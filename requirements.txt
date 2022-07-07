@@ -1,3 +1,1 @@
-cirq
-pyscf
-fqe
+requirements.txt cirq

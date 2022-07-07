@@ -23,7 +23,7 @@ def version_number(path: str) -> str:
 def main() -> None:
     """
     """
-    version_path = 'cirq-qubitization/_version.py'
+    version_path = 'cirq_qubitization/_version.py'
 
     __version__ = version_number(version_path)
 
@@ -41,7 +41,7 @@ def main() -> None:
     requirements = [r.strip() for r in requirements_buffer]
 
     setup(
-        name='cirq-qubitization',
+        name='cirq_qubitization',
         version=__version__,
         author='Nicholas C. Rubin and Tanuj Khattar',
         author_email='rubinnc0@gmail.com',
