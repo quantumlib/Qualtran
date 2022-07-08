@@ -47,11 +47,11 @@ def test_unary_iteration():
     sim = cirq.Simulator()
     for selection_integer in range(target_length):
         svals = [int(x) for x in format(selection_integer, f"0{selection_length}b")]
-        qubit_vals = {x: int(x == control) for x in all_qubits}
-        qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
+        qubit_vals = {x: int(x == control) for x in all_qubits}  # turn on control bit to activate circuit
+        qubit_vals.update({s: sval for s, sval in zip(selection, svals)})  # Initialize selection bits appropriately
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         result = sim.simulate(circuit, initial_state=initial_state)
-        initial_state[-(selection_integer + 1)] = 1
+        initial_state[-(selection_integer + 1)] = 1  # Build correct statevector with selection_integer bit flipped in the target register
         expected_output = "".join(str(x) for x in initial_state)
         assert result.dirac_notation()[1:-1] == expected_output
