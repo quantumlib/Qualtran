@@ -1,115 +1,101 @@
-from typing import Tuple, List
+from typing import Sequence, List
+import abc
 import cirq
 
+from cirq_qubitization import and_gate
 
-class And(cirq.Gate):
-    """And gate optimized for T-count.
 
-    See https://arxiv.org/abs/1805.03662 for reference.
+class UnaryIterationGate(cirq.Gate):
+    @property
+    @abc.abstractmethod
+    def control_register(self) -> int:
+        pass
 
-    Assumptions:
-        * And(cv).on(c1, c2, target) assumes that target is initially in the |0> state.
-        * And(cv, adjoint=True).on(c1, c2, target) will always leave the target in |0> state.
-    """
+    @property
+    @abc.abstractmethod
+    def selection_register(self) -> int:
+        pass
 
-    def __init__(self, cv: Tuple[int, int] = (1, 1), *, adjoint: bool = False) -> None:
-        self.cv = cv
-        self.adjoint = adjoint
+    @property
+    @abc.abstractmethod
+    def target_register(self) -> int:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def iteration_length(self) -> int:
+        pass
+
+    @abc.abstractmethod
+    def nth_operation(
+        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        pass
 
     def _num_qubits_(self) -> int:
-        return 3
+        return (
+            self.control_register + 2 * self.selection_register + self.target_register
+        )
 
-    def __pow__(self, power: int) -> "And":
-        if power == 1:
-            return self
-        if power == -1:
-            return And(self.cv, adjoint=self.adjoint ^ True)
+    def _unary_iteration_segtree(
+        self,
+        control: cirq.Qid,
+        selection: Sequence[cirq.Qid],
+        ancilla: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
+        sl: int,
+        l: int,
+        r: int,
+    ) -> cirq.OP_TREE:
+        if l >= min(r, self.iteration_length):
+            yield []
+        if l == (r - 1):
+            yield self.nth_operation(l, control, target)
+        else:
+            assert sl < len(selection)
+            m = (l + r) >> 1
+            if m >= self.iteration_length:
+                yield from self._unary_iteration_segtree(
+                    control, selection, ancilla, target, sl + 1, l, m
+                )
+            else:
+                anc, sq = ancilla[sl], selection[sl]
+                yield and_gate.And((1, 0)).on(control, sq, anc)
+                yield from self._unary_iteration_segtree(
+                    anc, selection, ancilla, target, sl + 1, l, m
+                )
+                yield cirq.CNOT(control, anc)
+                yield from self._unary_iteration_segtree(
+                    anc, selection, ancilla, target, sl + 1, m, r
+                )
+                yield and_gate.And(adjoint=True).on(control, sq, anc)
+
+    def _decompose_single_control(
+        self,
+        control: cirq.Qid,
+        selection: Sequence[cirq.Qid],
+        ancilla: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
+        assert len(selection) == len(ancilla)
+        assert 2 ** len(selection) >= self.iteration_length
+        yield from self._unary_iteration_segtree(
+            control, selection, ancilla, target, 0, 0, 2 ** len(selection)
+        )
+
+    def _decompose_(self, qubits: List[cirq.Qid]) -> cirq.OP_TREE:
+        control = qubits[: self.control_register]
+        selection = qubits[
+            self.control_register : self.control_register + self.selection_register
+        ]
+        ancilla = qubits[
+            self.control_register
+            + self.selection_register : self.control_register
+            + 2 * self.selection_register
+        ]
+        target = qubits[self.control_register + 2 * self.selection_register :]
+        if len(control) == 1:
+            yield from self._decompose_single_control(
+                control[0], selection, ancilla, target
+            )
         return NotImplemented
-
-    def __str__(self) -> str:
-        suffix = "" if self.cv == (1, 1) else str(self.cv)
-        return f"And†{suffix}" if self.adjoint else f"And{suffix}"
-
-    def __repr__(self) -> str:
-        return f"cirq_qubitization.And({self.cv}, adjoint={self.adjoint})"
-
-    def _circuit_diagram_info_(
-        self, args: "cirq.CircuitDiagramInfoArgs"
-    ) -> "cirq.CircuitDiagramInfo":
-        controls = ["(0)", "@"]
-        target = "And†" if self.adjoint else "And"
-        return cirq.CircuitDiagramInfo(
-            wire_symbols=[controls[c] for c in self.cv] + [target]
-        )
-
-    def _has_unitary_(self) -> bool:
-        return not self.adjoint
-
-    def _decompose_(self, qubits) -> "cirq.OP_TREE":
-        c1, c2, target = qubits
-        pre_post_ops = [cirq.X(q) for (q, v) in zip([c1, c2], self.cv) if v == 0]
-        yield pre_post_ops
-        if self.adjoint:
-            yield cirq.H(target)
-            yield cirq.measure(target, key=f"{target}")
-            yield cirq.CZ(c1, c2).with_classical_controls(f"{target}")
-            yield cirq.reset(target)
-        else:
-            yield [cirq.H(target), cirq.T(target)]
-            yield [cirq.CNOT(c1, target), cirq.CNOT(c2, target)]
-            yield [cirq.CNOT(target, c1), cirq.CNOT(target, c2)]
-            yield [cirq.T(c1) ** -1, cirq.T(c2) ** -1, cirq.T(target)]
-            yield [cirq.CNOT(target, c1), cirq.CNOT(target, c2)]
-            yield [cirq.H(target), cirq.S(target)]
-        yield pre_post_ops
-
-
-def _unary_iteration_impl(
-    control: cirq.Qid,
-    selection: List[cirq.Qid],
-    ancilla: List[cirq.Qid],
-    operations: List[cirq.Operation],
-    sl: int,
-    l: int,
-    r: int,
-) -> cirq.OP_TREE:
-    iteration_length = len(operations)
-    if l >= min(r, iteration_length):
-        yield []
-    if l == (r - 1):
-        yield operations[l].controlled_by(control)
-    else:
-        assert sl < len(selection)
-        m = (l + r) >> 1
-        if m >= iteration_length:
-            yield from _unary_iteration_impl(
-                control, selection, ancilla, operations, sl + 1, l, m
-            )
-        else:
-            anc, sq = ancilla[sl], selection[sl]
-            yield And((1, 0)).on(control, sq, anc)
-            yield from _unary_iteration_impl(
-                anc, selection, ancilla, operations, sl + 1, l, m
-            )
-            yield cirq.CNOT(control, anc)
-            yield from _unary_iteration_impl(
-                anc, selection, ancilla, operations, sl + 1, m, r
-            )
-            yield And(adjoint=True).on(control, sq, anc)
-
-
-def unary_iteration(
-    control: cirq.Qid,
-    selection: List[cirq.Qid],
-    ancilla: List[cirq.Qid],
-    operations: List[cirq.Operation],
-) -> cirq.CircuitOperation:
-    """Implements OP[l] when selection register stores integer `l`."""
-    assert len(ancilla) == len(selection)
-    return cirq.CircuitOperation(
-        cirq.FrozenCircuit(
-            _unary_iteration_impl(
-                control, selection, ancilla, operations, 0, 0, 2 ** len(selection)
-            )
-        )
-    )
