@@ -145,4 +145,5 @@ def test_ising_one_bitflip_select():
                 # Hamiltonian already defined on correct qubits so just take qid
                 initial_state[qid_key._x] = 0
         expected_output = "".join(str(x) for x in initial_state)
-        assert result.dirac_notation()[1:-1] == expected_outputgg
+        assert result.dirac_notation()[1:-1] == expected_output
+    
