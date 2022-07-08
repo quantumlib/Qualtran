@@ -8,11 +8,11 @@
 
 - [x] QROM built from Unary iteration 
 
-- [ ] Uniform superposition (Fig 12)
+- [x] Uniform superposition (Fig 12)
 
 - [ ] SUBPREPARE
 
-- [ ] Compare using ripple carry
+- [x] Compare using ripple carry
 
 - [ ] Alt_l (OpenFermion)
 
