@@ -1,1 +1,2 @@
-from cirq_qubitization.unary_iteration import And, unary_iteration
+from cirq_qubitization.and_gate import And
+from cirq_qubitization.unary_iteration import UnaryIterationGate
