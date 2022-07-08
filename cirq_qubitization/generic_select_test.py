@@ -146,4 +146,91 @@ def test_ising_one_bitflip_select():
                 initial_state[qid_key._x] = 0
         expected_output = "".join(str(x) for x in initial_state)
         assert result.dirac_notation()[1:-1] == expected_output
-    
+
+
+def fake_prepare(positive_coefficients: np.ndarray, selection_register: List[cirq.Qid]) -> cirq.OP_TREE:
+    """
+    :param selection_register: use a generic gate op to build a synthetic prepare
+    """
+    pos_coeffs = positive_coefficients.flatten()
+    size_hilbert_of_reg = 2**len(selection_register)
+    assert len(pos_coeffs) <= size_hilbert_of_reg
+    # pad to 2**(len(selection_register)) size
+    if len(pos_coeffs) < size_hilbert_of_reg:
+        pos_coeffs = np.hstack((pos_coeffs, np.array(
+            [0] * (size_hilbert_of_reg - len(pos_coeffs)))))
+
+    assert np.isclose(pos_coeffs.conj().T @ pos_coeffs, 1.)
+    circuit = cirq.Circuit()
+    circuit.append(cirq.StatePreparationChannel(
+        pos_coeffs).on(*selection_register))
+    return circuit
+
+
+def test_select_application_to_eigenstates():
+    """
+    To validate the unary iteration correctly applying Hamiltonian to the state we 
+    should compare to directly applying Hamiltonian to the initial state
+
+    Target register starts in an eigenstate so <L|select|L> = eig / lambda
+    """
+    sim = cirq.Simulator(dtype=np.complex128)
+    num_sites = 4
+    target_register_size = num_sites
+    num_select_unitaries = 2 * num_sites
+    # PBC Ising in 1-D has num_sites ZZ operations and num_sites X operations.
+    # Thus 2 * num_sites Pauli ops
+    selection_register_size = int(np.ceil(np.log(num_select_unitaries)))
+    control_register_size = 1
+    all_qubits = cirq.LineQubit.range(
+        2 * selection_register_size + target_register_size + 1)
+    control, selection, ancilla, target = (
+        all_qubits[0],
+        all_qubits[1: 2 * selection_register_size: 2],
+        all_qubits[2: 2 * selection_register_size + 1: 2],
+        all_qubits[2 * selection_register_size + 1:],
+    )
+
+    # Get paulistring terms
+    # right now we only handle positive interaction term values
+    ising_inst = OneDimensionalIsingModel(num_sites, 1, 1)
+    paulistring_hamiltonian = ising_inst.get_cirq_operator(target)
+    individual_hamiltonian_paulistrings = [
+        tt for tt in paulistring_hamiltonian]
+    assert all(
+        [type(xx) == cirq.PauliString for xx in individual_hamiltonian_paulistrings])
+    qubitization_lambda = sum(
+        xx.coefficient.real for xx in individual_hamiltonian_paulistrings)
+
+    ising_eigs, ising_wfns = np.linalg.eigh(paulistring_hamiltonian.matrix())
+
+    # built select with unary iteration gate
+    op = Apply_ABSTRACTSELECT(selection_register_length=selection_register_size,
+                              target_register_length=target_register_size,
+                              select_unitaries=individual_hamiltonian_paulistrings).on(control, *selection, *ancilla, *target)
+    select_circuit = cirq.Circuit(cirq.decompose_once(op))
+    coeffs = np.sqrt(np.array(
+        [xx.coefficient.real for xx in individual_hamiltonian_paulistrings]) / qubitization_lambda)
+    prep_circuit = fake_prepare(coeffs, selection)
+    turn_on_control = cirq.Circuit(cirq.X.on(control))
+
+    for ie, iw_idx in zip(ising_eigs, range(len(ising_eigs))):
+        eigenstate_prep = cirq.Circuit()
+        eigenstate_prep.append(cirq.StatePreparationChannel(
+            ising_wfns[:, iw_idx].flatten()).on(*target))
+
+        input_circuit = turn_on_control + prep_circuit + eigenstate_prep + \
+            cirq.Circuit([cirq.I.on(xx) for xx in ancilla])
+        input_vec = sim.simulate(input_circuit).final_state_vector
+        final_circuit = input_circuit + select_circuit
+        res = sim.simulate(final_circuit)
+
+        select_control_subsystem_size = len(all_qubits) - len(target)
+        H_op = np.kron(np.eye(2**select_control_subsystem_size),
+                       paulistring_hamiltonian.matrix())
+        test_final_vec = H_op @ input_vec
+        # Overlap of inital_state and SELECT initial_state should be like applying H/lambda which should give (E / lambda) * initial_state
+        print(np.vdot(input_vec, res.final_state_vector)
+              * qubitization_lambda, ie)
+        assert np.isclose(
+            np.vdot(input_vec, res.final_state_vector), ie / qubitization_lambda)
