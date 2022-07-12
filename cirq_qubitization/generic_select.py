@@ -1,10 +1,9 @@
 from typing import Sequence, List
-import numpy as np
 import cirq
-import cirq_qubitization
+from cirq_qubitization import unary_iteration
 
 
-class GenericSelect(cirq_qubitization.UnaryIterationGate):
+class GenericSelect(unary_iteration.UnaryIterationGate):
     """
     Gate that implements SELECT for a Hamiltonian expressed as an LCU.
 
@@ -26,17 +25,23 @@ class GenericSelect(cirq_qubitization.UnaryIterationGate):
         Args:
             selection_length: Number of qubits needed for select register. This is ceil(log2(len(select_unitaries)))
             target_length: number of qubits in the target register.
-            select_unitaries: List of Paulistrings to apply to target register
+            select_unitaries: List of DensePauliString's to apply to target register. Each dense
+            pauli string must contain `target_register_length` terms.
 
-        Caveat: this is not really a gate since select_unitaries contain qubits and we require
-                the user to correctly assign these qubits consistent with the "target_length" register
+        Raises:
+            ValueError if any(len(dps) != target_register_length for dps in select_unitaries).
         """
+        if any(len(dps) != target_register_length for dps in select_unitaries):
+            raise ValueError(
+                f"Each dense pauli string in `select_unitaries` should contain "
+                f"{target_register_length} terms."
+            )
         self.selection_length = selection_register_length
         self.target_length = target_register_length
         self.select_unitaries = select_unitaries
-        if len(select_unitaries) <= int(np.log(self.selection_length)):
+        if self.selection_length < (len(select_unitaries) - 1).bit_length():
             raise ValueError(
-                "Input select length is not consistent with select_unitaries"
+                "Input selection_register_length is not consistent with select_unitaries"
             )
 
     @property
@@ -59,10 +64,10 @@ class GenericSelect(cirq_qubitization.UnaryIterationGate):
         self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         """
-
-        :param n: takes on values [0, len(self.selection_unitaries))
-        :param control: Qid that is the control qubit or qubits
-        :param target: Target register qubits
+        Args:
+             n: takes on values [0, len(self.selection_unitaries))
+             control: Qid that is the control qubit or qubits
+             target: Target register qubits
         """
         if n < 0 or n >= 2**self.selection_length:
             raise ValueError("n is outside selection length range")
