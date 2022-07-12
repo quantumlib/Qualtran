@@ -3,4 +3,5 @@ from cirq_qubitization.arithmetic_gates import LessThanGate
 from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
 from cirq_qubitization.unary_iteration import UnaryIterationGate
 from cirq_qubitization.generic_select import GenericSelect
+from cirq_qubitization.selected_majorana_fermion import SelectedMajoranaFermionGate
 from cirq_qubitization.qrom import QROM
