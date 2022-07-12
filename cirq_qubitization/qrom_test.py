@@ -1,18 +1,38 @@
+import pytest
 import cirq
 import cirq_qubitization
+import itertools
 
 
-def test_qrom():
-    data = [1, 2, 3, 4, 5]
-    qrom = cirq_qubitization.QROM(data)
+@pytest.mark.parametrize(
+    "data",
+    [
+        [[1, 2, 3, 4, 5]],
+        [[1, 2, 3], [4, 5, 10]],
+    ],
+)
+def test_qrom(data):
+    qrom = cirq_qubitization.QROM(*data)
     all_qubits = cirq.LineQubit.range(qrom.num_qubits())
-    control, selection, ancilla, target = (
+    control, selection, ancilla, flat_target = (
         all_qubits[0],
         all_qubits[1 : 2 * qrom.selection_register : 2],
         all_qubits[2 : 2 * qrom.selection_register + 1 : 2],
         all_qubits[2 * qrom.selection_register + 1 :],
     )
-    circuit = cirq.Circuit(qrom.on(control, *selection, *ancilla, *target))
+    target_lengths = [max(d).bit_length() for d in data]
+    target = [
+        flat_target[y - x : y]
+        for x, y in zip(target_lengths, itertools.accumulate(target_lengths))
+    ]
+    circuit = cirq.Circuit(
+        qrom.on(
+            control_register=control,
+            selection_register=selection,
+            selection_ancilla=ancilla,
+            target_register=target if len(target) > 1 else flat_target,
+        )
+    )
 
     sim = cirq.Simulator()
     for selection_integer in range(qrom.iteration_length):
@@ -24,9 +44,13 @@ def test_qrom():
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         result = sim.simulate(circuit, initial_state=initial_state)
-        initial_state[2 * qrom.selection_register + 1 :] = [
-            int(x)
-            for x in format(data[selection_integer], f"0{qrom.selection_register}b")
-        ]
+
+        start = 2 * qrom.selection_register + 1
+        for d, d_bits in zip(data, target_lengths):
+            end = start + d_bits
+            initial_state[start:end] = [
+                int(x) for x in format(d[selection_integer], f"0{end - start}b")
+            ]
+            start = end
         expected_output = "".join(str(x) for x in initial_state)
         assert result.dirac_notation()[1:-1] == expected_output
