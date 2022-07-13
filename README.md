@@ -14,8 +14,8 @@
 
 - [x] Compare using ripple carry
 
-- [ ] Alt_l (OpenFermion)
+- [x] Alt_l (OpenFermion)
 
-- [ ] Keep_l (OpenFermion)
+- [x] Keep_l (OpenFermion)
 
 
