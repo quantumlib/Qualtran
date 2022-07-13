@@ -66,7 +66,6 @@ class SwapWithZeroGate(cirq.Gate):
         assert len(target) == self.target_register_length
         for j in range(len(selection)):
             for i in range(len(target) - 2**j):
-                print(f"DEBUG: CSWAP({len(selection) - j - 1}, {i}, {i + 2 ** j})")
                 yield swap_n(
                     selection[len(selection) - j - 1], target[i], target[i + 2**j]
                 )
