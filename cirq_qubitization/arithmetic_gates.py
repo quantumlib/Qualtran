@@ -1,4 +1,3 @@
-from re import I
 from typing import Union, Sequence, Iterable
 import cirq
 
@@ -51,24 +50,3 @@ class MultiInLessThanEqualGate(cirq.ArithmeticGate):
 
     def __repr__(self):
         return f"cirq_qubitization.MultiInLessThanEqualGate({self._first_input_register, self._second_input_register})"
-
-
-if __name__ == "__main__":
-    import itertools
-    circuit = cirq.Circuit(
-        MultiInLessThanEqualGate([2, 2, 2], [2, 2, 2]).on(*cirq.LineQubit.range(7))
-    )
-    maps = {}
-    for in1, in2 in itertools.product(range(2**3), repeat=2):
-        for target_reg_val in range(2):
-            target_bin = bin(target_reg_val)[2:] 
-            in1_bin = bin(in1)[2:]
-            in2_bin = bin(in2)[2:]
-            out_bin = bin(target_reg_val ^ (in1 <= in2))[2:]
-            true_out_int = target_reg_val ^ (in1 <= in2)
-            input_int = int(in1_bin + in2_bin + target_bin, 2)
-            output_int = int(in1_bin + in2_bin + out_bin, 2)
-            print(in1, in2, target_reg_val, true_out_int, int(out_bin, 2))
-            assert true_out_int == int(out_bin, 2)
-            maps[input_int] = output_int
-    cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)

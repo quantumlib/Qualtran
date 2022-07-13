@@ -35,8 +35,8 @@ def test_multi_in_less_equal_than_gate():
     for in1, in2 in itertools.product(range(2**3), repeat=2):
         for target_reg_val in range(2):
             target_bin = bin(target_reg_val)[2:] 
-            in1_bin = bin(in1)[2:]
-            in2_bin = bin(in2)[2:]
+            in1_bin = format(in1, '03b')
+            in2_bin = format(in2, '03b')
             out_bin = bin(target_reg_val ^ (in1 <= in2))[2:]
             true_out_int = target_reg_val ^ (in1 <= in2)
             input_int = int(in1_bin + in2_bin + target_bin, 2)
