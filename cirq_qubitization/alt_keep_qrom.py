@@ -6,18 +6,16 @@ Uses OpenFermion LCU_utils routines to generate QROM oracles for the alt and kee
 the SUBPREPARE oracle.
 """
 from typing import List, Sequence
+
 import itertools
 
 import numpy as np
 
-import cirq
-
 from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
-from cirq_qubitization.generic_select_test import OneDimensionalIsingModel
-from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
+import cirq
+
 from cirq_qubitization.qrom import QROM
-from cirq_qubitization import unary_iteration
 
 
 def construct_alt_keep_qrom(lcu_coefficients: List[float], probability_epsilon: float) -> QROM:
