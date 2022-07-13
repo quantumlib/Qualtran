@@ -27,7 +27,7 @@ class LessThanGate(cirq.ArithmeticGate):
         return f"cirq_qubitization.LessThanGate({self._input_register, self._val})"
 
 
-class MultiInLessThanEqualGate(cirq.ArithmeticGate):
+class LessThanEqualGate(cirq.ArithmeticGate):
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>"""
 
     def __init__(self, first_input_register: Sequence[int], second_input_register: Sequence[int]) -> None:
@@ -40,8 +40,8 @@ class MultiInLessThanEqualGate(cirq.ArithmeticGate):
 
     def with_registers(
         self, *new_registers: Union[int, Sequence[int]]
-    ) -> "MultiInLessThanEqualGate":
-        return MultiInLessThanEqualGate(new_registers[0], new_registers[1])
+    ) -> "LessThanEqualGate":
+        return LessThanEqualGate(new_registers[0], new_registers[1])
 
     def apply(
         self, first_input_val, second_input_val, target_register_val
@@ -49,4 +49,4 @@ class MultiInLessThanEqualGate(cirq.ArithmeticGate):
         return first_input_val, second_input_val, target_register_val ^ (first_input_val <= second_input_val)
 
     def __repr__(self):
-        return f"cirq_qubitization.MultiInLessThanEqualGate({self._first_input_register, self._second_input_register})"
+        return f"cirq_qubitization.LessThanEqualGate({self._first_input_register, self._second_input_register})"

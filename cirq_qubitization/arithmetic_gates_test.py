@@ -29,7 +29,7 @@ def test_less_than_gate():
 
 def test_multi_in_less_equal_than_gate():
     circuit = cirq.Circuit(
-        cirq_qubitization.MultiInLessThanEqualGate([2, 2, 2], [2, 2, 2]).on(*cirq.LineQubit.range(7))
+        cirq_qubitization.LessThanEqualGate([2, 2, 2], [2, 2, 2]).on(*cirq.LineQubit.range(7))
     )
     maps = {}
     for in1, in2 in itertools.product(range(2**3), repeat=2):

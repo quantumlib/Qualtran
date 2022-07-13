@@ -1,5 +1,5 @@
 from cirq_qubitization.and_gate import And
-from cirq_qubitization.arithmetic_gates import LessThanGate, MultiInLessThanEqualGate
+from cirq_qubitization.arithmetic_gates import LessThanGate, LessThanEqualGate
 from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
 from cirq_qubitization.unary_iteration import UnaryIterationGate
 from cirq_qubitization.generic_select import GenericSelect
