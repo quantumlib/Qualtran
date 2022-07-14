@@ -2,7 +2,6 @@
 
 ## Primitives to implement
 
-- [ ] Chi_m state prep -- ancilla init state for optimal Holevo bound on QPE variance
 
 - [x] Unary iteration (And compute/uncompte)
 
