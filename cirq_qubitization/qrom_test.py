@@ -14,11 +14,10 @@ import itertools
 def test_qrom(data):
     qrom = cirq_qubitization.QROM(*data)
     all_qubits = cirq.LineQubit.range(qrom.num_qubits())
-    control, selection, ancilla, flat_target = (
-        all_qubits[0],
+    selection, ancilla, flat_target = (
+        all_qubits[: 2 * qrom.selection_register - 1 : 2],
         all_qubits[1 : 2 * qrom.selection_register : 2],
-        all_qubits[2 : 2 * qrom.selection_register + 1 : 2],
-        all_qubits[2 * qrom.selection_register + 1 :],
+        all_qubits[2 * qrom.selection_register :],
     )
     target_lengths = [max(d).bit_length() for d in data]
     target = [
@@ -27,7 +26,6 @@ def test_qrom(data):
     ]
     circuit = cirq.Circuit(
         qrom.on(
-            control_register=control,
             selection_register=selection,
             selection_ancilla=ancilla,
             target_register=target if len(target) > 1 else flat_target,
@@ -39,13 +37,13 @@ def test_qrom(data):
         svals = [
             int(x) for x in format(selection_integer, f"0{qrom.selection_register}b")
         ]
-        qubit_vals = {x: int(x == control) for x in all_qubits}
+        qubit_vals = {x: 0 for x in all_qubits}
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         result = sim.simulate(circuit, initial_state=initial_state)
 
-        start = 2 * qrom.selection_register + 1
+        start = 2 * qrom.selection_register
         for d, d_bits in zip(data, target_lengths):
             end = start + d_bits
             initial_state[start:end] = [
