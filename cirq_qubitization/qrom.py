@@ -1,5 +1,5 @@
 import cirq
-from typing import Union, Sequence
+from typing import Tuple, Union, Sequence
 from cirq_qubitization import unary_iteration
 
 
@@ -9,14 +9,14 @@ class QROM(unary_iteration.UnaryIterationGate):
     def __init__(self, *data: Sequence[int]):
         if len(set(len(d) for d in data)) != 1:
             raise ValueError("All data sequences to load must be of equal length.")
-        self._data = data
+        self._data = tuple(tuple(d) for d in data)
         self._selection_register = len(data[0]).bit_length()
         self._individual_target_registers = [max(d).bit_length() for d in data]
         self._target_register = sum(self._individual_target_registers)
 
     @property
     def control_register(self) -> int:
-        return 1
+        return 0
 
     @property
     def selection_register(self) -> int:
@@ -30,16 +30,17 @@ class QROM(unary_iteration.UnaryIterationGate):
     def iteration_length(self) -> int:
         return len(self._data[0])
 
+    @property
+    def data(self) -> Tuple[Tuple[int, ...], ...]:
+        return self._data
+
     def on(
         self,
         *,
-        control_register: Union[cirq.Qid, Sequence[cirq.Qid]],
         selection_register: Sequence[cirq.Qid],
         selection_ancilla: Sequence[cirq.Qid],
         target_register: Union[Sequence[cirq.Qid], Sequence[Sequence[cirq.Qid]]],
     ) -> cirq.Operation:
-        if isinstance(control_register, cirq.Qid):
-            control_register = [control_register]
         if not isinstance(target_register[0], cirq.Qid):
             assert (
                 len(t) == tr
@@ -51,8 +52,7 @@ class QROM(unary_iteration.UnaryIterationGate):
         assert len(flat_target_register) == self.target_register
         return cirq.GateOperation(
             self,
-            list(control_register)
-            + list(selection_register)
+            list(selection_register)
             + list(selection_ancilla)
             + list(flat_target_register),
         )
