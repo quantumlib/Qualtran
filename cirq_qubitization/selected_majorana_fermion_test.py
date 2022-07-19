@@ -20,7 +20,7 @@ def test_selected_majorana_fermion_gate(selection_length, target_length):
         selection_length, target_length
     )
     circuit = cirq.Circuit(
-        gate.on(
+        gate.on_registers(
             control_register=control,
             selection_register=selection,
             selection_ancilla=ancilla,

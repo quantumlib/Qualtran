@@ -25,7 +25,7 @@ def test_qrom(data):
         for x, y in zip(target_lengths, itertools.accumulate(target_lengths))
     ]
     circuit = cirq.Circuit(
-        qrom.on(
+        qrom.on_registers(
             selection_register=selection,
             selection_ancilla=ancilla,
             target_register=target if len(target) > 1 else flat_target,

@@ -48,7 +48,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
             control, selection, ancilla, target
         )
 
-    def on(
+    def on_registers(
         self,
         *,
         control_register: Union[cirq.Qid, Sequence[cirq.Qid]],
@@ -56,7 +56,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         selection_ancilla: Sequence[cirq.Qid],
         accumulator: cirq.Qid,
         target_register: Sequence[cirq.Qid]
-    ) -> cirq.Operation:
+    ) -> cirq.GateOperation:
         if isinstance(control_register, cirq.Qid):
             control_register = [control_register]
         return cirq.GateOperation(

@@ -26,7 +26,7 @@ def test_swap_with_zero_gate(
         for st in range(selection_register, len(all_qubits), target_register_bit_size)
     ]
     # Create a circuit.
-    circuit = cirq.Circuit(gate.on(selection=selection, target=target))
+    circuit = cirq.Circuit(gate.on_registers(selection=selection, target=target))
 
     # Load data[i] in i'th target register; where each register is of size target_register_bit_size
     data = [

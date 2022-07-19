@@ -12,8 +12,8 @@ class PrepareUniformSuperposition(cirq.Gate):
         self._K = 0
         while n > 1 and n % 2 == 0:
             self._K += 1
-            n = n / 2
-        self._L = n
+            n = n // 2
+        self._L = int(n)
         self._logL = target_register - self._K
         self._num_controls = num_controls
 
