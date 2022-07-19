@@ -43,7 +43,7 @@ class QROM(unary_iteration.UnaryIterationGate):
         selection_register: Sequence[cirq.Qid],
         selection_ancilla: Sequence[cirq.Qid],
         target_register: Union[Sequence[cirq.Qid], Sequence[Sequence[cirq.Qid]]],
-    ) -> cirq.Operation:
+    ) -> cirq.GateOperation:
         if not isinstance(target_register[0], cirq.Qid):
             assert (
                 len(t) == tr
