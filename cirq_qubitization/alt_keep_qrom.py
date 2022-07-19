@@ -1,24 +1,18 @@
 """
-SUBPREPARE Circuit tests
-
-Uses OpenFermion LCU_utils routines to generate QROM oracles for the alt and keep parts of 
-
+Uses OpenFermion LCU_utils routines to generate QROM oracles for the alt and keep parts of
 the SUBPREPARE oracle.
 """
-from typing import List, Sequence
+from typing import List
 
-import itertools
-
-import numpy as np
-
-from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
-
-import cirq
-
+from openfermion.circuits.lcu_util import (
+    preprocess_lcu_coefficients_for_reversible_sampling,
+)
 from cirq_qubitization.qrom import QROM
 
 
-def construct_alt_keep_qrom(lcu_coefficients: List[float], probability_epsilon: float) -> QROM:
+def construct_alt_keep_qrom(
+    lcu_coefficients: List[float], probability_epsilon: float
+) -> QROM:
     """
     Construct the QROM that outputs alt and keep values in the SUBPREPARE routine
 
@@ -30,8 +24,6 @@ def construct_alt_keep_qrom(lcu_coefficients: List[float], probability_epsilon: 
         A QROM instance
     """
     alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-        lcu_coefficients=lcu_coefficients, 
-        epsilon=probability_epsilon
+        lcu_coefficients=lcu_coefficients, epsilon=probability_epsilon
     )
-    alt_keep_qrom = QROM(alternates, keep_numers)
-    return alt_keep_qrom
+    return QROM(alternates, keep_numers)

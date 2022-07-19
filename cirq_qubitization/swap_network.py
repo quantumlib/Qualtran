@@ -70,7 +70,7 @@ class SwapWithZeroGate(cirq.Gate):
                     selection[len(selection) - j - 1], target[i], target[i + 2**j]
                 )
 
-    def on(
+    def on_registers(
         self, *, selection: Sequence[cirq.Qid], target: Sequence[Sequence[cirq.Qid]]
     ):
         assert len(selection) == self.selection_register

@@ -10,7 +10,7 @@ class QROM(unary_iteration.UnaryIterationGate):
         if len(set(len(d) for d in data)) != 1:
             raise ValueError("All data sequences to load must be of equal length.")
         self._data = tuple(tuple(d) for d in data)
-        self._selection_register = len(data[0]).bit_length()
+        self._selection_register = (len(data[0]) - 1).bit_length()
         self._individual_target_registers = [max(d).bit_length() for d in data]
         self._target_register = sum(self._individual_target_registers)
 
@@ -34,7 +34,10 @@ class QROM(unary_iteration.UnaryIterationGate):
     def data(self) -> Tuple[Tuple[int, ...], ...]:
         return self._data
 
-    def on(
+    def __repr__(self) -> str:
+        return f"cirq_qubitization.QROM({self.data})"
+
+    def on_registers(
         self,
         *,
         selection_register: Sequence[cirq.Qid],
