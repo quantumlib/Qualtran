@@ -1,6 +1,9 @@
 from typing import Sequence
+
 import cirq
+
 from cirq_qubitization import multi_target_cnot
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers, Register
 
 
 def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
@@ -30,7 +33,7 @@ def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
     yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
 
-class SwapWithZeroGate(cirq.Gate):
+class SwapWithZeroGate(GateWithRegisters):
     """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.
 
     Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_n> --> |x> |Psi_x> |Rest of Psi>.
@@ -45,52 +48,45 @@ class SwapWithZeroGate(cirq.Gate):
         target_register_length: int,
     ):
         assert target_register_length <= 2**selection_register
-        self.selection_register = selection_register
         self.target_register_bit_size = target_register_bit_size
         self.target_register_length = target_register_length
 
-    def _num_qubits_(self) -> int:
-        return (
-            self.selection_register
-            + self.target_register_length * self.target_register_bit_size
+        self._registers = Registers(
+            [Register("selection", selection_register)]
+            + [
+                Register(f"target_{i}", target_register_bit_size)
+                for i in range(target_register_length)
+            ]
         )
 
-    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        selection = qubits[: self.selection_register]
-        target = [
-            qubits[st : st + self.target_register_bit_size]
-            for st in range(
-                self.selection_register, len(qubits), self.target_register_bit_size
-            )
-        ]
-        assert len(target) == self.target_register_length
+    @property
+    def registers(self) -> Registers:
+        return self._registers
+
+    def decompose_from_registers(self, selection, **targets):
         for j in range(len(selection)):
-            for i in range(len(target) - 2**j):
+            for i in range(len(targets) - 2**j):
                 yield swap_n(
-                    selection[len(selection) - j - 1], target[i], target[i + 2**j]
+                    selection[len(selection) - j - 1],
+                    targets[f"target_{i}"],
+                    targets[f"target_{i + 2**j}"],
                 )
 
     def on_registers(
         self, *, selection: Sequence[cirq.Qid], target: Sequence[Sequence[cirq.Qid]]
     ) -> cirq.GateOperation:
-        assert len(selection) == self.selection_register
+        assert len(selection) == self.registers["selection"].bitsize
         assert len(target) == self.target_register_length
         assert all(len(t) == self.target_register_bit_size for t in target)
         flat_target = [q for t in target for q in t]
         return cirq.GateOperation(self, selection + flat_target)
 
     def __repr__(self) -> str:
-        return (
-            "cirq_qubitization.SwapWithZeroGate("
-            f"{self.selection_register},"
-            f"{self.target_register_bit_size},"
-            f"{self.target_register_length}"
-            f")"
-        )
+        return "cirq_qubitization.SwapWithZeroGate(" f"{self.registers})"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@(n)"] * self.selection_register
-        wire_symbols += ["swap_0"] * self.target_register_bit_size
+        wire_symbols = ["@(n)"] * self.registers["selection"].bitsize
+        wire_symbols += ["swap_0"] * self.target_register_length
         wire_symbols += (
             ["swap_r"]
             * (self.target_register_length - 1)
