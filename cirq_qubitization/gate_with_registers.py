@@ -47,7 +47,7 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def decompose_from_registers(
-        self, **qubit_regs: Dict[str, Sequence[cirq.Qid]]
+        self, **qubit_regs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         ...
 
