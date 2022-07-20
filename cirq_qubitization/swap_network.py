@@ -7,7 +7,7 @@ def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
     """Approximately implements a multi-target controlled swap unitary using only 4 * N T-gates.
 
     Implements the unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$ such that the output state is
-    correct upto a global phase factor of +1 / -1.
+    correct up to a global phase factor of +1 / -1.
 
     This is useful when the incorrect phase can be absorbed in a garbage state of an algorithm; and
     thus ignored. See Appendix B.2.c of https://arxiv.org/abs/1812.00954 for more details.
@@ -35,7 +35,11 @@ class SwapWithZeroGate(cirq.Gate):
 
     Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_n> --> |x> |Psi_x> |Rest of Psi>.
     Note that the state of `|Rest of Psi>` is allowed to be anything and should not be depended
-    upon. See https://arxiv.org/abs/1812.00954 for reference.
+    upon.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+            Low, Kliuchnikov, Schaeffer. 2018.
     """
 
     def __init__(
