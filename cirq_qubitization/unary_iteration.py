@@ -10,17 +10,17 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers, 
 class UnaryIterationGate(GateWithRegisters):
     @property
     @abc.abstractmethod
-    def control_register(self) -> int:
+    def control_bitsize(self) -> int:
         pass
 
     @property
     @abc.abstractmethod
-    def selection_register(self) -> int:
+    def selection_bitsize(self) -> int:
         pass
 
     @property
     @abc.abstractmethod
-    def target_register(self) -> int:
+    def target_bitsize(self) -> int:
         pass
 
     @property
@@ -32,10 +32,10 @@ class UnaryIterationGate(GateWithRegisters):
     def registers(self) -> Registers:
         return Registers(
             [
-                Register("control", self.control_register),
-                Register("selection", self.selection_register),
-                Register("ancilla", self.selection_register),
-                Register("target", self.target_register),
+                Register("control", self.control_bitsize),
+                Register("selection", self.selection_bitsize),
+                Register("ancilla", self.selection_bitsize),
+                Register("target", self.target_bitsize),
             ]
         )
 

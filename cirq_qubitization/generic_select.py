@@ -15,46 +15,46 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
 
     def __init__(
         self,
-        selection_register_length: int,
-        target_register_length: int,
+        selection_bitsize: int,
+        target_bitsize: int,
         select_unitaries: List[cirq.DensePauliString],
     ):
         """
         An implementation of the SELECT unitary using the `UnaryIterationGate`
 
         Args:
-            selection_length: Number of qubits needed for select register. This is ceil(log2(len(select_unitaries)))
-            target_length: number of qubits in the target register.
+            selection_bitsize: Number of qubits needed for select register. This is ceil(log2(len(select_unitaries)))
+            target_bitsize: number of qubits in the target register.
             select_unitaries: List of DensePauliString's to apply to target register. Each dense
-            pauli string must contain `target_register_length` terms.
+                pauli string must contain `target_bitsize` terms.
 
         Raises:
-            ValueError if any(len(dps) != target_register_length for dps in select_unitaries).
+            ValueError if any(len(dps) != target_bitsize for dps in select_unitaries).
         """
-        if any(len(dps) != target_register_length for dps in select_unitaries):
+        if any(len(dps) != target_bitsize for dps in select_unitaries):
             raise ValueError(
                 f"Each dense pauli string in `select_unitaries` should contain "
-                f"{target_register_length} terms."
+                f"{target_bitsize} terms."
             )
-        self.selection_length = selection_register_length
-        self.target_length = target_register_length
+        self._selection_bitsize = selection_bitsize
+        self._target_bitsize = target_bitsize
         self.select_unitaries = select_unitaries
-        if self.selection_length < (len(select_unitaries) - 1).bit_length():
+        if self._selection_bitsize < (len(select_unitaries) - 1).bit_length():
             raise ValueError(
-                "Input selection_register_length is not consistent with select_unitaries"
+                "Input selection_bitsize is not consistent with select_unitaries"
             )
 
     @property
-    def control_register(self) -> int:
+    def control_bitsize(self) -> int:
         return 1
 
     @property
-    def selection_register(self) -> int:
-        return self.selection_length
+    def selection_bitsize(self) -> int:
+        return self._selection_bitsize
 
     @property
-    def target_register(self) -> int:
-        return self.target_length
+    def target_bitsize(self) -> int:
+        return self._target_bitsize
 
     @property
     def iteration_length(self) -> int:
@@ -69,7 +69,7 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
              control: Qid that is the control qubit or qubits
              target: Target register qubits
         """
-        if n < 0 or n >= 2**self.selection_length:
+        if n < 0 or n >= 2**self.selection_bitsize:
             raise ValueError("n is outside selection length range")
         return (
             self.select_unitaries[n]

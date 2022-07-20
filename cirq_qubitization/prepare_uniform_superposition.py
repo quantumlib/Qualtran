@@ -8,13 +8,13 @@ import cirq
 
 class PrepareUniformSuperposition(cirq.Gate):
     def __init__(self, n: int, *, num_controls: int = 0):
-        target_register = (n - 1).bit_length()
+        target_bitsize = (n - 1).bit_length()
         self._K = 0
         while n > 1 and n % 2 == 0:
             self._K += 1
             n = n // 2
         self._L = int(n)
-        self._logL = target_register - self._K
+        self._logL = target_bitsize - self._K
         self._num_controls = num_controls
 
     def _num_qubits_(self) -> int:

@@ -10,7 +10,7 @@ def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
     """Approximately implements a multi-target controlled swap unitary using only 4 * N T-gates.
 
     Implements the unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$ such that the output state is
-    correct upto a global phase factor of +1 / -1.
+    correct up to a global phase factor of +1 / -1.
 
     This is useful when the incorrect phase can be absorbed in a garbage state of an algorithm; and
     thus ignored. See Appendix B.2.c of https://arxiv.org/abs/1812.00954 for more details.
@@ -38,24 +38,29 @@ class SwapWithZeroGate(GateWithRegisters):
 
     Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_n> --> |x> |Psi_x> |Rest of Psi>.
     Note that the state of `|Rest of Psi>` is allowed to be anything and should not be depended
-    upon. See https://arxiv.org/abs/1812.00954 for reference.
+    upon.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+            Low, Kliuchnikov, Schaeffer. 2018.
     """
 
     def __init__(
         self,
-        selection_register: int,
-        target_register_bit_size: int,
-        target_register_length: int,
+        selection_bitsize: int,
+        target_bitsize: int,
+        n_target_registers: int,
     ):
-        assert target_register_length <= 2**selection_register
-        self.target_register_bit_size = target_register_bit_size
-        self.target_register_length = target_register_length
+        assert n_target_registers <= 2**selection_bitsize
+        self.selection_bitsize = selection_bitsize
+        self.target_bitsize = target_bitsize
+        self.n_target_registers = n_target_registers
 
         self._registers = Registers(
-            [Register("selection", selection_register)]
+            [Register("selection", selection_bitsize)]
             + [
-                Register(f"target_{i}", target_register_bit_size)
-                for i in range(target_register_length)
+                Register(f"target_{i}", target_bitsize)
+                for i in range(n_target_registers)
             ]
         )
 
@@ -75,21 +80,23 @@ class SwapWithZeroGate(GateWithRegisters):
     def on_registers(
         self, *, selection: Sequence[cirq.Qid], target: Sequence[Sequence[cirq.Qid]]
     ) -> cirq.GateOperation:
-        assert len(selection) == self.registers["selection"].bitsize
-        assert len(target) == self.target_register_length
-        assert all(len(t) == self.target_register_bit_size for t in target)
+        assert len(selection) == self.selection_bitsize
+        assert len(target) == self.n_target_registers
+        assert all(len(t) == self.target_bitsize for t in target)
         flat_target = [q for t in target for q in t]
         return cirq.GateOperation(self, selection + flat_target)
 
     def __repr__(self) -> str:
-        return "cirq_qubitization.SwapWithZeroGate(" f"{self.registers})"
+        return (
+            "cirq_qubitization.SwapWithZeroGate("
+            f"{self.selection_bitsize},"
+            f"{self.target_bitsize},"
+            f"{self.n_target_registers}"
+            f")"
+        )
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@(n)"] * self.registers["selection"].bitsize
-        wire_symbols += ["swap_0"] * self.target_register_length
-        wire_symbols += (
-            ["swap_r"]
-            * (self.target_register_length - 1)
-            * self.target_register_bit_size
-        )
+        wire_symbols = ["@(n)"] * self.selection_bitsize
+        wire_symbols += ["swap_0"] * self.target_bitsize
+        wire_symbols += ["swap_r"] * (self.n_target_registers - 1) * self.target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

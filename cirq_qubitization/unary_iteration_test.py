@@ -4,25 +4,25 @@ import cirq_qubitization
 
 
 class ApplyXToLthQubit(cirq_qubitization.UnaryIterationGate):
-    def __init__(self, selection_length: int, target_length: int):
-        self.selection_length = selection_length
-        self.target_length = target_length
+    def __init__(self, selection_bitsize: int, target_bitsize: int):
+        self._selection_bitsize = selection_bitsize
+        self._target_bitsize = target_bitsize
 
     @property
-    def control_register(self) -> int:
+    def control_bitsize(self) -> int:
         return 1
 
     @property
-    def selection_register(self) -> int:
-        return self.selection_length
+    def selection_bitsize(self) -> int:
+        return self._selection_bitsize
 
     @property
-    def target_register(self) -> int:
-        return self.target_length
+    def target_bitsize(self) -> int:
+        return self._target_bitsize
 
     @property
     def iteration_length(self) -> int:
-        return self.target_length
+        return self._target_bitsize
 
     def nth_operation(
         self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
@@ -31,14 +31,14 @@ class ApplyXToLthQubit(cirq_qubitization.UnaryIterationGate):
 
 
 def test_unary_iteration():
-    selection_length = 3
-    target_length = 5
-    all_qubits = cirq.LineQubit.range(2 * selection_length + target_length + 1)
+    selection_bitsize = 3
+    target_bitsize = 5
+    all_qubits = cirq.LineQubit.range(2 * selection_bitsize + target_bitsize + 1)
     control, selection, ancilla, target = (
         all_qubits[0],
-        all_qubits[1 : 2 * selection_length : 2],
-        all_qubits[2 : 2 * selection_length + 1 : 2],
-        all_qubits[2 * selection_length + 1 :],
+        all_qubits[1 : 2 * selection_bitsize : 2],
+        all_qubits[2 : 2 * selection_bitsize + 1 : 2],
+        all_qubits[2 * selection_bitsize + 1 :],
     )
 
     circuit = cirq.Circuit(

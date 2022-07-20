@@ -98,7 +98,7 @@ class GenericSubPrepare(cirq.Gate):
         yield PrepareUniformSuperposition(len(self._lcu_probs)).on(
             *selection, ancilla[0]
         )
-        qrom = QROM(self._alt, self._keep, target_registers=[len(alt), len(keep)])
+        qrom = QROM(self._alt, self._keep, target_bitsizes=[len(alt), len(keep)])
         yield qrom.on_registers(
             selection_register=selection,
             selection_ancilla=ancilla,
