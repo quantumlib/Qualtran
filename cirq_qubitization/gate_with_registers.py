@@ -18,7 +18,7 @@ class Registers:
         if len(self._registers) != len(self._register_dict):
             raise ValueError("Please provide unique register names.")
 
-    def i(self, i: int):
+    def at(self, i: int):
         return self._registers[i]
 
     def __getitem__(self, name: str):
