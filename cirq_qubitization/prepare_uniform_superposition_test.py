@@ -4,7 +4,7 @@ import cirq
 import cirq_qubitization
 
 
-@pytest.mark.parametrize("n", [3, 5, 8, 9, 16, 17, 25, 41])
+@pytest.mark.parametrize("n", [*range(3, 20), 25, 41])
 @pytest.mark.parametrize("num_controls", [0, 1])
 def test_prepare_uniform_superposition(n, num_controls):
     gate = cirq_qubitization.PrepareUniformSuperposition(n, num_controls=num_controls)
