@@ -1,5 +1,6 @@
-from typing import Sequence, List
 import abc
+from typing import Sequence, List
+
 import cirq
 
 from cirq_qubitization import and_gate
@@ -70,7 +71,7 @@ class UnaryIterationGate(cirq.Gate):
                 )
                 yield and_gate.And(adjoint=True).on(control, sq, anc)
 
-    def _decompose_single_control(
+    def decompose_single_control(
         self,
         control: cirq.Qid,
         selection: Sequence[cirq.Qid],
@@ -118,7 +119,7 @@ class UnaryIterationGate(cirq.Gate):
         if len(control) == 0:
             yield from self._decompose_zero_control(selection, ancilla, target)
         if len(control) == 1:
-            yield from self._decompose_single_control(
+            yield from self.decompose_single_control(
                 control[0], selection, ancilla, target
             )
         return NotImplemented
