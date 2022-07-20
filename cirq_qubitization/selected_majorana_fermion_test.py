@@ -4,20 +4,20 @@ import cirq
 
 
 @pytest.mark.parametrize(
-    "selection_length,target_length",
+    "selection_bitsize, target_bitsize",
     [(2, 4), (3, 8), (4, 9)],
 )
-def test_selected_majorana_fermion_gate(selection_length, target_length):
-    all_qubits = cirq.LineQubit.range(2 * selection_length + target_length + 2)
+def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize):
+    all_qubits = cirq.LineQubit.range(2 * selection_bitsize + target_bitsize + 2)
     control, selection, ancilla, accumulator, target = (
         all_qubits[0],
-        all_qubits[1 : 2 * selection_length : 2],
-        all_qubits[2 : 2 * selection_length + 1 : 2],
-        all_qubits[2 * selection_length + 1],
-        all_qubits[2 * selection_length + 2 :],
+        all_qubits[1 : 2 * selection_bitsize : 2],
+        all_qubits[2 : 2 * selection_bitsize + 1 : 2],
+        all_qubits[2 * selection_bitsize + 1],
+        all_qubits[2 * selection_bitsize + 2 :],
     )
     gate = cirq_qubitization.SelectedMajoranaFermionGate(
-        selection_length, target_length
+        selection_bitsize, target_bitsize
     )
     circuit = cirq.Circuit(
         gate.on_registers(
@@ -30,8 +30,8 @@ def test_selected_majorana_fermion_gate(selection_length, target_length):
     )
 
     sim = cirq.Simulator()
-    for selection_integer in range(target_length):
-        svals = [int(x) for x in format(selection_integer, f"0{selection_length}b")]
+    for selection_integer in range(target_bitsize):
+        svals = [int(x) for x in format(selection_integer, f"0{selection_bitsize}b")]
         qubit_vals = {
             x: int(x == control) for x in all_qubits
         }  # turn on control bit to activate circuit

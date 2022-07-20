@@ -44,30 +44,25 @@ class SwapWithZeroGate(cirq.Gate):
 
     def __init__(
         self,
-        selection_register: int,
-        target_register_bit_size: int,
-        target_register_length: int,
+        selection_bitsize: int,
+        target_bitsize: int,
+        n_target_registers: int,
     ):
-        assert target_register_length <= 2**selection_register
-        self.selection_register = selection_register
-        self.target_register_bit_size = target_register_bit_size
-        self.target_register_length = target_register_length
+        assert n_target_registers <= 2**selection_bitsize
+        self.selection_bitsize = selection_bitsize
+        self.target_bitsize = target_bitsize
+        self.n_target_registers = n_target_registers
 
     def _num_qubits_(self) -> int:
-        return (
-            self.selection_register
-            + self.target_register_length * self.target_register_bit_size
-        )
+        return self.selection_bitsize + self.n_target_registers * self.target_bitsize
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        selection = qubits[: self.selection_register]
+        selection = qubits[: self.selection_bitsize]
         target = [
-            qubits[st : st + self.target_register_bit_size]
-            for st in range(
-                self.selection_register, len(qubits), self.target_register_bit_size
-            )
+            qubits[st : st + self.target_bitsize]
+            for st in range(self.selection_bitsize, len(qubits), self.target_bitsize)
         ]
-        assert len(target) == self.target_register_length
+        assert len(target) == self.n_target_registers
         for j in range(len(selection)):
             for i in range(len(target) - 2**j):
                 yield swap_n(
@@ -77,27 +72,23 @@ class SwapWithZeroGate(cirq.Gate):
     def on_registers(
         self, *, selection: Sequence[cirq.Qid], target: Sequence[Sequence[cirq.Qid]]
     ) -> cirq.GateOperation:
-        assert len(selection) == self.selection_register
-        assert len(target) == self.target_register_length
-        assert all(len(t) == self.target_register_bit_size for t in target)
+        assert len(selection) == self.selection_bitsize
+        assert len(target) == self.n_target_registers
+        assert all(len(t) == self.target_bitsize for t in target)
         flat_target = [q for t in target for q in t]
         return cirq.GateOperation(self, selection + flat_target)
 
     def __repr__(self) -> str:
         return (
             "cirq_qubitization.SwapWithZeroGate("
-            f"{self.selection_register},"
-            f"{self.target_register_bit_size},"
-            f"{self.target_register_length}"
+            f"{self.selection_bitsize},"
+            f"{self.target_bitsize},"
+            f"{self.n_target_registers}"
             f")"
         )
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@(n)"] * self.selection_register
-        wire_symbols += ["swap_0"] * self.target_register_bit_size
-        wire_symbols += (
-            ["swap_r"]
-            * (self.target_register_length - 1)
-            * self.target_register_bit_size
-        )
+        wire_symbols = ["@(n)"] * self.selection_bitsize
+        wire_symbols += ["swap_0"] * self.target_bitsize
+        wire_symbols += ["swap_r"] * (self.n_target_registers - 1) * self.target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

@@ -9,32 +9,32 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
     Uses:
     * 1 Control qubit.
     * 1 Accumulator qubit.
-    * `selection_register` Number of selection qubits.
-    * `target_register` Number of target qubits.
+    * `selection_bitsize` number of selection qubits.
+    * `target_bitsize` number of target qubits.
 
     See Fig 9 of https://arxiv.org/abs/1805.03662 for more details.
     """
 
-    def __init__(self, selection_register: int, target_register: int):
-        self._selection_register = selection_register
-        self._target_register = target_register
+    def __init__(self, selection_bitsize: int, target_bitsize: int):
+        self._selection_bitsize = selection_bitsize
+        self._target_bitsize = target_bitsize
 
     @property
-    def control_register(self) -> int:
+    def control_bitsize(self) -> int:
         return 1
 
     @property
-    def selection_register(self) -> int:
-        return self._selection_register
+    def selection_bitsize(self) -> int:
+        return self._selection_bitsize
 
     @property
-    def target_register(self) -> int:
+    def target_bitsize(self) -> int:
         """First qubit is used as an accumulator and remaining qubits are used as target."""
-        return 1 + self._target_register
+        return 1 + self._target_bitsize
 
     @property
     def iteration_length(self) -> int:
-        return self._target_register
+        return self._target_bitsize
 
     def _decompose_single_control(
         self,
