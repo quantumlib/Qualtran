@@ -9,17 +9,17 @@ from cirq_qubitization import and_gate
 class UnaryIterationGate(cirq.Gate):
     @property
     @abc.abstractmethod
-    def control_register(self) -> int:
+    def control_bitsize(self) -> int:
         pass
 
     @property
     @abc.abstractmethod
-    def selection_register(self) -> int:
+    def selection_bitsize(self) -> int:
         pass
 
     @property
     @abc.abstractmethod
-    def target_register(self) -> int:
+    def target_bitsize(self) -> int:
         pass
 
     @property
@@ -34,9 +34,7 @@ class UnaryIterationGate(cirq.Gate):
         pass
 
     def _num_qubits_(self) -> int:
-        return (
-            self.control_register + 2 * self.selection_register + self.target_register
-        )
+        return self.control_bitsize + 2 * self.selection_bitsize + self.target_bitsize
 
     def _unary_iteration_segtree(
         self,
@@ -106,16 +104,16 @@ class UnaryIterationGate(cirq.Gate):
         yield cirq.CNOT(selection[0], ancilla[0])
 
     def _decompose_(self, qubits: List[cirq.Qid]) -> cirq.OP_TREE:
-        control = qubits[: self.control_register]
+        control = qubits[: self.control_bitsize]
         selection = qubits[
-            self.control_register : self.control_register + self.selection_register
+            self.control_bitsize : self.control_bitsize + self.selection_bitsize
         ]
         ancilla = qubits[
-            self.control_register
-            + self.selection_register : self.control_register
-            + 2 * self.selection_register
+            self.control_bitsize
+            + self.selection_bitsize : self.control_bitsize
+            + 2 * self.selection_bitsize
         ]
-        target = qubits[self.control_register + 2 * self.selection_register :]
+        target = qubits[self.control_bitsize + 2 * self.selection_bitsize :]
         if len(control) == 0:
             yield from self._decompose_zero_control(selection, ancilla, target)
         if len(control) == 1:

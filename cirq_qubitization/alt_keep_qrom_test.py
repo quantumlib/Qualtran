@@ -54,9 +54,9 @@ def test_alt_keep_qrom():
     # QROM data output
     all_qubits = cirq.LineQubit.range(qrom.num_qubits())
     selection, ancilla, flat_target = (
-        all_qubits[: 2 * qrom.selection_register - 1 : 2],
-        all_qubits[1 : 2 * qrom.selection_register : 2],
-        all_qubits[2 * qrom.selection_register :],
+        all_qubits[: 2 * qrom.selection_bitsize - 1 : 2],
+        all_qubits[1 : 2 * qrom.selection_bitsize : 2],
+        all_qubits[2 * qrom.selection_bitsize :],
     )
     target_lengths = [max(d).bit_length() for d in qrom._data]
     target = [
@@ -74,7 +74,7 @@ def test_alt_keep_qrom():
     sim = cirq.Simulator()
     for selection_integer in range(qrom.iteration_length):
         svals = [
-            int(x) for x in format(selection_integer, f"0{qrom.selection_register}b")
+            int(x) for x in format(selection_integer, f"0{qrom.selection_bitsize}b")
         ]
         qubit_vals = {x: 0 for x in all_qubits}
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
@@ -82,7 +82,7 @@ def test_alt_keep_qrom():
         initial_state = [qubit_vals[x] for x in all_qubits]
         result = sim.simulate(circuit, initial_state=initial_state)
 
-        start = 2 * qrom.selection_register
+        start = 2 * qrom.selection_bitsize
         for d, d_bits in zip(qrom._data, target_lengths):
             end = start + d_bits
             initial_state[start:end] = [
