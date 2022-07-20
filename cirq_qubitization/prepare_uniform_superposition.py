@@ -30,8 +30,8 @@ class PrepareUniformSuperposition(cirq.Gate):
 
     def _decompose_(self, qubits: List[cirq.Qid]) -> cirq.OP_TREE:
         controls = qubits[: self._num_controls]
-        k_qubits = qubits[self._num_controls : self._num_controls + self._K]
-        logL_qubits = qubits[self._num_controls + self._K : -1]
+        logL_qubits = qubits[self._num_controls : self._num_controls + self._logL]
+        k_qubits = qubits[self._num_controls + self._logL : -1]
         ancilla = qubits[-1]
         yield [
             op.controlled_by(*controls)
@@ -39,12 +39,11 @@ class PrepareUniformSuperposition(cirq.Gate):
         ]
         if not logL_qubits:
             return
-        A = (2**self._K) * self._L
         theta = np.arccos(1 - (2 ** np.floor(np.log2(self._L))) / self._L)
 
-        yield LessThanGate([2] * self._logL, A).on(*logL_qubits, ancilla)
+        yield LessThanGate([2] * self._logL, self._L).on(*logL_qubits, ancilla)
         yield cirq.Rz(rads=theta)(ancilla)
-        yield LessThanGate([2] * self._logL, A).on(*logL_qubits, ancilla)
+        yield LessThanGate([2] * self._logL, self._L).on(*logL_qubits, ancilla)
 
         yield cirq.H.on_each(*logL_qubits)
         yield cirq.X(ancilla).controlled_by(

@@ -1,17 +1,24 @@
 import cirq
-from typing import Tuple, Union, Sequence
+from typing import Tuple, Union, Sequence, Optional
 from cirq_qubitization import unary_iteration
 
 
 class QROM(unary_iteration.UnaryIterationGate):
     """Gate to load data[l] in the target_register when selection_register stores integer l."""
 
-    def __init__(self, *data: Sequence[int]):
+    def __init__(
+        self, *data: Sequence[int], target_registers: Optional[Sequence[int]] = None
+    ):
         if len(set(len(d) for d in data)) != 1:
             raise ValueError("All data sequences to load must be of equal length.")
         self._data = tuple(tuple(d) for d in data)
         self._selection_register = (len(data[0]) - 1).bit_length()
-        self._individual_target_registers = [max(d).bit_length() for d in data]
+        if target_registers is None:
+            target_registers = [max(d).bit_length() for d in data]
+        else:
+            assert len(target_registers) == len(data)
+            assert all(t >= max(d).bit_length() for t, d in zip(target_registers, data))
+        self._individual_target_registers = target_registers
         self._target_register = sum(self._individual_target_registers)
 
     @property

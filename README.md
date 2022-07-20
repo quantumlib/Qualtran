@@ -9,7 +9,7 @@
 
 - [x] Uniform superposition (Fig 12)
 
-- [ ] SUBPREPARE
+- [X] SUBPREPARE
 
 - [x] Compare using ripple carry
 

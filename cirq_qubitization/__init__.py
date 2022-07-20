@@ -5,6 +5,7 @@ from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperp
 from cirq_qubitization.multi_target_cnot import MultiTargetCNOT
 from cirq_qubitization.unary_iteration import UnaryIterationGate
 from cirq_qubitization.generic_select import GenericSelect
+from cirq_qubitization.generic_subprepare import GenericSubPrepare
 from cirq_qubitization.selected_majorana_fermion import SelectedMajoranaFermionGate
 from cirq_qubitization.swap_network import SwapWithZeroGate
 from cirq_qubitization.qrom import QROM
