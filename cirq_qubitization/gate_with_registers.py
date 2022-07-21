@@ -1,8 +1,14 @@
 import abc
 import dataclasses
+import sys
 from typing import Sequence, Dict, Iterable
 
 import cirq
+
+assert sys.version_info > (
+    3,
+    6,
+), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -14,9 +20,19 @@ class Register:
 class Registers:
     def __init__(self, registers: Iterable[Register]):
         self._registers = list(registers)
-        self._register_dict = {r.name: r for r in registers}
+        self._register_dict = {r.name: r for r in self._registers}
         if len(self._registers) != len(self._register_dict):
             raise ValueError("Please provide unique register names.")
+
+    @classmethod
+    def build(cls, **registers):
+        return cls(Register(name=k, bitsize=v) for k, v in registers.items())
+
+    def __eq__(self, other):
+        if not isinstance(other, Registers):
+            return False
+
+        return self._registers == other._registers
 
     def at(self, i: int):
         return self._registers[i]

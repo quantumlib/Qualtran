@@ -29,6 +29,12 @@ def test_registers():
     assert qregs["r2"] == cirq.LineQubit.range(5, 5 + 2)
 
 
+def test_registers_build():
+    regs1 = Registers([Register("r1", 5), Register("r2", 2)])
+    regs2 = Registers.build(r1=5, r2=2)
+    assert regs1 == regs2
+
+
 class _TestGate(GateWithRegisters):
     @property
     def registers(self) -> Registers:
