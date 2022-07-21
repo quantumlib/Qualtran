@@ -1,6 +1,11 @@
+from pathlib import Path
 from typing import Tuple
-import pytest
+
 import cirq
+import nbformat
+import pytest
+from nbconvert.preprocessors import ExecutePreprocessor
+
 import cirq_qubitization
 
 
@@ -27,3 +32,11 @@ def test_and_gate_adjoint(cv: Tuple[int, int]):
     for input, output in zip(input_states, output_states):
         result = cirq.Simulator().simulate(circuit, initial_state=input)
         assert result.dirac_notation()[1:-1] == "".join(str(x) for x in output)
+
+
+def test_notebook():
+    notebook_path = Path(__file__).parent / "and_gate.ipynb"
+    with notebook_path.open() as f:
+        nb = nbformat.read(f, as_version=4)
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    ep.preprocess(nb)
