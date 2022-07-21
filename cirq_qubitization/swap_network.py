@@ -1,9 +1,6 @@
 from typing import Sequence
-
 import cirq
-
 from cirq_qubitization import multi_target_cnot
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers, Register
 
 
 def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
@@ -33,7 +30,7 @@ def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
     yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
 
-class SwapWithZeroGate(GateWithRegisters):
+class SwapWithZeroGate(cirq.Gate):
     """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.
 
     Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_n> --> |x> |Psi_x> |Rest of Psi>.
@@ -56,25 +53,20 @@ class SwapWithZeroGate(GateWithRegisters):
         self.target_bitsize = target_bitsize
         self.n_target_registers = n_target_registers
 
-        self._registers = Registers(
-            [Register("selection", selection_bitsize)]
-            + [
-                Register(f"target_{i}", target_bitsize)
-                for i in range(n_target_registers)
-            ]
-        )
+    def _num_qubits_(self) -> int:
+        return self.selection_bitsize + self.n_target_registers * self.target_bitsize
 
-    @property
-    def registers(self) -> Registers:
-        return self._registers
-
-    def decompose_from_registers(self, selection, **targets):
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        selection = qubits[: self.selection_bitsize]
+        target = [
+            qubits[st : st + self.target_bitsize]
+            for st in range(self.selection_bitsize, len(qubits), self.target_bitsize)
+        ]
+        assert len(target) == self.n_target_registers
         for j in range(len(selection)):
-            for i in range(len(targets) - 2**j):
+            for i in range(len(target) - 2**j):
                 yield swap_n(
-                    selection[len(selection) - j - 1],
-                    targets[f"target_{i}"],
-                    targets[f"target_{i + 2**j}"],
+                    selection[len(selection) - j - 1], target[i], target[i + 2**j]
                 )
 
     def on_registers(
