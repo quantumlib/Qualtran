@@ -1,5 +1,10 @@
+from pathlib import Path
 from typing import Sequence
+
 import cirq
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
+
 import cirq_qubitization
 
 
@@ -59,3 +64,11 @@ def test_unary_iteration():
         initial_state[-(n + 1)] = 1
         expected_output = "".join(str(x) for x in initial_state)
         assert result.dirac_notation()[1:-1] == expected_output
+
+
+def test_notebook():
+    notebook_path = Path(__file__).parent / "unary_iteration.ipynb"
+    with notebook_path.open() as f:
+        nb = nbformat.read(f, as_version=4)
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    ep.preprocess(nb)
