@@ -5,11 +5,15 @@ import cirq
 class And(cirq.Gate):
     """And gate optimized for T-count.
 
-    See https://arxiv.org/abs/1805.03662 for reference.
-
     Assumptions:
         * And(cv).on(c1, c2, target) assumes that target is initially in the |0> state.
         * And(cv, adjoint=True).on(c1, c2, target) will always leave the target in |0> state.
+
+    References:
+        (Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity)[https://arxiv.org/abs/1805.03662].
+            Babbush et. al. 2018.
+        (Verifying Measurement Based Uncomputation)[https://algassert.com/post/1903].
+            Gidney, C. 2019.
     """
 
     def __init__(self, cv: Tuple[int, int] = (1, 1), *, adjoint: bool = False) -> None:
