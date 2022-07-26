@@ -1,12 +1,14 @@
 import abc
-from typing import Sequence, List
+from functools import cached_property
+from typing import Sequence
 
 import cirq
 
 from cirq_qubitization import and_gate
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers, Register
 
 
-class UnaryIterationGate(cirq.Gate):
+class UnaryIterationGate(GateWithRegisters):
     @property
     @abc.abstractmethod
     def control_bitsize(self) -> int:
@@ -27,14 +29,22 @@ class UnaryIterationGate(cirq.Gate):
     def iteration_length(self) -> int:
         pass
 
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers(
+            [
+                Register("control", self.control_bitsize),
+                Register("selection", self.selection_bitsize),
+                Register("ancilla", self.selection_bitsize),
+                Register("target", self.target_bitsize),
+            ]
+        )
+
     @abc.abstractmethod
     def nth_operation(
         self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         pass
-
-    def _num_qubits_(self) -> int:
-        return self.control_bitsize + 2 * self.selection_bitsize + self.target_bitsize
 
     def _unary_iteration_segtree(
         self,
@@ -103,17 +113,13 @@ class UnaryIterationGate(cirq.Gate):
         )
         yield cirq.CNOT(selection[0], ancilla[0])
 
-    def _decompose_(self, qubits: List[cirq.Qid]) -> cirq.OP_TREE:
-        control = qubits[: self.control_bitsize]
-        selection = qubits[
-            self.control_bitsize : self.control_bitsize + self.selection_bitsize
-        ]
-        ancilla = qubits[
-            self.control_bitsize
-            + self.selection_bitsize : self.control_bitsize
-            + 2 * self.selection_bitsize
-        ]
-        target = qubits[self.control_bitsize + 2 * self.selection_bitsize :]
+    def decompose_from_registers(
+        self,
+        control: Sequence[cirq.Qid],
+        selection: Sequence[cirq.Qid],
+        ancilla: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
         if len(control) == 0:
             yield from self._decompose_zero_control(selection, ancilla, target)
         if len(control) == 1:

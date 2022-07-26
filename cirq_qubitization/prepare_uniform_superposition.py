@@ -1,12 +1,14 @@
-from typing import List
+from functools import cached_property
+from typing import Sequence
 
+import cirq
 import numpy as np
 
 from cirq_qubitization.arithmetic_gates import LessThanGate
-import cirq
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
-class PrepareUniformSuperposition(cirq.Gate):
+class PrepareUniformSuperposition(GateWithRegisters):
     def __init__(self, n: int, *, num_controls: int = 0):
         target_bitsize = (n - 1).bit_length()
         self._K = 0
@@ -17,8 +19,14 @@ class PrepareUniformSuperposition(cirq.Gate):
         self._logL = target_bitsize - self._K
         self._num_controls = num_controls
 
-    def _num_qubits_(self) -> int:
-        return self._num_controls + self._K + self._logL + 1
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(
+            controls=self._num_controls,
+            logL_qubits=self._logL,
+            k_qubits=self._K,
+            ancilla=1,
+        )
 
     def __repr__(self) -> str:
         return (
@@ -28,11 +36,14 @@ class PrepareUniformSuperposition(cirq.Gate):
             f")"
         )
 
-    def _decompose_(self, qubits: List[cirq.Qid]) -> cirq.OP_TREE:
-        controls = qubits[: self._num_controls]
-        logL_qubits = qubits[self._num_controls : self._num_controls + self._logL]
-        k_qubits = qubits[self._num_controls + self._logL : -1]
-        ancilla = qubits[-1]
+    def decompose_from_registers(
+        self,
+        controls: Sequence[cirq.Qid],
+        logL_qubits: Sequence[cirq.Qid],
+        k_qubits: Sequence[cirq.Qid],
+        ancilla: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
+        (ancilla,) = ancilla
         yield [
             op.controlled_by(*controls)
             for op in cirq.H.on_each(*(k_qubits + logL_qubits))
