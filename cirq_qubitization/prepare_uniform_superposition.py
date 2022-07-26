@@ -1,10 +1,10 @@
-from typing import List, Sequence
+from functools import cached_property
+from typing import Sequence
 
+import cirq
 import numpy as np
 
 from cirq_qubitization.arithmetic_gates import LessThanGate
-import cirq
-
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
@@ -19,7 +19,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         self._logL = target_bitsize - self._K
         self._num_controls = num_controls
 
-    @property
+    @cached_property
     def registers(self) -> Registers:
         return Registers.build(
             controls=self._num_controls,

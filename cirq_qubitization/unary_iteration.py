@@ -1,4 +1,5 @@
 import abc
+from functools import cached_property
 from typing import Sequence
 
 import cirq
@@ -28,7 +29,7 @@ class UnaryIterationGate(GateWithRegisters):
     def iteration_length(self) -> int:
         pass
 
-    @property
+    @cached_property
     def registers(self) -> Registers:
         return Registers(
             [

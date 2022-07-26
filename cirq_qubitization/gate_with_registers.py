@@ -17,22 +17,20 @@ class Register:
     bitsize: int
 
 
+@cirq.value_equality()
 class Registers:
     def __init__(self, registers: Iterable[Register]):
-        self._registers = list(registers)
+        self._registers = tuple(registers)
         self._register_dict = {r.name: r for r in self._registers}
         if len(self._registers) != len(self._register_dict):
             raise ValueError("Please provide unique register names.")
 
+    def _value_equality_values_(self):
+        return self._registers
+
     @classmethod
-    def build(cls, **registers):
+    def build(cls, **registers: int):
         return cls(Register(name=k, bitsize=v) for k, v in registers.items())
-
-    def __eq__(self, other):
-        if not isinstance(other, Registers):
-            return False
-
-        return self._registers == other._registers
 
     def at(self, i: int):
         return self._registers[i]
