@@ -1,8 +1,8 @@
+import random
 import numpy as np
 import pytest
 import cirq
 import cirq_qubitization
-import random
 
 random.seed(12345)
 
@@ -55,3 +55,49 @@ def test_swap_with_zero_gate(selection_bitsize, target_bitsize, n_target_registe
         # Assert that result and expected state vectors are equal; reset and continue.
         assert cirq.equal_up_to_global_phase(result_state_vector, expected_state_vector)
         expected_state_vector[data[selection_integer]] = 0
+
+
+def test_multi_target_cswap():
+    qubits = cirq.LineQubit.range(5)
+    c, q_x, q_y = qubits[0], qubits[1:3], qubits[3:]
+    cswap = cirq_qubitization.MultiTargetCSwap(2).on_registers(
+        control=c, target_x=q_x, target_y=q_y
+    )
+    cswap_approx = cirq_qubitization.MultiTargetCSwapApprox(2).on_registers(
+        control=c, target_x=q_x, target_y=q_y
+    )
+    setup_code = "import cirq\nimport cirq_qubitization"
+    cirq.testing.assert_implements_consistent_protocols(cswap, setup_code=setup_code)
+    cirq.testing.assert_implements_consistent_protocols(
+        cswap_approx, setup_code=setup_code
+    )
+    circuit = cirq.Circuit(cswap, cswap_approx)
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+0: ───@──────@(approx)───
+      │      │
+1: ───×(x)───×(x)────────
+      │      │
+2: ───×(x)───×(x)────────
+      │      │
+3: ───×(y)───×(y)────────
+      │      │
+4: ───×(y)───×(y)────────
+    """,
+    )
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+0: ---@--------@(approx)---
+      |        |
+1: ---swap_x---swap_x------
+      |        |
+2: ---swap_x---swap_x------
+      |        |
+3: ---swap_y---swap_y------
+      |        |
+4: ---swap_y---swap_y------
+    """,
+        use_unicode_characters=False,
+    )

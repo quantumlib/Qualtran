@@ -8,5 +8,9 @@ from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
 from cirq_qubitization.generic_select import GenericSelect
 from cirq_qubitization.generic_subprepare import GenericSubPrepare
 from cirq_qubitization.selected_majorana_fermion import SelectedMajoranaFermionGate
-from cirq_qubitization.swap_network import SwapWithZeroGate
+from cirq_qubitization.swap_network import (
+    MultiTargetCSwap,
+    MultiTargetCSwapApprox,
+    SwapWithZeroGate,
+)
 from cirq_qubitization.qrom import QROM

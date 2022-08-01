@@ -1,10 +1,9 @@
-"""
-Implementation of all components for SUBPREPARE
+"""Implementation of all components for SUBPREPARE
 
 UNIFORM_L on first selection register
 H^{mu} on mu-sigma-register
 QROM-alt-keep selection is on first selection alt-keep are on next mu and logL registers
-LessThanEqualGate 
+LessThanEqualGate
 Coherent swap
 
 Input to subprepare should be the LCU coefficients and the desired accuracy to represent
@@ -15,6 +14,7 @@ Total space will be (2 * log(L) + 2 mu + 1) work qubits + log(L) ancillas for QR
 The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
 """
 from typing import List, Sequence
+import cirq
 
 from openfermion.circuits.lcu_util import (
     preprocess_lcu_coefficients_for_reversible_sampling,
@@ -23,7 +23,7 @@ from openfermion.circuits.lcu_util import (
 from cirq_qubitization.arithmetic_gates import LessThanEqualGate
 from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
 from cirq_qubitization.qrom import QROM
-import cirq
+from cirq_qubitization.swap_network import MultiTargetCSwap
 
 
 class GenericSubPrepare(cirq.Gate):
@@ -108,7 +108,9 @@ class GenericSubPrepare(cirq.Gate):
         yield LessThanEqualGate([2] * self._mu, [2] * self._mu).on(
             *sigma_mu, *keep, less_than_equal
         )
-        yield [cirq.CSWAP(less_than_equal, a, s) for (a, s) in zip(alt, selection)]
+        yield MultiTargetCSwap(self.selection_register).on_registers(
+            control=less_than_equal, target_x=alt, target_y=selection
+        )
 
     def on_registers(
         self,

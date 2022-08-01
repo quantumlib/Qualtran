@@ -1,9 +1,55 @@
-from typing import Sequence
+from functools import cached_property
+from typing import Any, Sequence
 import cirq
 from cirq_qubitization import multi_target_cnot
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
-def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
+@cirq.value_equality
+class MultiTargetCSwap(GateWithRegisters):
+    """Implements multi-target controlled swap unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$."""
+
+    def __init__(self, target_bitsize: int) -> None:
+        self._target_bitsize = target_bitsize
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(
+            control=1,
+            target_x=self._target_bitsize,
+            target_y=self._target_bitsize,
+        )
+
+    def decompose_from_registers(
+        self,
+        control: Sequence[cirq.Qid],
+        target_x: Sequence[cirq.Qid],
+        target_y: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
+        (control,) = control
+        yield [cirq.CSWAP(control, t_x, t_y) for t_x, t_y in zip(target_x, target_y)]
+
+    def _circuit_diagram_info_(
+        self, args: cirq.CircuitDiagramInfoArgs
+    ) -> cirq.CircuitDiagramInfo:
+        if not args.use_unicode_characters:
+            return cirq.CircuitDiagramInfo(
+                ("@",)
+                + ("swap_x",) * self._target_bitsize
+                + ("swap_y",) * self._target_bitsize
+            )
+        return cirq.CircuitDiagramInfo(
+            ("@",) + ("×(x)",) * self._target_bitsize + ("×(y)",) * self._target_bitsize
+        )
+
+    def __repr__(self) -> str:
+        return f"cirq_qubitization.MultiTargetCSwap({self._target_bitsize})"
+
+    def _value_equality_values_(self) -> Any:
+        return (self._target_bitsize,)
+
+
+class MultiTargetCSwapApprox(MultiTargetCSwap):
     """Approximately implements a multi-target controlled swap unitary using only 4 * N T-gates.
 
     Implements the unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$ such that the output state is
@@ -13,21 +59,45 @@ def swap_n(control: cirq.Qid, q_x: Sequence[cirq.Qid], q_y: Sequence[cirq.Qid]):
     thus ignored. See Appendix B.2.c of https://arxiv.org/abs/1812.00954 for more details.
     """
 
-    def g(q: cirq.Qid, adjoint=False) -> cirq.OP_TREE:
-        yield [cirq.S(q), cirq.H(q)]
-        yield cirq.T(q) ** (1 - 2 * adjoint)
-        yield [cirq.H(q), cirq.S(q) ** -1]
+    def decompose_from_registers(
+        self,
+        control: Sequence[cirq.Qid],
+        target_x: Sequence[cirq.Qid],
+        target_y: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
+        (control,) = control
 
-    assert len(q_x) == len(q_y), "Registers to swap must be of the same length."
+        def g(q: cirq.Qid, adjoint=False) -> cirq.OP_TREE:
+            yield [cirq.S(q), cirq.H(q)]
+            yield cirq.T(q) ** (1 - 2 * adjoint)
+            yield [cirq.H(q), cirq.S(q) ** -1]
 
-    cnot_x_to_y = [cirq.CNOT(x, y) for x, y in zip(q_x, q_y)]
-    cnot_y_to_x = [cirq.CNOT(y, x) for x, y in zip(q_x, q_y)]
-    g_inv_on_y = [list(g(q, True)) for q in q_y]  # Uses len(q_y) T-gates
-    g_on_y = [list(g(q)) for q in q_y]  # Uses len(q_y) T-gates
+        cnot_x_to_y = [cirq.CNOT(x, y) for x, y in zip(target_x, target_y)]
+        cnot_y_to_x = [cirq.CNOT(y, x) for x, y in zip(target_x, target_y)]
+        g_inv_on_y = [list(g(q, True)) for q in target_y]  # Uses len(target_y) T-gates
+        g_on_y = [list(g(q)) for q in target_y]  # Uses len(target_y) T-gates
 
-    yield [cnot_y_to_x, g_inv_on_y, cnot_x_to_y, g_inv_on_y]
-    yield multi_target_cnot.MultiTargetCNOT(len(q_y)).on(control, *q_y)
-    yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
+        yield [cnot_y_to_x, g_inv_on_y, cnot_x_to_y, g_inv_on_y]
+        yield multi_target_cnot.MultiTargetCNOT(len(target_y)).on(control, *target_y)
+        yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
+
+    def _circuit_diagram_info_(
+        self, args: cirq.CircuitDiagramInfoArgs
+    ) -> cirq.CircuitDiagramInfo:
+        if not args.use_unicode_characters:
+            return cirq.CircuitDiagramInfo(
+                ("@(approx)",)
+                + ("swap_x",) * self._target_bitsize
+                + ("swap_y",) * self._target_bitsize
+            )
+        return cirq.CircuitDiagramInfo(
+            ("@(approx)",)
+            + ("×(x)",) * self._target_bitsize
+            + ("×(y)",) * self._target_bitsize
+        )
+
+    def __repr__(self) -> str:
+        return f"cirq_qubitization.MultiTargetCSwapApprox({self._target_bitsize})"
 
 
 class SwapWithZeroGate(cirq.Gate):
@@ -38,7 +108,8 @@ class SwapWithZeroGate(cirq.Gate):
     upon.
 
     References:
-        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
+        (https://arxiv.org/abs/1812.00954).
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
@@ -63,10 +134,13 @@ class SwapWithZeroGate(cirq.Gate):
             for st in range(self.selection_bitsize, len(qubits), self.target_bitsize)
         ]
         assert len(target) == self.n_target_registers
+        swap_n = MultiTargetCSwapApprox(self.target_bitsize)
         for j in range(len(selection)):
             for i in range(len(target) - 2**j):
-                yield swap_n(
-                    selection[len(selection) - j - 1], target[i], target[i + 2**j]
+                yield swap_n.on_registers(
+                    control=selection[len(selection) - j - 1],
+                    target_x=target[i],
+                    target_y=target[i + 2**j],
                 )
 
     def on_registers(
