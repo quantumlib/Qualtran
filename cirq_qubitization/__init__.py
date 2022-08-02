@@ -15,3 +15,5 @@ from cirq_qubitization.swap_network import (
     SwapWithZeroGate,
 )
 from cirq_qubitization.qrom import QROM
+
+from cirq_qubitization.hamiltonians import hubbard_qubitization
