@@ -36,6 +36,21 @@ def test_registers():
     merged_qregs = regs.merge_qubits(r1=qubits[:5], r2=qubits[5:7], r3=qubits[-1])
     assert merged_qregs == qubits
 
+    expected_named_qubits = {
+        "r1": cirq.NamedQubit.range(5, prefix="r1"),
+        "r2": cirq.NamedQubit.range(2, prefix="r2"),
+        "r3": [cirq.NamedQubit("r3")],
+    }
+    assert regs.get_named_qubits() == expected_named_qubits
+    # Python dictionaries preserve insertion order, which should be same as insertion order of
+    # initial registers.
+    for reg_order in [[r1, r2, r3], [r2, r3, r1]]:
+        flat_named_qubits = [
+            q for v in Registers(reg_order).get_named_qubits().values() for q in v
+        ]
+        expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
+        assert flat_named_qubits == expected_qubits
+
 
 def test_registers_build():
     regs1 = Registers([Register("r1", 5), Register("r2", 2)])

@@ -63,6 +63,16 @@ class Registers:
             ret += qubits
         return ret
 
+    def get_named_qubits(self) -> Dict[str, Sequence[cirq.Qid]]:
+        def qubits_for_reg(name: str, bitsize: int):
+            return (
+                [cirq.NamedQubit(f"{name}")]
+                if bitsize == 1
+                else cirq.NamedQubit.range(bitsize, prefix=name)
+            )
+
+        return {reg.name: qubits_for_reg(reg.name, reg.bitsize) for reg in self}
+
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     @property
