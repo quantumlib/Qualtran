@@ -1,5 +1,6 @@
 from cirq_qubitization.alt_keep_qrom import construct_alt_keep_qrom
 from cirq_qubitization.and_gate import And
+from cirq_qubitization.apply_gate_to_lth_target import ApplyGateToLthQubit
 from cirq_qubitization.arithmetic_gates import LessThanGate, LessThanEqualGate
 from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
 from cirq_qubitization.multi_target_cnot import MultiTargetCNOT
