@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence
 import cirq
 from cirq_qubitization.unary_iteration import UnaryIterationGate
 
@@ -8,13 +8,11 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         self,
         selection_bitsize: int,
         target_bitsize: int,
-        nth_gate: Union[cirq.Gate, Callable[[int], cirq.Gate]],
+        nth_gate: Callable[[int], cirq.Gate],
         *,
         control_bitsize: int = 1,
     ):
-        self._nth_gate = (
-            (lambda _: nth_gate) if isinstance(nth_gate, cirq.Gate) else nth_gate
-        )
+        self._nth_gate = nth_gate
         self._selection_bitsize = selection_bitsize
         self._target_bitsize = target_bitsize
         self._control_bitsize = control_bitsize
