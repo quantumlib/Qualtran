@@ -61,6 +61,8 @@ ancilla1: ─────Anc───
                │
 ancilla2: ─────Anc───
                │
+ancilla3: ─────Anc───
+               │
 target0: ──────I─────
                │
 target1: ──────Z─────
@@ -69,7 +71,7 @@ target2: ──────I─────
                │
 target3: ──────Z─────
                │
-target4: ──────I─────    
+target4: ──────I─────
     """,
         qubit_order=qubits,
     )
