@@ -6,7 +6,7 @@ import cirq_qubitization
 @pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
 def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     gate = cirq_qubitization.ApplyGateToLthQubit(
-        selection_bitsize, target_bitsize, cirq.X
+        selection_bitsize, target_bitsize, lambda _: cirq.X
     )
     circuit = cirq.Circuit(gate.on_registers(**gate.registers.get_named_qubits()))
     q = gate.registers.get_named_qubits()
