@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 import sys
-from typing import Sequence, Dict, Iterable
+from typing import Sequence, Dict, Iterable, List, Union
 
 import cirq
 
@@ -49,6 +49,30 @@ class Registers:
             base += reg.bitsize
         return qubit_regs
 
+    def merge_qubits(
+        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]
+    ) -> Sequence[cirq.Qid]:
+        ret: List[cirq.Qid] = []
+        for reg in self:
+            assert reg.name in qubit_regs, "All qubit registers must pe present"
+            qubits = qubit_regs[reg.name]
+            qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
+            assert (
+                len(qubits) == reg.bitsize
+            ), f"{reg.name} register must of length {reg.bitsize}."
+            ret += qubits
+        return ret
+
+    def get_named_qubits(self) -> Dict[str, Sequence[cirq.Qid]]:
+        def qubits_for_reg(name: str, bitsize: int):
+            return (
+                [cirq.NamedQubit(f"{name}")]
+                if bitsize == 1
+                else cirq.NamedQubit.range(bitsize, prefix=name)
+            )
+
+        return {reg.name: qubits_for_reg(reg.name, reg.bitsize) for reg in self}
+
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     @property
@@ -68,3 +92,8 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         qubit_regs = self.registers.split_qubits(qubits)
         yield from self.decompose_from_registers(**qubit_regs)
+
+    def on_registers(
+        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]
+    ) -> cirq.GateOperation:
+        return self.on(*self.registers.merge_qubits(**qubit_regs))
