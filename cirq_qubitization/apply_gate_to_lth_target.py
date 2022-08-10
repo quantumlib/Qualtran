@@ -36,7 +36,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_bitsize
         wire_symbols += ["In"] * self.selection_bitsize
-        wire_symbols += ["Anc"] * self.selection_bitsize
+        wire_symbols += ["Anc"] * self.registers["ancilla"].bitsize
         wire_symbols += [str(self._nth_gate(i)) for i in range(self.target_bitsize)]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 

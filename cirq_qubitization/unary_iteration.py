@@ -29,13 +29,17 @@ class UnaryIterationGate(GateWithRegisters):
     def iteration_length(self) -> int:
         pass
 
+    @property
+    def ancilla_bitsize(self) -> int:
+        return max(0, self.control_bitsize - 1) + self.selection_bitsize
+
     @cached_property
     def registers(self) -> Registers:
         return Registers(
             [
                 Register("control", self.control_bitsize),
                 Register("selection", self.selection_bitsize),
-                Register("ancilla", self.selection_bitsize),
+                Register("ancilla", self.ancilla_bitsize),
                 Register("target", self.target_bitsize),
                 *self.extra_registers,
             ]
@@ -135,8 +139,19 @@ class UnaryIterationGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         if len(control) == 0:
             yield from self._decompose_zero_control(selection, ancilla, target, **extra_regs)
-        if len(control) == 1:
+        elif len(control) == 1:
             yield from self.decompose_single_control(
                 control[0], selection, ancilla, target, **extra_regs
             )
-        return NotImplemented
+        else:
+            and_ancillas = ancilla[: self.control_bitsize - 2]
+            and_target = ancilla[self.control_bitsize - 2]
+            selection_ancillas = ancilla[self.control_bitsize - 1 :]
+            multi_controlled_and = and_gate.And((1,) * len(control)).on_registers(
+                control=control, ancilla=and_ancillas, target=and_target
+            )
+            yield multi_controlled_and
+            yield from self.decompose_single_control(
+                and_target, selection, selection_ancillas, target, **extra_regs
+            )
+            yield multi_controlled_and**-1

@@ -1,3 +1,4 @@
+import pytest
 from pathlib import Path
 from typing import Sequence
 
@@ -9,13 +10,14 @@ import cirq_qubitization
 
 
 class ApplyXToLthQubit(cirq_qubitization.UnaryIterationGate):
-    def __init__(self, selection_bitsize: int, target_bitsize: int):
+    def __init__(self, selection_bitsize: int, target_bitsize: int, control_bitsize: int = 1):
         self._selection_bitsize = selection_bitsize
         self._target_bitsize = target_bitsize
+        self._control_bitsize = control_bitsize
 
     @property
     def control_bitsize(self) -> int:
-        return 1
+        return self._control_bitsize
 
     @property
     def selection_bitsize(self) -> int:
@@ -33,29 +35,32 @@ class ApplyXToLthQubit(cirq_qubitization.UnaryIterationGate):
         return cirq.CNOT(control, target[-(n + 1)])
 
 
-def test_unary_iteration():
-    selection_bitsize = 3
-    target_bitsize = 5
-    all_qubits = cirq.LineQubit.range(2 * selection_bitsize + target_bitsize + 1)
+@pytest.mark.parametrize(
+    "selection_bitsize, target_bitsize, control_bitsize", [(3, 5, 1), (2, 4, 2)]
+)
+def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
+    gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
+    qubit_regs = gate.registers.get_named_qubits()
     control, selection, ancilla, target = (
-        all_qubits[0],
-        all_qubits[1 : 2 * selection_bitsize : 2],
-        all_qubits[2 : 2 * selection_bitsize + 1 : 2],
-        all_qubits[2 * selection_bitsize + 1 :],
+        qubit_regs["control"],
+        qubit_regs["selection"],
+        qubit_regs["ancilla"],
+        qubit_regs["target"],
     )
+    all_qubits = control + selection + ancilla + target
 
-    circuit = cirq.Circuit(ApplyXToLthQubit(3, 5).on(control, *selection, *ancilla, *target))
+    circuit = cirq.Circuit(gate.on_registers(**qubit_regs))
     sim = cirq.Simulator()
     for n in range(len(target)):
         svals = [int(x) for x in format(n, f"0{len(selection)}b")]
         # turn on control bit to activate circuit:
-        qubit_vals = {x: int(x == control) for x in all_qubits}
+        qubit_vals = {x: int(x in control) for x in all_qubits}
         # Initialize selection bits appropriately:
 
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
-        result = sim.simulate(circuit, initial_state=initial_state)
+        result = sim.simulate(circuit, initial_state=initial_state, qubit_order=all_qubits)
         # Build correct statevector with selection_integer bit flipped in the target register:
         initial_state[-(n + 1)] = 1
         expected_output = "".join(str(x) for x in initial_state)
