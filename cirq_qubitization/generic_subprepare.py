@@ -16,9 +16,7 @@ The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent
 from typing import List, Sequence
 import cirq
 
-from openfermion.circuits.lcu_util import (
-    preprocess_lcu_coefficients_for_reversible_sampling,
-)
+from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 from cirq_qubitization.arithmetic_gates import LessThanEqualGate
 from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
@@ -30,19 +28,12 @@ class GenericSubPrepare(cirq.Gate):
     """Implements generic sub-prepare defined in Fig 11 of https://arxiv.org/abs/1805.03662"""
 
     def __init__(
-        self,
-        lcu_probabilities: List[float],
-        *,
-        probability_epsilon: float = 1.0e-5,
+        self, lcu_probabilities: List[float], *, probability_epsilon: float = 1.0e-5
     ) -> None:
         self._lcu_probs = lcu_probabilities
         self._probability_epsilon = probability_epsilon
         self._select_register_size = (len(self._lcu_probs) - 1).bit_length()
-        (
-            self._alt,
-            self._keep,
-            self._mu,
-        ) = preprocess_lcu_coefficients_for_reversible_sampling(
+        (self._alt, self._keep, self._mu) = preprocess_lcu_coefficients_for_reversible_sampling(
             lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
         )
 
@@ -64,9 +55,7 @@ class GenericSubPrepare(cirq.Gate):
 
     @property
     def temp_register(self) -> int:
-        return (
-            self.sigma_mu_register + self.alternates_register + self.keep_register + 1
-        )
+        return self.sigma_mu_register + self.alternates_register + self.keep_register + 1
 
     @property
     def ancilla_register(self) -> int:
@@ -85,9 +74,7 @@ class GenericSubPrepare(cirq.Gate):
 
     def _decompose_(self, qubits: List[cirq.Qid]) -> cirq.OP_TREE:
         selection = qubits[: self.selection_register]
-        temp = qubits[
-            self.selection_register : self.selection_register + self.temp_register
-        ]
+        temp = qubits[self.selection_register : self.selection_register + self.temp_register]
         sigma_mu, alt, keep, less_than_equal = (
             temp[: self._mu],
             temp[self._mu : self._mu + self._select_register_size],
@@ -95,14 +82,10 @@ class GenericSubPrepare(cirq.Gate):
             temp[-1],
         )
         ancilla = qubits[-self.selection_register :]
-        yield PrepareUniformSuperposition(len(self._lcu_probs)).on(
-            *selection, ancilla[0]
-        )
+        yield PrepareUniformSuperposition(len(self._lcu_probs)).on(*selection, ancilla[0])
         qrom = QROM(self._alt, self._keep, target_bitsizes=[len(alt), len(keep)])
         yield qrom.on_registers(
-            selection_register=selection,
-            selection_ancilla=ancilla,
-            target_register=[alt, keep],
+            selection_register=selection, selection_ancilla=ancilla, target_register=[alt, keep]
         )
         yield cirq.H.on_each(*sigma_mu)
         yield LessThanEqualGate([2] * self._mu, [2] * self._mu).on(
@@ -120,6 +103,5 @@ class GenericSubPrepare(cirq.Gate):
         temp_register: Sequence[cirq.Qid],
     ) -> cirq.GateOperation:
         return cirq.GateOperation(
-            self,
-            list(selection_register) + list(temp_register) + list(selection_ancilla),
+            self, list(selection_register) + list(temp_register) + list(selection_ancilla)
         )

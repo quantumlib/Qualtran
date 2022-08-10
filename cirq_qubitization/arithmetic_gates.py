@@ -13,14 +13,10 @@ class LessThanGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return self._input_register, self._val, self._target_register
 
-    def with_registers(
-        self, *new_registers: Union[int, Sequence[int]]
-    ) -> "LessThanGate":
+    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "LessThanGate":
         return LessThanGate(new_registers[0], new_registers[1])
 
-    def apply(
-        self, input_val, max_val, target_register_val
-    ) -> Union[int, Iterable[int]]:
+    def apply(self, input_val, max_val, target_register_val) -> Union[int, Iterable[int]]:
         return input_val, max_val, target_register_val ^ (input_val < max_val)
 
     def __repr__(self) -> str:
@@ -38,15 +34,9 @@ class LessThanEqualGate(cirq.ArithmeticGate):
         self._target_register = [2]  # |z>
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        return (
-            self._first_input_register,
-            self._second_input_register,
-            self._target_register,
-        )
+        return (self._first_input_register, self._second_input_register, self._target_register)
 
-    def with_registers(
-        self, *new_registers: Union[int, Sequence[int]]
-    ) -> "LessThanEqualGate":
+    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "LessThanEqualGate":
         return LessThanEqualGate(new_registers[0], new_registers[1])
 
     def apply(

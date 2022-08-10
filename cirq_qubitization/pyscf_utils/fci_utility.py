@@ -8,7 +8,9 @@ from pyscf.fci.cistring import make_strings
 import fqe
 
 
-def pyscf_to_fqe_wf(pyscf_cimat: np.ndarray, pyscf_mf=None, norbs=None, nelec=None) -> fqe.Wavefunction:
+def pyscf_to_fqe_wf(
+    pyscf_cimat: np.ndarray, pyscf_mf=None, norbs=None, nelec=None
+) -> fqe.Wavefunction:
     if pyscf_mf is None:
         assert norbs is not None
         assert nelec is not None
@@ -28,13 +30,14 @@ def pyscf_to_fqe_wf(pyscf_cimat: np.ndarray, pyscf_mf=None, norbs=None, nelec=No
     fqe_graph_ci = fqe_data_ci.get_fcigraph()
 
     # get coeff mat to populate Wavefunction object
-    fqe_orderd_coeff = np.zeros((fqe_graph_ci.lena(), fqe_graph_ci.lenb()),
-                                dtype=np.complex128)  # only works for complex128 right now
+    fqe_orderd_coeff = np.zeros(
+        (fqe_graph_ci.lena(), fqe_graph_ci.lenb()), dtype=np.complex128
+    )  # only works for complex128 right now
     for paidx, pyscf_alpha_idx in enumerate(n_alpha_strings):
         for pbidx, pyscf_beta_idx in enumerate(n_beta_strings):
-            fqe_orderd_coeff[fqe_graph_ci.index_alpha(pyscf_alpha_idx), 
-                             fqe_graph_ci.index_beta(pyscf_beta_idx)] = \
-                                pyscf_cimat[paidx, pbidx]
+            fqe_orderd_coeff[
+                fqe_graph_ci.index_alpha(pyscf_alpha_idx), fqe_graph_ci.index_beta(pyscf_beta_idx)
+            ] = pyscf_cimat[paidx, pbidx]
 
     # populate Wavefunction object
     fqe_data_ci.coeff = fqe_orderd_coeff
@@ -65,4 +68,3 @@ def get_spectrum(mf: scf.RHF, num_roots: int):
     myci = fci.FCI(mf)
     roots, wfs = myci.kernel(nroots=num_roots)
     return roots, wfs
-

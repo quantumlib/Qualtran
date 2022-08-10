@@ -40,9 +40,7 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
         self._target_bitsize = target_bitsize
         self.select_unitaries = select_unitaries
         if self._selection_bitsize < (len(select_unitaries) - 1).bit_length():
-            raise ValueError(
-                "Input selection_bitsize is not consistent with select_unitaries"
-            )
+            raise ValueError("Input selection_bitsize is not consistent with select_unitaries")
 
     @property
     def control_bitsize(self) -> int:
@@ -60,9 +58,7 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
     def iteration_length(self) -> int:
         return len(self.select_unitaries)
 
-    def nth_operation(
-        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    def nth_operation(self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         """
         Args:
              n: takes on values [0, len(self.selection_unitaries))
@@ -71,9 +67,4 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
         """
         if n < 0 or n >= 2**self.selection_bitsize:
             raise ValueError("n is outside selection length range")
-        return (
-            self.select_unitaries[n]
-            .on(*target)
-            .with_coefficient(1)
-            .controlled_by(control)
-        )
+        return self.select_unitaries[n].on(*target).with_coefficient(1).controlled_by(control)

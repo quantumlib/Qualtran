@@ -58,9 +58,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
             control, selection, ancilla, target, accumulator=accumulator
         )
 
-    def _circuit_diagram_info_(
-        self, args: cirq.CircuitDiagramInfoArgs
-    ) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_bitsize
         wire_symbols += ["In"] * self.selection_bitsize
         wire_symbols += ["Anc"] * self.selection_bitsize
@@ -69,11 +67,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def nth_operation(
-        self,
-        n: int,
-        control: cirq.Qid,
-        target: Sequence[cirq.Qid],
-        accumulator: Sequence[cirq.Qid],
+        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid], accumulator: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         yield cirq.CNOT(control, accumulator[0])
         yield self._target_gate(target[n]).controlled_by(control)

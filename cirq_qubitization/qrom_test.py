@@ -4,13 +4,7 @@ import cirq_qubitization
 import itertools
 
 
-@pytest.mark.parametrize(
-    "data",
-    [
-        [[1, 2, 3, 4, 5]],
-        [[1, 2, 3], [4, 5, 10]],
-    ],
-)
+@pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]]])
 def test_qrom(data):
     qrom = cirq_qubitization.QROM(*data)
     all_qubits = cirq.LineQubit.range(qrom.num_qubits())
@@ -21,8 +15,7 @@ def test_qrom(data):
     )
     target_lengths = [max(d).bit_length() for d in data]
     target = [
-        flat_target[y - x : y]
-        for x, y in zip(target_lengths, itertools.accumulate(target_lengths))
+        flat_target[y - x : y] for x, y in zip(target_lengths, itertools.accumulate(target_lengths))
     ]
     circuit = cirq.Circuit(
         qrom.on_registers(
@@ -34,9 +27,7 @@ def test_qrom(data):
 
     sim = cirq.Simulator()
     for selection_integer in range(qrom.iteration_length):
-        svals = [
-            int(x) for x in format(selection_integer, f"0{qrom.selection_bitsize}b")
-        ]
+        svals = [int(x) for x in format(selection_integer, f"0{qrom.selection_bitsize}b")]
         qubit_vals = {x: 0 for x in all_qubits}
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 

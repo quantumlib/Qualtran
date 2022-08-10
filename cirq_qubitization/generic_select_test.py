@@ -31,9 +31,7 @@ class OneDimensionalIsingModel:
                     coefficient=self.j,
                 )
             )
-            cirq_pauli_terms.append(
-                cirq.PauliString({qubits[k]: cirq.X}, coefficient=self.gamma)
-            )
+            cirq_pauli_terms.append(cirq.PauliString({qubits[k]: cirq.X}, coefficient=self.gamma))
         return cirq.PauliSum().from_pauli_strings(cirq_pauli_terms)
 
 
@@ -57,9 +55,7 @@ def test_ising_zero_bitflip_select():
     # right now we only handle positive interaction term values
     ising_inst = OneDimensionalIsingModel(num_sites, 1, 1)
     pauli_string_hamiltonian = [*ising_inst.get_pauli_sum(target)]
-    dense_pauli_string_hamiltonian = [
-        tt.dense(target) for tt in pauli_string_hamiltonian
-    ]
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
 
     # built select with unary iteration gate
     op = cirq_qubitization.GenericSelect(
@@ -111,9 +107,7 @@ def test_ising_one_bitflip_select():
     # right now we only handle positive interaction term values
     ising_inst = OneDimensionalIsingModel(num_sites, 1, 1)
     pauli_string_hamiltonian = [*ising_inst.get_pauli_sum(target)]
-    dense_pauli_string_hamiltonian = [
-        tt.dense(target) for tt in pauli_string_hamiltonian
-    ]
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
     # built select with unary iteration gate
     op = cirq_qubitization.GenericSelect(
         selection_bitsize=selection_bitsize,
@@ -193,12 +187,8 @@ def test_select_application_to_eigenstates():
     ising_inst = OneDimensionalIsingModel(num_sites, 1, 1)
     pauli_sum_hamiltonian = ising_inst.get_pauli_sum(target)
     pauli_string_hamiltonian = [*pauli_sum_hamiltonian]
-    dense_pauli_string_hamiltonian = [
-        tt.dense(target) for tt in pauli_string_hamiltonian
-    ]
-    qubitization_lambda = sum(
-        xx.coefficient.real for xx in dense_pauli_string_hamiltonian
-    )
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
+    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
 
     ising_eigs, ising_wfns = np.linalg.eigh(pauli_sum_hamiltonian.matrix())
 
@@ -235,6 +225,4 @@ def test_select_application_to_eigenstates():
 
         # Overlap of inital_state and SELECT initial_state should be like applying H/lambda
         # which should give (E / lambda) * initial_state
-        assert np.isclose(
-            np.vdot(input_vec, res.final_state_vector), ie / qubitization_lambda
-        )
+        assert np.isclose(np.vdot(input_vec, res.final_state_vector), ie / qubitization_lambda)

@@ -50,11 +50,7 @@ class PreparedEnv:
         return os.path.join(self.virtual_env_path, "bin", program)
 
     def report_status_to_github(
-        self,
-        state: str,
-        description: str,
-        context: str,
-        target_url: Optional[str] = None,
+        self, state: str, description: str, context: str, target_url: Optional[str] = None
     ):
         """Sets a commit status indicator on github.
 
@@ -82,10 +78,7 @@ class PreparedEnv:
         if self.repository is None or self.repository.access_token is None:
             return
 
-        print(
-            repr(("report_status", context, state, description, target_url)),
-            file=sys.stderr,
-        )
+        print(repr(("report_status", context, state, description, target_url)), file=sys.stderr)
 
         payload = {"state": state, "description": description, "context": context}
         if target_url is not None:
@@ -114,9 +107,7 @@ class PreparedEnv:
             List[str]: File paths of changed files, relative to the git repo
                 root.
         """
-        optional_actual_commit_id = (
-            [] if self.actual_commit_id is None else [self.actual_commit_id]
-        )
+        optional_actual_commit_id = [] if self.actual_commit_id is None else [self.actual_commit_id]
         out = shell_tools.output_of(
             [
                 "git",

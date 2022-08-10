@@ -134,9 +134,7 @@ class UnaryIterationGate(GateWithRegisters):
         **extra_regs: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         if len(control) == 0:
-            yield from self._decompose_zero_control(
-                selection, ancilla, target, **extra_regs
-            )
+            yield from self._decompose_zero_control(selection, ancilla, target, **extra_regs)
         if len(control) == 1:
             yield from self.decompose_single_control(
                 control[0], selection, ancilla, target, **extra_regs

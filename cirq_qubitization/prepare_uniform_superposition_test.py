@@ -22,9 +22,7 @@ def test_prepare_uniform_superposition(n, num_controls):
         result.final_state_vector,
         keep_indices=list(range(num_controls, num_controls + len(target))),
     )
-    expected_target_state = np.asarray(
-        [np.sqrt(1.0 / n)] * n + [0] * (2 ** len(target) - n)
-    )
+    expected_target_state = np.asarray([np.sqrt(1.0 / n)] * n + [0] * (2 ** len(target) - n))
     cirq.testing.assert_allclose_up_to_global_phase(
         expected_target_state, final_target_state, atol=1e-6
     )

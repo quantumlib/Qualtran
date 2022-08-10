@@ -29,9 +29,7 @@ def main() -> None:
     if __version__ is None:
         raise ValueError("Version information not found in " + version_path)
 
-    long_description = (
-        "=================\n" + "CIRQ-QUBITIZATION\n" + "=================\n"
-    )
+    long_description = "=================\n" + "CIRQ-QUBITIZATION\n" + "=================\n"
     stream = io.open("README.md", encoding="utf-8")
     stream.readline()
     long_description += stream.read()
