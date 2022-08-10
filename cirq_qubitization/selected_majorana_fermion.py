@@ -1,7 +1,7 @@
-from typing import Union, Sequence
+from typing import Sequence, Tuple
 from functools import cached_property
 import cirq
-from cirq_qubitization.gate_with_registers import Registers, Register
+from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization import unary_iteration
 
 
@@ -24,25 +24,24 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         self._target_bitsize = target_bitsize
         self._target_gate = target_gate
 
-    @property
-    def control_bitsize(self) -> int:
-        return 1
-
-    @property
-    def selection_bitsize(self) -> int:
-        return self._selection_bitsize
-
-    @property
-    def target_bitsize(self) -> int:
-        """First qubit is used as an accumulator and remaining qubits are used as target."""
-        return self._target_bitsize
-
-    @property
-    def iteration_length(self) -> int:
-        return self._target_bitsize
+    @cached_property
+    def control_registers(self) -> Registers:
+        return Registers.build(control=1)
 
     @cached_property
-    def extra_registers(self) -> Sequence[Register]:
+    def selection_registers(self) -> Registers:
+        return Registers.build(selection=self._selection_bitsize)
+
+    @cached_property
+    def target_registers(self) -> Registers:
+        return Registers.build(target=self._target_bitsize)
+
+    @cached_property
+    def iteration_lengths(self) -> Tuple[int, ...]:
+        return (self._target_bitsize,)
+
+    @cached_property
+    def extra_registers(self) -> Registers:
         return Registers.build(accumulator=1)
 
     def _decompose_single_control(
@@ -59,16 +58,20 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         )
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@"] * self.control_bitsize
-        wire_symbols += ["In"] * self.selection_bitsize
-        wire_symbols += ["Anc"] * self.selection_bitsize
-        wire_symbols += [f"Z{self._target_gate}"] * self.target_bitsize
+        wire_symbols = ["@"] * cirq.num_qubits(self.control_registers)
+        wire_symbols += ["In"] * cirq.num_qubits(self.selection_registers)
+        wire_symbols += ["Anc"] * cirq.num_qubits(self.ancilla_registers)
+        wire_symbols += [f"Z{self._target_gate}"] * cirq.num_qubits(self.target_registers)
         wire_symbols += ["Acc"]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def nth_operation(
-        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid], accumulator: Sequence[cirq.Qid]
+        self,
+        selection: int,
+        control: cirq.Qid,
+        target: Sequence[cirq.Qid],
+        accumulator: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         yield cirq.CNOT(control, accumulator[0])
-        yield self._target_gate(target[n]).controlled_by(control)
-        yield cirq.Z(target[n]).controlled_by(accumulator[0])
+        yield self._target_gate(target[selection]).controlled_by(control)
+        yield cirq.Z(target[selection]).controlled_by(accumulator[0])

@@ -1,6 +1,8 @@
-from typing import Sequence, List
+from typing import Sequence, List, Tuple
+from functools import cached_property
 import cirq
 from cirq_qubitization import unary_iteration
+from cirq_qubitization.gate_with_registers import Registers
 
 
 class GenericSelect(unary_iteration.UnaryIterationGate):
@@ -42,29 +44,33 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
         if self._selection_bitsize < (len(select_unitaries) - 1).bit_length():
             raise ValueError("Input selection_bitsize is not consistent with select_unitaries")
 
-    @property
-    def control_bitsize(self) -> int:
-        return 1
+    @cached_property
+    def control_registers(self) -> Registers:
+        return Registers.build(control=1)
 
-    @property
-    def selection_bitsize(self) -> int:
-        return self._selection_bitsize
+    @cached_property
+    def selection_registers(self) -> Registers:
+        return Registers.build(selection=self._selection_bitsize)
 
-    @property
-    def target_bitsize(self) -> int:
-        return self._target_bitsize
+    @cached_property
+    def target_registers(self) -> Registers:
+        return Registers.build(target=self._target_bitsize)
 
-    @property
-    def iteration_length(self) -> int:
-        return len(self.select_unitaries)
+    @cached_property
+    def iteration_lengths(self) -> Tuple[int, ...]:
+        return (len(self.select_unitaries),)
 
-    def nth_operation(self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def nth_operation(
+        self, selection: int, control: cirq.Qid, target: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         """
         Args:
              n: takes on values [0, len(self.selection_unitaries))
              control: Qid that is the control qubit or qubits
              target: Target register qubits
         """
-        if n < 0 or n >= 2**self.selection_bitsize:
+        if selection < 0 or selection >= 2**self._selection_bitsize:
             raise ValueError("n is outside selection length range")
-        return self.select_unitaries[n].on(*target).with_coefficient(1).controlled_by(control)
+        return (
+            self.select_unitaries[selection].on(*target).with_coefficient(1).controlled_by(control)
+        )

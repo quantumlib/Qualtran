@@ -25,6 +25,9 @@ class Registers:
     def _value_equality_values_(self):
         return self._registers
 
+    def _num_qubits_(self) -> int:
+        return sum(reg.bitsize for reg in self)
+
     @classmethod
     def build(cls, **registers: int):
         return cls(Register(name=k, bitsize=v) for k, v in registers.items())
@@ -34,6 +37,9 @@ class Registers:
 
     def __getitem__(self, name: str):
         return self._register_dict[name]
+
+    def __contains__(self, item: str):
+        return item in self._register_dict
 
     def __iter__(self):
         yield from self._registers
@@ -45,6 +51,15 @@ class Registers:
             qubit_regs[reg.name] = qubits[base : base + reg.bitsize]
             base += reg.bitsize
         return qubit_regs
+
+    def split_integer(self, n: int) -> Dict[str, int]:
+        qubit_vals = {}
+        base = 0
+        n_bin = f"{n:0{self._num_qubits_()}b}"
+        for reg in self:
+            qubit_vals[reg.name] = int(n_bin[base : base + reg.bitsize], 2)
+            base += reg.bitsize
+        return qubit_vals
 
     def merge_qubits(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> Sequence[cirq.Qid]:
         ret: List[cirq.Qid] = []
@@ -74,7 +89,7 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
         ...
 
     def _num_qubits_(self) -> int:
-        return sum(reg.bitsize for reg in self.registers)
+        return cirq.num_qubits(self.registers)
 
     @abc.abstractmethod
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:

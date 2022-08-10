@@ -1,6 +1,8 @@
-import cirq
 from typing import Tuple, Union, Sequence, Optional
+from functools import cached_property
+import cirq
 from cirq_qubitization import unary_iteration
+from cirq_qubitization.gate_with_registers import Registers
 
 
 class QROM(unary_iteration.UnaryIterationGate):
@@ -16,55 +18,37 @@ class QROM(unary_iteration.UnaryIterationGate):
         else:
             assert len(target_bitsizes) == len(data)
             assert all(t >= max(d).bit_length() for t, d in zip(target_bitsizes, data))
-        self._individual_target_bitsizes = target_bitsizes
-        self._target_bitsize = sum(self._individual_target_bitsizes)
+        self._target_bitsizes = target_bitsizes
 
-    @property
-    def control_bitsize(self) -> int:
-        return 0
+    @cached_property
+    def control_registers(self) -> Registers:
+        return Registers([])
 
-    @property
-    def selection_bitsize(self) -> int:
-        return self._selection_bitsize
+    @cached_property
+    def selection_registers(self) -> Registers:
+        return Registers.build(selection=self._selection_bitsize)
 
-    @property
-    def target_bitsize(self) -> int:
-        return self._target_bitsize
+    @cached_property
+    def target_registers(self) -> Registers:
+        return Registers.build(**{f'target{i}': len for i, len in enumerate(self._target_bitsizes)})
 
-    @property
-    def iteration_length(self) -> int:
-        return len(self._data[0])
+    @cached_property
+    def iteration_lengths(self) -> Tuple[int, ...]:
+        return (len(self._data[0]),)
 
     @property
     def data(self) -> Tuple[Tuple[int, ...], ...]:
         return self._data
 
     def __repr__(self) -> str:
-        return f"cirq_qubitization.QROM({self.data})"
+        data_repr = ",".join(repr(d) for d in self.data)
+        return f"cirq_qubitization.QROM({data_repr}, target_bitsizes={self._target_bitsizes})"
 
-    def on_registers(
-        self,
-        *,
-        selection_register: Sequence[cirq.Qid],
-        selection_ancilla: Sequence[cirq.Qid],
-        target_register: Union[Sequence[cirq.Qid], Sequence[Sequence[cirq.Qid]]],
-    ) -> cirq.GateOperation:
-        if not isinstance(target_register[0], cirq.Qid):
-            assert (
-                len(t) == tr for t, tr in zip(target_register, self._individual_target_bitsizes)
-            ), f"Length of each target register must match {self._individual_target_bitsizes}"
-            flat_target_register = [t for target in target_register for t in target]
-        else:
-            flat_target_register = target_register
-        assert len(flat_target_register) == self.target_bitsize
-        return cirq.GateOperation(
-            self, list(selection_register) + list(selection_ancilla) + list(flat_target_register)
-        )
-
-    def nth_operation(self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        offset = 0
-        for d, target_bitsize in zip(self._data, self._individual_target_bitsizes):
-            for i, bit in enumerate(format(d[n], f"0{target_bitsize}b")):
-                if bit == "1":
-                    yield cirq.CNOT(control, target[offset + i])
-            offset += target_bitsize
+    def nth_operation(
+        self, selection: int, control: cirq.Qid, **target_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        for i, d in enumerate(self._data):
+            target = target_regs[f'target{i}']
+            for q, bit in zip(target, f'{d[selection]:0{len(target)}b}'):
+                if int(bit):
+                    yield cirq.CNOT(control, q)

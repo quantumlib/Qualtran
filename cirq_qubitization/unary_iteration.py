@@ -1,63 +1,81 @@
 import abc
 from functools import cached_property
-from typing import Sequence
+from typing import Sequence, Tuple
 
 import cirq
 
 from cirq_qubitization import and_gate
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers, Register
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
 class UnaryIterationGate(GateWithRegisters):
     @property
     @abc.abstractmethod
-    def control_bitsize(self) -> int:
+    def control_registers(self) -> Registers:
         pass
 
     @property
     @abc.abstractmethod
-    def selection_bitsize(self) -> int:
+    def selection_registers(self) -> Registers:
         pass
 
     @property
     @abc.abstractmethod
-    def target_bitsize(self) -> int:
+    def target_registers(self) -> Registers:
         pass
 
     @property
     @abc.abstractmethod
+    def iteration_lengths(self) -> Tuple[int, ...]:
+        pass
+
+    @cached_property
     def iteration_length(self) -> int:
-        pass
+        max_iteration_bin = "".join(
+            f"{l - 1    :0{r.bitsize}b}"
+            for r, l in zip(self.selection_registers, self.iteration_lengths)
+        )
+        return 1 + int(max_iteration_bin, 2)
 
-    @property
-    def ancilla_bitsize(self) -> int:
-        return max(0, self.control_bitsize - 1) + self.selection_bitsize
+    @cached_property
+    def ancilla_registers(self) -> Registers:
+        control_ancilla_bitsize = max(0, cirq.num_qubits(self.control_registers) - 1)
+        iteration_ancilla_bitsize = cirq.num_qubits(self.selection_registers)
+        return Registers.build(ancilla=control_ancilla_bitsize + iteration_ancilla_bitsize)
 
     @cached_property
     def registers(self) -> Registers:
         return Registers(
             [
-                Register("control", self.control_bitsize),
-                Register("selection", self.selection_bitsize),
-                Register("ancilla", self.ancilla_bitsize),
-                Register("target", self.target_bitsize),
+                *self.control_registers,
+                *self.selection_registers,
+                *self.ancilla_registers,
+                *self.target_registers,
                 *self.extra_registers,
             ]
         )
 
     @cached_property
-    def extra_registers(self) -> Sequence[Register]:
-        return []
+    def extra_registers(self) -> Registers:
+        return Registers([])
 
     @abc.abstractmethod
-    def nth_operation(
-        self,
-        n: int,
-        control: cirq.Qid,
-        target: Sequence[cirq.Qid],
-        **extra_regs: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
+    def nth_operation(self, **kwargs) -> cirq.OP_TREE:
         pass
+
+    def _apply_nth_operation(
+        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid], **extra_regs
+    ) -> cirq.OP_TREE:
+        indices = self.selection_registers.split_integer(n)
+        targets = self.target_registers.split_qubits(target)
+        print("DEBUG NTH OP:", indices, targets, extra_regs, sep="\n")
+        all_indices_valid = all(
+            indices[r.name] < iter_len
+            for r, iter_len in zip(self.selection_registers, self.iteration_lengths)
+        )
+        yield self.nth_operation(
+            control=control, **targets, **indices, **extra_regs
+        ) if all_indices_valid else []
 
     def _unary_iteration_segtree(
         self,
@@ -73,7 +91,7 @@ class UnaryIterationGate(GateWithRegisters):
         if l >= min(r, self.iteration_length):
             yield []
         if l == (r - 1):
-            yield self.nth_operation(l, control, target, **extra_regs)
+            yield self._apply_nth_operation(l, control, target, **extra_regs)
         else:
             assert sl < len(selection)
             m = (l + r) >> 1
@@ -129,14 +147,15 @@ class UnaryIterationGate(GateWithRegisters):
         )
         yield cirq.CNOT(selection[0], ancilla[0])
 
-    def decompose_from_registers(
-        self,
-        control: Sequence[cirq.Qid],
-        selection: Sequence[cirq.Qid],
-        ancilla: Sequence[cirq.Qid],
-        target: Sequence[cirq.Qid],
-        **extra_regs: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
+    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        control = self.control_registers.merge_qubits(**qubit_regs)
+        selection = self.selection_registers.merge_qubits(**qubit_regs)
+        target = self.target_registers.merge_qubits(**qubit_regs)
+        ancilla = self.ancilla_registers.merge_qubits(**qubit_regs)
+        extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
+        print("DEBUG:", extra_regs)
+        print("DEBUG2:", self.extra_registers)
+
         if len(control) == 0:
             yield from self._decompose_zero_control(selection, ancilla, target, **extra_regs)
         elif len(control) == 1:
@@ -144,9 +163,10 @@ class UnaryIterationGate(GateWithRegisters):
                 control[0], selection, ancilla, target, **extra_regs
             )
         else:
-            and_ancillas = ancilla[: self.control_bitsize - 2]
-            and_target = ancilla[self.control_bitsize - 2]
-            selection_ancillas = ancilla[self.control_bitsize - 1 :]
+            control_bitsize = cirq.num_qubits(self.control_registers)
+            and_ancillas = ancilla[: control_bitsize - 2]
+            and_target = ancilla[control_bitsize - 2]
+            selection_ancillas = ancilla[control_bitsize - 1 :]
             multi_controlled_and = and_gate.And((1,) * len(control)).on_registers(
                 control=control, ancilla=and_ancillas, target=and_target
             )
