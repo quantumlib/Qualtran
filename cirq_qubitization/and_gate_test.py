@@ -29,10 +29,7 @@ def random_cv(n: int) -> List[int]:
     return [random.randint(0, 1) for _ in range(n)]
 
 
-@pytest.mark.parametrize(
-    "cv",
-    [[1] * 3, random_cv(5), random_cv(6), random_cv(7)],
-)
+@pytest.mark.parametrize("cv", [[1] * 3, random_cv(5), random_cv(6), random_cv(7)])
 def test_multi_controlled_and_gate(cv: List[int]):
     gate = cirq_qubitization.And(cv)
     qubit_regs = gate.registers.get_named_qubits()
@@ -49,9 +46,7 @@ def test_multi_controlled_and_gate(cv: List[int]):
     for input_control in input_controls:
         initial_state = input_control + [0] * (len(ancilla) + 1)
         result = cirq.Simulator().simulate(
-            circuit,
-            initial_state=initial_state,
-            qubit_order=[*control, *ancilla, target],
+            circuit, initial_state=initial_state, qubit_order=[*control, *ancilla, target]
         )
         expected_output = np.asarray([0, 1] if input_control == cv else [1, 0])
         assert cirq.equal_up_to_global_phase(
