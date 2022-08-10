@@ -10,11 +10,7 @@ class CheckResult:
     """Output of a status check that passed, failed, or error'ed."""
 
     def __init__(
-        self,
-        check: "Check",
-        success: bool,
-        message: str,
-        unexpected_error: Optional[Exception],
+        self, check: "Check", success: bool, message: str, unexpected_error: Optional[Exception]
     ) -> None:
         self.check = check
         self.success = success
@@ -22,14 +18,10 @@ class CheckResult:
         self.unexpected_error = unexpected_error
 
     def __str__(self):
-        outcome = (
-            "ERROR" if self.unexpected_error else "pass" if self.success else "FAIL"
-        )
+        outcome = "ERROR" if self.unexpected_error else "pass" if self.success else "FAIL"
         msg = self.unexpected_error if self.unexpected_error else self.message
         result = f"{outcome}: {self.check.context()} ({msg})"
-        return shell_tools.highlight(
-            result, shell_tools.GREEN if self.success else shell_tools.RED
-        )
+        return shell_tools.highlight(result, shell_tools.GREEN if self.success else shell_tools.RED)
 
 
 class Check(metaclass=abc.ABCMeta):
@@ -47,9 +39,7 @@ class Check(metaclass=abc.ABCMeta):
         """The name of this status check, as shown on github."""
 
     @abc.abstractmethod
-    def perform_check(
-        self, env: env_tools.PreparedEnv, verbose: bool
-    ) -> Tuple[bool, str]:
+    def perform_check(self, env: env_tools.PreparedEnv, verbose: bool) -> Tuple[bool, str]:
         """Evaluates the status check and returns a pass/fail with message.
 
         Args:
@@ -80,17 +70,11 @@ class Check(metaclass=abc.ABCMeta):
         # Skip if a dependency failed.
         if previous_failures.intersection(self.dependencies):
             print(
-                shell_tools.highlight(
-                    "Skipped " + self.command_line_switch(), shell_tools.YELLOW
-                )
+                shell_tools.highlight("Skipped " + self.command_line_switch(), shell_tools.YELLOW)
             )
             return CheckResult(self, False, "Skipped due to dependency failing.", None)
 
-        print(
-            shell_tools.highlight(
-                "Running " + self.command_line_switch(), shell_tools.GREEN
-            )
-        )
+        print(shell_tools.highlight("Running " + self.command_line_switch(), shell_tools.GREEN))
         try:
             success, message = self.perform_check(env, verbose=verbose)
             result = CheckResult(self, success, message, None)
@@ -134,9 +118,7 @@ class Check(metaclass=abc.ABCMeta):
             env.report_status_to_github("error", "Unexpected error.", self.context())
         else:
             env.report_status_to_github(
-                "success" if result.success else "failure",
-                result.message,
-                self.context(),
+                "success" if result.success else "failure", result.message, self.context()
             )
 
         return result

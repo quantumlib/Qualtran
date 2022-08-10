@@ -14,12 +14,8 @@ def get_lcu_coefficients(num_sites):
     target = cirq.LineQubit.range(num_sites)
     ising_inst = OneDimensionalIsingModel(num_sites, np.pi / 3, np.pi / 7)
     pauli_string_hamiltonian = [*ising_inst.get_pauli_sum(target)]
-    dense_pauli_string_hamiltonian = [
-        tt.dense(target) for tt in pauli_string_hamiltonian
-    ]
-    qubitization_lambda = sum(
-        xx.coefficient.real for xx in dense_pauli_string_hamiltonian
-    )
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
+    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
     lcu_coeffs = (
         np.array([xx.coefficient.real for xx in dense_pauli_string_hamiltonian])
         / qubitization_lambda
@@ -27,9 +23,7 @@ def get_lcu_coefficients(num_sites):
     return lcu_coeffs
 
 
-@pytest.mark.parametrize(
-    "num_sites, epsilon", [[2, 1.0e-2], [3, 1.0e-2], [4, 1.0e-2], [5, 1.0e-2]]
-)
+@pytest.mark.parametrize("num_sites, epsilon", [[2, 1.0e-2], [3, 1.0e-2], [4, 1.0e-2], [5, 1.0e-2]])
 def test_generic_subprepare(num_sites, epsilon):
     lcu_coefficients = get_lcu_coefficients(num_sites)
     subprepare_gate = cirq_qubitization.GenericSubPrepare(
@@ -45,9 +39,7 @@ def test_generic_subprepare(num_sites, epsilon):
     result = cirq.Simulator(dtype=np.complex128).simulate(
         cirq.Circuit(
             subprepare_gate.on_registers(
-                selection_register=selection,
-                temp_register=temp,
-                selection_ancilla=ancilla,
+                selection_register=selection, temp_register=temp, selection_ancilla=ancilla
             )
         )
     )
@@ -63,6 +55,4 @@ def test_generic_subprepare(num_sites, epsilon):
     prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
     # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
     # same as `lcu_coefficients` upto `epsilon`.
-    np.testing.assert_allclose(
-        lcu_coefficients, abs(prepared_state) ** 2, atol=epsilon * 10
-    )
+    np.testing.assert_allclose(lcu_coefficients, abs(prepared_state) ** 2, atol=epsilon * 10)

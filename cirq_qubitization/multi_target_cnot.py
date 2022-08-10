@@ -30,6 +30,4 @@ class MultiTargetCNOT(cirq.Gate):
             yield cirq.Moment(cnots_for_depth_i(i, targets))
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        return cirq.CircuitDiagramInfo(
-            wire_symbols=["@"] + ["X"] * (self._num_qubits_() - 1)
-        )
+        return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * (self._num_qubits_() - 1))

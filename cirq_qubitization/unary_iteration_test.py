@@ -10,9 +10,7 @@ import cirq_qubitization
 
 
 class ApplyXToLthQubit(cirq_qubitization.UnaryIterationGate):
-    def __init__(
-        self, selection_bitsize: int, target_bitsize: int, control_bitsize: int = 1
-    ):
+    def __init__(self, selection_bitsize: int, target_bitsize: int, control_bitsize: int = 1):
         self._selection_bitsize = selection_bitsize
         self._target_bitsize = target_bitsize
         self._control_bitsize = control_bitsize
@@ -33,9 +31,7 @@ class ApplyXToLthQubit(cirq_qubitization.UnaryIterationGate):
     def iteration_length(self) -> int:
         return self._target_bitsize
 
-    def nth_operation(
-        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    def nth_operation(self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return cirq.CNOT(control, target[-(n + 1)])
 
 
@@ -64,9 +60,7 @@ def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
-        result = sim.simulate(
-            circuit, initial_state=initial_state, qubit_order=all_qubits
-        )
+        result = sim.simulate(circuit, initial_state=initial_state, qubit_order=all_qubits)
         # Build correct statevector with selection_integer bit flipped in the target register:
         initial_state[-(n + 1)] = 1
         expected_output = "".join(str(x) for x in initial_state)

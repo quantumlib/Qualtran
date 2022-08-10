@@ -4,15 +4,11 @@ the SUBPREPARE oracle.
 """
 from typing import List
 
-from openfermion.circuits.lcu_util import (
-    preprocess_lcu_coefficients_for_reversible_sampling,
-)
+from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from cirq_qubitization.qrom import QROM
 
 
-def construct_alt_keep_qrom(
-    lcu_coefficients: List[float], probability_epsilon: float
-) -> QROM:
+def construct_alt_keep_qrom(lcu_coefficients: List[float], probability_epsilon: float) -> QROM:
     """
     Construct the QROM that outputs alt and keep values in the SUBPREPARE routine
 

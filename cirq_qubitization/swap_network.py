@@ -15,9 +15,7 @@ class MultiTargetCSwap(GateWithRegisters):
     @cached_property
     def registers(self) -> Registers:
         return Registers.build(
-            control=1,
-            target_x=self._target_bitsize,
-            target_y=self._target_bitsize,
+            control=1, target_x=self._target_bitsize, target_y=self._target_bitsize
         )
 
     def decompose_from_registers(
@@ -29,14 +27,10 @@ class MultiTargetCSwap(GateWithRegisters):
         (control,) = control
         yield [cirq.CSWAP(control, t_x, t_y) for t_x, t_y in zip(target_x, target_y)]
 
-    def _circuit_diagram_info_(
-        self, args: cirq.CircuitDiagramInfoArgs
-    ) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if not args.use_unicode_characters:
             return cirq.CircuitDiagramInfo(
-                ("@",)
-                + ("swap_x",) * self._target_bitsize
-                + ("swap_y",) * self._target_bitsize
+                ("@",) + ("swap_x",) * self._target_bitsize + ("swap_y",) * self._target_bitsize
             )
         return cirq.CircuitDiagramInfo(
             ("@",) + ("×(x)",) * self._target_bitsize + ("×(y)",) * self._target_bitsize
@@ -81,9 +75,7 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
         yield multi_target_cnot.MultiTargetCNOT(len(target_y)).on(control, *target_y)
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
-    def _circuit_diagram_info_(
-        self, args: cirq.CircuitDiagramInfoArgs
-    ) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if not args.use_unicode_characters:
             return cirq.CircuitDiagramInfo(
                 ("@(approx)",)
@@ -91,9 +83,7 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
                 + ("swap_y",) * self._target_bitsize
             )
         return cirq.CircuitDiagramInfo(
-            ("@(approx)",)
-            + ("×(x)",) * self._target_bitsize
-            + ("×(y)",) * self._target_bitsize
+            ("@(approx)",) + ("×(x)",) * self._target_bitsize + ("×(y)",) * self._target_bitsize
         )
 
     def __repr__(self) -> str:
@@ -113,12 +103,7 @@ class SwapWithZeroGate(cirq.Gate):
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    def __init__(
-        self,
-        selection_bitsize: int,
-        target_bitsize: int,
-        n_target_registers: int,
-    ):
+    def __init__(self, selection_bitsize: int, target_bitsize: int, n_target_registers: int):
         assert n_target_registers <= 2**selection_bitsize
         self.selection_bitsize = selection_bitsize
         self.target_bitsize = target_bitsize

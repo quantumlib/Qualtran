@@ -44,9 +44,7 @@ class And(GateWithRegisters):
     def __repr__(self) -> str:
         return f"cirq_qubitization.And({self.cv}, adjoint={self.adjoint})"
 
-    def _circuit_diagram_info_(
-        self, args: cirq.CircuitDiagramInfoArgs
-    ) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
         target = "And†" if self.adjoint else "And"
         wire_symbols = [controls[c] for c in self.cv]
@@ -86,9 +84,7 @@ class And(GateWithRegisters):
         else:
             new_controls = (ancillas[0], *controls[2:])
             new_control_values = (1, *control_values[2:])
-            and_op = And(control_values[:2], adjoint=self.adjoint).on(
-                *controls[:2], ancillas[0]
-            )
+            and_op = And(control_values[:2], adjoint=self.adjoint).on(*controls[:2], ancillas[0])
             if self.adjoint:
                 yield from self._decompose_via_tree(
                     new_controls, new_control_values, ancillas[1:], target
@@ -101,10 +97,7 @@ class And(GateWithRegisters):
                 )
 
     def decompose_from_registers(
-        self,
-        control: Sequence[cirq.Qid],
-        ancilla: Sequence[cirq.Qid],
-        target: Sequence[cirq.Qid],
+        self, control: Sequence[cirq.Qid], ancilla: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         (target,) = target
         if len(control) == 2:

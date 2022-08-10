@@ -45,9 +45,7 @@ def test_registers():
     # Python dictionaries preserve insertion order, which should be same as insertion order of
     # initial registers.
     for reg_order in [[r1, r2, r3], [r2, r3, r1]]:
-        flat_named_qubits = [
-            q for v in Registers(reg_order).get_named_qubits().values() for q in v
-        ]
+        flat_named_qubits = [q for v in Registers(reg_order).get_named_qubits().values() for q in v]
         expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
         assert flat_named_qubits == expected_qubits
 
