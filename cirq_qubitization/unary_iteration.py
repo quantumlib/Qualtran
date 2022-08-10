@@ -68,7 +68,6 @@ class UnaryIterationGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         indices = self.selection_registers.split_integer(n)
         targets = self.target_registers.split_qubits(target)
-        print("DEBUG NTH OP:", indices, targets, extra_regs, sep="\n")
         all_indices_valid = all(
             indices[r.name] < iter_len
             for r, iter_len in zip(self.selection_registers, self.iteration_lengths)
@@ -153,8 +152,6 @@ class UnaryIterationGate(GateWithRegisters):
         target = self.target_registers.merge_qubits(**qubit_regs)
         ancilla = self.ancilla_registers.merge_qubits(**qubit_regs)
         extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
-        print("DEBUG:", extra_regs)
-        print("DEBUG2:", self.extra_registers)
 
         if len(control) == 0:
             yield from self._decompose_zero_control(selection, ancilla, target, **extra_regs)
