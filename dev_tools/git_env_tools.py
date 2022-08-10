@@ -91,22 +91,13 @@ def fetch_github_pull_request(
         compare_branch="master",
         verbose=verbose,
     )
-    optional_actual_commit_id = (
-        [] if result.actual_commit_id is None else [result.actual_commit_id]
-    )
+    optional_actual_commit_id = [] if result.actual_commit_id is None else [result.actual_commit_id]
     shell_tools.run(
         ["git", "branch", *optional_quiet, "compare_commit", result.compare_commit_id],
         log_run_to_stderr=verbose,
     )
     shell_tools.run(
-        [
-            "git",
-            "checkout",
-            *optional_quiet,
-            "-b",
-            "actual_commit",
-            *optional_actual_commit_id,
-        ],
+        ["git", "checkout", *optional_quiet, "-b", "actual_commit", *optional_actual_commit_id],
         log_run_to_stderr=verbose,
     )
     return prepared_env.PreparedEnv(
@@ -118,9 +109,7 @@ def fetch_github_pull_request(
     )
 
 
-def fetch_local_files(
-    destination_directory: str, verbose: bool
-) -> prepared_env.PreparedEnv:
+def fetch_local_files(destination_directory: str, verbose: bool) -> prepared_env.PreparedEnv:
     """Uses local files to create a directory for testing and comparisons.
 
     Args:
@@ -138,9 +127,7 @@ def fetch_local_files(
         if verbose:
             print("chdir", staging_dir, file=sys.stderr)
 
-        shell_tools.run(
-            ["git", "add", "--all"], stdout=sys.stderr, log_run_to_stderr=verbose
-        )
+        shell_tools.run(["git", "add", "--all"], stdout=sys.stderr, log_run_to_stderr=verbose)
 
         shell_tools.run(
             [
@@ -162,32 +149,19 @@ def fetch_local_files(
         if verbose:
             print("chdir", destination_directory, file=sys.stderr)
         shell_tools.run(
-            ["git", "init", *optional_quiet],
-            stdout=sys.stderr,
-            log_run_to_stderr=verbose,
+            ["git", "init", *optional_quiet], stdout=sys.stderr, log_run_to_stderr=verbose
         )
-        result = _git_fetch_for_comparison(
-            staging_dir, cur_commit, "master", verbose=verbose
-        )
+        result = _git_fetch_for_comparison(staging_dir, cur_commit, "master", verbose=verbose)
     finally:
         shutil.rmtree(staging_dir, ignore_errors=True)
 
-    optional_actual_commit_id = (
-        [] if result.actual_commit_id is None else [result.actual_commit_id]
-    )
+    optional_actual_commit_id = [] if result.actual_commit_id is None else [result.actual_commit_id]
     shell_tools.run(
         ["git", "branch", *optional_quiet, "compare_commit", result.compare_commit_id],
         log_run_to_stderr=verbose,
     )
     shell_tools.run(
-        [
-            "git",
-            "checkout",
-            *optional_quiet,
-            "-b",
-            "actual_commit",
-            *optional_actual_commit_id,
-        ],
+        ["git", "checkout", *optional_quiet, "-b", "actual_commit", *optional_actual_commit_id],
         log_run_to_stderr=verbose,
     )
     return prepared_env.PreparedEnv(

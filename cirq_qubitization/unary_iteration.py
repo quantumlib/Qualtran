@@ -41,9 +41,7 @@ class UnaryIterationGate(GateWithRegisters):
         )
 
     @abc.abstractmethod
-    def nth_operation(
-        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    def nth_operation(self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         pass
 
     def _unary_iteration_segtree(
@@ -93,10 +91,7 @@ class UnaryIterationGate(GateWithRegisters):
         )
 
     def _decompose_zero_control(
-        self,
-        selection: Sequence[cirq.Qid],
-        ancilla: Sequence[cirq.Qid],
-        target: Sequence[cirq.Qid],
+        self, selection: Sequence[cirq.Qid], ancilla: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
     ):
         assert len(selection) == len(ancilla)
         assert 2 ** len(selection) >= self.iteration_length
@@ -123,7 +118,5 @@ class UnaryIterationGate(GateWithRegisters):
         if len(control) == 0:
             yield from self._decompose_zero_control(selection, ancilla, target)
         if len(control) == 1:
-            yield from self.decompose_single_control(
-                control[0], selection, ancilla, target
-            )
+            yield from self.decompose_single_control(control[0], selection, ancilla, target)
         return NotImplemented

@@ -43,9 +43,7 @@ def create_virtual_env(
     )
     pip_path = os.path.join(venv_path, "bin", "pip")
     for req_path in requirements_paths:
-        shell_tools.run(
-            [pip_path, "install", *optional_quiet, "-r", req_path], stdout=sys.stderr
-        )
+        shell_tools.run([pip_path, "install", *optional_quiet, "-r", req_path], stdout=sys.stderr)
 
 
 def prepare_temporary_test_environment(
@@ -97,16 +95,11 @@ def prepare_temporary_test_environment(
     base_path = cast(str, env.destination_directory)
     env_path = os.path.join(base_path, env_name)
     req_path = os.path.join(base_path, "requirements.txt")
-    dev_req_path = os.path.join(
-        base_path, "dev_tools", "requirements", "deps", "dev-tools.txt"
-    )
+    dev_req_path = os.path.join(base_path, "dev_tools", "requirements", "deps", "dev-tools.txt")
     contrib_req_path = os.path.join(base_path, "cirq", "contrib", "requirements.txt")
     rev_paths = [req_path, dev_req_path, contrib_req_path]
     create_virtual_env(
-        venv_path=env_path,
-        python_path=python_path,
-        requirements_paths=rev_paths,
-        verbose=verbose,
+        venv_path=env_path, python_path=python_path, requirements_paths=rev_paths, verbose=verbose
     )
 
     return PreparedEnv(

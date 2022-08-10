@@ -3,10 +3,7 @@ import cirq_qubitization
 import cirq
 
 
-@pytest.mark.parametrize(
-    "selection_bitsize, target_bitsize",
-    [(2, 4), (3, 8), (4, 9)],
-)
+@pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 8), (4, 9)])
 def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize):
     all_qubits = cirq.LineQubit.range(2 * selection_bitsize + target_bitsize + 2)
     control, selection, ancilla, accumulator, target = (
@@ -16,9 +13,7 @@ def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize):
         all_qubits[2 * selection_bitsize + 1],
         all_qubits[2 * selection_bitsize + 2 :],
     )
-    gate = cirq_qubitization.SelectedMajoranaFermionGate(
-        selection_bitsize, target_bitsize
-    )
+    gate = cirq_qubitization.SelectedMajoranaFermionGate(selection_bitsize, target_bitsize)
     circuit = cirq.Circuit(
         gate.on_registers(
             control_register=control,

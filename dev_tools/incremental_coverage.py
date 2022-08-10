@@ -15,9 +15,7 @@ IGNORED_FILE_PATTERNS = [
     r"^cirq-google/cirq_google/api/v1/.+\.py$",  # deprecated API code
     r"^benchmarks/",
 ]
-IGNORED_BLOCK_PATTERNS = [
-    r"^\s*if TYPE_CHECKING:$"
-]  # imports needed only while type-checking.
+IGNORED_BLOCK_PATTERNS = [r"^\s*if TYPE_CHECKING:$"]  # imports needed only while type-checking.
 IGNORED_LINE_PATTERNS = [
     # Imports often uncovered due to version checks and type checking blocks.
     r"^import .+$",
@@ -134,15 +132,7 @@ def get_incremental_uncovered_lines(
 
     optional_actual_commit = [] if actual_commit is None else [actual_commit]
     unified_diff_lines_str = shell_tools.output_of(
-        [
-            "git",
-            "diff",
-            "--unified=0",
-            base_commit,
-            *optional_actual_commit,
-            "--",
-            abs_path,
-        ]
+        ["git", "diff", "--unified=0", base_commit, *optional_actual_commit, "--", abs_path]
     )
     unified_diff_lines = [e for e in unified_diff_lines_str.split("\n") if e.strip()]
 
@@ -262,9 +252,7 @@ def line_counts_as_uncovered(line: str, is_from_cover_annotation_file: bool) -> 
     if any(re.search(pat, content) for pat in IGNORED_LINE_PATTERNS):
         return False
 
-    return is_from_cover_annotation_file or line_content_counts_as_uncovered_manual(
-        content
-    )
+    return is_from_cover_annotation_file or line_content_counts_as_uncovered_manual(content)
 
 
 def is_applicable_python_file(rel_path: str) -> bool:
@@ -293,9 +281,7 @@ def check_for_uncovered_lines(env: env_tools.PreparedEnv) -> int:
 
         base_path = cast(str, env.destination_directory)
         uncovered_lines = get_incremental_uncovered_lines(
-            os.path.join(base_path, changed_file),
-            env.compare_commit_id,
-            env.actual_commit_id,
+            os.path.join(base_path, changed_file), env.compare_commit_id, env.actual_commit_id
         )
 
         if uncovered_lines:
@@ -309,9 +295,7 @@ def check_for_uncovered_lines(env: env_tools.PreparedEnv) -> int:
         for index, line, reason in uncovered_lines:
             print(
                 "Line {} {} but not covered: {}".format(
-                    shell_tools.highlight(
-                        str(index).rjust(4), color_code=shell_tools.BOLD
-                    ),
+                    shell_tools.highlight(str(index).rjust(4), color_code=shell_tools.BOLD),
                     reason,
                     shell_tools.highlight(line, color_code=shell_tools.YELLOW),
                 )
@@ -322,15 +306,10 @@ def check_for_uncovered_lines(env: env_tools.PreparedEnv) -> int:
     if uncovered_count:
         print(
             shell_tools.highlight(
-                f"Found {uncovered_count} uncovered touched lines.",
-                color_code=shell_tools.RED,
+                f"Found {uncovered_count} uncovered touched lines.", color_code=shell_tools.RED
             )
         )
     else:
-        print(
-            shell_tools.highlight(
-                "All touched lines covered", color_code=shell_tools.GREEN
-            )
-        )
+        print(shell_tools.highlight("All touched lines covered", color_code=shell_tools.GREEN))
     print()
     return uncovered_count

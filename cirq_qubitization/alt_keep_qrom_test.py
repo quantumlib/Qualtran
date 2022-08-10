@@ -7,28 +7,20 @@ from cirq_qubitization.generic_select_test import OneDimensionalIsingModel
 
 def test_alt_keep_qrom():
     num_sites = 4
-    target = cirq.LineQubit.range(
-        num_sites
-    )  # This is just for getting Hamiltonian coefficients
+    target = cirq.LineQubit.range(num_sites)  # This is just for getting Hamiltonian coefficients
     ising_inst = OneDimensionalIsingModel(
         num_sites, j_zz_interaction=np.pi / 3, gamma_x_interaction=np.pi / 7
     )
     pauli_sum_hamiltonian = ising_inst.get_pauli_sum(target)
     pauli_string_hamiltonian = [*pauli_sum_hamiltonian]
-    dense_pauli_string_hamiltonian = [
-        tt.dense(target) for tt in pauli_string_hamiltonian
-    ]
-    qubitization_lambda = sum(
-        xx.coefficient.real for xx in dense_pauli_string_hamiltonian
-    )
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
+    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
     lcu_coeffs = (
         np.array([xx.coefficient.real for xx in dense_pauli_string_hamiltonian])
         / qubitization_lambda
     )
     epsilon = 1.0e-2  # precision value is kept low so we can simulate the output
-    qrom = construct_alt_keep_qrom(
-        lcu_coefficients=lcu_coeffs, probability_epsilon=epsilon
-    )
+    qrom = construct_alt_keep_qrom(lcu_coefficients=lcu_coeffs, probability_epsilon=epsilon)
 
     alternates, keep_numers = qrom._data
     mu = max([xx.bit_length() for xx in keep_numers])
@@ -60,8 +52,7 @@ def test_alt_keep_qrom():
     )
     target_lengths = [max(d).bit_length() for d in qrom._data]
     target = [
-        flat_target[y - x : y]
-        for x, y in zip(target_lengths, itertools.accumulate(target_lengths))
+        flat_target[y - x : y] for x, y in zip(target_lengths, itertools.accumulate(target_lengths))
     ]
     circuit = cirq.Circuit(
         qrom.on_registers(
@@ -73,9 +64,7 @@ def test_alt_keep_qrom():
 
     sim = cirq.Simulator()
     for selection_integer in range(qrom.iteration_length):
-        svals = [
-            int(x) for x in format(selection_integer, f"0{qrom.selection_bitsize}b")
-        ]
+        svals = [int(x) for x in format(selection_integer, f"0{qrom.selection_bitsize}b")]
         qubit_vals = {x: 0 for x in all_qubits}
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 

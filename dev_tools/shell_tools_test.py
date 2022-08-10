@@ -33,9 +33,7 @@ def test_run_with_command_logging():
     assert catch_stderr.getvalue() == "run: ('echo', '-n', 'a', 'b')\n"
     catch_stderr = io.StringIO()
     with contextlib.redirect_stderr(catch_stderr):
-        shell_tools.run(
-            ["echo", "-n", "a", "b"], abbreviate_non_option_arguments=True, **kw
-        )
+        shell_tools.run(["echo", "-n", "a", "b"], abbreviate_non_option_arguments=True, **kw)
     assert catch_stderr.getvalue() == "run: ('echo', '-n', '[...]')\n"
 
 

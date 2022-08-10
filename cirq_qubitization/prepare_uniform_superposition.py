@@ -22,10 +22,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
     @cached_property
     def registers(self) -> Registers:
         return Registers.build(
-            controls=self._num_controls,
-            logL_qubits=self._logL,
-            k_qubits=self._K,
-            ancilla=1,
+            controls=self._num_controls, logL_qubits=self._logL, k_qubits=self._K, ancilla=1
         )
 
     def __repr__(self) -> str:
@@ -44,10 +41,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         ancilla: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         (ancilla,) = ancilla
-        yield [
-            op.controlled_by(*controls)
-            for op in cirq.H.on_each(*(k_qubits + logL_qubits))
-        ]
+        yield [op.controlled_by(*controls) for op in cirq.H.on_each(*(k_qubits + logL_qubits))]
         if not logL_qubits:
             return
         theta = np.arccos(1 - (2 ** np.floor(np.log2(self._L))) / self._L)
@@ -58,14 +52,10 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
         yield cirq.H.on_each(*logL_qubits)
         yield cirq.X(ancilla).controlled_by(
-            *logL_qubits,
-            *controls,
-            control_values=[0] * self._logL + [1] * self._num_controls,
+            *logL_qubits, *controls, control_values=[0] * self._logL + [1] * self._num_controls
         )
         yield cirq.Rz(rads=theta)(ancilla)
         yield cirq.X(ancilla).controlled_by(
-            *logL_qubits,
-            *controls,
-            control_values=[0] * self._logL + [1] * self._num_controls,
+            *logL_qubits, *controls, control_values=[0] * self._logL + [1] * self._num_controls
         )
         yield cirq.H.on_each(*logL_qubits)

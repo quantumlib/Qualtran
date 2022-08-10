@@ -44,9 +44,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         target: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         yield cirq.CNOT(control, target[0])
-        yield from super()._decompose_single_control(
-            control, selection, ancilla, target
-        )
+        yield from super()._decompose_single_control(control, selection, ancilla, target)
 
     def on_registers(
         self,
@@ -55,7 +53,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         selection_register: Sequence[cirq.Qid],
         selection_ancilla: Sequence[cirq.Qid],
         accumulator: cirq.Qid,
-        target_register: Sequence[cirq.Qid]
+        target_register: Sequence[cirq.Qid],
     ) -> cirq.GateOperation:
         if isinstance(control_register, cirq.Qid):
             control_register = [control_register]
@@ -68,9 +66,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
             + list(target_register),
         )
 
-    def nth_operation(
-        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    def nth_operation(self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         accumulator, target_register = target[0], target[1:]
         yield cirq.CNOT(control, accumulator)
         yield cirq.Y(target_register[n]).controlled_by(control)

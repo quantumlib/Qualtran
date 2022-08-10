@@ -5,10 +5,7 @@ from typing import Sequence, Dict, Iterable, List, Union
 
 import cirq
 
-assert sys.version_info > (
-    3,
-    6,
-), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
+assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -49,17 +46,13 @@ class Registers:
             base += reg.bitsize
         return qubit_regs
 
-    def merge_qubits(
-        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]
-    ) -> Sequence[cirq.Qid]:
+    def merge_qubits(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> Sequence[cirq.Qid]:
         ret: List[cirq.Qid] = []
         for reg in self:
             assert reg.name in qubit_regs, "All qubit registers must pe present"
             qubits = qubit_regs[reg.name]
             qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
-            assert (
-                len(qubits) == reg.bitsize
-            ), f"{reg.name} register must of length {reg.bitsize}."
+            assert len(qubits) == reg.bitsize, f"{reg.name} register must of length {reg.bitsize}."
             ret += qubits
         return ret
 
@@ -84,16 +77,12 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
         return sum(reg.bitsize for reg in self.registers)
 
     @abc.abstractmethod
-    def decompose_from_registers(
-        self, **qubit_regs: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         ...
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         qubit_regs = self.registers.split_qubits(qubits)
         yield from self.decompose_from_registers(**qubit_regs)
 
-    def on_registers(
-        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]
-    ) -> cirq.GateOperation:
+    def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.GateOperation:
         return self.on(*self.registers.merge_qubits(**qubit_regs))

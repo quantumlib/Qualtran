@@ -29,9 +29,7 @@ class ApplyXToLthQubit(cirq_qubitization.UnaryIterationGate):
     def iteration_length(self) -> int:
         return self._target_bitsize
 
-    def nth_operation(
-        self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    def nth_operation(self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return cirq.CNOT(control, target[-(n + 1)])
 
 
@@ -46,9 +44,7 @@ def test_unary_iteration():
         all_qubits[2 * selection_bitsize + 1 :],
     )
 
-    circuit = cirq.Circuit(
-        ApplyXToLthQubit(3, 5).on(control, *selection, *ancilla, *target)
-    )
+    circuit = cirq.Circuit(ApplyXToLthQubit(3, 5).on(control, *selection, *ancilla, *target))
     sim = cirq.Simulator()
     for n in range(len(target)):
         svals = [int(x) for x in format(n, f"0{len(selection)}b")]

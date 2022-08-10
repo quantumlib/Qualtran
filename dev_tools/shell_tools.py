@@ -24,9 +24,7 @@ def highlight(text: str, color_code: int, bold: bool = False) -> str:
     return "{}\033[{}m{}\033[0m".format("\033[1m" if bold else "", color_code, text)
 
 
-def abbreviate_command_arguments_after_switches(
-    cmd: Tuple[str, ...]
-) -> Tuple[str, ...]:
+def abbreviate_command_arguments_after_switches(cmd: Tuple[str, ...]) -> Tuple[str, ...]:
     result = [cmd[0]]
     for i in range(1, len(cmd)):
         if not cmd[i].startswith("-"):

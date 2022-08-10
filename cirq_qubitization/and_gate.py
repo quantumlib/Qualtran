@@ -37,14 +37,10 @@ class And(cirq.Gate):
     def __repr__(self) -> str:
         return f"cirq_qubitization.And({self.cv}, adjoint={self.adjoint})"
 
-    def _circuit_diagram_info_(
-        self, args: cirq.CircuitDiagramInfoArgs
-    ) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
         target = "And†" if self.adjoint else "And"
-        return cirq.CircuitDiagramInfo(
-            wire_symbols=[controls[c] for c in self.cv] + [target]
-        )
+        return cirq.CircuitDiagramInfo(wire_symbols=[controls[c] for c in self.cv] + [target])
 
     def _has_unitary_(self) -> bool:
         return not self.adjoint

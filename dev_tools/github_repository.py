@@ -6,9 +6,7 @@ import requests
 class GithubRepository:
     """Details how to access a repository on github."""
 
-    def __init__(
-        self, organization: str, name: str, access_token: Optional[str]
-    ) -> None:
+    def __init__(self, organization: str, name: str, access_token: Optional[str]) -> None:
         """Inits GithubRepository.
 
         Args:
