@@ -1,10 +1,11 @@
-from typing import Tuple, Union, Sequence, Optional
+from typing import Tuple, Sequence, Optional
 from functools import cached_property
 import cirq
 from cirq_qubitization import unary_iteration
 from cirq_qubitization.gate_with_registers import Registers
 
 
+@cirq.value_equality
 class QROM(unary_iteration.UnaryIterationGate):
     """Gate to load data[l] in the target register when the selection register stores integer l."""
 
@@ -52,3 +53,6 @@ class QROM(unary_iteration.UnaryIterationGate):
             for q, bit in zip(target, f'{d[selection]:0{len(target)}b}'):
                 if int(bit):
                     yield cirq.CNOT(control, q)
+
+    def _value_equality_values_(self):
+        return self.data, self._target_bitsizes

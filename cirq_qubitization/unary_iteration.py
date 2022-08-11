@@ -9,22 +9,22 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
 class UnaryIterationGate(GateWithRegisters):
-    @property
+    @cached_property
     @abc.abstractmethod
     def control_registers(self) -> Registers:
         pass
 
-    @property
+    @cached_property
     @abc.abstractmethod
     def selection_registers(self) -> Registers:
         pass
 
-    @property
+    @cached_property
     @abc.abstractmethod
     def target_registers(self) -> Registers:
         pass
 
-    @property
+    @cached_property
     @abc.abstractmethod
     def iteration_lengths(self) -> Tuple[int, ...]:
         pass

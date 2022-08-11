@@ -1,4 +1,3 @@
-import itertools
 import cirq
 import numpy as np
 from cirq_qubitization import construct_alt_keep_qrom
@@ -46,7 +45,7 @@ def test_alt_keep_qrom():
     # QROM data output
     qubit_regs = qrom.registers.get_named_qubits()
     all_qubits = qrom.registers.merge_qubits(**qubit_regs)
-    selection, ancilla = qubit_regs["selection"], qubit_regs["ancilla"]
+    selection = qubit_regs["selection"]
     targets = [qubit_regs[f"target{i}"] for i in range(len(qrom._data))]
     circuit = cirq.Circuit(qrom.on_registers(**qubit_regs))
 
