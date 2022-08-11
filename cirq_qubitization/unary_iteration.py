@@ -43,6 +43,10 @@ class UnaryIterationGate(GateWithRegisters):
         iteration_ancilla_bitsize = cirq.num_qubits(self.selection_registers)
         return Registers.build(ancilla=control_ancilla_bitsize + iteration_ancilla_bitsize)
 
+    @property
+    def ancilla_bitsize(self) -> int:
+        return max(0, self.control_bitsize - 1) + self.selection_bitsize
+
     @cached_property
     def registers(self) -> Registers:
         return Registers(
