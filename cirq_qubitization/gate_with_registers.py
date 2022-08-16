@@ -25,9 +25,6 @@ class Registers:
     def bitsize(self) -> int:
         return sum(reg.bitsize for reg in self)
 
-    def _num_qubits_(self) -> int:
-        return sum(reg.bitsize for reg in self)
-
     @classmethod
     def build(cls, **registers: int):
         return cls(Register(name=k, bitsize=v) for k, v in registers.items())
