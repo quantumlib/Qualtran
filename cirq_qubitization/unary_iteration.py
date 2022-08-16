@@ -39,8 +39,8 @@ class UnaryIterationGate(GateWithRegisters):
 
     @cached_property
     def ancilla_registers(self) -> Registers:
-        control_ancilla_bitsize = max(0, cirq.num_qubits(self.control_registers) - 1)
-        iteration_ancilla_bitsize = cirq.num_qubits(self.selection_registers)
+        control_ancilla_bitsize = max(0, self.control_registers.bitsize - 1)
+        iteration_ancilla_bitsize = self.selection_registers.bitsize
         return Registers.build(ancilla=control_ancilla_bitsize + iteration_ancilla_bitsize)
 
     @property
@@ -65,7 +65,25 @@ class UnaryIterationGate(GateWithRegisters):
 
     @abc.abstractmethod
     def nth_operation(self, **kwargs) -> cirq.OP_TREE:
-        pass
+        """Apply nth operation on the target registers when selection registers store `n`.
+
+        The `UnaryIterationGate` class is a mixin that represents a coherent for-loop over
+        different indices (i.e. selection registers). This method denotes the "body" of the
+        for-loop, which is executed `np.prod(self.iteration_lengths)` times and each iteration
+        represents a unique combination of values stored in selection registers. For each call,
+        the method should return the operations that should be applied to the target registers,
+        given the values stored in selection registers.
+
+        The derived classes should specify the following arguments as `**kwargs`:
+            1) `control: cirq.Qid`: A qubit which can be used as a control to selectively
+            apply operations when selection register stores specific value.
+            2) Register names in `self.selection_registers`: Each argument corresponds to
+            a selection register and represents the integer value stored in the register.
+            3) Register names in `self.target_registers`: Each argument corresponds to a target
+            register and represents the sequence of qubits that represent the target register.
+            4) Register names in `self.extra_regs`: Each argument corresponds to an extra
+            register and represents the sequence of qubits that represent the extra register.
+        """
 
     def _apply_nth_operation(
         self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid], **extra_regs
@@ -164,7 +182,7 @@ class UnaryIterationGate(GateWithRegisters):
                 control[0], selection, ancilla, target, **extra_regs
             )
         else:
-            control_bitsize = cirq.num_qubits(self.control_registers)
+            control_bitsize = self.control_registers.bitsize
             and_ancillas = ancilla[: control_bitsize - 2]
             and_target = ancilla[control_bitsize - 2]
             selection_ancillas = ancilla[control_bitsize - 1 :]

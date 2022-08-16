@@ -65,7 +65,7 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
     ) -> cirq.OP_TREE:
         """
         Args:
-             n: takes on values [0, len(self.selection_unitaries))
+             selection: takes on values [0, self.iteration_lengths[0])
              control: Qid that is the control qubit or qubits
              target: Target register qubits
         """

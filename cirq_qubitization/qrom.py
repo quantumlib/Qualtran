@@ -5,7 +5,6 @@ from cirq_qubitization import unary_iteration
 from cirq_qubitization.gate_with_registers import Registers
 
 
-@cirq.value_equality
 class QROM(unary_iteration.UnaryIterationGate):
     """Gate to load data[l] in the target register when the selection register stores integer l."""
 
@@ -46,7 +45,7 @@ class QROM(unary_iteration.UnaryIterationGate):
         return f"cirq_qubitization.QROM({data_repr}, target_bitsizes={self._target_bitsizes})"
 
     def nth_operation(
-        self, selection: int, control: cirq.Qid, **target_regs: Sequence[cirq.Qid]
+        self, control: cirq.Qid, selection: int, **target_regs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         for i, d in enumerate(self._data):
             target = target_regs[f'target{i}']
@@ -54,5 +53,5 @@ class QROM(unary_iteration.UnaryIterationGate):
                 if int(bit):
                     yield cirq.CNOT(control, q)
 
-    def _value_equality_values_(self):
-        return self.data, self._target_bitsizes
+    def __eq__(self, other: 'QROM'):
+        return self.data == other.data and self._target_bitsizes == other._target_bitsizes

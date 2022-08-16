@@ -4,7 +4,6 @@ import cirq
 from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
 
 
-@cirq.value_equality
 class And(GateWithRegisters):
     """And gate optimized for T-count.
 
@@ -114,5 +113,5 @@ class And(GateWithRegisters):
         else:
             yield from self._decompose_via_tree(control, self.cv, ancilla, target)
 
-    def _value_equality_values_(self):
-        return self.cv, self.adjoint
+    def __eq__(self, other: 'And'):
+        return self.cv == other.cv and self.adjoint == other.adjoint
