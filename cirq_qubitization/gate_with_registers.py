@@ -14,7 +14,6 @@ class Register:
     bitsize: int
 
 
-@cirq.value_equality()
 class Registers:
     def __init__(self, registers: Iterable[Register]):
         self._registers = tuple(registers)
@@ -22,8 +21,9 @@ class Registers:
         if len(self._registers) != len(self._register_dict):
             raise ValueError("Please provide unique register names.")
 
-    def _value_equality_values_(self):
-        return self._registers
+    @property
+    def bitsize(self) -> int:
+        return sum(reg.bitsize for reg in self)
 
     @classmethod
     def build(cls, **registers: int):
@@ -35,6 +35,9 @@ class Registers:
     def __getitem__(self, name: str):
         return self._register_dict[name]
 
+    def __contains__(self, item: str):
+        return item in self._register_dict
+
     def __iter__(self):
         yield from self._registers
 
@@ -45,6 +48,23 @@ class Registers:
             qubit_regs[reg.name] = qubits[base : base + reg.bitsize]
             base += reg.bitsize
         return qubit_regs
+
+    def split_integer(self, n: int) -> Dict[str, int]:
+        """Extracts integer values of individual qubit registers, given a bit-packed integer.
+
+        Considers the given integer as a binary bit-packed representation of `self.bitsize` bits,
+        with `n_bin[0 : self.at(0).bitsize]` representing the integer for first register,
+        `n_bin[self.at(0).bitsize : self.at(1).bitsize]` representing the integer for second
+        register and so on. Here `n_bin` is the `self.bitsize` length binary representation of
+        input integer `n`.
+        """
+        qubit_vals = {}
+        base = 0
+        n_bin = f"{n:0{self.bitsize}b}"
+        for reg in self:
+            qubit_vals[reg.name] = int(n_bin[base : base + reg.bitsize], 2)
+            base += reg.bitsize
+        return qubit_vals
 
     def merge_qubits(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> Sequence[cirq.Qid]:
         ret: List[cirq.Qid] = []
@@ -66,6 +86,9 @@ class Registers:
 
         return {reg.name: qubits_for_reg(reg.name, reg.bitsize) for reg in self}
 
+    def __eq__(self, other) -> bool:
+        return self._registers == other._registers
+
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     @property
@@ -74,7 +97,7 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
         ...
 
     def _num_qubits_(self) -> int:
-        return sum(reg.bitsize for reg in self.registers)
+        return self.registers.bitsize
 
     @abc.abstractmethod
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
