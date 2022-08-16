@@ -1,8 +1,8 @@
-import pytest
 from pathlib import Path
 from typing import Sequence, Tuple
 from functools import cached_property
 import itertools
+import pytest
 
 import cirq
 import nbformat

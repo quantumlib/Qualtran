@@ -1,7 +1,6 @@
 import pytest
 import cirq
 import cirq_qubitization
-import itertools
 
 
 @pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]]])
@@ -9,7 +8,7 @@ def test_qrom(data):
     qrom = cirq_qubitization.QROM(*data)
     qubit_regs = qrom.registers.get_named_qubits()
     all_qubits = qrom.registers.merge_qubits(**qubit_regs)
-    selection, ancilla = qubit_regs["selection"], qubit_regs["ancilla"]
+    selection = qubit_regs["selection"]
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
     circuit = cirq.Circuit(qrom.on_registers(**qubit_regs))
 
@@ -28,3 +27,8 @@ def test_qrom(data):
         final_state = [qubit_vals[x] for x in all_qubits]
         expected_output = "".join(str(x) for x in final_state)
         assert result.dirac_notation()[1:-1] == expected_output
+
+
+def test_qrom_repr():
+    qrom = cirq_qubitization.QROM([1, 2], [3, 5])
+    cirq.testing.assert_equivalent_repr(qrom, setup_code="import cirq_qubitization\n")

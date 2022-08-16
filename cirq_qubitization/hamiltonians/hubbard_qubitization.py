@@ -53,11 +53,7 @@ def qubit_hamiltonian_fermi_hubbard(
 
 if __name__ == "__main__":
     paulisum_hub_ham = qubit_hamiltonian_fermi_hubbard(
-        x_dimension=4,
-        y_dimension=4,
-        tunneling=1,
-        coulomb=4,
-        periodic=True,
+        x_dimension=4, y_dimension=4, tunneling=1, coulomb=4, periodic=True
     )
     d = defaultdict(lambda: [])
     for ps in paulisum_hub_ham:

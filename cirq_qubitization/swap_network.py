@@ -5,7 +5,6 @@ from cirq_qubitization import multi_target_cnot
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
-@cirq.value_equality
 class MultiTargetCSwap(GateWithRegisters):
     """Implements multi-target controlled swap unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$."""
 
@@ -39,8 +38,8 @@ class MultiTargetCSwap(GateWithRegisters):
     def __repr__(self) -> str:
         return f"cirq_qubitization.MultiTargetCSwap({self._target_bitsize})"
 
-    def _value_equality_values_(self) -> Any:
-        return (self._target_bitsize,)
+    def __eq__(self, other: 'MultiTargetCSwap') -> Any:
+        return type(self) == type(other) and self._target_bitsize == other._target_bitsize
 
 
 class MultiTargetCSwapApprox(MultiTargetCSwap):

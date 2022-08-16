@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Sequence, Optional
+from typing import Tuple, Sequence, Optional
 from functools import cached_property
 import cirq
 from cirq_qubitization import unary_iteration
@@ -45,10 +45,13 @@ class QROM(unary_iteration.UnaryIterationGate):
         return f"cirq_qubitization.QROM({data_repr}, target_bitsizes={self._target_bitsizes})"
 
     def nth_operation(
-        self, selection: int, control: cirq.Qid, **target_regs: Sequence[cirq.Qid]
+        self, control: cirq.Qid, selection: int, **target_regs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         for i, d in enumerate(self._data):
             target = target_regs[f'target{i}']
             for q, bit in zip(target, f'{d[selection]:0{len(target)}b}'):
                 if int(bit):
                     yield cirq.CNOT(control, q)
+
+    def __eq__(self, other: 'QROM'):
+        return self.data == other.data and self._target_bitsizes == other._target_bitsizes
