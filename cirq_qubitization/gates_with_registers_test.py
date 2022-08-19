@@ -16,9 +16,13 @@ def test_registers():
     r3 = Register("r3", 1)
     regs = Registers([r1, r2, r3])
 
-    assert regs.at(0) == r1
-    assert regs.at(1) == r2
-    assert regs.at(2) == r3
+    assert regs[0] == r1
+    assert regs[1] == r2
+    assert regs[2] == r3
+
+    assert regs[0:1] == Registers([r1])
+    assert regs[0:2] == Registers([r1, r2])
+    assert regs[1:3] == Registers([r2, r3])
 
     assert regs["r1"] == r1
     assert regs["r2"] == r2
