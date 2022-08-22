@@ -14,13 +14,18 @@ import cirq_qubitization.testing as cq_testing
 random.seed(12345)
 
 
+@pytest.mark.parametrize("decomp", [False, True])
 @pytest.mark.parametrize("cv", [(0, 0), (0, 1), (1, 0), (1, 1)])
-def test_and_gate(cv: Tuple[int, int]):
+def test_and_gate(cv: Tuple[int, int], decomp: bool):
     c1, c2, t = cirq.LineQubit.range(3)
     input_states = [(0, 0, 0), (0, 1, 0), (1, 0, 0), (1, 1, 0)]
     output_states = [inp[:2] + (1 if inp[:2] == cv else 0,) for inp in input_states]
 
-    circuit = cirq.Circuit(cirq_qubitization.And(cv).on(c1, c2, t))
+    operation = cirq_qubitization.And(cv).on(c1, c2, t)
+    if decomp:
+        circuit = cirq.Circuit(cirq.decompose_once(operation))
+    else:
+        circuit = cirq.Circuit(operation)
     for inp, out in zip(input_states, output_states):
         cq_testing.assert_circuit_inp_out_cirqsim(circuit, [c1, c2, t], inp, out)
 
@@ -173,14 +178,19 @@ def test_and_gate_str_and_repr(cv, adjoint, str_output):
     cirq.testing.assert_equivalent_repr(gate, setup_code="import cirq_qubitization\n")
 
 
+@pytest.mark.parametrize("decomp", [False, True])
 @pytest.mark.parametrize("cv", [(0, 0), (0, 1), (1, 0), (1, 1)])
-def test_and_gate_adjoint(cv: Tuple[int, int]):
+def test_and_gate_adjoint(cv: Tuple[int, int], decomp: bool):
     c1, c2, t = cirq.LineQubit.range(3)
     all_cvs = [(0, 0), (0, 1), (1, 0), (1, 1)]
     input_states = [inp + (1 if inp == cv else 0,) for inp in all_cvs]
     output_states = [inp + (0,) for inp in all_cvs]
 
-    circuit = cirq.Circuit(cirq_qubitization.And(cv, adjoint=True).on(c1, c2, t))
+    operation = cirq_qubitization.And(cv, adjoint=True).on(c1, c2, t)
+    if decomp:
+        circuit = cirq.Circuit(cirq.decompose_once(operation))
+    else:
+        circuit = cirq.Circuit(operation)
     for inp, out in zip(input_states, output_states):
         cq_testing.assert_circuit_inp_out_cirqsim(circuit, [c1, c2, t], inp, out)
 
