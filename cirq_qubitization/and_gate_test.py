@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import Tuple, List
 
@@ -5,10 +6,10 @@ import cirq
 import nbformat
 import numpy as np
 import pytest
-import random
 from nbconvert.preprocessors import ExecutePreprocessor
 
 import cirq_qubitization
+import cirq_qubitization.testing as cq_testing
 
 random.seed(12345)
 
@@ -20,9 +21,8 @@ def test_and_gate(cv: Tuple[int, int]):
     output_states = [inp[:2] + (1 if inp[:2] == cv else 0,) for inp in input_states]
 
     circuit = cirq.Circuit(cirq_qubitization.And(cv).on(c1, c2, t))
-    for input, output in zip(input_states, output_states):
-        result = cirq.Simulator().simulate(circuit, initial_state=input)
-        assert result.dirac_notation()[1:-1] == "".join(str(x) for x in output)
+    for inp, out in zip(input_states, output_states):
+        cq_testing.assert_circuit_inp_out_cirqsim(circuit, [c1, c2, t], inp, out)
 
 
 def random_cv(n: int) -> List[int]:
@@ -32,21 +32,19 @@ def random_cv(n: int) -> List[int]:
 @pytest.mark.parametrize("cv", [[1] * 3, random_cv(5), random_cv(6), random_cv(7)])
 def test_multi_controlled_and_gate(cv: List[int]):
     gate = cirq_qubitization.And(cv)
-    qubit_regs = gate.registers.get_named_qubits()
-    and_op = gate.on_registers(**qubit_regs)
-    control, ancilla, (target,) = (
-        qubit_regs["control"],
-        qubit_regs["ancilla"],
-        qubit_regs["target"],
-    )
-    assert len(ancilla) == len(control) - 2
-    input_controls = [cv] + [random_cv(len(cv)) for _ in range(10)]
-
+    r = gate.registers
+    assert r['ancilla'].bitsize == r['control'].bitsize - 2
+    quregs = r.get_named_qubits()
+    and_op = gate.on_registers(**quregs)
     circuit = cirq.Circuit(and_op)
+
+    input_controls = [cv] + [random_cv(len(cv)) for _ in range(10)]
+    qubit_order = gate.registers.merge_qubits(**quregs)
+
     for input_control in input_controls:
-        initial_state = input_control + [0] * (len(ancilla) + 1)
+        initial_state = input_control + [0] * (r['ancilla'].bitsize + 1)
         result = cirq.Simulator().simulate(
-            circuit, initial_state=initial_state, qubit_order=[*control, *ancilla, target]
+            circuit, initial_state=initial_state, qubit_order=qubit_order
         )
         expected_output = np.asarray([0, 1] if input_control == cv else [1, 0])
         assert cirq.equal_up_to_global_phase(
@@ -55,13 +53,14 @@ def test_multi_controlled_and_gate(cv: List[int]):
             ),
             expected_output,
         )
+
         # Test adjoint.
-        result = cirq.Simulator().simulate(
+        cq_testing.assert_circuit_inp_out_cirqsim(
             circuit + cirq.Circuit(and_op**-1),
-            initial_state=initial_state,
-            qubit_order=[*control, *ancilla, target],
+            qubits=qubit_order,
+            inp=initial_state,
+            out=initial_state,
         )
-        assert result.dirac_notation()[1:-1] == "".join(str(v) for v in initial_state)
 
 
 def test_and_gate_diagram():
@@ -182,9 +181,8 @@ def test_and_gate_adjoint(cv: Tuple[int, int]):
     output_states = [inp + (0,) for inp in all_cvs]
 
     circuit = cirq.Circuit(cirq_qubitization.And(cv, adjoint=True).on(c1, c2, t))
-    for input, output in zip(input_states, output_states):
-        result = cirq.Simulator().simulate(circuit, initial_state=input)
-        assert result.dirac_notation()[1:-1] == "".join(str(x) for x in output)
+    for inp, out in zip(input_states, output_states):
+        cq_testing.assert_circuit_inp_out_cirqsim(circuit, [c1, c2, t], inp, out)
 
 
 def test_notebook():
