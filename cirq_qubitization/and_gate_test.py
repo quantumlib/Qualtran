@@ -182,9 +182,9 @@ def test_and_gate_adjoint(cv: Tuple[int, int]):
     output_states = [inp + (0,) for inp in all_cvs]
 
     circuit = cirq.Circuit(cirq_qubitization.And(cv, adjoint=True).on(c1, c2, t))
-    for input, output in zip(input_states, output_states):
-        result = cirq.Simulator().simulate(circuit, initial_state=input)
-        assert result.dirac_notation()[1:-1] == "".join(str(x) for x in output)
+    for inp, out in zip(input_states, output_states):
+        result = cirq.Simulator().simulate(circuit, initial_state=inp)
+        assert result.dirac_notation()[1:-1] == "".join(str(x) for x in out)
 
 
 def test_notebook():
