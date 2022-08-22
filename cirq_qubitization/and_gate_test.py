@@ -58,8 +58,8 @@ def test_multi_controlled_and_gate(cv: List[int]):
         cq_testing.assert_circuit_inp_out_cirqsim(
             circuit + cirq.Circuit(and_op**-1),
             qubits=qubit_order,
-            inp=initial_state,
-            out=initial_state,
+            inputs=initial_state,
+            outputs=initial_state,
         )
 
 
