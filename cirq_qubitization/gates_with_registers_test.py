@@ -1,6 +1,7 @@
 from typing import Sequence
 
 import cirq
+import pytest
 
 from cirq_qubitization.gate_with_registers import Register, Registers, GateWithRegisters
 
@@ -52,6 +53,12 @@ def test_registers():
         flat_named_qubits = [q for v in Registers(reg_order).get_named_qubits().values() for q in v]
         expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
         assert flat_named_qubits == expected_qubits
+
+
+def test_registers_getitem_raises():
+    g = Registers.build(a=4, b=3, c=2)
+    with pytest.raises(IndexError, match="must be of the type"):
+        _ = g[2.5]
 
 
 def test_registers_build():

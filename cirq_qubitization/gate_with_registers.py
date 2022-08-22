@@ -46,8 +46,10 @@ class Registers:
             return Registers(self._registers[key])
         elif isinstance(key, int):
             return self._registers[key]
-        else:
+        elif isinstance(key, str):
             return self._register_dict[key]
+        else:
+            raise IndexError(f"key {key} must be of the type str/int/slice.")
 
     def __contains__(self, item: str) -> bool:
         return item in self._register_dict
