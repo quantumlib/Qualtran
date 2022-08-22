@@ -1,6 +1,9 @@
-import pytest
 import cirq
+import pytest
+
 import cirq_qubitization
+from cirq_qubitization import testing as cq_testing
+from cirq_qubitization.bit_tools import iter_bits
 
 
 @pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]]])
@@ -12,21 +15,17 @@ def test_qrom(data):
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
     circuit = cirq.Circuit(qrom.on_registers(**qubit_regs))
 
-    sim = cirq.Simulator()
     for selection_integer in range(qrom.iteration_length):
-        svals = [int(x) for x in format(selection_integer, f"0{len(selection)}b")]
+        svals = list(iter_bits(selection_integer, len(selection)))
         qubit_vals = {x: 0 for x in all_qubits}
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
-        result = sim.simulate(circuit, initial_state=initial_state, qubit_order=all_qubits)
-
         for target, d in zip(targets, data):
-            for q, b in zip(target, f"{d[selection_integer]:0{len(target)}b}"):
-                qubit_vals[q] = int(b)
+            for q, b in zip(target, iter_bits(d[selection_integer], len(target))):
+                qubit_vals[q] = b
         final_state = [qubit_vals[x] for x in all_qubits]
-        expected_output = "".join(str(x) for x in final_state)
-        assert result.dirac_notation()[1:-1] == expected_output
+        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
 
 def test_qrom_repr():

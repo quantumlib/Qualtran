@@ -1,14 +1,16 @@
+import itertools
+from functools import cached_property
 from pathlib import Path
 from typing import Sequence, Tuple
-from functools import cached_property
-import itertools
-import pytest
 
 import cirq
 import nbformat
+import pytest
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization import UnaryIterationGate, Registers
+from cirq_qubitization import testing as cq_testing
+from cirq_qubitization.bit_tools import iter_bits
 
 
 class ApplyXToLthQubit(UnaryIterationGate):
@@ -54,9 +56,8 @@ def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
     all_qubits = control + selection + ancilla + target
 
     circuit = cirq.Circuit(gate.on_registers(**qubit_regs))
-    sim = cirq.Simulator()
     for n in range(len(target)):
-        svals = [int(x) for x in format(n, f"0{len(selection)}b")]
+        svals = list(iter_bits(n, len(selection)))
         # turn on control bit to activate circuit:
         qubit_vals = {x: int(x in control) for x in all_qubits}
         # Initialize selection bits appropriately:
@@ -64,11 +65,9 @@ def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
-        result = sim.simulate(circuit, initial_state=initial_state, qubit_order=all_qubits)
-        # Build correct statevector with selection_integer bit flipped in the target register:
-        initial_state[-(n + 1)] = 1
-        expected_output = "".join(str(x) for x in initial_state)
-        assert result.dirac_notation()[1:-1] == expected_output
+        final_state = initial_state.copy()
+        final_state[-(n + 1)] = 1
+        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
 
 class ApplyXToIJKthQubit(UnaryIterationGate):
@@ -117,24 +116,21 @@ def test_multi_dimensional_unary_iteration(target_shape):
     all_qubits = gate.registers.merge_qubits(**qubit_regs)
 
     circuit = cirq.Circuit(gate.on_registers(**qubit_regs))
-    sim = cirq.Simulator()
     max_i, max_j, max_k = target_shape
     i_len, j_len, k_len = tuple(reg.bitsize for reg in gate.selection_registers)
     for i, j, k in itertools.product(range(max_i), range(max_j), range(max_k)):
         qubit_vals = {x: 0 for x in all_qubits}
         # Initialize selection bits appropriately:
-        qubit_vals.update({s: int(val) for s, val in zip(qubit_regs['i'], f'{i:0{i_len}b}')})
-        qubit_vals.update({s: int(val) for s, val in zip(qubit_regs['j'], f'{j:0{j_len}b}')})
-        qubit_vals.update({s: int(val) for s, val in zip(qubit_regs['k'], f'{k:0{k_len}b}')})
+        qubit_vals.update(zip(qubit_regs['i'], iter_bits(i, i_len)))
+        qubit_vals.update(zip(qubit_regs['j'], iter_bits(j, j_len)))
+        qubit_vals.update(zip(qubit_regs['k'], iter_bits(k, k_len)))
         # Construct initial state
         initial_state = [qubit_vals[x] for x in all_qubits]
-        result = sim.simulate(circuit, initial_state=initial_state, qubit_order=all_qubits)
         # Build correct statevector with selection_integer bit flipped in the target register:
         for reg_name, idx in zip(['t1', 't2', 't3'], [i, j, k]):
             qubit_vals[qubit_regs[reg_name][idx]] = 1
         final_state = [qubit_vals[x] for x in all_qubits]
-        expected_output = "".join(str(x) for x in final_state)
-        assert result.dirac_notation()[1:-1] == expected_output
+        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
 
 def test_notebook():
