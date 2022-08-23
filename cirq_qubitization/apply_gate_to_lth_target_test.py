@@ -1,6 +1,9 @@
-import pytest
 import cirq
+import pytest
+
 import cirq_qubitization
+from cirq_qubitization import testing as cq_testing
+from cirq_qubitization.bit_tools import iter_bits
 
 
 @pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
@@ -8,9 +11,8 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     gate = cirq_qubitization.ApplyGateToLthQubit(
         selection_bitsize, target_bitsize, lambda _: cirq.X
     )
-    circuit = cirq.Circuit(gate.on_registers(**gate.registers.get_named_qubits()))
     q = gate.registers.get_named_qubits()
-    sim = cirq.Simulator()
+    circuit = cirq.Circuit(gate.on_registers(**q))
     all_qubits = sorted(circuit.all_qubits())
     (control,), selection, ancilla, target = (
         q["control"],
@@ -19,20 +21,16 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
         q["target"],
     )
     for n in range(len(target)):
-        svals = [int(x) for x in format(n, f"0{len(selection)}b")]
+        svals = iter_bits(n, len(selection))
         # turn on control bit to activate circuit:
         qubit_vals = {x: int(x == control) for x in all_qubits}
         # Initialize selection bits appropriately:
-
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
-
-        result = sim.simulate(circuit, initial_state=initial_state)
-        # Build correct statevector with selection_integer bit flipped in the target register:
-        initial_state[-(n + 1)] = 1
-        expected_output = "".join(str(x) for x in initial_state)
-        assert result.dirac_notation()[1:-1] == expected_output
+        final_state = initial_state.copy()
+        final_state[-(n + 1)] = 1
+        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
 
 def test_apply_gate_to_lth_qubit_diagram():

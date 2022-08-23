@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 import sys
-from typing import Sequence, Dict, Iterable, List, Union
+from typing import Sequence, Dict, Iterable, List, Union, overload
 
 import cirq
 
@@ -26,16 +26,32 @@ class Registers:
         return sum(reg.bitsize for reg in self)
 
     @classmethod
-    def build(cls, **registers: int):
+    def build(cls, **registers: int) -> 'Registers':
         return cls(Register(name=k, bitsize=v) for k, v in registers.items())
 
-    def at(self, i: int):
-        return self._registers[i]
+    @overload
+    def __getitem__(self, key: int) -> Register:
+        pass
 
-    def __getitem__(self, name: str):
-        return self._register_dict[name]
+    @overload
+    def __getitem__(self, key: str) -> Register:
+        pass
 
-    def __contains__(self, item: str):
+    @overload
+    def __getitem__(self, key: slice) -> 'Registers':
+        pass
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return Registers(self._registers[key])
+        elif isinstance(key, int):
+            return self._registers[key]
+        elif isinstance(key, str):
+            return self._register_dict[key]
+        else:
+            raise IndexError(f"key {key} must be of the type str/int/slice.")
+
+    def __contains__(self, item: str) -> bool:
         return item in self._register_dict
 
     def __iter__(self):
@@ -53,8 +69,8 @@ class Registers:
         """Extracts integer values of individual qubit registers, given a bit-packed integer.
 
         Considers the given integer as a binary bit-packed representation of `self.bitsize` bits,
-        with `n_bin[0 : self.at(0).bitsize]` representing the integer for first register,
-        `n_bin[self.at(0).bitsize : self.at(1).bitsize]` representing the integer for second
+        with `n_bin[0 : self[0].bitsize]` representing the integer for first register,
+        `n_bin[self[0].bitsize : self[1].bitsize]` representing the integer for second
         register and so on. Here `n_bin` is the `self.bitsize` length binary representation of
         input integer `n`.
         """
