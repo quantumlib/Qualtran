@@ -23,6 +23,26 @@ def test_and_gate(cv: Tuple[int, int]):
     circuit = cirq.Circuit(cirq_qubitization.And(cv).on(c1, c2, t))
     for inp, out in zip(input_states, output_states):
         cq_testing.assert_circuit_inp_out_cirqsim(circuit, [c1, c2, t], inp, out)
+        cq_testing.assert_circuit_inp_out_quimb(circuit, [c1, c2, t], inp, out)
+
+
+@pytest.mark.parametrize("cv", [(0, 0), (0, 1), (1, 0), (1, 1)])
+def test_and_gate_classical(cv: Tuple[int, int]):
+    gate = cirq_qubitization.And(cv=cv)
+    r = gate.registers
+    test_inputs = cq_testing.get_classical_inputs(
+        variable_registers=[r['control']], fixed_registers={r['target']: 0, r['ancilla']: 0}
+    )
+    test_outputs = gate.apply_classical(test_inputs)
+
+    # Control vals should remain unmodified.
+    np.testing.assert_array_equal(test_inputs['control'], test_outputs['control'])
+
+    # not using any ancilla here
+    assert test_inputs['ancilla'].shape[1] == 0
+    assert test_outputs['ancilla'].shape[1] == 0
+
+    cq_testing.assert_gate_inputs_outputs(gate, test_inputs, test_outputs)
 
 
 def random_cv(n: int) -> List[int]:
@@ -61,6 +81,26 @@ def test_multi_controlled_and_gate(cv: List[int]):
             inputs=initial_state,
             outputs=initial_state,
         )
+
+
+@pytest.mark.parametrize("cv", [[1] * 3, random_cv(5)])
+def test_multi_controlled_and_gate_classical(cv: List[int]):
+    gate = cirq_qubitization.And(cv=cv)
+    r = gate.registers
+    test_inputs = cq_testing.get_classical_inputs(
+        variable_registers=[r['control']], fixed_registers={r['target']: 0, r['ancilla']: 0}
+    )
+    test_outputs = gate.apply_classical(test_inputs)
+
+    # Control vals should remain unmodified.
+    np.testing.assert_array_equal(test_inputs['control'], test_outputs['control'])
+
+    # using ancilla
+    assert test_inputs['ancilla'].shape[1] == len(cv) - 2
+    n = len(test_inputs['control'])
+    np.testing.assert_array_equal(test_inputs['ancilla'], np.zeros((n, len(cv) - 2)))
+
+    cq_testing.assert_gate_inputs_outputs(gate, test_inputs, test_outputs)
 
 
 def test_and_gate_diagram():

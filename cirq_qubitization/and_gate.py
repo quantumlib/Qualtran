@@ -1,6 +1,9 @@
-from typing import Sequence
 from functools import cached_property
+from typing import Sequence, Tuple
+
 import cirq
+import numpy as np
+
 from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
 
 
@@ -14,6 +17,8 @@ class And(GateWithRegisters):
     Multi-controlled AND version decomposes into an AND ladder with `#controls - 2` ancillas.
 
     References:
+        (Halving the cost of quantum addition)[https://arxiv.org/abs/1709.06648].
+            Gidney, C. 2017.
         (Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity)[https://arxiv.org/abs/1805.03662].
             Babbush et. al. 2018.
         (Verifying Measurement Based Uncomputation)[https://algassert.com/post/1903].
@@ -112,6 +117,38 @@ class And(GateWithRegisters):
             yield from self._decompose_single_and(*self.cv, *control, target)
         else:
             yield from self._decompose_via_tree(control, self.cv, ancilla, target)
+
+    def _get_correct_classical_ancilla(self, control: np.ndarray):
+        """Helper function to also get the correct ancilla values.
+
+        For the semi-automated testing to work, we need everything to be accounted for.
+        However -- the values of these ancillae are not part of the guarantees of this
+        gate. In the future we'll likely have better handling of ancillae in classical
+        testing and remove this precise specification.
+        """
+        ancilla = np.zeros((control.shape[0], control.shape[1] - 2), dtype=np.uint8)
+        cv1, cv2, *_ = self.cv
+        c1 = control[:, 0]
+        c2 = control[:, 1]
+        for anc_i in range(len(self.cv) - 2):
+            ancilla[:, anc_i] = (c1 == cv1) & (c2 == cv2)
+            c1 = ancilla[:, anc_i]
+            c2 = control[:, anc_i + 2]
+            cv1 = 1
+            cv2 = self.cv[anc_i + 2]
+        return ancilla
+
+    def _apply_classical_from_registers(
+        self, control: np.ndarray, ancilla: np.ndarray, target: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        target = (target[:, 0] + np.all(control == self.cv, axis=1)) % 2
+        target = target[:, np.newaxis]
+
+        if not self.adjoint:
+            np.testing.assert_allclose(ancilla, np.zeros_like(ancilla))
+            ancilla = self._get_correct_classical_ancilla(control)
+
+        return control, ancilla, target
 
     def __eq__(self, other: 'And'):
         return self.cv == other.cv and self.adjoint == other.adjoint
