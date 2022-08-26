@@ -1,11 +1,102 @@
 import abc
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Callable
 
 import cirq
 
 from cirq_qubitization import and_gate
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers, Register
+
+
+class SegTreeGate(GateWithRegisters):
+    def __init__(
+        self,
+        *,
+        depth: int,
+        left: int,
+        right: int,
+        iteration_length: int,
+        nth_operation: Callable,
+        selection_bitsize: int,
+        ancilla_bitsize: int,
+        target_bitsize: int,
+    ):
+        self.depth = depth
+        self.left = left
+        self.right = right
+
+        self.iteration_length = iteration_length
+        self.nth_operation = nth_operation
+        self._selection_bitsize = selection_bitsize
+        self._ancilla_bitsize = ancilla_bitsize
+        self._target_bitsize = target_bitsize
+
+    def __str__(self):
+        return f"SegTree({self.depth}, {self.left}, {self.right})"
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers(
+            [
+                Register("control", 1),
+                Register("selection", self._selection_bitsize),
+                Register("ancilla", self._ancilla_bitsize),
+                Register("target", self._target_bitsize),
+            ]
+        )
+
+    def _recurse(self, depth: int, left: int, right: int, pop_ancilla: bool = False):
+        if pop_ancilla:
+            ancilla_bitsize = self._ancilla_bitsize - 1
+        else:
+            ancilla_bitsize = self._ancilla_bitsize
+        return SegTreeGate(
+            depth=depth,
+            left=left,
+            right=right,
+            iteration_length=self.iteration_length,
+            nth_operation=self.nth_operation,
+            selection_bitsize=self._selection_bitsize,
+            ancilla_bitsize=ancilla_bitsize,
+            target_bitsize=self._target_bitsize,
+        )
+
+    def decompose_from_registers(
+        self,
+        control: Sequence[cirq.Qid],
+        selection: Sequence[cirq.Qid],
+        ancilla: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
+        (control,) = control
+        if self.left >= min(self.right, self.iteration_length):
+            yield []
+            return
+
+        if self.left == (self.right - 1):
+            yield self.nth_operation(self.left, control, target)
+            return
+
+        assert self.depth < len(selection)
+        mid = (self.left + self.right) >> 1
+        if mid >= self.iteration_length:
+            yield self._recurse(depth=self.depth + 1, left=self.left, right=mid).on(
+                control, *selection, *ancilla, *target
+            )
+            return
+
+        anc = ancilla[0]
+        new_anc_reg = ancilla[1:]
+        sq = selection[self.depth]
+        yield and_gate.And((1, 0)).on(control, sq, anc)
+        yield self._recurse(depth=self.depth + 1, left=self.left, right=mid, pop_ancilla=True).on(
+            anc, *selection, *new_anc_reg, *target
+        )
+        yield cirq.CNOT(control, anc)
+        yield self._recurse(depth=self.depth + 1, left=mid, right=self.right, pop_ancilla=True).on(
+            anc, *selection, *new_anc_reg, *target
+        )
+        yield and_gate.And(adjoint=True).on(control, sq, anc)
 
 
 class UnaryIterationGate(GateWithRegisters):
@@ -94,39 +185,19 @@ class UnaryIterationGate(GateWithRegisters):
             control=control, **targets, **indices, **extra_regs
         ) if all_indices_valid else []
 
-    def _unary_iteration_segtree(
-        self,
-        control: cirq.Qid,
-        selection: Sequence[cirq.Qid],
-        ancilla: Sequence[cirq.Qid],
-        target: Sequence[cirq.Qid],
-        sl: int,
-        l: int,
-        r: int,
-        **extra_regs: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
-        if l >= min(r, self.iteration_length):
-            yield []
-        if l == (r - 1):
-            yield self._apply_nth_operation(l, control, target, **extra_regs)
-        else:
-            assert sl < len(selection)
-            m = (l + r) >> 1
-            if m >= self.iteration_length:
-                yield from self._unary_iteration_segtree(
-                    control, selection, ancilla, target, sl + 1, l, m, **extra_regs
-                )
-            else:
-                anc, sq = ancilla[sl], selection[sl]
-                yield and_gate.And((1, 0)).on(control, sq, anc)
-                yield from self._unary_iteration_segtree(
-                    anc, selection, ancilla, target, sl + 1, l, m, **extra_regs
-                )
-                yield cirq.CNOT(control, anc)
-                yield from self._unary_iteration_segtree(
-                    anc, selection, ancilla, target, sl + 1, m, r, **extra_regs
-                )
-                yield and_gate.And(adjoint=True).on(control, sq, anc)
+    def _get_segtree_gate(self, depth=0, left=0, right=None):
+        if right is None:
+            right = 2**self.selection_registers.bitsize
+        return SegTreeGate(
+            depth=depth,
+            left=left,
+            right=right,
+            iteration_length=self.iteration_length,
+            nth_operation=self.nth_operation,
+            selection_bitsize=self.selection_registers.bitsize,
+            ancilla_bitsize=self.ancilla_registers.bitsize,
+            target_bitsize=self.target_registers.bitsize,
+        )
 
     def decompose_single_control(
         self,
@@ -138,8 +209,8 @@ class UnaryIterationGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         assert len(selection) == len(ancilla)
         assert 2 ** len(selection) >= self.iteration_length
-        yield from self._unary_iteration_segtree(
-            control, selection, ancilla, target, 0, 0, 2 ** len(selection), **extra_regs
+        yield from self._get_segtree_gate().decompose_from_registers(
+            control=[control], selection=selection, ancilla=ancilla, target=target
         )
 
     def _decompose_zero_control(
@@ -155,12 +226,12 @@ class UnaryIterationGate(GateWithRegisters):
         sl, l, r = 0, 0, 2 ** len(selection)
         m = (l + r) >> 1
         yield cirq.X(ancilla[0]).controlled_by(selection[0], control_values=[0])
-        yield from self._unary_iteration_segtree(
-            ancilla[0], selection, ancilla, target, sl + 1, l, m, **extra_regs
+        yield from self._get_segtree_gate(depth=sl + 1, left=l, right=m).decompose_from_registers(
+            control=[ancilla[0]], selection=selection, ancilla=ancilla, target=target
         )
         yield cirq.X(ancilla[0])
-        yield from self._unary_iteration_segtree(
-            ancilla[0], selection, ancilla, target, sl + 1, m, r, **extra_regs
+        yield from self._get_segtree_gate(depth=sl + 1, left=m, right=r).decompose_from_registers(
+            control=[ancilla[0]], selection=selection, ancilla=ancilla, target=target
         )
         yield cirq.CNOT(selection[0], ancilla[0])
 
