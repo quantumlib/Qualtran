@@ -5,6 +5,7 @@ import cirq
 import numpy as np
 
 from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
+from cirq_qubitization.simple_measurement_gate import SimpleMeasurementGate
 
 
 class And(GateWithRegisters):
@@ -72,7 +73,7 @@ class And(GateWithRegisters):
         yield pre_post_ops
         if self.adjoint:
             yield cirq.H(target)
-            yield cirq.measure(target, key=f"{target}")
+            yield SimpleMeasurementGate(key=f"{target}").on(target)
             yield cirq.CZ(c1, c2).with_classical_controls(f"{target}")
             yield cirq.reset(target)
         else:

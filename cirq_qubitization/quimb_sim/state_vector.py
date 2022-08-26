@@ -5,6 +5,8 @@ import numpy as np
 import quimb
 import quimb.tensor as qtn
 
+from cirq_qubitization.simple_measurement_gate import SimpleMeasurementGate
+
 
 def _get_basis_state_data(x: int, q: cirq.Qid):
     """Helper function to return the state vector representation for a computational basis state.
@@ -113,11 +115,34 @@ def circuit_to_tensors(
             data=_get_basis_state_data(init, q), qubits=[q], mi=-1, thru_tensor=False, tag=f'{init}'
         )
 
+    measure_i = 0
     for mi, moment in enumerate(circuit.moments):
         for op in moment.operations:
-            assert cirq.has_unitary(op.gate)
-            U = cirq.unitary(op).reshape((2,) * 2 * len(op.qubits))
-            _add_tensor(data=U, qubits=op.qubits, mi=mi, tag=f'U{len(op.qubits)}')
+            if cirq.has_unitary(op.gate):
+                U = cirq.unitary(op).reshape((2,) * 2 * len(op.qubits))
+                _add_tensor(data=U, qubits=op.qubits, mi=mi, tag=f'U{len(op.qubits)}')
+                continue
+
+            if op.gate is None:
+                raise NotImplementedError(f"Only GateOperations, not {op}")
+
+            gate = op.gate
+            if isinstance(gate, SimpleMeasurementGate):
+                U = cirq.unitary(cirq.CNOT).reshape((2,) * 4)
+                (mq,) = op.qubits
+                dummy_q = cirq.NamedQubit(f'm{measure_i}')
+                qubit_frontier[dummy_q] = 0
+                all_qubits.append(dummy_q)
+                _add_tensor(
+                    data=_get_basis_state_data(0, dummy_q),
+                    qubits=[dummy_q],
+                    mi=mi - 1,
+                    thru_tensor=False,
+                    tag='0',
+                )
+                _add_tensor(data=U, qubits=[mq, dummy_q], mi=mi, tag=f'M')
+                measure_i += 1
+                continue
 
     for q, final in final_state.items():
         _add_tensor(
