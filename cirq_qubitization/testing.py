@@ -1,7 +1,36 @@
-from typing import Sequence
+from dataclasses import dataclass
+from functools import cached_property
+from typing import Sequence, Dict, List
 
 import cirq
 import numpy as np
+
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+
+
+@dataclass(frozen=True)
+class GateSystem:
+    gate: GateWithRegisters
+
+    @cached_property
+    def r(self) -> Registers:
+        return self.gate.registers
+
+    @cached_property
+    def quregs(self) -> Dict[str, Sequence[cirq.Qid]]:
+        return self.r.get_named_qubits()
+
+    @cached_property
+    def all_qubits(self) -> List[cirq.Qid]:
+        return self.r.merge_qubits(**self.quregs)
+
+    @cached_property
+    def operation(self) -> cirq.Operation:
+        return self.gate.on_registers(**self.quregs)
+
+    @cached_property
+    def circuit(self) -> cirq.Circuit:
+        return cirq.Circuit(self.operation)
 
 
 def assert_circuit_inp_out_cirqsim(
