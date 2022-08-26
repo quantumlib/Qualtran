@@ -10,26 +10,40 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 @dataclass(frozen=True)
 class GateSystem:
+    """A collection of related objects derivable from a `GateWithRegisters`.
+
+    This are likely useful to have at ones fingertips while writing tests or
+    demo notebooks.
+
+    Attributes:
+        gate: The gate from which all other objects are derived.
+    """
+
     gate: GateWithRegisters
 
     @cached_property
     def r(self) -> Registers:
+        """The Registers system for the gate."""
         return self.gate.registers
 
     @cached_property
     def quregs(self) -> Dict[str, Sequence[cirq.Qid]]:
+        """A dictionary of named qubits appropriate for the registers for the gate."""
         return self.r.get_named_qubits()
 
     @cached_property
     def all_qubits(self) -> List[cirq.Qid]:
+        """All qubits in Register order."""
         return self.r.merge_qubits(**self.quregs)
 
     @cached_property
     def operation(self) -> cirq.Operation:
+        """The `gate` applied to example qubits."""
         return self.gate.on_registers(**self.quregs)
 
     @cached_property
     def circuit(self) -> cirq.Circuit:
+        """The `gate` applied to example qubits wrapped in a `cirq.Circuit`."""
         return cirq.Circuit(self.operation)
 
 
