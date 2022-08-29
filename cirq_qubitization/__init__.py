@@ -15,3 +15,4 @@ from cirq_qubitization.swap_network import (
     SwapWithZeroGate,
 )
 from cirq_qubitization.qrom import QROM
+from cirq_qubitization.qubit_manager import (qalloc, qfree, qtot)
