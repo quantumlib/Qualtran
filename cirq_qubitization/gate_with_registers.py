@@ -2,7 +2,6 @@ import abc
 import dataclasses
 import sys
 from typing import Sequence, Dict, Iterable, List, Union, overload
-from cirq_qubitization import qubit_manager
 
 import cirq
 
@@ -94,7 +93,14 @@ class Registers:
         return ret
 
     def get_named_qubits(self) -> Dict[str, Sequence[cirq.Qid]]:
-        return {reg.name: qubit_manager.qalloc(reg.bitsize, reg.name) for reg in self}
+        def qubits_for_reg(name: str, bitsize: int):
+            return (
+                [cirq.NamedQubit(f"{name}")]
+                if bitsize == 1
+                else cirq.NamedQubit.range(bitsize, prefix=name)
+            )
+
+        return {reg.name: qubits_for_reg(reg.name, reg.bitsize) for reg in self}
 
     def __eq__(self, other) -> bool:
         return self._registers == other._registers
