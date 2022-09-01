@@ -21,6 +21,9 @@ class Registers:
         if len(self._registers) != len(self._register_dict):
             raise ValueError("Please provide unique register names.")
 
+    def __repr__(self):
+        return f'Registers({repr(self._registers)})'
+
     @property
     def bitsize(self) -> int:
         return sum(reg.bitsize for reg in self)

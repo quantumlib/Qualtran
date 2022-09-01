@@ -1,12 +1,9 @@
 import itertools
 from functools import cached_property
-from pathlib import Path
 from typing import Sequence, Tuple
 
 import cirq
-import nbformat
 import pytest
-from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization import UnaryIterationGate, Registers
 from cirq_qubitization import testing as cq_testing
@@ -128,8 +125,4 @@ def test_multi_dimensional_unary_iteration(target_shape):
 
 
 def test_notebook():
-    notebook_path = Path(__file__).parent / "unary_iteration.ipynb"
-    with notebook_path.open() as f:
-        nb = nbformat.read(f, as_version=4)
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-    ep.preprocess(nb)
+    cq_testing.execute_notebook('unary_iteration')

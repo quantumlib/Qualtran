@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 from functools import cached_property
+from pathlib import Path
 from typing import Sequence, Dict, List
 
 import cirq
 import numpy as np
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
@@ -12,7 +15,7 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 class GateSystem:
     """A collection of related objects derivable from a `GateWithRegisters`.
 
-    This are likely useful to have at ones fingertips while writing tests or
+    These are likely useful to have at one's fingertips while writing tests or
     demo notebooks.
 
     Attributes:
@@ -71,3 +74,17 @@ def assert_circuit_inp_out_cirqsim(
     actual = result.dirac_notation(decimals=decimals)[1:-1]
     should_be = "".join(str(x) for x in outputs)
     assert actual == should_be, (actual, should_be)
+
+
+def execute_notebook(name: str):
+    """Execute a jupyter notebook in this directory.
+
+    Args:
+        name: The name of the notebook without extension.
+
+    """
+    notebook_path = Path(__file__).parent / f"{name}.ipynb"
+    with notebook_path.open() as f:
+        nb = nbformat.read(f, as_version=4)
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    ep.preprocess(nb)
