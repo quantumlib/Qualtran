@@ -1,9 +1,11 @@
-from typing import Sequence
+from typing import Sequence, Dict
 
 import cirq
+import numpy as np
 import pytest
 
 from cirq_qubitization.gate_with_registers import Register, Registers, GateWithRegisters
+import cirq_qubitization.testing as cq_testing
 
 
 def test_register():
@@ -83,6 +85,15 @@ class _TestGate(GateWithRegisters):
         yield cirq.X.on_each(r2)
         yield cirq.X.on_each(r3)
 
+    def _apply_classical_from_registers(
+        self, r1: np.ndarray, r2: np.ndarray, r3: np.ndarray
+    ) -> Dict[str, np.ndarray]:
+        assert r1.ndim == 2
+        assert r2.ndim == 2
+        assert len(r1) == len(r2)
+
+        return {'r1': (r1 + r3) % 2, 'r2': r2, 'r3': r3}
+
 
 def test_gate_with_registers():
     tg = _TestGate()
@@ -94,3 +105,10 @@ def test_gate_with_registers():
     op1 = tg.on_registers(r1=qubits[:5], r2=qubits[6:], r3=qubits[5])
     op2 = tg.on(*qubits[:5], *qubits[6:], qubits[5])
     assert op1 == op2
+
+    r = tg.registers
+    bits = tg.apply_classical(
+        cq_testing.get_classical_inputs([r['r3']], fixed_registers={r['r2']: 1, r['r1']: 0})
+    )
+    assert len(bits['r1']) == len(bits['r3'])
+    assert bits['r1'].shape == (2, 5)

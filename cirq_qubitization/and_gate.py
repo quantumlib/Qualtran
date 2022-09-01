@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Sequence, Dict
 
 import cirq
 import numpy as np
@@ -140,7 +140,7 @@ class And(GateWithRegisters):
 
     def _apply_classical_from_registers(
         self, control: np.ndarray, ancilla: np.ndarray, target: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Dict[str, np.ndarray]:
         target = (target[:, 0] + np.all(control == self.cv, axis=1)) % 2
         target = target[:, np.newaxis]
 
@@ -148,7 +148,7 @@ class And(GateWithRegisters):
             np.testing.assert_allclose(ancilla, np.zeros_like(ancilla))
             ancilla = self._get_correct_classical_ancilla(control)
 
-        return control, ancilla, target
+        return {'control': control, 'ancilla': ancilla, 'target': target}
 
     def __eq__(self, other: 'And'):
         return self.cv == other.cv and self.adjoint == other.adjoint

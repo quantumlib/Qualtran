@@ -6,7 +6,6 @@ from typing import Sequence, Dict, Iterable, List, Union, overload, Tuple
 import cirq
 import numpy as np
 
-
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
@@ -172,11 +171,9 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.GateOperation:
         return self.on(*self.registers.merge_qubits(**qubit_regs))
 
-    def _apply_classical_from_registers(self, **vals: np.ndarray) -> Tuple[np.ndarray, ...]:
+    def _apply_classical_from_registers(self, **vals: np.ndarray) -> Dict[str, np.ndarray]:
         raise NotImplementedError()
 
     def apply_classical(self, vals: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        r = self.registers
-        vals, _ = munge_classical_arrays(r, vals)
-        out_vals: Tuple[np.ndarray, ...] = self._apply_classical_from_registers(**vals)
-        return {reg.name: val for reg, val in zip(r, out_vals)}
+        vals, _ = munge_classical_arrays(self.registers, vals)
+        return self._apply_classical_from_registers(**vals)
