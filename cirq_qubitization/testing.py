@@ -12,7 +12,7 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
 @dataclass(frozen=True)
-class GateSystem:
+class GateHelper:
     """A collection of related objects derivable from a `GateWithRegisters`.
 
     These are likely useful to have at one's fingertips while writing tests or

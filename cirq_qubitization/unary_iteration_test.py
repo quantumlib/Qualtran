@@ -43,7 +43,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
 )
 def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
     gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
-    g = cq_testing.GateSystem(gate)
+    g = cq_testing.GateHelper(gate)
     for n in range(target_bitsize):
 
         # Initial qubit values
