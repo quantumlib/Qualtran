@@ -1,17 +1,17 @@
 import cirq
 import cirq.contrib.svg.svg as ccsvg
 import ipywidgets
-from IPython.display import display, SVG
+import IPython.display
 
 import cirq_qubitization.testing as cq_testing
-from cirq_qubitization import GateWithRegisters, Registers
+from cirq_qubitization import Registers
 
 
-def display_gate_and_compilation(g: cq_testing.GateSystem, vertical=False):
-    """Use ipywidgets to display SVG circuits for a `GateSystem` next to each other.
+def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False):
+    """Use ipywidgets to display SVG circuits for a `GateHelper` next to each other.
 
     Args:
-        g: The `GateSystem` to draw
+        g: The `GateHelper` to draw
         vertical: If true, lay-out the original gate and its decomposition vertically
             rather than side-by-side.
     """
@@ -27,7 +27,7 @@ def display_gate_and_compilation(g: cq_testing.GateSystem, vertical=False):
         svg_circuit(cirq.Circuit(cirq.decompose_once(g.operation)), registers=g.r)
     )
 
-    display(box)
+    IPython.display.display(box)
 
 
 def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
@@ -47,4 +47,4 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
     tdd = circuit.to_text_diagram_drawer(transpose=False, qubit_order=qubit_order)
     if len(tdd.horizontal_lines) == 0:
         raise ValueError("No non-empty moments.")
-    return SVG(ccsvg.tdd_to_svg(tdd))
+    return IPython.display.SVG(ccsvg.tdd_to_svg(tdd))
