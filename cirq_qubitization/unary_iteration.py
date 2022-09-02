@@ -190,3 +190,15 @@ class UnaryIterationGate(GateWithRegisters):
                 and_target, selection, selection_ancillas, target, **extra_regs
             )
             yield multi_controlled_and**-1
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        """Basic circuit diagram.
+
+        Descendants are encouraged to override this with more descriptive
+        circuit diagram information.
+        """
+        wire_symbols = ["@"] * self.control_registers.bitsize
+        wire_symbols += ["In"] * self.selection_registers.bitsize
+        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
+        wire_symbols += [self.__class__.__name__] * self.target_registers.bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
