@@ -1,8 +1,9 @@
-import pytest
 import cirq
 import numpy as np
+import pytest
+
 import cirq_qubitization
-from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs, get_1d_ising_hamiltonian
+from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
 
 
 @pytest.mark.parametrize("num_sites, epsilon", [[2, 1.0e-2], [3, 1.0e-2], [4, 1.0e-2], [5, 1.0e-2]])
@@ -12,23 +13,21 @@ def test_generic_subprepare(num_sites, epsilon):
         lcu_probabilities=lcu_coefficients, probability_epsilon=epsilon
     )
     q = cirq.LineQubit.range(cirq.num_qubits(subprepare_gate))
-    selection = q[: subprepare_gate.selection_register]
+    selection = q[: subprepare_gate.selection_bitsize]
     temp = q[
-        subprepare_gate.selection_register : subprepare_gate.selection_register
-        + subprepare_gate.temp_register
+        subprepare_gate.selection_bitsize : subprepare_gate.selection_bitsize
+        + subprepare_gate.temp_bitsize
     ]
-    ancilla = q[-subprepare_gate.ancilla_register :]
+    ancilla = q[-subprepare_gate.ancilla_bitsize :]
     result = cirq.Simulator(dtype=np.complex128).simulate(
         cirq.Circuit(
-            subprepare_gate.on_registers(
-                selection_register=selection, temp_register=temp, selection_ancilla=ancilla
-            )
+            subprepare_gate.on_registers(selection=selection, temp=temp, selection_ancilla=ancilla)
         )
     )
     state_vector = result.final_state_vector
     # State vector is of the form |l>|temp_{l}>. We trace out the |temp_{l}> part to
     # get the coefficients corresponding to |l>.
-    L, logL = len(lcu_coefficients), subprepare_gate.selection_register
+    L, logL = len(lcu_coefficients), subprepare_gate.selection_bitsize
     state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
     num_non_zero = (state_vector > 1e-6).sum(axis=1)
     prepared_state = state_vector.sum(axis=1)
