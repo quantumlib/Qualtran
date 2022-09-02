@@ -6,7 +6,14 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
 class MultiTargetCSwap(GateWithRegisters):
-    """Implements multi-target controlled swap unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$."""
+    """Implements a multi-target controlled swap unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$.
+
+    This decomposes into a qubitwise SWAP on the two target registers, and takes 14*n T-gates.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low et. al. 2018. See Appendix B.2.c.
+    """
 
     def __init__(self, target_bitsize: int) -> None:
         self._target_bitsize = target_bitsize
@@ -43,13 +50,17 @@ class MultiTargetCSwap(GateWithRegisters):
 
 
 class MultiTargetCSwapApprox(MultiTargetCSwap):
-    """Approximately implements a multi-target controlled swap unitary using only 4 * N T-gates.
+    """Approximately implements a multi-target controlled swap unitary using only 4 * n T-gates.
 
-    Implements the unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$ such that the output state is
+    Implements the unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$ such that the output state is
     correct up to a global phase factor of +1 / -1.
 
     This is useful when the incorrect phase can be absorbed in a garbage state of an algorithm; and
-    thus ignored. See Appendix B.2.c of https://arxiv.org/abs/1812.00954 for more details.
+    thus ignored, see the reference for more details.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low et. al. 2018. See Appendix B.2.c.
     """
 
     def decompose_from_registers(
