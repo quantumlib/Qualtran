@@ -4,23 +4,12 @@ import numpy as np
 from cirq_qubitization import construct_alt_keep_qrom
 from cirq_qubitization import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
-from cirq_qubitization.generic_select_test import OneDimensionalIsingModel
+from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
 
 
 def test_alt_keep_qrom():
     num_sites = 4
-    target = cirq.LineQubit.range(num_sites)  # This is just for getting Hamiltonian coefficients
-    ising_inst = OneDimensionalIsingModel(
-        num_sites, j_zz_interaction=np.pi / 3, gamma_x_interaction=np.pi / 7
-    )
-    pauli_sum_hamiltonian = ising_inst.get_pauli_sum(target)
-    pauli_string_hamiltonian = [*pauli_sum_hamiltonian]
-    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
-    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
-    lcu_coeffs = (
-        np.array([xx.coefficient.real for xx in dense_pauli_string_hamiltonian])
-        / qubitization_lambda
-    )
+    lcu_coeffs = get_1d_ising_lcu_coeffs(num_sites)
     epsilon = 1.0e-2  # precision value is kept low so we can simulate the output
     qrom = construct_alt_keep_qrom(lcu_coefficients=lcu_coeffs, probability_epsilon=epsilon)
 
