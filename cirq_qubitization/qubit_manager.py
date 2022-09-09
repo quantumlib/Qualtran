@@ -1,16 +1,25 @@
+from collections import defaultdict
+from glob import glob
 import cirq
-from typing import List, Optional
+from typing import List
 
 _free_qubits = {}
 _used_qubits = {}
 
-def _allocate(name: Optional[str] = None, reuse: bool = True):
+_qubit_count = defaultdict(lambda: 0)
+
+def _next_name(prefix: str, need_index: bool) -> str:
+    global _qubit_count
+    # Don't add an index if we don't need to.
+    # This makes the call qalloc(1, name, False) equivalent to cirq.NamedQubit(name).
+    if _qubit_count[prefix] == 0 and not need_index: 
+        return prefix
+    return f'{prefix}{_qubit_count[prefix]}'
+
+def _allocate(prefix: str, need_index: bool, reuse: bool = True):
     global _free_qubits, _used_qubits
 
-    name = name or f'ancilla{len(_free_qubits) + len(_used_qubits)}'
-    if name in _used_qubits:
-        raise ValueError(f'a qubit with name {name} already exists')
-
+    name = _next_name(prefix, need_index)
     if reuse and len(_free_qubits) and (name not in _free_qubits):
         # if reuse is enabled then reuse any of the free qubits.
         name = next(iter(_free_qubits))
@@ -22,6 +31,7 @@ def _allocate(name: Optional[str] = None, reuse: bool = True):
         return q
 
     q = cirq.NamedQubit(name)
+    _qubit_count[prefix] += 1
     _used_qubits[name] = q
     return q
 
@@ -30,11 +40,8 @@ def _free(q: cirq.NamedQubit):
     del _used_qubits[q.name]
     _free_qubits[q.name] = q
 
-def qalloc(n: int = 1, prefix: Optional[str] = None, reuse: bool = True) -> List[cirq.NamedQubit]:
-    name = lambda i: prefix + str(i) if prefix else None
-    if n == 1: name = lambda i: prefix if prefix else None
-
-    qubits = [_allocate(name(i), reuse=reuse) for i in range(n)]
+def qalloc(n: int = 1, prefix: str = 'ancilla', reuse: bool = True) -> List[cirq.NamedQubit]:
+    qubits = [_allocate(prefix, n > 1, reuse=reuse) for i in range(n)]
     return qubits
 
 def qfree(q: cirq.NamedQubit) -> None:
@@ -53,5 +60,8 @@ if __name__ == "__main__":
     print(qtot()) 
     qfree(qs.pop(0))
     qs.extend(qalloc(2, prefix='noreuse', reuse=False))
+    print(qs)
+    print(qtot()) 
+    qs.extend(qalloc(1, prefix='y', reuse=False))
     print(qs)
     print(qtot()) 
