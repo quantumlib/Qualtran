@@ -247,7 +247,6 @@ class UnaryIterationGate(GateWithRegisters):
 
     def decompose_zero_selection(self, **kwargs) -> cirq.OP_TREE:
         """Specify decomposition of the gate when selection register is empty
-
         By default, if the selection register is empty, the decomposition will raise a
         `NotImplementedError`. The derived classes can override this method and specify
         a custom decomposition that should be used if the selection register is empty,
