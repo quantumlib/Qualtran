@@ -4,6 +4,7 @@ import pytest
 import cirq_qubitization
 from cirq_qubitization import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
+from cirq_qubitization.qubit_manager import _reset
 
 
 @pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
@@ -34,11 +35,13 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
 
 
 def test_apply_gate_to_lth_qubit_diagram():
+    _reset()
     # Apply Z gate to all odd targets and Identity to even targets.
     gate = cirq_qubitization.ApplyGateToLthQubit(
         3, 5, lambda n: cirq.Z if n & 1 else cirq.I, control_bitsize=2
     )
     circuit = cirq.Circuit(gate.on_registers(**gate.registers.get_named_qubits()))
+    _reset()
     qubits = list(q for v in gate.registers.get_named_qubits().values() for q in v)
     cirq.testing.assert_has_diagram(
         circuit,

@@ -10,6 +10,7 @@ from nbconvert.preprocessors import ExecutePreprocessor
 
 import cirq_qubitization
 import cirq_qubitization.testing as cq_testing
+from cirq_qubitization.qubit_manager import _reset
 
 random.seed(12345)
 
@@ -64,6 +65,7 @@ def test_multi_controlled_and_gate(cv: List[int]):
 
 
 def test_and_gate_diagram():
+    _reset()
     gate = cirq_qubitization.And((1, 0, 1, 0, 1, 0))
     qubit_regs = gate.registers.get_named_qubits()
     op = gate.on_registers(**qubit_regs)

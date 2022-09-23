@@ -1,6 +1,7 @@
 import pytest
 import cirq_qubitization
 import cirq
+from cirq_qubitization.qubit_manager import _reset
 
 
 @pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 8), (4, 9)])
@@ -61,7 +62,9 @@ def test_selected_majorana_fermion_gate_diagram():
     gate = cirq_qubitization.SelectedMajoranaFermionGate(
         selection_bitsize, target_bitsize, target_gate=cirq.X
     )
+    _reset()
     circuit = cirq.Circuit(gate.on_registers(**gate.registers.get_named_qubits()))
+    _reset()
     qubits = list(q for v in gate.registers.get_named_qubits().values() for q in v)
     cirq.testing.assert_has_diagram(
         circuit,
