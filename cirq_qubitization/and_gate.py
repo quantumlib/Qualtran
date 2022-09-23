@@ -114,4 +114,9 @@ class And(GateWithRegisters):
             yield from self._decompose_via_tree(control, self.cv, ancilla, target)
 
     def __eq__(self, other: 'And'):
+        if not isinstance(other, And):
+            return NotImplemented
         return self.cv == other.cv and self.adjoint == other.adjoint
+
+    def __hash__(self) -> int:
+        return hash((super(), self.cv, self.adjoint))
