@@ -129,6 +129,9 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.GateOperation:
         return self.on(*self.registers.merge_qubits(**qubit_regs))
 
+    def pretty_name(self) -> str:
+        return self.__class__.__name__
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Default diagram info that uses register names to name the boxes in multi-qubit gates.
 

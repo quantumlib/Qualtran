@@ -59,3 +59,11 @@ def _make_GenericSubPrepare():
     lcu_coeffs = coeffs / np.sum(coeffs)
 
     return GenericSubPrepare(lcu_coeffs, probability_epsilon=1e-2)
+
+def _make_ModMultiply():
+    from cirq_qubitization.shor.mod_multiply import ModMultiply
+    return ModMultiply(exponent_bitsize=3, x_bitsize=3, mul_constant=123, mod_N=5)
+
+def _make_SingleControlModMultiply():
+    from cirq_qubitization.shor.mod_multiply import SingleControlModMultiply
+    return SingleControlModMultiply(x_bitsize=3, mul_constant=123)

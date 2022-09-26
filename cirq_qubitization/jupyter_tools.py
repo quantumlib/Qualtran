@@ -51,6 +51,11 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
 
     if registers is not None:
         qubit_order = registers.merge_qubits(**registers.get_named_qubits())
+
+        extra_qs = circuit.all_qubits() - set(qubit_order)
+        if extra_qs:
+            print("BAD!", registers)
+            qubit_order += sorted(extra_qs)
     else:
         qubit_order = cirq.QubitOrder.DEFAULT
     tdd = circuit.to_text_diagram_drawer(transpose=False, qubit_order=qubit_order)

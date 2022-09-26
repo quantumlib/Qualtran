@@ -1,5 +1,6 @@
 import dataclasses
 import cirq_qubitization
+import cirq_qubitization.shor.mod_multiply
 from types import ModuleType
 from typing import Callable, List
 
@@ -59,5 +60,11 @@ NOTEBOOK_DATA = {
         title='Sub-Prepare',
         module=cirq_qubitization.generic_subprepare,
         gates=[GateNbData(cq_jd._make_GenericSubPrepare)]
+    ),
+    'shor': NotebookData(
+        title='Shor',
+        module=cirq_qubitization.shor.mod_multiply,
+        gates=[GateNbData(cq_jd._make_ModMultiply),
+               GateNbData(cq_jd._make_SingleControlModMultiply)]
     )
 }
