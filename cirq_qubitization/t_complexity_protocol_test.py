@@ -28,7 +28,9 @@ class DoesNotSupportTComplexity(cirq.Gate):
 
 
 def test_t_complexity():
-    assert t_complexity(DoesNotSupportTComplexity()) is None
+    with pytest.raises(TypeError):
+        _ = t_complexity(DoesNotSupportTComplexity())
+    assert t_complexity(DoesNotSupportTComplexity(), fail_quietly=True) is None
 
     assert t_complexity(SupportTComplexity()) == TComplexity(t=1)
 
