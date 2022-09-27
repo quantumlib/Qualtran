@@ -1,12 +1,9 @@
 import random
-from pathlib import Path
 from typing import Tuple, List
 
 import cirq
-import nbformat
 import numpy as np
 import pytest
-from nbconvert.preprocessors import ExecutePreprocessor
 
 import cirq_qubitization
 import cirq_qubitization.testing as cq_testing
@@ -186,8 +183,4 @@ def test_and_gate_adjoint(cv: Tuple[int, int]):
 
 
 def test_notebook():
-    notebook_path = Path(__file__).parent / "and_gate.ipynb"
-    with notebook_path.open() as f:
-        nb = nbformat.read(f, as_version=4)
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-    ep.preprocess(nb)
+    cq_testing.execute_notebook('and_gate')
