@@ -22,6 +22,9 @@ class Registers:
         if len(self._registers) != len(self._register_dict):
             raise ValueError("Please provide unique register names.")
 
+    def __repr__(self):
+        return f'Registers({repr(self._registers)})'
+
     @property
     def bitsize(self) -> int:
         return sum(reg.bitsize for reg in self)
@@ -86,7 +89,7 @@ class Registers:
             base += reg.bitsize
         return qubit_vals
 
-    def merge_qubits(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> Sequence[cirq.Qid]:
+    def merge_qubits(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> List[cirq.Qid]:
         ret: List[cirq.Qid] = []
         for reg in self:
             assert reg.name in qubit_regs, "All qubit registers must pe present"
@@ -170,6 +173,18 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
 
     def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.GateOperation:
         return self.on(*self.registers.merge_qubits(**qubit_regs))
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        """Default diagram info that uses register names to name the boxes in multi-qubit gates.
+
+        Descendants can override this method with more meaningful circuit diagram information.
+        """
+        wire_symbols = []
+        for reg in self.registers:
+            wire_symbols += [reg.name] * reg.bitsize
+
+        wire_symbols[0] = self.__class__.__name__
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _apply_classical_from_registers(self, **vals: np.ndarray) -> Dict[str, np.ndarray]:
         raise NotImplementedError()

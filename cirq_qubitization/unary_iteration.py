@@ -81,6 +81,24 @@ class UnaryIterationGate(GateWithRegisters):
             register and represents the sequence of qubits that represent the extra register.
         """
 
+    def decompose_zero_selection(self, **kwargs) -> cirq.OP_TREE:
+        """Specify decomposition of the gate when selection register is empty
+
+        By default, if the selection register is empty, the decomposition will raise a
+        `NotImplementedError`. The derived classes can override this method and specify
+        a custom decomposition that should be used if the selection register is empty,
+        i.e. `self.selection_registers.bitsize == 0`.
+
+        The derived classes should specify the following arguments as `**kwargs`:
+            1) Register names in `self.control_registers`: Each argument corresponds to a
+            control register and represents sequence of qubits that represent the control register.
+            2) Register names in `self.target_registers`: Each argument corresponds to a target
+            register and represents the sequence of qubits that represent the target register.
+            3) Register names in `self.extra_regs`: Each argument corresponds to an extra
+            register and represents the sequence of qubits that represent the extra register.
+        """
+        raise NotImplementedError("Selection register must not be empty.")
+
     def _apply_nth_operation(
         self, n: int, control: cirq.Qid, target: Sequence[cirq.Qid], **extra_regs
     ) -> cirq.OP_TREE:
@@ -138,11 +156,12 @@ class UnaryIterationGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         assert len(selection) == len(ancilla)
         assert 2 ** len(selection) >= self.iteration_length
+        assert len(selection) > 0
         yield from self._unary_iteration_segtree(
             control, selection, ancilla, target, 0, 0, 2 ** len(selection), **extra_regs
         )
 
-    def _decompose_zero_control(
+    def decompose_zero_control(
         self,
         selection: Sequence[cirq.Qid],
         ancilla: Sequence[cirq.Qid],
@@ -171,8 +190,10 @@ class UnaryIterationGate(GateWithRegisters):
         ancilla = self.ancilla_registers.merge_qubits(**qubit_regs)
         extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
 
-        if len(control) == 0:
-            yield from self._decompose_zero_control(selection, ancilla, target, **extra_regs)
+        if len(selection) == 0:
+            yield from self.decompose_zero_selection(**qubit_regs)
+        elif len(control) == 0:
+            yield from self.decompose_zero_control(selection, ancilla, target, **extra_regs)
         elif len(control) == 1:
             yield from self.decompose_single_control(
                 control[0], selection, ancilla, target, **extra_regs
@@ -190,3 +211,15 @@ class UnaryIterationGate(GateWithRegisters):
                 and_target, selection, selection_ancillas, target, **extra_regs
             )
             yield multi_controlled_and**-1
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        """Basic circuit diagram.
+
+        Descendants are encouraged to override this with more descriptive
+        circuit diagram information.
+        """
+        wire_symbols = ["@"] * self.control_registers.bitsize
+        wire_symbols += ["In"] * self.selection_registers.bitsize
+        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
+        wire_symbols += [self.__class__.__name__] * self.target_registers.bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

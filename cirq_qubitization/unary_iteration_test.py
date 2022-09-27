@@ -1,12 +1,9 @@
 import itertools
 from functools import cached_property
-from pathlib import Path
 from typing import Sequence, Tuple
 
 import cirq
-import nbformat
 import pytest
-from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization import UnaryIterationGate, Registers
 from cirq_qubitization import testing as cq_testing
@@ -46,28 +43,22 @@ class ApplyXToLthQubit(UnaryIterationGate):
 )
 def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
     gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
-    qubit_regs = gate.registers.get_named_qubits()
-    control, selection, ancilla, target = (
-        qubit_regs["control"],
-        qubit_regs["selection"],
-        qubit_regs["ancilla"],
-        qubit_regs["target"],
-    )
-    all_qubits = control + selection + ancilla + target
+    g = cq_testing.GateHelper(gate)
+    for n in range(target_bitsize):
 
-    circuit = cirq.Circuit(gate.on_registers(**qubit_regs))
-    for n in range(len(target)):
-        svals = list(iter_bits(n, len(selection)))
-        # turn on control bit to activate circuit:
-        qubit_vals = {x: int(x in control) for x in all_qubits}
-        # Initialize selection bits appropriately:
+        # Initial qubit values
+        qubit_vals = {q: 0 for q in g.all_qubits}
+        # All controls 'on' to activate circuit
+        qubit_vals |= {c: 1 for c in g.quregs['control']}
+        # Set selection according to `n`
+        qubit_vals |= zip(g.quregs['selection'], iter_bits(n, selection_bitsize))
 
-        qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
-
-        initial_state = [qubit_vals[x] for x in all_qubits]
+        initial_state = [qubit_vals[x] for x in g.all_qubits]
         final_state = initial_state.copy()
         final_state[-(n + 1)] = 1
-        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+        cq_testing.assert_circuit_inp_out_cirqsim(
+            g.circuit, g.all_qubits, initial_state, final_state
+        )
 
 
 class ApplyXToIJKthQubit(UnaryIterationGate):
@@ -134,8 +125,4 @@ def test_multi_dimensional_unary_iteration(target_shape):
 
 
 def test_notebook():
-    notebook_path = Path(__file__).parent / "unary_iteration.ipynb"
-    with notebook_path.open() as f:
-        nb = nbformat.read(f, as_version=4)
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-    ep.preprocess(nb)
+    cq_testing.execute_notebook('unary_iteration')
