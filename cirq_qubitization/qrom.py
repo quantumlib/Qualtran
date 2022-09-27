@@ -1,4 +1,4 @@
-from typing import Tuple, Sequence, Optional
+from typing import Tuple, Sequence, Optional, Callable
 from functools import cached_property
 import cirq
 from cirq_qubitization import unary_iteration
@@ -15,9 +15,8 @@ class QROM(unary_iteration.UnaryIterationGate):
         self._selection_bitsize = (len(data[0]) - 1).bit_length()
         if target_bitsizes is None:
             target_bitsizes = [max(d).bit_length() for d in data]
-        else:
-            assert len(target_bitsizes) == len(data)
-            assert all(t >= max(d).bit_length() for t, d in zip(target_bitsizes, data))
+        assert len(target_bitsizes) == len(data)
+        assert all(t >= max(d).bit_length() for t, d in zip(target_bitsizes, data))
         self._target_bitsizes = target_bitsizes
 
     @cached_property
@@ -44,14 +43,22 @@ class QROM(unary_iteration.UnaryIterationGate):
         data_repr = ",".join(repr(d) for d in self.data)
         return f"cirq_qubitization.QROM({data_repr}, target_bitsizes={self._target_bitsizes})"
 
-    def nth_operation(
-        self, control: cirq.Qid, selection: int, **target_regs: Sequence[cirq.Qid]
+    def _load_nth_data(
+        self, n: int, gate: Callable[[cirq.Qid], cirq.Operation], **target_regs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         for i, d in enumerate(self._data):
             target = target_regs[f'target{i}']
-            for q, bit in zip(target, f'{d[selection]:0{len(target)}b}'):
+            for q, bit in zip(target, f'{d[n]:0{len(target)}b}'):
                 if int(bit):
-                    yield cirq.CNOT(control, q)
+                    yield gate(q)
+
+    def decompose_zero_selection(self, **target_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        yield from self._load_nth_data(0, cirq.X, **target_regs)
+
+    def nth_operation(
+        self, control: cirq.Qid, selection: int, **target_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        yield from self._load_nth_data(selection, lambda q: cirq.CNOT(control, q), **target_regs)
 
     def __eq__(self, other: 'QROM'):
         return self.data == other.data and self._target_bitsizes == other._target_bitsizes
