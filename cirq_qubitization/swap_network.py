@@ -127,7 +127,6 @@ class SwapWithZeroGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         assert len(target_regs) == self._n_target_registers
         cswap_n = MultiTargetCSwapApprox(self._target_bitsize)
-
         # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target
         # register. If the selection register stores index `r`, we want to bring the value stored
         # in leaf indexed `r` to the leaf indexed `0`. At each node of the binary tree, the left
