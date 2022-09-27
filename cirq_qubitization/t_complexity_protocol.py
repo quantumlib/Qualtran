@@ -7,7 +7,7 @@ from cirq.protocols import SupportsDecompose
 from cirq.protocols.decompose_protocol import _try_decompose_into_operations_and_qubits
 from cirq import flatten_op_tree
 
-_T_SET = cirq.Gateset(cirq.T, cirq.T ** -1)
+_T_GATESET = cirq.Gateset(cirq.T, cirq.T ** -1, unroll_circuit_op=False)
 
 @dataclass(frozen=True)
 class TComplexity:
@@ -55,7 +55,7 @@ def _is_cliffort_or_t(stc: Any) -> Optional[TComplexity]:
 
     if isinstance(stc, (cirq.Gate, cirq.Operation)):
         # Gateset in operator assumes operand is a Gate or Operation
-        if stc in _T_SET:
+        if stc in _T_GATESET:
             return TComplexity(t=1) # T gate
 
         if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
@@ -88,13 +88,13 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
 
     Args:
         stc: an object to compute its TComplexity.
-        raise_on_failure: bool whether to raise an error on failure or return None.
+        fail_quietly: bool whether to return None on failure or raise an error.
     
     Returns:
-        TComplexity.
+        The TComplexity of the given object or None on failure (and fail_quietly=True).
     
     Raises:
-        ValueError
+        TypeError if fail_quietly=False and the methods fails to compute TComplexity. 
     """
     strategies = [
         _has_t_complexity,

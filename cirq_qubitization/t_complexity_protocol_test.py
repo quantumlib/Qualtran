@@ -107,6 +107,7 @@ def test_circuit_operations():
         cirq.measure(q, key='m')
     )
     assert t_complexity(cirq.CircuitOperation(circuit)) == TComplexity(clifford=2, rotations=1, t=1)
+    assert t_complexity(cirq.CircuitOperation(circuit, repetitions=10)) == TComplexity(clifford=20, rotations=10, t=10)
 
     circuit = cirq.FrozenCircuit(
         cirq.T(q)**-1,
@@ -114,6 +115,7 @@ def test_circuit_operations():
         cirq.measure(q, key='m')
     )
     assert t_complexity(cirq.CircuitOperation(circuit)) == TComplexity(clifford=1, rotations=1, t=1)
+    assert t_complexity(cirq.CircuitOperation(circuit, repetitions=3)) == TComplexity(clifford=3, rotations=3, t=3)
 
 
 def test_classically_controlled_operations():

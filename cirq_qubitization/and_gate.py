@@ -1,9 +1,10 @@
-from typing import Sequence
+from typing import Any, Sequence
 from functools import cached_property
 import cirq
 from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
 
 
+@cirq.value_equality
 class And(GateWithRegisters):
     """And gate optimized for T-count.
 
@@ -114,9 +115,7 @@ class And(GateWithRegisters):
             yield from self._decompose_via_tree(control, self.cv, ancilla, target)
 
     def __eq__(self, other: 'And'):
-        if not isinstance(other, And):
-            return NotImplemented
         return self.cv == other.cv and self.adjoint == other.adjoint
 
-    def __hash__(self) -> int:
-        return hash((super(), self.cv, self.adjoint))
+    def _value_equality_values_(self) -> Any:
+        return (self.cv, self.adjoint)
