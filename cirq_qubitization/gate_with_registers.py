@@ -64,7 +64,7 @@ class Registers:
         qubit_regs = {}
         base = 0
         for reg in self:
-            qubit_regs[reg.name] = qubits[base : base + reg.bitsize]
+            qubit_regs[reg.name] = qubits[base: base + reg.bitsize]
             base += reg.bitsize
         return qubit_regs
 
@@ -81,7 +81,7 @@ class Registers:
         base = 0
         n_bin = f"{n:0{self.bitsize}b}"
         for reg in self:
-            qubit_vals[reg.name] = int(n_bin[base : base + reg.bitsize], 2)
+            qubit_vals[reg.name] = int(n_bin[base: base + reg.bitsize], 2)
             base += reg.bitsize
         return qubit_vals
 
@@ -90,7 +90,7 @@ class Registers:
         for reg in self:
             assert reg.name in qubit_regs, "All qubit registers must pe present"
             qubits = qubit_regs[reg.name]
-            qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
+            qubits = qubits if isinstance(qubits, Sequence) else [qubits]
             assert len(qubits) == reg.bitsize, f"{reg.name} register must of length {reg.bitsize}."
             ret += qubits
         return ret
@@ -127,6 +127,10 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
         yield from self.decompose_from_registers(**qubit_regs)
 
     def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.GateOperation:
+        for reg_name, reg_qubits in qubit_regs.items():
+            if hasattr(reg_qubits, 'wire_up'):
+                reg_qubits.wire_up(self, reg_name)
+
         return self.on(*self.registers.merge_qubits(**qubit_regs))
 
     def pretty_name(self) -> str:

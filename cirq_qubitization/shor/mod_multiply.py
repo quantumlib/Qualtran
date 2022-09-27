@@ -5,6 +5,7 @@ from typing import Sequence, Union, List
 import cirq
 
 from cirq_qubitization import MultiTargetCSwap
+from cirq_qubitization.atoms import Split, Join
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
@@ -62,51 +63,7 @@ class SingleControlModMultiply(GateWithRegisters):
         )
 
 
-@dataclass(frozen=True)
-class Split(GateWithRegisters):
-    bitsize: int
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        raise NotImplementedError()
-
-    @cached_property
-    def registers(self) -> Registers:
-        return Registers.build(x=self.bitsize)
-
-
-@dataclass(frozen=True)
-class Join(GateWithRegisters):
-    bitsize: int
-
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        raise NotImplementedError()
-
-    @cached_property
-    def registers(self) -> Registers:
-        return Registers.build(x=self.bitsize)
-
-
-class DanglingT:
-    def __repr__(self):
-        return '..'
-
-
-LeftDangle = DanglingT()
-RightDangle = DanglingT()
-
-
-@dataclass(frozen=True)
-class Wire:
-    left_gate: Union[GateWithRegisters, DanglingT]
-    left_name: str
-    right_gate: Union[GateWithRegisters, DanglingT]
-    right_name: str
-
-    @property
-    def tt(self):
-        ln = 'x' if isinstance(self.left_gate, Split) else self.left_name
-        rn = 'x' if isinstance(self.right_gate, Join) else self.right_name
-        return ((self.left_gate, ln), (self.right_gate, rn))
 
 
 @dataclass(frozen=True)
@@ -124,6 +81,7 @@ class ModMultiply(GateWithRegisters):
         )
 
     def compute_graph(self):
+        from cirq_qubitization.quantum_graph import Wire, LeftDangle, RightDangle
         nodes: List[GateWithRegisters] = []
         edges: List[Wire] = []
 
@@ -158,4 +116,4 @@ class ModMultiply(GateWithRegisters):
             c = self.mul_constant ** 2 ** j % self.mod_N
             yield SingleControlModMultiply(
                 x_bitsize=self.x_bitsize,
-                mul_constant=c).on_registers(control=[exponent[j]], x=x)
+                mul_constant=c).on_registers(control=exponent[j:j+1], x=x)
