@@ -6,7 +6,6 @@ import pytest
 
 import cirq_qubitization.testing as cq_testing
 from cirq_qubitization.gate_with_registers import Register, Registers, GateWithRegisters
-import cirq_qubitization.testing as cq_testing
 
 
 def test_register():
@@ -117,4 +116,3 @@ def test_gate_with_registers():
 
 def test_notebook():
     cq_testing.execute_notebook('gate_with_registers')
-

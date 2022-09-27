@@ -141,6 +141,7 @@ class TestingTensorSystem:
     def output_str(self) -> str:
         return _fmt_state(self.test_output)
 
+
 def assert_circuit_inp_out_cirqsim(
     circuit: cirq.AbstractCircuit,
     qubits: Sequence[cirq.Qid],
@@ -165,6 +166,8 @@ def assert_circuit_inp_out_cirqsim(
     actual = result.dirac_notation(decimals=decimals)[1:-1]
     should_be = "".join(str(x) for x in outputs)
     assert actual == should_be, (actual, should_be)
+
+
 def assert_circuit_inp_out_quimb(
     circuit: cirq.AbstractCircuit,
     qubits: Sequence[cirq.Qid],
