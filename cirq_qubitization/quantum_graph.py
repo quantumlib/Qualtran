@@ -8,8 +8,8 @@ from typing import Sequence, Union, List, Dict, overload, Any, Tuple
 import cirq
 
 from cirq_qubitization import MultiTargetCSwap
-from cirq_qubitization.atoms import Join
-from cirq_qubitization.gate_with_registers import Registers, SplitRegister, Register
+from cirq_qubitization.gate_with_registers import Registers, SplitRegister, Register, JoinRegister, \
+    ApplyFRegister
 import networkx as nx
 from collections import defaultdict
 import cirq_qubitization.testing as cq_testing
@@ -47,18 +47,10 @@ class BloqInstance:
         return f'{self.bloq!r}<{self.i}>'
 
 
-class RegObj:
-    def __init__(self, name: str):
-        self.name = name
-
-    def __eq__(self, other):
-        return self is other
-
-    def __hash__(self):
-        return hash(id(self))
-
-    def __repr__(self):
-        return f'{self.name}<{id(self)}>'
+@dataclass(frozen=True)
+class Port:
+    binst: BloqInstance
+    reg_name: str
 
 
 @dataclass(frozen=True)
@@ -70,54 +62,70 @@ class Split(Bloq):
         return Registers([SplitRegister(name='sss', bitsize=self.bitsize)])
 
 
+@dataclass(frozen=True)
+class Join(Bloq):
+    bitsize: int
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers([JoinRegister(name='jjj', bitsize=self.bitsize)])
+
+
+def reg_out_name(reg: Register):
+    if isinstance(reg, ApplyFRegister):
+        return reg.out_name
+    return reg.name
+
+
 class BloqBuilder:
     def __init__(self, parent_reg: Registers):
         self.i = 0
         self._wires = []
-        self._prev_inst = {reg.name: LeftDangle for reg in parent_reg}
-        self._tracers = tuple(RegObj(reg.name) for reg in parent_reg)
+        self._tracers = tuple(Port(LeftDangle, reg.name) for reg in parent_reg)
+        self._parent_reg = parent_reg
         self._used = set()
-        print('bbstart', self._prev_inst, self._tracers, self._used)
 
     def get_tracers(self):
         return self._tracers
 
-    def split(self, x: RegObj, n: int):
+    def split(self, fr_port: Port, n: int):
         bloq = Split(n)
         splitname = bloq.registers[0].name
-        inst = BloqInstance(Split(n), self.i)
+        inst = BloqInstance(bloq, self.i)
         self.i += 1
 
-        fr_name = x.name
-        self._wires.append(Wire(self._prev_inst[fr_name], fr_name, inst, splitname))
+        self._wires.append(Wire(fr_port.binst, fr_port.reg_name, inst, splitname))
         print('wire_add', self._wires[-1])
-        del self._prev_inst[fr_name]
-        new_reg_objs = tuple(RegObj(f'{splitname}{i}') for i in range(n))
-        for i in range(n):
-            robj = new_reg_objs[i]
-            to_name = robj.name
-            self._prev_inst[to_name] = inst
+        new_ports = tuple(Port(inst, f'{splitname}{i}') for i in range(n))
+        return new_ports
 
-        print("prev_inst", self._prev_inst)
-        return new_reg_objs
+    def join(self, xs: Sequence[Port]):
+        bloq = Join(len(xs))
+        joinname = bloq.registers[0].name
+        inst = BloqInstance(bloq, self.i)
+        self.i += 1
 
-    def add(self, bloq: Bloq, **reg_map: RegObj):
+        for i, x in enumerate(xs):
+            self._wires.append(Wire(x.binst, x.reg_name, inst, f'{joinname}{i}'))
+
+        return Port(inst, joinname)
+
+    def add(self, bloq: Bloq, **reg_map: Port):
         inst = BloqInstance(bloq, i=self.i)
         self.i += 1
-        for to_name, fr_obj in reg_map.items():
-            fr_name = fr_obj.name
-            if fr_obj in self._used:
-                raise TypeError(f"{fr_obj} re-used!")
-            self._used.add(fr_obj)
-            self._wires.append(Wire(self._prev_inst[fr_name], fr_name, inst, to_name))
+        for to_name, fr_port in reg_map.items():
+            if fr_port in self._used:
+                raise TypeError(f"{fr_port} re-used!")
+            self._used.add(fr_port)
+            self._wires.append(Wire(fr_port.binst, fr_port.reg_name, inst, to_name))
             print('wire_add', self._wires[-1])
-            del self._prev_inst[fr_name]
-            self._prev_inst[to_name] = inst  # todo: translate if bloq has different in/out reg.
 
-        print('prev_inst', self._prev_inst)
-        return tuple(RegObj(name=reg.name) for reg in bloq.registers)
+        return tuple(Port(inst, reg_out_name(reg)) for reg in bloq.registers)
 
-    def finalize(self) -> CompositeBloq:
+    def finalize(self, **final_ports: Port) -> CompositeBloq:
+        for final_name, fport in final_ports.items():
+            self._wires.append(Wire(fport.binst, fport.reg_name, RightDangle, final_name))
+
         return CompositeBloq(wires=self._wires)
 
 
@@ -128,10 +136,11 @@ class SingleControlModMultiply(Bloq):
 
     @cached_property
     def registers(self) -> Registers:
-        return Registers.build(
-            control=1,
-            x=self.x_bitsize
-        )
+        return Registers([
+            Register('control', 1),
+            ApplyFRegister('x', self.x_bitsize, 'x_out', in_text='x',
+                           out_text=f'{self.mul_constant}*x')
+        ])
 
 
 @dataclass(frozen=True)
@@ -159,7 +168,7 @@ class ModMultiply(Bloq):
                             control=ctls[j], x=x)
             ctls[j] = ctl
 
-        return bb.finalize()
+        return bb.finalize(exponent=bb.join(ctls), x=x)
 
 
 class DanglingT:
@@ -186,6 +195,9 @@ class Wire:
     right_gate: Union[BloqInstance, DanglingT]
     right_name: str
 
+    def __repr__(self):
+        return f'{self.left_gate!r}:{self.left_name} -> {self.right_gate!r}:{self.right_name}'
+
     @property
     def tt(self):
         return ((self.left_gate, self.left_name), (self.right_gate, self.right_name))
@@ -201,7 +213,7 @@ def _binst_in_port(x: BloqInstance, port: str):
 
 
 def _binst_out_port(x: BloqInstance, port: str):
-    return f'{_binst_id(x)}:{port}_out:e'
+    return f'{_binst_id(x)}:{port}:e'
 
 
 def _dangling_id(x: DanglingT, reg_name: str):
@@ -236,20 +248,47 @@ class GraphDrawer:
         graph.add_subgraph(dang)
         return graph
 
+    def get_split_text(self, i: Union[None, int]):
+        if i is None:
+            return 'in'
+        return str(i)
+
     def get_split_register(self, reg: SplitRegister) -> str:
-        """Return a <TR> for a SplitRegister."""
+        """Return <TR>s for a SplitRegister."""
         label = ''
         for i in range(reg.bitsize):
-            if i == 0:
-                label += f'<TR><TD rowspan="{reg.bitsize}" port="{reg.name}">in</TD><TD port="{reg.name}{i}_out">{i}</TD></TR>'
-            else:
-                label += f'<TR><TD port="{reg.name}{i}_out">{i}</TD></TR>'
+            in_td = f'<TD rowspan="{reg.bitsize}" port="{reg.name}">{self.get_split_text(None)}</TD>' if i == 0 else ''
+            label += f'<TR>{in_td}<TD port="{reg.name}{i}">{self.get_split_text(i)}</TD></TR>'
 
         return label
 
-    def get_default_register(self, reg: Register) -> str:
+    def get_join_text(self, i: Union[None, int]):
+        if i is None:
+            return 'out'
+        return str(i)
+
+    def get_join_register(self, reg: JoinRegister) -> str:
+        """Return <TR>s for a JoinRegister."""
+        label = ''
+        for i in range(reg.bitsize):
+            out_td = f'<TD rowspan="{reg.bitsize}" port="{reg.name}">{self.get_join_text(None)}</TD>' if i == 0 else ''
+            label += f'<TR><TD port="{reg.name}{i}">{self.get_join_text(i)}</TD>{out_td}</TR>'
+
+        return label
+
+    def get_apply_f_text(self, reg: ApplyFRegister) -> Tuple[str, str]:
+        return reg.name, reg.out_name
+
+    def get_apply_f_register(self, reg: ApplyFRegister) -> str:
+        t1, t2 = self.get_apply_f_text(reg)
+        return f'<TR><TD port="{reg.name}">{t1}</TD><TD port="{reg.out_name}">{t2}</TD></TR>'
+
+    def get_default_text(self, reg: Register) -> str:
+        return reg.name
+
+    def get_default_register(self, reg: Register, colspan: str = '') -> str:
         """Return a <TR> for a normal Register."""
-        return f'<TR><TD PORT="{reg.name}">{reg.name}</TD><TD PORT="{reg.name}_out">{reg.name}_out</TD></TR>'
+        return f'<TR><TD {colspan} PORT="{reg.name}">{self.get_default_text(reg)}</TD></TR>'
 
     def get_binst_table_attributes(self) -> str:
         """Return the desired table attributes for the bloq."""
@@ -263,26 +302,42 @@ class GraphDrawer:
         """Add a BloqInstance to the graph."""
         label = '<'  # graphviz: start an HTML section
         label += f'<TABLE {self.get_binst_table_attributes()}>'
-        label += f'<tr><td colspan="2">{self.get_binst_header_text(binst)}</td></tr>'
+
+        complex_reg_types = (SplitRegister, JoinRegister, ApplyFRegister)
+        have_complex_regs = any(isinstance(reg, complex_reg_types) for reg in binst.bloq.registers)
+        header_colspan = 'colspan="2"' if have_complex_regs else ''
+        label += f'<tr><td {header_colspan}>{self.get_binst_header_text(binst)}</td></tr>'
+
         for reg in binst.bloq.registers:
             if isinstance(reg, SplitRegister):
                 label += self.get_split_register(reg)
+            elif isinstance(reg, JoinRegister):
+                label += self.get_join_register(reg)
+            elif isinstance(reg, ApplyFRegister):
+                label += self.get_apply_f_register(reg)
             else:
-                label += self.get_default_register(reg)
+                label += self.get_default_register(reg, header_colspan)
+
         label += '</TABLE>'
         label += '>'  # graphviz: end the HTML section
 
         graph.add_node(pydot.Node(_binst_id(binst), label=label, shape='plain'))
         return graph
 
+    def get_arrowhead(self):
+        return 'normal'
+
+    def add_edge(self, graph: pydot.Graph, tail: str, head: str):
+        graph.add_edge(pydot.Edge(tail, head, arrowhead=self.get_arrowhead()))
+
     def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
         (lg, ln), (rg, rn) = wire.tt
         if isinstance(lg, DanglingT):
-            graph.add_edge(pydot.Edge(_dangling_id(lg, ln), _binst_in_port(rg, rn)))
+            self.add_edge(graph, _dangling_id(lg, ln), _binst_in_port(rg, rn))
         elif isinstance(rg, DanglingT):
-            graph.add_edge(pydot.Edge(_binst_out_port(lg, ln), _dangling_id(rg, ln)))
+            self.add_edge(graph, _binst_out_port(lg, ln), _dangling_id(rg, rn))
         else:
-            graph.add_edge(pydot.Edge(_binst_out_port(lg, ln), _binst_in_port(rg, rn)))
+            self.add_edge(graph, _binst_out_port(lg, ln), _binst_in_port(rg, rn))
 
         return graph
 
@@ -306,16 +361,27 @@ class PrettyGraphDrawer(GraphDrawer):
         return 'BORDER="0" CELLBORDER="1" CELLSPACING="0"'
 
     def get_binst_header_text(self, binst: BloqInstance):
+        if isinstance(binst.bloq, (Split, Join)):
+            return ''
         return f'<font point-size="10">{binst.bloq.pretty_name()}</font>'
 
-    def get_default_register(self, reg: Register) -> str:
-        if reg.name == 'control':
-            celllab = '\u2b24'
-        else:
-            celllab = reg.name
+    def get_split_text(self, i: Union[None, int]):
+        return ''
 
-        label = f'<TR><TD PORT="{reg.name}">{celllab}</TD><TD PORT="{reg.name}_out">..</TD></TR>'
-        return label
+    def get_join_text(self, i: Union[None, int]):
+        return ''
+
+    def get_apply_f_text(self, reg: ApplyFRegister) -> Tuple[str, str]:
+        return reg.in_text, reg.out_text
+
+    def get_default_text(self, reg: Register) -> str:
+        if reg.name == 'control':
+            return '\u2b24'
+
+        return reg.name
+
+    def get_arrowhead(self):
+        return 'none'
 
 
 class _QuantumGraphBuilder:

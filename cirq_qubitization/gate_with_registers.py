@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 import sys
-from typing import Sequence, Dict, Iterable, List, Union, overload
+from typing import Sequence, Dict, Iterable, List, Union, overload, Optional
 
 import cirq
 
@@ -17,7 +17,15 @@ class Register:
 class SplitRegister(Register):
     pass
 
+@dataclasses.dataclass(frozen=True)
+class JoinRegister(Register):
+    pass
 
+@dataclasses.dataclass(frozen=True)
+class ApplyFRegister(Register):
+    out_name:str
+    in_text:Optional[str] = None
+    out_text:Optional[str] = None
 
 
 class Registers:
