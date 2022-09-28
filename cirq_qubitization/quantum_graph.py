@@ -1,3 +1,4 @@
+import abc
 import re
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -7,104 +8,274 @@ from typing import Sequence, Union, List, Dict, overload, Any
 import cirq
 
 from cirq_qubitization import MultiTargetCSwap
-from cirq_qubitization.atoms import Split, Join
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.atoms import Join
+from cirq_qubitization.gate_with_registers import Registers, SplitRegister
 import networkx as nx
 from collections import defaultdict
 import cirq_qubitization.testing as cq_testing
 
+class LeftRightT:
+    pass
+
+Left = LeftRightT()
+Right = LeftRightT()
+
+
+@dataclass(frozen=True)
+class Port:
+    name: str
+    lr: LeftRightT
+
+class Bloq(metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def registers(self) -> Registers:
+        ...
+
+    def ports(self):
+        for reg in self.registers:
+            yield Port(reg.name, Left)
+            yield Port(reg.name, Right)
+
+    def pretty_name(self) -> str:
+        return self.__class__.__name__
+
+
+class CompositeBloq(Bloq):
+    def __init__(self, wires: Sequence['Wire'], provenance=None):
+        self._wires = wires
+        self._provenance = provenance
+        self._registers = Registers.build() # todo
+
+    @property
+    def registers(self) -> Registers:
+        return self._registers
+
+
+@dataclass(frozen=True)
+class BloqInstance:
+    bloq: Bloq
+    i: int
+
+    def __repr__(self):
+        return f'{self.bloq!r}[{self.i}]'
+
+
+class RegObj:
+    def __init__(self, name: str):
+        self.name = name
+
+    def __eq__(self, other):
+        return self is other
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def __repr__(self):
+        return f'{self.name}<{id(self)}>'
+
+
+@dataclass(frozen=True)
+class Split(Bloq):
+    bitsize: int
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers([SplitRegister(name='xy', bitsize=self.bitsize)])
+
+
+class BloqBuilder:
+    def __init__(self, parent_reg: Registers):
+        self.i = 0
+        self._wires = []
+        self._prev_inst = {reg.name: LeftDangle for reg in parent_reg}
+        self._tracers = tuple(RegObj(reg.name) for reg in parent_reg)
+        self._used = set()
+        print('bbstart', self._prev_inst, self._tracers, self._used)
+
+    def get_tracers(self):
+        return self._tracers
+
+    def split(self, x: RegObj, n: int):
+        inst = BloqInstance(Split(n), self.i)
+        self.i += 1
+
+        fr_name = x.name
+        self._wires.append(Wire(self._prev_inst[fr_name], fr_name, inst, 'x'))
+        print('wire_add', self._wires[-1])
+        del self._prev_inst[fr_name]
+        new_reg_objs = tuple(RegObj(f'y{i}') for i in range(n))
+        for i in range(n):
+            robj = new_reg_objs[i]
+            to_name = robj.name
+            self._prev_inst[to_name] = inst
+
+        print("prev_inst", self._prev_inst)
+        return new_reg_objs
+
+    def add(self, bloq: Bloq, **reg_map: RegObj):
+        inst = BloqInstance(bloq, i=self.i)
+        self.i += 1
+        for to_name, fr_obj in reg_map.items():
+            fr_name = fr_obj.name
+            if fr_obj in self._used:
+                raise TypeError(f"{fr_obj} re-used!")
+            self._used.add(fr_obj)
+            self._wires.append(Wire(self._prev_inst[fr_name], fr_name, inst, to_name))
+            print('wire_add', self._wires[-1])
+            del self._prev_inst[fr_name]
+            self._prev_inst[to_name] = inst  # todo: translate if bloq has different in/out reg.
+
+        print('prev_inst', self._prev_inst)
+        return tuple(RegObj(name=reg.name) for reg in bloq.registers)
+
+    def finalize(self) -> CompositeBloq:
+        return CompositeBloq(wires=self._wires)
+
+
+@dataclass(frozen=True)
+class SingleControlModMultiply(Bloq):
+    x_bitsize: int
+    mul_constant: int
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(
+            control=1,
+            x=self.x_bitsize
+        )
+
+
+@dataclass(frozen=True)
+class ModMultiply(Bloq):
+    exponent_bitsize: int
+    x_bitsize: int
+    mul_constant: int
+    mod_N: int
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(
+            exponent=self.exponent_bitsize,
+            x=self.x_bitsize
+        )
+
+    def decompose_from_registers(self):
+        bb = BloqBuilder(self.registers)
+        exponent, x = bb.get_tracers()
+        ctls = list(bb.split(exponent, self.exponent_bitsize))
+
+        for j in range(self.exponent_bitsize - 1, 0 - 1, -1):
+            c = self.mul_constant ** 2 ** j % self.mod_N
+            ctl, x = bb.add(SingleControlModMultiply(x_bitsize=self.x_bitsize, mul_constant=c),
+                            control=ctls[j], x=x)
+            ctls[j] = ctl
+
+        return bb.finalize()
+
 
 class DanglingT:
+
+    def __init__(self, direction:str):
+        self.direction = direction
     def __repr__(self):
-        return '..'
+        if self.direction == 'l':
+            return '<|'
+        if self.direction == 'r':
+            return '|>'
+        raise ValueError()
 
 
-LeftDangle = DanglingT()
-RightDangle = DanglingT()
+LeftDangle = DanglingT(direction='l')
+RightDangle = DanglingT(direction='r')
 
 
 @dataclass(frozen=True)
 class Wire:
-    left_gate: Union[GateWithRegisters, DanglingT]
+    left_gate: Union[BloqInstance, DanglingT]
     left_name: str
-    right_gate: Union[GateWithRegisters, DanglingT]
+    right_gate: Union[BloqInstance, DanglingT]
     right_name: str
 
     @property
     def tt(self):
-        ln = 'x' if isinstance(self.left_gate, Split) else self.left_name
-        rn = 'x' if isinstance(self.right_gate, Join) else self.right_name
-        return ((self.left_gate, ln), (self.right_gate, rn))
+        return ((self.left_gate, self.left_name), (self.right_gate, self.right_name))
 
 
 class QuantumGraph:
-    def __init__(self, nodes: List[GateWithRegisters], wires: List[Wire]):
+    def __init__(self, nodes: List[BloqInstance], wires: List[Wire], registers:Registers):
         self.nodes = nodes
         self.wires = wires
+        self.registers = registers
 
     def graphviz(self):
         import pydot
-        i_by_prefix = defaultdict(lambda: 0)
-        saved = {}
 
-        def gid(gate, regname):
-            pot = saved.get((gate, regname), None)
-            if pot is not None:
-                return pot
+        def gid(x: BloqInstance):
+            return f'{x.bloq.pretty_name()}_{x.i}'
 
-            gname = gate.__class__.__name__
-            i = i_by_prefix[gname, regname]
-            i_by_prefix[gname, regname] += 1
-            name = f'{gname}_{i}_{regname}'
-            saved[gate, regname] = name
-            return name
+        def did(x: DanglingT, reg_name:str):
+            return f'DanglingT_{x.direction}_{reg_name}'
+
+        def splittable(n):
+            label = ''
+            for i in range(n):
+                if i == 0:
+                    label += f'<TR><TD rowspan="3" port="x">in</TD><TD port="y{i}_out">{i}</TD></TR>'
+                else:
+                   label += f'<TR><TD port="y{i}_out">{i}</TD></TR>'
+
+            # label = '<TR><TD>in</TD><TD><TABLE><TR><TD>1</TD></TR><TR><TD>2</TD></TR></TABLE></TD></TR>'
+            return label
 
         graph = pydot.Dot('qual', graph_type='digraph', rankdir='LR')
 
         dang = pydot.Subgraph(rank='same')
-        for yi, r in enumerate(g.r):
-            dang.add_node(pydot.Node(gid(LeftDangle, r.name), label=f'{r.name}', shape='plaintext'))
+        for yi, r in enumerate(self.registers):
+            dang.add_node(pydot.Node(did(LeftDangle, r.name), label=f'{r.name}', shape='plaintext'))
         graph.add_subgraph(dang)
 
-        for xi, gate in enumerate(self.nodes):
-            if isinstance(gate, Split):
-                graph.add_node(
-                    pydot.Node(gid(gate, ''), shape='triangle', label='', orientation=90))
-                continue
-            if isinstance(gate, Join):
-                graph.add_node(
-                    pydot.Node(gid(gate, ''), shape='triangle', label='', orientation=-90))
-                continue
+        for xi, binst in enumerate(self.nodes):
+            # if isinstance(binst.bloq, Split):
+            #     graph.add_node(
+            #         pydot.Node(gid(binst), shape='triangle', label='', orientation=90))
+            #     continue
+            # if isinstance(binst.bloq, Join):
+            #     graph.add_node(
+            #         pydot.Node(gid(binst), shape='triangle', label='', orientation=-90))
+            #     continue
 
-            ports = [f'<{r.name}>{r.name}' for r in gate.registers]
-            label = '<<TABLE BORDER="1" CELLBORDER="0" CeLLSPACING="0">'
-            label += f'<tr><td><font point-size="10">{gate.pretty_name()}</font></td></tr>'
-            for r in gate.registers:
+            label = '<<TABLE BORDER="1" CELLBORDER="1" CeLLSPACING="3">'
+            label += f'<tr><td colspan="2"><font point-size="10">{binst.bloq.pretty_name()}</font></td></tr>'
+            for r in binst.bloq.registers:
                 if r.name == 'control':
                     celllab = '\u2b24'
                 else:
                     celllab = r.name
 
-                label += f'<TR><TD PORT="{r.name}">{celllab}</TD></TR>'
+                if isinstance(r, SplitRegister):
+                    label += splittable(r.bitsize)
+                else:
+                    label += f'<TR><TD PORT="{r.name}">{celllab}</TD><TD PORT="{r.name}_out">..</TD></TR>'
             label += '</TABLE>>'
 
-            graph.add_node(pydot.Node(gid(gate, ''), label=label, shape='plain'))
+            graph.add_node(pydot.Node(gid(binst), label=label, shape='plain'))
 
         dang = pydot.Subgraph(rank='same')
-        for yi, r in enumerate(g.r):
+        for yi, r in enumerate(self.registers):
             dang.add_node(
-                pydot.Node(gid(RightDangle, r.name), label=f'{r.name}', shape='plaintext'))
+                pydot.Node(did(RightDangle, r.name), label=f'{r.name}', shape='plaintext'))
         graph.add_subgraph(dang)
 
         for wire in self.wires:
             (lg, ln), (rg, rn) = wire.tt
             if isinstance(lg, DanglingT):
-                graph.add_edge(pydot.Edge(gid(lg, ln), gid(rg, '') + ':' + rn))
+                graph.add_edge(pydot.Edge(did(lg, ln), gid(rg) + ':' + rn))
             elif isinstance(rg, DanglingT):
-                graph.add_edge(pydot.Edge(gid(lg, '') + ':' + ln, gid(rg, rn)))
+                graph.add_edge(pydot.Edge(gid(lg) + ':' + ln, did(rg, ln)))
             else:
                 graph.add_edge(
-                    pydot.Edge(gid(lg, '') + ':' + ln, gid(rg, '') + ':' + rn, arrowhead='none'))
+                    pydot.Edge(gid(lg) + ':' + ln+'_out' + ':e', gid(rg) + ':' + rn +':w'))
 
         return graph
 
@@ -116,14 +287,13 @@ class _QuantumGraphBuilder:
         self.left_gate = {}
         self.splits = {}
 
-    def wire_up(self, from_reg_name: str, gate: GateWithRegisters, to_reg_name: str):
+    def wire_up(self, from_reg_name: str, gate: Bloq, to_reg_name: str):
         if gate not in self.nodes:
             self.nodes.append(gate)
 
         ma = re.match(r'(\w+)\[(\d+):(\d+)]', from_reg_name)
         if ma is not None:
             self.split(ma.group(1), int(ma.group(2)), int(ma.group(3)))
-
 
         # self.wires.append(Wire(self.left_gate[from_reg_name], from_reg_name, gate, to_reg_name))
         # del self.left_gate[from_reg_name]
@@ -188,7 +358,7 @@ class QubitTracer(Sequence[cirq.Qid], cirq.Qid):
     def __len__(self) -> int:
         return self.bitsize
 
-    def wire_up(self, gate: GateWithRegisters, reg_name: str):
+    def wire_up(self, gate: Bloq, reg_name: str):
         # I'm being plugged in
         print(self.name, gate, reg_name)
         self._gb.wire_up(self.name, gate, reg_name)

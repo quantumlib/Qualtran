@@ -13,6 +13,12 @@ class Register:
     name: str
     bitsize: int
 
+@dataclasses.dataclass(frozen=True)
+class SplitRegister(Register):
+    pass
+
+
+
 
 class Registers:
     def __init__(self, registers: Iterable[Register]):
