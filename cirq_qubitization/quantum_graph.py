@@ -3,39 +3,25 @@ import re
 from abc import abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Sequence, Union, List, Dict, overload, Any
+from typing import Sequence, Union, List, Dict, overload, Any, Tuple
 
 import cirq
 
 from cirq_qubitization import MultiTargetCSwap
 from cirq_qubitization.atoms import Join
-from cirq_qubitization.gate_with_registers import Registers, SplitRegister
+from cirq_qubitization.gate_with_registers import Registers, SplitRegister, Register
 import networkx as nx
 from collections import defaultdict
 import cirq_qubitization.testing as cq_testing
 
-class LeftRightT:
-    pass
+import pydot
 
-Left = LeftRightT()
-Right = LeftRightT()
-
-
-@dataclass(frozen=True)
-class Port:
-    name: str
-    lr: LeftRightT
 
 class Bloq(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def registers(self) -> Registers:
         ...
-
-    def ports(self):
-        for reg in self.registers:
-            yield Port(reg.name, Left)
-            yield Port(reg.name, Right)
 
     def pretty_name(self) -> str:
         return self.__class__.__name__
@@ -45,7 +31,7 @@ class CompositeBloq(Bloq):
     def __init__(self, wires: Sequence['Wire'], provenance=None):
         self._wires = wires
         self._provenance = provenance
-        self._registers = Registers.build() # todo
+        self._registers = Registers.build()  # todo
 
     @property
     def registers(self) -> Registers:
@@ -58,7 +44,7 @@ class BloqInstance:
     i: int
 
     def __repr__(self):
-        return f'{self.bloq!r}[{self.i}]'
+        return f'{self.bloq!r}<{self.i}>'
 
 
 class RegObj:
@@ -81,7 +67,7 @@ class Split(Bloq):
 
     @cached_property
     def registers(self) -> Registers:
-        return Registers([SplitRegister(name='xy', bitsize=self.bitsize)])
+        return Registers([SplitRegister(name='sss', bitsize=self.bitsize)])
 
 
 class BloqBuilder:
@@ -97,14 +83,16 @@ class BloqBuilder:
         return self._tracers
 
     def split(self, x: RegObj, n: int):
+        bloq = Split(n)
+        splitname = bloq.registers[0].name
         inst = BloqInstance(Split(n), self.i)
         self.i += 1
 
         fr_name = x.name
-        self._wires.append(Wire(self._prev_inst[fr_name], fr_name, inst, 'x'))
+        self._wires.append(Wire(self._prev_inst[fr_name], fr_name, inst, splitname))
         print('wire_add', self._wires[-1])
         del self._prev_inst[fr_name]
-        new_reg_objs = tuple(RegObj(f'y{i}') for i in range(n))
+        new_reg_objs = tuple(RegObj(f'{splitname}{i}') for i in range(n))
         for i in range(n):
             robj = new_reg_objs[i]
             to_name = robj.name
@@ -176,8 +164,9 @@ class ModMultiply(Bloq):
 
 class DanglingT:
 
-    def __init__(self, direction:str):
+    def __init__(self, direction: str):
         self.direction = direction
+
     def __repr__(self):
         if self.direction == 'l':
             return '<|'
@@ -202,82 +191,131 @@ class Wire:
         return ((self.left_gate, self.left_name), (self.right_gate, self.right_name))
 
 
-class QuantumGraph:
-    def __init__(self, nodes: List[BloqInstance], wires: List[Wire], registers:Registers):
+def _binst_id(x: BloqInstance):
+    # should be fine as long as all the `i`s are unique.
+    return f'{x.bloq.__class__.__name__}_{x.i}'
+
+
+def _binst_in_port(x: BloqInstance, port: str):
+    return f'{_binst_id(x)}:{port}:w'
+
+
+def _binst_out_port(x: BloqInstance, port: str):
+    return f'{_binst_id(x)}:{port}_out:e'
+
+
+def _dangling_id(x: DanglingT, reg_name: str):
+    # Can we collide with a binst_id? Probably not unless we have a class named
+    # DanglingT_l with integer reg_name.
+    return f'DanglingT_{x.direction}_{reg_name}'
+
+
+class GraphDrawer:
+    def __init__(self, nodes: List[BloqInstance], wires: List[Wire], registers: Registers):
         self.nodes = nodes
         self.wires = wires
         self.registers = registers
 
-    def graphviz(self):
-        import pydot
+    def to_pretty(self):
+        """Return a PrettyGraphDrawer version of this that overrides methods to make the
+        display more pretty but less explicit."""
+        return PrettyGraphDrawer(self.nodes, self.wires, self.registers)
 
-        def gid(x: BloqInstance):
-            return f'{x.bloq.pretty_name()}_{x.i}'
+    def get_dangle_node(self, dangle: DanglingT, reg: Register) -> pydot.Node:
+        """Get a Node representing dangling indices."""
+        return pydot.Node(_dangling_id(dangle, reg.name), label=f'{reg.name}', shape='plaintext')
 
-        def did(x: DanglingT, reg_name:str):
-            return f'DanglingT_{x.direction}_{reg_name}'
+    def add_dangles(self, graph: pydot.Graph, dangle: DanglingT) -> pydot.Graph:
+        """Add nodes representing dangling indices to the graph.
 
-        def splittable(n):
-            label = ''
-            for i in range(n):
-                if i == 0:
-                    label += f'<TR><TD rowspan="3" port="x">in</TD><TD port="y{i}_out">{i}</TD></TR>'
-                else:
-                   label += f'<TR><TD port="y{i}_out">{i}</TD></TR>'
-
-            # label = '<TR><TD>in</TD><TD><TABLE><TR><TD>1</TD></TR><TR><TD>2</TD></TR></TABLE></TD></TR>'
-            return label
-
-        graph = pydot.Dot('qual', graph_type='digraph', rankdir='LR')
-
+        We wrap this in a subgraph to align (rank=same) the 'nodes'
+        """
         dang = pydot.Subgraph(rank='same')
-        for yi, r in enumerate(self.registers):
-            dang.add_node(pydot.Node(did(LeftDangle, r.name), label=f'{r.name}', shape='plaintext'))
+        for reg in self.registers:
+            dang.add_node(self.get_dangle_node(dangle, reg))
         graph.add_subgraph(dang)
+        return graph
 
-        for xi, binst in enumerate(self.nodes):
-            # if isinstance(binst.bloq, Split):
-            #     graph.add_node(
-            #         pydot.Node(gid(binst), shape='triangle', label='', orientation=90))
-            #     continue
-            # if isinstance(binst.bloq, Join):
-            #     graph.add_node(
-            #         pydot.Node(gid(binst), shape='triangle', label='', orientation=-90))
-            #     continue
-
-            label = '<<TABLE BORDER="1" CELLBORDER="1" CeLLSPACING="3">'
-            label += f'<tr><td colspan="2"><font point-size="10">{binst.bloq.pretty_name()}</font></td></tr>'
-            for r in binst.bloq.registers:
-                if r.name == 'control':
-                    celllab = '\u2b24'
-                else:
-                    celllab = r.name
-
-                if isinstance(r, SplitRegister):
-                    label += splittable(r.bitsize)
-                else:
-                    label += f'<TR><TD PORT="{r.name}">{celllab}</TD><TD PORT="{r.name}_out">..</TD></TR>'
-            label += '</TABLE>>'
-
-            graph.add_node(pydot.Node(gid(binst), label=label, shape='plain'))
-
-        dang = pydot.Subgraph(rank='same')
-        for yi, r in enumerate(self.registers):
-            dang.add_node(
-                pydot.Node(did(RightDangle, r.name), label=f'{r.name}', shape='plaintext'))
-        graph.add_subgraph(dang)
-
-        for wire in self.wires:
-            (lg, ln), (rg, rn) = wire.tt
-            if isinstance(lg, DanglingT):
-                graph.add_edge(pydot.Edge(did(lg, ln), gid(rg) + ':' + rn))
-            elif isinstance(rg, DanglingT):
-                graph.add_edge(pydot.Edge(gid(lg) + ':' + ln, did(rg, ln)))
+    def get_split_register(self, reg: SplitRegister) -> str:
+        """Return a <TR> for a SplitRegister."""
+        label = ''
+        for i in range(reg.bitsize):
+            if i == 0:
+                label += f'<TR><TD rowspan="{reg.bitsize}" port="{reg.name}">in</TD><TD port="{reg.name}{i}_out">{i}</TD></TR>'
             else:
-                graph.add_edge(
-                    pydot.Edge(gid(lg) + ':' + ln+'_out' + ':e', gid(rg) + ':' + rn +':w'))
+                label += f'<TR><TD port="{reg.name}{i}_out">{i}</TD></TR>'
+
+        return label
+
+    def get_default_register(self, reg: Register) -> str:
+        """Return a <TR> for a normal Register."""
+        return f'<TR><TD PORT="{reg.name}">{reg.name}</TD><TD PORT="{reg.name}_out">{reg.name}_out</TD></TR>'
+
+    def get_binst_table_attributes(self) -> str:
+        """Return the desired table attributes for the bloq."""
+        return 'BORDER="1" CELLBORDER="1" CELLSPACING="3"'
+
+    def get_binst_header_text(self, binst: BloqInstance) -> str:
+        """Get the text used for the 'header' cell of a bloq."""
+        return _binst_id(binst)
+
+    def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
+        """Add a BloqInstance to the graph."""
+        label = '<'  # graphviz: start an HTML section
+        label += f'<TABLE {self.get_binst_table_attributes()}>'
+        label += f'<tr><td colspan="2">{self.get_binst_header_text(binst)}</td></tr>'
+        for reg in binst.bloq.registers:
+            if isinstance(reg, SplitRegister):
+                label += self.get_split_register(reg)
+            else:
+                label += self.get_default_register(reg)
+        label += '</TABLE>'
+        label += '>'  # graphviz: end the HTML section
+
+        graph.add_node(pydot.Node(_binst_id(binst), label=label, shape='plain'))
+        return graph
+
+    def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
+        (lg, ln), (rg, rn) = wire.tt
+        if isinstance(lg, DanglingT):
+            graph.add_edge(pydot.Edge(_dangling_id(lg, ln), _binst_in_port(rg, rn)))
+        elif isinstance(rg, DanglingT):
+            graph.add_edge(pydot.Edge(_binst_out_port(lg, ln), _dangling_id(rg, ln)))
+        else:
+            graph.add_edge(pydot.Edge(_binst_out_port(lg, ln), _binst_in_port(rg, rn)))
 
         return graph
+
+    def graphviz(self) -> pydot.Graph:
+        graph = pydot.Dot('qual', graph_type='digraph', rankdir='LR')
+        graph = self.add_dangles(graph, LeftDangle)
+
+        for binst in self.nodes:
+            graph = self.add_binst(graph, binst)
+
+        graph = self.add_dangles(graph, RightDangle)
+
+        for wire in self.wires:
+            graph = self.add_wire(graph, wire)
+
+        return graph
+
+
+class PrettyGraphDrawer(GraphDrawer):
+    def get_binst_table_attributes(self) -> str:
+        return 'BORDER="0" CELLBORDER="1" CELLSPACING="0"'
+
+    def get_binst_header_text(self, binst: BloqInstance):
+        return f'<font point-size="10">{binst.bloq.pretty_name()}</font>'
+
+    def get_default_register(self, reg: Register) -> str:
+        if reg.name == 'control':
+            celllab = '\u2b24'
+        else:
+            celllab = reg.name
+
+        label = f'<TR><TD PORT="{reg.name}">{celllab}</TD><TD PORT="{reg.name}_out">..</TD></TR>'
+        return label
 
 
 class _QuantumGraphBuilder:
