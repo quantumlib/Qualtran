@@ -3,18 +3,13 @@ import re
 from abc import abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Sequence, Union, List, Dict, overload, Any, Tuple
+from typing import Sequence, Union, List, overload, Any, Tuple
 
 import cirq
+import pydot
 
-from cirq_qubitization import MultiTargetCSwap
 from cirq_qubitization.gate_with_registers import Registers, SplitRegister, Register, JoinRegister, \
     ApplyFRegister
-import networkx as nx
-from collections import defaultdict
-import cirq_qubitization.testing as cq_testing
-
-import pydot
 
 
 class Bloq(metaclass=abc.ABCMeta):
