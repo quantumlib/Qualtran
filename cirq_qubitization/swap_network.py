@@ -127,8 +127,20 @@ class SwapWithZeroGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         assert len(target_regs) == self._n_target_registers
         cswap_n = MultiTargetCSwapApprox(self._target_bitsize)
+        # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target
+        # register. If the selection register stores index `r`, we want to bring the value stored
+        # in leaf indexed `r` to the leaf indexed `0`. At each node of the binary tree, the left
+        # subtree contains node with current bit 0 and right subtree contains nodes with current
+        # bit 1. Thus, leaf indexed `0` is the leftmost node in the tree.
+        # Start iterating from the root of the tree. If the j'th bit is set in the selection
+        # register (i.e. the control would be activated); we know that the value we are searching
+        # for is in the right subtree. In order to (eventually) bring the desired value to node
+        # 0; we swap all values in the right subtree with all values in the left subtree. This
+        # takes (N / (2 ** (j + 1)) swaps at level `j`.
+        # Therefore, in total, we need $\sum_{j=0}^{logN-1} \frac{N}{2 ^ {j + 1}}$ controlled swaps.
         for j in range(len(selection)):
-            for i in range(self._n_target_registers - 2**j):
+            for i in range(0, self._n_target_registers - 2**j, 2 ** (j + 1)):
+                # The inner loop is executed at-most `N - 1` times, where `N:= len(target_regs)`.
                 yield cswap_n.on_registers(
                     control=selection[len(selection) - j - 1],
                     target_x=target_regs[f'target{i}'],
