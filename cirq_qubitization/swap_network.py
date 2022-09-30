@@ -3,7 +3,7 @@ from typing import Any, Sequence
 import cirq
 from cirq_qubitization import multi_target_cnot
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
-
+from cirq_qubitization.t_complexity_protocol import TComplexity
 
 class MultiTargetCSwap(GateWithRegisters):
     """Implements multi-target controlled swap unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$."""
@@ -41,12 +41,23 @@ class MultiTargetCSwap(GateWithRegisters):
     def __eq__(self, other: 'MultiTargetCSwap') -> Any:
         return type(self) == type(other) and self._target_bitsize == other._target_bitsize
 
+    def _t_complexity_(self) -> TComplexity:
+        """Returns TComplexity of MultiTargetCSwap = TComplexity of _target_bitsize CSWAPs.
+
+            Decomposition of CSWAP(Appendix B.2.c of https://arxiv.org/abs/1812.00954):
+                0: ──────────────────@──────────────────@───@───T──────@───
+                                     │                  │   │          │
+                1: ───────@──────────┼───────@───T──────┼───X───T^-1───X───
+                          │          │       │          │
+                2: ───H───X───T^-1───X───T───X───T^-1───X───T───H──────────
+        """
+        return TComplexity(t=7*self._target_bitsize, clifford=8*self._target_bitsize)
 
 class MultiTargetCSwapApprox(MultiTargetCSwap):
     """Approximately implements a multi-target controlled swap unitary using only 4 * N T-gates.
 
     Implements the unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$ such that the output state is
-    correct up to a global phase factor of +1 / -1.
+    correct up to a global phase factor of ±1.
 
     This is useful when the incorrect phase can be absorbed in a garbage state of an algorithm; and
     thus ignored. See Appendix B.2.c of https://arxiv.org/abs/1812.00954 for more details.
@@ -88,6 +99,10 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
     def __repr__(self) -> str:
         return f"cirq_qubitization.MultiTargetCSwapApprox({self._target_bitsize})"
 
+    def _t_complexity_(self) -> TComplexity:
+        """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
+        n = (self._num_qubits_() - 1) // 2
+        return TComplexity(t=4*n, clifford=26*n - 3)
 
 class SwapWithZeroGate(GateWithRegisters):
     """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.

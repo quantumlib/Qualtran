@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 import cirq
 import cirq_qubitization
+from cirq_qubitization.t_complexity_protocol import _has_decomposition, t_complexity
 
 random.seed(12345)
 
@@ -123,3 +124,12 @@ def test_multi_target_cswap():
     """,
         use_unicode_characters=False,
     )
+
+
+def test_t_complexity():
+    for n in range(1, 5 + 1):
+        g = cirq_qubitization.MultiTargetCSwap(n)
+        assert _has_decomposition(g) == g._t_complexity_()
+
+        g = cirq_qubitization.MultiTargetCSwapApprox(n)
+        assert _has_decomposition(g) == g._t_complexity_()

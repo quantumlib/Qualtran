@@ -1,6 +1,7 @@
 from typing import Sequence
 import cirq
 
+from cirq_qubitization.t_complexity_protocol import TComplexity
 
 class MultiTargetCNOT(cirq.Gate):
     """Implements single control, multi-target CNOT_{n} gate in 2*log(n) + 1 CNOT depth.
@@ -31,3 +32,6 @@ class MultiTargetCNOT(cirq.Gate):
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * (self._num_qubits_() - 1))
+
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(clifford=6*self._num_qubits_() - 9)
