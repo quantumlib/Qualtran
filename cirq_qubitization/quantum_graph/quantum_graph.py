@@ -19,7 +19,7 @@ class DanglingT:
 
 
 @dataclass(frozen=True)
-class Port:
+class Soquet:
     binst: Union[BloqInstance, DanglingT]
     reg_name: str
 
@@ -30,8 +30,8 @@ RightDangle = DanglingT(direction='r')
 
 @dataclass(frozen=True)
 class Wiring:
-    left: Port
-    right: Port
+    left: Soquet
+    right: Soquet
 
     def __repr__(self):
         return f'{self.left!r} -> {self.right!r}'

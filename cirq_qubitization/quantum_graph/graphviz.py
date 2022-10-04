@@ -12,7 +12,7 @@ from cirq_qubitization.quantum_graph.fancy_registers import (
     ApplyFRegister,
 )
 from cirq_qubitization.quantum_graph.quantum_graph import (
-    Port,
+    Soquet,
     LeftDangle,
     BloqInstance,
     Wiring,
@@ -27,15 +27,15 @@ def _binst_id(x: BloqInstance):
     return f'{x.bloq.__class__.__name__}_{x.i}'
 
 
-def _binst_in_port(port: Port):
+def _binst_in_port(port: Soquet):
     return f'{_binst_id(port.binst)}:{port.reg_name}:w'
 
 
-def _binst_out_port(port: Port):
+def _binst_out_port(port: Soquet):
     return f'{_binst_id(port.binst)}:{port.reg_name}:e'
 
 
-def _dangling_id(port: Port):
+def _dangling_id(port: Soquet):
     # Can we collide with a binst_id? Probably not unless we have a class named
     # DanglingT_l with integer reg_name.
     assert isinstance(port.binst, DanglingT)
@@ -48,7 +48,7 @@ class GraphDrawer:
             cbloq = bloq
         else:
             bb = BloqBuilder(bloq.registers)
-            port_dict = {reg.name: Port(LeftDangle, reg.name) for reg in bloq.registers}
+            port_dict = {reg.name: Soquet(LeftDangle, reg.name) for reg in bloq.registers}
             stuff = bb.add(bloq, **port_dict)
             cbloq = bb.finalize(**{reg.name: s for reg, s in zip(bloq.registers, stuff)})
 
@@ -74,7 +74,7 @@ class GraphDrawer:
     def get_dangle_node(self, dangle: DanglingT, reg: Register) -> pydot.Node:
         """Get a Node representing dangling indices."""
         return pydot.Node(
-            _dangling_id(Port(dangle, reg.name)), label=f'{reg.name}', shape='plaintext'
+            _dangling_id(Soquet(dangle, reg.name)), label=f'{reg.name}', shape='plaintext'
         )
 
     def add_dangles(self, graph: pydot.Graph, dangle: DanglingT) -> pydot.Graph:
@@ -238,14 +238,14 @@ def _binst_id2(x: BloqInstance):
     return f'{x.bloq.__class__.__name__}_{x.i}'
 
 
-def _pgid(p: Port):
+def _pgid(p: Soquet):
     return f'{_binst_id2(p.binst)}_{p.reg_name}'
 
 
 class PortGraphDrawer(GraphDrawer):
     def get_dangle_node(self, dangle: DanglingT, reg: Register) -> pydot.Node:
         """Get a Node representing dangling indices."""
-        return pydot.Node(_pgid(Port(dangle, reg.name)), label=reg.name, shape='plaintext')
+        return pydot.Node(_pgid(Soquet(dangle, reg.name)), label=reg.name, shape='plaintext')
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         subg = pydot.Cluster(_binst_id2(binst), label=binst.bloq.pretty_name())
@@ -255,38 +255,38 @@ class PortGraphDrawer(GraphDrawer):
             if isinstance(reg, SplitRegister):
                 subg.add_node(
                     pydot.Node(
-                        _pgid(Port(binst, reg.name)), label=reg.name, shape='house', orientation=-90
+                        _pgid(Soquet(binst, reg.name)), label=reg.name, shape='house', orientation=-90
                     )
                 )
                 for i in range(reg.bitsize):
                     sname = f'{reg.name}{i}'
                     subg.add_node(
                         pydot.Node(
-                            _pgid(Port(binst, sname)), label=sname, shape='house', orientation=90
+                            _pgid(Soquet(binst, sname)), label=sname, shape='house', orientation=90
                         )
                     )
             elif isinstance(reg, JoinRegister):
                 subg.add_node(
                     pydot.Node(
-                        _pgid(Port(binst, reg.name)), label=reg.name, shape='house', orientation=90
+                        _pgid(Soquet(binst, reg.name)), label=reg.name, shape='house', orientation=90
                     )
                 )
                 for i in range(reg.bitsize):
                     sname = f'{reg.name}{i}'
                     subg.add_node(
                         pydot.Node(
-                            _pgid(Port(binst, sname)), label=sname, shape='house', orientation=-90
+                            _pgid(Soquet(binst, sname)), label=sname, shape='house', orientation=-90
                         )
                     )
             elif isinstance(reg, ApplyFRegister):
                 subg.add_node(
                     pydot.Node(
-                        _pgid(Port(binst, reg.name)), label=reg.name, shape='house', orientation=-90
+                        _pgid(Soquet(binst, reg.name)), label=reg.name, shape='house', orientation=-90
                     )
                 )
                 subg.add_node(
                     pydot.Node(
-                        _pgid(Port(binst, reg.out_name)),
+                        _pgid(Soquet(binst, reg.out_name)),
                         label=reg.out_name,
                         shape='house',
                         orientation=90,
@@ -294,7 +294,7 @@ class PortGraphDrawer(GraphDrawer):
                 )
             else:
                 subg.add_node(
-                    pydot.Node(_pgid(Port(binst, reg.name)), label=reg.name, shape='rect')
+                    pydot.Node(_pgid(Soquet(binst, reg.name)), label=reg.name, shape='rect')
                 )
 
         graph.add_subgraph(subg)

@@ -8,7 +8,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
 from cirq_qubitization.quantum_graph.fancy_registers import (
     ApplyFRegister,
 )
-from cirq_qubitization.quantum_graph.quantum_graph import Port, LeftDangle
+from cirq_qubitization.quantum_graph.quantum_graph import Soquet, LeftDangle
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ class ModMultiply(Bloq):
     def registers(self) -> Registers:
         return Registers.build(exponent=self.exponent_bitsize, x=self.x_bitsize)
 
-    def better_decompose(self, bb: BloqBuilder, exponent: Port, x: Port) -> CompositeBloq:
+    def better_decompose(self, bb: BloqBuilder, exponent: Soquet, x: Soquet) -> CompositeBloq:
         ctls = bb.split(exponent, self.exponent_bitsize)
         out_ctls = []
 
@@ -61,6 +61,6 @@ class ModMultiply(Bloq):
     def decompose(self) -> CompositeBloq:
         # TODO: context manager
         # TODO: parent class
-        port_dict = {reg.name: Port(LeftDangle, reg.name) for reg in self.registers}
+        port_dict = {reg.name: Soquet(LeftDangle, reg.name) for reg in self.registers}
         bb = BloqBuilder(self.registers)
         return self.better_decompose(bb=bb, **port_dict)
