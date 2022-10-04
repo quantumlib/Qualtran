@@ -1,25 +1,17 @@
-import abc
-import re
-from abc import abstractmethod
-from dataclasses import dataclass
-from functools import cached_property
-from typing import Sequence, Union, List, overload, Any, Tuple, Set
-
-import cirq
-import pydot
+from typing import Sequence, List, Tuple, Set
 
 from cirq_qubitization.gate_with_registers import Registers, Register
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
+from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister
 from cirq_qubitization.quantum_graph.quantum_graph import (
-    Wire,
+    Wiring,
     Port,
     LeftDangle,
     RightDangle,
     BloqInstance,
 )
 from cirq_qubitization.quantum_graph.util_bloqs import Split, Join
-from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister
 
 
 def reg_out_name(reg: Register):
@@ -32,7 +24,7 @@ def reg_out_name(reg: Register):
 class BloqBuilder:
     def __init__(self, parent_reg: Registers):
         # Our builder builds a sequence of Wires
-        self._wires: List[Wire] = []
+        self._wires: List[Wiring] = []
 
         # Initialize our BloqInstance counter
         self._i = 0
@@ -60,7 +52,7 @@ class BloqBuilder:
         binst = self._new_binst(Split(n))
         splitname = binst.bloq.registers[0].name
 
-        self._wires.append(Wire(fr_port, Port(binst, splitname)))
+        self._wires.append(Wiring(fr_port, Port(binst, splitname)))
         new_ports = tuple(Port(binst, f'{splitname}{i}') for i in range(n))
         return new_ports
 
@@ -69,7 +61,7 @@ class BloqBuilder:
         joinname = binst.bloq.registers[0].name
 
         for i, x in enumerate(xs):
-            self._wires.append(Wire(x, Port(binst, f'{joinname}{i}')))
+            self._wires.append(Wiring(x, Port(binst, f'{joinname}{i}')))
 
         return Port(binst, joinname)
 
@@ -84,7 +76,7 @@ class BloqBuilder:
             self._used.add(fr_port)
 
             # TODO: construct out ports for returning while we're making wires
-            self._wires.append(Wire(fr_port, Port(inst, to_name)))
+            self._wires.append(Wiring(fr_port, Port(inst, to_name)))
 
         return tuple(Port(inst, reg_out_name(reg)) for reg in bloq.registers)
 
@@ -94,7 +86,7 @@ class BloqBuilder:
         # TODO: use parent_registers to iterate? or at least check that all the final_names
         #       are correct?
         for final_name, fr_port in final_ports.items():
-            self._wires.append(Wire(fr_port, Port(RightDangle, final_name)))
+            self._wires.append(Wiring(fr_port, Port(RightDangle, final_name)))
 
         # TODO: remove things from used
         # TODO: assert used() is empty

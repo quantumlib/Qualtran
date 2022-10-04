@@ -1,14 +1,9 @@
-import abc
-import re
-from abc import abstractmethod
-from dataclasses import dataclass
-from functools import cached_property
-from typing import Sequence, Union, List, overload, Any, Tuple, Set
+from typing import Sequence, Union, Tuple, Set
 
-import cirq
 import pydot
 
 from cirq_qubitization.gate_with_registers import Registers, Register
+from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_builder import BloqBuilder
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
 from cirq_qubitization.quantum_graph.fancy_registers import (
@@ -16,12 +11,11 @@ from cirq_qubitization.quantum_graph.fancy_registers import (
     JoinRegister,
     ApplyFRegister,
 )
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.quantum_graph import (
     Port,
     LeftDangle,
     BloqInstance,
-    Wire,
+    Wiring,
     DanglingT,
     RightDangle,
 )
@@ -65,7 +59,7 @@ class GraphDrawer:
             wire.right.binst for wire in cbloq.wires if not isinstance(wire.right.binst, DanglingT)
         )
         self.nodes: Set[BloqInstance] = nodes
-        self.wires: Sequence[Wire] = cbloq.wires
+        self.wires: Sequence[Wiring] = cbloq.wires
 
         self.registers: Registers = cbloq.registers
         self._cbloq: CompositeBloq = cbloq
@@ -184,7 +178,7 @@ class GraphDrawer:
     def add_edge(self, graph: pydot.Graph, tail: str, head: str):
         graph.add_edge(pydot.Edge(tail, head, arrowhead=self.get_arrowhead()))
 
-    def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
+    def add_wire(self, graph: pydot.Graph, wire: Wiring) -> pydot.Graph:
         if wire.left.binst is LeftDangle:
             self.add_edge(graph, _dangling_id(wire.left), _binst_in_port(wire.right))
         elif wire.right.binst is RightDangle:
@@ -306,7 +300,7 @@ class PortGraphDrawer(GraphDrawer):
         graph.add_subgraph(subg)
         return graph
 
-    def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
+    def add_wire(self, graph: pydot.Graph, wire: Wiring) -> pydot.Graph:
         self.add_edge(graph, _pgid(wire.left) + ':e', _pgid(wire.right) + ":w")
 
         return graph

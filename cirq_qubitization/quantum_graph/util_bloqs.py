@@ -1,20 +1,12 @@
-import abc
-import re
-from abc import abstractmethod
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Sequence, Union, List, overload, Any, Tuple, Set
 
-import cirq
-import pydot
-
-from cirq_qubitization.gate_with_registers import Registers, Register
+from cirq_qubitization.gate_with_registers import Registers
+from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import (
     SplitRegister,
     JoinRegister,
-    ApplyFRegister,
 )
-from cirq_qubitization.quantum_graph.bloq import Bloq
 
 
 @dataclass(frozen=True)
