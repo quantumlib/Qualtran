@@ -3,10 +3,7 @@ from functools import cached_property
 
 from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import (
-    SplitRegister,
-    JoinRegister,
-)
+from cirq_qubitization.quantum_graph.fancy_registers import SplitRegister, JoinRegister
 
 
 @dataclass(frozen=True)

@@ -255,7 +255,10 @@ class PortGraphDrawer(GraphDrawer):
             if isinstance(reg, SplitRegister):
                 subg.add_node(
                     pydot.Node(
-                        _pgid(Soquet(binst, reg.name)), label=reg.name, shape='house', orientation=-90
+                        _pgid(Soquet(binst, reg.name)),
+                        label=reg.name,
+                        shape='house',
+                        orientation=-90,
                     )
                 )
                 for i in range(reg.bitsize):
@@ -268,7 +271,10 @@ class PortGraphDrawer(GraphDrawer):
             elif isinstance(reg, JoinRegister):
                 subg.add_node(
                     pydot.Node(
-                        _pgid(Soquet(binst, reg.name)), label=reg.name, shape='house', orientation=90
+                        _pgid(Soquet(binst, reg.name)),
+                        label=reg.name,
+                        shape='house',
+                        orientation=90,
                     )
                 )
                 for i in range(reg.bitsize):
@@ -281,7 +287,10 @@ class PortGraphDrawer(GraphDrawer):
             elif isinstance(reg, ApplyFRegister):
                 subg.add_node(
                     pydot.Node(
-                        _pgid(Soquet(binst, reg.name)), label=reg.name, shape='house', orientation=-90
+                        _pgid(Soquet(binst, reg.name)),
+                        label=reg.name,
+                        shape='house',
+                        orientation=-90,
                     )
                 )
                 subg.add_node(

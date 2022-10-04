@@ -1,4 +1,4 @@
-from typing import Sequence, List, Tuple, Set
+from typing import Sequence, List, Tuple, Set, Dict
 
 from cirq_qubitization.gate_with_registers import Registers, Register
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -30,17 +30,13 @@ class BloqBuilder:
         self._i = 0
 
         # To name: this is a list of ports aka half-wires. We enforce linearity.
-        self._tracers: Tuple[Soquet, ...] = tuple(Soquet(LeftDangle, reg.name) for reg in parent_reg)
         self._used: Set[Soquet] = set()
 
         # Keep a reference to this for some reason
         self._parent_reg = parent_reg
 
-    def get_tracers(self):
-        # Get the initial ports.
-        # TODO: rename.
-        # TODO: why do we need to save this as an attribute?
-        return self._tracers
+    def initial_soquets(self) -> Dict[str, Soquet]:
+        return {reg.name: Soquet(LeftDangle, reg.name) for reg in self._parent_reg}
 
     def _new_binst(self, bloq: Bloq):
         inst = BloqInstance(bloq, self._i)

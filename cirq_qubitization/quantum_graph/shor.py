@@ -1,14 +1,12 @@
 from dataclasses import dataclass
 from functools import cached_property
+from typing import Dict
 
 from cirq_qubitization.gate_with_registers import Registers, Register
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_builder import BloqBuilder
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
-from cirq_qubitization.quantum_graph.fancy_registers import (
-    ApplyFRegister,
-)
-from cirq_qubitization.quantum_graph.quantum_graph import Soquet, LeftDangle
+from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister
+from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 @dataclass(frozen=True)
@@ -42,7 +40,9 @@ class ModMultiply(Bloq):
     def registers(self) -> Registers:
         return Registers.build(exponent=self.exponent_bitsize, x=self.x_bitsize)
 
-    def better_decompose(self, bb: BloqBuilder, exponent: Soquet, x: Soquet) -> CompositeBloq:
+    def build_decomposition(
+        self, bb: BloqBuilder, *, exponent: Soquet, x: Soquet
+    ) -> Dict[str, Soquet]:
         ctls = bb.split(exponent, self.exponent_bitsize)
         out_ctls = []
 
@@ -55,12 +55,4 @@ class ModMultiply(Bloq):
             )
             out_ctls.append(ctl)
 
-        ret_dict = {'exponent': bb.join(out_ctls), 'x': x}
-        return bb.finalize(**ret_dict)
-
-    def decompose(self) -> CompositeBloq:
-        # TODO: context manager
-        # TODO: parent class
-        port_dict = {reg.name: Soquet(LeftDangle, reg.name) for reg in self.registers}
-        bb = BloqBuilder(self.registers)
-        return self.better_decompose(bb=bb, **port_dict)
+        return {'exponent': bb.join(out_ctls), 'x': x}
