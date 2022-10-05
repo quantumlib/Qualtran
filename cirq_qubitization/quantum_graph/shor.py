@@ -4,7 +4,7 @@ from typing import Dict
 
 from cirq_qubitization.gate_with_registers import Registers, Register
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.bloq_builder import BloqBuilder
+from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
@@ -44,7 +44,7 @@ class ModMultiply(Bloq):
         return Registers.build(exponent=self.exponent_bitsize, x=self.x_bitsize)
 
     def build_decomposition(
-        self, bb: BloqBuilder, *, exponent: Soquet, x: Soquet
+        self, bb: CompositeBloqBuilder, *, exponent: Soquet, x: Soquet
     ) -> Dict[str, Soquet]:
         ctls = bb.split(exponent, self.exponent_bitsize)
         out_ctls = []

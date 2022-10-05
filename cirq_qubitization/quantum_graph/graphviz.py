@@ -4,8 +4,7 @@ import pydot
 
 from cirq_qubitization.gate_with_registers import Registers, Register
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.bloq_builder import BloqBuilder
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
+from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import (
     SplitRegister,
     JoinRegister,
@@ -47,7 +46,8 @@ class GraphDrawer:
         if isinstance(bloq, CompositeBloq):
             cbloq = bloq
         else:
-            bb = BloqBuilder(bloq.registers)
+            # TODO: factor out bloq -> compositebloq wrapping
+            bb = CompositeBloqBuilder(bloq.registers)
             port_dict = {reg.name: Soquet(LeftDangle, reg.name) for reg in bloq.registers}
             stuff = bb.add(bloq, **port_dict)
             cbloq = bb.finalize(**{reg.name: s for reg, s in zip(bloq.registers, stuff)})
