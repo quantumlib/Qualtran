@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict
+from typing import Dict, TYPE_CHECKING, List
 
 from cirq_qubitization.gate_with_registers import Registers, Register
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
+
+if TYPE_CHECKING:
+    import cirq
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,9 @@ class SingleControlModMultiply(Bloq):
                 ),
             ]
         )
+
+    def _circuit_diagram_info_(self, args: 'cirq.CircuitDiagramInfoArgs') -> List[str]:
+        return ['@'] + ['x'] * self.x_bitsize
 
 
 @dataclass(frozen=True)
