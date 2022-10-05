@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Sequence, Dict, List
+from typing import Any, Sequence, Dict, List
 
 import cirq
 import numpy as np
@@ -9,6 +9,7 @@ import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.t_complexity_protocol import _has_decomposition
 
 
 @dataclass(frozen=True)
@@ -88,3 +89,13 @@ def execute_notebook(name: str):
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
     ep.preprocess(nb)
+
+
+def assert_decompose_is_consistent_with_t_complexity(val: Any, check_clifford: bool = False):
+    decompose_complexity = _has_decomposition(val)
+    if decompose_complexity is None:
+        return
+    analytic_complexity = val._t_complexity_()
+    assert analytic_complexity == decompose_complexity
+    if check_clifford:
+        assert analytic_complexity.clifford == decompose_complexity.clifford
