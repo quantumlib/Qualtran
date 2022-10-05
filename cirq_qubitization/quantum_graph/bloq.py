@@ -24,14 +24,14 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return name[:4] + '..'
 
-    def build_decomposition(
+    def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', **soquets: 'Soquet'
     ) -> Dict[str, 'Soquet']:
         return NotImplemented
 
-    def decompose(self) -> 'CompositeBloq':
+    def to_composite_bloq(self) -> 'CompositeBloq':
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
         bb = CompositeBloqBuilder(self.registers)
-        stuff = self.build_decomposition(bb=bb, **bb.initial_soquets())
+        stuff = self.build_composite_bloq(bb=bb, **bb.initial_soquets())
         return bb.finalize(**stuff)

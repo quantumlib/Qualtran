@@ -43,7 +43,7 @@ class ModMultiply(Bloq):
     def registers(self) -> Registers:
         return Registers.build(exponent=self.exponent_bitsize, x=self.x_bitsize)
 
-    def build_decomposition(
+    def build_composite_bloq(
         self, bb: CompositeBloqBuilder, *, exponent: Soquet, x: Soquet
     ) -> Dict[str, Soquet]:
         ctls = bb.split(exponent, self.exponent_bitsize)
