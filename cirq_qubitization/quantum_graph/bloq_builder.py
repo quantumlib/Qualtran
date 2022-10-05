@@ -38,6 +38,7 @@ class BloqBuilder:
         return {reg.name: Soquet(LeftDangle, reg.name) for reg in self._parent_reg}
 
     def _new_binst(self, bloq: Bloq):
+        # TODO: bloqinstance has reference to parent bloq to make equality work?
         inst = BloqInstance(bloq, self._i)
         self._i += 1
         return inst
