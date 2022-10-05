@@ -15,7 +15,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     Soquet,
     LeftDangle,
     BloqInstance,
-    Wiring,
+    Wire,
     DanglingT,
     RightDangle,
 )
@@ -59,7 +59,7 @@ class GraphDrawer:
             wire.right.binst for wire in cbloq.wires if not isinstance(wire.right.binst, DanglingT)
         )
         self.nodes: Set[BloqInstance] = nodes
-        self.wires: Sequence[Wiring] = cbloq.wires
+        self.wires: Sequence[Wire] = cbloq.wires
 
         self.registers: Registers = cbloq.registers
         self._cbloq: CompositeBloq = cbloq
@@ -178,7 +178,7 @@ class GraphDrawer:
     def add_edge(self, graph: pydot.Graph, tail: str, head: str):
         graph.add_edge(pydot.Edge(tail, head, arrowhead=self.get_arrowhead()))
 
-    def add_wire(self, graph: pydot.Graph, wire: Wiring) -> pydot.Graph:
+    def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
         if wire.left.binst is LeftDangle:
             self.add_edge(graph, _dangling_id(wire.left), _binst_in_port(wire.right))
         elif wire.right.binst is RightDangle:
@@ -309,7 +309,7 @@ class PortGraphDrawer(GraphDrawer):
         graph.add_subgraph(subg)
         return graph
 
-    def add_wire(self, graph: pydot.Graph, wire: Wiring) -> pydot.Graph:
+    def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
         self.add_edge(graph, _pgid(wire.left) + ':e', _pgid(wire.right) + ":w")
 
         return graph

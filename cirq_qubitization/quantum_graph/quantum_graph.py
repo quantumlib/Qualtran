@@ -29,7 +29,7 @@ RightDangle = DanglingT(direction='r')
 
 
 @dataclass(frozen=True)
-class Wiring:
+class Wire:
     left: Soquet
     right: Soquet
 
