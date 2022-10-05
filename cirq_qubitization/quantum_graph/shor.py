@@ -15,7 +15,7 @@ class SingleControlModMultiply(Bloq):
     mul_constant: int
 
     def short_name(self) -> str:
-        return 'SCMM'
+        return 'SingleCtrlMM'
 
     @cached_property
     def registers(self) -> Registers:
@@ -35,6 +35,9 @@ class ModMultiply(Bloq):
     x_bitsize: int
     mul_constant: int
     mod_N: int
+
+    def short_name(self) -> str:
+        return 'ModMult'
 
     @cached_property
     def registers(self) -> Registers:
