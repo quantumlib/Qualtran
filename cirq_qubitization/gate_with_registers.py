@@ -95,7 +95,7 @@ class Registers:
             ret += qubits
         return ret
 
-    def get_named_qubits(self) -> Dict[str, Sequence[cirq.Qid]]:
+    def get_named_qubits(self) -> Dict[str, List[cirq.Qid]]:
         def qubits_for_reg(name: str, bitsize: int):
             return (
                 [cirq.NamedQubit(f"{name}")]
