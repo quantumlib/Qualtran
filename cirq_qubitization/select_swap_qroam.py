@@ -1,5 +1,6 @@
-from typing import Tuple, Sequence, Optional, List
+from typing import Tuple, Sequence, Optional, List, Dict
 from functools import cached_property
+from collections import defaultdict
 import numpy as np
 import cirq
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
@@ -11,7 +12,7 @@ class SelectSwapQROM(GateWithRegisters):
     """Gate to load data[l] in the target register when the selection register stores integer l.
 
     Let
-        N:= Number of data elements to load a
+        N:= Number of data elements to load.
         b:= Bit-length of the target register in which data elements should be loaded.
 
     The `SelectSwapQROM` is a hybrid of the following two existing primitives:
@@ -55,6 +56,29 @@ class SelectSwapQROM(GateWithRegisters):
         target_bitsizes: Optional[Sequence[int]] = None,
         block_size: Optional[int] = None,
     ):
+        """Initializes SelectSwapQROM
+
+        For a single data sequence of length `N`, maximum target bitsize `b` and block size `B`;
+        SelectSwapQROM requires:
+            - Selection register & ancilla of size `logN` for QROM data load.
+            - 1 clean target register of size `b`.
+            - `B` dirty target registers, each of size `b`.
+
+        Similarly, to load `M` such data sequences, `SelectSwapQROM` requires:
+            - Selection register & ancilla of size `logN` for QROM data load.
+            - 1 clean target register of size `sum(target_bitsizes)`.
+            - `B` dirty target registers, each of size `sum(target_bitsizes)`.
+
+        Args:
+            data: Sequence of integers to load in the target register. If more than one sequence
+                is provided, each sequence must be of the same length.
+            target_bitsizes: Sequence of integers describing the size of target register for each
+                data sequence to load. Defaults to `max(data[i]).bit_length()` for each i.
+            block_size(B): Load batches of `B` data elements in each iteration of traditional QROM
+                (N/B iterations required). Complexity of SelectSwap QROAM scales as
+                `O(B * b + N / B)`, where `B` is the block_size. Defaults to optimal value of
+                 `O(sqrt(N / b))`.
+        """
         # Validate input.
         if len(set(len(d) for d in data)) != 1:
             raise ValueError("All data sequences to load must be of equal length.")
@@ -62,38 +86,35 @@ class SelectSwapQROM(GateWithRegisters):
             target_bitsizes = [max(d).bit_length() for d in data]
         assert len(target_bitsizes) == len(data)
         assert all(t >= max(d).bit_length() for t, d in zip(target_bitsizes, data))
+        self._num_sequences = len(data)
+        self._target_bitsizes = target_bitsizes
         self._iteration_length = len(data[0])
         if block_size is None:
+            # Figure out optimal value of block_size
             block_size = int(np.ceil(np.sqrt(self._iteration_length / sum(target_bitsizes))))
         assert 0 < block_size <= self._iteration_length
-        # Figure out optimal value of block_size and register sizes accordingly.
         self._block_size = block_size
         self._num_blocks = int(np.ceil(self._iteration_length / self.block_size))
-        batched_data = []
-        batched_target_bitsizes = []
-        for d, bitsize in zip(data, target_bitsizes):
-            # Each original data array is split into `r` different sequences, each of length `q`.
-            current_batch = []
-            for st in range(self.block_size):
-                curr_data = list(d[st :: self.block_size])
-                curr_data += [0] * (self.num_blocks - len(curr_data))
-                assert len(curr_data) == self.num_blocks
-                current_batch.append(curr_data)
-            batched_data.append(current_batch)
-            batched_target_bitsizes.append([bitsize] * self.block_size)
-        self.qrom = QROM(
-            *[d for batch in batched_data for d in batch],
-            target_bitsizes=[b for batch in batched_target_bitsizes for b in batch],
-        )
-        self.swap_with_zero = SwapWithZeroGate(
-            (self.block_size - 1).bit_length(), sum(target_bitsizes), self.block_size
-        )
-        self._iteration_length = len(data[0])
-        self._batched_data = tuple(tuple(tuple(d) for d in batch) for batch in batched_data)
-        self._batched_target_bitsizes = batched_target_bitsizes
         self._selection_bitsizes = tuple(
             (L - 1).bit_length() for L in [self.num_blocks, self.block_size]
         )
+        self._data = tuple(tuple(d) for d in data)
+        # batched_data = []
+        # batched_target_bitsizes = []
+        # for d, bitsize in zip(data, target_bitsizes):
+        #     # Each original data array is split into `r` different sequences, each of length `q`.
+        #     current_batch = []
+        #     for block_start_index in range(self.block_size):
+        #         curr_data = list(d[block_start_index :: self.block_size])
+        #         curr_data += [0] * (self.num_blocks - len(curr_data))
+        #         assert len(curr_data) == self.num_blocks
+        #         current_batch.append(curr_data)
+        #     batched_data.append(current_batch)
+        #     batched_target_bitsizes.append([bitsize] * self.block_size)
+        # Store the data.
+        # self._iteration_length = len(data[0])
+        # self._batched_data = tuple(tuple(tuple(d) for d in batch) for batch in batched_data)
+        # self._batched_target_bitsizes = batched_target_bitsizes
 
     @cached_property
     def selection_registers(self) -> Registers:
@@ -102,22 +123,24 @@ class SelectSwapQROM(GateWithRegisters):
         )
 
     @cached_property
-    def selection_ancillas(self) -> Registers:
-        return Registers.build(selection_ancilla=self._selection_bitsizes[0])
+    def selection_ancilla(self) -> Registers:
+        return Registers.build(selection_q_ancilla=max(0, self._selection_bitsizes[0] - 1))
 
     @cached_property
     def target_registers(self) -> Registers:
         clean_output = {}
-        for i, target_bitsize in enumerate(self._batched_target_bitsizes):
-            clean_output[f'target{i}'] = target_bitsize[0]
+        for sequence_id in range(self._num_sequences):
+            clean_output[f'target{sequence_id}'] = self._target_bitsizes[sequence_id]
         return Registers.build(**clean_output)
 
     @cached_property
-    def target_dirty_ancillas(self) -> Registers:
+    def target_dirty_ancilla(self) -> Registers:
         dirty_ancillas = {}
-        for i, target_bitsize in enumerate(self._batched_target_bitsizes):
-            for b, bitsize in enumerate(target_bitsize):
-                dirty_ancillas[f'target_dirty_ancilla_{i}_{b}'] = bitsize
+        for block_id in range(self.block_size):
+            for sequence_id in range(self._num_sequences):
+                name = f'target_dirty_ancilla_{block_id}_{sequence_id}'
+                bitsize = self._target_bitsizes[sequence_id]
+                dirty_ancillas[name] = bitsize
         return Registers.build(**dirty_ancillas)
 
     @cached_property
@@ -125,9 +148,9 @@ class SelectSwapQROM(GateWithRegisters):
         return Registers(
             [
                 *self.selection_registers,
-                *self.selection_ancillas,
+                *self.selection_ancilla,
                 *self.target_registers,
-                *self.target_dirty_ancillas,
+                *self.target_dirty_ancilla,
             ]
         )
 
@@ -136,8 +159,8 @@ class SelectSwapQROM(GateWithRegisters):
         return self._iteration_length
 
     @property
-    def batched_data(self) -> Tuple[Tuple[Tuple[int, ...], ...], ...]:
-        return self._batched_data
+    def data(self) -> Tuple[Tuple[int, ...], ...]:
+        return self._data
 
     @property
     def block_size(self) -> int:
@@ -148,45 +171,56 @@ class SelectSwapQROM(GateWithRegisters):
         return self._num_blocks
 
     def __repr__(self) -> str:
-        data_repr = ",".join(repr(sum(batch, ())) for batch in self.batched_data)
-        target_repr = repr([batch[0] for batch in self._batched_target_bitsizes])
-        return f"cirq_qubitization.SelectSwapQROM({data_repr}, target_bitsizes={target_repr})"
+        data_repr = ','.join(repr(d) for d in self.data)
+        target_repr = repr(self._target_bitsizes)
+        return (
+            f"cirq_qubitization.SelectSwapQROM("
+            f"{data_repr}, "
+            f"target_bitsizes={target_repr}, "
+            f"block_size={self.block_size})"
+        )
 
     def decompose_from_registers(
         self,
         selection_q: Sequence[cirq.Qid],
         selection_r: Sequence[cirq.Qid],
-        selection_ancilla: Sequence[cirq.Qid],
+        selection_q_ancilla: Sequence[cirq.Qid],
         **targets: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
-        # Parse and construct appropriate qubit registers.
-        qrom_dirty_targets: List[cirq.Qid] = []
-        swap_dirty_targets = [[] for _ in range(self.block_size)]
-        for data_idx in range(len(self.batched_data)):
-            for batch_idx in range(self.block_size):
-                qubits = list(targets[f'target_dirty_ancilla_{data_idx}_{batch_idx}'])
-                qrom_dirty_targets += qubits
-                swap_dirty_targets[batch_idx] += qubits
-        for batch_idx in range(self.block_size):
-            assert len(swap_dirty_targets[batch_idx]) == sum(
-                batch[0] for batch in self._batched_target_bitsizes
-            )
-        clean_targets = self.target_registers.merge_qubits(**targets)
-        # Construct the unique operations.
-        qrom_op = self.qrom.on_registers(
+        # Divide the each data sequence and corresponding target registers into
+        # `self.num_blocks` batches of size `self.block_size`.
+        qrom_data: List[Tuple[int, ...]] = []
+        qrom_target_bitsizes: List[int] = []
+        ordered_target_qubits: List[cirq.Qid] = []
+        for block_id in range(self.block_size):
+            for sequence_id in range(self._num_sequences):
+                data = self.data[sequence_id]
+                target_bitsize = self._target_bitsizes[sequence_id]
+                name = f'target_dirty_ancilla_{block_id}_{sequence_id}'
+                assert len(targets[name]) == target_bitsize
+                ordered_target_qubits.extend(targets[name])
+                data_for_current_block = data[block_id :: self.block_size]
+                if len(data_for_current_block) < self.num_blocks:
+                    zero_pad = (0,) * (self.num_blocks - len(data_for_current_block))
+                    data_for_current_block = data_for_current_block + zero_pad
+                qrom_data.append(data_for_current_block)
+                qrom_target_bitsizes.append(target_bitsize)
+        # Construct QROM, SwapWithZero and CX operations using the batched data and qubits.
+        qrom_gate = QROM(*qrom_data, target_bitsizes=qrom_target_bitsizes)
+        qrom_op = qrom_gate.on_registers(
             selection=selection_q,
-            ancilla=selection_ancilla,
-            **self.qrom.target_registers.split_qubits(qrom_dirty_targets),
+            ancilla=selection_q_ancilla,
+            **qrom_gate.target_registers.split_qubits(ordered_target_qubits),
         )
-        swap_with_zero_op = self.swap_with_zero.on_registers(
+        swap_with_zero_gate = SwapWithZeroGate(
+            (self.block_size - 1).bit_length(), self.target_registers.bitsize, self.block_size
+        )
+        swap_with_zero_op = swap_with_zero_gate.on_registers(
             selection=selection_r,
-            **{
-                self.swap_with_zero.target_registers[i].name: t
-                for i, t in enumerate(swap_dirty_targets)
-            },
+            **swap_with_zero_gate.target_registers.split_qubits(ordered_target_qubits),
         )
-        cnot_op = cirq.Moment(cirq.CNOT(s, t) for s, t in zip(swap_dirty_targets[0], clean_targets))
-
+        clean_targets = self.target_registers.merge_qubits(**targets)
+        cnot_op = cirq.Moment(cirq.CNOT(s, t) for s, t in zip(ordered_target_qubits, clean_targets))
         # Yield the operations in correct order.
         yield qrom_op
         yield swap_with_zero_op
@@ -200,16 +234,19 @@ class SelectSwapQROM(GateWithRegisters):
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In_q"] * self._selection_bitsizes[0]
         wire_symbols += ["In_r"] * self._selection_bitsizes[1]
-        wire_symbols += ["Anc"] * self.selection_ancillas.bitsize
+        wire_symbols += ["Anc"] * self.selection_ancilla.bitsize
         for i, target in enumerate(self.target_registers):
             wire_symbols += [f"QROAM_{i}"] * target.bitsize
-        for i, target_bitsize in enumerate(self._batched_target_bitsizes):
-            for b, bitsize in enumerate(target_bitsize):
-                wire_symbols += [f"TAnc_{i}_{b}"] * bitsize
+        for block_id in range(self.block_size):
+            for sequence_id in range(self._num_sequences):
+                name = f'target_dirty_ancilla_{block_id}_{sequence_id}'
+                bitsize = self.target_dirty_ancilla[name].bitsize
+                wire_symbols += [f"TAnc_{block_id}_{sequence_id}"] * bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __eq__(self, other: 'SelectSwapQROM') -> bool:
         return (
-            self.batched_data == other.batched_data
-            and self._batched_target_bitsizes == other._batched_target_bitsizes
+            self.data == other.data
+            and self._target_bitsizes == other._target_bitsizes
+            and self.block_size == other.block_size
         )
