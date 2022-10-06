@@ -16,11 +16,11 @@ def _unary_iteration_segtree(
     sl: int,
     l: int,
     r: int,
-    L: int,
-    R: int,
+    l_iter: int,
+    r_iter: int,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
-    if l >= R or L >= r:
-        # Completely out of range.
+    if l >= r_iter or l_iter >= r:
+        # Range corresponding to this node is completely outside of iteration range.
         return
     if l == (r - 1):
         # Reached a leaf node; yield the operations.
@@ -29,48 +29,55 @@ def _unary_iteration_segtree(
         return
     assert sl < len(selection)
     m = (l + r) >> 1
-    if R <= m:
+    if r_iter <= m:
         # Yield only left sub-tree.
-        yield from _unary_iteration_segtree(ops, control, selection, ancilla, sl + 1, l, m, L, R)
+        yield from _unary_iteration_segtree(
+            ops, control, selection, ancilla, sl + 1, l, m, l_iter, r_iter
+        )
         return
-    if L >= m:
+    if l_iter >= m:
         # Yield only right sub-tree
-        yield from _unary_iteration_segtree(ops, control, selection, ancilla, sl + 1, m, r, L, R)
+        yield from _unary_iteration_segtree(
+            ops, control, selection, ancilla, sl + 1, m, r, l_iter, r_iter
+        )
         return
     anc, sq = ancilla[sl], selection[sl]
     ops.append(and_gate.And((1, 0)).on(control, sq, anc))
-    yield from _unary_iteration_segtree(ops, anc, selection, ancilla, sl + 1, l, m, L, R)
+    yield from _unary_iteration_segtree(ops, anc, selection, ancilla, sl + 1, l, m, l_iter, r_iter)
     ops.append(cirq.CNOT(control, anc))
-    yield from _unary_iteration_segtree(ops, anc, selection, ancilla, sl + 1, m, r, L, R)
+    yield from _unary_iteration_segtree(ops, anc, selection, ancilla, sl + 1, m, r, l_iter, r_iter)
     ops.append(and_gate.And(adjoint=True).on(control, sq, anc))
 
 
-def _unary_iteration_zero_controls(
+def _unary_iteration_zero_control(
     ops: List[cirq.Operation],
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
-    L: int,
-    R: int,
+    l_iter: int,
+    r_iter: int,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
     m = (l + r) >> 1
-    ops.extend([cirq.X(selection[0]), cirq.CNOT(selection[0], ancilla[0]), cirq.X(selection[0])])
-    yield from _unary_iteration_segtree(ops, ancilla[0], selection, ancilla, sl + 1, l, m, L, R)
-    ops.append(cirq.X(ancilla[0]))
-    yield from _unary_iteration_segtree(ops, ancilla[0], selection, ancilla, sl + 1, m, r, L, R)
-    ops.append(cirq.CNOT(selection[0], ancilla[0]))
+    ops.append(cirq.X(selection[0]))
+    yield from _unary_iteration_segtree(
+        ops, selection[0], selection[1:], ancilla, sl, l, m, l_iter, r_iter
+    )
+    ops.append(cirq.X(selection[0]))
+    yield from _unary_iteration_segtree(
+        ops, selection[0], selection[1:], ancilla, sl, m, r, l_iter, r_iter
+    )
 
 
-def _unary_iteration_single_controls(
+def _unary_iteration_single_control(
     ops: List[cirq.Operation],
     control: cirq.Qid,
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
-    L: int,
-    R: int,
+    l_iter: int,
+    r_iter: int,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
-    yield from _unary_iteration_segtree(ops, control, selection, ancilla, sl, l, r, L, R)
+    yield from _unary_iteration_segtree(ops, control, selection, ancilla, sl, l, r, l_iter, r_iter)
 
 
 def _unary_iteration_multi_controls(
@@ -78,33 +85,34 @@ def _unary_iteration_multi_controls(
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
-    L: int,
-    R: int,
+    l_iter: int,
+    r_iter: int,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     num_controls = len(controls)
-    and_ancilla, and_target = ancilla[: num_controls - 2], ancilla[num_controls - 2]
+    and_ancilla = ancilla[: num_controls - 2]
+    and_target = ancilla[num_controls - 2]
     multi_controlled_and = and_gate.And((1,) * len(controls)).on_registers(
         control=controls, ancilla=and_ancilla, target=and_target
     )
     ops.append(multi_controlled_and)
-    yield from _unary_iteration_single_controls(
-        ops, and_target, selection, ancilla[num_controls - 1 :], L, R
+    yield from _unary_iteration_single_control(
+        ops, and_target, selection, ancilla[num_controls - 1 :], l_iter, r_iter
     )
     ops.append(multi_controlled_and**-1)
 
 
 def unary_iteration(
-    L: int,
-    R: int,
-    ops: List[cirq.Operation],
+    l_iter: int,
+    r_iter: int,
+    flanking_ops: List[cirq.Operation],
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
     ancilla: Sequence[cirq.Qid],
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
-    """The method performs unary iteration on `selection` integer in `range(L, R)`.
+    """The method performs unary iteration on `selection` integer in `range(l_iter, r_iter)`.
 
     Unary iteration is a coherent for loop that can be used to conditionally perform a different
-    operation on a target register for every integer in the `range(L, R)` stored in the selection
+    operation on a target register for every integer in the `range(l_iter, r_iter)` stored in the selection
     register.
 
     Users can write multi-dimensional coherent for loops as follows:
@@ -126,34 +134,43 @@ def unary_iteration(
     >>> circuit.append(i_ops)
 
     Args:
-        L: Starting index of the iteration range.
-        R: Ending index of the iteration range.
-        ops: A list of that stores operations to be inserted in the circuit before/after
-            the first/last iteration of the unary iteration for loop.
+        l_iter: Starting index of the iteration range.
+        r_iter: Ending index of the iteration range.
+        flanking_ops: A list of `cirq.Operation`s that represents operations to be inserted in the
+            circuit before/after the first/last iteration of the unary iteration for loop. Note that
+            the list is mutated by the function, such that before calling the function, the list represents
+            operations to be inserted before the first iteration and after the last call to the function,
+            list represents operations to be inserted at the end of last iteration.
         controls: Control register of qubits.
         selection: Selection register of qubits.
         ancilla: Ancillas to be used for unary iteration and multi-controlled AND gate.
 
     Yields:
-        (R - L) different tuples, each corresponding to a different integer in range [L, R).
+        (r_iter - l_iter) different tuples, each corresponding to an integer in range [l_iter, r_iter).
         Each returned tuple also corresponds to a unique leaf in the unary iteration tree.
         The values of yielded `Tuple[cirq.OP_TREE, cirq.Qid, int]` correspond to:
         - cirq.OP_TREE: The op-tree to be inserted in the circuit to get to the current leaf.
         - cirq.Qid: Control qubit used to conditionally apply operations on the target conditioned
             on the returned integer.
-        - int: The current integer in the iteration `range(L, R)`.
+        - int: The current integer in the iteration `range(l_iter, r_iter)`.
     """
-    assert len(selection) + max(0, len(controls) - 1) == len(
-        ancilla
-    ), f'selection: {selection}\ncontrols: {controls}\nancilla: {ancilla}'
-    assert 2 ** len(selection) >= R - L
+    if len(selection) + len(controls) - 1 != len(ancilla):
+        raise ValueError(
+            f'ancilla count should be {len(selection) + len(controls) - 1}\n'
+            f'selection: {selection}\ncontrols: {controls}\nancilla: {ancilla}'
+        )
+    assert 2 ** len(selection) >= r_iter - l_iter
     assert len(selection) > 0
     if len(controls) == 0:
-        yield from _unary_iteration_zero_controls(ops, selection, ancilla, L, R)
+        yield from _unary_iteration_zero_control(flanking_ops, selection, ancilla, l_iter, r_iter)
     elif len(controls) == 1:
-        yield from _unary_iteration_single_controls(ops, controls[0], selection, ancilla, L, R)
+        yield from _unary_iteration_single_control(
+            flanking_ops, controls[0], selection, ancilla, l_iter, r_iter
+        )
     elif len(controls) == 2:
-        yield from _unary_iteration_multi_controls(ops, controls, selection, ancilla, L, R)
+        yield from _unary_iteration_multi_controls(
+            flanking_ops, controls, selection, ancilla, l_iter, r_iter
+        )
 
 
 class UnaryIterationGate(GateWithRegisters):
@@ -184,7 +201,9 @@ class UnaryIterationGate(GateWithRegisters):
         ]
         ancillas[0] = Register(
             name=ancillas[0].name,
-            bitsize=ancillas[0].bitsize + max(0, self.control_registers.bitsize - 1),
+            bitsize=max(
+                0, self.selection_registers[0].bitsize + self.control_registers.bitsize - 1
+            ),
         )
         return Registers(ancillas)
 
@@ -255,27 +274,51 @@ class UnaryIterationGate(GateWithRegisters):
         ancilla_regs = self.ancilla_registers.split_qubits(qubit_regs['ancilla'])
 
         def unary_iteration_loops(
-            index: int, indices: Dict[str, int], controls: Sequence[cirq.Qid]
+            nested_depth: int,
+            selection_reg_name_to_val: Dict[str, int],
+            controls: Sequence[cirq.Qid],
         ) -> cirq.OP_TREE:
-            if index == num_loops:
+            """Recursively write any number of nested coherent for-loops using unary iteration.
+
+            This helper method is useful to write `num_loops` number of nested coherent for-loops by
+            recursively calling this method `num_loops` times. The ith recursive call of this method
+            has `nested_depth=i` and represents the body of ith nested for-loop.
+
+            Args:
+                nested_depth: Integer between `[0, num_loops]` representing the nest-level of
+                    for-loop for which this method implements the body.
+                selection_reg_name_to_val: A dictionary containing `nested_depth` elements mapping
+                    the selection integer names (i.e. loop variables) to corresponding values;
+                    for each of the `nested_depth` parent for-loops written before.
+                controls: Control qubits that should be used to conditionally activate the body of
+                    this for-loop.
+
+            Returns:
+                `cirq.OP_TREE` implementing `num_loops` nested coherent for-loops, with operations
+                returned by `self.nth_operation` applied conditionally to the target register based
+                on values of selection registers.
+            """
+            if nested_depth == num_loops:
                 yield self.nth_operation(
-                    control=controls[0], **indices, **target_regs, **extra_regs
+                    control=controls[0], **selection_reg_name_to_val, **target_regs, **extra_regs
                 )
                 return
             # Use recursion to write `num_loops` nested loops using unary_iteration().
             ops = []
             ith_for_loop = unary_iteration(
-                L=0,
-                R=self.iteration_lengths[index],
-                ops=ops,
+                l_iter=0,
+                r_iter=self.iteration_lengths[nested_depth],
+                flanking_ops=ops,
                 controls=controls,
-                selection=qubit_regs[self.selection_registers[index].name],
-                ancilla=ancilla_regs[self.ancilla_registers[index].name],
+                selection=qubit_regs[self.selection_registers[nested_depth].name],
+                ancilla=ancilla_regs[self.ancilla_registers[nested_depth].name],
             )
             for op_tree, control_qid, n in ith_for_loop:
                 yield op_tree
-                indices[self.selection_registers[index].name] = n
-                yield from unary_iteration_loops(index + 1, indices, (control_qid,))
+                selection_reg_name_to_val[self.selection_registers[nested_depth].name] = n
+                yield from unary_iteration_loops(
+                    nested_depth + 1, selection_reg_name_to_val, (control_qid,)
+                )
             yield ops
 
         yield from unary_iteration_loops(0, {}, self.control_registers.merge_qubits(**qubit_regs))

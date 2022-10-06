@@ -96,7 +96,7 @@ class GenericSubPrepare(GateWithRegisters):
         yield PrepareUniformSuperposition(len(self._lcu_probs)).on(*selection, selection_ancilla[0])
         qrom = QROM(self._alt, self._keep, target_bitsizes=[len(alt), len(keep)])
         yield qrom.on_registers(
-            selection=selection, ancilla=selection_ancilla, target0=alt, target1=keep
+            selection=selection, ancilla=selection_ancilla[1:], target0=alt, target1=keep
         )
         yield cirq.H.on_each(*sigma_mu)
         yield LessThanEqualGate([2] * self._mu, [2] * self._mu).on(
