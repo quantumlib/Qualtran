@@ -16,17 +16,17 @@ def test_select_swap_qrom(data, block_size):
     selection_q = qubit_regs["selection_q"]
     selection_r = qubit_regs["selection_r"]
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
-    dirty_target_ancillas = qrom.target_dirty_ancillas.merge_qubits(**qubit_regs)
+    dirty_target_ancilla = qrom.target_dirty_ancilla.merge_qubits(**qubit_regs)
 
     circuit = cirq.Circuit(
         # Prepare dirty ancillas in an arbitrary state.
-        cirq.H.on_each(*dirty_target_ancillas),
-        cirq.T.on_each(*dirty_target_ancillas),
+        cirq.H.on_each(*dirty_target_ancilla),
+        cirq.T.on_each(*dirty_target_ancilla),
         # The dirty ancillas should remain unaffected by qroam.
         qrom.on_registers(**qubit_regs),
         # Bring back the dirty ancillas to their original state.
-        (cirq.T**-1).on_each(*dirty_target_ancillas),
-        cirq.H.on_each(*dirty_target_ancillas),
+        (cirq.T**-1).on_each(*dirty_target_ancilla),
+        cirq.H.on_each(*dirty_target_ancilla),
     )
 
     for selection_integer in range(qrom.iteration_length):
@@ -36,8 +36,8 @@ def test_select_swap_qrom(data, block_size):
         qubit_vals.update({s: sval for s, sval in zip(selection_q, svals_q)})
         qubit_vals.update({s: sval for s, sval in zip(selection_r, svals_r)})
 
-        dvals = np.random.randint(2, size=len(dirty_target_ancillas))
-        qubit_vals.update({d: dval for d, dval in zip(dirty_target_ancillas, dvals)})
+        dvals = np.random.randint(2, size=len(dirty_target_ancilla))
+        qubit_vals.update({d: dval for d, dval in zip(dirty_target_ancilla, dvals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
         for target, d in zip(targets, data):
@@ -65,21 +65,21 @@ def test_qroam_diagram():
        │
 1: ────In_r───────
        │
-2: ────Anc────────
+2: ────QROAM_0────
        │
 3: ────QROAM_0────
        │
-4: ────QROAM_0────
+4: ────QROAM_1────
        │
 5: ────QROAM_1────
        │
 6: ────QROAM_1────
        │
-7: ────QROAM_1────
+7: ────TAnc_0_0───
        │
 8: ────TAnc_0_0───
        │
-9: ────TAnc_0_0───
+9: ────TAnc_0_1───
        │
 10: ───TAnc_0_1───
        │
@@ -89,13 +89,11 @@ def test_qroam_diagram():
        │
 13: ───TAnc_1_0───
        │
-14: ───TAnc_1_0───
+14: ───TAnc_1_1───
        │
 15: ───TAnc_1_1───
        │
 16: ───TAnc_1_1───
-       │
-17: ───TAnc_1_1───
 """,
     )
 
