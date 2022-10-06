@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Dict, TYPE_CHECKING, List
 
-from cirq_qubitization.gate_with_registers import Registers, Register
+from cirq_qubitization.gate_with_registers import Registers, ThruRegister
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister
@@ -24,7 +24,7 @@ class SingleControlModMultiply(Bloq):
     def registers(self) -> Registers:
         return Registers(
             [
-                Register('control', 1),
+                ThruRegister('control', 1),
                 ApplyFRegister(
                     'x', self.x_bitsize, 'x_out', in_text='x', out_text=f'{self.mul_constant}*x'
                 ),

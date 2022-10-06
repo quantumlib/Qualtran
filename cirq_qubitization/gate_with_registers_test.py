@@ -4,18 +4,24 @@ import cirq
 import pytest
 
 import cirq_qubitization.testing as cq_testing
-from cirq_qubitization.gate_with_registers import Register, Registers, GateWithRegisters
+from cirq_qubitization.gate_with_registers import (
+    Registers,
+    GateWithRegisters,
+    ThruRegister,
+    Register,
+)
 
 
-def test_register():
-    r = Register("my_reg", 5)
+def test_thru_register():
+    r = ThruRegister("my_reg", 5)
+    assert isinstance(r, Register)
     assert r.bitsize == 5
 
 
 def test_registers():
-    r1 = Register("r1", 5)
-    r2 = Register("r2", 2)
-    r3 = Register("r3", 1)
+    r1 = ThruRegister("r1", 5)
+    r2 = ThruRegister("r2", 2)
+    r3 = ThruRegister("r3", 1)
     regs = Registers([r1, r2, r3])
 
     assert regs[0] == r1
@@ -63,7 +69,7 @@ def test_registers_getitem_raises():
 
 
 def test_registers_build():
-    regs1 = Registers([Register("r1", 5), Register("r2", 2)])
+    regs1 = Registers([ThruRegister("r1", 5), ThruRegister("r2", 2)])
     regs2 = Registers.build(r1=5, r2=2)
     assert regs1 == regs2
 
@@ -71,9 +77,9 @@ def test_registers_build():
 class _TestGate(GateWithRegisters):
     @property
     def registers(self) -> Registers:
-        r1 = Register("r1", 5)
-        r2 = Register("r2", 2)
-        r3 = Register("r3", 1)
+        r1 = ThruRegister("r1", 5)
+        r2 = ThruRegister("r2", 2)
+        r3 = ThruRegister("r3", 1)
         regs = Registers([r1, r2, r3])
         return regs
 

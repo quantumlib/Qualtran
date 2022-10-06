@@ -1,21 +1,26 @@
-import dataclasses
 from typing import Optional
 
 from cirq_qubitization.gate_with_registers import Register
 
+from attrs import frozen
 
-@dataclasses.dataclass(frozen=True)
+
+@frozen
 class SplitRegister(Register):
-    pass
+    name: str
+    bitsize: int
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class JoinRegister(Register):
-    pass
+    name: str
+    bitsize: int
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class ApplyFRegister(Register):
+    name: str
+    bitsize: int
     out_name: str
     in_text: Optional[str] = None
     out_text: Optional[str] = None

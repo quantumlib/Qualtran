@@ -1,15 +1,27 @@
 import abc
-import dataclasses
 import sys
 from typing import Sequence, Dict, Iterable, List, Union, overload
 
 import cirq
+from attrs import frozen
 
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
-@dataclasses.dataclass(frozen=True)
-class Register:
+class Register(metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def name(self):
+        ...
+
+    @property
+    @abc.abstractmethod
+    def bitsize(self):
+        ...
+
+
+@frozen
+class ThruRegister(Register):
     name: str
     bitsize: int
 
@@ -30,7 +42,7 @@ class Registers:
 
     @classmethod
     def build(cls, **registers: int) -> 'Registers':
-        return cls(Register(name=k, bitsize=v) for k, v in registers.items())
+        return cls(ThruRegister(name=k, bitsize=v) for k, v in registers.items())
 
     @overload
     def __getitem__(self, key: int) -> Register:
