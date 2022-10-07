@@ -31,7 +31,7 @@ class GateHelper:
         return self.gate.registers
 
     @cached_property
-    def quregs(self) -> Dict[str, Sequence[cirq.Qid]]:
+    def quregs(self) -> Dict[str, List[cirq.Qid]]:
         """A dictionary of named qubits appropriate for the registers for the gate."""
         return self.r.get_named_qubits()
 
