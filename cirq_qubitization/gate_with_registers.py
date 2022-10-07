@@ -19,11 +19,25 @@ class Register(metaclass=abc.ABCMeta):
     def bitsize(self):
         ...
 
+    @abc.abstractmethod
+    def left_names(self) -> Iterable[str]:
+        ...
+
+    @abc.abstractmethod
+    def right_names(self) -> Iterable[str]:
+        ...
+
 
 @frozen
 class ThruRegister(Register):
     name: str
     bitsize: int
+
+    def left_names(self) -> Iterable[str]:
+        yield self.name
+
+    def right_names(self) -> Iterable[str]:
+        yield self.name
 
 
 class Registers:

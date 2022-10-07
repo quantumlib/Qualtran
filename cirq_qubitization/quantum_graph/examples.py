@@ -1,18 +1,17 @@
-from dataclasses import dataclass
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING, List
+from typing import Dict, List, Sequence
+
+import cirq
+from attrs import frozen
 
 from cirq_qubitization.gate_with_registers import Registers, ThruRegister
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister
+from cirq_qubitization.quantum_graph.fancy_registers import ApplyFRegister, SplitRegister
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
-if TYPE_CHECKING:
-    import cirq
 
-
-@dataclass(frozen=True)
+@frozen
 class SingleControlModMultiply(Bloq):
     x_bitsize: int
     mul_constant: int
@@ -35,7 +34,7 @@ class SingleControlModMultiply(Bloq):
         return ['@'] + ['x'] * self.x_bitsize
 
 
-@dataclass(frozen=True)
+@frozen
 class ModMultiply(Bloq):
     exponent_bitsize: int
     x_bitsize: int
@@ -65,3 +64,36 @@ class ModMultiply(Bloq):
             out_ctls.append(ctl)
 
         return {'exponent': bb.join(out_ctls), 'x': x}
+
+
+class CNOT(Bloq):
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(control=1, target=1)
+
+    def on_registers(
+        self, control: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
+    ) -> cirq.Operation:
+        (control,) = control
+        (target,) = target
+        return cirq.CNOT(control, target)
+
+
+@frozen
+class MultiCNOTSplit(Bloq):
+    n_targets: int
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers([ThruRegister('control', 1), SplitRegister('target', self.n_targets)])
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', control: Soquet, target: Soquet
+    ) -> Dict[str, 'Soquet']:
+        targets = list(bb.split(target, self.n_targets))
+        for i in range(self.n_targets):
+            control, trg = bb.add(CNOT(), control=control, target=targets[i])
+            targets[i] = trg
+
+        targ_outs = dict(zip(self.registers['target'].right_names(), targets))
+        return {'control': control, **targ_outs}

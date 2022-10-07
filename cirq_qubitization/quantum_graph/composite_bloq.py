@@ -148,39 +148,33 @@ class CompositeBloqBuilder:
         self._i += 1
         return inst
 
-    def split(self, in_soq: Soquet, n: int) -> Tuple[Soquet, ...]:
-        """Add a `Split` bloq to the compute graph."""
-        binst = self._new_binst(Split(n))
-        splitname = binst.bloq.registers[0].name
+    def split(self, prev_soq: Soquet, n: int) -> Tuple[Soquet, ...]:
+        bloq = Split(n)
+        return self.add(bloq, **{bloq.registers[0].name: prev_soq})
 
-        self._wires.append(Wire(in_soq, Soquet(binst, splitname)))
-        out_soqs = tuple(Soquet(binst, f'{splitname}{i}') for i in range(n))
-        return out_soqs
-
-    def join(self, in_soqs: Sequence[Soquet]) -> Soquet:
-        binst = self._new_binst(Join(len(in_soqs)))
-        joinname = binst.bloq.registers[0].name
-
-        for i, in_soq in enumerate(in_soqs):
-            self._wires.append(Wire(in_soq, Soquet(binst, f'{joinname}{i}')))
-
-        return Soquet(binst, joinname)
+    def join(self, prev_soqs: Sequence[Soquet]) -> Soquet:
+        bloq = Join(len(prev_soqs))
+        left_names = list(bloq.registers[0].left_names())
+        assert len(prev_soqs) == len(left_names)
+        (out_soq,) = self.add(bloq, **dict(zip(left_names, prev_soqs)))
+        return out_soq
 
     def add(self, bloq: Bloq, **soq_map: Soquet) -> Tuple[Soquet, ...]:
         # TODO: rename method?
         binst = self._new_binst(bloq)
 
         # TODO: use registers
-        for out_name, in_soq in soq_map.items():
-            if in_soq in self._used:
-                # TODO: check this in split() and join()
-                raise TypeError(f"{in_soq} re-used!")
-            self._used.add(in_soq)  # TODO: factor out checking method.
 
-            out_soq = Soquet(binst, out_name)
-            self._wires.append(Wire(in_soq, out_soq))
+        out_soqs = []
+        for reg in bloq.registers:
+            for ln in reg.left_names():
+                prev_soq = soq_map[ln]
+                # TODO: check used
+                self._wires.append(Wire(prev_soq, Soquet(binst, ln)))
 
-        return tuple(Soquet(binst, reg_out_name(reg)) for reg in bloq.registers)
+            out_soqs += [Soquet(binst, rn) for rn in reg.right_names()]
+
+        return tuple(out_soqs)
 
     def finalize(self, **out_soqs: Soquet) -> CompositeBloq:
         # TODO: rename method?

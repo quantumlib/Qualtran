@@ -34,23 +34,19 @@ def _binst_out_port(port: Soquet):
     return f'{_binst_id(port.binst)}:{port.reg_name}:e'
 
 
-def _dangling_id(port: Soquet):
+def _dangling_id(soq: Soquet):
     # Can we collide with a binst_id? Probably not unless we have a class named
     # DanglingT_l with integer reg_name.
-    assert isinstance(port.binst, DanglingT)
-    return f'DanglingT_{port.binst.direction}_{port.reg_name}'
+    assert isinstance(soq.binst, DanglingT)
+    return f'DanglingT_{soq.binst.direction}_{soq.reg_name}'
 
 
 class GraphDrawer:
     def __init__(self, bloq: Bloq):
-        if isinstance(bloq, CompositeBloq):
-            cbloq = bloq
+        if not isinstance(bloq, CompositeBloq):
+            cbloq = bloq.as_composite_bloq()
         else:
-            # TODO: factor out bloq -> compositebloq wrapping
-            bb = CompositeBloqBuilder(bloq.registers)
-            port_dict = {reg.name: Soquet(LeftDangle, reg.name) for reg in bloq.registers}
-            stuff = bb.add(bloq, **port_dict)
-            cbloq = bb.finalize(**{reg.name: s for reg, s in zip(bloq.registers, stuff)})
+            cbloq = bloq
 
         nodes = set(
             wire.left.binst for wire in cbloq.wires if not isinstance(wire.left.binst, DanglingT)
@@ -71,10 +67,10 @@ class GraphDrawer:
         # TODO: constructor method
         return PrettyGraphDrawer(self._cbloq)
 
-    def get_dangle_node(self, dangle: DanglingT, reg: Register) -> pydot.Node:
+    def get_dangle_node(self, dangle: DanglingT, soq_name: str) -> pydot.Node:
         """Get a Node representing dangling indices."""
         return pydot.Node(
-            _dangling_id(Soquet(dangle, reg.name)), label=f'{reg.name}', shape='plaintext'
+            _dangling_id(Soquet(dangle, soq_name)), label=f'{soq_name}', shape='plaintext'
         )
 
     def add_dangles(self, graph: pydot.Graph, dangle: DanglingT) -> pydot.Graph:
@@ -84,7 +80,15 @@ class GraphDrawer:
         """
         dang = pydot.Subgraph(rank='same')
         for reg in self.registers:
-            dang.add_node(self.get_dangle_node(dangle, reg))
+            if dangle is LeftDangle:
+                soqnames = reg.left_names
+            elif dangle is RightDangle:
+                soqnames = reg.right_names
+            else:
+                raise ValueError()
+
+            for soqname in soqnames():
+                dang.add_node(self.get_dangle_node(dangle, soqname))
         graph.add_subgraph(dang)
         return graph
 
@@ -243,9 +247,9 @@ def _pgid(p: Soquet):
 
 
 class PortGraphDrawer(GraphDrawer):
-    def get_dangle_node(self, dangle: DanglingT, reg: Register) -> pydot.Node:
+    def get_dangle_node(self, dangle: DanglingT, soqname: str) -> pydot.Node:
         """Get a Node representing dangling indices."""
-        return pydot.Node(_pgid(Soquet(dangle, reg.name)), label=reg.name, shape='plaintext')
+        return pydot.Node(_pgid(Soquet(dangle, soqname)), label=soqname, shape='plaintext')
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         subg = pydot.Cluster(_binst_id2(binst), label=binst.bloq.pretty_name())

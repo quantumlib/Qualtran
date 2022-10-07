@@ -41,6 +41,20 @@ class Bloq(cirq.Gate, metaclass=abc.ABCMeta):
 
         return bb.finalize(**ret_soqs)
 
+    def as_composite_bloq(self):
+        # TODO: confusing names
+        from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
+
+        bb = CompositeBloqBuilder(self.registers)
+        ret_soqs_tuple = bb.add(self, **bb.initial_soquets())
+        ret_soqs = {}
+        i = 0
+        for reg in self.registers:
+            for outname in reg.right_names():
+                ret_soqs[outname] = ret_soqs_tuple[i]
+                i += 1
+        return bb.finalize(**ret_soqs)
+
     ## ----- cirq stuff
 
     def _num_qubits_(self) -> int:
@@ -50,7 +64,7 @@ class Bloq(cirq.Gate, metaclass=abc.ABCMeta):
         qubit_regs = self.registers.split_qubits(qubits)
         yield from self.to_composite_bloq().to_cirq_circuit(**qubit_regs)
 
-    def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.Operation:
+    def on_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.Operation:
         return self.on(*self.registers.merge_qubits(**qubit_regs))
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
