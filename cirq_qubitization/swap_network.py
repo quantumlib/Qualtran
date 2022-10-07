@@ -5,6 +5,7 @@ from cirq_qubitization import multi_target_cnot
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import TComplexity
 
+
 class MultiTargetCSwap(GateWithRegisters):
     """Implements multi-target controlled swap unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$."""
 
@@ -42,17 +43,11 @@ class MultiTargetCSwap(GateWithRegisters):
         return type(self) == type(other) and self._target_bitsize == other._target_bitsize
 
     def _t_complexity_(self) -> TComplexity:
-        """Returns TComplexity of MultiTargetCSwap = TComplexity of _target_bitsize CSWAPs.
+        """Returns TComplexity of MultiTargetCSwap = TComplexity of _target_bitsize CSWAPs."""
+        return TComplexity(t=7 * self._target_bitsize, clifford=10 * self._target_bitsize)
 
-            Decomposition of CSWAP(Appendix B.2.c of https://arxiv.org/abs/1812.00954):
-                0: ──────────────────@──────────────────@───@───T──────@───
-                                     │                  │   │          │
-                1: ───────@──────────┼───────@───T──────┼───X───T^-1───X───
-                          │          │       │          │
-                2: ───H───X───T^-1───X───T───X───T^-1───X───T───H──────────
-        """
-        return TComplexity(t=7*self._target_bitsize, clifford=8*self._target_bitsize)
 
+@cirq.value_equality
 class MultiTargetCSwapApprox(MultiTargetCSwap):
     """Approximately implements a multi-target controlled swap unitary using only 4 * N T-gates.
 
@@ -99,10 +94,17 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
     def __repr__(self) -> str:
         return f"cirq_qubitization.MultiTargetCSwapApprox({self._target_bitsize})"
 
+    def _value_equality_values_(self) -> Any:
+        return self._target_bitsize
+
     def _t_complexity_(self) -> TComplexity:
         """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
-        n = (self._num_qubits_() - 1) // 2
-        return TComplexity(t=4*n, clifford=26*n - 3)
+        n = self._target_bitsize
+        # 4 * n: G gates, each wth 1 T and 4 cliffords
+        # 4 * n: CNOTs
+        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
+        return TComplexity(t=4 * n, clifford=22 * n - 1)
+
 
 class SwapWithZeroGate(GateWithRegisters):
     """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.
@@ -176,3 +178,18 @@ class SwapWithZeroGate(GateWithRegisters):
         for i in range(self._n_target_registers):
             wire_symbols += [f"swap_{i}"] * self._target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    @cached_property
+    def _num_cswaps(self):
+        num_cswaps = 0
+        for j in range(self._selection_bitsize):
+            num_cswaps += (self._n_target_registers + 2**j - 1) // 2 ** (j + 1)
+        return num_cswaps
+
+    def _t_complexity_(self):
+        cswap_complexity = MultiTargetCSwapApprox(self._target_bitsize)._t_complexity_()
+        return TComplexity(
+            t=cswap_complexity.t * self._num_cswaps,
+            clifford=cswap_complexity.clifford * self._num_cswaps,
+            rotations=cswap_complexity.rotations * self._num_cswaps,
+        )

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Sequence, Dict, List
+from typing import Any, Callable, Iterable, Optional, Sequence, Dict, List
 
 import cirq
 import numpy as np
@@ -9,7 +9,7 @@ import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
-from cirq_qubitization.t_complexity_protocol import _has_decomposition
+from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
 
 
 @dataclass(frozen=True)
@@ -91,11 +91,25 @@ def execute_notebook(name: str):
     ep.preprocess(nb)
 
 
-def assert_decompose_is_consistent_with_t_complexity(val: Any, check_clifford: bool = False):
-    decompose_complexity = _has_decomposition(val)
-    if decompose_complexity is None:
+def assert_decompose_is_consistent_with_t_complexity(
+    val: Any,
+    qubits: Iterable[cirq.Qid] = None,
+    custom_strategies: Iterable[Callable[[Any], Optional[TComplexity]]] = (),
+):
+    expected = t_complexity(val, fail_quietly=True, custom_strategies=custom_strategies)
+    if expected is None:
+        # If T-complexity of `val` doesn't exist, no need to check consistency with decompose.
         return
-    analytic_complexity = val._t_complexity_()
-    assert analytic_complexity == decompose_complexity
-    if check_clifford:
-        assert analytic_complexity.clifford == decompose_complexity.clifford
+    if isinstance(val, cirq.Operation):
+        decomposition = cirq.decompose_once(val, default=None)
+    else:
+        if qubits is None:
+            qubits = [cirq.NamedQubit(f'test{i}') for i in range(val.num_qubits())]
+        decomposition = cirq.decompose_once_with_qubits(val, qubits, default=None)
+    if decomposition is None:
+        # If there's no decomposition, no need to check consistency with decompose.
+        return
+    from_decomposition = t_complexity(
+        decomposition, fail_quietly=False, custom_strategies=custom_strategies
+    )
+    assert expected == from_decomposition, f'{expected} != {from_decomposition}'

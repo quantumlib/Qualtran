@@ -1,9 +1,9 @@
 import pytest
 import cirq
-import cirq_qubitization
 import numpy as np
-
+import cirq_qubitization
 from cirq_qubitization.testing import assert_decompose_is_consistent_with_t_complexity
+
 
 @pytest.mark.parametrize("num_targets", [3, 4, 6, 8, 10])
 def test_multi_target_cnot(num_targets):
@@ -20,5 +20,4 @@ def test_multi_target_cnot(num_targets):
 def test_t_complexity():
     for n in range(1, 5 + 1):
         g = cirq_qubitization.MultiTargetCNOT(n)
-        assert_decompose_is_consistent_with_t_complexity(g, check_clifford=True)
-
+        assert_decompose_is_consistent_with_t_complexity(g)

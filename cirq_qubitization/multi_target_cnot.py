@@ -1,9 +1,9 @@
 from functools import cached_property
 from typing import Sequence
-from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
 import cirq
-
+from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
 from cirq_qubitization.t_complexity_protocol import TComplexity
+
 
 class MultiTargetCNOT(GateWithRegisters):
     """Implements single control, multi-target CNOT_{n} gate in 2*log(n) + 1 CNOT depth.
@@ -37,4 +37,4 @@ class MultiTargetCNOT(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self._num_targets)
 
     def _t_complexity_(self) -> TComplexity:
-        return TComplexity(clifford=6*self._num_qubits_() - 9)
+        return TComplexity(clifford=2 * self._num_targets - 1)
