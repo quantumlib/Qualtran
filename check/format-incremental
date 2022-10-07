@@ -32,8 +32,9 @@
 ################################################################################
 
 # Get the working directory to the repo root.
-cd "$(dirname "${BASH_SOURCE[0]}")"
-cd "$(git rev-parse --show-toplevel)"
+thisdir="$(dirname "${BASH_SOURCE[0]}")" || exit $?
+topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
+cd "${topdir}" || exit $?
 
 
 # Parse arguments.
@@ -82,7 +83,7 @@ if (( only_changed == 1 )); then
 
     # Get the modified, added and moved python files.
     IFS=$'\n' read -r -d '' -a format_files < \
-        <(git diff --name-only --diff-filter=MAR ${rev} -- '*.py' ':(exclude)cirq-google/cirq_google/cloud/*' ':(exclude)*_pb2.py')
+        <(git diff --name-only --diff-filter=MAR "${rev}" -- '*.py' ':(exclude)cirq-google/cirq_google/cloud/*' ':(exclude)*_pb2.py')
 else
     echo -e "Formatting all python files." >&2
     IFS=$'\n' read -r -d '' -a format_files < \
@@ -104,9 +105,9 @@ FLYNTSTATUS=$?
 
 isort_args=("--color")
 if (( only_print == 1 )); then
-    args+=("--check" "--diff")
+    isort_args+=("--check" "--diff")
 fi
-isort "${args[@]}" "${format_files[@]}"
+isort "${isort_args[@]}" "${format_files[@]}"
 ISORTSTATUS=$?
 
 
