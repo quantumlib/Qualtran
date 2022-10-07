@@ -32,6 +32,10 @@ class QROM(unary_iteration.UnaryIterationGate):
         return Registers.build(**{f'target{i}': len for i, len in enumerate(self._target_bitsizes)})
 
     @cached_property
+    def iteration_length(self) -> int:
+        return len(self._data[0])
+
+    @cached_property
     def iteration_lengths(self) -> Tuple[int, ...]:
         return (len(self._data[0]),)
 
