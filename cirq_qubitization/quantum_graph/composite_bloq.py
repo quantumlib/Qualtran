@@ -1,7 +1,10 @@
+import itertools
 from typing import Sequence, Tuple, Set, List, Dict, Optional
 
 import networkx as nx
 import cirq
+import numpy as np
+
 from cirq_qubitization.gate_with_registers import Registers, Register
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
 from cirq_qubitization.quantum_graph.fancy_registers import (
@@ -154,25 +157,31 @@ class CompositeBloqBuilder:
 
     def join(self, prev_soqs: Sequence[Soquet]) -> Soquet:
         bloq = Join(len(prev_soqs))
-        left_names = list(bloq.registers[0].left_names())
-        assert len(prev_soqs) == len(left_names)
-        (out_soq,) = self.add(bloq, **dict(zip(left_names, prev_soqs)))
+        (out_soq,) = self.add(bloq, **{bloq.registers[0].name: prev_soqs})
         return out_soq
 
     def add(self, bloq: Bloq, **soq_map: Soquet) -> Tuple[Soquet, ...]:
         # TODO: rename method?
         binst = self._new_binst(bloq)
 
-        # TODO: use registers
-
         out_soqs = []
         for reg in bloq.registers:
-            for ln in reg.left_names():
-                prev_soq = soq_map[ln]
-                # TODO: check used
-                self._wires.append(Wire(prev_soq, Soquet(binst, ln)))
+            *lwireshape, bitwidth = reg.left_shape
 
-            out_soqs += [Soquet(binst, rn) for rn in reg.right_names()]
+            # if we want fancy indexing (which we do), we need numpy
+            # this also supports length-zero indexing natively, which is good too.
+            prev_soqs = np.asarray(soq_map[reg.name])
+            # if len(lwireshape) == 0:
+            #     # TODO: can be fancy if we could index a Soquet with tuple() to just get itself.
+            #     self._wires.append(Wire(prev_soqs, Soquet(binst, reg.name)))
+            for li in itertools.product(*[range(sh) for sh in lwireshape]):
+                self._wires.append(Wire(prev_soqs[li], Soquet(binst, reg.name, idx=li)))
+
+            *rwireshape, bitwidth = reg.right_shape
+            out_soqs += [
+                Soquet(binst, reg.name, idx=ri)
+                for ri in itertools.product(*[range(sh) for sh in rwireshape])
+            ]
 
         return tuple(out_soqs)
 

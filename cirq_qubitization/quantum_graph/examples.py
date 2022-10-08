@@ -12,6 +12,22 @@ from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 @frozen
+class SplitJoin(Bloq):
+    nn: int
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers([ThruRegister('xx', self.nn)])
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', *, xx: 'Soquet'
+    ) -> Dict[str, 'Soquet']:
+        xxs = bb.split(xx, self.nn)
+        xx2 = bb.join(xxs)
+        return {'xx': xx2}
+
+
+@frozen
 class SingleControlModMultiply(Bloq):
     x_bitsize: int
     mul_constant: int

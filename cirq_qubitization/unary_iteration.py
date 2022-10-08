@@ -39,8 +39,8 @@ class UnaryIterationGate(GateWithRegisters):
 
     @cached_property
     def ancilla_registers(self) -> Registers:
-        control_ancilla_bitsize = max(0, self.control_registers.bitsize - 1)
-        iteration_ancilla_bitsize = self.selection_registers.bitsize
+        control_ancilla_bitsize = max(0, self.control_registers.total_size - 1)
+        iteration_ancilla_bitsize = self.selection_registers.total_size
         return Registers.build(ancilla=control_ancilla_bitsize + iteration_ancilla_bitsize)
 
     @cached_property
@@ -199,7 +199,7 @@ class UnaryIterationGate(GateWithRegisters):
                 control[0], selection, ancilla, target, **extra_regs
             )
         else:
-            control_bitsize = self.control_registers.bitsize
+            control_bitsize = self.control_registers.total_size
             and_ancillas = ancilla[: control_bitsize - 2]
             and_target = ancilla[control_bitsize - 2]
             selection_ancillas = ancilla[control_bitsize - 1 :]
@@ -218,8 +218,8 @@ class UnaryIterationGate(GateWithRegisters):
         Descendants are encouraged to override this with more descriptive
         circuit diagram information.
         """
-        wire_symbols = ["@"] * self.control_registers.bitsize
-        wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
-        wire_symbols += [self.__class__.__name__] * self.target_registers.bitsize
+        wire_symbols = ["@"] * self.control_registers.total_size
+        wire_symbols += ["In"] * self.selection_registers.total_size
+        wire_symbols += ["Anc"] * self.ancilla_registers.total_size
+        wire_symbols += [self.__class__.__name__] * self.target_registers.total_size
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

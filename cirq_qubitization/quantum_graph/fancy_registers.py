@@ -1,6 +1,6 @@
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Tuple
 
-from cirq_qubitization.gate_with_registers import Register
+from cirq_qubitization.gate_with_registers import Register, IThruRegister
 
 from attrs import frozen
 
@@ -8,41 +8,39 @@ from attrs import frozen
 @frozen
 class SplitRegister(Register):
     name: str
-    bitsize: int
+    n: int
 
-    def left_names(self) -> Iterable[str]:
-        yield self.name
+    @property
+    def left_shape(self) -> Tuple[int, ...]:
+        return (self.n,)
 
-    def right_names(self) -> Iterable[str]:
-        for i in range(self.bitsize):
-            # TODO: name collisions? but we need it to be a kwarg
-            yield f'{self.name}{i}'
+    @property
+    def right_shape(self) -> Tuple[int, ...]:
+        return (self.n, 1)
 
 
 @frozen
 class JoinRegister(Register):
     name: str
-    bitsize: int
+    n: int
 
-    def left_names(self) -> Iterable[str]:
-        for i in range(self.bitsize):
-            # TODO: name collisions? but we need it to be a kwarg
-            yield f'{self.name}{i}'
+    @property
+    def left_shape(self) -> Tuple[int, ...]:
+        return (self.n, 1)
 
-    def right_names(self) -> Iterable[str]:
-        yield self.name
+    @property
+    def right_shape(self) -> Tuple[int, ...]:
+        return (self.n,)
 
 
 @frozen
-class ApplyFRegister(Register):
+class ApplyFRegister(IThruRegister):
     name: str
     bitsize: int
     out_name: str
     in_text: Optional[str] = None
     out_text: Optional[str] = None
 
-    def left_names(self) -> Iterable[str]:
-        yield self.name
-
-    def right_names(self) -> Iterable[str]:
-        yield self.out_name
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return (self.bitsize,)

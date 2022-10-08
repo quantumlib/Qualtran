@@ -1,4 +1,5 @@
-from typing import Sequence, Union, Tuple, Set
+import itertools
+from typing import Sequence, Union, Tuple, Set, Optional
 
 import pydot
 
@@ -21,24 +22,10 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 from cirq_qubitization.quantum_graph.util_bloqs import Split, Join
 
 
-def _binst_id(x: BloqInstance):
-    # should be fine as long as all the `i`s are unique.
-    return f'{x.bloq.__class__.__name__}_{x.i}'
-
-
-def _binst_in_port(port: Soquet):
-    return f'{_binst_id(port.binst)}:{port.reg_name}:w'
-
-
-def _binst_out_port(port: Soquet):
-    return f'{_binst_id(port.binst)}:{port.reg_name}:e'
-
-
-def _dangling_id(soq: Soquet):
-    # Can we collide with a binst_id? Probably not unless we have a class named
-    # DanglingT_l with integer reg_name.
-    assert isinstance(soq.binst, DanglingT)
-    return f'DanglingT_{soq.binst.direction}_{soq.reg_name}'
+def _get_idx_label(label: str, idx: Tuple[int, ...] = tuple()):
+    if len(idx) > 0:
+        return f'{label}[{", ".join(str(i) for i in idx)}]'
+    return str(label)
 
 
 class GraphDrawer:
@@ -67,10 +54,89 @@ class GraphDrawer:
         # TODO: constructor method
         return PrettyGraphDrawer(self._cbloq)
 
-    def get_dangle_node(self, dangle: DanglingT, soq_name: str) -> pydot.Node:
+    def port_id(self, reg_name: str, idx: Tuple[int, ...] = tuple(), *, right=False) -> str:
+        idx = "_".join(str(i) for i in idx)
+        if idx:
+            idx = '_' + idx
+        if right:
+            right = '_r'
+        else:
+            right = ''
+        return f'{reg_name}{idx}{right}'
+
+    def get_id_parts(
+        self, soq: Soquet, lr: Optional[str] = None
+    ) -> Tuple[str, Optional[str], Optional[str]]:
+        # node, port (if any), east/west
+        if isinstance(soq.binst, DanglingT):
+            if soq.binst is LeftDangle:
+                if lr is not None:
+                    assert lr == 'r'
+                dir = 'e'
+            elif soq.binst is RightDangle:
+                if lr is not None:
+                    assert lr == 'l'
+                dir = 'w'
+            else:
+                raise ValueError()
+            return f'DanglingT_{dir}_{soq.reg_name}', None, dir
+
+        binst = f'{soq.binst.bloq.__class__.__name__}_{soq.binst.i}'
+
+        if lr is None:
+            ew = None
+        elif lr == 'l':
+            ew = 'w'
+        elif lr == 'r':
+            ew = 'e'
+        else:
+            raise ValueError()
+
+        if lr == 'r':
+            # TODO: only set for special things
+            right = True
+        else:
+            right = False
+
+        return binst, self.port_id(soq.reg_name, soq.idx, right=right), ew
+
+    def node_id(self, thing: Union[Soquet, BloqInstance], lr: Optional[str] = None) -> str:
+        if isinstance(thing, Soquet):
+            soq = thing
+        elif isinstance(thing, BloqInstance):
+            soq = Soquet(thing, '')
+        else:
+            raise ValueError()
+
+        nid, portname, ew = self.get_id_parts(soq=soq, lr=lr)
+        assert isinstance(nid, str)
+        return nid
+
+    def node_port_id(self, soq: Soquet, lr: Optional[str] = None):
+        nid, portname, ew = self.get_id_parts(soq=soq, lr=lr)
+        assert isinstance(nid, str)
+        assert isinstance(portname, str)
+        return f'{nid}:{portname}'
+
+    def node_port_compass_id(self, soq: Soquet, lr: Optional[str] = None):
+        nid, portname, ew = self.get_id_parts(soq=soq, lr=lr)
+        assert isinstance(nid, str)
+        assert isinstance(portname, str)
+        assert isinstance(ew, str)
+        return f'{nid}:{portname}:{ew}'
+
+    def node_compass_id(self, soq: Soquet, lr: Optional[str] = None):
+        nid, portname, ew = self.get_id_parts(soq=soq, lr=lr)
+        assert isinstance(nid, str)
+        assert isinstance(ew, str)
+        return f'{nid}:{ew}'
+
+    def get_dangle_node(self, dangle: DanglingT, reg_name: str, idx: Tuple[int, ...]) -> pydot.Node:
         """Get a Node representing dangling indices."""
         return pydot.Node(
-            _dangling_id(Soquet(dangle, soq_name)), label=f'{soq_name}', shape='plaintext'
+            self.node_id(Soquet(dangle, reg_name, idx)),
+            label=_get_idx_label(reg_name, idx),
+            shape='plaintext',
         )
 
     def add_dangles(self, graph: pydot.Graph, dangle: DanglingT) -> pydot.Graph:
@@ -81,50 +147,48 @@ class GraphDrawer:
         dang = pydot.Subgraph(rank='same')
         for reg in self.registers:
             if dangle is LeftDangle:
-                soqnames = reg.left_names
+                shape = reg.left_shape
             elif dangle is RightDangle:
-                soqnames = reg.right_names
+                shape = reg.right_shape
             else:
                 raise ValueError()
 
-            for soqname in soqnames():
-                dang.add_node(self.get_dangle_node(dangle, soqname))
+            *wireshape, bitsize = shape
+            for si in itertools.product(*wireshape):
+                dang.add_node(self.get_dangle_node(dangle, reg.name, si))
         graph.add_subgraph(dang)
         return graph
-
-    def get_split_text(self, i: Union[None, int]):
-        if i is None:
-            return 'in'
-        return str(i)
 
     def get_split_register(self, reg: SplitRegister) -> str:
         """Return <TR>s for a SplitRegister."""
         label = ''
-        for i in range(reg.bitsize):
+        *rwireshape, bitsize = reg.right_shape
+        first = True
+        for idx in itertools.product(*[range(sh) for sh in rwireshape]):
             in_td = (
-                f'<TD rowspan="{reg.bitsize}" port="{reg.name}">{self.get_split_text(None)}</TD>'
-                if i == 0
+                f'<TD rowspan="{reg.n}" port="{self.port_id(reg.name)}">{_get_idx_label(reg.name)}</TD>'
+                if first
                 else ''
             )
-            label += f'<TR>{in_td}<TD port="{reg.name}{i}">{self.get_split_text(i)}</TD></TR>'
+            first = False
+            label += f'<TR>{in_td}<TD port="{self.port_id(reg.name, idx, right=True)}">{_get_idx_label(reg.name, idx)}</TD></TR>'
 
         return label
-
-    def get_join_text(self, i: Union[None, int]):
-        if i is None:
-            return 'out'
-        return str(i)
 
     def get_join_register(self, reg: JoinRegister) -> str:
         """Return <TR>s for a JoinRegister."""
         label = ''
-        for i in range(reg.bitsize):
+
+        first = True
+        *lwireshape, bitsize = reg.left_shape
+        for idx in itertools.product(*[range(sh) for sh in lwireshape]):
             out_td = (
-                f'<TD rowspan="{reg.bitsize}" port="{reg.name}">{self.get_join_text(None)}</TD>'
-                if i == 0
+                f'<TD rowspan="{reg.n}" port="{self.port_id(reg.name, right=True)}">{_get_idx_label(reg.name)}</TD>'
+                if first
                 else ''
             )
-            label += f'<TR><TD port="{reg.name}{i}">{self.get_join_text(i)}</TD>{out_td}</TR>'
+            first = False
+            label += f'<TR><TD port="{self.port_id(reg.name, idx)}">{_get_idx_label(reg.name, idx)}</TD>{out_td}</TR>'
 
         return label
 
@@ -133,14 +197,14 @@ class GraphDrawer:
 
     def get_apply_f_register(self, reg: ApplyFRegister) -> str:
         t1, t2 = self.get_apply_f_text(reg)
-        return f'<TR><TD port="{reg.name}">{t1}</TD><TD port="{reg.out_name}">{t2}</TD></TR>'
+        return f'<TR><TD port="{self.port_id(reg.name)}">{t1}</TD><TD port="{self.port_id(reg.name, right=True)}">{t2}</TD></TR>'
 
     def get_default_text(self, reg: Register) -> str:
         return reg.name
 
     def get_default_register(self, reg: Register, colspan: str = '') -> str:
         """Return a <TR> for a normal Register."""
-        return f'<TR><TD {colspan} PORT="{reg.name}">{self.get_default_text(reg)}</TD></TR>'
+        return f'<TR><TD {colspan} port="{self.port_id(reg.name)}">{self.get_default_text(reg)}</TD></TR>'
 
     def get_binst_table_attributes(self) -> str:
         """Return the desired table attributes for the bloq."""
@@ -148,7 +212,7 @@ class GraphDrawer:
 
     def get_binst_header_text(self, binst: BloqInstance) -> str:
         """Get the text used for the 'header' cell of a bloq."""
-        return _binst_id(binst)
+        return self.node_id(binst)
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         """Add a BloqInstance to the graph."""
@@ -173,22 +237,39 @@ class GraphDrawer:
         label += '</TABLE>'
         label += '>'  # graphviz: end the HTML section
 
-        graph.add_node(pydot.Node(_binst_id(binst), label=label, shape='plain'))
+        graph.add_node(pydot.Node(self.node_id(binst), label=label, shape='plain'))
         return graph
 
-    def get_arrowhead(self):
-        return 'normal'
+    def wire_label(self, wire: Wire) -> str:
+        return str(wire.shape)
 
-    def add_edge(self, graph: pydot.Graph, tail: str, head: str):
-        graph.add_edge(pydot.Edge(tail, head, arrowhead=self.get_arrowhead()))
+    def add_edge(self, graph: pydot.Graph, tail: str, head: str, label: str):
+        graph.add_edge(
+            pydot.Edge(tail, head, arrowhead='normal', label=label, labelfloat=True, fontsize=10)
+        )
 
     def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
         if wire.left.binst is LeftDangle:
-            self.add_edge(graph, _dangling_id(wire.left), _binst_in_port(wire.right))
+            self.add_edge(
+                graph,
+                self.node_compass_id(wire.left, lr='r'),
+                self.node_port_compass_id(wire.right, lr='l'),
+                label=self.wire_label(wire),
+            )
         elif wire.right.binst is RightDangle:
-            self.add_edge(graph, _binst_out_port(wire.left), _dangling_id(wire.right))
+            self.add_edge(
+                graph,
+                self.node_port_compass_id(wire.left, lr='r'),
+                self.node_compass_id(wire.right, lr='l'),
+                label=self.wire_label(wire),
+            )
         else:
-            self.add_edge(graph, _binst_out_port(wire.left), _binst_in_port(wire.right))
+            self.add_edge(
+                graph,
+                self.node_port_compass_id(wire.left, lr='r'),
+                self.node_port_compass_id(wire.right, lr='l'),
+                label=self.wire_label(wire),
+            )
 
         return graph
 
@@ -231,89 +312,71 @@ class PrettyGraphDrawer(GraphDrawer):
 
         return reg.name
 
-    def get_arrowhead(self):
-        return 'none'
+    def add_edge(self, graph: pydot.Graph, tail: str, head: str, label: str):
+        graph.add_edge(pydot.Edge(tail, head, arrowhead='none'))
 
 
 def _binst_id2(x: BloqInstance):
-    if isinstance(x, DanglingT):
-        return f'dang{x.direction}'
+    if x is LeftDangle:
+        return 'dang_left'
+    if x is RightDangle:
+        return 'dang_right'
 
     return f'{x.bloq.__class__.__name__}_{x.i}'
 
 
 def _pgid(p: Soquet):
-    return f'{_binst_id2(p.binst)}_{p.reg_name}'
+    idx = "_".join(str(i) for i in p.idx)
+    return f'{_binst_id2(p.binst)}_{p.reg_name}_{idx}'
 
 
 class PortGraphDrawer(GraphDrawer):
-    def get_dangle_node(self, dangle: DanglingT, soqname: str) -> pydot.Node:
+    def get_dangle_node(self, dangle: DanglingT, soqname: str, idx: Tuple[int, ...]) -> pydot.Node:
         """Get a Node representing dangling indices."""
-        return pydot.Node(_pgid(Soquet(dangle, soqname)), label=soqname, shape='plaintext')
+        return pydot.Node(
+            _pgid(Soquet(dangle, soqname, idx)),
+            label=_get_idx_label(soqname, idx),
+            shape='plaintext',
+        )
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         subg = pydot.Cluster(_binst_id2(binst), label=binst.bloq.pretty_name())
 
         for reg in binst.bloq.registers:
-            # TODO: abstract method that gives all the in/out ports
-            if isinstance(reg, SplitRegister):
-                subg.add_node(
-                    pydot.Node(
-                        _pgid(Soquet(binst, reg.name)),
-                        label=reg.name,
-                        shape='house',
-                        orientation=-90,
-                    )
-                )
-                for i in range(reg.bitsize):
-                    sname = f'{reg.name}{i}'
-                    subg.add_node(
-                        pydot.Node(
-                            _pgid(Soquet(binst, sname)), label=sname, shape='house', orientation=90
-                        )
-                    )
-            elif isinstance(reg, JoinRegister):
-                subg.add_node(
-                    pydot.Node(
-                        _pgid(Soquet(binst, reg.name)),
-                        label=reg.name,
-                        shape='house',
-                        orientation=90,
-                    )
-                )
-                for i in range(reg.bitsize):
-                    sname = f'{reg.name}{i}'
-                    subg.add_node(
-                        pydot.Node(
-                            _pgid(Soquet(binst, sname)), label=sname, shape='house', orientation=-90
-                        )
-                    )
-            elif isinstance(reg, ApplyFRegister):
-                subg.add_node(
-                    pydot.Node(
-                        _pgid(Soquet(binst, reg.name)),
-                        label=reg.name,
-                        shape='house',
-                        orientation=-90,
-                    )
-                )
-                subg.add_node(
-                    pydot.Node(
-                        _pgid(Soquet(binst, reg.out_name)),
-                        label=reg.out_name,
-                        shape='house',
-                        orientation=90,
-                    )
-                )
+            *lwireshape, bitsize = reg.left_shape
+            *rwireshape, bitsize = reg.right_shape
+            if lwireshape == rwireshape:
+                draw_args = dict(shape='rect', style='rounded')
+                r_idx_iter = []
             else:
+                draw_args = dict(shape='house', orientation=-90)
+                r_idx_iter = itertools.product(*[range(sh) for sh in rwireshape])
+
+            for idx in itertools.product(*[range(sh) for sh in lwireshape]):
                 subg.add_node(
-                    pydot.Node(_pgid(Soquet(binst, reg.name)), label=reg.name, shape='rect')
+                    pydot.Node(
+                        _pgid(Soquet(binst, reg.name, idx)),
+                        label=_get_idx_label(reg.name, idx),
+                        **draw_args,
+                    )
+                )
+
+            for idx in r_idx_iter:
+                subg.add_node(
+                    pydot.Node(
+                        _pgid(Soquet(binst, reg.name, idx)),
+                        label=_get_idx_label(reg.name, idx),
+                        shape='house',
+                        orientation=90,
+                    )
                 )
 
         graph.add_subgraph(subg)
         return graph
 
     def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
-        self.add_edge(graph, _pgid(wire.left) + ':e', _pgid(wire.right) + ":w")
+        self.add_edge(
+            graph, _pgid(wire.left) + ':e', _pgid(wire.right) + ":w", label=self.wire_label(wire)
+        )
 
         return graph

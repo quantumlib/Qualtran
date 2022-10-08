@@ -16,7 +16,7 @@ class Split(Bloq):
 
     @cached_property
     def registers(self) -> Registers:
-        return Registers([SplitRegister(name='sss', bitsize=self.bitsize)])
+        return Registers([SplitRegister(name='sss', n=self.bitsize)])
 
     def on_registers(
         self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
@@ -30,7 +30,7 @@ class Join(Bloq):
 
     @cached_property
     def registers(self) -> Registers:
-        return Registers([JoinRegister(name='jjj', bitsize=self.bitsize)])
+        return Registers([JoinRegister(name='jjj', n=self.bitsize)])
 
     def on_registers(
         self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]

@@ -47,18 +47,14 @@ class Bloq(cirq.Gate, metaclass=abc.ABCMeta):
 
         bb = CompositeBloqBuilder(self.registers)
         ret_soqs_tuple = bb.add(self, **bb.initial_soquets())
-        ret_soqs = {}
-        i = 0
-        for reg in self.registers:
-            for outname in reg.right_names():
-                ret_soqs[outname] = ret_soqs_tuple[i]
-                i += 1
+        assert len(self.registers) == len(ret_soqs_tuple)
+        ret_soqs = {reg.name: v for reg, v in zip(self.registers, ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
 
     ## ----- cirq stuff
 
     def _num_qubits_(self) -> int:
-        return self.registers.bitsize
+        return self.registers.total_size
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         qubit_regs = self.registers.split_qubits(qubits)
