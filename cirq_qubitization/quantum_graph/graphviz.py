@@ -28,6 +28,104 @@ def _get_idx_label(label: str, idx: Tuple[int, ...] = tuple()):
     return str(label)
 
 
+class SimplestGraphDrawer:
+    def __init__(self, bloq: Bloq):
+        if not isinstance(bloq, CompositeBloq):
+            cbloq = bloq.as_composite_bloq()
+        else:
+            cbloq = bloq
+        self._cbloq = cbloq
+
+    def node_id(self, thing: Union[BloqInstance, DanglingT], reg_name: Optional[str] = None) -> str:
+        parts = []
+        if isinstance(thing, BloqInstance):
+            parts += [thing.bloq.__class__.__name__, str(thing.i)]
+        else:
+            if thing is LeftDangle:
+                parts.append('LeftDangle')
+            elif thing is RightDangle:
+                parts.append('RightDangle')
+            else:
+                raise ValueError()
+
+        if reg_name is not None:
+            parts.append(reg_name)
+
+        return '_'.join(parts)
+
+    def node_compass_id(self, thing: BloqInstance, reg_name: str, ew: str):
+        return f'{self.node_id(thing, reg_name)}:{ew}'
+
+    def get_dangle_node(self, dangle: DanglingT, reg_name: str) -> pydot.Node:
+        """Get a Node representing dangling indices."""
+        return pydot.Node(
+            self.node_id(dangle, reg_name), label=self.node_id(dangle, reg_name), shape='plaintext'
+        )
+
+    def add_dangles(
+        self, graph: pydot.Graph, registers: Registers, dangle: DanglingT
+    ) -> pydot.Graph:
+        """Add nodes representing dangling indices to the graph.
+
+        We wrap this in a subgraph to align (rank=same) the 'nodes'
+        """
+        dang = pydot.Subgraph(rank='same')
+        for reg in registers:
+            dang.add_node(self.get_dangle_node(dangle, reg.name))
+        graph.add_subgraph(dang)
+        return graph
+
+    def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
+        subg = pydot.Cluster(self.node_id(binst), label=self.node_id(binst))
+
+        for reg in binst.bloq.registers:
+            subg.add_node(
+                pydot.Node(self.node_id(binst, reg.name), label=self.node_id(binst, reg.name))
+            )
+
+        graph.add_subgraph(subg)
+        return graph
+
+    def add_wire(self, graph: pydot.Graph, wire: Wire) -> pydot.Graph:
+        graph.add_edge(
+            pydot.Edge(
+                self.node_compass_id(wire.left.binst, wire.left.reg_name, 'e'),
+                self.node_compass_id(wire.right.binst, wire.right.reg_name, 'w'),
+                arrowhead='normal',
+                label=str(wire.shape),
+                labelfloat=True,
+                fontsize=10,
+            )
+        )
+
+        return graph
+
+    def graphviz(self) -> pydot.Graph:
+        binsts = set(
+            wire.left.binst
+            for wire in self._cbloq.wires
+            if not isinstance(wire.left.binst, DanglingT)
+        )
+        binsts |= set(
+            wire.right.binst
+            for wire in self._cbloq.wires
+            if not isinstance(wire.right.binst, DanglingT)
+        )
+
+        graph = pydot.Dot('qual', graph_type='digraph', rankdir='LR')
+        graph = self.add_dangles(graph, self._cbloq.registers, LeftDangle)
+
+        for binst in binsts:
+            graph = self.add_binst(graph, binst)
+
+        graph = self.add_dangles(graph, self._cbloq.registers, RightDangle)
+
+        for wire in self._cbloq.wires:
+            graph = self.add_wire(graph, wire)
+
+        return graph
+
+
 class GraphDrawer:
     def __init__(self, bloq: Bloq):
         if not isinstance(bloq, CompositeBloq):
