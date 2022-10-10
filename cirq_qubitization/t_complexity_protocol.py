@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Iterable, Optional, Tuple
 from dataclasses import dataclass
 from typing_extensions import Protocol
 
@@ -6,7 +6,6 @@ import cirq
 from cirq.protocols.decompose_protocol import _try_decompose_into_operations_and_qubits
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
-_FREDKIN_GATESET = cirq.Gateset(cirq.FREDKIN, unroll_circuit_op=False)
 
 
 @dataclass(frozen=True)
@@ -21,9 +20,9 @@ class TComplexity:
         )
 
 
-_KNOWN_COMPLEXITIES: Dict[cirq.Gateset, TComplexity] = {
-    _FREDKIN_GATESET: TComplexity(t=7, clifford=10)
-}
+_KNOWN_COMPLEXITIES: Tuple[Tuple[cirq.Gateset, TComplexity], ...] = tuple(
+    ((cirq.Gateset(cirq.FREDKIN, unroll_circuit_op=False), TComplexity(t=7, clifford=10)),)
+)
 
 
 class SupportsTComplexity(Protocol):
@@ -96,7 +95,7 @@ def _strat_from_know_complexities(stc: Any) -> Optional[TComplexity]:
     if isinstance(stc, cirq.ClassicallyControlledOperation):
         stc = stc.without_classical_controls()
 
-    for gateset, t in _KNOWN_COMPLEXITIES.items():
+    for gateset, t in _KNOWN_COMPLEXITIES:
         if stc in gateset:
             return t
     return None
