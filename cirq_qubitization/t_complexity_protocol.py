@@ -89,6 +89,7 @@ def _strat_from_decomposition(stc: Any) -> Optional[TComplexity]:
 
 
 def _strat_from_know_complexities(stc: Any) -> Optional[TComplexity]:
+    """check if the object has a known decomposition."""
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
 
@@ -107,8 +108,6 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     Args:
         stc: an object to compute its TComplexity.
         fail_quietly: bool whether to return None on failure or raise an error.
-        custom_strategies: Callables that apply custom strategies
-                            and take precendence on cirq.decompose_once.
 
     Returns:
         The TComplexity of the given object or None on failure (and fail_quietly=True).
