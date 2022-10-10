@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 import cirq
 import cirq_qubitization
-from cirq_qubitization.t_complexity_protocol import fredkin_t_complexity
 
 from cirq_qubitization.testing import assert_decompose_is_consistent_with_t_complexity
 
@@ -131,14 +130,10 @@ def test_multi_target_cswap():
 def test_t_complexity():
     for n in range(1, 5 + 1):
         g = cirq_qubitization.MultiTargetCSwap(n)
-        assert_decompose_is_consistent_with_t_complexity(
-            g, custom_strategies=(fredkin_t_complexity,)
-        )
+        assert_decompose_is_consistent_with_t_complexity(g)
 
         g = cirq_qubitization.MultiTargetCSwapApprox(n)
-        assert_decompose_is_consistent_with_t_complexity(
-            g, custom_strategies=(fredkin_t_complexity,)
-        )
+        assert_decompose_is_consistent_with_t_complexity(g)
 
 
 @pytest.mark.parametrize(
@@ -147,6 +142,4 @@ def test_t_complexity():
 )
 def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers):
     gate = cirq_qubitization.SwapWithZeroGate(selection_bitsize, target_bitsize, n_target_registers)
-    assert_decompose_is_consistent_with_t_complexity(
-        gate, custom_strategies=(fredkin_t_complexity,)
-    )
+    assert_decompose_is_consistent_with_t_complexity(gate)

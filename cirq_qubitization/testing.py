@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional, Sequence, Dict, List
+from typing import Any, Iterable, Sequence, Dict, List
 
 import cirq
 import numpy as np
@@ -9,7 +9,7 @@ import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
-from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
+from cirq_qubitization.t_complexity_protocol import t_complexity
 
 
 @dataclass(frozen=True)
@@ -91,12 +91,8 @@ def execute_notebook(name: str):
     ep.preprocess(nb)
 
 
-def assert_decompose_is_consistent_with_t_complexity(
-    val: Any,
-    qubits: Iterable[cirq.Qid] = None,
-    custom_strategies: Iterable[Callable[[Any], Optional[TComplexity]]] = (),
-):
-    expected = t_complexity(val, fail_quietly=True, custom_strategies=custom_strategies)
+def assert_decompose_is_consistent_with_t_complexity(val: Any, qubits: Iterable[cirq.Qid] = None):
+    expected = t_complexity(val, fail_quietly=True)
     if expected is None:
         # If T-complexity of `val` doesn't exist, no need to check consistency with decompose.
         return
@@ -109,7 +105,5 @@ def assert_decompose_is_consistent_with_t_complexity(
     if decomposition is None:
         # If there's no decomposition, no need to check consistency with decompose.
         return
-    from_decomposition = t_complexity(
-        decomposition, fail_quietly=False, custom_strategies=custom_strategies
-    )
+    from_decomposition = t_complexity(decomposition, fail_quietly=False)
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'

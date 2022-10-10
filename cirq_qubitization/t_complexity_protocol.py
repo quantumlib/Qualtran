@@ -1,4 +1,4 @@
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional
 from dataclasses import dataclass
 from typing_extensions import Protocol
 
@@ -6,6 +6,7 @@ import cirq
 from cirq.protocols.decompose_protocol import _try_decompose_into_operations_and_qubits
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
+_FREDKIN_GATESET = cirq.Gateset(cirq.FREDKIN, unroll_circuit_op=False)
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,11 @@ class TComplexity:
         )
 
 
+_KNOWN_COMPLEXITIES: Dict[cirq.Gateset, TComplexity] = {
+    _FREDKIN_GATESET: TComplexity(t=7, clifford=10)
+}
+
+
 class SupportsTComplexity(Protocol):
     """An object whose TComplexity can be computed.
 
@@ -31,7 +37,7 @@ class SupportsTComplexity(Protocol):
         """Returns the TComplexity."""
 
 
-def _has_t_complexity(stc: Any, **kwargs) -> Optional[TComplexity]:
+def _start_t_from_builtin_method(stc: Any) -> Optional[TComplexity]:
     """Returns TComplexity of stc by calling its _t_complexity_ if it exists."""
     estimator = getattr(stc, '_t_complexity_', None)
     if estimator is not None:
@@ -40,7 +46,7 @@ def _has_t_complexity(stc: Any, **kwargs) -> Optional[TComplexity]:
     return None
 
 
-def _is_clifford_or_t(stc: Any, **kwargs) -> Optional[TComplexity]:
+def _strat_is_clifford_or_t(stc: Any) -> Optional[TComplexity]:
     """Attempts to infer the type of a gate/operation as one of clifford, T or Rotation."""
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
@@ -62,33 +68,40 @@ def _is_clifford_or_t(stc: Any, **kwargs) -> Optional[TComplexity]:
     return None
 
 
-def _is_iterable(it: Any, **kwargs) -> Optional[TComplexity]:
+def _strat_is_iterable(it: Any) -> Optional[TComplexity]:
     if not isinstance(it, Iterable):
         return None
-    custom_strategies = kwargs['custom_strategies'] if 'custom_strategies' in kwargs else ()
     t = TComplexity()
     for v in it:
-        r = t_complexity(v, custom_strategies=custom_strategies)
+        r = t_complexity(v)
         if r is None:
             return None
         t = t + r
     return t
 
 
-def _has_decomposition(stc: Any, **kwargs) -> Optional[TComplexity]:
+def _strat_from_decomposition(stc: Any) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
     decomposition, _, _ = _try_decompose_into_operations_and_qubits(stc)
     if decomposition is None:
         return None
-    custom_strategies = kwargs['custom_strategies'] if 'custom_strategies' in kwargs else ()
-    return _is_iterable(decomposition, custom_strategies=custom_strategies)
+    return _strat_is_iterable(decomposition)
 
 
-def t_complexity(
-    stc: Any,
-    fail_quietly: bool = False,
-    custom_strategies: Iterable[Callable[[Any], TComplexity]] = (),
-) -> Optional[TComplexity]:
+def _strat_from_know_complexities(stc: Any) -> Optional[TComplexity]:
+    if not isinstance(stc, (cirq.Gate, cirq.Operation)):
+        return None
+
+    if isinstance(stc, cirq.ClassicallyControlledOperation):
+        stc = stc.without_classical_controls()
+
+    for gateset, t in _KNOWN_COMPLEXITIES.items():
+        if stc in gateset:
+            return t
+    return None
+
+
+def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     """Returns the TComplexity.
 
     Args:
@@ -103,23 +116,18 @@ def t_complexity(
     Raises:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    strategies = [_has_t_complexity, _is_clifford_or_t]
-    strategies.extend(custom_strategies)
-    strategies.extend([_has_decomposition, _is_iterable])
+    strategies = [
+        _start_t_from_builtin_method,
+        _strat_is_clifford_or_t,
+        _strat_from_know_complexities,
+        _strat_from_decomposition,
+        _strat_is_iterable,
+    ]
 
     for strategy in strategies:
-        ret = strategy(stc, custom_strategies=custom_strategies)
+        ret = strategy(stc)
         if ret is not None:
             return ret
     if fail_quietly:
         return None
     raise TypeError("couldn't compute TComplexity of:\n" f"type: {type(stc)}\n" f"value: {stc}")
-
-
-def fredkin_t_complexity(val: Any, **kwargs) -> Optional[TComplexity]:
-    """Optimal TComplexity of FREDKIN gate from figure 5.2 of https://arxiv.org/pdf/1308.4134.pdf"""
-    if isinstance(val, (cirq.Operation, cirq.Gate)) and val in cirq.Gateset(
-        cirq.FREDKIN, unroll_circuit_op=False
-    ):
-        return TComplexity(t=7, clifford=10)
-    return None
