@@ -1,10 +1,10 @@
+import IPython.display
 import cirq
 import cirq.contrib.svg.svg as ccsvg
 import ipywidgets
-import IPython.display
 
 import cirq_qubitization.testing as cq_testing
-from cirq_qubitization import Registers
+from cirq_qubitization.gate_with_registers import Registers
 
 
 def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False):
