@@ -14,9 +14,9 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         *,
         control_bitsize: int = 1,
     ):
-        self._nth_gate = nth_gate
         self._selection_bitsize = selection_bitsize
         self._target_bitsize = target_bitsize
+        self._nth_gate = nth_gate
         self._control_bitsize = control_bitsize
 
     @cached_property
