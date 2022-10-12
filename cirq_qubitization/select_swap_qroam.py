@@ -1,6 +1,5 @@
-from typing import Tuple, Sequence, Optional, List, Dict
+from typing import Tuple, Sequence, Optional, List
 from functools import cached_property
-from collections import defaultdict
 import numpy as np
 import cirq
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
@@ -99,22 +98,6 @@ class SelectSwapQROM(GateWithRegisters):
             (L - 1).bit_length() for L in [self.num_blocks, self.block_size]
         )
         self._data = tuple(tuple(d) for d in data)
-        # batched_data = []
-        # batched_target_bitsizes = []
-        # for d, bitsize in zip(data, target_bitsizes):
-        #     # Each original data array is split into `r` different sequences, each of length `q`.
-        #     current_batch = []
-        #     for block_start_index in range(self.block_size):
-        #         curr_data = list(d[block_start_index :: self.block_size])
-        #         curr_data += [0] * (self.num_blocks - len(curr_data))
-        #         assert len(curr_data) == self.num_blocks
-        #         current_batch.append(curr_data)
-        #     batched_data.append(current_batch)
-        #     batched_target_bitsizes.append([bitsize] * self.block_size)
-        # Store the data.
-        # self._iteration_length = len(data[0])
-        # self._batched_data = tuple(tuple(tuple(d) for d in batch) for batch in batched_data)
-        # self._batched_target_bitsizes = batched_target_bitsizes
 
     @cached_property
     def selection_registers(self) -> Registers:
