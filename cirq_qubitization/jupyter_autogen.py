@@ -1,6 +1,6 @@
 """Autogeneration of stub Jupyter notebooks.
 
-for each module listed in the `NOTEBOOK_SPECS` global variable (in this file)
+For each module listed in the `NOTEBOOK_SPECS` global variable (in this file)
 we write a notebook with a title, module docstring [TODO],
 standard imports, and information on each `GateWithRegisters` listed in the
 `gate_specs` field. For each gate, we render a docstring and diagrams.
