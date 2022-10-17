@@ -1,6 +1,7 @@
 import abc
 import sys
-from typing import Sequence, Dict, Iterable, List, Union, overload
+import warnings
+from typing import Sequence, Dict, Iterable, List, Union, overload, Tuple
 
 import cirq
 from attrs import frozen
@@ -8,10 +9,46 @@ from attrs import frozen
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
+class Register(metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def name(self):
+        ...
+
+    @property
+    @abc.abstractmethod
+    def left_shape(self) -> Tuple[int, ...]:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def right_shape(self) -> Tuple[int, ...]:
+        ...
+
+
+class IThruRegister(Register, metaclass=abc.ABCMeta):
+    @property
+    def left_shape(self) -> Tuple[int, ...]:
+        return self.shape
+
+    @property
+    def right_shape(self) -> Tuple[int, ...]:
+        return self.shape
+
+    @property
+    @abc.abstractmethod
+    def shape(self) -> Tuple[int, ...]:
+        ...
+
+
 @frozen
-class Register:
+class ThruRegister(IThruRegister):
     name: str
     bitsize: int
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return (self.bitsize,)
 
 
 class Registers:
@@ -26,11 +63,17 @@ class Registers:
 
     @property
     def bitsize(self) -> int:
-        return sum(reg.bitsize for reg in self)
+        warnings.warn("Bitsize only works for `ThruRegister`s", DeprecationWarning)
+        s = 0
+        for reg in self:
+            if not isinstance(reg, ThruRegister):
+                raise ValueError(f"`Registers.bitsize` only works for `ThruRegister`s, not {reg}")
+            s += reg.bitsize
+        return s
 
     @classmethod
     def build(cls, **registers: int) -> 'Registers':
-        return cls(Register(name=k, bitsize=v) for k, v in registers.items())
+        return cls(ThruRegister(name=k, bitsize=v) for k, v in registers.items())
 
     @overload
     def __getitem__(self, key: int) -> Register:
@@ -63,12 +106,20 @@ class Registers:
     def __len__(self) -> int:
         return len(self._registers)
 
+    def _hack_bitsize(self, reg: Register):
+        # FIXME: move to left and right shape
+        if len(reg.left_shape) != 1:
+            raise NotImplementedError("TODO")
+        (bitsize,) = reg.left_shape
+        return bitsize
+
     def split_qubits(self, qubits: Sequence[cirq.Qid]) -> Dict[str, Sequence[cirq.Qid]]:
         qubit_regs = {}
         base = 0
         for reg in self:
-            qubit_regs[reg.name] = qubits[base : base + reg.bitsize]
-            base += reg.bitsize
+            bitsize = self._hack_bitsize(reg)
+            qubit_regs[reg.name] = qubits[base : base + bitsize]
+            base += bitsize
         return qubit_regs
 
     def split_integer(self, n: int) -> Dict[str, int]:
@@ -82,19 +133,21 @@ class Registers:
         """
         qubit_vals = {}
         base = 0
-        n_bin = f"{n:0{self.bitsize}b}"
+        n_bin = f"{n:0{self.total_size}b}"
         for reg in self:
-            qubit_vals[reg.name] = int(n_bin[base : base + reg.bitsize], 2)
-            base += reg.bitsize
+            bitsize = self._hack_bitsize(reg)
+            qubit_vals[reg.name] = int(n_bin[base : base + bitsize], 2)
+            base += bitsize
         return qubit_vals
 
     def merge_qubits(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> List[cirq.Qid]:
         ret: List[cirq.Qid] = []
         for reg in self:
+            bitsize = self._hack_bitsize(reg)
             assert reg.name in qubit_regs, "All qubit registers must pe present"
             qubits = qubit_regs[reg.name]
             qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
-            assert len(qubits) == reg.bitsize, f"{reg.name} register must of length {reg.bitsize}."
+            assert len(qubits) == bitsize, f"{reg.name} register must of length {bitsize}."
             ret += qubits
         return ret
 
@@ -106,7 +159,7 @@ class Registers:
                 else cirq.NamedQubit.range(bitsize, prefix=name)
             )
 
-        return {reg.name: qubits_for_reg(reg.name, reg.bitsize) for reg in self}
+        return {reg.name: qubits_for_reg(reg.name, self._hack_bitsize(reg)) for reg in self}
 
     def __eq__(self, other) -> bool:
         return self._registers == other._registers
@@ -116,10 +169,11 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
     def registers(self) -> Registers:
+        # TODO: thru registers only?
         ...
 
     def _num_qubits_(self) -> int:
-        return self.registers.bitsize
+        return self.registers.total_size
 
     @abc.abstractmethod
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
@@ -139,7 +193,9 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
         """
         wire_symbols = []
         for reg in self.registers:
-            wire_symbols += [reg.name] * reg.bitsize
+            # TODO: nicer for multidim
+            # FIXME: left or right shape?
+            wire_symbols += [reg.name] * sum(reg.left_shape)
 
         wire_symbols[0] = self.__class__.__name__
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

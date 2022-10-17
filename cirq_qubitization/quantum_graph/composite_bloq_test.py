@@ -7,8 +7,8 @@ from cirq_qubitization.quantum_graph.bloq_test import TestBloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, _create_binst_graph
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
+    Connection,
     Wire,
-    Soquet,
     LeftDangle,
     RightDangle,
 )
@@ -20,12 +20,12 @@ def _manually_make_test_cbloq_wires():
     binst2 = BloqInstance(tb, 2)
     assert binst1 != binst2
     return [
-        Wire(Soquet(LeftDangle, 'q1'), Soquet(binst1, 'control')),
-        Wire(Soquet(LeftDangle, 'q2'), Soquet(binst1, 'target')),
-        Wire(Soquet(binst1, 'control'), Soquet(binst2, 'target')),
-        Wire(Soquet(binst1, 'target'), Soquet(binst2, 'control')),
-        Wire(Soquet(binst2, 'control'), Soquet(RightDangle, 'q1')),
-        Wire(Soquet(binst2, 'target'), Soquet(RightDangle, 'q2')),
+        Connection(Wire(LeftDangle, 'q1'), Wire(binst1, 'control')),
+        Connection(Wire(LeftDangle, 'q2'), Wire(binst1, 'target')),
+        Connection(Wire(binst1, 'control'), Wire(binst2, 'target')),
+        Connection(Wire(binst1, 'target'), Wire(binst2, 'control')),
+        Connection(Wire(binst2, 'control'), Wire(RightDangle, 'q1')),
+        Connection(Wire(binst2, 'target'), Wire(RightDangle, 'q2')),
     ]
 
 

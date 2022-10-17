@@ -3,15 +3,15 @@ from typing import Sequence
 
 import cirq
 
-from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
+from cirq_qubitization.quantum_graph.fancy_registers import Soquets, ThruRegister
 
 
 class TestBloq(Bloq):
     @cached_property
-    def registers(self) -> Registers:
-        return Registers.build(control=1, target=1)
+    def soquets(self) -> Soquets:
+        return Soquets([ThruRegister('control', 1), ThruRegister('target', 1)])
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("A leaf bloq")
@@ -26,10 +26,10 @@ class TestBloq(Bloq):
 
 def test_bloq():
     tb = TestBloq()
-    assert len(tb.registers) == 2
-    assert tb.registers['control'].bitsize == 1
+    assert len(tb.soquets) == 2
+    assert tb.soquets['control'].bitsize == 1
     assert tb.pretty_name() == 'TestBloq'
 
-    quregs = tb.registers.get_named_qubits()
+    quregs = tb.soquets.get_named_qubits()
     circuit = cirq.Circuit(tb.on_registers(**quregs))
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))

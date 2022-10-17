@@ -58,10 +58,10 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         )
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@"] * self.control_registers.bitsize
-        wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
-        wire_symbols += [f"Z{self._target_gate}"] * self.target_registers.bitsize
+        wire_symbols = ["@"] * self.control_registers.total_size
+        wire_symbols += ["In"] * self.selection_registers.total_size
+        wire_symbols += ["Anc"] * self.ancilla_registers.total_size
+        wire_symbols += [f"Z{self._target_gate}"] * self.target_registers.total_size
         wire_symbols += ["Acc"]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 

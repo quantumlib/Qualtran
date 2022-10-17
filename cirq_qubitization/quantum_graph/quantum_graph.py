@@ -1,75 +1,91 @@
-from typing import Union
+from functools import cached_property
+from typing import Union, Tuple, Optional
 
-from attrs import frozen
+import numpy as np
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister
+
+from attrs import frozen, field
 
 
 @frozen
 class BloqInstance:
-    """A unique instance of a Bloq within a `CompositeBloq`.
-
-    Attributes:
-        bloq: The `Bloq`.
-        i: An arbitary index to disambiguate this instance from other Bloqs of the same type
-            within a `CompositeBloq`.
-    """
-
     bloq: Bloq
     i: int
 
 
 class DanglingT:
-    """The type of the singleton objects `LeftDangle` and `RightDangle`.
-
-    These objects are placeholders for the `binst` field of a `Soquet` that represents
-    an "external wire". We can consider `Soquets` of this type to represent input or
-    output data of a `CompositeBloq`.
-    """
-
     def __init__(self, name: str):
         self._name = name
 
     def __repr__(self):
         return self._name
 
-    # def __eq__(self, other):
-    #     raise ValueError("Do not use equality comparison on DanglingT. Use `is`.")
+
+def _to_tuple(x: Union[int, Tuple[int, ...]]):
+    if isinstance(x, int):
+        return (x,)
+    return x
 
 
 @frozen
-class Soquet:
-    """One half of a `Wire` connection.
-
-    A `Soquet` acts as the node type in our quantum compute graph. It is a particular
-    register (by name) on a particular `Bloq`.
-
-    A `Soquet can also be present in a dangling wire (i.e. represent an unconnected input or
-    output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
-    """
-
+class Wire:
     binst: Union[BloqInstance, DanglingT]
-    reg_name: str
+    soq: FancyRegister
+    idx: Tuple[int, ...] = field(converter=_to_tuple, default=tuple())
 
 
 LeftDangle = DanglingT("LeftDangle")
 RightDangle = DanglingT("RightDangle")
 
+# attrs note: Slots come into play because of our use of cached_property??? TODO: figure out
+@frozen(slots=False)
+class Connection:
+    left: Wire
+    right: Wire
 
-def _singleton_error(self, x):
-    raise ValueError("Do not instantiate a new DanglingT. Use `LeftDangle` or `RightDangle`.")
+    def _left_shape(self) -> Optional[Tuple[int, ...]]:
+        if not isinstance(self.left.binst, BloqInstance):
+            return None
 
+        # tricky: we use the left object's right shape (we're a wire)
+        soq = self.left.soq
+        shape = soq.wireshape + (soq.bitsize,)
 
-DanglingT.__init__ = _singleton_error
+        # hack off any width associated with indexing
+        nw = len(self.left.idx)
+        return shape[nw:]
 
+    def _right_shape(self) -> Optional[Tuple[int, ...]]:
+        if not isinstance(self.right.binst, BloqInstance):
+            return None
 
-@frozen
-class Wire:
-    """A connection between two `Soquet`s.
+        # tricky: we use the right object's left shape (we're a wire)
+        soq = self.right.soq
+        shape = soq.wireshape + (soq.bitsize,)
+        nw = len(self.right.idx)
+        return shape[nw:]
 
-    Quantum data flows from left to right. The graph implied by a collection of `Wire`s
-    is directed.
-    """
+    @cached_property
+    def shape(self) -> Tuple[int, ...]:
+        ls = self._left_shape()
+        rs = self._right_shape()
 
-    left: Soquet
-    right: Soquet
+        # FIXME: get the idx.
+
+        if ls is not None and rs is not None:
+            if ls != rs:
+                # raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
+                print(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
+            return ls
+
+        if ls is not None:
+            return ls
+
+        if rs is not None:
+            return rs
+
+        raise ValueError(
+            f"Invalid Connection {self}: either the left or right soquet must be non-dangling."
+        )
