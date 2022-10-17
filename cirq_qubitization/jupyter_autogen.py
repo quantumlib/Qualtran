@@ -32,9 +32,7 @@ import dataclasses
 import inspect
 import re
 from pathlib import Path
-from types import ModuleType
-from typing import Callable, List, Type
-from typing import Dict
+from types import ModuleType, Callable, List, Type, Dict
 
 import nbformat
 from sphinx.ext.napoleon import Config, GoogleDocstring
