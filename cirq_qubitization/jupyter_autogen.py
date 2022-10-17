@@ -13,7 +13,7 @@ standard imports, and information on each `GateWithRegisters` listed in the
     in this file. The key should be the name of the module with a `NotebookSpec` value. See
     the docstring for `NotebookSpec` for more information.
  3. Update the `NotebookSpec` `gate_specs` field to include a `GateNbSpec` for your new gate.
-    provide your factory function from step (1).
+    Provide your factory function from step (1).
 
 ## Autogen behavior.
 
