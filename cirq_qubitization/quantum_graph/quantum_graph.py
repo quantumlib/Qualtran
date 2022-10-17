@@ -33,9 +33,6 @@ class DanglingT:
     def __repr__(self):
         return self._name
 
-    # def __eq__(self, other):
-    #     raise ValueError("Do not use equality comparison on DanglingT. Use `is`.")
-
 
 @frozen
 class Soquet:
@@ -44,7 +41,7 @@ class Soquet:
     A `Soquet` acts as the node type in our quantum compute graph. It is a particular
     register (by name) on a particular `Bloq`.
 
-    A `Soquet can also be present in a dangling wire (i.e. represent an unconnected input or
+    A `Soquet` can also be present in a dangling wire (i.e. represent an unconnected input or
     output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
     """
 

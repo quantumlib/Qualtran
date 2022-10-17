@@ -42,7 +42,7 @@ class CompositeBloq(Bloq):
         raise NotImplementedError("Come back later.")
 
 
-def _create_binst_graph(wires: Iterable[Wire]):
+def _create_binst_graph(wires: Iterable[Wire]) -> nx.Graph:
     """Helper function to create a NetworkX so we can topologically visit BloqInstances.
 
     `CompositeBloq` defines a directed acyclic graph, so we can iterate in (time) order.

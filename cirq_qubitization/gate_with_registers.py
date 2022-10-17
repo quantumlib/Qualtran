@@ -1,14 +1,14 @@
 import abc
+import dataclasses
 import sys
 from typing import Sequence, Dict, Iterable, List, Union, overload
 
 import cirq
-from attrs import frozen
 
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
-@frozen
+@dataclasses.dataclass(frozen=True)
 class Register:
     name: str
     bitsize: int
