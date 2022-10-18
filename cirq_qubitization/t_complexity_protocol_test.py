@@ -1,5 +1,3 @@
-from re import S
-from this import d
 import cirq
 import pytest
 from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
