@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Tuple
 from dataclasses import dataclass
 from typing_extensions import Protocol
 
@@ -20,6 +20,11 @@ class TComplexity:
         )
 
 
+_KNOWN_COMPLEXITIES: Tuple[Tuple[cirq.Gateset, TComplexity], ...] = tuple(
+    ((cirq.Gateset(cirq.FREDKIN, unroll_circuit_op=False), TComplexity(t=7, clifford=10)),)
+)
+
+
 class SupportsTComplexity(Protocol):
     """An object whose TComplexity can be computed.
 
@@ -29,10 +34,9 @@ class SupportsTComplexity(Protocol):
 
     def _t_complexity_(self) -> TComplexity:
         """Returns the TComplexity."""
-        pass
 
 
-def _has_t_complexity(stc: Any) -> Optional[TComplexity]:
+def _start_t_from_builtin_method(stc: Any) -> Optional[TComplexity]:
     """Returns TComplexity of stc by calling its _t_complexity_ if it exists."""
     estimator = getattr(stc, '_t_complexity_', None)
     if estimator is not None:
@@ -41,7 +45,7 @@ def _has_t_complexity(stc: Any) -> Optional[TComplexity]:
     return None
 
 
-def _is_clifford_or_t(stc: Any) -> Optional[TComplexity]:
+def _strat_is_clifford_or_t(stc: Any) -> Optional[TComplexity]:
     """Attempts to infer the type of a gate/operation as one of clifford, T or Rotation."""
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
@@ -63,7 +67,7 @@ def _is_clifford_or_t(stc: Any) -> Optional[TComplexity]:
     return None
 
 
-def _is_iterable(it: Any) -> Optional[TComplexity]:
+def _strat_is_iterable(it: Any) -> Optional[TComplexity]:
     if not isinstance(it, Iterable):
         return None
     t = TComplexity()
@@ -75,12 +79,26 @@ def _is_iterable(it: Any) -> Optional[TComplexity]:
     return t
 
 
-def _has_decomposition(stc: Any) -> Optional[TComplexity]:
+def _strat_from_decomposition(stc: Any) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
     decomposition, _, _ = _try_decompose_into_operations_and_qubits(stc)
     if decomposition is None:
         return None
-    return _is_iterable(decomposition)
+    return _strat_is_iterable(decomposition)
+
+
+def _strat_from_know_complexities(stc: Any) -> Optional[TComplexity]:
+    """check if the object has a known decomposition."""
+    if not isinstance(stc, (cirq.Gate, cirq.Operation)):
+        return None
+
+    if isinstance(stc, cirq.ClassicallyControlledOperation):
+        stc = stc.without_classical_controls()
+
+    for gateset, t in _KNOWN_COMPLEXITIES:
+        if stc in gateset:
+            return t
+    return None
 
 
 def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
@@ -94,9 +112,16 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
         The TComplexity of the given object or None on failure (and fail_quietly=True).
 
     Raises:
-        TypeError if fail_quietly=False and the methods fails to compute TComplexity.
+        TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    strategies = [_has_t_complexity, _is_clifford_or_t, _has_decomposition, _is_iterable]
+    strategies = [
+        _start_t_from_builtin_method,
+        _strat_is_clifford_or_t,
+        _strat_from_know_complexities,
+        _strat_from_decomposition,
+        _strat_is_iterable,
+    ]
+
     for strategy in strategies:
         ret = strategy(stc)
         if ret is not None:
