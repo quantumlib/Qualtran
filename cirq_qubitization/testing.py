@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Sequence, Dict, List
+from typing import Any, Iterable, Sequence, Dict, List
 
 import cirq
 import numpy as np
@@ -9,7 +9,7 @@ import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
-
+from cirq_qubitization.t_complexity_protocol import t_complexity
 
 @dataclass(frozen=True)
 class GateHelper:
@@ -88,3 +88,19 @@ def execute_notebook(name: str):
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
     ep.preprocess(nb)
+
+
+def assert_decompose_is_consistent_with_t_complexity(val: Any):
+    if not hasattr(val, '_t_complexity_'):
+        return
+    expected = val._t_complexity_()
+    if isinstance(val, cirq.Operation):
+        decomposition = cirq.decompose_once(val, default=None)
+    else:
+        qubits = tuple(cirq.LineQid.for_gate(val))
+        decomposition = cirq.decompose_once_with_qubits(val, qubits, default=None)
+    if decomposition is None:
+        # If there's no decomposition, no need to check consistency with decompose.
+        return
+    from_decomposition = t_complexity(decomposition, fail_quietly=False)
+    assert expected == from_decomposition, f'{expected} != {from_decomposition}'
