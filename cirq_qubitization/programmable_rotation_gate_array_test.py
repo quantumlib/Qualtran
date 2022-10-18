@@ -1,9 +1,9 @@
+from typing import Sequence, Type
+from functools import cached_property
+
 import cirq
 import numpy as np
 import pytest
-
-from typing import Sequence, Type
-from functools import cached_property
 
 import cirq_qubitization as cq
 from cirq_qubitization.bit_tools import iter_bits
@@ -40,8 +40,7 @@ def construct_programmable_rotation_gate(
 
 
 @pytest.mark.parametrize(
-    "angles",
-    [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], [[3, 4, 5], [10, 11, 12]]],
+    "angles", [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], [[3, 4, 5], [10, 11, 12]]]
 )
 @pytest.mark.parametrize("kappa", [*range(1, 12)])
 @pytest.mark.parametrize(

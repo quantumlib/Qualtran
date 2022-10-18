@@ -27,8 +27,8 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
     Note that naively applying multiplexed controlled rotations on target register using a unary
     iteration loop would require us to apply `O(iteration_length)` controlled rotations for a
     single multiplexed rotations array. On the contrary, this approach requires us to apply only
-    `B` controlled rotations on the target register; which is usually much smaller than the iteration
-    length.
+    `B` controlled rotations on the target register; which is usually much smaller than the
+    iteration length.
 
     Users should derive from this base class and override the `interleaved_unitary` and
     `interleaved_unitary_target` abstract methods to specify the information regarding
@@ -55,6 +55,9 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
                 of multiplexed rotation angles.
             rotation_gate: Exponential of this gate, depending on `angles`, shall be applied on the
                 target register.
+
+        Raises:
+            ValueError: If all multiplexed `angles` sequences are not of the same length.
         """
         if len(set(len(thetas) for thetas in angles)) != 1:
             raise ValueError("All multiplexed angles sequences to apply must be of same length.")
