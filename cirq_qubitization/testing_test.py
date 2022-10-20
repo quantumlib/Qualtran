@@ -1,4 +1,5 @@
 import cirq
+from cirq_qubitization.t_complexity_protocol import TComplexity
 import pytest
 
 import cirq_qubitization.testing as cq_testing
@@ -30,3 +31,48 @@ def test_gate_helper():
     }
     assert g.operation.qubits == tuple(g.all_qubits)
     assert len(g.circuit) == 1
+
+
+class DoesNotDecompose(cirq.Operation):
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(t=1, clifford=2, rotations=3)
+
+    def qubits(self):
+        return []
+
+    def with_qubits(self, _):
+        pass
+
+
+class InconsistentDecompostion(cirq.Operation):
+    def __init__(self) -> None:
+        self.qubit = cirq.NamedQubit('test-qubit')
+
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(rotations=1)
+
+    def _decompose_(self) -> cirq.OP_TREE:
+        yield cirq.X(self.qubit)
+
+    def qubits(self):
+        return [self.qubit]
+
+    def with_qubits(self, _):
+        pass
+
+
+def test_assert_decompose_is_consistent_with_t_complexity():
+    # doesn't have _t_complexity_
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(cirq.T)
+
+    # nothing to compare with
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(DoesNotDecompose())
+
+    # has correct decomposition
+    gate = And()
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(
+        gate.on_registers(**gate.registers.get_named_qubits())
+    )
+
+    with pytest.raises(AssertionError):
+        cq_testing.assert_decompose_is_consistent_with_t_complexity(InconsistentDecompostion())

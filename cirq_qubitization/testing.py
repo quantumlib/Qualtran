@@ -11,6 +11,7 @@ from nbconvert.preprocessors import ExecutePreprocessor
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import t_complexity
 
+
 @dataclass(frozen=True)
 class GateHelper:
     """A collection of related objects derivable from a `GateWithRegisters`.
