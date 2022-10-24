@@ -2,7 +2,6 @@
 load-plugins=pylint.extensions.docstyle,pylint.extensions.docparams,pylint_copyright_checker
 max-line-length=100
 disable=all
-ignore-paths=cirq-google/cirq_google/cloud/.*
 ignore-patterns=.*_pb2\.py
 output-format=colorized
 score=no
@@ -24,11 +23,9 @@ enable=
     function-redefined,
     inconsistent-mro,
     init-is-generator,
-    line-too-long,
     lost-exception,
     missing-kwoa,
     missing-param-doc,
-    missing-raises-doc,
     mixed-indentation,
     mixed-line-endings,
     no-value-for-parameter,
@@ -53,7 +50,6 @@ enable=
     unrecognized-inline-option,
     unused-import,
     unnecessary-semicolon,
-    unused-variable,
     unused-wildcard-import,
     wildcard-import,
     wrong-or-nonexistent-copyright-notice,

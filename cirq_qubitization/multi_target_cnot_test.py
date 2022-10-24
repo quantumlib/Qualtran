@@ -1,7 +1,8 @@
-import pytest
 import cirq
-import cirq_qubitization
 import numpy as np
+import pytest
+
+import cirq_qubitization
 
 
 @pytest.mark.parametrize("num_targets", [3, 4, 6, 8, 10])

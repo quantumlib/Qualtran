@@ -1,9 +1,8 @@
-from re import S
-from this import d
 import cirq
 import pytest
-from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
+
 from cirq_qubitization.and_gate import And
+from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
 
 
 class SupportTComplexity(cirq.Operation):

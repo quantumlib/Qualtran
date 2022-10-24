@@ -1,7 +1,9 @@
 from functools import cached_property
 from typing import Sequence
-from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
+
 import cirq
+
+from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
 
 
 class MultiTargetCNOT(GateWithRegisters):
