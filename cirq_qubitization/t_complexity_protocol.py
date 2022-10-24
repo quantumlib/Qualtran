@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing_extensions import Protocol
 
 import cirq
-from cirq.protocols.decompose_protocol import _try_decompose_into_operations_and_qubits
+from cirq_qubitization.decompose_protocol import decompose_once
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -29,7 +29,6 @@ class SupportsTComplexity(Protocol):
 
     def _t_complexity_(self) -> TComplexity:
         """Returns the TComplexity."""
-        pass
 
 
 def _has_t_complexity(stc: Any) -> Optional[TComplexity]:
@@ -75,9 +74,10 @@ def _is_iterable(it: Any) -> Optional[TComplexity]:
     return t
 
 
-def _has_decomposition(stc: Any) -> Optional[TComplexity]:
+def _from_decomposition(stc: Any) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
-    decomposition, _, _ = _try_decompose_into_operations_and_qubits(stc)
+    decomposition = decompose_once(stc)
+    print(stc, decomposition)
     if decomposition is None:
         return None
     return _is_iterable(decomposition)
@@ -94,9 +94,9 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
         The TComplexity of the given object or None on failure (and fail_quietly=True).
 
     Raises:
-        TypeError if fail_quietly=False and the methods fails to compute TComplexity.
+        TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    strategies = [_has_t_complexity, _is_clifford_or_t, _has_decomposition, _is_iterable]
+    strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition, _is_iterable]
     for strategy in strategies:
         ret = strategy(stc)
         if ret is not None:
