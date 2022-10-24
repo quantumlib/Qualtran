@@ -39,6 +39,19 @@ def _manually_make_test_cbloq_wires():
     ]
 
 
+class TestComposite(Bloq):
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(q1=1, q2=2)
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', q1: 'Soquet', q2: 'Soquet'
+    ) -> Dict[str, 'Soquet']:
+        q1, q2 = bb.add(TestBloq(), control=q1, target=q2)
+        q1, q2 = bb.add(TestBloq(), control=q2, target=q1)
+        return {'q1': q1, 'q2': q2}
+
+
 def test_create_binst_graph():
     wires = _manually_make_test_cbloq_wires()
     binst1 = wires[2].left.binst
@@ -52,7 +65,6 @@ def test_create_binst_graph():
 def test_composite_bloq():
     wires = _manually_make_test_cbloq_wires()
     cbloq = CompositeBloq(wires=wires, registers=Registers.build(q1=1, q2=1))
-    print()
     circuit = cbloq.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
     cirq.testing.assert_has_diagram(
         circuit,
@@ -62,7 +74,19 @@ def test_composite_bloq():
 2: ───X───@─── \
     """,
     )
-    print()
+
+
+def test_bb_composite_bloq():
+    cbloq_auto = TestComposite().decompose_bloq()
+    circuit = cbloq_auto.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
+    cirq.testing.assert_has_diagram(
+        circuit,
+        desired="""\
+1: ───@───X───
+      │   │
+2: ───X───@─── \
+    """,
+    )
 
 
 @frozen
