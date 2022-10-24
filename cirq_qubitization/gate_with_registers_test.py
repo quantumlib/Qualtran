@@ -17,6 +17,7 @@ def test_registers():
     r2 = Register("r2", 2)
     r3 = Register("r3", 1)
     regs = Registers([r1, r2, r3])
+    assert len(regs) == 3
 
     assert regs[0] == r1
     assert regs[1] == r2
