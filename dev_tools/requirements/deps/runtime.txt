@@ -1,5 +1,5 @@
 fqe
 pyscf
 openfermion
-cirq
+cirq-core
 sphinx
