@@ -38,6 +38,9 @@ class DanglingT:
 class Soquet:
     """One half of a `Wire` connection.
 
+    Users should not construct these directly. They should be marshalled
+    by a `CompositeBloqBuilder`.
+
     A `Soquet` acts as the node type in our quantum compute graph. It is a particular
     register (by name) on a particular `Bloq`.
 

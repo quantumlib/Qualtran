@@ -1,4 +1,5 @@
-from typing import Sequence, Tuple, List, Dict, Optional, Iterable
+from functools import cached_property
+from typing import Sequence, Tuple, Set, List, Dict, Optional, Iterable
 
 import cirq
 import networkx as nx
@@ -7,10 +8,11 @@ from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
 from cirq_qubitization.quantum_graph.quantum_graph import (
     Wire,
-    Soquet,
     LeftDangle,
+    RightDangle,
     BloqInstance,
     DanglingT,
+    Soquet,
 )
 
 
@@ -34,6 +36,17 @@ class CompositeBloq(Bloq):
     @property
     def wires(self) -> Tuple[Wire, ...]:
         return self._wires
+
+    @cached_property
+    def bloq_instances(self) -> Set[BloqInstance]:
+        """The set of BloqInstances making up the nodes of the graph."""
+        binsts = {
+            cxn.left.binst for cxn in self._wires if not isinstance(cxn.left.binst, DanglingT)
+        }
+        binsts |= {
+            cxn.right.binst for cxn in self._wires if not isinstance(cxn.right.binst, DanglingT)
+        }
+        return binsts
 
     def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]):
         return _cbloq_to_cirq_circuit(quregs, self.wires)
@@ -126,3 +139,117 @@ def _cbloq_to_cirq_circuit(
             moments.append(cirq.Moment(mom))
 
     return cirq.Circuit(moments)
+
+
+class BloqBuilderError(ValueError):
+    """A value error raised during composite bloq building."""
+
+
+class CompositeBloqBuilder:
+    """A builder class for constructing a `CompositeBloq`.
+
+    The recommended way of using this class is by overriding `Bloq.build_composite_bloq`.
+    A properly-initialized builder instance will be provided as the first argument.
+
+    Args:
+        parent_regs: The `Registers` argument for the parent bloq.
+    """
+
+    def __init__(self, parent_regs: Registers):
+        # To be appended to:
+        self._cxns: List[Wire] = []
+
+        # Initialize our BloqInstance counter
+        self._i = 0
+
+        # Linear types! Soquets must be used exactly once.
+        self._initial_soquets = {reg.name: Soquet(LeftDangle, reg.name) for reg in parent_regs}
+        self._available: Set[Soquet] = set(self._initial_soquets.values())
+
+        self._parent_regs = parent_regs
+
+    def initial_soquets(self) -> Dict[str, Soquet]:
+        """Input soquets (by name) to start building a quantum compute graph."""
+        return self._initial_soquets
+
+    def _new_binst(self, bloq: Bloq) -> BloqInstance:
+        inst = BloqInstance(bloq, self._i)
+        self._i += 1
+        return inst
+
+    def add(self, bloq: Bloq, **in_soqs: Soquet) -> Tuple[Soquet, ...]:
+        """Add a new bloq instance to the compute graph.
+
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`, e.g. the output soquets from a prior operation.
+
+        Returns:
+            A `Soquet` for each output register.
+        """
+        binst = self._new_binst(bloq)
+
+        out_soqs = []
+        for reg in bloq.registers:
+            try:
+                in_soq = in_soqs[reg.name]
+            except KeyError:
+                raise BloqBuilderError(
+                    f"{bloq} requires an input Soquet named `{reg.name}`."
+                ) from None
+
+            try:
+                self._available.remove(in_soq)
+            except KeyError:
+                raise BloqBuilderError(
+                    f"{in_soq} is not an available input Soquet for {reg}."
+                ) from None
+
+            del in_soqs[reg.name]  # so we can check for surplus arguments.
+
+            out_soq = Soquet(binst, reg.name)
+            self._available.add(out_soq)
+
+            self._cxns.append(Wire(in_soq, out_soq))
+            out_soqs.append(out_soq)
+
+        if in_soqs:
+            raise BloqBuilderError(
+                f"{bloq} does not accept input Soquets: {in_soqs.keys()}."
+            ) from None
+
+        return tuple(out_soqs)
+
+    def finalize(self, **final_soqs: Soquet) -> CompositeBloq:
+        for reg in self._parent_regs:
+            try:
+                in_soq = final_soqs[reg.name]
+            except KeyError:
+                raise BloqBuilderError(
+                    f"Finalizing the build requires a final Soquet named `{reg.name}`."
+                ) from None
+
+            try:
+                self._available.remove(in_soq)
+            except KeyError:
+                raise BloqBuilderError(
+                    f"{in_soq} is not an available final Soquet for {reg}."
+                ) from None
+
+            del final_soqs[reg.name]  # so we can check for surplus arguments.
+
+            out_soq = Soquet(RightDangle, reg.name)
+            self._cxns.append(Wire(in_soq, out_soq))
+
+        if final_soqs:
+            raise BloqBuilderError(
+                f"Finalizing the build does not accept final Soquets: {final_soqs.keys()}."
+            ) from None
+
+        if self._available:
+            raise BloqBuilderError(
+                f"During finalization, {self._available} Soquets were not used."
+            ) from None
+
+        return CompositeBloq(wires=self._cxns, registers=self._parent_regs)
