@@ -77,7 +77,6 @@ def _is_iterable(it: Any) -> Optional[TComplexity]:
 def _from_decomposition(stc: Any) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
     decomposition = decompose_once(stc)
-    print(stc, decomposition)
     if decomposition is None:
         return None
     return _is_iterable(decomposition)
