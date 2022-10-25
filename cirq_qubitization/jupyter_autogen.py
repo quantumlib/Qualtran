@@ -42,6 +42,8 @@ import cirq_qubitization
 import cirq_qubitization.jupyter_autogen_factories as jaf
 from cirq_qubitization.gate_with_registers import GateWithRegisters
 
+DEFAULT_BASE_DIR = (Path(__file__).parent.resolve() / '../docs/gates/').resolve()
+
 
 @dataclasses.dataclass
 class GateNbSpec:
@@ -301,7 +303,9 @@ def render_notebook_cells(nbspec: NotebookSpec) -> NbCells:
     )
 
 
-def _init_notebook(modname: str, overwrite=False) -> nbformat.NotebookNode:
+def _init_notebook(
+    modname: str, *, overwrite=False, base_dir=DEFAULT_BASE_DIR
+) -> nbformat.NotebookNode:
     """Initialize a jupyter notebook.
 
     If one already exists: load it in. Otherwise, create a new one.
@@ -311,7 +315,7 @@ def _init_notebook(modname: str, overwrite=False) -> nbformat.NotebookNode:
         overwrite: If set, remove any existing notebook and start from scratch.
     """
 
-    nb_path = Path(f'{modname}.ipynb')
+    nb_path = base_dir / Path(f'{modname}.ipynb')
 
     if overwrite:
         nb_path.unlink(missing_ok=True)
@@ -330,10 +334,11 @@ def _init_notebook(modname: str, overwrite=False) -> nbformat.NotebookNode:
     return nb
 
 
-def render_notebooks():
+def render_notebooks(base_dir: Path = DEFAULT_BASE_DIR):
+    print(f"Rendering notebooks in {base_dir}")
     for modname, nbspec in NOTEBOOK_SPECS.items():
         # 1. get a notebook (existing or empty)
-        nb = _init_notebook(modname=modname)
+        nb = _init_notebook(modname=modname, base_dir=base_dir)
 
         # 2. Render all the cells we can render
         cells = render_notebook_cells(nbspec)
@@ -358,7 +363,7 @@ def render_notebooks():
             nb.cells.append(new_cell)
 
         # 5. Write the notebook.
-        with open(f'{modname}.ipynb', 'w') as f:
+        with open(f'{base_dir}/{modname}.ipynb', 'w') as f:
             nbformat.write(nb, f)
 
 

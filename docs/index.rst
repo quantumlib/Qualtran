@@ -8,7 +8,23 @@ Welcome to cirq-qubitization's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Gates
+
+   gates/and_gate
+   gates/apply_gate_to_lth_target
+   gates/generic_select
+   gates/generic_subprepare
+   gates/qrom
+   gates/swap_network
+   gates/unary_iteration
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Protocols
+
+   gate_with_registers
+   protocols/t_complexity
+
 
 
 

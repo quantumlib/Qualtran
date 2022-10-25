@@ -3,3 +3,4 @@
 -r format.txt
 -r pylint.txt
 -r packaging.txt
+-r docs.txt
