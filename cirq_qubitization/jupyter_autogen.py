@@ -38,8 +38,6 @@ from typing import Callable, List, Type, Dict
 import nbformat
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
-import cirq_qubitization
-import cirq_qubitization.jupyter_autogen_factories as jaf
 from cirq_qubitization.gate_with_registers import GateWithRegisters
 
 

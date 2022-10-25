@@ -60,6 +60,9 @@ class Registers:
     def __iter__(self):
         yield from self._registers
 
+    def __len__(self) -> int:
+        return len(self._registers)
+
     def split_qubits(self, qubits: Sequence[cirq.Qid]) -> Dict[str, Sequence[cirq.Qid]]:
         qubit_regs = {}
         base = 0
@@ -126,7 +129,7 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
         qubit_regs = self.registers.split_qubits(qubits)
         yield from self.decompose_from_registers(**qubit_regs)
 
-    def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.GateOperation:
+    def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.Operation:
         return self.on(*self.registers.merge_qubits(**qubit_regs))
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
