@@ -1,4 +1,5 @@
 import cirq
+import numpy as np
 import pytest
 
 import cirq_qubitization.testing as cq_testing
@@ -30,3 +31,17 @@ def test_gate_helper():
     }
     assert g.operation.qubits == tuple(g.all_qubits)
     assert len(g.circuit) == 1
+
+
+def test_classical_inputs():
+    r = Registers.build(control=2, target=1)
+    bitstrings = cq_testing.get_classical_inputs(
+        variable_registers=[r['control']], fixed_registers={r['target']: 0}
+    )
+    should_be = {
+        'control': np.array([[0, 0], [0, 1], [1, 0], [1, 1]]),
+        'target': np.array([[0], [0], [0], [0]]),
+    }
+    assert list(bitstrings) == list(should_be)
+    for k in bitstrings:
+        np.testing.assert_array_equal(bitstrings[k], should_be[k])

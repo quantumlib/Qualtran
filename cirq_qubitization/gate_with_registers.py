@@ -1,9 +1,10 @@
 import abc
 import dataclasses
 import sys
-from typing import Sequence, Dict, Iterable, List, Union, overload
+from typing import Sequence, Dict, Iterable, List, Union, overload, Tuple
 
 import cirq
+import numpy as np
 
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
@@ -57,7 +58,7 @@ class Registers:
     def __contains__(self, item: str) -> bool:
         return item in self._register_dict
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable[Register]:
         yield from self._registers
 
     def __len__(self) -> int:
@@ -112,6 +113,47 @@ class Registers:
         return self._registers == other._registers
 
 
+def munge_classical_arrays(
+    r: Registers, vals: Dict[str, np.ndarray]
+) -> Tuple[Dict[str, np.ndarray], int]:
+    """Coerce classical arrays into the correct shape.
+
+    This function will ensure `vals` is in a form that one would get from
+    `cq_testing.get_classical_inputs`.
+
+    This casts all items into 2d arrays, validates that the lengths are self-consistent,
+    and validates that array widths are consistent with register bitwidths.
+
+    Args:
+        r: The registers used to validate the shape of arrays
+        vals: The dictionary of ndarrays to parse.
+
+    Returns:
+        vals: The munged ndarrays
+        n_states: The length of each array.
+    """
+    n_states = None  # to be filled in
+    for k in vals.keys():
+        arr = np.asarray(vals[k])
+
+        if n_states is None:
+            n_states = len(vals[k])
+
+        if arr.ndim == 1:
+            arr = arr[:, np.newaxis]
+
+        if arr.shape != (n_states, r[k].bitsize):
+            raise ValueError(
+                f"Incorrect shape for {k}: {arr.shape} (expected ({n_states}, {r[k].bitsize})"
+            )
+
+        vals[k] = arr
+
+    if n_states is None:
+        raise ValueError("No values were provided.")
+    return vals, n_states
+
+
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
@@ -143,3 +185,10 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
 
         wire_symbols[0] = self.__class__.__name__
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def _apply_classical_from_registers(self, **vals: np.ndarray) -> Dict[str, np.ndarray]:
+        raise NotImplementedError()
+
+    def apply_classical(self, vals: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        vals, _ = munge_classical_arrays(self.registers, vals)
+        return self._apply_classical_from_registers(**vals)

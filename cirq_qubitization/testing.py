@@ -1,14 +1,20 @@
+import itertools
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Sequence, Dict, List
+from typing import Dict, Sequence, Optional, Iterable, List
 
 import cirq
-import numpy as np
 import nbformat
+import numpy as np
 from nbconvert.preprocessors import ExecutePreprocessor
 
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.gate_with_registers import (
+    Register,
+    Registers,
+    GateWithRegisters,
+    munge_classical_arrays,
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +56,38 @@ class GateHelper:
         return cirq.Circuit(self.operation)
 
 
+def get_classical_inputs(
+    variable_registers: Sequence[Register], fixed_registers: Optional[Dict[Register, int]] = None
+) -> Dict[str, np.ndarray]:
+    """Get classical all possible classical inputs for a given sequence of registers.
+
+    Args:
+        variable_registers: A sequence of registers over which we generate all possible
+            bit assignments like `itertools.product`.
+        fixed_registers: An optional mapping of additional registers to a fixed integer value,
+            which will be broadcast to the correct shape.
+
+    Returns:
+        A mapping from register name to numpy array suitable for GateWithRegisters.apply_classical.
+    """
+    tot_bitsize = sum(reg.bitsize for reg in variable_registers)
+    product_bits = np.array(list(itertools.product([0, 1], repeat=tot_bitsize)), dtype=np.uint8)
+    n_states = len(product_bits)
+
+    # Split `product_bits` into registers
+    ret_inputs: Dict[str, np.ndarray] = {}
+    base = 0
+    for reg in variable_registers:
+        ret_inputs[reg.name] = product_bits[:, base : base + reg.bitsize]
+        base += reg.bitsize
+
+    # Split fixed bits into registers
+    for reg, v in fixed_registers.items():
+        ret_inputs[reg.name] = v * np.ones((n_states, reg.bitsize), dtype=np.uint8)
+
+    return ret_inputs
+
+
 def assert_circuit_inp_out_cirqsim(
     circuit: cirq.AbstractCircuit,
     qubits: Sequence[cirq.Qid],
@@ -74,6 +112,77 @@ def assert_circuit_inp_out_cirqsim(
     actual = result.dirac_notation(decimals=decimals)[1:-1]
     should_be = "".join(str(x) for x in outputs)
     assert actual == should_be, (actual, should_be)
+
+
+@dataclass()
+class TestingCirqsimSystem:
+    circuit: cirq.Circuit
+    qubits: Sequence[cirq.Qid]
+    inputs: Sequence[int]
+    outputs: Sequence[int]
+
+    def assert_input_output(self):
+        assert_circuit_inp_out_cirqsim(
+            circuit=self.circuit, qubits=self.qubits, inputs=self.inputs, outputs=self.outputs
+        )
+
+
+def yield_test_cirqsim(
+    gate: GateWithRegisters, test_inputs: Dict[str, np.ndarray], test_outputs: Dict[str, np.ndarray]
+) -> Iterable[TestingCirqsimSystem]:
+    """For each state in test_inputs/test_outputs, yield a tensor network.
+
+    The tensor network can be used for visualizing or asserting a proper contraction.
+
+    Args:
+        gate: A GateWithRegisters
+        test_inputs: ndarrays representing classical input conditions, perhaps from
+            `get_classical_inputs`.
+        test_outputs: ndarrays representing the correct classical output states, perhaps
+            from applying `gate.apply_classical(test_inputs)`.
+    """
+
+    r = gate.registers
+    quregs = r.get_named_qubits()
+    operation = gate.on_registers(**quregs)
+    circuit = cirq.Circuit(operation)
+    qubits = r.merge_qubits(**quregs)
+
+    test_inputs, n1 = munge_classical_arrays(r, test_inputs)
+    test_outputs, n2 = munge_classical_arrays(r, test_outputs)
+    if n1 != n2:
+        raise ValueError(
+            f"The number of test inputs {n1} does not match the number of test outputs {n2}"
+        )
+
+    for i in range(n1):
+        test_input = {reg.name: test_inputs[reg.name][i, :] for reg in r}
+        test_output = {reg.name: test_outputs[reg.name][i, :] for reg in r}
+
+        inputs: List[int] = []
+        outputs: List[int] = []
+
+        for reg in r:
+            inputs.extend(test_input[reg.name])
+            outputs.extend(test_output[reg.name])
+
+        yield TestingCirqsimSystem(circuit=circuit, qubits=qubits, inputs=inputs, outputs=outputs)
+
+
+def assert_gate_inputs_outputs(
+    gate: GateWithRegisters, test_inputs: Dict[str, np.ndarray], test_outputs: Dict[str, np.ndarray]
+):
+    """Assert that the gate behaves correctly on each input/output pair using Quimb contraction.
+
+    Args:
+        gate: A GateWithRegisters
+        test_inputs: ndarrays representing classical input conditions, perhaps from
+            `get_classical_inputs`.
+        test_outputs: ndarrays representing the correct classical output states, perhaps
+            from applying `gate.apply_classical(test_inputs)`.
+    """
+    for sys in yield_test_cirqsim(gate, test_inputs, test_outputs):
+        sys.assert_input_output()
 
 
 def execute_notebook(name: str):
