@@ -1,11 +1,12 @@
 # !!!! Do not modify imports !!!!
+# pylint: disable=unused-import,wildcard-import,unused-wildcard-import
+from typing import *
 import cirq
 import numpy as np
 import cirq_qubitization
 import cirq_qubitization.testing as cq_testing
-from typing import *
 
-
+# pylint: enable=unused-import,wildcard-import,unused-wildcard-import
 # !!!! Do not modify imports !!!!
 
 # This module contains functions that generate demo gate objects. Both the code and
