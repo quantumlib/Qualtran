@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing_extensions import Protocol
 
 import cirq
-from cirq_qubitization.decompose_protocol import decompose_once
+from cirq_qubitization.decompose_protocol import decompose_once_into_operations
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -76,7 +76,7 @@ def _is_iterable(it: Any) -> Optional[TComplexity]:
 
 def _from_decomposition(stc: Any) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
-    decomposition = decompose_once(stc)
+    decomposition = decompose_once_into_operations(stc)
     if decomposition is None:
         return None
     return _is_iterable(decomposition)

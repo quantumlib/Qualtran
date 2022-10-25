@@ -8,7 +8,7 @@ import numpy as np
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 from cirq_qubitization.t_complexity_protocol import t_complexity
-from cirq_qubitization.decompose_protocol import decompose
+from cirq_qubitization.decompose_protocol import decompose_once_into_operations
 
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
@@ -93,8 +93,12 @@ def execute_notebook(name: str):
 
 
 def assert_decompose_is_consistent_with_t_complexity(val: Any):
-    if not hasattr(val, '_t_complexity_'):
+    t_complexity_method = getattr(val, '_t_complexity_', None)
+    expected = NotImplemented if t_complexity_method is None else t_complexity_method()
+    if expected is NotImplemented or expected is None:
         return
-    expected = val._t_complexity_()
-    from_decomposition = t_complexity(decompose(val), fail_quietly=False)
+    decomposition = decompose_once_into_operations(val)
+    if decomposition is None:
+        return
+    from_decomposition = t_complexity(decomposition, fail_quietly=False)
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'
