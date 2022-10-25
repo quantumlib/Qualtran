@@ -216,3 +216,7 @@ def test_select_application_to_eigenstates():
         # Overlap of inital_state and SELECT initial_state should be like applying H/lambda
         # which should give (E / lambda) * initial_state
         np.testing.assert_allclose(np.vdot(input_vec, out_vec), ie / qubitization_lambda, atol=1e-8)
+
+
+def test_notebook():
+    cq_testing.execute_notebook('generic_select')
