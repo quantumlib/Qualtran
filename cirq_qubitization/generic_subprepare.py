@@ -1,3 +1,12 @@
+"""Gates for preparing coefficient states.
+
+In section III.D. of the [Linear T paper](https://arxiv.org/abs/1805.03662) the authors introduce
+a technique for initializing a state with $L$ unique coefficients (provided by a classical
+database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is the
+largest absolute error that one can tolerate in the prepared amplitudes.
+"""
+
+
 from typing import List, Sequence
 
 import cirq
@@ -11,14 +20,29 @@ from cirq_qubitization.swap_network import MultiTargetCSwap
 
 
 class GenericSubPrepare(GateWithRegisters):
-    """Implements generic sub-prepare defined in Fig 11 of https://arxiv.org/abs/1805.03662.
+    r"""Initialize a state with $L$ unique coefficients.
+
+    In particular, we take the zero state to:
+
+    $$
+    \sum_{\ell=0}^{L-1} \sqrt{p_\ell} |\ell\rangle |\mathrm{temp}_\ell\rangle
+    $$
+
+    where the probabilities $p_\ell$ are $\mu$-bit binary approximations to the true values and
+    where the temporary register must be treated with care, see the details in Section III.D. of
+    the reference.
+
+    The preparation is equivalent to classical alias sampling: we sample `l` with probability
+    `p[l]` by first selecting `l` uniformally at random and then returning it with probability
+    `keep[l] / 2**mu`; otherwise returning `alt[l]`.
 
     This corresponds to the following operations:
      - UNIFORM_L on first selection register
-     - H^{mu} on mu-sigma-register
-     - QROM-alt-keep selection is on first selection alt-keep are on next mu and logL registers
-     - LessThanEqualGate
-     - Coherent swap
+     - H^{mu} on sigma register
+     - QROM addressed by the first selection register into the alt and keep registers.
+     - LessThanEqualGate comparing the keep and sigma registers.
+     - Coherent swap between the first selection register and alt register if the comparison
+       returns True.
 
     Total space will be (2 * log(L) + 2 mu + 1) work qubits + log(L) ancillas for QROM.
     The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
@@ -27,6 +51,12 @@ class GenericSubPrepare(GateWithRegisters):
         lcu_probabilities: The LCU coefficients.
         probability_epsilon: The desired accuracy to represent each probability
             (which sets mu size and keep/alt integers).
+            See `openfermion.circuits.lcu_util.preprocess_lcu_coefficients_for_reversible_sampling`
+            for more information.
+
+    References:
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Babbush et. al. (2018). Section III.D. and Figure 11.
     """
 
     def __init__(
