@@ -76,14 +76,14 @@ def assert_circuit_inp_out_cirqsim(
     assert actual == should_be, (actual, should_be)
 
 
-def execute_notebook(name: str):
+def execute_notebook(name: str, *, subdir: str = '.'):
     """Execute a jupyter notebook in this directory.
 
     Args:
         name: The name of the notebook without extension.
 
     """
-    notebook_path = Path(__file__).parent / f"{name}.ipynb"
+    notebook_path = Path(__file__).parent / f'../docs/{subdir}/{name}.ipynb'
     with notebook_path.open() as f:
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")

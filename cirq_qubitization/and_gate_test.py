@@ -183,4 +183,4 @@ def test_and_gate_adjoint(cv: Tuple[int, int]):
 
 
 def test_notebook():
-    cq_testing.execute_notebook('and_gate')
+    cq_testing.execute_notebook('and_gate', subdir='gates')

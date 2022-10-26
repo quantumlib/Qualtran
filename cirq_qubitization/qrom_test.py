@@ -36,4 +36,4 @@ def test_qrom_repr():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('qrom')
+    cq_testing.execute_notebook('qrom', subdir='gates')

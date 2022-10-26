@@ -22,7 +22,7 @@ Welcome to cirq-qubitization's documentation!
    :maxdepth: 2
    :caption: Protocols
 
-   gate_with_registers
+   protocols/gate_with_registers
    protocols/t_complexity
 
 

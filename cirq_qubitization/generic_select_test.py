@@ -219,4 +219,4 @@ def test_select_application_to_eigenstates():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('generic_select')
+    cq_testing.execute_notebook('generic_select', subdir='gates')

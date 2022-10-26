@@ -125,4 +125,4 @@ def test_multi_dimensional_unary_iteration(target_shape):
 
 
 def test_notebook():
-    cq_testing.execute_notebook('unary_iteration')
+    cq_testing.execute_notebook('unary_iteration', subdir='gates')

@@ -129,4 +129,4 @@ def test_multi_target_cswap():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('qrom')
+    cq_testing.execute_notebook('swap_network', subdir='gates')

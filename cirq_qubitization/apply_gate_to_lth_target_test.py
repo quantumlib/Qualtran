@@ -76,4 +76,4 @@ target4: ──────I─────
 
 
 def test_notebook():
-    cq_testing.execute_notebook('apply_gate_to_lth_target')
+    cq_testing.execute_notebook('apply_gate_to_lth_target', subdir='gates')

@@ -99,4 +99,4 @@ def test_gate_with_registers():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('gate_with_registers')
+    cq_testing.execute_notebook('gate_with_registers', subdir='protocols')
