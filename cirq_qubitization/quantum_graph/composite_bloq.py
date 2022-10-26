@@ -66,9 +66,9 @@ def _create_binst_graph(cxns: Iterable[Connection]) -> nx.Graph:
     for cxn in cxns:
         binst_edge = (cxn.left.binst, cxn.right.binst)
         if binst_edge in binst_graph.edges:
-            binst_graph.edges[binst_edge]['conns'].append((cxn.left.reg_name, cxn.right.reg_name))
+            binst_graph.edges[binst_edge]['cxns'].append((cxn.left.reg_name, cxn.right.reg_name))
         else:
-            binst_graph.add_edge(*binst_edge, conns=[(cxn.left.reg_name, cxn.right.reg_name)])
+            binst_graph.add_edge(*binst_edge, cxns=[(cxn.left.reg_name, cxn.right.reg_name)])
     return binst_graph
 
 
@@ -101,7 +101,7 @@ def _process_binst(
 
     # Finally: track name updates for successors
     for suc in binst_graph.successors(binst):
-        reg_conns = binst_graph.edges[binst, suc]['conns']
+        reg_conns = binst_graph.edges[binst, suc]['cxns']
         for in_regname, out_regname in reg_conns:
             soqmap[Soquet(suc, out_regname)] = soqmap[Soquet(binst, in_regname)]
 
