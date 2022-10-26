@@ -1,8 +1,11 @@
 import random
+
+import cirq
 import numpy as np
 import pytest
-import cirq
+
 import cirq_qubitization
+import cirq_qubitization.testing as cq_testing
 
 random.seed(12345)
 
@@ -123,3 +126,7 @@ def test_multi_target_cswap():
     """,
         use_unicode_characters=False,
     )
+
+
+def test_notebook():
+    cq_testing.execute_notebook('qrom')

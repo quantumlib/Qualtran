@@ -29,7 +29,6 @@ class SupportsTComplexity(Protocol):
 
     def _t_complexity_(self) -> TComplexity:
         """Returns the TComplexity."""
-        pass
 
 
 def _has_t_complexity(stc: Any) -> Optional[TComplexity]:
