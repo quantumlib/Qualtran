@@ -60,18 +60,13 @@ class InconsistentDecompostion(cirq.Operation):
         pass
 
 
-def test_assert_decompose_is_consistent_with_t_complexity():
-    # doesn't have _t_complexity_
+@pytest.mark.parametrize(
+    "val", [cirq.T, DoesNotDecompose(), And().on_registers(**And().registers.get_named_qubits())]
+)
+def test_assert_decompose_is_consistent_with_t_complexity(val):
     cq_testing.assert_decompose_is_consistent_with_t_complexity(cirq.T)
 
-    # nothing to compare with
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(DoesNotDecompose())
 
-    # has correct decomposition
-    gate = And()
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(
-        gate.on_registers(**gate.registers.get_named_qubits())
-    )
-
+def test_assert_decompose_is_consistent_with_t_complexity_raises():
     with pytest.raises(AssertionError):
         cq_testing.assert_decompose_is_consistent_with_t_complexity(InconsistentDecompostion())

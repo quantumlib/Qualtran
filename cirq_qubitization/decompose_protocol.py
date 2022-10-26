@@ -1,4 +1,4 @@
-from typing import Any, Iterable, List, Optional, Tuple
+from typing import Any, Iterable, Optional, Tuple
 
 import cirq
 from cirq.protocols.decompose_protocol import _try_decompose_into_operations_and_qubits
@@ -56,9 +56,9 @@ def _try_decompose_from_known_decompositions(val: Any) -> Optional[Tuple[cirq.Op
 
 def decompose_once_into_operations(val: Any) -> Optional[Iterable[cirq.Operation]]:
     """Decomposes a value into operations, if possible.
-    
-        This method decomposes the value exactly once, repeated application
-        of the function results in a decomposition with optimal T complexity.
+
+    This method decomposes the value exactly once, repeated application
+    of the function results in a decomposition with optimal T complexity.
     """
     res = _try_decompose_from_known_decompositions(val)
     if res is not None:
