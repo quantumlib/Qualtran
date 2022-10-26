@@ -1,5 +1,4 @@
-"""
-Uses OpenFermion LCU_utils routines to generate QROM oracles for the alt and keep parts of
+"""Uses OpenFermion LCU_utils routines to generate QROM oracles for the alt and keep parts of
 the SUBPREPARE oracle.
 """
 from typing import List
@@ -9,8 +8,7 @@ from cirq_qubitization.qrom import QROM
 
 
 def construct_alt_keep_qrom(lcu_coefficients: List[float], probability_epsilon: float) -> QROM:
-    """
-    Construct the QROM that outputs alt and keep values in the SUBPREPARE routine
+    """Construct the QROM that outputs alt and keep values in the SUBPREPARE routine
 
     Args:
         :lcu_coefficients: List of coefficients for the LCU expansion of a Hamiltonian

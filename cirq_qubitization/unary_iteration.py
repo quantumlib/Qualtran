@@ -112,8 +112,8 @@ def unary_iteration(
     """The method performs unary iteration on `selection` integer in `range(l_iter, r_iter)`.
 
     Unary iteration is a coherent for loop that can be used to conditionally perform a different
-    operation on a target register for every integer in the `range(l_iter, r_iter)` stored in the selection
-    register.
+    operation on a target register for every integer in the `range(l_iter, r_iter)` stored in the
+    selection register.
 
     Users can write multi-dimensional coherent for loops as follows:
 
@@ -138,15 +138,16 @@ def unary_iteration(
         r_iter: Ending index of the iteration range.
         flanking_ops: A list of `cirq.Operation`s that represents operations to be inserted in the
             circuit before/after the first/last iteration of the unary iteration for loop. Note that
-            the list is mutated by the function, such that before calling the function, the list represents
-            operations to be inserted before the first iteration and after the last call to the function,
-            list represents operations to be inserted at the end of last iteration.
+            the list is mutated by the function, such that before calling the function, the list
+            represents operations to be inserted before the first iteration and after the last call
+            to the function, list represents operations to be inserted at the end of last iteration.
         controls: Control register of qubits.
         selection: Selection register of qubits.
         ancilla: Ancillas to be used for unary iteration and multi-controlled AND gate.
 
     Yields:
-        (r_iter - l_iter) different tuples, each corresponding to an integer in range [l_iter, r_iter).
+        (r_iter - l_iter) different tuples, each corresponding to an integer in range
+        [l_iter, r_iter).
         Each returned tuple also corresponds to a unique leaf in the unary iteration tree.
         The values of yielded `Tuple[cirq.OP_TREE, cirq.Qid, int]` correspond to:
         - cirq.OP_TREE: The op-tree to be inserted in the circuit to get to the current leaf.

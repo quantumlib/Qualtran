@@ -11,7 +11,7 @@ from cirq_qubitization.bit_tools import iter_bits
 def get_1d_ising_hamiltonian(
     qubits: Sequence[cirq.Qid], j_zz_strength: float = 1.0, gamma_x_strength: float = -1
 ) -> cirq.PauliSum:
-    """A one dimensional ising model with periodic boundaries.
+    r"""A one dimensional ising model with periodic boundaries.
 
     $$
     H = -J\sum_{k=0}^{L-1}\sigma_{k}^{Z}\sigma_{(k+1)\%L}^{Z} + -\Gamma \sum_{k=0}^{L-1}\sigma_{k}^{X}
@@ -165,12 +165,10 @@ def _fake_prepare(
 
 
 def test_select_application_to_eigenstates():
-    """
-    To validate the unary iteration correctly applies the Hamiltonian to a state we
-    compare to directly applying Hamiltonian to the initial state.
-
-    The target register starts in an eigenstate so <L|select|L> = eig / lambda
-    """
+    # To validate the unary iteration correctly applies the Hamiltonian to a state we
+    # compare to directly applying Hamiltonian to the initial state.
+    #
+    # The target register starts in an eigenstate so <L|select|L> = eig / lambda
     sim = cirq.Simulator(dtype=np.complex128)
     num_sites = 4
     target_bitsize = num_sites
@@ -218,3 +216,7 @@ def test_select_application_to_eigenstates():
         # Overlap of inital_state and SELECT initial_state should be like applying H/lambda
         # which should give (E / lambda) * initial_state
         np.testing.assert_allclose(np.vdot(input_vec, out_vec), ie / qubitization_lambda, atol=1e-8)
+
+
+def test_notebook():
+    cq_testing.execute_notebook('generic_select')

@@ -1,6 +1,5 @@
 import numpy as np
-from pyscf import gto, scf, fci
-from pyscf.fci.cistring import make_strings
+from pyscf import gto, scf
 import fqe
 
 from cirq_qubitization.pyscf_utils.fci_utility import get_spectrum, get_fqe_wfns
