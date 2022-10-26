@@ -1,6 +1,0 @@
-# captures all the modules
-fqe
-pyscf
-openfermion
-cirq
-sphinx
