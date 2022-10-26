@@ -77,10 +77,11 @@ def assert_circuit_inp_out_cirqsim(
 
 
 def execute_notebook(name: str, *, subdir: str = '.'):
-    """Execute a jupyter notebook in this directory.
+    """Execute a jupyter notebook in the `docs/` directory.
 
     Args:
         name: The name of the notebook without extension.
+        subdir: The subdirectory to find the notebook.
 
     """
     notebook_path = Path(__file__).parent / f'../docs/{subdir}/{name}.ipynb'
