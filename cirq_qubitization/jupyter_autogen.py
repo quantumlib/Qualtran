@@ -32,7 +32,8 @@ import dataclasses
 import inspect
 import re
 from pathlib import Path
-from types import ModuleType, Callable, List, Type, Dict
+from types import ModuleType
+from typing import Callable, List, Type, Dict
 
 import nbformat
 from sphinx.ext.napoleon import Config, GoogleDocstring
@@ -83,7 +84,34 @@ class NotebookSpec:
     gate_specs: List[GateNbSpec]
 
 
-NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {}
+NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
+    'apply_gate_to_lth_target': NotebookSpec(
+        title='Apply to L-th Target',
+        module=cirq_qubitization.apply_gate_to_lth_target,
+        gate_specs=[GateNbSpec(jaf._make_ApplyGateToLthQubit)],
+    ),
+    'qrom': NotebookSpec(
+        title='QROM', module=cirq_qubitization.qrom, gate_specs=[GateNbSpec(jaf._make_QROM)]
+    ),
+    'swap_network': NotebookSpec(
+        title='Swap Network',
+        module=cirq_qubitization.swap_network,
+        gate_specs=[
+            GateNbSpec(jaf._make_MultiTargetCSwap),
+            GateNbSpec(jaf._make_MultiTargetCSwapApprox),
+        ],
+    ),
+    'generic_select': NotebookSpec(
+        title='Generic Select',
+        module=cirq_qubitization.generic_select,
+        gate_specs=[GateNbSpec(jaf._make_GenericSelect, draw_vertical=True)],
+    ),
+    'generic_subprepare': NotebookSpec(
+        title='Sub-Prepare',
+        module=cirq_qubitization.generic_subprepare,
+        gate_specs=[GateNbSpec(jaf._make_GenericSubPrepare)],
+    ),
+}
 
 
 class _GoogleDocstringToMarkdown(GoogleDocstring):

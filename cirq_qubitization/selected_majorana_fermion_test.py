@@ -1,6 +1,7 @@
-import pytest
-import cirq_qubitization
 import cirq
+import pytest
+
+import cirq_qubitization
 
 
 @pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 8), (4, 9)])

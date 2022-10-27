@@ -1,9 +1,7 @@
-"""
-Helper functions for getting FCI coefficients
-"""
+"""Helper functions for getting FCI coefficients"""
 from typing import List
 import numpy as np
-from pyscf import gto, scf, fci
+from pyscf import scf, fci
 from pyscf.fci.cistring import make_strings
 import fqe
 
@@ -45,8 +43,7 @@ def pyscf_to_fqe_wf(
 
 
 def get_fqe_wfns(pyscf_ci_wfns: List[np.ndarray], pyscf_mf: scf.RHF) -> List[fqe.Wavefunction]:
-    """
-    Construct FQE wavefunctions from pyscf wavefunctions
+    """Construct FQE wavefunctions from pyscf wavefunctions
 
     :param pyscf_ci_wfns: List of numpy arrays that represent the pyscf wavefunctions
     :param pyscf_mf: pyscf RHF mean-field object
@@ -59,8 +56,7 @@ def get_fqe_wfns(pyscf_ci_wfns: List[np.ndarray], pyscf_mf: scf.RHF) -> List[fqe
 
 
 def get_spectrum(mf: scf.RHF, num_roots: int):
-    """
-    Get spectrum of molecule defined as RHF object
+    """Get spectrum of molecule defined as RHF object
 
     :param mf: psycf mean-field object
     :param num_roots: number of roots to get from fci

@@ -1,7 +1,3 @@
-"""
-CIRQ-QUBITIZATION installation script
-"""
-
 import io
 import re
 
@@ -34,7 +30,7 @@ def main() -> None:
     stream.readline()
     long_description += stream.read()
 
-    requirements = explode("dev_tools/requirements/deps/cirq-qubitization-all.txt")
+    requirements = explode("dev_tools/requirements/deps/runtime.txt")
     dev_requirements = explode("dev_tools/requirements/dev.env.txt")
     # requirements = [r.strip() for r in requirements_buffer]
 

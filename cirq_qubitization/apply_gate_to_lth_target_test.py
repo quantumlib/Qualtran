@@ -73,3 +73,7 @@ target4: ──────I─────
     """,
         qubit_order=qubits,
     )
+
+
+def test_notebook():
+    cq_testing.execute_notebook('apply_gate_to_lth_target')

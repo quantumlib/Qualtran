@@ -1,6 +1,8 @@
 import itertools
-import cirq_qubitization
+
 import cirq
+
+import cirq_qubitization
 
 
 def test_less_than_gate():
