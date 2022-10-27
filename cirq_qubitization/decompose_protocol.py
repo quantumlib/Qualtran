@@ -1,5 +1,4 @@
-from ctypes import Union
-from typing import Any, Callable, Iterable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple
 
 import cirq
 from cirq.protocols.decompose_protocol import _try_decompose_into_operations_and_qubits
