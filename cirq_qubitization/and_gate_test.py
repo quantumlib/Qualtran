@@ -130,7 +130,7 @@ ancilla3: ───Anc───
              │
 control5: ───(0)───
              │
-target: ─────And───        
+target: ─────And───
 """,
         qubit_order=qubit_order,
     )

@@ -1,0 +1,5 @@
+fqe
+pyscf
+openfermion
+cirq-core
+sphinx

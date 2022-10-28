@@ -33,3 +33,7 @@ def test_qrom(data):
 def test_qrom_repr():
     qrom = cirq_qubitization.QROM([1, 2], [3, 5])
     cirq.testing.assert_equivalent_repr(qrom, setup_code="import cirq_qubitization\n")
+
+
+def test_notebook():
+    cq_testing.execute_notebook('qrom')

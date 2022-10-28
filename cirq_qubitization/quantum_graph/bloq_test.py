@@ -13,7 +13,7 @@ class TestBloq(Bloq):
     def registers(self) -> Registers:
         return Registers.build(control=1, target=1)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
+    def decompose_bloq(self) -> CompositeBloq:
         raise NotImplementedError("A leaf bloq")
 
     def on_registers(
