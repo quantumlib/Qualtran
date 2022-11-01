@@ -1,3 +1,4 @@
+"""Gates for applying generic selected unitaries."""
 from typing import Sequence, List, Tuple
 from functools import cached_property
 import cirq
@@ -6,12 +7,23 @@ from cirq_qubitization.gate_with_registers import Registers
 
 
 class GenericSelect(unary_iteration.UnaryIterationGate):
-    r"""Gate that implements SELECT for a Hamiltonian expressed as an LCU.
+    r"""A generic controlled SELECT operation for applying Pauli strings.
 
-    Recall: SELECT = \sum_{l}|l><l| \otimes U_{l}
+    $$
+    \mathrm{SELECT} = \sum_{l}|l \rangle \langle l| \otimes U_l
+    $$
 
-    The first log(L) qubits is the index register and the last M qubits are the system
-    register U_{l} is applied to
+    Where $U_l$ is a member of the Pauli group.
+
+    This gate uses the unary iteration scheme to apply `select_unitaries[selection]` to `target`
+    controlled on the single-bit `control` register.
+
+    Args:
+        selection_bitsize: The size of the indexing `select` register. This should be at least
+            `log2(len(select_unitaries))`
+        target_bitsize: The size of the `target` register.
+        select_unitaries: List of `DensePauliString`s to apply to the `target` register. Each
+            dense pauli string must contain `target_bitsize` terms.
     """
 
     def __init__(
@@ -20,17 +32,6 @@ class GenericSelect(unary_iteration.UnaryIterationGate):
         target_bitsize: int,
         select_unitaries: List[cirq.DensePauliString],
     ):
-        """An implementation of the SELECT unitary using the `UnaryIterationGate`
-
-        Args:
-            selection_bitsize: Number of qubits needed for select register. This is ceil(log2(len(select_unitaries)))
-            target_bitsize: number of qubits in the target register.
-            select_unitaries: List of DensePauliString's to apply to target register. Each dense
-                pauli string must contain `target_bitsize` terms.
-
-        Raises:
-            ValueError if any(len(dps) != target_bitsize for dps in select_unitaries).
-        """
         if any(len(dps) != target_bitsize for dps in select_unitaries):
             raise ValueError(
                 f"Each dense pauli string in `select_unitaries` should contain "
