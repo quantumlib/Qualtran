@@ -33,7 +33,7 @@ class GenericSubPrepare(GateWithRegisters):
     the reference.
 
     The preparation is equivalent to classical alias sampling: we sample `l` with probability
-    `p[l]` by first selecting `l` uniformally at random and then returning it with probability
+    `p[l]` by first selecting `l` uniformly at random and then returning it with probability
     `keep[l] / 2**mu`; otherwise returning `alt[l]`.
 
     This corresponds to the following operations:
