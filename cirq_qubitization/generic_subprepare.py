@@ -48,7 +48,7 @@ class GenericSubPrepare(GateWithRegisters):
 
     This gate corresponds to the following operations:
      - UNIFORM_L on the selection register
-     - H^{mu} on the sigma register
+     - H^mu on the sigma register
      - QROM addressed by the selection register into the alt and keep registers.
      - LessThanEqualGate comparing the keep and sigma registers.
      - Coherent swap between the selection register and alt register if the comparison
