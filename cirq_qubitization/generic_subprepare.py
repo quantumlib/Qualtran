@@ -32,9 +32,9 @@ class GenericSubPrepare(GateWithRegisters):
     where the temporary register must be treated with care, see the details in Section III.D. of
     the reference.
 
-    The preparation is equivalent to [classical alias sampling](https://en.wikipedia.org/wiki/Alias_method): we sample `l` with probability
-    `p[l]` by first selecting `l` uniformly at random and then returning it with probability
-    `keep[l] / 2**mu`; otherwise returning `alt[l]`.
+    The preparation is equivalent to [classical alias sampling](https://en.wikipedia.org/wiki/Alias_method):
+    we sample `l` with probability `p[l]` by first selecting `l` uniformly at random and then
+    returning it with probability `keep[l] / 2**mu`; otherwise returning `alt[l]`.
 
     This corresponds to the following operations:
      - UNIFORM_L on the selection register
