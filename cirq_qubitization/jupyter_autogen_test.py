@@ -1,3 +1,7 @@
+"""Tests for jupyter autogen.
+
+This module is used as a mock NotebookSpec module, so this docstring shows up in the tests.
+"""
 import inspect
 
 import cirq_qubitization
@@ -25,7 +29,9 @@ def test_gate_nb_spec():
 
 def test_notebook_spec():
     nbspec = NotebookSpec(
-        title='test', module=cirq_qubitization.qrom, gate_specs=[GateNbSpec(_make_QROM)]
+        title='test',
+        module=cirq_qubitization.jupyter_autogen_test,
+        gate_specs=[GateNbSpec(_make_QROM)],
     )
     assert nbspec.title == 'test'
     assert inspect.ismodule(nbspec.module)
@@ -74,12 +80,22 @@ def test_get_code_for_demoing_a_gate():
 def test_render_notebook_cells():
     cells = render_notebook_cells(
         NotebookSpec(
-            title='test', module=cirq_qubitization.qrom, gate_specs=[GateNbSpec(_make_QROM)]
+            title='Test Notebook',
+            module=cirq_qubitization.jupyter_autogen_test,
+            gate_specs=[GateNbSpec(_make_QROM)],
         )
     )
 
     assert cells.title_cell.metadata == {'cq.autogen': 'title_cell'}
-    assert cells.title_cell.source == '# test'
+    assert cells.title_cell.source == '\n'.join(
+        [
+            '# Test Notebook',
+            '',
+            'Tests for jupyter autogen.',
+            '',
+            'This module is used as a mock NotebookSpec module, so this docstring shows up in the tests.',
+        ]
+    )
     assert cells.top_imports.metadata == {'cq.autogen': 'top_imports'}
 
     assert list(cells.gate_cells.keys()) == ['_make_QROM']
