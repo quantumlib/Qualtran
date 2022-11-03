@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Sequence
 
 import cirq
 import numpy as np
@@ -8,35 +8,48 @@ from cirq_qubitization import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
 
 
-class OneDimensionalIsingModel:
-    def __init__(self, num_sites, j_zz_interaction=-1, gamma_x_interaction=-1) -> None:
-        """
-        H = -J\sum_{k=0}^{L-1}sigma_{k}^{Z}sigma_{(k+1)%L}^{Z} + -Gamma \sum_{k=0}^{L-1}sigma_{k}^{X}
-        """
-        self.num_sites = num_sites
-        self.j = j_zz_interaction
-        self.gamma = gamma_x_interaction
+def get_1d_ising_hamiltonian(
+    qubits: Sequence[cirq.Qid], j_zz_strength: float = 1.0, gamma_x_strength: float = -1
+) -> cirq.PauliSum:
+    r"""A one dimensional ising model with periodic boundaries.
 
-        self.qop_hamiltonian = None
-        self.fermion_ham = None
+    $$
+    H = -J\sum_{k=0}^{L-1}\sigma_{k}^{Z}\sigma_{(k+1)\%L}^{Z} + -\Gamma \sum_{k=0}^{L-1}\sigma_{k}^{X}
+    $$
 
-    def get_pauli_sum(self, qubits: List[cirq.Qid]) -> cirq.PauliSum:
-        """
-        Construct the Hamiltonian as a PauliSum object
+    Args:
+        qubits: One qubit for each spin site.
+        j_zz_strength: The two-body ZZ potential strength, $J$.
+        gamma_x_strength: The one-body X potential strength, $\Gamma$.
 
-        :param qubits: list of qubits
-        :return: cirq.PauliSum representing the Hamiltonian
-        """
-        cirq_pauli_terms = []
-        for k in range(self.num_sites):
-            cirq_pauli_terms.append(
-                cirq.PauliString(
-                    {qubits[k]: cirq.Z, qubits[(k + 1) % self.num_sites]: cirq.Z},
-                    coefficient=self.j,
-                )
+    Returns:
+        cirq.PauliSum representing the Hamiltonian
+    """
+    n_sites = len(qubits)
+    terms = []
+    for k in range(n_sites):
+        terms.append(
+            cirq.PauliString(
+                {qubits[k]: cirq.Z, qubits[(k + 1) % n_sites]: cirq.Z}, coefficient=j_zz_strength
             )
-            cirq_pauli_terms.append(cirq.PauliString({qubits[k]: cirq.X}, coefficient=self.gamma))
-        return cirq.PauliSum().from_pauli_strings(cirq_pauli_terms)
+        )
+        terms.append(cirq.PauliString({qubits[k]: cirq.X}, coefficient=gamma_x_strength))
+    return cirq.PauliSum.from_pauli_strings(terms)
+
+
+def get_1d_ising_lcu_coeffs(
+    n_spins: int, j_zz_strength: float = np.pi / 3, gamma_x_strength: float = np.pi / 7
+) -> np.ndarray:
+    """Get LCU coefficients for a 1d ising Hamiltonian.
+
+    The order of the terms is according to `get_1d_ising_hamiltonian`, namely: ZZ's and X's
+    interleaved.
+    """
+    spins = cirq.LineQubit.range(n_spins)
+    ham = get_1d_ising_hamiltonian(spins, j_zz_strength, gamma_x_strength)
+    coeffs = np.array([term.coefficient.real for term in ham])
+    lcu_coeffs = coeffs / np.sum(coeffs)
+    return lcu_coeffs
 
 
 def test_ising_zero_bitflip_select():
@@ -54,12 +67,10 @@ def test_ising_zero_bitflip_select():
         all_qubits[2 * selection_bitsize + 1 :],
     )
 
-    # Get paulistring terms
+    # Get dense PauliString Hamiltonian terms
     # right now we only handle positive interaction term values
-    ising_inst = OneDimensionalIsingModel(num_sites, 1, 1)
-    pauli_string_hamiltonian = [*ising_inst.get_pauli_sum(target)]
-    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
-
+    ham = get_1d_ising_hamiltonian(target, 1, 1)
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
     op = cirq_qubitization.GenericSelect(
         selection_bitsize=selection_bitsize,
@@ -79,13 +90,11 @@ def test_ising_zero_bitflip_select():
         qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
 
         initial_state = [qubit_vals[x] for x in all_qubits]
-        final_state = initial_state.copy()
-        for qid_key, pauli_val in pauli_string_hamiltonian[
-            selection_integer
-        ]._qubit_pauli_map.items():
+        for i, pauli_val in enumerate(dense_pauli_string_hamiltonian[selection_integer]):
             if pauli_val == cirq.X:
                 # Hamiltonian already defined on correct qubits so just take qid
-                final_state[qid_key._x] = 1
+                qubit_vals[target[i]] = 1
+        final_state = [qubit_vals[x] for x in all_qubits]
 
         cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
@@ -105,11 +114,10 @@ def test_ising_one_bitflip_select():
         all_qubits[2 * selection_bitsize + 1 :],
     )
 
-    # Get paulistring terms
+    # Get dense PauliString Hamiltonian terms
     # right now we only handle positive interaction term values
-    ising_inst = OneDimensionalIsingModel(num_sites, 1, 1)
-    pauli_string_hamiltonian = [*ising_inst.get_pauli_sum(target)]
-    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
+    ham = get_1d_ising_hamiltonian(target, 1, 1)
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
     op = cirq_qubitization.GenericSelect(
         selection_bitsize=selection_bitsize,
@@ -119,7 +127,7 @@ def test_ising_one_bitflip_select():
     circuit = cirq.Circuit(op)
 
     # now we need to have a superposition w.r.t all operators to act on target.
-    # Normally this would be generated by a PREPARE circuit but we will
+    # Normally this would be generated by a PREPARE circuit, but we will
     # build it directly here.
     for selection_integer in range(num_select_unitaries):
         svals = list(iter_bits(selection_integer, selection_bitsize))
@@ -130,23 +138,17 @@ def test_ising_one_bitflip_select():
         # flip target register to all 1
         qubit_vals.update({t: 1 for t in target})
         initial_state = [qubit_vals[x] for x in all_qubits]
-        final_state = initial_state.copy()
-        for qid_key, pauli_val in pauli_string_hamiltonian[
-            selection_integer
-        ]._qubit_pauli_map.items():
+        for i, pauli_val in enumerate(dense_pauli_string_hamiltonian[selection_integer]):
             if pauli_val == cirq.X:
                 # Hamiltonian already defined on correct qubits so just take qid
-                final_state[qid_key._x] = 0
-
+                qubit_vals[target[i]] = 0
+        final_state = [qubit_vals[x] for x in all_qubits]
         cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
 
-def fake_prepare(
+def _fake_prepare(
     positive_coefficients: np.ndarray, selection_register: List[cirq.Qid]
 ) -> cirq.OP_TREE:
-    """
-    :param selection_register: use a generic gate op to build a synthetic prepare
-    """
     pos_coeffs = positive_coefficients.flatten()
     size_hilbert_of_reg = 2 ** len(selection_register)
     assert len(pos_coeffs) <= size_hilbert_of_reg
@@ -163,12 +165,10 @@ def fake_prepare(
 
 
 def test_select_application_to_eigenstates():
-    """
-    To validate the unary iteration correctly applying Hamiltonian to the state we
-    should compare to directly applying Hamiltonian to the initial state
-
-    Target register starts in an eigenstate so <L|select|L> = eig / lambda
-    """
+    # To validate the unary iteration correctly applies the Hamiltonian to a state we
+    # compare to directly applying Hamiltonian to the initial state.
+    #
+    # The target register starts in an eigenstate so <L|select|L> = eig / lambda
     sim = cirq.Simulator(dtype=np.complex128)
     num_sites = 4
     target_bitsize = num_sites
@@ -184,16 +184,10 @@ def test_select_application_to_eigenstates():
         all_qubits[2 * selection_bitsize + 1 :],
     )
 
-    # Get paulistring terms
+    # Get dense PauliString Hamiltonian terms
     # right now we only handle positive interaction term values
-    ising_inst = OneDimensionalIsingModel(num_sites, 1, 1)
-    pauli_sum_hamiltonian = ising_inst.get_pauli_sum(target)
-    pauli_string_hamiltonian = [*pauli_sum_hamiltonian]
-    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in pauli_string_hamiltonian]
-    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
-
-    ising_eigs, ising_wfns = np.linalg.eigh(pauli_sum_hamiltonian.matrix())
-
+    ham = get_1d_ising_hamiltonian(target, 1, 1)
+    dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
     op = cirq_qubitization.GenericSelect(
         selection_bitsize=selection_bitsize,
@@ -202,29 +196,27 @@ def test_select_application_to_eigenstates():
     ).on(control, *selection, *ancilla, *target)
     select_circuit = cirq.Circuit(op)
 
-    coeffs = np.sqrt(
-        np.array([xx.coefficient.real for xx in dense_pauli_string_hamiltonian])
-        / qubitization_lambda
-    )
-    prep_circuit = fake_prepare(coeffs, selection)
+    coeffs = get_1d_ising_lcu_coeffs(num_sites, 1, 1)
+    prep_circuit = _fake_prepare(np.sqrt(coeffs), selection)
     turn_on_control = cirq.Circuit(cirq.X.on(control))
 
-    for ie, iw_idx in zip(ising_eigs, range(len(ising_eigs))):
+    ising_eigs, ising_wfns = np.linalg.eigh(ham.matrix())
+    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
+    for iw_idx, ie in enumerate(ising_eigs):
         eigenstate_prep = cirq.Circuit()
         eigenstate_prep.append(
             cirq.StatePreparationChannel(ising_wfns[:, iw_idx].flatten()).on(*target)
         )
 
-        input_circuit = (
-            turn_on_control
-            + prep_circuit
-            + eigenstate_prep
-            + cirq.Circuit([cirq.I.on(xx) for xx in ancilla])
-        )
-        input_vec = sim.simulate(input_circuit).final_state_vector
+        input_circuit = turn_on_control + prep_circuit + eigenstate_prep
+        input_vec = sim.simulate(input_circuit, qubit_order=all_qubits).final_state_vector
         final_circuit = input_circuit + select_circuit
-        res = sim.simulate(final_circuit)
+        out_vec = sim.simulate(final_circuit, qubit_order=all_qubits).final_state_vector
 
         # Overlap of inital_state and SELECT initial_state should be like applying H/lambda
         # which should give (E / lambda) * initial_state
-        assert np.isclose(np.vdot(input_vec, res.final_state_vector), ie / qubitization_lambda)
+        np.testing.assert_allclose(np.vdot(input_vec, out_vec), ie / qubitization_lambda, atol=1e-8)
+
+
+def test_notebook():
+    cq_testing.execute_notebook('generic_select')

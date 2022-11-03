@@ -6,7 +6,14 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
 class MultiTargetCSwap(GateWithRegisters):
-    """Implements multi-target controlled swap unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$."""
+    """Implements a multi-target controlled swap unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$.
+
+    This decomposes into a qubitwise SWAP on the two target registers, and takes 14*n T-gates.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low et. al. 2018. See Appendix B.2.c.
+    """
 
     def __init__(self, target_bitsize: int) -> None:
         self._target_bitsize = target_bitsize
@@ -43,13 +50,17 @@ class MultiTargetCSwap(GateWithRegisters):
 
 
 class MultiTargetCSwapApprox(MultiTargetCSwap):
-    """Approximately implements a multi-target controlled swap unitary using only 4 * N T-gates.
+    """Approximately implements a multi-target controlled swap unitary using only 4 * n T-gates.
 
-    Implements the unitary $CSWAP_{n} = |0><0| I + |1><1| SWAP_{n}$ such that the output state is
+    Implements the unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$ such that the output state is
     correct up to a global phase factor of +1 / -1.
 
     This is useful when the incorrect phase can be absorbed in a garbage state of an algorithm; and
-    thus ignored. See Appendix B.2.c of https://arxiv.org/abs/1812.00954 for more details.
+    thus ignored, see the reference for more details.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low et. al. 2018. See Appendix B.2.c.
     """
 
     def decompose_from_registers(
@@ -89,10 +100,10 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
         return f"cirq_qubitization.MultiTargetCSwapApprox({self._target_bitsize})"
 
 
-class SwapWithZeroGate(cirq.Gate):
+class SwapWithZeroGate(GateWithRegisters):
     """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.
 
-    Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_n> --> |x> |Psi_x> |Rest of Psi>.
+    Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_{n-1}> --> |x> |Psi_x> |Rest of Psi>.
     Note that the state of `|Rest of Psi>` is allowed to be anything and should not be depended
     upon.
 
@@ -104,37 +115,48 @@ class SwapWithZeroGate(cirq.Gate):
 
     def __init__(self, selection_bitsize: int, target_bitsize: int, n_target_registers: int):
         assert n_target_registers <= 2**selection_bitsize
-        self.selection_bitsize = selection_bitsize
-        self.target_bitsize = target_bitsize
-        self.n_target_registers = n_target_registers
+        self._selection_bitsize = selection_bitsize
+        self._target_bitsize = target_bitsize
+        self._n_target_registers = n_target_registers
 
-    def _num_qubits_(self) -> int:
-        return self.selection_bitsize + self.n_target_registers * self.target_bitsize
+    @cached_property
+    def selection_registers(self) -> Registers:
+        return Registers.build(selection=self._selection_bitsize)
 
-    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        selection = qubits[: self.selection_bitsize]
-        target = [
-            qubits[st : st + self.target_bitsize]
-            for st in range(self.selection_bitsize, len(qubits), self.target_bitsize)
-        ]
-        assert len(target) == self.n_target_registers
-        swap_n = MultiTargetCSwapApprox(self.target_bitsize)
+    @cached_property
+    def target_registers(self) -> Registers:
+        return Registers.build(
+            **{f'target{i}': self._target_bitsize for i in range(self._n_target_registers)}
+        )
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers([*self.selection_registers, *self.target_registers])
+
+    def decompose_from_registers(
+        self, selection: Sequence[cirq.Qid], **target_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        assert len(target_regs) == self._n_target_registers
+        cswap_n = MultiTargetCSwapApprox(self._target_bitsize)
+        # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target
+        # register. If the selection register stores index `r`, we want to bring the value stored
+        # in leaf indexed `r` to the leaf indexed `0`. At each node of the binary tree, the left
+        # subtree contains node with current bit 0 and right subtree contains nodes with current
+        # bit 1. Thus, leaf indexed `0` is the leftmost node in the tree.
+        # Start iterating from the root of the tree. If the j'th bit is set in the selection
+        # register (i.e. the control would be activated); we know that the value we are searching
+        # for is in the right subtree. In order to (eventually) bring the desired value to node
+        # 0; we swap all values in the right subtree with all values in the left subtree. This
+        # takes (N / (2 ** (j + 1)) swaps at level `j`.
+        # Therefore, in total, we need $\sum_{j=0}^{logN-1} \frac{N}{2 ^ {j + 1}}$ controlled swaps.
         for j in range(len(selection)):
-            for i in range(len(target) - 2**j):
-                yield swap_n.on_registers(
+            for i in range(0, self._n_target_registers - 2**j, 2 ** (j + 1)):
+                # The inner loop is executed at-most `N - 1` times, where `N:= len(target_regs)`.
+                yield cswap_n.on_registers(
                     control=selection[len(selection) - j - 1],
-                    target_x=target[i],
-                    target_y=target[i + 2**j],
+                    target_x=target_regs[f'target{i}'],
+                    target_y=target_regs[f'target{i + 2**j}'],
                 )
-
-    def on_registers(
-        self, *, selection: Sequence[cirq.Qid], target: Sequence[Sequence[cirq.Qid]]
-    ) -> cirq.GateOperation:
-        assert len(selection) == self.selection_bitsize
-        assert len(target) == self.n_target_registers
-        assert all(len(t) == self.target_bitsize for t in target)
-        flat_target = [q for t in target for q in t]
-        return cirq.GateOperation(self, selection + flat_target)
 
     def __repr__(self) -> str:
         return (
@@ -146,7 +168,7 @@ class SwapWithZeroGate(cirq.Gate):
         )
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@(n)"] * self.selection_bitsize
-        wire_symbols += ["swap_0"] * self.target_bitsize
-        wire_symbols += ["swap_r"] * (self.n_target_registers - 1) * self.target_bitsize
+        wire_symbols = ["@(r⇋0)"] * self._selection_bitsize
+        for i in range(self._n_target_registers):
+            wire_symbols += [f"swap_{i}"] * self._target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

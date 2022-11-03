@@ -6,7 +6,9 @@ from cirq_qubitization import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
 
 
-@pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]]])
+@pytest.mark.parametrize(
+    "data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]], [[1], [2], [3], [4], [5], [6]]]
+)
 def test_qrom(data):
     qrom = cirq_qubitization.QROM(*data)
     qubit_regs = qrom.registers.get_named_qubits()
@@ -31,3 +33,7 @@ def test_qrom(data):
 def test_qrom_repr():
     qrom = cirq_qubitization.QROM([1, 2], [3, 5])
     cirq.testing.assert_equivalent_repr(qrom, setup_code="import cirq_qubitization\n")
+
+
+def test_notebook():
+    cq_testing.execute_notebook('qrom')

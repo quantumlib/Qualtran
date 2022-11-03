@@ -1,15 +1,18 @@
 import random
+
+import cirq
 import numpy as np
 import pytest
-import cirq
+
 import cirq_qubitization
+import cirq_qubitization.testing as cq_testing
 
 random.seed(12345)
 
 
 @pytest.mark.parametrize(
     "selection_bitsize, target_bitsize, n_target_registers",
-    [[2, 2, 3], [2, 3, 4], [3, 2, 5], [4, 1, 10]],
+    [[3, 5, 1], [2, 2, 3], [2, 3, 4], [3, 2, 5], [4, 1, 10]],
 )
 def test_swap_with_zero_gate(selection_bitsize, target_bitsize, n_target_registers):
     # Construct the gate.
@@ -17,12 +20,12 @@ def test_swap_with_zero_gate(selection_bitsize, target_bitsize, n_target_registe
     # Allocate selection and target qubits.
     all_qubits = cirq.LineQubit.range(cirq.num_qubits(gate))
     selection = all_qubits[:selection_bitsize]
-    target = [
-        all_qubits[st : st + target_bitsize]
-        for st in range(selection_bitsize, len(all_qubits), target_bitsize)
-    ]
+    targets = {
+        f'target{i}': all_qubits[st : st + target_bitsize]
+        for i, st in enumerate(range(selection_bitsize, len(all_qubits), target_bitsize))
+    }
     # Create a circuit.
-    circuit = cirq.Circuit(gate.on_registers(selection=selection, target=target))
+    circuit = cirq.Circuit(gate.on_registers(selection=selection, **targets))
 
     # Load data[i] in i'th target register; where each register is of size target_bitsize
     data = [random.randint(0, 2**target_bitsize - 1) for _ in range(n_target_registers)]
@@ -47,6 +50,38 @@ def test_swap_with_zero_gate(selection_bitsize, target_bitsize, n_target_registe
         # Assert that result and expected state vectors are equal; reset and continue.
         assert cirq.equal_up_to_global_phase(result_state_vector, expected_state_vector)
         expected_state_vector[data[selection_integer]] = 0
+
+
+def test_swap_with_zero_gate_diagram():
+    gate = cirq_qubitization.SwapWithZeroGate(3, 2, 4)
+    q = cirq.LineQubit.range(cirq.num_qubits(gate))
+    circuit = cirq.Circuit(gate.on_registers(**gate.registers.split_qubits(q)))
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+0: ────@(r⇋0)───
+       │
+1: ────@(r⇋0)───
+       │
+2: ────@(r⇋0)───
+       │
+3: ────swap_0───
+       │
+4: ────swap_0───
+       │
+5: ────swap_1───
+       │
+6: ────swap_1───
+       │
+7: ────swap_2───
+       │
+8: ────swap_2───
+       │
+9: ────swap_3───
+       │
+10: ───swap_3───
+""",
+    )
 
 
 def test_multi_target_cswap():
@@ -91,3 +126,7 @@ def test_multi_target_cswap():
     """,
         use_unicode_characters=False,
     )
+
+
+def test_notebook():
+    cq_testing.execute_notebook('qrom')
