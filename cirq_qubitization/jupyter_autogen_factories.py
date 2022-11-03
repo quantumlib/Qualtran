@@ -25,7 +25,7 @@ def _make_ApplyGateToLthQubit():
     from cirq_qubitization.apply_gate_to_lth_target import ApplyGateToLthQubit
 
     def _z_to_odd(n: int):
-        if n & 1:
+        if n % 2 == 1:
             return cirq.Z
         return cirq.I
 
