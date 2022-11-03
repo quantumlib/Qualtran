@@ -37,11 +37,11 @@ class GenericSubPrepare(GateWithRegisters):
     `keep[l] / 2**mu`; otherwise returning `alt[l]`.
 
     This corresponds to the following operations:
-     - UNIFORM_L on first selection register
-     - H^{mu} on sigma register
-     - QROM addressed by the first selection register into the alt and keep registers.
+     - UNIFORM_L on the selection register
+     - H^{mu} on the sigma register
+     - QROM addressed by the selection register into the alt and keep registers.
      - LessThanEqualGate comparing the keep and sigma registers.
-     - Coherent swap between the first selection register and alt register if the comparison
+     - Coherent swap between the selection register and alt register if the comparison
        returns True.
 
     Total space will be (2 * log(L) + 2 mu + 1) work qubits + log(L) ancillas for QROM.
