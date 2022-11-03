@@ -36,7 +36,17 @@ class GenericSubPrepare(GateWithRegisters):
     we sample `l` with probability `p[l]` by first selecting `l` uniformly at random and then
     returning it with probability `keep[l] / 2**mu`; otherwise returning `alt[l]`.
 
-    This corresponds to the following operations:
+    Registers:
+        selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
+            coefficient state is prepared.
+        temp: Work space comprised of sub registers:
+            - sigma: A lg(L)-sized register of uniformly sampled indices.
+            - alt: A lg(L)-sized register of alternate indices
+            - keep: a mu-sized register of probabilities of keeping the initially sampled index.
+            - one bit for the result of the comparison.
+        selection_ancilla: Ancilla space for QROM loading.
+
+    This gate corresponds to the following operations:
      - UNIFORM_L on the selection register
      - H^{mu} on the sigma register
      - QROM addressed by the selection register into the alt and keep registers.
