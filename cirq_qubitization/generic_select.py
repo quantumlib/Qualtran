@@ -7,7 +7,8 @@ from cirq_qubitization.gate_with_registers import Registers
 
 
 class GenericSelect(unary_iteration.UnaryIterationGate):
-    r"""A generic controlled SELECT operation for applying Pauli strings.
+    r"""A generic controlled SELECT gate for selecting and applying operators from an
+    array of `PauliString`s.
 
     $$
     \mathrm{SELECT} = \sum_{l}|l \rangle \langle l| \otimes U_l
