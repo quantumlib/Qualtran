@@ -25,7 +25,7 @@ def _make_ApplyGateToLthQubit():
     from cirq_qubitization.apply_gate_to_lth_target import ApplyGateToLthQubit
 
     def _z_to_odd(n: int):
-        if n & 1:
+        if n % 2 == 1:
             return cirq.Z
         return cirq.I
 
@@ -56,42 +56,18 @@ def _make_MultiTargetCSwapApprox():
 
 def _make_GenericSelect():
     from cirq_qubitization.generic_select import GenericSelect
-    from cirq_qubitization.generic_select_test import get_1d_ising_hamiltonian
 
-    num_sites = 4
-    target_bitsize = num_sites
-    num_select_unitaries = 2 * num_sites
-
-    # PBC Ising in 1-D has num_sites ZZ operations and num_sites X operations.
-    # Thus, 2 * num_sites Pauli ops
-    selection_bitsize = int(np.ceil(np.log(num_select_unitaries)))
-
-    target = cirq.LineQubit.range(target_bitsize)  # placeholder
-    ham = get_1d_ising_hamiltonian(target, 1, 1)
-    dense_ham = [tt.dense(target) for tt in ham]
-    return GenericSelect(selection_bitsize, target_bitsize, select_unitaries=dense_ham)
+    target_bitsize = 4
+    us = ['XIXI', 'YIYI', 'ZZZZ', 'ZXYZ']
+    us = [cirq.DensePauliString(u) for u in us]
+    selection_bitsize = int(np.ceil(np.log2(len(us))))
+    return GenericSelect(selection_bitsize, target_bitsize, select_unitaries=us)
 
 
 def _make_GenericSubPrepare():
     from cirq_qubitization.generic_subprepare import GenericSubPrepare
 
-    def get_1d_ising_hamiltonian(
-        qubits: Sequence[cirq.Qid], j_zz_strength: float = 1.0, gamma_x_strength: float = -1
-    ) -> cirq.PauliSum:
-        n_sites = len(qubits)
-        terms = [
-            cirq.PauliString(
-                {qubits[k]: cirq.Z, qubits[(k + 1) % n_sites]: cirq.Z}, coefficient=j_zz_strength
-            )
-            for k in range(n_sites)
-        ]
-        terms.extend([cirq.PauliString({q: cirq.X}, coefficient=gamma_x_strength) for q in qubits])
-        return cirq.PauliSum.from_pauli_strings(terms)
+    coeffs = np.array([1.0, 1, 3, 2])
+    mu = 3
 
-    spins = cirq.LineQubit.range(3)
-    ham = get_1d_ising_hamiltonian(spins, np.pi / 3, np.pi / 7)
-    coeffs = np.array([term.coefficient.real for term in ham])
-
-    lcu_coeffs = coeffs / np.sum(coeffs)
-
-    return GenericSubPrepare(lcu_coeffs, probability_epsilon=1e-2)
+    return GenericSubPrepare(coeffs, probability_epsilon=2**-mu / len(coeffs))

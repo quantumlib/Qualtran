@@ -6,6 +6,26 @@ from cirq_qubitization.gate_with_registers import Registers
 
 
 class ApplyGateToLthQubit(UnaryIterationGate):
+    r"""A controlled SELECT operation for single-qubit gates.
+
+    $$
+    \mathrm{SELECT} = \sum_{l}|l \rangle \langle l| \otimes [G(l)]_l
+    $$
+
+    Where $G$ is a function that maps an index to a single-qubit gate.
+
+    This gate uses the unary iteration scheme to apply `nth_gate(selection)` to the
+    `selection`-th qubit of `target` all controlled by the `control` register.
+
+    Args:
+        selection_bitsize: The size of the indexing `select` register. This should be at most
+            `log2(target_bitsize)`
+        target_bitsize: The size of the `target` register. This also serves as the iteration
+            length.
+        nth_gate: A function mapping the selection index to a single-qubit gate.
+        control_bitsize: The size of the control register.
+    """
+
     def __init__(
         self,
         selection_bitsize: int,

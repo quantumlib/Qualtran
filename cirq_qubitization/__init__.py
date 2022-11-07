@@ -17,3 +17,9 @@ from cirq_qubitization.swap_network import (
 from cirq_qubitization.qrom import QROM
 from cirq_qubitization.select_swap_qroam import SelectSwapQROM
 from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
+from cirq_qubitization.decompose_protocol import decompose_once_into_operations
+from cirq_qubitization.select_swap_qroam import SelectSwapQROM
+from cirq_qubitization.programmable_rotation_gate_array import (
+    ProgrammableRotationGateArray,
+    ProgrammableRotationGateArrayBase,
+)
