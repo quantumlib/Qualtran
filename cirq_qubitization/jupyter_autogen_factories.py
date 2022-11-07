@@ -56,20 +56,12 @@ def _make_MultiTargetCSwapApprox():
 
 def _make_GenericSelect():
     from cirq_qubitization.generic_select import GenericSelect
-    from cirq_qubitization.generic_select_test import get_1d_ising_hamiltonian
 
-    num_sites = 4
-    target_bitsize = num_sites
-    num_select_unitaries = 2 * num_sites
-
-    # PBC Ising in 1-D has num_sites ZZ operations and num_sites X operations.
-    # Thus, 2 * num_sites Pauli ops
-    selection_bitsize = int(np.ceil(np.log(num_select_unitaries)))
-
-    target = cirq.LineQubit.range(target_bitsize)  # placeholder
-    ham = get_1d_ising_hamiltonian(target, 1, 1)
-    dense_ham = [tt.dense(target) for tt in ham]
-    return GenericSelect(selection_bitsize, target_bitsize, select_unitaries=dense_ham)
+    target_bitsize = 4
+    us = ['XIXI', 'YIYI', 'ZZZZ', 'ZXYZ']
+    us = [cirq.DensePauliString(u) for u in us]
+    selection_bitsize = int(np.ceil(np.log2(len(us))))
+    return GenericSelect(selection_bitsize, target_bitsize, select_unitaries=us)
 
 
 def _make_GenericSubPrepare():
