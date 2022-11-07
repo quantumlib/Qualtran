@@ -1,12 +1,14 @@
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Sequence, Dict, List
+from typing import Any, Sequence, Dict, List
 
 import cirq
 import numpy as np
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+from cirq_qubitization.t_complexity_protocol import t_complexity
+from cirq_qubitization.decompose_protocol import decompose_once_into_operations
 
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
@@ -88,3 +90,15 @@ def execute_notebook(name: str):
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
     ep.preprocess(nb)
+
+
+def assert_decompose_is_consistent_with_t_complexity(val: Any):
+    t_complexity_method = getattr(val, '_t_complexity_', None)
+    expected = NotImplemented if t_complexity_method is None else t_complexity_method()
+    if expected is NotImplemented or expected is None:
+        return
+    decomposition = decompose_once_into_operations(val)
+    if decomposition is None:
+        return
+    from_decomposition = t_complexity(decomposition, fail_quietly=False)
+    assert expected == from_decomposition, f'{expected} != {from_decomposition}'
