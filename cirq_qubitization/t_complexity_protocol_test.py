@@ -64,6 +64,8 @@ def test_gates():
     assert t_complexity(And()) == TComplexity(t=4, clifford=9)
     assert t_complexity(And() ** -1) == TComplexity(clifford=4)
 
+    assert t_complexity(cirq.FREDKIN) == TComplexity(t=7, clifford=10)
+
 
 def test_operations():
     q = cirq.NamedQubit('q')
