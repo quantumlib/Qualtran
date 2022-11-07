@@ -107,7 +107,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         gate_specs=[GateNbSpec(jaf._make_GenericSelect, draw_vertical=True)],
     ),
     'generic_subprepare': NotebookSpec(
-        title='Sub-Prepare',
+        title='Subprepare',
         module=cirq_qubitization.generic_subprepare,
         gate_specs=[GateNbSpec(jaf._make_GenericSubPrepare)],
     ),

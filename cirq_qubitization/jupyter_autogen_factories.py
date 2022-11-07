@@ -67,23 +67,7 @@ def _make_GenericSelect():
 def _make_GenericSubPrepare():
     from cirq_qubitization.generic_subprepare import GenericSubPrepare
 
-    def get_1d_ising_hamiltonian(
-        qubits: Sequence[cirq.Qid], j_zz_strength: float = 1.0, gamma_x_strength: float = -1
-    ) -> cirq.PauliSum:
-        n_sites = len(qubits)
-        terms = [
-            cirq.PauliString(
-                {qubits[k]: cirq.Z, qubits[(k + 1) % n_sites]: cirq.Z}, coefficient=j_zz_strength
-            )
-            for k in range(n_sites)
-        ]
-        terms.extend([cirq.PauliString({q: cirq.X}, coefficient=gamma_x_strength) for q in qubits])
-        return cirq.PauliSum.from_pauli_strings(terms)
+    coeffs = np.array([1.0, 1, 3, 2])
+    mu = 3
 
-    spins = cirq.LineQubit.range(3)
-    ham = get_1d_ising_hamiltonian(spins, np.pi / 3, np.pi / 7)
-    coeffs = np.array([term.coefficient.real for term in ham])
-
-    lcu_coeffs = coeffs / np.sum(coeffs)
-
-    return GenericSubPrepare(lcu_coeffs, probability_epsilon=1e-2)
+    return GenericSubPrepare(coeffs, probability_epsilon=2**-mu / len(coeffs))
