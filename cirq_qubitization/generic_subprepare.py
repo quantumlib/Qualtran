@@ -40,7 +40,8 @@ class GenericSubPrepare(GateWithRegisters):
         selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
             coefficient state is prepared.
         temp: Work space comprised of sub registers:
-            - sigma: A lg(L)-sized register of uniformly sampled indices.
+            - sigma: A mu-sized register containing uniform probabilities for comparison against
+                `keep`.
             - alt: A lg(L)-sized register of alternate indices
             - keep: a mu-sized register of probabilities of keeping the initially sampled index.
             - one bit for the result of the comparison.
