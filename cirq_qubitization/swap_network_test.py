@@ -132,13 +132,13 @@ def test_notebook():
     cq_testing.execute_notebook('qrom')
 
 
-def test_t_complexity():
-    for n in range(1, 5 + 1):
-        g = cirq_qubitization.MultiTargetCSwap(n)
-        cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+@pytest.mark.parametrize("n", [*range(1, 6)])
+def test_t_complexity(n):
+    g = cirq_qubitization.MultiTargetCSwap(n)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
-        g = cirq_qubitization.MultiTargetCSwapApprox(n)
-        cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+    g = cirq_qubitization.MultiTargetCSwapApprox(n)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
 
 @pytest.mark.parametrize(
