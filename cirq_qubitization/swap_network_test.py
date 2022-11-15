@@ -6,6 +6,7 @@ import pytest
 
 import cirq_qubitization
 import cirq_qubitization.testing as cq_testing
+from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
 
 random.seed(12345)
 
@@ -142,9 +143,15 @@ def test_t_complexity(n):
 
 
 @pytest.mark.parametrize(
-    "selection_bitsize, target_bitsize, n_target_registers",
-    [[3, 5, 1], [2, 2, 3], [2, 3, 4], [3, 2, 5], [4, 1, 10]],
+    "selection_bitsize, target_bitsize, n_target_registers, want",
+    [
+        [3, 5, 1, TComplexity(t=0, clifford=0)],
+        [2, 2, 3, TComplexity(t=16, clifford=86)],
+        [2, 3, 4, TComplexity(t=36, clifford=195)],
+        [3, 2, 5, TComplexity(t=32, clifford=172)],
+        [4, 1, 10, TComplexity(t=36, clifford=189)],
+    ],
 )
-def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers):
+def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers, want):
     gate = cirq_qubitization.SwapWithZeroGate(selection_bitsize, target_bitsize, n_target_registers)
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(gate)
+    assert want == t_complexity(gate)

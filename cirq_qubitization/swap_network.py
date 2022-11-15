@@ -192,18 +192,3 @@ class SwapWithZeroGate(GateWithRegisters):
         for i in range(self._n_target_registers):
             wire_symbols += [f"swap_{i}"] * self._target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    @cached_property
-    def _num_cswaps(self):
-        num_cswaps = 0
-        for j in range(self._selection_bitsize):
-            num_cswaps += (self._n_target_registers + 2**j - 1) // 2 ** (j + 1)
-        return num_cswaps
-
-    def _t_complexity_(self):
-        cswap_complexity = MultiTargetCSwapApprox(self._target_bitsize)._t_complexity_()
-        return TComplexity(
-            t=cswap_complexity.t * self._num_cswaps,
-            clifford=cswap_complexity.clifford * self._num_cswaps,
-            rotations=cswap_complexity.rotations * self._num_cswaps,
-        )

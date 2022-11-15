@@ -188,8 +188,9 @@ def test_notebook():
     cq_testing.execute_notebook('and_gate')
 
 
-def test_t_complexity():
-    for adjoint in range(2):
-        for n in range(2, 7 + 1):
-            for C in itertools.product(range(2), repeat=n):
-                cq_testing.assert_decompose_is_consistent_with_t_complexity(And(C, adjoint=adjoint))
+@pytest.mark.parametrize(
+    "C", [*itertools.chain(*[itertools.product(range(2), repeat=n) for n in range(2, 7 + 1)])]
+)
+@pytest.mark.parametrize("adjoint", [*range(2)])
+def test_t_complexity(adjoint, C):
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(And(C, adjoint=adjoint))
