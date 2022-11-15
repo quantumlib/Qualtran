@@ -130,3 +130,21 @@ def test_multi_target_cswap():
 
 def test_notebook():
     cq_testing.execute_notebook('qrom')
+
+
+def test_t_complexity():
+    for n in range(1, 5 + 1):
+        g = cirq_qubitization.MultiTargetCSwap(n)
+        cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+
+        g = cirq_qubitization.MultiTargetCSwapApprox(n)
+        cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+
+
+@pytest.mark.parametrize(
+    "selection_bitsize, target_bitsize, n_target_registers",
+    [[3, 5, 1], [2, 2, 3], [2, 3, 4], [3, 2, 5], [4, 1, 10]],
+)
+def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers):
+    gate = cirq_qubitization.SwapWithZeroGate(selection_bitsize, target_bitsize, n_target_registers)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(gate)
