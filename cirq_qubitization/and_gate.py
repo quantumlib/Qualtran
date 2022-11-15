@@ -2,6 +2,7 @@ from typing import Any, Sequence
 from functools import cached_property
 import cirq
 from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
+from cirq_qubitization.t_complexity_protocol import TComplexity
 
 
 @cirq.value_equality
@@ -119,3 +120,13 @@ class And(GateWithRegisters):
 
     def _value_equality_values_(self) -> Any:
         return (self.cv, self.adjoint)
+
+    def _t_complexity_(self) -> TComplexity:
+        pre_post_cliffords = len(self.cv) - sum(self.cv)  # number of zeros in self.cv
+        num_single_and = len(self.cv) - 1
+        if self.adjoint:
+            return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
+        else:
+            return TComplexity(
+                t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
+            )
