@@ -1,11 +1,10 @@
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Dict
 from dataclasses import dataclass
 from typing_extensions import Protocol
 
 import cirq
 from cirq_qubitization.decompose_protocol import decompose_once_into_operations
 
-_CACHE = {}
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
 
@@ -63,24 +62,28 @@ def _is_clifford_or_t(stc: Any, **kwargs) -> Optional[TComplexity]:
     return None
 
 
-def _is_iterable(it: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
+def _is_iterable(
+    it: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
+) -> Optional[TComplexity]:
     if not isinstance(it, Iterable):
         return None
     t = TComplexity()
     for v in it:
-        r = _t_complexity(v, fail_quietly=fail_quietly)
+        r = _t_complexity(v, cache=cache, fail_quietly=fail_quietly)
         if r is None:
             return None
         t = t + r
     return t
 
 
-def _from_decomposition(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
+def _from_decomposition(
+    stc: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
+) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
     decomposition = decompose_once_into_operations(stc)
     if decomposition is None:
         return None
-    return _is_iterable(decomposition, fail_quietly=fail_quietly)
+    return _is_iterable(decomposition, cache=cache, fail_quietly=fail_quietly)
 
 
 def get_hash(val: Any) -> Optional[int]:
@@ -100,26 +103,29 @@ def get_hash(val: Any) -> Optional[int]:
     """
     if not isinstance(val, (cirq.Operation, cirq.Gate)):
         return None
-    if not isinstance(val, cirq.Gate):
-        if val.gate is not None:
-            val = val.gate
+    if isinstance(val, cirq.Operation):
+        val = val.gate
+        if val is None:
+            return None
     return hash(val)
 
 
-def _t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
+def _t_complexity(
+    stc: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
+) -> Optional[TComplexity]:
     h = get_hash(stc)
-    if h in _CACHE:
-        return _CACHE[h]
+    if h is not None and h in cache:
+        return cache[h]
     strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition, _is_iterable]
     ret = None
     for strategy in strategies:
-        ret = strategy(stc)
+        ret = strategy(stc, cache=cache, fail_quietly=fail_quietly)
         if ret is not None:
             break
     if ret is None and not fail_quietly:
         raise TypeError("couldn't compute TComplexity of:\n" f"type: {type(stc)}\n" f"value: {stc}")
     if h is not None:
-        _CACHE[h] = ret
+        cache[h] = ret
     return ret
 
 
@@ -136,5 +142,5 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     Raises:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    _CACHE.clear()
-    return _t_complexity(stc, fail_quietly=fail_quietly)
+    cache = {}
+    return _t_complexity(stc, cache=cache, fail_quietly=fail_quietly)

@@ -133,6 +133,7 @@ class IsCachable(cirq.Operation):
     def __init__(self) -> None:
         super().__init__()
         self.num_calls = 0
+        self._gate = cirq.X
 
     def _t_complexity_(self) -> TComplexity:
         self.num_calls += 1
@@ -145,8 +146,9 @@ class IsCachable(cirq.Operation):
     def with_qubits(self, _):
         pass
 
-    def __hash__(self) -> int:
-        return 0
+    @property
+    def gate(self):
+        return self._gate
 
 
 def test_cache():
