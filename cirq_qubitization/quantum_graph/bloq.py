@@ -1,19 +1,19 @@
 import abc
 from typing import Dict, Sequence, TYPE_CHECKING
 
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+import cirq
+
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
 if TYPE_CHECKING:
-    import cirq
-
     from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, CompositeBloqBuilder
     from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
-class Bloq(GateWithRegisters, metaclass=abc.ABCMeta):
+class Bloq(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
-    def registers(self) -> Registers:
+    def registers(self) -> 'FancyRegisters':
         ...
 
     def pretty_name(self) -> str:
