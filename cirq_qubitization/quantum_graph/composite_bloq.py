@@ -40,11 +40,12 @@ class CompositeBloq(Bloq):
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
         """The set of BloqInstances making up the nodes of the graph."""
-        binsts = {cxn.left.binst for cxn in self._cxns if not isinstance(cxn.left.binst, DanglingT)}
-        binsts |= {
-            cxn.right.binst for cxn in self._cxns if not isinstance(cxn.right.binst, DanglingT)
+        return {
+            soq.binst
+            for cxn in self._cxns
+            for soq in [cxn.left, cxn.right]
+            if not isinstance(soq.binst, DanglingT)
         }
-        return binsts
 
     def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]):
         return _cbloq_to_cirq_circuit(quregs, self.connections)
@@ -146,8 +147,9 @@ class BloqBuilderError(ValueError):
 class CompositeBloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
-    The recommended way of using this class is by overriding `Bloq.build_composite_bloq`.
-    A properly-initialized builder instance will be provided as the first argument.
+    Users should not instantiate a CompositeBloqBuilder directly. To build a composite bloq,
+    override `Bloq.build_composite_bloq`. A properly-initialized builder instance will be
+    provided as the first argument.
 
     Args:
         parent_regs: The `Registers` argument for the parent bloq.
@@ -181,10 +183,13 @@ class CompositeBloqBuilder:
         Args:
             bloq: The bloq representing the operation to add.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
-                `Soquet`, e.g. the output soquets from a prior operation.
+                `Soquet`s, e.g. the output soquets from a prior operation.
 
         Returns:
-            A `Soquet` for each output register.
+            A `Soquet` for each output register ordered according to `bloq.registers`.
+                Note: Analogous to a Python function call using kwargs and multiple return values,
+                the ordering is irrespective of the order of `in_soqs` that have been passed in
+                and depends only on the convention of the bloq's registers.
         """
         binst = self._new_binst(bloq)
 
@@ -220,6 +225,19 @@ class CompositeBloqBuilder:
         return tuple(out_soqs)
 
     def finalize(self, **final_soqs: Soquet) -> CompositeBloq:
+        """Finish building a CompositeBloq and return the immutable CompositeBloq.
+
+        This method is similar to calling `add()` but instead of adding a new Bloq,
+        it validates the final "dangling" soquets that serve as the outputs for
+        the composite bloq as a whole.
+
+        This method is called at the end of `Bloq.decompose_bloq`. Users overriding
+        `Bloq.build_composite_bloq` should not call this method.
+
+        Args:
+            **final_soqs: Keyword arguments mapping the composite bloq's register names to
+                final`Soquet`s, e.g. the output soquets from a prior, final operation.
+        """
         for reg in self._parent_regs:
             try:
                 in_soq = final_soqs[reg.name]
