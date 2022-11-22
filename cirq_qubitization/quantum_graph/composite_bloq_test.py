@@ -14,7 +14,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     CompositeBloq,
     CompositeBloqBuilder,
 )
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -144,7 +144,11 @@ def test_wrong_soquet():
     with pytest.raises(
         BloqBuilderError, match=r'.*is not an available input Soquet for .*target.*'
     ):
-        bb.add(TestBloq(), control=x, target=Soquet(BloqInstance(TestBloq(), i=12), 'target'))
+        bb.add(
+            TestBloq(),
+            control=x,
+            target=Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2)),
+        )
 
 
 def test_double_use_1():
@@ -190,7 +194,7 @@ def test_finalize_wrong_soquet():
     assert y != y2
 
     with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq(), i=12), 'target'))
+        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2)))
 
 
 def test_finalize_double_use_1():
@@ -222,4 +226,4 @@ def test_finalize_too_many_args():
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
     with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, 'asdf'))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))

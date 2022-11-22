@@ -5,7 +5,7 @@ import cirq
 import networkx as nx
 
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -48,18 +48,19 @@ class CompositeBloq(Bloq):
         }
 
     def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]):
+        quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
         return _cbloq_to_cirq_circuit(quregs, self.connections)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 
 
-def _create_binst_graph(cxns: Iterable[Connection]) -> nx.Graph:
+def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
     """Helper function to create a NetworkX so we can topologically visit BloqInstances.
 
     `CompositeBloq` defines a directed acyclic graph, so we can iterate in (time) order.
     Here, we make two changes to our view of the graph:
-        1. Our nodes are now BloqInstances because they are the objects to time-order. Register
+        1. Our nodes are now BloqInstances because they are the objects to time-order. Soquet
            connections are added as edge attributes.
         2. We use networkx so we can use their algorithms for topological sorting.
     """
@@ -67,9 +68,9 @@ def _create_binst_graph(cxns: Iterable[Connection]) -> nx.Graph:
     for cxn in cxns:
         binst_edge = (cxn.left.binst, cxn.right.binst)
         if binst_edge in binst_graph.edges:
-            binst_graph.edges[binst_edge]['cxns'].append((cxn.left.reg_name, cxn.right.reg_name))
+            binst_graph.edges[binst_edge]['cxns'].append(cxn)
         else:
-            binst_graph.add_edge(*binst_edge, cxns=[(cxn.left.reg_name, cxn.right.reg_name)])
+            binst_graph.add_edge(*binst_edge, cxns=[cxn])
     return binst_graph
 
 
@@ -92,7 +93,7 @@ def _process_binst(
     if not isinstance(binst, DanglingT):
         # Add it using the current mapping of soqmap to regnames
         bloq = binst.bloq
-        quregs = {reg.name: soqmap[Soquet(binst, reg.name)] for reg in bloq.registers}
+        quregs = {reg.name: soqmap[Soquet(binst, reg)] for reg in bloq.registers}
         try:
             op = bloq.on_registers(**quregs)
         except NoCirqEquivalent:
@@ -110,7 +111,7 @@ def _process_binst(
 
 
 def _cbloq_to_cirq_circuit(
-    quregs: Dict[str, Sequence[cirq.Qid]], cxns: Sequence[Connection]
+    quregs: Dict[FancyRegister, Sequence[cirq.Qid]], cxns: Sequence[Connection]
 ) -> cirq.Circuit:
     """Transform CompositeBloq components into a cirq.Circuit.
 
@@ -125,7 +126,8 @@ def _cbloq_to_cirq_circuit(
     binst_graph = _create_binst_graph(cxns)
 
     # A mapping of soquet to qubits that we update as operations are appended to the circuit.
-    soqmap = {Soquet(LeftDangle, reg_name): qubits for reg_name, qubits in quregs.items()}
+    # TODO: test where we have a non-trivial input wireshape
+    soqmap = {Soquet(LeftDangle, reg): qubits for reg, qubits in quregs.items()}
 
     moments: List[cirq.Moment] = []
     for i, binsts in enumerate(nx.topological_generations(binst_graph)):
@@ -163,7 +165,7 @@ class CompositeBloqBuilder:
         self._i = 0
 
         # Linear types! Soquets must be used exactly once.
-        self._initial_soquets = {reg.name: Soquet(LeftDangle, reg.name) for reg in parent_regs}
+        self._initial_soquets = {reg.name: Soquet(LeftDangle, reg) for reg in parent_regs}
         self._available: Set[Soquet] = set(self._initial_soquets.values())
 
         self._parent_regs = parent_regs
@@ -211,7 +213,7 @@ class CompositeBloqBuilder:
 
             del in_soqs[reg.name]  # so we can check for surplus arguments.
 
-            out_soq = Soquet(binst, reg.name)
+            out_soq = Soquet(binst, reg)
             self._available.add(out_soq)
 
             self._cxns.append(Connection(in_soq, out_soq))
@@ -255,7 +257,7 @@ class CompositeBloqBuilder:
 
             del final_soqs[reg.name]  # so we can check for surplus arguments.
 
-            out_soq = Soquet(RightDangle, reg.name)
+            out_soq = Soquet(RightDangle, reg)
             self._cxns.append(Connection(in_soq, out_soq))
 
         if final_soqs:
