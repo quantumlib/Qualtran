@@ -147,8 +147,9 @@ class BloqBuilderError(ValueError):
 class CompositeBloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
-    The recommended way of using this class is by overriding `Bloq.build_composite_bloq`.
-    A properly-initialized builder instance will be provided as the first argument.
+    Users should not instantiate a CompositeBloqBuilder directly. To build a composite bloq,
+    override `Bloq.build_composite_bloq`. A properly-initialized builder instance will be
+    provided as the first argument.
 
     Args:
         parent_regs: The `Registers` argument for the parent bloq.
