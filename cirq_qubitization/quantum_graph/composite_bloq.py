@@ -40,13 +40,12 @@ class CompositeBloq(Bloq):
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
         """The set of BloqInstances making up the nodes of the graph."""
-        binsts = {
-            cxn.left.binst for cxn in self._wires if not isinstance(cxn.left.binst, DanglingT)
+        return {
+            soq.binst
+            for cxn in self._wires
+            for soq in [cxn.left, cxn.right]
+            if not isinstance(soq.binst, DanglingT)
         }
-        binsts |= {
-            cxn.right.binst for cxn in self._wires if not isinstance(cxn.right.binst, DanglingT)
-        }
-        return binsts
 
     def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]):
         return _cbloq_to_cirq_circuit(quregs, self.wires)
@@ -186,7 +185,10 @@ class CompositeBloqBuilder:
                 `Soquet`s, e.g. the output soquets from a prior operation.
 
         Returns:
-            A `Soquet` for each output register.
+            A `Soquet` for each output register ordered according to `bloq.registers`.
+                Note: Analogous to a Python function call using kwargs and multiple return values,
+                the ordering is irrespective of the order of `in_soqs` that have been passed in
+                and depends only on the convention of the bloq's registers.
         """
         binst = self._new_binst(bloq)
 
