@@ -23,7 +23,7 @@ class DanglingT:
     """The type of the singleton objects `LeftDangle` and `RightDangle`.
 
     These objects are placeholders for the `binst` field of a `Soquet` that represents
-    an "external wire". We can consider `Soquets` of this type to represent input or
+    an "external soq". We can consider `Soquets` of this type to represent input or
     output data of a `CompositeBloq`.
     """
 
