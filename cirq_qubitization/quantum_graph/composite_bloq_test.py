@@ -6,7 +6,6 @@ import networkx as nx
 import pytest
 from attrs import frozen
 
-from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestBloq
 from cirq_qubitization.quantum_graph.composite_bloq import (
@@ -15,6 +14,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     CompositeBloq,
     CompositeBloqBuilder,
 )
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -25,24 +25,27 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 
 
 def _manually_make_test_cbloq_cxns():
+    regs = FancyRegisters.build(q1=1, q2=1)
+    q1, q2 = regs
     tb = TestBloq()
+    control, target = tb.registers
     binst1 = BloqInstance(tb, 1)
     binst2 = BloqInstance(tb, 2)
     assert binst1 != binst2
     return [
-        Connection(Soquet(LeftDangle, 'q1'), Soquet(binst1, 'control')),
-        Connection(Soquet(LeftDangle, 'q2'), Soquet(binst1, 'target')),
-        Connection(Soquet(binst1, 'control'), Soquet(binst2, 'target')),
-        Connection(Soquet(binst1, 'target'), Soquet(binst2, 'control')),
-        Connection(Soquet(binst2, 'control'), Soquet(RightDangle, 'q1')),
-        Connection(Soquet(binst2, 'target'), Soquet(RightDangle, 'q2')),
-    ]
+        Connection(Soquet(LeftDangle, q1), Soquet(binst1, control)),
+        Connection(Soquet(LeftDangle, q2), Soquet(binst1, target)),
+        Connection(Soquet(binst1, control), Soquet(binst2, target)),
+        Connection(Soquet(binst1, target), Soquet(binst2, control)),
+        Connection(Soquet(binst2, control), Soquet(RightDangle, q1)),
+        Connection(Soquet(binst2, target), Soquet(RightDangle, q2)),
+    ], regs
 
 
 class TestComposite(Bloq):
     @cached_property
-    def registers(self) -> Registers:
-        return Registers.build(q1=1, q2=2)
+    def registers(self) -> FancyRegisters:
+        return FancyRegisters.build(q1=1, q2=2)
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', q1: 'Soquet', q2: 'Soquet'
@@ -53,7 +56,7 @@ class TestComposite(Bloq):
 
 
 def test_create_binst_graph():
-    cxns = _manually_make_test_cbloq_cxns()
+    cxns, regs = _manually_make_test_cbloq_cxns()
     binst1 = cxns[2].left.binst
     binst2 = cxns[2].right.binst
     binst_graph = _create_binst_graph(cxns)
@@ -63,8 +66,8 @@ def test_create_binst_graph():
 
 
 def test_composite_bloq():
-    cxns = _manually_make_test_cbloq_cxns()
-    cbloq = CompositeBloq(cxns=cxns, registers=Registers.build(q1=1, q2=1))
+    cxns, regs = _manually_make_test_cbloq_cxns()
+    cbloq = CompositeBloq(cxns=cxns, registers=regs)
     circuit = cbloq.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
     cirq.testing.assert_has_diagram(
         circuit,
@@ -94,33 +97,30 @@ class TestRepBloq(Bloq):
     n_reps: int
 
     @cached_property
-    def registers(self) -> Registers:
-        return Registers.build(x1=1, x2=1)
+    def registers(self) -> FancyRegisters:
+        return FancyRegisters.build(x1=1, x2=1)
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', x1: 'Soquet', x2: 'Soquet'
     ) -> Dict[str, 'Soquet']:
-
         for _ in range(self.n_reps):
             x1, x2 = bb.add(TestBloq(), control=x1, target=x2)
 
 
 def test_bloq_builder():
-    registers = Registers.build(x=1, y=1)
+    registers = FancyRegisters.build(x=1, y=1)
     bb = CompositeBloqBuilder(registers)
     initial_soqs = bb.initial_soquets()
-    assert initial_soqs == {'x': Soquet(LeftDangle, 'x'), 'y': Soquet(LeftDangle, 'y')}
+    assert initial_soqs == {
+        'x': Soquet(LeftDangle, registers['x']),
+        'y': Soquet(LeftDangle, registers['y']),
+    }
 
     x = initial_soqs['x']
     y = initial_soqs['y']
     x, y = bb.add(TestBloq(), control=x, target=y)
 
-    # the next assertion is sortof an implementation detail... these returned
-    # soquets should be pretty opaque to the user.
-    assert x == Soquet(BloqInstance(TestBloq(), i=0), 'control')
-
     x, y = bb.add(TestBloq(), control=x, target=y)
-    assert x == Soquet(BloqInstance(TestBloq(), i=1), 'control')
 
     cbloq = bb.finalize(x=x, y=y)
 
@@ -130,7 +130,7 @@ def test_bloq_builder():
 
 
 def _get_bb():
-    registers = Registers.build(x=1, y=1)
+    registers = FancyRegisters.build(x=1, y=1)
     bb = CompositeBloqBuilder(registers)
     initial_soqs = bb.initial_soquets()
     x = initial_soqs['x']
