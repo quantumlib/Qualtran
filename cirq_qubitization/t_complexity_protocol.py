@@ -31,7 +31,9 @@ class SupportsTComplexity(Protocol):
         """Returns the TComplexity."""
 
 
-def _has_t_complexity(stc: Any, **kwargs) -> Optional[TComplexity]:
+def _has_t_complexity(
+    stc: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
+) -> Optional[TComplexity]:
     """Returns TComplexity of stc by calling its _t_complexity_ if it exists."""
     estimator = getattr(stc, '_t_complexity_', None)
     if estimator is not None:
@@ -40,7 +42,9 @@ def _has_t_complexity(stc: Any, **kwargs) -> Optional[TComplexity]:
     return None
 
 
-def _is_clifford_or_t(stc: Any, **kwargs) -> Optional[TComplexity]:
+def _is_clifford_or_t(
+    stc: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
+) -> Optional[TComplexity]:
     """Attempts to infer the type of a gate/operation as one of clifford, T or Rotation."""
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
@@ -87,14 +91,14 @@ def _from_decomposition(
 
 
 def get_hash(val: Any) -> Optional[int]:
-    """Computes a qubit invariant hash Operations and Gates.
+    """Returns a hash of cirq.Operation and cirq.Gate.
 
         The hash of a cirq.Operation changes depending on its
-        qubits, tags, classical controls, and other properties it might have.
-        None of these properties affect the TComplexity.
+        qubits, tags, classical controls, and other properties it has,
+        none of these properties affect the TComplexity.
         For gates and gate backed operations we compute the hash
         of the gate which is a property of the Gate.
-        For other operations we default to the hash of the operation.
+        We don't support other types of operations at the moment.
     Args:
         val: object to comptue its hash.
 
