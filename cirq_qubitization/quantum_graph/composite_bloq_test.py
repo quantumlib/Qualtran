@@ -23,6 +23,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 
 
 def _manually_make_test_cbloq_cxns():
