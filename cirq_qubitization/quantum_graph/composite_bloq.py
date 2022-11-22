@@ -183,7 +183,7 @@ class CompositeBloqBuilder:
         Args:
             bloq: The bloq representing the operation to add.
             **in_soqs: Keyword arguments mapping the new bloq's register names to input
-                `Soquet`, e.g. the output soquets from a prior operation.
+                `Soquet`s, e.g. the output soquets from a prior operation.
 
         Returns:
             A `Soquet` for each output register.
@@ -222,6 +222,19 @@ class CompositeBloqBuilder:
         return tuple(out_soqs)
 
     def finalize(self, **final_soqs: Soquet) -> CompositeBloq:
+        """Finish building a CompositeBloq and return the immutable CompositeBloq.
+
+        This method is similar to calling `add()` but instead of adding a new Bloq,
+        it validates the final "dangling" soquets that serve as the outputs for
+        the composite bloq as a whole.
+
+        This method is called at the end of `Bloq.decompose_bloq`. Users overriding
+        `Bloq.build_composite_bloq` should not call this method.
+
+        Args:
+            **final_soqs: Keyword arguments mapping the composite bloq's register names to
+                final`Soquet`s, e.g. the output soquets from a prior, final operation.
+        """
         for reg in self._parent_regs:
             try:
                 in_soq = final_soqs[reg.name]
