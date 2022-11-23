@@ -1,8 +1,12 @@
+from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
+import attrs
 import cirq
 import networkx as nx
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
@@ -14,6 +18,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 
 
 class CompositeBloq(Bloq):
@@ -90,22 +95,39 @@ def _process_binst(
         an operation if there is a corresponding one in Cirq. Some bookkeeping Bloqs will not
         correspond to Cirq operations.
     """
-    if not isinstance(binst, DanglingT):
-        # Add it using the current mapping of soqmap to regnames
-        bloq = binst.bloq
-        quregs = {reg.name: soqmap[Soquet(binst, reg)] for reg in bloq.registers}
-        try:
-            op = bloq.on_registers(**quregs)
-        except NoCirqEquivalent:
-            op = None
-    else:
-        op = None
+    if isinstance(binst, DanglingT):
+        return None
 
-    # Finally: track name updates for successors
-    for suc in binst_graph.successors(binst):
-        reg_conns = binst_graph.edges[binst, suc]['cxns']
-        for in_regname, out_regname in reg_conns:
-            soqmap[Soquet(suc, out_regname)] = soqmap[Soquet(binst, in_regname)]
+    # Track inter-Bloq name changes
+    for pred in binst_graph.predecessors(binst):
+        for cxn in binst_graph.edges[pred, binst]['cxns']:
+            soqmap[cxn.right] = soqmap[cxn.left]
+            del soqmap[cxn.left]
+
+    bloq = binst.bloq
+
+    # Pull out the qubits from soqmap into qumap which has string keys.
+    # This implicitly joins things with the same name.
+    quregs = defaultdict(list)
+    for reg in bloq.registers.lefts():
+        for li in reg.wire_idxs():
+            soq = Soquet(binst, reg, idx=li)
+            quregs[reg.name].extend(soqmap[soq])
+            del soqmap[soq]
+
+    op = bloq.on_registers(**quregs)
+
+    # We pluck things back out from their collapsed by-name qumap into soqmap
+    # This does implicit splitting.
+    for reg in bloq.registers.rights():
+        for ri in reg.wire_idxs():
+            soq = Soquet(binst, reg, idx=ri)
+            thing = np.asarray(quregs[reg.name])[ri]
+            if isinstance(thing, np.ndarray):
+                thing = thing.tolist()
+            else:
+                thing = [thing]
+            soqmap[soq] = thing
 
     return op
 
@@ -161,25 +183,49 @@ class CompositeBloqBuilder:
         # To be appended to:
         self._cxns: List[Connection] = []
 
-        # Initialize our BloqInstance counter
-        self._i = 0
-
-        # Linear types! Soquets must be used exactly once.
-        self._initial_soquets = {reg.name: Soquet(LeftDangle, reg) for reg in parent_regs}
-        self._available: Set[Soquet] = set(self._initial_soquets.values())
-
         self._parent_regs = parent_regs
 
-    def initial_soquets(self) -> Dict[str, Soquet]:
+        # Linear types! Soquets must be used exactly once.
+        self._available: Set[Soquet] = set()
+        self._initial_soquets = self._initialize_soquets()
+
+    def _initialize_soquets(self) -> Dict[str, NDArray[Soquet]]:
+        ret = {}
+        for reg in self._parent_regs.lefts():
+            if reg.wireshape:
+                out = np.empty(reg.wireshape, dtype=object)
+                for ri in reg.wire_idxs():
+                    out_soq = Soquet(LeftDangle, reg, idx=ri)
+                    out[ri] = out_soq
+                    self._available.add(out_soq)
+            else:
+                # annoying, but we must do it. or x[i] = thing will nest *array* objects.
+                out = Soquet(LeftDangle, reg)
+                self._available.add(out)
+
+            ret[reg.name] = out
+        return ret
+
+    def initial_soquets(self) -> Dict[str, NDArray[Soquet]]:
         """Input soquets (by name) to start building a quantum compute graph."""
         return self._initial_soquets
 
     def _new_binst(self, bloq: Bloq) -> BloqInstance:
-        inst = BloqInstance(bloq, self._i)
-        self._i += 1
-        return inst
+        return BloqInstance(bloq)
 
-    def add(self, bloq: Bloq, **in_soqs: Soquet) -> Tuple[Soquet, ...]:
+    def split(self, prev_wire: Soquet, n: int) -> NDArray[Soquet]:
+        bloq = Split(n)
+        (reg,) = bloq.registers.lefts()
+        (ret,) = self.add(bloq, **{reg.name: prev_wire})
+        return ret
+
+    def join(self, prev_wires: Sequence[Soquet]) -> Soquet:
+        bloq = Join(len(prev_wires))  # TODO: prev_soqs may be of differing size
+        (reg,) = bloq.registers.rights()
+        (ret,) = self.add(bloq, **{reg.name: prev_wires})
+        return ret
+
+    def add(self, bloq: Bloq, **in_soqs: ArrayLike) -> Tuple[NDArray[Soquet], ...]:
         """Add a new bloq instance to the compute graph.
 
         Args:
@@ -195,38 +241,53 @@ class CompositeBloqBuilder:
         """
         binst = self._new_binst(bloq)
 
-        out_soqs = []
-        for reg in bloq.registers:
+        for reg in bloq.registers.lefts():
             try:
-                in_soq = in_soqs[reg.name]
+                # if we want fancy indexing (which we do), we need numpy
+                # this also supports length-zero indexing natively, which is good too.
+                in_soq = np.asarray(in_soqs[reg.name])
             except KeyError:
                 raise BloqBuilderError(
                     f"{bloq} requires an input Soquet named `{reg.name}`."
                 ) from None
 
-            try:
-                self._available.remove(in_soq)
-            except KeyError:
-                raise BloqBuilderError(
-                    f"{in_soq} is not an available input Soquet for {reg}."
-                ) from None
-
             del in_soqs[reg.name]  # so we can check for surplus arguments.
 
-            out_soq = Soquet(binst, reg)
-            self._available.add(out_soq)
-
-            self._cxns.append(Connection(in_soq, out_soq))
-            out_soqs.append(out_soq)
+            for li in reg.wire_idxs():
+                idxed_soq = in_soq[li]
+                assert isinstance(idxed_soq, Soquet)
+                try:
+                    self._available.remove(idxed_soq)
+                except KeyError:
+                    raise BloqBuilderError(
+                        f"{idxed_soq} is not an available input Soquet for {reg}."
+                    ) from None
+                cxn = Connection(idxed_soq, Soquet(binst, reg, idx=li))
+                self._cxns.append(cxn)
 
         if in_soqs:
             raise BloqBuilderError(
                 f"{bloq} does not accept input Soquets: {in_soqs.keys()}."
             ) from None
 
+        out_soqs = []
+        for reg in bloq.registers.rights():
+            if reg.wireshape:
+                out = np.empty(reg.wireshape, dtype=object)
+                for ri in reg.wire_idxs():
+                    out_soq = Soquet(binst, reg, idx=ri)
+                    out[ri] = out_soq
+                    self._available.add(out_soq)
+            else:
+                # annoying, but we must do it. or x[i] = thing will nest *array* objects.
+                out = Soquet(binst, reg)
+                self._available.add(out)
+
+            out_soqs.append(out)
+
         return tuple(out_soqs)
 
-    def finalize(self, **final_soqs: Soquet) -> CompositeBloq:
+    def finalize(self, **final_soqs: ArrayLike) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
 
         This method is similar to calling `add()` but instead of adding a new Bloq,
@@ -240,25 +301,26 @@ class CompositeBloqBuilder:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
-        for reg in self._parent_regs:
+        for reg in self._parent_regs.rights():
             try:
-                in_soq = final_soqs[reg.name]
+                in_soq = np.asarray(final_soqs[reg.name])
             except KeyError:
                 raise BloqBuilderError(
                     f"Finalizing the build requires a final Soquet named `{reg.name}`."
                 ) from None
 
-            try:
-                self._available.remove(in_soq)
-            except KeyError:
-                raise BloqBuilderError(
-                    f"{in_soq} is not an available final Soquet for {reg}."
-                ) from None
-
             del final_soqs[reg.name]  # so we can check for surplus arguments.
 
-            out_soq = Soquet(RightDangle, reg)
-            self._cxns.append(Connection(in_soq, out_soq))
+            for li in reg.wire_idxs():
+                idxed_soq = in_soq[li]
+                assert isinstance(idxed_soq, Soquet)
+                try:
+                    self._available.remove(idxed_soq)
+                except KeyError:
+                    raise BloqBuilderError(
+                        f"{in_soq} is not an available final Soquet for {reg}."
+                    ) from None
+                self._cxns.append(Connection(idxed_soq, Soquet(RightDangle, reg, idx=li)))
 
         if final_soqs:
             raise BloqBuilderError(
@@ -269,5 +331,4 @@ class CompositeBloqBuilder:
             raise BloqBuilderError(
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
-
         return CompositeBloq(cxns=self._cxns, registers=self._parent_regs)
