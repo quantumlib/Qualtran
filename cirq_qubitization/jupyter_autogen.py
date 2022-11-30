@@ -117,15 +117,32 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
 class _GoogleDocstringToMarkdown(GoogleDocstring):
     """Subclass of sphinx's parser to emit Markdown from Google-style docstrings."""
 
+    def __init__(self, *args, **kwargs):
+        # The super().__init__ method will respect self._sections if it is set before being
+        # called. Unfortunately, we lose their long list of default section-to-function mappings,
+        # but we don't really use most of them anyways.
+        self._sections = {
+            'args': self._parse_parameters_section,
+            'parameters': self._parse_parameters_section,
+            'references': self._parse_references_section,
+            # custom:
+            'registers': self._parse_parameters_section,
+        }
+        super().__init__(*args, **kwargs)
+
     def _parse_parameters_section(self, section: str) -> List[str]:
         """Sphinx method to emit a 'Parameters' section."""
+
+        if section == 'Args':
+            # standardize to "Parameters".
+            section = 'Parameters'
 
         def _template(name, desc_lines):
             desc = ' '.join(desc_lines)
             return f' - `{name}`: {desc}'
 
         return [
-            '#### Parameters',
+            f'#### {section}',
             *[_template(name, desc) for name, _type, desc in self._consume_fields()],
             '',
         ]
