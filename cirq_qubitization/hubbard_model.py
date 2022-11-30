@@ -62,7 +62,7 @@ class SelectHubbard(GateWithRegisters):
 
 
     Args:
-        x_dim the number of sites in the x axis.
+        x_dim: the number of sites in the x axis.
         y_dim: the number of site along the y axis.
 
     Registers:
@@ -109,33 +109,33 @@ class SelectHubbard(GateWithRegisters):
     ) -> cirq.OP_TREE:
         (control, U, V, alpha, beta) = control + U + V + alpha + beta
 
-        first_inds = p_x + p_y + (alpha,)
-        second_inds = q_x + q_y + (beta,)
+        p_inds = p_x + p_y + (alpha,)
+        q_inds = q_x + q_y + (beta,)
         yield SelectedMajoranaFermionGate.make_on(
             target_gate=cirq.Y,
             control=control,
-            selection=first_inds,
+            selection=p_inds,
             ancilla=ancilla[:-1],
             accumulator=ancilla[-1],
             target=target,
         )
-        yield MultiTargetCSwap.make_on(control=V, target_x=first_inds, target_y=second_inds)
+        yield MultiTargetCSwap.make_on(control=V, target_x=p_inds, target_y=q_inds)
         yield SelectedMajoranaFermionGate.make_on(
             target_gate=cirq.X,
             control=control,
-            selection=second_inds,
+            selection=q_inds,
             ancilla=ancilla[:-1],
             accumulator=ancilla[-1],
             target=target,
         )
-        yield MultiTargetCSwap.make_on(control=V, target_x=first_inds, target_y=second_inds)
-        yield cirq.S(control) ** -1  # TODO: what's this for?
-        yield cirq.CCZ(control, U, V)  # TODO: This is not what tanuj had
+        yield MultiTargetCSwap.make_on(control=V, target_x=p_inds, target_y=q_inds)
+        yield cirq.S(control) ** -1  # Fix errant i from XY=iZ
+        yield cirq.CZ(control, U)  # Fix errant -1 from multiple pauli applications
 
         yield ApplyGateToLthQubit.make_on(
-            nth_gate=lambda n: cirq.Z if n & 1 else cirq.I,  # TODO why odds?
+            nth_gate=lambda n: cirq.Z if n & 1 else cirq.I,
             control=[control, V],
-            selection=second_inds,
+            selection=q_inds,
             ancilla=ancilla[:],
             target=target,
         )
