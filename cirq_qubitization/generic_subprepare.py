@@ -40,11 +40,11 @@ class GenericSubPrepare(GateWithRegisters):
         selection: The input/output register $|\ell\rangle$ of size lg(L) where the desired
             coefficient state is prepared.
         temp: Work space comprised of sub registers:
-            - sigma: A mu-sized register containing uniform probabilities for comparison against
-                `keep`.
-            - alt: A lg(L)-sized register of alternate indices
-            - keep: a mu-sized register of probabilities of keeping the initially sampled index.
-            - one bit for the result of the comparison.
+            1.) `sigma`: A mu-sized register containing uniform probabilities for comparison
+                against `keep`.
+            2.) `alt`: A lg(L)-sized register of alternate indices.
+            3.) `keep`: a mu-sized register of probabilities of keeping the initially sampled index.
+            4.) one bit for the result of the comparison.
         selection_ancilla: Ancilla space for QROM loading.
 
     This gate corresponds to the following operations:
