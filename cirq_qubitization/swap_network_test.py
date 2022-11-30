@@ -129,6 +129,16 @@ def test_multi_target_cswap():
     )
 
 
+def test_multi_target_cswap_make_on():
+    qubits = cirq.LineQubit.range(5)
+    c, q_x, q_y = qubits[0], qubits[1:3], qubits[3:]
+    cswap1 = cirq_qubitization.MultiTargetCSwap(2).on_registers(
+        control=c, target_x=q_x, target_y=q_y
+    )
+    cswap2 = cirq_qubitization.MultiTargetCSwap.make_on(control=c, target_x=q_x, target_y=q_y)
+    assert cswap1 == cswap2
+
+
 def test_notebook():
     cq_testing.execute_notebook('qrom')
 

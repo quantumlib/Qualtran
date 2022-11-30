@@ -20,6 +20,11 @@ class MultiTargetCSwap(GateWithRegisters):
     def __init__(self, target_bitsize: int) -> None:
         self._target_bitsize = target_bitsize
 
+    @classmethod
+    def make_on(cls, **quregs: Sequence[cirq.Qid]) -> cirq.Operation:
+        """Helper constructor to automatically deduce bitsize attributes."""
+        return cls(target_bitsize=len(quregs['target_x'])).on_registers(**quregs)
+
     @cached_property
     def registers(self) -> Registers:
         return Registers.build(

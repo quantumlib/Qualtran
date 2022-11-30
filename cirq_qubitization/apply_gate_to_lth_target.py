@@ -39,6 +39,18 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         self._nth_gate = nth_gate
         self._control_bitsize = control_bitsize
 
+    @classmethod
+    def make_on(
+        cls, *, nth_gate: Callable[[int], cirq.Gate], **quregs: Sequence[cirq.Qid]
+    ) -> cirq.Operation:
+        """Helper constructor to automatically deduce bitsize attributes."""
+        return cls(
+            selection_bitsize=len(quregs['selection']),
+            target_bitsize=len(quregs['target']),
+            nth_gate=nth_gate,
+            control_bitsize=len(quregs['control']),
+        ).on_registers(**quregs)
+
     @cached_property
     def control_registers(self) -> Registers:
         return Registers.build(control=self._control_bitsize)
