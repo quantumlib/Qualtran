@@ -23,3 +23,6 @@ from cirq_qubitization.programmable_rotation_gate_array import (
     ProgrammableRotationGateArray,
     ProgrammableRotationGateArrayBase,
 )
+
+
+from cirq_qubitization.hubbard_model import SelectHubbard

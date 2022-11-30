@@ -71,3 +71,9 @@ def _make_GenericSubPrepare():
     mu = 3
 
     return GenericSubPrepare(coeffs, probability_epsilon=2**-mu / len(coeffs))
+
+
+def _make_SelectHubbard():
+    from cirq_qubitization.hubbard_model import SelectHubbard
+
+    return SelectHubbard(x_dim=1, y_dim=4)

@@ -111,6 +111,11 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         module=cirq_qubitization.generic_subprepare,
         gate_specs=[GateNbSpec(jaf._make_GenericSubPrepare)],
     ),
+    'hubbard_model': NotebookSpec(
+        title='Hubbard Model',
+        module=cirq_qubitization.hubbard_model,
+        gate_specs=[GateNbSpec(jaf._make_SelectHubbard)],
+    ),
 }
 
 
