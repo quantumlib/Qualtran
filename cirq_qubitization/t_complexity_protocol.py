@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-+from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional
 
 import cirq
 from typing_extensions import Protocol
