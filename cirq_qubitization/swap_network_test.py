@@ -6,7 +6,7 @@ import pytest
 
 import cirq_qubitization
 import cirq_qubitization.testing as cq_testing
-from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
+from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 random.seed(12345)
 
