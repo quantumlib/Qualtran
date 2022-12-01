@@ -1,8 +1,9 @@
-from typing import Any, Iterable, Optional, Dict
 from dataclasses import dataclass
-from typing_extensions import Protocol
+from typing import Any, Iterable, Optional, Dict
 
 import cirq
+from typing_extensions import Protocol
+
 from cirq_qubitization.decompose_protocol import decompose_once_into_operations
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
