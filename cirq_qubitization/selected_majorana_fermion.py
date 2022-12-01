@@ -1,10 +1,13 @@
-from typing import Sequence, Tuple
 from functools import cached_property
+from typing import Sequence, Tuple
+
 import cirq
-from cirq_qubitization.gate_with_registers import Registers
+
 from cirq_qubitization import unary_iteration
+from cirq_qubitization.gate_with_registers import Registers
 
 
+@cirq.value_equality()
 class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
     """Implements U s.t. U|l>|Psi> -> |l> T_{l} . Z_{l - 1} ... Z_{0} |Psi>
 
@@ -23,6 +26,18 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         self._selection_bitsize = selection_bitsize
         self._target_bitsize = target_bitsize
         self._target_gate = target_gate
+
+    @classmethod
+    def make_on(cls, *, target_gate=cirq.Y, **quregs: Sequence[cirq.Qid]) -> cirq.Operation:
+        """Helper constructor to automatically deduce bitsize attributes."""
+        return cls(
+            selection_bitsize=len(quregs['selection']),
+            target_bitsize=len(quregs['target']),
+            target_gate=target_gate,
+        ).on_registers(**quregs)
+
+    def _value_equality_values_(self):
+        return self._selection_bitsize, self._target_bitsize, self._target_gate
 
     @cached_property
     def control_registers(self) -> Registers:

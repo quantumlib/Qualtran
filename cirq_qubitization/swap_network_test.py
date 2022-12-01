@@ -6,7 +6,7 @@ import pytest
 
 import cirq_qubitization
 import cirq_qubitization.testing as cq_testing
-from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
+from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 random.seed(12345)
 
@@ -127,6 +127,16 @@ def test_multi_target_cswap():
     """,
         use_unicode_characters=False,
     )
+
+
+def test_multi_target_cswap_make_on():
+    qubits = cirq.LineQubit.range(5)
+    c, q_x, q_y = qubits[0], qubits[1:3], qubits[3:]
+    cswap1 = cirq_qubitization.MultiTargetCSwap(2).on_registers(
+        control=c, target_x=q_x, target_y=q_y
+    )
+    cswap2 = cirq_qubitization.MultiTargetCSwap.make_on(control=c, target_x=q_x, target_y=q_y)
+    assert cswap1 == cswap2
 
 
 def test_notebook():
