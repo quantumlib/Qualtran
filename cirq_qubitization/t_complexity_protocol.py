@@ -90,20 +90,19 @@ def _from_decomposition(
     return _is_iterable(decomposition, cache=cache, fail_quietly=fail_quietly)
 
 
-def get_hash(val: Any) -> Optional[int]:
+def _get_hash(val: Any) -> Optional[int]:
     """Returns a hash of cirq.Operation and cirq.Gate.
 
-        The hash of a cirq.Operation changes depending on its
-        qubits, tags, classical controls, and other properties it has,
-        none of these properties affect the TComplexity.
-        For gates and gate backed operations we compute the hash
-        of the gate which is a property of the Gate.
-        We don't support other types of operations at the moment.
+        The hash of a cirq.Operation changes depending on its qubits, tags,
+        classical controls, and other properties it has, none of these properties
+        affect the TComplexity.
+        For gates and gate backed operations we compute the hash of the gate which
+        is a property of the Gate.
     Args:
         val: object to comptue its hash.
 
     Returns:
-        hash value or None.
+        hash value for gates and gate backed operations or None otherwise.
     """
     if not isinstance(val, (cirq.Operation, cirq.Gate)):
         return None
@@ -117,7 +116,7 @@ def get_hash(val: Any) -> Optional[int]:
 def _t_complexity(
     stc: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
 ) -> Optional[TComplexity]:
-    h = get_hash(stc)
+    h = _get_hash(stc)
     if h is not None and h in cache:
         return cache[h]
     strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition, _is_iterable]
