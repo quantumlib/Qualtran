@@ -8,6 +8,7 @@ from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import TComplexity
 
 
+@cirq.value_equality
 class MultiTargetCSwap(GateWithRegisters):
     """Implements a multi-target controlled swap unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$.
 
@@ -48,11 +49,8 @@ class MultiTargetCSwap(GateWithRegisters):
     def __repr__(self) -> str:
         return f"cirq_qubitization.MultiTargetCSwap({self._target_bitsize})"
 
-    def __eq__(self, other: 'MultiTargetCSwap') -> Any:
-        return type(self) == type(other) and self._target_bitsize == other._target_bitsize
-
-    def __hash__(self) -> int:
-        return hash(('MultiTargetCSwap', self._target_bitsize))
+    def _value_equality_values_(self) -> Any:
+        return self._target_bitsize
 
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self._target_bitsize, clifford=10 * self._target_bitsize)
