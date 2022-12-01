@@ -1,8 +1,10 @@
-from typing import Callable, Sequence, Tuple
 from functools import cached_property
+from typing import Callable, Sequence, Tuple
+
 import cirq
-from cirq_qubitization.unary_iteration import UnaryIterationGate
+
 from cirq_qubitization.gate_with_registers import Registers
+from cirq_qubitization.unary_iteration import UnaryIterationGate
 
 
 class ApplyGateToLthQubit(UnaryIterationGate):
