@@ -54,9 +54,6 @@ class MultiTargetCSwap(GateWithRegisters):
     def __repr__(self) -> str:
         return f"cirq_qubitization.MultiTargetCSwap({self._target_bitsize})"
 
-    def __eq__(self, other: 'MultiTargetCSwap') -> Any:
-        return type(self) == type(other) and self._target_bitsize == other._target_bitsize
-
     def _value_equality_values_(self) -> Any:
         return self._target_bitsize
 
