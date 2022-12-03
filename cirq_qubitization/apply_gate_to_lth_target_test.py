@@ -75,5 +75,18 @@ target4: ──────I─────
     )
 
 
+def test_apply_gate_to_lth_qubit_make_on():
+    gate = cirq_qubitization.ApplyGateToLthQubit(
+        3, 5, lambda n: cirq.Z if n & 1 else cirq.I, control_bitsize=2
+    )
+    op = gate.on_registers(**gate.registers.get_named_qubits())
+    op2 = cirq_qubitization.ApplyGateToLthQubit.make_on(
+        nth_gate=lambda n: cirq.Z if n & 1 else cirq.I, **gate.registers.get_named_qubits()
+    )
+    # Note: ApplyGateToLthQubit doesn't support value equality.
+    assert op.qubits == op2.qubits
+    assert op.gate._selection_bitsize == op2.gate._selection_bitsize
+
+
 def test_notebook():
     cq_testing.execute_notebook('apply_gate_to_lth_target')

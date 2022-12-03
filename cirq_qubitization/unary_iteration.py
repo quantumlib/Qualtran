@@ -1,11 +1,11 @@
 import abc
 from functools import cached_property
-from typing import Sequence, Tuple, Iterator, List, Dict
+from typing import Dict, Iterator, List, Sequence, Tuple
 
 import cirq
 
 from cirq_qubitization import and_gate
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers, Register
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Register, Registers
 
 
 def _unary_iteration_segtree(
