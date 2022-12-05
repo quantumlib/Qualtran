@@ -37,7 +37,7 @@ from functools import cached_property
 import cirq
 from attrs import frozen
 
-from cirq_qubitization import SelectedMajoranaFermionGate, MultiTargetCSwap, ApplyGateToLthQubit
+from cirq_qubitization import ApplyGateToLthQubit, MultiTargetCSwap, SelectedMajoranaFermionGate
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 
