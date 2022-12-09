@@ -1,6 +1,8 @@
 from typing import Union, Sequence, Iterable
 import cirq
 
+from cirq_qubitization import bit_tools
+from cirq_qubitization.and_gate import And
 
 class LessThanGate(cirq.ArithmeticGate):
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
@@ -22,6 +24,46 @@ class LessThanGate(cirq.ArithmeticGate):
     def __repr__(self) -> str:
         return f"cirq_qubitization.LessThanGate({self._input_register, self._val})"
 
+
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        qubits, target = qubits[:-1], qubits[-1]
+        # trivial case, self._val is larger than any value the registers could represent
+        if self._val >= 2**len(self._input_register):
+            yield cirq.CNOT(target)
+            return
+        
+        # scanning from left to right, initially our belief is that the numbers are equal.
+        equal = cirq.NamedQubit('equal')
+        yield cirq.X(equal)
+
+        # uses n+1 ancilla => finishes with n+1  dirty ancilla
+        # ancilla = cirq.NamedQubit.range(len(qubits), prefix='ancilla')
+        # for a, b, q in zip(ancilla, bit_tools.iter_bits(self._val, len(self._input_register)), qubits):
+        #     if b:
+        #         yield cirq.X(q)
+        #         yield cirq.CCNOT(q, equal, a)
+        #         yield cirq.CNOT(a, target)
+        #         yield cirq.CNOT(a, equal)
+        #         yield cirq.X(q)
+        #     else:
+        #         yield cirq.CCNOT(q, equal, a)
+        #         yield cirq.CNOT(a, equal)
+
+        # uses 2 ancillas => finishes with 1 dirty
+        # might have phase error
+        ancilla = cirq.NamedQubit('ancilla')
+        for b, q in zip(bit_tools.iter_bits(self._val, len(self._input_register)), qubits):
+            if b:
+                yield cirq.X(q)
+                yield And().on(q, equal, ancilla)
+                yield cirq.CNOT(ancilla, target)
+                yield cirq.CNOT(ancilla, equal)
+                yield And(adjoint=True).on(q, equal, ancilla)
+                yield cirq.X(q)
+            else:
+                yield And().on(q, equal, ancilla)
+                yield cirq.CNOT(ancilla, equal)
+                yield And(adjoint=True).on(q, equal, ancilla)
 
 class LessThanEqualGate(cirq.ArithmeticGate):
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>"""
