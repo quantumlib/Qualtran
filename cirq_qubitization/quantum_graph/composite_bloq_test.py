@@ -109,8 +109,7 @@ def test_bloq_builder():
 
     cbloq = bb.finalize(x=x, y=y)
 
-    inds = {binst.i for binst in cbloq.bloq_instances}
-    assert len(inds) == 2
+    assert len(set(cbloq.bloq_instances)) == 2
     assert len(cbloq.bloq_instances) == 2
 
 
@@ -129,7 +128,7 @@ def test_wrong_soquet():
     with pytest.raises(
         BloqBuilderError, match=r'.*is not an available input Soquet for .*target.*'
     ):
-        bad_target_arg = Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2))
+        bad_target_arg = Soquet(BloqInstance(TestBloq()), FancyRegister('target', 2))
         bb.add(TestBloq(), control=x, target=bad_target_arg)
 
 
@@ -176,7 +175,7 @@ def test_finalize_wrong_soquet():
     assert y != y2
 
     with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2)))
+        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq()), FancyRegister('target', 2)))
 
 
 def test_finalize_double_use_1():

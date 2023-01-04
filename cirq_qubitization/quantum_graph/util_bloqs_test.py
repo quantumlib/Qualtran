@@ -7,7 +7,7 @@ from cirq_qubitization.quantum_graph.util_bloqs import Split
 
 def test_split():
     bloq = Split(n=5)
-    binst = BloqInstance(bloq, i=0)
+    binst = BloqInstance(bloq)
 
     # What follows is a highly-simplified version of CompositeBloqBuilder.add for Split
     left_reg: FancyRegister

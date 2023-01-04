@@ -6,18 +6,28 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister
 
 
-@frozen
 class BloqInstance:
-    """A unique instance of a Bloq within a `CompositeBloq`.
+    """A wrapper around Bloq with reference equality.
 
     Attributes:
         bloq: The `Bloq`.
-        i: An arbitrary index to disambiguate this instance from other Bloqs of the same type
-            within a `CompositeBloq`.
     """
 
-    bloq: Bloq
-    i: int
+    def __init__(self, bloq: Bloq):
+        self._bloq = bloq
+
+    @property
+    def bloq(self) -> Bloq:
+        return self._bloq
+
+    def __eq__(self, other):
+        return id(self) == id(other)
+
+    def __hash__(self):
+        return hash(id(self))
+
+    def __repr__(self):
+        return f'{self._bloq!r}[{id(self)}]'
 
 
 class DanglingT:
