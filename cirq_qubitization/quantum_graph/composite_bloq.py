@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Sequence, Tuple, Set, List, Dict, Optional, Iterable
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import cirq
 import networkx as nx
@@ -12,6 +12,8 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     BloqInstance,
     DanglingT,
+    LeftDangle,
+    RightDangle,
     Soquet,
 )
 

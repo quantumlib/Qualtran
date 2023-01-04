@@ -1,10 +1,11 @@
 import abc
-from typing import TYPE_CHECKING, Sequence, Dict
+from typing import Dict, Sequence, TYPE_CHECKING
 
-from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 
 if TYPE_CHECKING:
     import cirq
+
     from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, CompositeBloqBuilder
     from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 

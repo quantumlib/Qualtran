@@ -95,3 +95,15 @@ accumulator: ───Acc───
     """,
         qubit_order=qubits,
     )
+
+
+def test_selected_majorana_fermion_gate_make_on():
+    selection_bitsize, target_bitsize = 3, 5
+    gate = cirq_qubitization.SelectedMajoranaFermionGate(
+        selection_bitsize, target_bitsize, target_gate=cirq.X
+    )
+    op = gate.on_registers(**gate.registers.get_named_qubits())
+    op2 = cirq_qubitization.SelectedMajoranaFermionGate.make_on(
+        target_gate=cirq.X, **gate.registers.get_named_qubits()
+    )
+    assert op == op2
