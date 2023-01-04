@@ -91,8 +91,8 @@ def _singleton_error(self, x):
 
 DanglingT.__init__ = _singleton_error
 
-
-@frozen
+# attrs note: Slots come into play because of our use of cached_property??? TODO: figure out
+@frozen(slots=False)
 class Connection:
     """A connection between two `Soquet`s.
 
@@ -102,3 +102,13 @@ class Connection:
 
     left: Soquet
     right: Soquet
+
+    @cached_property
+    def shape(self) -> int:
+        ls = self.left.reg.bitsize
+        rs = self.right.reg.bitsize
+
+        if ls != rs:
+            # raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
+            print(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
+        return ls
