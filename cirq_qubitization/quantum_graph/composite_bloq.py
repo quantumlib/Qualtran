@@ -42,6 +42,14 @@ class CompositeBloq(Bloq):
     def connections(self) -> Tuple[Connection, ...]:
         return self._cxns
 
+    def internal_connections(self) -> Tuple[Connection, ...]:
+        return tuple(
+            cxn
+            for cxn in self._cxns
+            if not isinstance(cxn.left.binst, DanglingT)
+            and not isinstance(cxn.right.binst, DanglingT)
+        )
+
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
         """The set of BloqInstances making up the nodes of the graph."""
@@ -51,6 +59,12 @@ class CompositeBloq(Bloq):
             for soq in [cxn.left, cxn.right]
             if not isinstance(soq.binst, DanglingT)
         }
+
+    @cached_property
+    def all_soquets(self) -> Set[Soquet]:
+        soquets = {cxn.left for cxn in self._cxns if not isinstance(cxn.left, DanglingT)}
+        soquets |= {cxn.right for cxn in self._cxns if not isinstance(cxn.right, DanglingT)}
+        return soquets
 
     def to_cirq_circuit(self, **quregs: NDArray[cirq.Qid]) -> cirq.Circuit:
         """Convert this CompositeBloq to a `cirq.Circuit`.
