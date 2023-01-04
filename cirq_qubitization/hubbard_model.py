@@ -121,6 +121,7 @@ class SelectHubbard(GateWithRegisters):
     ) -> cirq.OP_TREE:
         (control, U, V, alpha, beta) = control + U + V + alpha + beta
 
+        # TODO: this is broken without multi-select
         p_inds = p_x + p_y + (alpha,)
         q_inds = q_x + q_y + (beta,)
         yield SelectedMajoranaFermionGate.make_on(
