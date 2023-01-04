@@ -19,6 +19,13 @@ class Bloq(metaclass=abc.ABCMeta):
     def pretty_name(self) -> str:
         return self.__class__.__name__
 
+    def short_name(self) -> str:
+        name = self.pretty_name()
+        if len(name) <= 8:
+            return name
+
+        return name[:6] + '..'
+
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', **soqs: 'Soquet'
     ) -> Dict[str, 'Soquet']:
@@ -60,6 +67,16 @@ class Bloq(metaclass=abc.ABCMeta):
             raise NotImplementedError(f"Cannot decompose {self}.")
 
         return bb.finalize(**out_soqs)
+
+    def as_composite_bloq(self) -> 'CompositeBloq':
+        """Wrap this Bloq into a size-1 CompositeBloq."""
+        from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
+
+        bb = CompositeBloqBuilder(self.registers)
+        ret_soqs_tuple = bb.add(self, **bb.initial_soquets())
+        assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
+        ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
+        return bb.finalize(**ret_soqs)
 
     # ----- cirq stuff -----
 
