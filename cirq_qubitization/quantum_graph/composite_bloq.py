@@ -7,10 +7,8 @@ import networkx as nx
 from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
 from cirq_qubitization.quantum_graph.quantum_graph import (
-    Connection,
-    LeftDangle,
-    RightDangle,
     BloqInstance,
+    Connection,
     DanglingT,
     LeftDangle,
     RightDangle,

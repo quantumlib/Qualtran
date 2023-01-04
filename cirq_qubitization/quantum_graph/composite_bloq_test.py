@@ -18,7 +18,6 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
-    Soquet,
     LeftDangle,
     RightDangle,
     Soquet,
