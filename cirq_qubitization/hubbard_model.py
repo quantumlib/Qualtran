@@ -33,6 +33,7 @@ in both the PREPARE and SELECT operations corresponding to the terms in the Hami
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
 from functools import cached_property
+from typing import Sequence
 
 import cirq
 from attrs import frozen
@@ -105,7 +106,18 @@ class SelectHubbard(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, control, U, V, p_x, p_y, alpha, q_x, q_y, beta, target, ancilla
+        self,
+        control: Sequence[cirq.Qid],
+        U: Sequence[cirq.Qid],
+        V: Sequence[cirq.Qid],
+        p_x: Sequence[cirq.Qid],
+        p_y: Sequence[cirq.Qid],
+        alpha: Sequence[cirq.Qid],
+        q_x: Sequence[cirq.Qid],
+        q_y: Sequence[cirq.Qid],
+        beta: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
+        ancilla: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         (control, U, V, alpha, beta) = control + U + V + alpha + beta
 
