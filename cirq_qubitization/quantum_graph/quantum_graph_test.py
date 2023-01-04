@@ -15,8 +15,8 @@ def test_bloq_instance():
     tb1 = TestBloq()
     tb2 = TestBloq()
     assert tb1 == tb2
-    assert BloqInstance(tb1, i=1) == BloqInstance(tb2, i=1)
-    assert BloqInstance(tb1, i=1) != BloqInstance(tb2, i=2)
+    assert BloqInstance(tb1) != BloqInstance(tb2)
+    assert BloqInstance(tb1) != BloqInstance(tb2)
 
 
 def test_dangling():
@@ -44,14 +44,14 @@ def test_dangling_hash():
 
 
 def test_soquet():
-    soq = Soquet(BloqInstance(TestBloq(), i=0), FancyRegister('x', 10))
+    soq = Soquet(BloqInstance(TestBloq()), FancyRegister('x', 10))
     assert soq.reg.side is Side.THRU
     assert soq.idx == ()
     assert soq.pretty() == 'x'
 
 
 def test_soquet_idxed():
-    binst = BloqInstance(TestBloq(), i=0)
+    binst = BloqInstance(TestBloq())
     reg = FancyRegister('y', 10, wireshape=(10, 2))
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
