@@ -22,6 +22,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 
 
 def _manually_make_test_cbloq_cxns():
@@ -29,8 +30,8 @@ def _manually_make_test_cbloq_cxns():
     q1, q2 = regs
     tb = TestBloq()
     control, target = tb.registers
-    binst1 = BloqInstance(tb, 1)
-    binst2 = BloqInstance(tb, 2)
+    binst1 = BloqInstance(tb)
+    binst2 = BloqInstance(tb)
     assert binst1 != binst2
     return [
         Connection(Soquet(LeftDangle, q1), Soquet(binst1, control)),
@@ -124,8 +125,7 @@ def test_bloq_builder():
 
     cbloq = bb.finalize(x=x, y=y)
 
-    inds = {binst.i for binst in cbloq.bloq_instances}
-    assert len(inds) == 2
+    assert len(set(cbloq.bloq_instances)) == 2
     assert len(cbloq.bloq_instances) == 2
 
 
@@ -147,7 +147,7 @@ def test_wrong_soquet():
         bb.add(
             TestBloq(),
             control=x,
-            target=Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2)),
+            target=Soquet(BloqInstance(TestBloq()), FancyRegister('target', 2)),
         )
 
 
@@ -194,7 +194,7 @@ def test_finalize_wrong_soquet():
     assert y != y2
 
     with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2)))
+        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq()), FancyRegister('target', 2)))
 
 
 def test_finalize_double_use_1():
@@ -227,3 +227,21 @@ def test_finalize_too_many_args():
 
     with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+
+
+def test_initial_soquets():
+    regs = FancyRegisters([FancyRegister('x', 3), FancyRegister('y', 1)])
+    bb = CompositeBloqBuilder(regs)
+    init_soqs = bb.initial_soquets()
+    assert list(init_soqs.keys()) == ['x', 'y']
+
+    x = init_soqs['x']
+    y = init_soqs['y']
+
+    # TODO: only return one thing or always a tuple?
+    (x,) = bb.add(Split(3), split=x)
+    for i in range(3):
+        x[i], y = bb.add(TestBloq(), control=x[i], target=y)
+
+    (x,) = bb.add(Join(3), join=x)
+    cbloq = bb.finalize(x=x, y=y)
