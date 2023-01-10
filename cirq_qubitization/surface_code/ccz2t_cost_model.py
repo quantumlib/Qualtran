@@ -43,7 +43,7 @@ class CCZ2TCostModel:
 
         This is an estimate, see the references section.
 
-        The formula was originally expressed as $p_l = a (b * p_p)^((d+1)/2)$ physical
+        The formula was originally expressed as $p_l = a (b * p_p)^((d+1)/2)$, with physical
         error rate $p_p$ and parameters $a$ and $b$. This can alternatively be expressed with
         $p_th = (1/b)$ roughly corresponding to the code threshold. This is sometimes also
         expressed with $lambda = p_th / p_p$. A lambda of 10, for example, would be p_p = 1e-3
