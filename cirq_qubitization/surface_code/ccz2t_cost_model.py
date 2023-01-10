@@ -117,8 +117,11 @@ class CCZ2TCostModel:
 
     @property
     def l1_distillation_error(self) -> float:
-        """The chance that undetected errors in the L0 T states input into the L1 factory
-        resulted in an undetected error in an L1 T state being output."""
+        """The error due to level-0 faulty T states making it through distillation undetected.
+
+        The level 1 distillation proceedure detects any two errors. There are 35 weight-three
+        errors that can make it through undetected.
+        """
         return 35 * self.l0_error**3
 
     @property
