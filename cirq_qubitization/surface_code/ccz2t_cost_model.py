@@ -91,7 +91,11 @@ class CCZ2TCostModel:
 
     @property
     def l0_error(self) -> float:
-        """Chance of failure of a T gate performed with an injected T state (level 0)."""
+        """Chance of failure of a T gate performed with an injected (level-0) T state.
+
+        As a simplifying approximation here (and elsewhere) we assume different sources
+        of error are independent, and we merely add the probabilities.
+        """
         return self.l0_state_injection_error + self.l0_topo_error_t_gate
 
     # -------------------------------------------------------------------------------
