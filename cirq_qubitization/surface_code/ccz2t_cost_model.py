@@ -75,9 +75,10 @@ class CCZ2TCostModel:
 
     @property
     def l0_topo_error_t_gate(self) -> float:
-        """Topological error associated with level 0 distillation.
+        """Topological error associated with level-0 distillation.
 
-        This construction uses a d1/2 distance code for storing level-0 T states.
+        For a level-1 code distance of `d1`, this construction uses a `d1/2` distance code
+        for storing level-0 T states.
         """
 
         # The chance of a logical error occurring within a lattice surgery unit cell at
