@@ -83,7 +83,7 @@ class CCZ2TCostModel:
 
         # The chance of a logical error occurring within a lattice surgery unit cell at
         # code distance d1*0.5.
-        topo_error_per_unit_cell = self.error_at(d=math.floor(self.distillation_l1_d / 2))
+        topo_error_per_unit_cell = self.error_at(d=self.distillation_l1_d // 2)
 
         # It takes approximately 100 L0 unit cells to get the injected state where
         # it needs to be and perform the T gate.
