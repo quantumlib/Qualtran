@@ -5,6 +5,26 @@ import cirq
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.qrom import QROM
 from cirq_qubitization.swap_network import SwapWithZeroGate
+from cirq_qubitization.qubit_manager import QubitManager
+
+
+def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> int:
+    """Find optimal block size, which is a power of 2, for SelectSwapQROM.
+
+    This functions returns the optimal `k` s.t.
+        * k is in an integer and k >= 0.
+        * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized.
+    The corresponding block size for SelectSwapQROM would be 2^k.
+    """
+    k = 0.5 * np.log2(iteration_length / target_bitsize)
+    if k < 0:
+        return 1
+
+    def value(k: int):
+        return iteration_length / np.power(2, k) + target_bitsize * (np.power(2, k) - 1)
+
+    k_int = [np.floor(k), np.ceil(k)]  # restrict optimal k to integers
+    return int(k_int[np.argmin(value(k_int))])  # obtain optimal k
 
 
 class SelectSwapQROM(GateWithRegisters):
@@ -99,6 +119,31 @@ class SelectSwapQROM(GateWithRegisters):
         )
         self._data = tuple(tuple(d) for d in data)
 
+    @classmethod
+    def make_on(
+        cls,
+        *data: Sequence[int],
+        selection: Sequence[cirq.Qid],
+        ancilla: QubitManager,
+        **targets: Sequence[cirq.Qid],
+    ) -> cirq.Operation:
+        # Split `selection` into `selection_q` and `selection_r`.
+        target_bitsizes = [len(targets[f"target{i}"]) for i in range(len(data))]
+        k = find_optimal_log_block_size(len(data[0]), sum(target_bitsizes))
+        q, r = (selection[:-k], selection[-k:]) if k > 0 else (selection, [])
+        print(k, q, r, sep="\n")
+        # Construct gate and operation using qubit manager.
+        gate = cls(*data, target_bitsizes=target_bitsizes, block_size=2**k)
+        print(gate.iteration_length, gate.num_blocks, gate.block_size)
+        print(gate.selection_registers)
+        target_ancillas = {}
+        for block_id in range(2**k):
+            for i in range(len(data)):
+                target_ancillas[f'target_dirty_ancilla_{block_id}_{i}'] = ancilla
+        return gate.on_registers(
+            selection_q=q, selection_r=r, selection_q_ancilla=ancilla, **targets, **target_ancillas
+        )
+
     @cached_property
     def selection_registers(self) -> Registers:
         return Registers.build(
@@ -170,7 +215,7 @@ class SelectSwapQROM(GateWithRegisters):
         selection_q_ancilla: Sequence[cirq.Qid],
         **targets: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
-        # Divide the each data sequence and corresponding target registers into
+        # Divide each data sequence and corresponding target registers into
         # `self.num_blocks` batches of size `self.block_size`.
         qrom_data: List[Tuple[int, ...]] = []
         qrom_target_bitsizes: List[int] = []

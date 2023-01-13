@@ -194,3 +194,102 @@ def test_notebook():
 @pytest.mark.parametrize("adjoint", [*range(2)])
 def test_t_complexity(adjoint, C):
     cq_testing.assert_decompose_is_consistent_with_t_complexity(And(C, adjoint=adjoint))
+
+
+def make_circuit(qm: cirq_qubitization.QubitManager) -> cirq.Circuit:
+    ret = cirq.Circuit()
+    for i in range(2):
+        control = [cirq.q(f"control_{3 * i + j}") for j in range(3)]
+        target = cirq.q(f"target_{i}")
+        ret.append(cirq_qubitization.And.make_on(control=control, target=target, ancilla=qm))
+    return ret
+
+
+def test_qubit_manager_allocation_strategies():
+    # Qubit manager with only 1 managed qubit. Will always repeat the same qubit.
+    qm = cirq_qubitization.GreedyQubitManager(prefix="ancilla", size=1)
+    circuit = make_circuit(qm)
+    print(circuit)
+    assert len(circuit) == 2
+    assert len(circuit.all_qubits()) == 9
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+ancilla_0: ───Anc───Anc───
+              │     │
+control_0: ───@─────┼─────
+              │     │
+control_1: ───@─────┼─────
+              │     │
+control_2: ───@─────┼─────
+              │     │
+control_3: ───┼─────@─────
+              │     │
+control_4: ───┼─────@─────
+              │     │
+control_5: ───┼─────@─────
+              │     │
+target_0: ────And───┼─────
+                    │
+target_1: ──────────And───
+""",
+    )
+    # Qubit manager with 2 managed qubits and parallelize=False.
+    qm = cirq_qubitization.GreedyQubitManager(prefix="ancilla", size=2, parallelize=False)
+    circuit = make_circuit(qm)
+    assert len(circuit) == 2
+    assert len(circuit.all_qubits()) == 9
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+ancilla_1: ───Anc───Anc───
+              │     │
+control_0: ───@─────┼─────
+              │     │
+control_1: ───@─────┼─────
+              │     │
+control_2: ───@─────┼─────
+              │     │
+control_3: ───┼─────@─────
+              │     │
+control_4: ───┼─────@─────
+              │     │
+control_5: ───┼─────@─────
+              │     │
+target_0: ────And───┼─────
+                    │
+target_1: ──────────And───
+""",
+    )
+    # Qubit manager with 2 managed qubits and parallelize=True.
+    qm = cirq_qubitization.GreedyQubitManager(prefix="ancilla", size=2)
+    circuit = make_circuit(qm)
+    assert len(circuit) == 1
+    assert len(circuit.all_qubits()) == 10
+    print(circuit)
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+              ┌──────┐
+ancilla_0: ────Anc───────
+               │
+ancilla_1: ────┼──Anc────
+               │  │
+control_0: ────@──┼──────
+               │  │
+control_1: ────@──┼──────
+               │  │
+control_2: ────@──┼──────
+               │  │
+control_3: ────┼──@──────
+               │  │
+control_4: ────┼──@──────
+               │  │
+control_5: ────┼──@──────
+               │  │
+target_0: ─────And┼──────
+                  │
+target_1: ────────And────
+              └──────┘
+""",
+    )

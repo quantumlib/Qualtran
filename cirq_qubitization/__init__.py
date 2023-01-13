@@ -23,3 +23,4 @@ from cirq_qubitization.programmable_rotation_gate_array import (
     ProgrammableRotationGateArray,
     ProgrammableRotationGateArrayBase,
 )
+from cirq_qubitization.qubit_manager import QubitManager, GreedyQubitManager

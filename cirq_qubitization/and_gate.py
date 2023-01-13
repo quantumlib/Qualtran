@@ -1,7 +1,7 @@
-from typing import Any, Sequence
+from typing import Any, Sequence, Optional
 from functools import cached_property
 import cirq
-from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
+from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters, QidSource
 from cirq_qubitization.t_complexity_protocol import TComplexity
 
 
@@ -114,6 +114,22 @@ class And(GateWithRegisters):
             yield from self._decompose_single_and(*self.cv, *control, target)
         else:
             yield from self._decompose_via_tree(control, self.cv, ancilla, target)
+
+    @classmethod
+    def make_on(
+        cls,
+        *,
+        control: Sequence[cirq.Qid],
+        target: cirq.Qid,
+        ancilla: QidSource,
+        cv: Optional[Sequence[int]] = None,
+        adjoint: bool = False,
+    ) -> cirq.Operation:
+        if cv is None:
+            cv = (1,) * len(control)
+        assert len(cv) == len(control)
+        gate = cls(cv=cv, adjoint=adjoint)
+        return gate.on_registers(control=control, target=target, ancilla=ancilla)
 
     def __eq__(self, other: 'And'):
         return self.cv == other.cv and self.adjoint == other.adjoint
