@@ -11,7 +11,7 @@ class BloqInstance:
 
     Attributes:
         bloq: The `Bloq`.
-        i: An arbitary index to disambiguate this instance from other Bloqs of the same type
+        i: An arbitrary index to disambiguate this instance from other Bloqs of the same type
             within a `CompositeBloq`.
     """
 
@@ -37,6 +37,9 @@ class DanglingT:
 @frozen
 class Soquet:
     """One half of a `Wire` connection.
+
+    Users should not construct these directly. They should be marshalled
+    by a `CompositeBloqBuilder`.
 
     A `Soquet` acts as the node type in our quantum compute graph. It is a particular
     register (by name) on a particular `Bloq`.
