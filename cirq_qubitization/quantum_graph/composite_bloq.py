@@ -8,11 +8,11 @@ from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
+    Connection,
     DanglingT,
     LeftDangle,
     RightDangle,
     Soquet,
-    Wire,
 )
 
 
@@ -20,13 +20,13 @@ class CompositeBloq(Bloq):
     """A container type implementing the `Bloq` interface.
 
     Args:
-        wires: A sequence of `Wire` encoding the quantum compute graph.
+        cxns: A sequence of `Connection` encoding the quantum compute graph.
         registers: The registers defining the inputs and outputs of this Bloq. This
-            should correspond to the dangling `Soquets` in the `wires`.
+            should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    def __init__(self, wires: Sequence[Wire], registers: Registers):
-        self._wires = tuple(wires)
+    def __init__(self, cxns: Sequence[Connection], registers: Registers):
+        self._cxns = tuple(cxns)
         self._registers = registers
 
     @property
@@ -34,27 +34,27 @@ class CompositeBloq(Bloq):
         return self._registers
 
     @property
-    def wires(self) -> Tuple[Wire, ...]:
-        return self._wires
+    def connections(self) -> Tuple[Connection, ...]:
+        return self._cxns
 
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
         """The set of BloqInstances making up the nodes of the graph."""
         return {
             soq.binst
-            for cxn in self._wires
+            for cxn in self._cxns
             for soq in [cxn.left, cxn.right]
             if not isinstance(soq.binst, DanglingT)
         }
 
     def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]):
-        return _cbloq_to_cirq_circuit(quregs, self.wires)
+        return _cbloq_to_cirq_circuit(quregs, self.connections)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 
 
-def _create_binst_graph(wires: Iterable[Wire]) -> nx.Graph:
+def _create_binst_graph(cxns: Iterable[Connection]) -> nx.Graph:
     """Helper function to create a NetworkX so we can topologically visit BloqInstances.
 
     `CompositeBloq` defines a directed acyclic graph, so we can iterate in (time) order.
@@ -64,12 +64,12 @@ def _create_binst_graph(wires: Iterable[Wire]) -> nx.Graph:
         2. We use networkx so we can use their algorithms for topological sorting.
     """
     binst_graph = nx.DiGraph()
-    for wire in wires:
-        binst_edge = (wire.left.binst, wire.right.binst)
+    for cxn in cxns:
+        binst_edge = (cxn.left.binst, cxn.right.binst)
         if binst_edge in binst_graph.edges:
-            binst_graph.edges[binst_edge]['conns'].append((wire.left.reg_name, wire.right.reg_name))
+            binst_graph.edges[binst_edge]['cxns'].append((cxn.left.reg_name, cxn.right.reg_name))
         else:
-            binst_graph.add_edge(*binst_edge, conns=[(wire.left.reg_name, wire.right.reg_name)])
+            binst_graph.add_edge(*binst_edge, cxns=[(cxn.left.reg_name, cxn.right.reg_name)])
     return binst_graph
 
 
@@ -102,7 +102,7 @@ def _process_binst(
 
     # Finally: track name updates for successors
     for suc in binst_graph.successors(binst):
-        reg_conns = binst_graph.edges[binst, suc]['conns']
+        reg_conns = binst_graph.edges[binst, suc]['cxns']
         for in_regname, out_regname in reg_conns:
             soqmap[Soquet(suc, out_regname)] = soqmap[Soquet(binst, in_regname)]
 
@@ -110,19 +110,19 @@ def _process_binst(
 
 
 def _cbloq_to_cirq_circuit(
-    quregs: Dict[str, Sequence[cirq.Qid]], wires: Sequence[Wire]
+    quregs: Dict[str, Sequence[cirq.Qid]], cxns: Sequence[Connection]
 ) -> cirq.Circuit:
     """Transform CompositeBloq components into a cirq.Circuit.
 
     Args:
         quregs: Named registers of `cirq.Qid` to apply the quantum compute graph to.
-        wires: A sequence of `Wire` objects that define the quantum compute graph.
+        cxns: A sequence of `Connection` objects that define the quantum compute graph.
 
     Returns:
         A `cirq.Circuit` for the quantum compute graph.
     """
     # Make a graph where we just connect binsts but note in the edges what the mappings are.
-    binst_graph = _create_binst_graph(wires)
+    binst_graph = _create_binst_graph(cxns)
 
     # A mapping of soquet to qubits that we update as operations are appended to the circuit.
     soqmap = {Soquet(LeftDangle, reg_name): qubits for reg_name, qubits in quregs.items()}
@@ -157,7 +157,7 @@ class CompositeBloqBuilder:
 
     def __init__(self, parent_regs: Registers):
         # To be appended to:
-        self._cxns: List[Wire] = []
+        self._cxns: List[Connection] = []
 
         # Initialize our BloqInstance counter
         self._i = 0
@@ -214,7 +214,7 @@ class CompositeBloqBuilder:
             out_soq = Soquet(binst, reg.name)
             self._available.add(out_soq)
 
-            self._cxns.append(Wire(in_soq, out_soq))
+            self._cxns.append(Connection(in_soq, out_soq))
             out_soqs.append(out_soq)
 
         if in_soqs:
@@ -256,7 +256,7 @@ class CompositeBloqBuilder:
             del final_soqs[reg.name]  # so we can check for surplus arguments.
 
             out_soq = Soquet(RightDangle, reg.name)
-            self._cxns.append(Wire(in_soq, out_soq))
+            self._cxns.append(Connection(in_soq, out_soq))
 
         if final_soqs:
             raise BloqBuilderError(
@@ -268,4 +268,4 @@ class CompositeBloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(wires=self._cxns, registers=self._parent_regs)
+        return CompositeBloq(cxns=self._cxns, registers=self._parent_regs)
