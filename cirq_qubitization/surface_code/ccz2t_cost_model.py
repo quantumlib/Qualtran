@@ -168,6 +168,7 @@ class CCZ2TCostModel:
 
     @property
     def distillation_error(self) -> float:
+        """Error resulting from the magic state distillation part of the computation."""
         return self.l2_error * self.n_ccz_states
 
     @property
