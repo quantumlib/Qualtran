@@ -173,6 +173,13 @@ class CCZ2TCostModel:
 
     @property
     def n_rounds(self) -> int:
+        """The number of error-correction rounds to distill enough magic states.
+
+        According to the approximations used in this cost model where we are limited by
+        T state production, this sets the number of rounds for the whole computation. See
+        `self.duration_hr` for this quantity in units of time.
+        """
+
         distillation_d = max(2 * self.distillation_l1_d + 1, self.distillation_l2_d)
         catalyzations = math.ceil(self.t_count / 2)
 
