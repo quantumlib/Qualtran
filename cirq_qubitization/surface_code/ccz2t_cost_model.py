@@ -135,8 +135,9 @@ class CCZ2TCostModel:
 
     @property
     def l2_error(self) -> float:
-        """Chance of failure of a CCZ gate or a pair of T gates performed with a CCZ state or
-        a pair of T states produced by the L2 factory.
+        """Chance of failure of the level two factory.
+
+        This is the chance of failure of a CCZ gate or a pair of T gates performed with a CCZ state.
         """
 
         # The L2 CCZ factory and catalyzed T factory both use approximately 1000 L2 unit cells.
