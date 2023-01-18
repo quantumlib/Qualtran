@@ -199,9 +199,7 @@ class CCZ2TCostModel:
         # See: `self.error_at()`. p_l = a Λ^(-r) where r = (d+1)/2
         # Which we invert: r = ln(p_l/a) / ln(1/Λ)
         r = math.log(10 * budget) / math.log(100 * self.physical_error_rate)
-        d = 2 * r - 1
-        # Note: This logic is from the included spreadsheet and I don't completely understand it.
-        d = round(0.5 + (d - 1) / 2) * 2 + 1
+        d = 2 * math.ceil(r) - 1
         if d < 3:
             return 3
         return d

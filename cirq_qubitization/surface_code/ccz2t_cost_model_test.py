@@ -31,4 +31,7 @@ def test_invert_error_at():
     budgets = np.logspace(-1, -18)
     for budget in budgets:
         d = re._code_distance_from_budget(budget=budget)
+        assert d % 2 == 1
         assert re.error_at(d=d) <= budget
+        if d > 3:
+            assert re.error_at(d=d - 2) > budget
