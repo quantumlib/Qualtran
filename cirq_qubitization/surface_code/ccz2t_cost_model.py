@@ -119,7 +119,7 @@ class CCZ2TCostModel:
     def l1_distillation_error(self) -> float:
         """The error due to level-0 faulty T states making it through distillation undetected.
 
-        The level 1 distillation proceedure detects any two errors. There are 35 weight-three
+        The level 1 distillation procedure detects any two errors. There are 35 weight-three
         errors that can make it through undetected.
         """
         return 35 * self.l0_error**3
