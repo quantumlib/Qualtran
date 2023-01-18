@@ -11,7 +11,7 @@ class BloqInstance:
 
     Attributes:
         bloq: The `Bloq`.
-        i: An arbitary index to disambiguate this instance from other Bloqs of the same type
+        i: An arbitrary index to disambiguate this instance from other Bloqs of the same type
             within a `CompositeBloq`.
     """
 
@@ -36,13 +36,16 @@ class DanglingT:
 
 @frozen
 class Soquet:
-    """One half of a `Wire` connection.
+    """One half of a connection.
+
+    Users should not construct these directly. They should be marshalled
+    by a `CompositeBloqBuilder`.
 
     A `Soquet` acts as the node type in our quantum compute graph. It is a particular
     register (by name) on a particular `Bloq`.
 
-    A `Soquet` can also be present in a dangling wire (i.e. represent an unconnected input or
-    output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
+    A `Soquet` can also be present in an external connection (i.e. represent an unconnected input
+    or output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
     """
 
     binst: Union[BloqInstance, DanglingT]
@@ -61,10 +64,10 @@ DanglingT.__init__ = _singleton_error
 
 
 @frozen
-class Wire:
+class Connection:
     """A connection between two `Soquet`s.
 
-    Quantum data flows from left to right. The graph implied by a collection of `Wire`s
+    Quantum data flows from left to right. The graph implied by a collection of `Connections`s
     is directed.
     """
 
