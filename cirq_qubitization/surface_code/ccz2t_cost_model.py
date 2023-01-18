@@ -256,4 +256,4 @@ class CCZ2TCostModel:
     @property
     def duration_hr(self) -> float:
         """Total time in hours to run algorithm, assuming no routing or Clifford bottlenecks."""
-        return self.cycle_time_us * self.n_rounds / 1_000_000 / 60 / 60
+        return (self.cycle_time_us * self.n_rounds) / (1_000_000 * 60 * 60)
