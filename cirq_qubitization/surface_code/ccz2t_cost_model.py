@@ -249,7 +249,7 @@ class CCZ2TCostModel:
         return self.distillation_error + self.data_error
 
     @property
-    def n_phys_qubits(self) -> int:
+    def n_physical_qubits(self) -> int:
         """Total physical qubits required to run algorithm."""
         return self.n_distillation_qubits + self.n_data_qubits
 
