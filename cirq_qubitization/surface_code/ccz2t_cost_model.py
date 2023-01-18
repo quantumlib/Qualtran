@@ -205,7 +205,7 @@ class CCZ2TCostModel:
         return d
 
     @property
-    def n_logi_qubits(self) -> int:
+    def n_logical_qubits(self) -> int:
         """Number of logical qubits including overhead.
 
         Note: the spreadsheet from the reference had a 50% overhead hardcoded for
@@ -220,18 +220,18 @@ class CCZ2TCostModel:
 
         # Use "left over" budget for data qubits.
         err_budget = self.error_budget - self.distillation_error
-        data_unit_cells = self.n_logi_qubits * self.n_rounds
+        data_unit_cells = self.n_logical_qubits * self.n_rounds
         target_err_per_round = err_budget / data_unit_cells
         return self._code_distance_from_budget(budget=target_err_per_round)
 
     @property
     def n_data_qubits(self) -> int:
         n_phys_per_logical = 2 * self.data_code_distance**2
-        return self.n_logi_qubits * n_phys_per_logical
+        return self.n_logical_qubits * n_phys_per_logical
 
     @property
     def data_error(self) -> float:
-        data_unit_cells = self.n_logi_qubits * self.n_rounds
+        data_unit_cells = self.n_logical_qubits * self.n_rounds
         error_per_unit_cell = self.error_at(d=self.data_code_distance)
         return data_unit_cells * error_per_unit_cell
 
