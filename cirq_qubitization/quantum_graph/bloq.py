@@ -1,11 +1,16 @@
 import abc
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Iterator, List, Sequence, TYPE_CHECKING
 
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     import cirq
 
+from cirq_qubitization.gate_with_registers import GateWithRegisters, Register, Registers
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+
+if TYPE_CHECKING:
+    from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, CompositeBloqBuilder
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
@@ -85,6 +90,13 @@ class Bloq(metaclass=abc.ABCMeta):
 
     # ----- cirq stuff -----
 
+    def on_registers(self, **regs: Sequence['cirq.Qid']) -> 'cirq.OP_TREE':
+        raise NoCirqEquivalent(f'{self}')
+
+    def _decompose_(self, qubits: Sequence['cirq.Qid']) -> 'cirq.OP_TREE':
+        qubit_regs = self.registers.split_qubits(qubits)
+        yield from self.decompose_bloq().to_cirq_circuit(**qubit_regs)
+
     def decompose_from_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
         yield from self.decompose_bloq().to_cirq_circuit(**qubit_regs)
 
@@ -93,4 +105,46 @@ class NoCirqEquivalent(NotImplementedError):
     """Raise this in `Bloq.on_registers` to signify that it should be omitted from Cirq circuits.
 
     For example, this would apply for qubit bookkeeping operations.
+    TODO
     """
+
+
+class CirqWrapper(Bloq):
+    def __init__(self, cirq_gate: cirq.Gate):
+        self._gate = cirq_gate
+
+    @property
+    def registers(self) -> FancyRegisters:
+        nq = cirq.num_qubits(self._gate)
+        return FancyRegisters(
+            [
+                FancyRegister('qubits', bitsize=1, wireshape=(nq,), side=Side.LEFT),
+                FancyRegister(name='qubits', bitsize=1, wireshape=(nq,), side=Side.RIGHT),
+            ]
+        )
+
+    def pretty_name(self) -> str:
+        return f'cirq.{self._gate.__class__.__name__}'
+
+
+class GateWithRegistersWrapper(GateWithRegisters):
+    def __init__(self, bloq: Bloq):
+        self._bloq = bloq
+
+        cregs = []
+        for reg in bloq.registers:
+            if reg.side != Side.THRU:
+                raise NoCirqEquivalent(f"{bloq} has allocation or de-allocation {reg}")
+
+            if reg.wireshape != tuple():
+                raise NoCirqEquivalent(f"{bloq} has multidim registers.")
+
+            cregs.append(Register(reg.name, reg.bitsize))
+        self._classic_registers = Registers(cregs)
+
+    @property
+    def registers(self) -> Registers:
+        return self._classic_registers
+
+    def decompose_from_registers(self, **qubit_regs: Sequence['cirq.Qid']) -> 'cirq.OP_TREE':
+        yield from self._bloq.decompose_bloq().to_cirq_circuit(**qubit_regs)

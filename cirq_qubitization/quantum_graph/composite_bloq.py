@@ -5,7 +5,8 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 import cirq
 import networkx as nx
 import numpy as np
-from numpy.typing import NDArray
+from attrs import frozen
+from numpy.typing import ArrayLike, NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
@@ -227,6 +228,12 @@ def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[S
     return initial_soqs, available
 
 
+@frozen
+class CBBAddResult:
+    binst: BloqInstance
+    soquets: Tuple[Soquet, ...]
+
+
 class CompositeBloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
@@ -259,7 +266,7 @@ class CompositeBloqBuilder:
         self._i += 1
         return inst
 
-    def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
+    def advanced_add(self, bloq: Bloq, **in_soqs: ArrayLike) -> CBBAddResult:
         """Add a new bloq instance to the compute graph.
 
         Args:
@@ -323,7 +330,23 @@ class CompositeBloqBuilder:
 
             out_soqs.append(out)
 
-        return tuple(out_soqs)
+        return CBBAddResult(binst=binst, soquets=tuple(out_soqs))
+
+    def add(self, bloq: Bloq, **in_soqs: ArrayLike) -> Tuple[SoquetT, ...]:
+        """Add a new bloq instance to the compute graph.
+
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`s, e.g. the output soquets from a prior operation.
+
+        Returns:
+            A `Soquet` for each output register ordered according to `bloq.registers`.
+                Note: Analogous to a Python function call using kwargs and multiple return values,
+                the ordering is irrespective of the order of `in_soqs` that have been passed in
+                and depends only on the convention of the bloq's registers.
+        """
+        return self.advanced_add(bloq, **in_soqs).soquets
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
@@ -371,3 +394,79 @@ class CompositeBloqBuilder:
             ) from None
 
         return CompositeBloq(cxns=self._cxns, registers=self._parent_regs)
+
+
+def my_rep(binst: BloqInstance) -> Optional[CompositeBloq]:
+    from cirq_qubitization.quantum_graph.examples import MultiAnd
+
+    if isinstance(binst.bloq, MultiAnd):
+        return binst.bloq.decompose_bloq()
+
+    return None
+
+
+def _get_in_soqs(
+    binst: BloqInstance,
+    binst_graph: nx.DiGraph,
+    parent_soqs: Dict[str, Soquet],
+    binst_replacement: Dict[BloqInstance, BloqInstance],
+) -> Dict[str, Soquet]:
+
+    soqs: Dict[str, Soquet] = {}
+    for pred in binst_graph.predecessors(binst):
+        cxn: Connection
+        for cxn in binst_graph.edges[pred, binst]['cxns']:
+            if cxn.left.binst is LeftDangle and cxn.left.reg.name in parent_soqs:
+                left = parent_soqs[cxn.left.reg.name]
+            else:
+                left = cxn.left
+
+            if left.binst in binst_replacement:
+                left = attrs.evolve(left, binst=binst_replacement[left.binst])
+
+            soqs[cxn.right.reg.name] = left
+
+    return soqs
+
+
+def _process_binst_replace(
+    bb: CompositeBloqBuilder,
+    binst: BloqInstance,
+    binst_graph: nx.DiGraph,
+    parent_soqs: Dict[str, Soquet],
+    binst_replacement: Dict[BloqInstance, BloqInstance],
+):
+    if isinstance(binst, DanglingT):
+        return
+
+    soqs = _get_in_soqs(binst, binst_graph, parent_soqs, binst_replacement)
+
+    cbloq = my_rep(binst)
+    if cbloq is None:
+        print('adding', binst)
+        res = bb.advanced_add(binst.bloq, **soqs)
+        binst_replacement[binst] = res.binst
+        return
+
+    assert isinstance(cbloq, CompositeBloq)
+    print("Recursing instead")
+    _replace(cbloq, bb, soqs)
+    print("pop")
+
+
+def _replace(cbloq: CompositeBloq, bb: CompositeBloqBuilder, soqs: Dict[str, Soquet]):
+    binst_graph = _create_binst_graph(cbloq.connections)
+    binst_replacement = {}
+    sorted_binsts = list(nx.topological_sort(binst_graph))
+    for binst in sorted_binsts:
+        # Modifies graph
+        _process_binst_replace(bb, binst, binst_graph, soqs, binst_replacement)
+    return binst_graph, soqs, binst_replacement
+
+
+def replace(cbloq: CompositeBloq) -> CompositeBloq:
+    bb = CompositeBloqBuilder(cbloq.registers)
+    binst_graph, parent_soqs, binst_replacement = _replace(cbloq, bb, {})
+
+    soqs = _get_in_soqs(RightDangle, binst_graph, parent_soqs, binst_replacement)
+    return bb.finalize(**soqs)
