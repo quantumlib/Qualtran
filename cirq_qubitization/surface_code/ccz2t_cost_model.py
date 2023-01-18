@@ -226,8 +226,8 @@ class CCZ2TCostModel:
 
     @property
     def n_data_qubits(self) -> int:
-        physiq_per_logiq = 2 * self.data_code_distance**2
-        return self.n_logi_qubits * physiq_per_logiq
+        n_phys_per_logical = 2 * self.data_code_distance**2
+        return self.n_logi_qubits * n_phys_per_logical
 
     @property
     def data_error(self) -> float:
