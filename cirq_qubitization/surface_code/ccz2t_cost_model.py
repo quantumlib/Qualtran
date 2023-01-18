@@ -241,8 +241,11 @@ class CCZ2TCostModel:
 
     @property
     def failure_prob(self) -> float:
-        """Approximate probability of a bad CCZ being produced, a bad T state being produced,
-        or a topological error occurring during the algorithm."""
+        """Approximate probability of an error occurring during execution of the algorithm.
+
+        This can be a bad CCZ being produced, a bad T state being produced,
+        or a topological error occurring during the algorithm.
+        """
         return self.distillation_error + self.data_error
 
     @property
