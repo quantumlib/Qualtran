@@ -4,7 +4,9 @@ from collections import defaultdict
 from typing import Dict, Iterable, List, overload, Tuple
 
 import cirq
+import numpy as np
 from attr import frozen
+from numpy.typing import NDArray
 
 
 class Side(enum.Flag):
@@ -135,15 +137,27 @@ class FancyRegisters:
     def __len__(self) -> int:
         return len(self._registers)
 
-    def get_named_qubits(self) -> Dict[str, List[cirq.Qid]]:
-        def qubits_for_reg(name: str, bitsize: int):
+    def get_named_qubits(self) -> Dict[str, NDArray[cirq.Qid]]:
+        def _qubit_array(reg: FancyRegister):
+            qubits = np.empty(reg.wireshape + (reg.bitsize,), dtype=object)
+            for ii in reg.wire_idxs():
+                for j in range(reg.bitsize):
+                    qubits[ii + (j,)] = cirq.NamedQubit(
+                        f'{reg.name}[{", ".join(str(i) for i in ii+(j,))}]'
+                    )
+            return qubits
+
+        def _qubits_for_reg(reg: FancyRegister):
+            if reg.wireshape:
+                return _qubit_array(reg)
+
             return (
-                [cirq.NamedQubit(f"{name}")]
-                if bitsize == 1
-                else cirq.NamedQubit.range(bitsize, prefix=name)
+                [cirq.NamedQubit(f"{reg.name}")]
+                if reg.bitsize == 1
+                else cirq.NamedQubit.range(reg.bitsize, prefix=reg.name)
             )
 
-        return {reg.name: qubits_for_reg(reg.name, reg.bitsize) for reg in self}
+        return {reg.name: _qubits_for_reg(reg) for reg in self}
 
     def __hash__(self):
         return hash(self._registers)

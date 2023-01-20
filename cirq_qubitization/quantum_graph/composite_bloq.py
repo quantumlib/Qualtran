@@ -50,7 +50,7 @@ class CompositeBloq(Bloq):
             if not isinstance(soq.binst, DanglingT)
         }
 
-    def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]) -> cirq.Circuit:
+    def to_cirq_circuit(self, **quregs: ArrayLike) -> cirq.Circuit:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
@@ -139,7 +139,7 @@ def _process_binst(
 
 
 def _cbloq_to_cirq_circuit(
-    quregs: Dict[FancyRegister, Sequence[cirq.Qid]], cxns: Sequence[Connection]
+    quregs: Dict[FancyRegister, ArrayLike], cxns: Sequence[Connection]
 ) -> cirq.Circuit:
     """Transform CompositeBloq components into a `cirq.Circuit`.
 
@@ -155,7 +155,10 @@ def _cbloq_to_cirq_circuit(
     binst_graph = _create_binst_graph(cxns)
 
     # A mapping of soquet to qubits that we update as operations are appended to the circuit.
-    soqmap = {Soquet(LeftDangle, reg): qubits for reg, qubits in quregs.items()}
+    soqmap = {}
+    for reg in quregs.keys():
+        for ii in reg.wire_idxs():
+            soqmap[Soquet(LeftDangle, reg, idx=ii)] = np.asarray(quregs[reg])[ii]
 
     moments: List[cirq.Moment] = []
     for i, binsts in enumerate(nx.topological_generations(binst_graph)):

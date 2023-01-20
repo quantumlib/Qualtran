@@ -214,14 +214,14 @@ class TestMultiCNOT(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters(
-            [FancyRegister('control', 1), FancyRegister('target', 1, wireshape=(2, 7))]
+            [FancyRegister('control', 1), FancyRegister('target', 1, wireshape=(2, 3))]
         )
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', control: 'Soquet', target: NDArray['Soquet']
     ) -> Dict[str, 'Soquet']:
         for i in range(2):
-            for j in range(7):
+            for j in range(3):
                 control, target[i, j] = bb.add(TestBloq(), control=control, target=target[i, j])
 
         return {'control': control, 'target': target}
@@ -230,15 +230,27 @@ class TestMultiCNOT(Bloq):
 def test_complicated_target_register():
     bloq = TestMultiCNOT()
     cbloq = bloq.decompose_bloq()
-    assert len(cbloq.bloq_instances) == 2 * 7
+    assert len(cbloq.bloq_instances) == 2 * 3
 
     binst_graph = _create_binst_graph(cbloq.connections)
     # note: this includes the two `Dangling` generations.
-    assert len(list(nx.topological_generations(binst_graph))) == 2 * 7 + 2
+    assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
 
-    # TODO: fix
     circuit = cbloq.to_cirq_circuit(**bloq.registers.get_named_qubits())
-    print()
-    print(circuit)
-    print()
-    assert False
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """\
+control: ───────────@───@───@───@───@───@───
+                    │   │   │   │   │   │
+target[0, 0, 0]: ───X───┼───┼───┼───┼───┼───
+                        │   │   │   │   │
+target[0, 1, 0]: ───────X───┼───┼───┼───┼───
+                            │   │   │   │
+target[0, 2, 0]: ───────────X───┼───┼───┼───
+                                │   │   │
+target[1, 0, 0]: ───────────────X───┼───┼───
+                                    │   │
+target[1, 1, 0]: ───────────────────X───┼───
+                                        │
+target[1, 2, 0]: ───────────────────────X───""",
+    )
