@@ -3,10 +3,7 @@ from typing import Dict
 
 import cirq
 import networkx as nx
-import numpy as np
 import pytest
-from attrs import frozen
-from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestBloq
