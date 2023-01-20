@@ -4,8 +4,8 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 import cirq
 import networkx as nx
 
-from cirq_qubitization.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -25,12 +25,12 @@ class CompositeBloq(Bloq):
             should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    def __init__(self, cxns: Sequence[Connection], registers: Registers):
+    def __init__(self, cxns: Sequence[Connection], registers: FancyRegisters):
         self._cxns = tuple(cxns)
         self._registers = registers
 
     @property
-    def registers(self) -> Registers:
+    def registers(self) -> FancyRegisters:
         return self._registers
 
     @property
@@ -155,7 +155,7 @@ class CompositeBloqBuilder:
         parent_regs: The `Registers` argument for the parent bloq.
     """
 
-    def __init__(self, parent_regs: Registers):
+    def __init__(self, parent_regs: FancyRegisters):
         # To be appended to:
         self._cxns: List[Connection] = []
 
