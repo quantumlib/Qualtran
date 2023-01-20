@@ -5,7 +5,7 @@ import cirq
 import networkx as nx
 
 from cirq_qubitization.quantum_graph.bloq import Bloq, NoCirqEquivalent
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -47,19 +47,28 @@ class CompositeBloq(Bloq):
             if not isinstance(soq.binst, DanglingT)
         }
 
-    def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]):
+    def to_cirq_circuit(self, **quregs: Sequence[cirq.Qid]) -> cirq.Circuit:
+        """Convert this CompositeBloq to a `cirq.Circuit`.
+
+        Args:
+            quregs: These keyword arguments map from register name to a sequence of `cirq.Qid`.
+                Cirq operations operate on individual qubit objects.
+                Consider using `**self.registers.get_named_qubits()` for this argument.
+        """
+        # First, convert register names to registers.
+        quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
         return _cbloq_to_cirq_circuit(quregs, self.connections)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 
 
-def _create_binst_graph(cxns: Iterable[Connection]) -> nx.Graph:
-    """Helper function to create a NetworkX so we can topologically visit BloqInstances.
+def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
+    """Helper function to create a NetworkX graph so we can topologically visit BloqInstances.
 
     `CompositeBloq` defines a directed acyclic graph, so we can iterate in (time) order.
     Here, we make two changes to our view of the graph:
-        1. Our nodes are now BloqInstances because they are the objects to time-order. Register
+        1. Our nodes are now BloqInstances because they are the objects to time-order. Soquet
            connections are added as edge attributes.
         2. We use networkx so we can use their algorithms for topological sorting.
     """
@@ -67,9 +76,9 @@ def _create_binst_graph(cxns: Iterable[Connection]) -> nx.Graph:
     for cxn in cxns:
         binst_edge = (cxn.left.binst, cxn.right.binst)
         if binst_edge in binst_graph.edges:
-            binst_graph.edges[binst_edge]['cxns'].append((cxn.left.reg_name, cxn.right.reg_name))
+            binst_graph.edges[binst_edge]['cxns'].append(cxn)
         else:
-            binst_graph.add_edge(*binst_edge, cxns=[(cxn.left.reg_name, cxn.right.reg_name)])
+            binst_graph.add_edge(*binst_edge, cxns=[cxn])
     return binst_graph
 
 
@@ -92,7 +101,7 @@ def _process_binst(
     if not isinstance(binst, DanglingT):
         # Add it using the current mapping of soqmap to regnames
         bloq = binst.bloq
-        quregs = {reg.name: soqmap[Soquet(binst, reg.name)] for reg in bloq.registers}
+        quregs = {reg.name: soqmap[Soquet(binst, reg)] for reg in bloq.registers}
         try:
             op = bloq.on_registers(**quregs)
         except NoCirqEquivalent:
@@ -102,20 +111,21 @@ def _process_binst(
 
     # Finally: track name updates for successors
     for suc in binst_graph.successors(binst):
-        reg_conns = binst_graph.edges[binst, suc]['cxns']
-        for in_regname, out_regname in reg_conns:
-            soqmap[Soquet(suc, out_regname)] = soqmap[Soquet(binst, in_regname)]
+        cxns: List[Connection] = binst_graph.edges[binst, suc]['cxns']
+        for cxn in cxns:
+            soqmap[cxn.right] = soqmap[cxn.left]
 
     return op
 
 
 def _cbloq_to_cirq_circuit(
-    quregs: Dict[str, Sequence[cirq.Qid]], cxns: Sequence[Connection]
+    quregs: Dict[FancyRegister, Sequence[cirq.Qid]], cxns: Sequence[Connection]
 ) -> cirq.Circuit:
-    """Transform CompositeBloq components into a cirq.Circuit.
+    """Transform CompositeBloq components into a `cirq.Circuit`.
 
     Args:
-        quregs: Named registers of `cirq.Qid` to apply the quantum compute graph to.
+        quregs: Assignment from each register to a sequence of `cirq.Qid` for the conversion
+            to a `cirq.Circuit`.
         cxns: A sequence of `Connection` objects that define the quantum compute graph.
 
     Returns:
@@ -125,7 +135,7 @@ def _cbloq_to_cirq_circuit(
     binst_graph = _create_binst_graph(cxns)
 
     # A mapping of soquet to qubits that we update as operations are appended to the circuit.
-    soqmap = {Soquet(LeftDangle, reg_name): qubits for reg_name, qubits in quregs.items()}
+    soqmap = {Soquet(LeftDangle, reg): qubits for reg, qubits in quregs.items()}
 
     moments: List[cirq.Moment] = []
     for i, binsts in enumerate(nx.topological_generations(binst_graph)):
@@ -163,7 +173,7 @@ class CompositeBloqBuilder:
         self._i = 0
 
         # Linear types! Soquets must be used exactly once.
-        self._initial_soquets = {reg.name: Soquet(LeftDangle, reg.name) for reg in parent_regs}
+        self._initial_soquets = {reg.name: Soquet(LeftDangle, reg) for reg in parent_regs}
         self._available: Set[Soquet] = set(self._initial_soquets.values())
 
         self._parent_regs = parent_regs
@@ -211,7 +221,7 @@ class CompositeBloqBuilder:
 
             del in_soqs[reg.name]  # so we can check for surplus arguments.
 
-            out_soq = Soquet(binst, reg.name)
+            out_soq = Soquet(binst, reg)
             self._available.add(out_soq)
 
             self._cxns.append(Connection(in_soq, out_soq))
@@ -255,7 +265,7 @@ class CompositeBloqBuilder:
 
             del final_soqs[reg.name]  # so we can check for surplus arguments.
 
-            out_soq = Soquet(RightDangle, reg.name)
+            out_soq = Soquet(RightDangle, reg)
             self._cxns.append(Connection(in_soq, out_soq))
 
         if final_soqs:
