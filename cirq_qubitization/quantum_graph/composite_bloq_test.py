@@ -4,7 +4,6 @@ from typing import Dict
 import cirq
 import networkx as nx
 import pytest
-from attrs import frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestBloq
@@ -14,7 +13,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     CompositeBloq,
     CompositeBloqBuilder,
 )
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -26,13 +25,9 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 
 def _manually_make_test_cbloq_cxns():
     regs = FancyRegisters.build(q1=1, q2=1)
-    # q1, q2 = regs
-    q1 = 'q1'
-    q2 = 'q2'
+    q1, q2 = regs
     tb = TestBloq()
-    # control, target = tb.registers
-    control = 'control'
-    target = 'target'
+    control, target = tb.registers
     binst1 = BloqInstance(tb, 1)
     binst2 = BloqInstance(tb, 2)
     assert binst1 != binst2
@@ -96,26 +91,12 @@ def test_bb_composite_bloq():
     )
 
 
-@frozen
-class TestRepBloq(Bloq):
-    n_reps: int
-
-    @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(x1=1, x2=1)
-
-    def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', x1: 'Soquet', x2: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
-        for _ in range(self.n_reps):
-            x1, x2 = bb.add(TestBloq(), control=x1, target=x2)
-
-
 def test_bloq_builder():
     registers = FancyRegisters.build(x=1, y=1)
+    x, y = registers
     bb = CompositeBloqBuilder(registers)
     initial_soqs = bb.initial_soquets()
-    assert initial_soqs == {'x': Soquet(LeftDangle, 'x'), 'y': Soquet(LeftDangle, 'y')}
+    assert initial_soqs == {'x': Soquet(LeftDangle, x), 'y': Soquet(LeftDangle, y)}
 
     x = initial_soqs['x']
     y = initial_soqs['y']
@@ -145,7 +126,8 @@ def test_wrong_soquet():
     with pytest.raises(
         BloqBuilderError, match=r'.*is not an available input Soquet for .*target.*'
     ):
-        bb.add(TestBloq(), control=x, target=Soquet(BloqInstance(TestBloq(), i=12), 'target'))
+        bad_target_arg = Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2))
+        bb.add(TestBloq(), control=x, target=bad_target_arg)
 
 
 def test_double_use_1():
@@ -191,7 +173,7 @@ def test_finalize_wrong_soquet():
     assert y != y2
 
     with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq(), i=12), 'target'))
+        bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2)))
 
 
 def test_finalize_double_use_1():
@@ -223,4 +205,4 @@ def test_finalize_too_many_args():
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
     with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, 'asdf'))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
