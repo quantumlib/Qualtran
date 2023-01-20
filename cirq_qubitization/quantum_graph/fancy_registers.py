@@ -72,11 +72,11 @@ class FancyRegisters:
 
     def lefts(self) -> Iterable[FancyRegister]:
         """Iterable over all registers that appear on the LEFT as input."""
-        yield from (reg for reg in self._registers if reg.side & Side.LEFT)
+        yield from self._lefts.values()
 
     def rights(self) -> Iterable[FancyRegister]:
         """Iterable over all registers that appear on the RIGHT as output."""
-        yield from (reg for reg in self._registers if reg.side & Side.RIGHT)
+        yield from self._rights.values()
 
     def get_left(self, name: str) -> FancyRegister:
         """Get a left register by name."""
