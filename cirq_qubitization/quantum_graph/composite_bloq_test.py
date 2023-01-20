@@ -4,6 +4,7 @@ from typing import Dict
 import cirq
 import networkx as nx
 import pytest
+from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestBloq
@@ -206,3 +207,38 @@ def test_finalize_too_many_args():
 
     with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+
+
+class TestMultiCNOT(Bloq):
+    # A minimal test-bloq with a complicated `target` register.
+    @cached_property
+    def registers(self) -> FancyRegisters:
+        return FancyRegisters(
+            [FancyRegister('control', 1), FancyRegister('target', 1, wireshape=(2, 7))]
+        )
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', control: 'Soquet', target: NDArray['Soquet']
+    ) -> Dict[str, 'Soquet']:
+        for i in range(2):
+            for j in range(7):
+                control, target[i, j] = bb.add(TestBloq(), control=control, target=target[i, j])
+
+        return {'control': control, 'target': target}
+
+
+def test_complicated_target_register():
+    bloq = TestMultiCNOT()
+    cbloq = bloq.decompose_bloq()
+    assert len(cbloq.bloq_instances) == 2 * 7
+
+    binst_graph = _create_binst_graph(cbloq.connections)
+    # note: this includes the two `Dangling` generations.
+    assert len(list(nx.topological_generations(binst_graph))) == 2 * 7 + 2
+
+    # TODO: fix
+    circuit = cbloq.to_cirq_circuit(**bloq.registers.get_named_qubits())
+    print()
+    print(circuit)
+    print()
+    assert False
