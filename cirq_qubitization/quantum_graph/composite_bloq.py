@@ -185,7 +185,7 @@ def _initialize_soquets(regs) -> Tuple[Dict[str, NDArray[Soquet]], Set[Soquet]]:
             registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
             registers, the value will be a `Soquet` object.
         available: A flat set of all the `Soquet`s. During initialization, all Soquets are
-            availalbe to be consumed. `CompositeBloqBuilder` will keep the set of available
+            available to be consumed. `CompositeBloqBuilder` will keep the set of available
             Soquets up-to-date.
     """
     available: Set[Soquet] = set()
