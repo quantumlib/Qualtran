@@ -1,12 +1,17 @@
 import abc
-from typing import Dict, Sequence, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
-import cirq
-
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
-    from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, CompositeBloqBuilder
+    import cirq
+
+    from cirq_qubitization.quantum_graph.composite_bloq import (
+        CompositeBloq,
+        CompositeBloqBuilder,
+        SoquetT,
+    )
+    from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
     from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
@@ -20,7 +25,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return self.__class__.__name__
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', **soqs: 'Soquet'
+        self, bb: 'CompositeBloqBuilder', **soqs: 'SoquetT'
     ) -> Dict[str, 'Soquet']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
@@ -63,11 +68,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     # ----- cirq stuff -----
 
-    def _decompose_(self, qubits: Sequence['cirq.Qid']) -> 'cirq.OP_TREE':
-        qubit_regs = self.registers.split_qubits(qubits)
-        yield from self.decompose_bloq().to_cirq_circuit(**qubit_regs)
-
-    def decompose_from_registers(self, **qubit_regs: Sequence['cirq.Qid']) -> 'cirq.OP_TREE':
+    def decompose_from_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
         yield from self.decompose_bloq().to_cirq_circuit(**qubit_regs)
 
 

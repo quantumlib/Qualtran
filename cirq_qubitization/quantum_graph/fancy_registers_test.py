@@ -98,3 +98,10 @@ def test_agg_split():
     assert sorted([k for k, v in regs.groups()]) == ['control', 'target']
     assert len(list(regs.lefts())) == 2
     assert len(list(regs.rights())) == 2
+
+
+def test_get_named_qubits_multidim():
+    regs = FancyRegisters([FancyRegister('matt', wireshape=(2, 3), bitsize=4)])
+    quregs = regs.get_named_qubits()
+    assert quregs['matt'].shape == (2, 3, 4)
+    assert quregs['matt'][1, 2, 3] == cirq.NamedQubit('matt[1, 2, 3]')

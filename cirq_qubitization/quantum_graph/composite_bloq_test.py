@@ -4,6 +4,7 @@ from typing import Dict
 import cirq
 import networkx as nx
 import pytest
+from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestBloq
@@ -12,6 +13,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     BloqBuilderError,
     CompositeBloq,
     CompositeBloqBuilder,
+    SoquetT,
 )
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
@@ -48,7 +50,7 @@ class TestComposite(Bloq):
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', q1: 'Soquet', q2: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+    ) -> Dict[str, SoquetT]:
         q1, q2 = bb.add(TestBloq(), control=q1, target=q2)
         q1, q2 = bb.add(TestBloq(), control=q2, target=q1)
         return {'q1': q1, 'q2': q2}
@@ -206,3 +208,50 @@ def test_finalize_too_many_args():
 
     with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+
+
+class TestMultiCNOT(Bloq):
+    # A minimal test-bloq with a complicated `target` register.
+    @cached_property
+    def registers(self) -> FancyRegisters:
+        return FancyRegisters(
+            [FancyRegister('control', 1), FancyRegister('target', 1, wireshape=(2, 3))]
+        )
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', control: 'Soquet', target: NDArray['Soquet']
+    ) -> Dict[str, SoquetT]:
+        for i in range(2):
+            for j in range(3):
+                control, target[i, j] = bb.add(TestBloq(), control=control, target=target[i, j])
+
+        return {'control': control, 'target': target}
+
+
+def test_complicated_target_register():
+    bloq = TestMultiCNOT()
+    cbloq = bloq.decompose_bloq()
+    assert len(cbloq.bloq_instances) == 2 * 3
+
+    binst_graph = _create_binst_graph(cbloq.connections)
+    # note: this includes the two `Dangling` generations.
+    assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
+
+    circuit = cbloq.to_cirq_circuit(**bloq.registers.get_named_qubits())
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """\
+control: ───────────@───@───@───@───@───@───
+                    │   │   │   │   │   │
+target[0, 0, 0]: ───X───┼───┼───┼───┼───┼───
+                        │   │   │   │   │
+target[0, 1, 0]: ───────X───┼───┼───┼───┼───
+                            │   │   │   │
+target[0, 2, 0]: ───────────X───┼───┼───┼───
+                                │   │   │
+target[1, 0, 0]: ───────────────X───┼───┼───
+                                    │   │
+target[1, 1, 0]: ───────────────────X───┼───
+                                        │
+target[1, 2, 0]: ───────────────────────X───""",
+    )
