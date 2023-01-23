@@ -179,7 +179,7 @@ class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
-def _initialize_soquets(regs) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
+def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
     """Initialize input Soquets from left registers for bookkeeping in `CompositeBloqBuilder`.
 
     Returns:
