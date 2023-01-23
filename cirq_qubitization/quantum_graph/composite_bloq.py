@@ -128,14 +128,15 @@ def _process_binst(
     # We pluck things back out from their collapsed by-name qumap into soqmap
     # This does implicit splitting.
     for reg in bloq.registers.rights():
+        qarr = np.asarray(quregs[reg.name])
         for ri in reg.wire_idxs():
             soq = Soquet(binst, reg, idx=ri)
-            thing = np.asarray(quregs[reg.name])[ri]
-            if isinstance(thing, np.ndarray):
-                thing = thing.tolist()
+            qs = qarr[ri]
+            if isinstance(qs, np.ndarray):
+                qs = qs.tolist()
             else:
-                thing = [thing]
-            soqmap[soq] = thing
+                qs = [qs]
+            soqmap[soq] = qs
 
     return op
 
@@ -159,8 +160,9 @@ def _cbloq_to_cirq_circuit(
     # A mapping of soquet to qubits that we update as operations are appended to the circuit.
     soqmap = {}
     for reg in quregs.keys():
+        qarr = np.asarray(quregs[reg])
         for ii in reg.wire_idxs():
-            soqmap[Soquet(LeftDangle, reg, idx=ii)] = np.asarray(quregs[reg])[ii]
+            soqmap[Soquet(LeftDangle, reg, idx=ii)] = qarr[ii]
 
     moments: List[cirq.Moment] = []
     for i, binsts in enumerate(nx.topological_generations(binst_graph)):
