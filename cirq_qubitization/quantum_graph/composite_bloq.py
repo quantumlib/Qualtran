@@ -5,7 +5,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 import cirq
 import networkx as nx
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters

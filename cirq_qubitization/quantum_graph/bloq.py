@@ -1,17 +1,17 @@
 import abc
 from typing import Dict, TYPE_CHECKING
 
-import cirq
 from numpy.typing import NDArray
 
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
-
 if TYPE_CHECKING:
+    import cirq
+
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
         SoquetT,
     )
+    from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
     from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
