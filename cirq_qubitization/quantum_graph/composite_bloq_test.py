@@ -13,6 +13,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     BloqBuilderError,
     CompositeBloq,
     CompositeBloqBuilder,
+    SoquetT,
 )
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
@@ -49,7 +50,7 @@ class TestComposite(Bloq):
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', q1: 'Soquet', q2: 'Soquet'
-    ) -> Dict[str, 'Soquet']:
+    ) -> Dict[str, SoquetT]:
         q1, q2 = bb.add(TestBloq(), control=q1, target=q2)
         q1, q2 = bb.add(TestBloq(), control=q2, target=q1)
         return {'q1': q1, 'q2': q2}
@@ -219,7 +220,7 @@ class TestMultiCNOT(Bloq):
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', control: 'Soquet', target: NDArray['Soquet']
-    ) -> Dict[str, 'Soquet']:
+    ) -> Dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):
                 control, target[i, j] = bb.add(TestBloq(), control=control, target=target[i, j])

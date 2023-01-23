@@ -1,7 +1,7 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, List, overload, Tuple
+from typing import Dict, Iterable, Iterator, overload, Tuple
 
 import cirq
 import numpy as np
@@ -131,7 +131,7 @@ class FancyRegisters:
     def __contains__(self, item: FancyRegister) -> bool:
         return item in self._registers
 
-    def __iter__(self) -> Iterable[FancyRegister]:
+    def __iter__(self) -> Iterator[FancyRegister]:
         yield from self._registers
 
     def __len__(self) -> int:

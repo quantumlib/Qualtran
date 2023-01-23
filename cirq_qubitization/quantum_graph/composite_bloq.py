@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import cirq
 import networkx as nx
@@ -17,6 +17,8 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+
+SoquetT = Union[Soquet, NDArray[Soquet]]
 
 
 class CompositeBloq(Bloq):
@@ -50,7 +52,7 @@ class CompositeBloq(Bloq):
             if not isinstance(soq.binst, DanglingT)
         }
 
-    def to_cirq_circuit(self, **quregs: ArrayLike) -> cirq.Circuit:
+    def to_cirq_circuit(self, **quregs: NDArray[cirq.Qid]) -> cirq.Circuit:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
@@ -114,7 +116,7 @@ def _process_binst(
 
     # Pull out the qubits from soqmap into qumap which has string keys.
     # This implicitly joins things with the same name.
-    quregs = defaultdict(list)
+    quregs: Dict[str, List[cirq.Qid]] = defaultdict(list)
     for reg in bloq.registers.lefts():
         for li in reg.wire_idxs():
             soq = Soquet(binst, reg, idx=li)
@@ -139,7 +141,7 @@ def _process_binst(
 
 
 def _cbloq_to_cirq_circuit(
-    quregs: Dict[FancyRegister, ArrayLike], cxns: Sequence[Connection]
+    quregs: Dict[FancyRegister, NDArray[cirq.Qid]], cxns: Sequence[Connection]
 ) -> cirq.Circuit:
     """Transform CompositeBloq components into a `cirq.Circuit`.
 
@@ -177,7 +179,7 @@ class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
-def _initialize_soquets(regs) -> Tuple[Dict[str, NDArray[Soquet]], Set[Soquet]]:
+def _initialize_soquets(regs) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
     """Initialize input Soquets from left registers for bookkeeping in `CompositeBloqBuilder`.
 
     Returns:
@@ -189,7 +191,8 @@ def _initialize_soquets(regs) -> Tuple[Dict[str, NDArray[Soquet]], Set[Soquet]]:
             Soquets up-to-date.
     """
     available: Set[Soquet] = set()
-    initial_soqs: Dict[str, NDArray[Soquet]] = {}
+    initial_soqs: Dict[str, SoquetT] = {}
+    soqs: SoquetT
     for reg in regs.lefts():
         if reg.wireshape:
             soqs = np.empty(reg.wireshape, dtype=object)
@@ -231,7 +234,7 @@ class CompositeBloqBuilder:
         # Bookkeeping for linear types; Soquets must be used exactly once.
         self._initial_soquets, self._available = _initialize_soquets(parent_regs)
 
-    def initial_soquets(self) -> Dict[str, NDArray[Soquet]]:
+    def initial_soquets(self) -> Dict[str, SoquetT]:
         """Input soquets (by name) to start building a quantum compute graph."""
         return self._initial_soquets
 
@@ -240,7 +243,7 @@ class CompositeBloqBuilder:
         self._i += 1
         return inst
 
-    def add(self, bloq: Bloq, **in_soqs: ArrayLike) -> Tuple[NDArray[Soquet], ...]:
+    def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
 
         Args:
@@ -287,7 +290,8 @@ class CompositeBloqBuilder:
                 f"{bloq} does not accept input Soquets: {in_soqs.keys()}."
             ) from None
 
-        out_soqs = []
+        out_soqs: List[SoquetT] = []
+        out: SoquetT
         for reg in bloq.registers.rights():
             if reg.wireshape:
                 out = np.empty(reg.wireshape, dtype=object)
@@ -305,7 +309,7 @@ class CompositeBloqBuilder:
 
         return tuple(out_soqs)
 
-    def finalize(self, **final_soqs: ArrayLike) -> CompositeBloq:
+    def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
 
         This method is similar to calling `add()` but instead of adding a new Bloq,
