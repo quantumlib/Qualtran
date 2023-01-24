@@ -17,6 +17,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
 
@@ -357,3 +358,33 @@ class CompositeBloqBuilder:
             ) from None
 
         return CompositeBloq(cxns=self._cxns, registers=self._parent_regs)
+
+    def allocate(self, n: int = 1) -> Soquet:
+        (out_soq,) = self.add(Allocate(n=n))
+        return out_soq
+
+    def free(self, soq: Soquet) -> None:
+        if not isinstance(soq, Soquet):
+            raise ValueError("`free` expects a single Soquet to free.")
+
+        self.add(Free(n=soq.reg.bitsize), free=soq)
+
+    def split(self, soq: Soquet) -> SoquetT:
+        """Add a Split bloq to split up a register."""
+        if not isinstance(soq, Soquet):
+            raise ValueError("`split` expects a single Soquet to split.")
+
+        (out_soqs,) = self.add(Split(n=soq.reg.bitsize), split=soq)
+        return out_soqs
+
+    def join(self, soqs: NDArray[Soquet]) -> Soquet:
+        try:
+            (n,) = soqs.shape
+        except AttributeError:
+            raise ValueError("`join` expects a 1-d array of input soquets to join.") from None
+
+        if not all(soq.reg.bitsize == 1 for soq in soqs):
+            raise ValueError("`join` can only join equal-bitsized soquets, currently only size 1.")
+
+        (out_soq,) = self.add(Join(n=n), join=soqs)
+        return out_soq
