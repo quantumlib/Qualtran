@@ -67,6 +67,54 @@ class CompositeBloq(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 
+    @staticmethod
+    def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
+        """Helper method used in `debug_text`"""
+        lines = [f'{binst}']
+        pred_cxns = []
+        for pred in g.pred[binst]:
+            pred_cxns.extend(g.edges[pred, binst]['cxns'])
+
+        for pred_cxn in pred_cxns:
+            lines.append(
+                f'  {pred_cxn.left.binst}.{pred_cxn.left.pretty()} -> {pred_cxn.right.pretty()}'
+            )
+
+        succ_cxns = []
+        for succ in g.succ[binst]:
+            succ_cxns.extend(g.edges[binst, succ]['cxns'])
+
+        for succ_cxn in succ_cxns:
+            lines.append(
+                f'  {succ_cxn.left.pretty()} -> {succ_cxn.right.binst}.{succ_cxn.right.pretty()}'
+            )
+        return lines
+
+    def debug_text(self) -> str:
+        """Print connection information to assist in debugging.
+
+        The output will be a topologically sorted list of BloqInstances with each
+        topological generation separated by a horizontal line. Each bloq instance is followed
+        by a list of its incoming and outgoing connections. Note that all non-dangling
+        connections are represented twice: once as the output of a binst and again as the input
+        to a subsequent binst.
+        """
+        g = _create_binst_graph(self.connections)
+        gen_texts = []
+        for gen in nx.topological_generations(g):
+            gen_lines = []
+            for binst in gen:
+                if isinstance(binst, DanglingT):
+                    continue
+
+                gen_lines.extend(self._debug_binst(g, binst))
+
+            if gen_lines:
+                gen_texts.append('\n'.join(gen_lines))
+
+        delimited_gens = ('\n' + '-' * 20 + '\n').join(gen_texts)
+        return delimited_gens
+
 
 def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
     """Helper function to create a NetworkX graph so we can topologically visit BloqInstances.
