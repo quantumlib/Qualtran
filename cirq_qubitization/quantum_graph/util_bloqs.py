@@ -62,6 +62,12 @@ class Join(Bloq):
 
 @frozen
 class Allocate(Bloq):
+    """Allocate an `n` bit register.
+
+    Args:
+          n: the bitsize of the allocated register.
+    """
+
     n: int
 
     @cached_property
@@ -71,6 +77,12 @@ class Allocate(Bloq):
 
 @frozen
 class Free(Bloq):
+    """Free (i.e. de-allocate) an `n` bit register.
+
+    Args:
+        n: the bitsize of the register to be freed.
+    """
+
     n: int
 
     @cached_property
