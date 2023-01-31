@@ -80,6 +80,22 @@ def test_composite_bloq():
     """,
     )
 
+    assert (
+        cbloq.debug_text()
+        == """\
+BloqInstance(bloq=TestBloq(), i=1)
+  LeftDangle.q1 -> control
+  LeftDangle.q2 -> target
+  control -> BloqInstance(bloq=TestBloq(), i=2).target
+  target -> BloqInstance(bloq=TestBloq(), i=2).control
+--------------------
+BloqInstance(bloq=TestBloq(), i=2)
+  BloqInstance(bloq=TestBloq(), i=1).control -> target
+  BloqInstance(bloq=TestBloq(), i=1).target -> control
+  control -> RightDangle.q1
+  target -> RightDangle.q2"""
+    )
+
 
 def test_bb_composite_bloq():
     cbloq_auto = TestComposite().decompose_bloq()
