@@ -3,6 +3,7 @@ from typing import Dict
 
 import cirq
 import networkx as nx
+import numpy as np
 import pytest
 from numpy.typing import NDArray
 
@@ -271,3 +272,34 @@ target[1, 1, 0]: ───────────────────X─�
                                         │
 target[1, 2, 0]: ───────────────────────X───""",
     )
+
+
+def test_util_convenience_methods():
+    bb = CompositeBloqBuilder(FancyRegisters([]))
+
+    qs = bb.allocate(10)
+    qs = bb.split(qs)
+    qs = bb.join(qs)
+    bb.free(qs)
+    cbloq = bb.finalize()
+    assert len(cbloq.connections) == 1 + 10 + 1
+
+
+def test_util_convenience_methods_errors():
+    bb = CompositeBloqBuilder(FancyRegisters([]))
+
+    qs = np.asarray([bb.allocate(5), bb.allocate(5)])
+    with pytest.raises(ValueError, match='.*expects a single Soquet'):
+        qs = bb.split(qs)
+
+    qs = bb.allocate(5)
+    with pytest.raises(ValueError, match='.*expects a 1-d array'):
+        qs = bb.join(qs)
+
+    # but this works:
+    qs = np.asarray([bb.allocate(), bb.allocate()])
+    qs = bb.join(qs)
+
+    qs = np.asarray([bb.allocate(5), bb.allocate(5)])
+    with pytest.raises(ValueError, match='.*expects a single Soquet'):
+        bb.free(qs)

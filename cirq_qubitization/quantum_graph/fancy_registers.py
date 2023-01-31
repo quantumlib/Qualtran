@@ -49,6 +49,13 @@ class FancyRegister:
         """Iterate over all possible indices of a multidimensional register."""
         yield from itertools.product(*[range(sh) for sh in self.wireshape])
 
+    def total_bits(self) -> int:
+        """The total number of bits in this register.
+
+        This is the product of bitsize and all wireshapes.
+        """
+        return self.bitsize * np.product(self.wireshape).item()
+
 
 class FancyRegisters:
     """An ordered collection of `FancyRegister`.
@@ -143,7 +150,7 @@ class FancyRegisters:
             for ii in reg.wire_idxs():
                 for j in range(reg.bitsize):
                     qubits[ii + (j,)] = cirq.NamedQubit(
-                        f'{reg.name}[{", ".join(str(i) for i in ii+(j,))}]'
+                        f'{reg.name}[{", ".join(str(i) for i in ii + (j,))}]'
                     )
             return qubits
 

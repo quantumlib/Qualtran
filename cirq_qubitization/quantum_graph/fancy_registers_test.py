@@ -10,6 +10,7 @@ def test_register():
     assert r.bitsize == 5
     assert r.wireshape == tuple()
     assert r.side == Side.THRU
+    assert r.total_bits() == 5
 
 
 def test_multidim_register():
@@ -19,6 +20,7 @@ def test_multidim_register():
 
     assert not r.side & Side.LEFT
     assert r.side & Side.THRU
+    assert r.total_bits() == 2 * 3
 
 
 def test_registers():
