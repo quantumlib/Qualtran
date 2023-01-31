@@ -4,7 +4,7 @@ import pytest
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
-from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Join, Split
+from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
 
 @pytest.mark.parametrize('n', [5, 123])
@@ -34,3 +34,5 @@ def test_util_bloqs():
     assert qs2.shape == (10,)
     (qs3,) = bb.add(Join(10), join=qs2)
     assert isinstance(qs3, Soquet)
+    no_return = bb.add(Free(10), free=qs3)
+    assert no_return is tuple()
