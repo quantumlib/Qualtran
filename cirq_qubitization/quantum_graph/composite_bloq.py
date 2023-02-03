@@ -54,6 +54,12 @@ class CompositeBloq(Bloq):
         }
 
     @cached_property
+    def all_soquets(self) -> Set[Soquet]:
+        soquets = {cxn.left for cxn in self._cxns}
+        soquets |= {cxn.right for cxn in self._cxns}
+        return soquets
+
+    @cached_property
     def _binst_graph(self) -> nx.DiGraph:
         """Get a cached version of this composite bloq's BloqInstance graph.
 
