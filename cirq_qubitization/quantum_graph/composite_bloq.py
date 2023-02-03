@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union, Iterator
 
 import cirq
 import networkx as nx
@@ -34,6 +34,8 @@ class CompositeBloq(Bloq):
     def __init__(self, cxns: Sequence[Connection], registers: FancyRegisters):
         self._cxns = tuple(cxns)
         self._registers = registers
+        # Warning: networkx graphs are mutable. Don't accidentally mutate this.
+        self._g: Union[None, nx.DiGraph] = None
 
     @property
     def registers(self) -> FancyRegisters:
@@ -53,6 +55,21 @@ class CompositeBloq(Bloq):
             if not isinstance(soq.binst, DanglingT)
         }
 
+    def _get_binst_graph(self) -> nx.DiGraph:
+        """Get a cached version of this composite bloq's BloqInstance graph.
+
+        The BloqInstance graph (or binst_graph) records edges between bloq instances
+        and stores the `Connection` (i.e. Soquet-Soquet) information on an edge attribute
+        named `cxns`.
+
+        NetworkX graphs are mutable. We require that any uses of this private method
+        do not mutate the graph. It is cached for performance reasons. Use g.copy() to
+        get a copy.
+        """
+        if self._g is None:
+            self._g = _create_binst_graph(self.connections)
+        return self._g
+
     def to_cirq_circuit(self, **quregs: NDArray[cirq.Qid]) -> cirq.Circuit:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
@@ -63,28 +80,41 @@ class CompositeBloq(Bloq):
         """
         # First, convert register names to registers.
         quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
-        return _cbloq_to_cirq_circuit(quregs, self.connections)
+        return _cbloq_to_cirq_circuit(quregs, self._get_binst_graph())
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
+
+    def iter_bloqnections(
+        self,
+    ) -> Iterator[Tuple[BloqInstance, List[Connection], List[Connection]]]:
+        """Iterate over Bloqs and their connections in topological order.
+
+        Yields:
+            A bloq instance, its predecessor connections, and its successor connections. The
+            bloq instances are yielded in a topologically-sorted order. The predecessor
+            and successor connections are lists of `Connection` objects feeding into or out of
+            (respectively) the binst. Dangling nodes are not included as the binst (but
+            connections to dangling nodes are included in predecessors and successors).
+            Every connection that does not involve a dangling node will appear twice: once as
+            a predecessor and again as a successor.
+        """
+        g = self._get_binst_graph()
+        for binst in nx.topological_sort(g):
+            if isinstance(binst, DanglingT):
+                continue
+            pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=g)
+            yield binst, pred_cxns, succ_cxns
 
     @staticmethod
     def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
         """Helper method used in `debug_text`"""
         lines = [f'{binst}']
-        pred_cxns = []
-        for pred in g.pred[binst]:
-            pred_cxns.extend(g.edges[pred, binst]['cxns'])
-
+        pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=g)
         for pred_cxn in pred_cxns:
             lines.append(
                 f'  {pred_cxn.left.binst}.{pred_cxn.left.pretty()} -> {pred_cxn.right.pretty()}'
             )
-
-        succ_cxns = []
-        for succ in g.succ[binst]:
-            succ_cxns.extend(g.edges[binst, succ]['cxns'])
-
         for succ_cxn in succ_cxns:
             lines.append(
                 f'  {succ_cxn.left.pretty()} -> {succ_cxn.right.binst}.{succ_cxn.right.pretty()}'
@@ -100,7 +130,7 @@ class CompositeBloq(Bloq):
         connections are represented twice: once as the output of a binst and again as the input
         to a subsequent binst.
         """
-        g = _create_binst_graph(self.connections)
+        g = self._get_binst_graph()
         gen_texts = []
         for gen in nx.topological_generations(g):
             gen_lines = []
@@ -136,6 +166,21 @@ def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
     return binst_graph
 
 
+def _binst_to_cxns(
+    binst: BloqInstance, binst_graph: nx.DiGraph
+) -> Tuple[List[Connection], List[Connection]]:
+    """Helper method to extract all predecessor and successor Connections for a binst."""
+    pred_cxns: List[Connection] = []
+    for pred in binst_graph.pred[binst]:
+        pred_cxns.extend(binst_graph.edges[pred, binst]['cxns'])
+
+    succ_cxns: List[Connection] = []
+    for succ in binst_graph.succ[binst]:
+        succ_cxns.extend(binst_graph.edges[binst, succ]['cxns'])
+
+    return pred_cxns, succ_cxns
+
+
 def _process_binst(
     binst: BloqInstance, soqmap: Dict[Soquet, Sequence[cirq.Qid]], binst_graph: nx.DiGraph
 ) -> Optional[cirq.Operation]:
@@ -155,11 +200,12 @@ def _process_binst(
     if isinstance(binst, DanglingT):
         return None
 
+    pred_cxns, _ = _binst_to_cxns(binst, binst_graph)
+
     # Track inter-Bloq name changes
-    for pred in binst_graph.predecessors(binst):
-        for cxn in binst_graph.edges[pred, binst]['cxns']:
-            soqmap[cxn.right] = soqmap[cxn.left]
-            del soqmap[cxn.left]
+    for cxn in pred_cxns:
+        soqmap[cxn.right] = soqmap[cxn.left]
+        del soqmap[cxn.left]
 
     bloq = binst.bloq
 
@@ -191,21 +237,20 @@ def _process_binst(
 
 
 def _cbloq_to_cirq_circuit(
-    quregs: Dict[FancyRegister, NDArray[cirq.Qid]], cxns: Sequence[Connection]
+    quregs: Dict[FancyRegister, NDArray[cirq.Qid]], binst_graph: nx.DiGraph
 ) -> cirq.Circuit:
     """Transform CompositeBloq components into a `cirq.Circuit`.
 
     Args:
         quregs: Assignment from each register to a sequence of `cirq.Qid` for the conversion
             to a `cirq.Circuit`.
-        cxns: A sequence of `Connection` objects that define the quantum compute graph.
+        binst_graph: A graph connecting bloq instances with edge attributes containing the
+            full list of `Connection`s, as returned by `CompositeBloq._get_binst_graph()`.
+            This function does not mutate `binst_graph`.
 
     Returns:
         A `cirq.Circuit` for the quantum compute graph.
     """
-    # Make a graph where we just connect binsts but note in the edges what the mappings are.
-    binst_graph = _create_binst_graph(cxns)
-
     # A mapping of soquet to qubits that we update as operations are appended to the circuit.
     soqmap = {}
     for reg in quregs.keys():

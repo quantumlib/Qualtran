@@ -96,6 +96,12 @@ BloqInstance(bloq=TestBloq(), i=2)
   target -> RightDangle.q2"""
     )
 
+    assert len(list(cbloq.iter_bloqnections())) == len(cbloq.bloq_instances)
+    for binst, preds, succs in cbloq.iter_bloqnections():
+        assert isinstance(binst, BloqInstance)
+        assert len(preds) > 0
+        assert len(succs) > 0
+
 
 def test_bb_composite_bloq():
     cbloq_auto = TestComposite().decompose_bloq()
