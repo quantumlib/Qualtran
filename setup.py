@@ -1,7 +1,8 @@
 import io
 import re
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
+
 from dev_tools.requirements import explode
 
 
