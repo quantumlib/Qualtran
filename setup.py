@@ -31,7 +31,7 @@ def main() -> None:
     long_description += stream.read()
 
     requirements = explode("dev_tools/requirements/deps/runtime.txt")
-    dev_requirements = explode("dev_tools/requirements/dev.env.txt")
+    dev_requirements = explode("dev_tools/requirements/deps/dev-tools.txt")
     # requirements = [r.strip() for r in requirements_buffer]
 
     setup(
