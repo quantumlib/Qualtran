@@ -33,7 +33,7 @@ class MagicStateFactory(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def footprint(self) -> int:
-        """The physical qubit spacial footprint of the factory."""
+        """The number of physical qubits used by the magic state factory."""
 
     @abc.abstractmethod
     def n_cycles(self, n_magic: MagicStateCount) -> int:
