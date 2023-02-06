@@ -12,7 +12,7 @@ class MagicStateCount:
 
     Args:
         t_count: The number of T operations that need to be performed.
-        ccz_count: The number of Toffli or CCZ operations that need to be performed.
+        ccz_count: The number of Toffoli or CCZ operations that need to be performed.
     """
 
     t_count: int
