@@ -127,7 +127,7 @@ class CompositeBloq(Bloq):
         connections are represented twice: once as the output of a binst and again as the input
         to a subsequent binst.
         """
-        g = self._binst_graph()
+        g = self._binst_graph
         gen_texts = []
         for gen in nx.topological_generations(g):
             gen_lines = []
