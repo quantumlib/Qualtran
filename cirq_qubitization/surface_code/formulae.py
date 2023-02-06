@@ -1,7 +1,7 @@
 import math
 
 
-def error_at(phys_err: float, *, d: int):
+def error_at(phys_err: float, *, d: int) -> float:
     """Logical error suppressed with code distance `d` for this physical error rate.
 
     This is an estimate, see the references section.
