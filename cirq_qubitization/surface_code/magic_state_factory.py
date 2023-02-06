@@ -23,7 +23,7 @@ class MagicStateCount:
         return self.t_count + 4 * self.ccz_count
 
 
-class Factory(metaclass=abc.ABCMeta):
+class MagicStateFactory(metaclass=abc.ABCMeta):
     """A cost model for the magic state distillation factory of a surface code compilation.
 
     A surface code layout is segregated into qubits dedicated to magic state distillation

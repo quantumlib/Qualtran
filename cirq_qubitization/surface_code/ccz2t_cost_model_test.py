@@ -1,7 +1,7 @@
 import numpy as np
 
 from cirq_qubitization.surface_code.ccz2t_cost_model import get_ccz2t_costs
-from cirq_qubitization.surface_code.factory import MagicStateCount
+from cirq_qubitization.surface_code.magic_state_factory import MagicStateCount
 
 
 def test_vs_spreadsheet():

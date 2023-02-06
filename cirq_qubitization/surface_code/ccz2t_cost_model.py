@@ -4,13 +4,13 @@ from typing import Optional
 from attrs import frozen
 
 from cirq_qubitization.surface_code.data_block import DataBlock, SimpleDataBlock
-from cirq_qubitization.surface_code.factory import Factory, MagicStateCount
 from cirq_qubitization.surface_code.formulae import code_distance_from_budget, error_at
+from cirq_qubitization.surface_code.magic_state_factory import MagicStateCount, MagicStateFactory
 from cirq_qubitization.surface_code.physical_cost import PhysicalCost
 
 
 @frozen
-class CCZ2TFactory(Factory):
+class CCZ2TFactory(MagicStateFactory):
     """Magic state factory costs using the model from catalyzed CCZ to 2T paper.
 
     Args:
@@ -144,7 +144,7 @@ def get_ccz2t_costs(
     error_budget: Optional[float] = 1e-2,
     cycle_time_us: float = 1.0,
     routing_overhead: Optional[float] = 0.5,
-    factory: Factory = None,
+    factory: MagicStateFactory = None,
     data_block: DataBlock = None,
 ) -> PhysicalCost:
     """Physical costs using the model from catalyzed CCZ to 2T paper.
