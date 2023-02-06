@@ -62,6 +62,7 @@ def test_create_binst_graph():
     binst1 = cxns[2].left.binst
     binst2 = cxns[2].right.binst
     binst_graph = _create_binst_graph(cxns)
+    assert nx.is_isomorphic(binst_graph, CompositeBloq(cxns, regs)._binst_graph)
 
     binst_generations = list(nx.topological_generations(binst_graph))
     assert binst_generations == [[LeftDangle], [binst1], [binst2], [RightDangle]]

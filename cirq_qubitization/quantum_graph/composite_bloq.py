@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union, Iterator
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
 
 import cirq
 import networkx as nx
@@ -34,8 +34,6 @@ class CompositeBloq(Bloq):
     def __init__(self, cxns: Sequence[Connection], registers: FancyRegisters):
         self._cxns = tuple(cxns)
         self._registers = registers
-        # Warning: networkx graphs are mutable. Don't accidentally mutate this.
-        self._g: Union[None, nx.DiGraph] = None
 
     @property
     def registers(self) -> FancyRegisters:
@@ -55,20 +53,19 @@ class CompositeBloq(Bloq):
             if not isinstance(soq.binst, DanglingT)
         }
 
-    def _get_binst_graph(self) -> nx.DiGraph:
+    @cached_property
+    def _binst_graph(self) -> nx.DiGraph:
         """Get a cached version of this composite bloq's BloqInstance graph.
 
         The BloqInstance graph (or binst_graph) records edges between bloq instances
         and stores the `Connection` (i.e. Soquet-Soquet) information on an edge attribute
         named `cxns`.
 
-        NetworkX graphs are mutable. We require that any uses of this private method
+        NetworkX graphs are mutable. We require that any uses of this private property
         do not mutate the graph. It is cached for performance reasons. Use g.copy() to
         get a copy.
         """
-        if self._g is None:
-            self._g = _create_binst_graph(self.connections)
-        return self._g
+        return _create_binst_graph(self.connections)
 
     def to_cirq_circuit(self, **quregs: NDArray[cirq.Qid]) -> cirq.Circuit:
         """Convert this CompositeBloq to a `cirq.Circuit`.
@@ -80,7 +77,7 @@ class CompositeBloq(Bloq):
         """
         # First, convert register names to registers.
         quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
-        return _cbloq_to_cirq_circuit(quregs, self._get_binst_graph())
+        return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
@@ -99,7 +96,7 @@ class CompositeBloq(Bloq):
             Every connection that does not involve a dangling node will appear twice: once as
             a predecessor and again as a successor.
         """
-        g = self._get_binst_graph()
+        g = self._binst_graph
         for binst in nx.topological_sort(g):
             if isinstance(binst, DanglingT):
                 continue
@@ -130,7 +127,7 @@ class CompositeBloq(Bloq):
         connections are represented twice: once as the output of a binst and again as the input
         to a subsequent binst.
         """
-        g = self._get_binst_graph()
+        g = self._binst_graph()
         gen_texts = []
         for gen in nx.topological_generations(g):
             gen_lines = []
