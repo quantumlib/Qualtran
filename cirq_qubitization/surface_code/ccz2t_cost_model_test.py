@@ -1,37 +1,18 @@
 import numpy as np
 
-from cirq_qubitization.surface_code.ccz2t_cost_model import CCZ2TCostModel
+from cirq_qubitization.surface_code.ccz2t_cost_model import get_ccz2t_costs
+from cirq_qubitization.surface_code.magic_state_factory import MagicStateCount
 
 
 def test_vs_spreadsheet():
-    re = CCZ2TCostModel(
-        t_count=10**8,
-        toffoli_count=10**8,
-        n_alg_qubits=100,
+    re = get_ccz2t_costs(
+        n_magic=MagicStateCount(t_count=10**8, ccz_count=10**8),
+        n_algo_qubits=100,
         error_budget=0.01,
-        physical_error_rate=1e-3,
+        phys_err=1e-3,
         cycle_time_us=1,
     )
 
     np.testing.assert_allclose(re.failure_prob, 0.0084, rtol=1e-3)
-    np.testing.assert_allclose(re.n_physical_qubits, 4.00e5, rtol=1e-3)
+    np.testing.assert_allclose(re.footprint, 4.00e5, rtol=1e-3)
     np.testing.assert_allclose(re.duration_hr, 7.53, rtol=1e-3)
-
-
-def test_invert_error_at():
-    re = CCZ2TCostModel(
-        t_count=10**8,
-        toffoli_count=10**8,
-        n_alg_qubits=100,
-        error_budget=0.01,
-        physical_error_rate=1e-3,
-        cycle_time_us=1,
-    )
-
-    budgets = np.logspace(-1, -18)
-    for budget in budgets:
-        d = re._code_distance_from_budget(budget=budget)
-        assert d % 2 == 1
-        assert re.error_at(d=d) <= budget
-        if d > 3:
-            assert re.error_at(d=d - 2) > budget
