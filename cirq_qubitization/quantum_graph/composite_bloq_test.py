@@ -62,6 +62,7 @@ def test_create_binst_graph():
     binst1 = cxns[2].left.binst
     binst2 = cxns[2].right.binst
     binst_graph = _create_binst_graph(cxns)
+    assert nx.is_isomorphic(binst_graph, CompositeBloq(cxns, regs)._binst_graph)
 
     binst_generations = list(nx.topological_generations(binst_graph))
     assert binst_generations == [[LeftDangle], [binst1], [binst2], [RightDangle]]
@@ -95,6 +96,12 @@ BloqInstance(bloq=TestBloq(), i=2)
   control -> RightDangle.q1
   target -> RightDangle.q2"""
     )
+
+    assert len(list(cbloq.iter_bloqnections())) == len(cbloq.bloq_instances)
+    for binst, preds, succs in cbloq.iter_bloqnections():
+        assert isinstance(binst, BloqInstance)
+        assert len(preds) > 0
+        assert len(succs) > 0
 
 
 def test_bb_composite_bloq():
