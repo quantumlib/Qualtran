@@ -21,7 +21,14 @@ def error_at(phys_err: float, *, d: int) -> float:
         Fowler et. al. (2010). https://arxiv.org/abs/1004.0255.
         Note: this doesn't actually contain the formula from the above reference.
     """
+    # azure: prefactor is 0.03
+    # probably want d=1 --> in_err
     return 0.1 * (100 * phys_err) ** ((d + 1) / 2)
+
+
+def quop_err(phys_err: float, *, d: int) -> float:
+    # d cycles
+    return 1 - (1 - error_at(phys_err, d=d)) ** d
 
 
 def code_distance_from_budget(phys_err: float, budget: float) -> int:
@@ -33,4 +40,18 @@ def code_distance_from_budget(phys_err: float, budget: float) -> int:
     d = 2 * math.ceil(r) - 1
     if d < 3:
         return 3
+    return d
+
+
+def physical_qubits_per_tile(*, d: int) -> int:
+    """Each 'tile' is d^2 data qubits and d^2 measure qubits.
+
+    A tile is the minimum-footprint area of physical qubits to store one logical qubit's
+    worth of information with code distance `d`. However, a logical qubit can be composed
+    of multiple tiles, and a tile can be deactivated and reserved for ancilla/routing duty.
+    """
+    return 2 * d**2
+
+
+def n_cycles_per_quop(*, d: int) -> int:
     return d

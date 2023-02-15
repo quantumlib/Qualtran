@@ -3,7 +3,7 @@ import math
 
 from attrs import frozen
 
-from cirq_qubitization.surface_code.formulae import error_at
+from cirq_qubitization.surface_code.formulae import error_at, physical_qubits_per_tile
 
 
 class DataBlock(metaclass=abc.ABCMeta):
@@ -14,6 +14,7 @@ class DataBlock(metaclass=abc.ABCMeta):
     called the data block, and we provide its costs here.
     """
 
+    @abc.abstractmethod
     def footprint(self, n_algo_qubits: int) -> int:
         """The number of physical qubits used by the data block.
 
@@ -22,12 +23,30 @@ class DataBlock(metaclass=abc.ABCMeta):
                 accessed.
         """
 
+    @abc.abstractmethod
     def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
 
 
+class TileDataBlock(metaclass=abc.ABCMeta):
+    data_d: int = NotImplemented
+
+    @abc.abstractmethod
+    def n_tiles(self, n_algo_qubits: int) -> int:
+        """Number of logical tiles including overhead."""
+
+    def footprint(self, n_algo_qubits: int) -> int:
+        """The number of physical qubits used by the data block."""
+        return self.n_tiles(n_algo_qubits) * physical_qubits_per_tile(d=self.data_d)
+
+    def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
+        """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
+        data_cells = self.n_tiles(n_algo_qubits) * n_cycles
+        return data_cells * error_at(phys_err, d=self.data_d)
+
+
 @frozen
-class SimpleDataBlock(DataBlock):
+class SimpleDataBlock(TileDataBlock):
     """A simple data block that uses a fixed code distance and routing overhead.
 
     Args:
@@ -39,21 +58,11 @@ class SimpleDataBlock(DataBlock):
     data_d: int
     routing_overhead: float = 0.5
 
-    def n_logical_qubits(self, n_algo_qubits: int) -> int:
-        """Number of logical qubits including overhead.
+    def n_tiles(self, n_algo_qubits: int) -> int:
+        """Number of logical tiles including overhead.
 
         Note: the spreadsheet from the reference had a 50% overhead hardcoded for
         some of the cells using this quantity and variable (but set to 50% as default)
         for others.
         """
         return math.ceil((1 + self.routing_overhead) * n_algo_qubits)
-
-    def footprint(self, n_algo_qubits: int) -> int:
-        """The number of physical qubits used by the data block."""
-        n_phys_per_logical = 2 * self.data_d**2
-        return self.n_logical_qubits(n_algo_qubits) * n_phys_per_logical
-
-    def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
-        """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
-        data_cells = self.n_logical_qubits(n_algo_qubits) * n_cycles
-        return data_cells * error_at(phys_err, d=self.data_d)
