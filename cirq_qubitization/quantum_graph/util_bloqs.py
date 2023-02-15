@@ -1,10 +1,14 @@
 from functools import cached_property
-from typing import Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Sequence, Tuple, TYPE_CHECKING, Union
 
+import numpy as np
+import quimb.tensor as qtn
 from attrs import field, frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance, Soquet
 
 if TYPE_CHECKING:
     import cirq
@@ -58,6 +62,30 @@ class Join(Bloq):
         self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
     ) -> 'cirq.GateOperation':
         return None
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        binst: BloqInstance,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        assert sorted(incoming.keys()) == ['join']
+        in_soqs = incoming['join']
+        assert in_soqs.shape == (self.n,)
+
+        assert sorted(outgoing.keys()) == ['join']
+        out_soq = outgoing['join']
+        assert isinstance(out_soq, Soquet)
+
+        tn.add(
+            qtn.Tensor(
+                data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
+                inds=in_soqs.tolist() + [out_soq],
+                tags=['Join', binst],
+            )
+        )
 
 
 @frozen

@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -17,7 +17,6 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
-from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
 
@@ -278,7 +277,7 @@ class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
-def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
+def _initialize_soquets(regs: Optional[FancyRegisters]) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
     """Initialize input Soquets from left registers for bookkeeping in `CompositeBloqBuilder`.
 
     Returns:
@@ -291,6 +290,9 @@ def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[S
     """
     available: Set[Soquet] = set()
     initial_soqs: Dict[str, SoquetT] = {}
+    if regs is None:
+        return initial_soqs, available
+
     soqs: SoquetT
     for reg in regs.lefts():
         if reg.wireshape:
@@ -310,6 +312,39 @@ def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[S
     return initial_soqs, available
 
 
+def get_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT]:
+    """Initialize input Soquets from left registers for bookkeeping in `CompositeBloqBuilder`.
+
+    Returns:
+        all_soqs: A mapping from register name to a Soquet or Soquets. For multi-dimensional
+            registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
+            registers, the value will be a `Soquet` object.
+    """
+    if right:
+        regs = regs.rights()
+        dang = RightDangle
+    else:
+        regs = regs.lefts()
+        dang = LeftDangle
+
+    all_soqs: Dict[str, SoquetT] = {}
+    soqs: SoquetT
+    for reg in regs:
+        if reg.wireshape:
+            soqs = np.empty(reg.wireshape, dtype=object)
+            for ri in reg.wire_idxs():
+                soq = Soquet(dang, reg, idx=ri)
+                soqs[ri] = soq
+        else:
+            # Annoyingly, this must be a special case.
+            # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
+            # 'object'. This wouldn't happen--for example--with an integer array.
+            soqs = Soquet(dang, reg)
+
+        all_soqs[reg.name] = soqs
+    return all_soqs
+
+
 class CompositeBloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
@@ -321,7 +356,7 @@ class CompositeBloqBuilder:
         parent_regs: The `Registers` argument for the parent bloq.
     """
 
-    def __init__(self, parent_regs: FancyRegisters):
+    def __init__(self, parent_regs: Optional[FancyRegisters] = None):
         # To be appended to:
         self._cxns: List[Connection] = []
 
@@ -408,6 +443,25 @@ class CompositeBloqBuilder:
 
         return tuple(out_soqs)
 
+    def fancy_finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
+        assert self._parent_regs is None
+
+        def _infer_reg(name: str, soq: SoquetT) -> FancyRegister:
+            if isinstance(soq, Soquet):
+                return FancyRegister(name=name, bitsize=soq.reg.bitsize, side=Side.RIGHT)
+
+            return FancyRegister(
+                name=name,
+                bitsize=soq.reshape(-1)[0].reg.bitsize,
+                wireshape=soq.shape,
+                side=Side.RIGHT,
+            )
+
+        self._parent_regs = FancyRegisters(
+            [_infer_reg(name, soq) for name, soq in final_soqs.items()]
+        )
+        return self.finalize(**final_soqs)
+
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
 
@@ -456,10 +510,14 @@ class CompositeBloqBuilder:
         return CompositeBloq(cxns=self._cxns, registers=self._parent_regs)
 
     def allocate(self, n: int = 1) -> Soquet:
+        from cirq_qubitization.quantum_graph.util_bloqs import Allocate
+
         (out_soq,) = self.add(Allocate(n=n))
         return out_soq
 
     def free(self, soq: Soquet) -> None:
+        from cirq_qubitization.quantum_graph.util_bloqs import Free
+
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
@@ -467,6 +525,8 @@ class CompositeBloqBuilder:
 
     def split(self, soq: Soquet) -> SoquetT:
         """Add a Split bloq to split up a register."""
+        from cirq_qubitization.quantum_graph.util_bloqs import Split
+
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
 
@@ -474,6 +534,8 @@ class CompositeBloqBuilder:
         return out_soqs
 
     def join(self, soqs: NDArray[Soquet]) -> Soquet:
+        from cirq_qubitization.quantum_graph.util_bloqs import Join
+
         try:
             (n,) = soqs.shape
         except AttributeError:
