@@ -1,7 +1,8 @@
 import io
 import re
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
+
 from dev_tools.requirements import explode
 
 
@@ -31,7 +32,7 @@ def main() -> None:
     long_description += stream.read()
 
     requirements = explode("dev_tools/requirements/deps/runtime.txt")
-    dev_requirements = explode("dev_tools/requirements/dev.env.txt")
+    dev_requirements = explode("dev_tools/requirements/deps/dev-tools.txt")
     # requirements = [r.strip() for r in requirements_buffer]
 
     setup(
