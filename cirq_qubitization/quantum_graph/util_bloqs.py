@@ -122,7 +122,7 @@ class Unpartition(Bloq):
     """Take a number of registers of uneven size and combine into one register.
 
     Args:
-        sizes: Input one left regsiter per size of the given bitsize. The output register
+        sizes: Input one left register per size of the given bitsize. The output register
             will be of bitsize `sum(sizes)`.
     """
 
