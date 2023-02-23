@@ -238,7 +238,7 @@ class GraphDrawer:
         for groupname, groupregs in binst.bloq.registers.groups():
             lefts, rights, thrus = _parition_registers_in_a_group(groupregs, binst)
 
-            # Case 1: all registers are THRU and we don't need different left and right
+            # Special case: all registers are THRU and we don't need different left and right
             # columns.
             if len(thrus) > 0:
                 for t in thrus:
@@ -251,10 +251,11 @@ class GraphDrawer:
             n_surplus_rights = max(0, len(rights) - len(lefts))
             n_common = min(len(lefts), len(rights))
 
-            # Case 2: we have some rows ("common" rows) that have both left and right soquets.
-            # This case will correctly deal with rowspan arguments for one column having
-            # greater or fewer items.
             if n_common >= 1:
+                # We have some rows ("common" rows) that have both left and right soquets.
+                # This branch will correctly deal with rowspan arguments for one column having
+                # greater or fewer items.
+
                 # add all but the last common rows. Both lefts[i] and rights[i] are non-None.
                 for i in range(n_common - 1):
                     label += self._get_register_tr(lefts[i], rights[i])
@@ -268,17 +269,16 @@ class GraphDrawer:
                     right_rowspan=n_surplus_lefts + 1,
                 )
 
-                # Add the rest of the registers. We don't include empty TDs
+                # For the rest of the registers, we don't include empty TDs
                 # because we used the rowspan argument above.
-                for l, r in itertools.zip_longest(
-                    lefts[n_common:], rights[n_common:], fillvalue=None
-                ):
-                    label += self._get_register_tr(l, r, with_empty_td=False)
-                continue
+                with_empty_td = False
+            else:
+                # No common rows; no place to include rowspan arguments so we pad with empty TDs
+                with_empty_td = True
 
-            # Case 3: Only one column has values. The other will have an empty TD.
-            for l, r in itertools.zip_longest(lefts, rights, fillvalue=None):
-                label += self._get_register_tr(l, r, with_empty_td=True)
+            # Add the rest of the registers.
+            for l, r in itertools.zip_longest(lefts[n_common:], rights[n_common:], fillvalue=None):
+                label += self._get_register_tr(l, r, with_empty_td=with_empty_td)
 
         label += '</TABLE>'
         label += '>'  # graphviz: end the HTML section
