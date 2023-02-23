@@ -17,63 +17,51 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 from cirq_qubitization.quantum_graph.util_bloqs import Join, Partition, Split, Unpartition
 
 
-class _IDBuilder:
-    """A helper builder class for assigning unique, readable string identifiers to objects.
+def _assign_ids_to_bloqs_and_soqs(
+    bloq_instances: Set[BloqInstance], all_soquets: Set[Soquet]
+) -> Dict[Any, str]:
+    """Assign unique identifiers to bloq instances, soquets, and register groups.
 
-    Any hashable Python object can be added to the ID mapping. Each addition should provide
-    a string `desired_id` to which we will add a disambiguating integer if required.
+    Graphviz is very forgiving in its input format. If you accidentally introduce a new id (e.g.
+    when defining an edge) that doesn't correspond to an existing node it will silently accept
+    this and draw a wonky graph. This function forces the declaration of all
+    possible graphviz objects ahead of time to remove this class of errors.
+
+    Returns:
+        A dictionary mapping objects to string identifiers. The objects are as follows:
+        1) Each BloqInstance in `bloq_instances`. 2) For each bloq instance, a collection of
+        (bloq_instance, group_name) tuples for each register group name. Registers with
+        shared names (but differing `side` attributes) are implicitly grouped. 3) Each
+        Soquet in `all_soquets`.
     """
+    to_id: Dict[Any, str] = {}
+    ids: Set[str] = set()
+    disambiguator = 0
 
-    def __init__(self):
-        self._to_id: Dict[Any, str] = {}
-        self._ids: Set[str] = set()
-        self._disambiguator = 0
-        self._valid = True
-
-    def add(self, item: Any, desired_id: str):
-        if item in self._to_id:
+    def add(item: Any, desired_id: str):
+        nonlocal disambiguator
+        if item in to_id:
             raise ValueError(f"Item {item} was already added to the ID mapping.")
 
-        if not self._valid:
-            raise ValueError("This builder is no longer valid.")
-
-        if desired_id not in self._ids:
+        if desired_id not in ids:
             unique_id = desired_id
         else:
-            unique_id = f'{desired_id}_G{self._disambiguator}'
-            self._disambiguator += 1
+            unique_id = f'{desired_id}_G{disambiguator}'
+            disambiguator += 1
 
-        self._ids.add(unique_id)
-        self._to_id[item] = unique_id
+        ids.add(unique_id)
+        to_id[item] = unique_id
 
-    def build(self) -> Dict[Any, str]:
-        self._valid = False
-        return self._to_id
+    for binst in bloq_instances:
+        add(binst, f'{binst.bloq.__class__.__name__}')
 
-    @classmethod
-    def assign_ids_to_bloqs_and_soqs(
-        cls, bloq_instances: Set[BloqInstance], all_soquets: Set[Soquet]
-    ) -> Dict[Any, str]:
-        """Assign unique identifiers to bloq instances, soquets, and register groups.
+        for groupname, groupregs in binst.bloq.registers.groups():
+            add((binst, groupname), groupname)
 
-        Returns:
-            A dictionary mapping objects to string identifiers. The objects are as follows:
-            1) Each BloqInstance in `bloq_instances`. 2) For each bloq instance, a collection of
-            (bloq_instance, group_name) tuples for each register group name. Registers with
-            shared names (but differing `side` attributes) are implicitly grouped. 3) Each
-            Soquet in `all_soquets`.
-        """
-        ibuilder = cls()
-        for binst in bloq_instances:
-            ibuilder.add(binst, f'{binst.bloq.__class__.__name__}')
+    for soq in all_soquets:
+        add(soq, f'{soq.reg.name}')
 
-            for groupname, groupregs in binst.bloq.registers.groups():
-                ibuilder.add((binst, groupname), groupname)
-
-        for soq in all_soquets:
-            ibuilder.add(soq, f'{soq.reg.name}')
-
-        return ibuilder.build()
+    return to_id
 
 
 def _parition_registers_in_a_group(
@@ -139,7 +127,7 @@ class GraphDrawer:
         self._binsts = cbloq.bloq_instances
         self._soquets = cbloq.all_soquets
 
-        self.ids = _IDBuilder.assign_ids_to_bloqs_and_soqs(self._binsts, self._soquets)
+        self.ids = _assign_ids_to_bloqs_and_soqs(self._binsts, self._soquets)
 
     def get_dangle_node(self, soq: Soquet) -> pydot.Node:
         """Overridable method to create a Node representing dangling Soquets."""
