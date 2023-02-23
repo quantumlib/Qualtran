@@ -51,10 +51,18 @@ class _IDBuilder:
         return self._to_id
 
     @classmethod
-    def build_bloqs_and_soqs(
+    def assign_ids_to_bloqs_and_soqs(
         cls, bloq_instances: Set[BloqInstance], all_soquets: Set[Soquet]
     ) -> Dict[Any, str]:
-        """Assign unique identifiers to bloq instances, soquets, and register groups."""
+        """Assign unique identifiers to bloq instances, soquets, and register groups.
+
+        Returns:
+            A dictionary mapping objects to string identifiers. The objects are as follows:
+            1) Each BloqInstance in `bloq_instances`. 2) For each bloq instance, a collection of
+            (bloq_instance, group_name) tuples for each register group name. Registers with
+            shared names (but differing `side` attributes) are implicitly grouped. 3) Each
+            Soquet in `all_soquets`.
+        """
         ibuilder = cls()
         for binst in bloq_instances:
             ibuilder.add(binst, f'{binst.bloq.__class__.__name__}')
@@ -131,7 +139,7 @@ class GraphDrawer:
         self._binsts = cbloq.bloq_instances
         self._soquets = cbloq.all_soquets
 
-        self.ids = _IDBuilder.build_bloqs_and_soqs(self._binsts, self._soquets)
+        self.ids = _IDBuilder.assign_ids_to_bloqs_and_soqs(self._binsts, self._soquets)
 
     def get_dangle_node(self, soq: Soquet) -> pydot.Node:
         """Overridable method to create a Node representing dangling Soquets."""
