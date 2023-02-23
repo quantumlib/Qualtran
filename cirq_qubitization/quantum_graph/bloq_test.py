@@ -6,6 +6,7 @@ import pytest
 from attrs import frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
 
 
@@ -36,3 +37,15 @@ def test_bloq():
 
     with pytest.raises(NotImplementedError):
         tb.decompose_bloq()
+
+
+def test_as_composite_bloq():
+    tb = TestBloq()
+    cb = tb.as_composite_bloq()
+    assert isinstance(cb, CompositeBloq)
+    bloqs = list(cb.bloq_instances)
+    assert len(bloqs) == 1
+    assert bloqs[0].bloq == tb
+
+    cb2 = cb.as_composite_bloq()
+    assert cb is cb2

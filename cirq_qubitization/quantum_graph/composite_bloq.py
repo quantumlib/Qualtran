@@ -85,6 +85,10 @@ class CompositeBloq(Bloq):
         quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
         return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
 
+    def as_composite_bloq(self) -> 'CompositeBloq':
+        """This override just returns the present composite bloq."""
+        return self
+
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 

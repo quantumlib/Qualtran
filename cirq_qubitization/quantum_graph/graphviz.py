@@ -126,10 +126,7 @@ class GraphDrawer:
     """
 
     def __init__(self, bloq: Bloq):
-        if not isinstance(bloq, CompositeBloq):
-            cbloq = bloq.as_composite_bloq()
-        else:
-            cbloq = bloq
+        cbloq = bloq.as_composite_bloq()
         self._cbloq = cbloq
         self._binsts = cbloq.bloq_instances
         self._soquets = cbloq.all_soquets

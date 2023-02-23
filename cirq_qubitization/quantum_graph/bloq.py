@@ -74,7 +74,11 @@ class Bloq(metaclass=abc.ABCMeta):
         return bb.finalize(**out_soqs)
 
     def as_composite_bloq(self) -> 'CompositeBloq':
-        """Wrap this Bloq into a size-1 CompositeBloq."""
+        """Wrap this Bloq into a size-1 CompositeBloq.
+
+        This method is overriden so if this Bloq is already a CompositeBloq, it will
+        be returned.
+        """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
         bb = CompositeBloqBuilder(self.registers)
