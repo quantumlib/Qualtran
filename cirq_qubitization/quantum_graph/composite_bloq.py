@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, FrozenSet, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
 
 import cirq
 import networkx as nx
@@ -54,10 +54,10 @@ class CompositeBloq(Bloq):
         }
 
     @cached_property
-    def all_soquets(self) -> Set[Soquet]:
+    def all_soquets(self) -> FrozenSet[Soquet]:
         soquets = {cxn.left for cxn in self._cxns}
         soquets |= {cxn.right for cxn in self._cxns}
-        return soquets
+        return frozenset(soquets)
 
     @cached_property
     def _binst_graph(self) -> nx.DiGraph:
