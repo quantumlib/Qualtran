@@ -13,7 +13,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
-from cirq_qubitization.quantum_graph.util_bloqs import Join, Partition, Split, Unpartition
+from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 
 
 def _assign_ids_to_bloqs_and_soqs(
@@ -338,7 +338,7 @@ class GraphDrawer:
 
 
 class PrettyGraphDrawer(GraphDrawer):
-    INFRA_BLOQ_TYPES = (Split, Join, Partition, Unpartition)
+    INFRA_BLOQ_TYPES = (Split, Join)
 
     def get_binst_table_attributes(self) -> str:
         return 'BORDER="0" CELLBORDER="1" CELLSPACING="0"'
