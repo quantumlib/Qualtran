@@ -31,7 +31,9 @@ jobs:
           cache: "pip"
           cache-dependency-path: "dev_tools/requirements/format.env.txt"
       - name: Install dependencies
-        run: pip install -r dev_tools/requirements/format.env.txt
+        run: |
+          pip install wheel
+          pip install -r dev_tools/requirements/format.env.txt
       - run: check/format-incremental
 
   pylint:
