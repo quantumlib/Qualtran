@@ -1,6 +1,6 @@
+import cirq
 import numpy as np
 import pytest
-import cirq
 
 import cirq_qubitization
 from cirq_qubitization import testing as cq_testing
@@ -12,23 +12,26 @@ from cirq_qubitization.bit_tools import iter_bits
 def test_select_swap_qrom(data, block_size):
     qrom = cirq_qubitization.SelectSwapQROM(*data, block_size=block_size)
     qubit_regs = qrom.registers.get_named_qubits()
-    all_qubits = qrom.registers.merge_qubits(**qubit_regs)
-    selection_q = qubit_regs["selection_q"]
-    selection_r = qubit_regs["selection_r"]
+    selection = qubit_regs["selection"]
+    selection_q, selection_r = selection[: qrom.selection_q], selection[qrom.selection_q :]
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
-    dirty_target_ancilla = qrom.target_dirty_ancilla.merge_qubits(**qubit_regs)
+    qrom_circuit = cirq.Circuit(cirq.decompose(qrom.on_registers(**qubit_regs)))
+    dirty_target_ancilla = [
+        q for q in qrom_circuit.all_qubits() if isinstance(q, cirq_qubitization.BorrowableQubit)
+    ]
 
     circuit = cirq.Circuit(
         # Prepare dirty ancillas in an arbitrary state.
         cirq.H.on_each(*dirty_target_ancilla),
         cirq.T.on_each(*dirty_target_ancilla),
         # The dirty ancillas should remain unaffected by qroam.
-        qrom.on_registers(**qubit_regs),
+        *qrom_circuit,
         # Bring back the dirty ancillas to their original state.
         (cirq.T**-1).on_each(*dirty_target_ancilla),
         cirq.H.on_each(*dirty_target_ancilla),
     )
 
+    all_qubits = circuit.all_qubits()
     for selection_integer in range(qrom.iteration_length):
         svals_q = list(iter_bits(selection_integer // qrom.block_size, len(selection_q)))
         svals_r = list(iter_bits(selection_integer % qrom.block_size, len(selection_r)))
@@ -53,47 +56,55 @@ def test_qrom_repr():
 
 
 def test_qroam_diagram():
-    data = [[1, 2, 3], [4, 5, 6]]
+    cirq_qubitization.qalloc_reset()
+    data = [[1, 2, 3, 1, 2, 3], [4, 5, 6, 4, 5, 6]]
     blocksize = 2
     qrom = cirq_qubitization.SelectSwapQROM(*data, block_size=blocksize)
     q = cirq.LineQubit.range(cirq.num_qubits(qrom))
-    circuit = cirq.Circuit(qrom.on_registers(**qrom.registers.split_qubits(q)))
+    op = qrom.on_registers(**qrom.registers.split_qubits(q))
+    circuit = cirq.Circuit(op, cirq.decompose_once(op))
     cirq.testing.assert_has_diagram(
         circuit,
         """
-0: ────In_q───────
-       │
-1: ────In_r───────
-       │
-2: ────QROAM_0────
-       │
-3: ────QROAM_0────
-       │
-4: ────QROAM_1────
-       │
-5: ────QROAM_1────
-       │
-6: ────QROAM_1────
-       │
-7: ────TAnc_0_0───
-       │
-8: ────TAnc_0_0───
-       │
-9: ────TAnc_0_1───
-       │
-10: ───TAnc_0_1───
-       │
-11: ───TAnc_0_1───
-       │
-12: ───TAnc_1_0───
-       │
-13: ───TAnc_1_0───
-       │
-14: ───TAnc_1_1───
-       │
-15: ───TAnc_1_1───
-       │
-16: ───TAnc_1_1───
+                                    ┌─────┐                                 ┌─────┐
+_b0: ─────────────QROM_0───swap_0────@────────swap_0──────QROM_0───swap_0────@────────swap_0──────
+                  │        │         │        │           │        │         │        │
+_b1: ─────────────QROM_0───swap_0────┼@───────swap_0──────QROM_0───swap_0────┼@───────swap_0──────
+                  │        │         ││       │           │        │         ││       │
+_b2: ─────────────QROM_1───swap_0────┼┼@──────swap_0──────QROM_1───swap_0────┼┼@──────swap_0──────
+                  │        │         │││      │           │        │         │││      │
+_b3: ─────────────QROM_1───swap_0────┼┼┼@─────swap_0──────QROM_1───swap_0────┼┼┼@─────swap_0──────
+                  │        │         ││││     │           │        │         ││││     │
+_b4: ─────────────QROM_1───swap_0────┼┼┼┼@────swap_0──────QROM_1───swap_0────┼┼┼┼@────swap_0──────
+                  │        │         │││││    │           │        │         │││││    │
+_b5: ─────────────QROM_2───swap_1────┼┼┼┼┼────swap_1──────QROM_2───swap_1────┼┼┼┼┼────swap_1──────
+                  │        │         │││││    │           │        │         │││││    │
+_b6: ─────────────QROM_2───swap_1────┼┼┼┼┼────swap_1──────QROM_2───swap_1────┼┼┼┼┼────swap_1──────
+                  │        │         │││││    │           │        │         │││││    │
+_b7: ─────────────QROM_3───swap_1────┼┼┼┼┼────swap_1──────QROM_3───swap_1────┼┼┼┼┼────swap_1──────
+                  │        │         │││││    │           │        │         │││││    │
+_b8: ─────────────QROM_3───swap_1────┼┼┼┼┼────swap_1──────QROM_3───swap_1────┼┼┼┼┼────swap_1──────
+                  │        │         │││││    │           │        │         │││││    │
+_b9: ─────────────QROM_3───swap_1────┼┼┼┼┼────swap_1──────QROM_3───swap_1────┼┼┼┼┼────swap_1──────
+                  │        │         │││││    │           │        │         │││││    │
+_c0: ─────────────Anc──────┼─────────┼┼┼┼┼────┼───────────Anc──────┼─────────┼┼┼┼┼────┼───────────
+                  │        │         │││││    │           │        │         │││││    │
+0: ─────In_q──────In───────┼─────────┼┼┼┼┼────┼───────────In───────┼─────────┼┼┼┼┼────┼───────────
+        │         │        │         │││││    │           │        │         │││││    │
+1: ─────In_q──────In───────┼─────────┼┼┼┼┼────┼───────────In^-1────┼─────────┼┼┼┼┼────┼───────────
+        │                  │         │││││    │                    │         │││││    │
+2: ─────In_r───────────────@(r⇋0)────┼┼┼┼┼────@(r⇋0)^-1────────────@(r⇋0)────┼┼┼┼┼────@(r⇋0)^-1───
+        │                            │││││                                   │││││
+3: ─────QROAM_0──────────────────────X┼┼┼┼───────────────────────────────────X┼┼┼┼────────────────
+        │                             ││││                                    ││││
+4: ─────QROAM_0───────────────────────X┼┼┼────────────────────────────────────X┼┼┼────────────────
+        │                              │││                                     │││
+5: ─────QROAM_1────────────────────────X┼┼─────────────────────────────────────X┼┼────────────────
+        │                               ││                                      ││
+6: ─────QROAM_1─────────────────────────X┼──────────────────────────────────────X┼────────────────
+        │                                │                                       │
+7: ─────QROAM_1──────────────────────────X───────────────────────────────────────X────────────────
+                                    └─────┘                                 └─────┘
 """,
     )
 
@@ -104,90 +115,90 @@ def test_qroam_raises():
 
 
 def test_qroam_make_on():
+    cirq_qubitization.qalloc_reset()
     data = [[1, 0, 1] * 33, [2, 3, 2] * 33]
     selection = [cirq.q(f'selection_{i}') for i in range(7)]
     targets = [[cirq.q(f'target_{i}_{j}') for j in range(1 + i)] for i in range(2)]
-    ancilla = cirq_qubitization.GreedyQubitManager(prefix="ancilla")
-    qrom_op = cirq_qubitization.SelectSwapQROM.make_on(
-        *data, selection=selection, target0=targets[0], target1=targets[1], ancilla=ancilla
-    )
-    circuit = cirq.Circuit(qrom_op)
-    print(circuit)
+    qrom = cirq_qubitization.SelectSwapQROM(*data)
+    op = qrom.on_registers(selection=selection, target0=targets[0], target1=targets[1])
+    circuit = cirq.Circuit(op, cirq.decompose_once(op))
     cirq.testing.assert_has_diagram(
         circuit,
         """
-ancilla_0: ─────Anc────────
-                │
-ancilla_1: ─────Anc────────
-                │
-ancilla_2: ─────Anc────────
-                │
-ancilla_3: ─────TAnc_0_0───
-                │
-ancilla_4: ─────TAnc_0_1───
-                │
-ancilla_5: ─────TAnc_0_1───
-                │
-ancilla_6: ─────TAnc_1_0───
-                │
-ancilla_7: ─────TAnc_1_1───
-                │
-ancilla_8: ─────TAnc_1_1───
-                │
-ancilla_9: ─────TAnc_2_0───
-                │
-ancilla_10: ────TAnc_2_1───
-                │
-ancilla_11: ────TAnc_2_1───
-                │
-ancilla_12: ────TAnc_3_0───
-                │
-ancilla_13: ────TAnc_3_1───
-                │
-ancilla_14: ────TAnc_3_1───
-                │
-ancilla_15: ────TAnc_4_0───
-                │
-ancilla_16: ────TAnc_4_1───
-                │
-ancilla_17: ────TAnc_4_1───
-                │
-ancilla_18: ────TAnc_5_0───
-                │
-ancilla_19: ────TAnc_5_1───
-                │
-ancilla_20: ────TAnc_5_1───
-                │
-ancilla_21: ────TAnc_6_0───
-                │
-ancilla_22: ────TAnc_6_1───
-                │
-ancilla_23: ────TAnc_6_1───
-                │
-ancilla_24: ────TAnc_7_0───
-                │
-ancilla_25: ────TAnc_7_1───
-                │
-ancilla_26: ────TAnc_7_1───
-                │
-selection_0: ───In_q───────
-                │
-selection_1: ───In_q───────
-                │
-selection_2: ───In_q───────
-                │
-selection_3: ───In_q───────
-                │
-selection_4: ───In_r───────
-                │
-selection_5: ───In_r───────
-                │
-selection_6: ───In_r───────
-                │
-target_0_0: ────QROAM_0────
-                │
-target_1_0: ────QROAM_1────
-                │
-target_1_1: ────QROAM_1────
+                                             ┌───┐                                  ┌───┐
+_b0: ─────────────────────QROM_0────swap_0────@──────swap_0──────QROM_0────swap_0────@──────swap_0──────
+                          │         │         │      │           │         │         │      │
+_b1: ─────────────────────QROM_1────swap_0────┼@─────swap_0──────QROM_1────swap_0────┼@─────swap_0──────
+                          │         │         ││     │           │         │         ││     │
+_b2: ─────────────────────QROM_1────swap_0────┼┼@────swap_0──────QROM_1────swap_0────┼┼@────swap_0──────
+                          │         │         │││    │           │         │         │││    │
+_b3: ─────────────────────QROM_2────swap_1────┼┼┼────swap_1──────QROM_2────swap_1────┼┼┼────swap_1──────
+                          │         │         │││    │           │         │         │││    │
+_b4: ─────────────────────QROM_3────swap_1────┼┼┼────swap_1──────QROM_3────swap_1────┼┼┼────swap_1──────
+                          │         │         │││    │           │         │         │││    │
+_b5: ─────────────────────QROM_3────swap_1────┼┼┼────swap_1──────QROM_3────swap_1────┼┼┼────swap_1──────
+                          │         │         │││    │           │         │         │││    │
+_b6: ─────────────────────QROM_4────swap_2────┼┼┼────swap_2──────QROM_4────swap_2────┼┼┼────swap_2──────
+                          │         │         │││    │           │         │         │││    │
+_b7: ─────────────────────QROM_5────swap_2────┼┼┼────swap_2──────QROM_5────swap_2────┼┼┼────swap_2──────
+                          │         │         │││    │           │         │         │││    │
+_b8: ─────────────────────QROM_5────swap_2────┼┼┼────swap_2──────QROM_5────swap_2────┼┼┼────swap_2──────
+                          │         │         │││    │           │         │         │││    │
+_b9: ─────────────────────QROM_6────swap_3────┼┼┼────swap_3──────QROM_6────swap_3────┼┼┼────swap_3──────
+                          │         │         │││    │           │         │         │││    │
+_b10: ────────────────────QROM_7────swap_3────┼┼┼────swap_3──────QROM_7────swap_3────┼┼┼────swap_3──────
+                          │         │         │││    │           │         │         │││    │
+_b11: ────────────────────QROM_7────swap_3────┼┼┼────swap_3──────QROM_7────swap_3────┼┼┼────swap_3──────
+                          │         │         │││    │           │         │         │││    │
+_b12: ────────────────────QROM_8────swap_4────┼┼┼────swap_4──────QROM_8────swap_4────┼┼┼────swap_4──────
+                          │         │         │││    │           │         │         │││    │
+_b13: ────────────────────QROM_9────swap_4────┼┼┼────swap_4──────QROM_9────swap_4────┼┼┼────swap_4──────
+                          │         │         │││    │           │         │         │││    │
+_b14: ────────────────────QROM_9────swap_4────┼┼┼────swap_4──────QROM_9────swap_4────┼┼┼────swap_4──────
+                          │         │         │││    │           │         │         │││    │
+_b15: ────────────────────QROM_10───swap_5────┼┼┼────swap_5──────QROM_10───swap_5────┼┼┼────swap_5──────
+                          │         │         │││    │           │         │         │││    │
+_b16: ────────────────────QROM_11───swap_5────┼┼┼────swap_5──────QROM_11───swap_5────┼┼┼────swap_5──────
+                          │         │         │││    │           │         │         │││    │
+_b17: ────────────────────QROM_11───swap_5────┼┼┼────swap_5──────QROM_11───swap_5────┼┼┼────swap_5──────
+                          │         │         │││    │           │         │         │││    │
+_b18: ────────────────────QROM_12───swap_6────┼┼┼────swap_6──────QROM_12───swap_6────┼┼┼────swap_6──────
+                          │         │         │││    │           │         │         │││    │
+_b19: ────────────────────QROM_13───swap_6────┼┼┼────swap_6──────QROM_13───swap_6────┼┼┼────swap_6──────
+                          │         │         │││    │           │         │         │││    │
+_b20: ────────────────────QROM_13───swap_6────┼┼┼────swap_6──────QROM_13───swap_6────┼┼┼────swap_6──────
+                          │         │         │││    │           │         │         │││    │
+_b21: ────────────────────QROM_14───swap_7────┼┼┼────swap_7──────QROM_14───swap_7────┼┼┼────swap_7──────
+                          │         │         │││    │           │         │         │││    │
+_b22: ────────────────────QROM_15───swap_7────┼┼┼────swap_7──────QROM_15───swap_7────┼┼┼────swap_7──────
+                          │         │         │││    │           │         │         │││    │
+_b23: ────────────────────QROM_15───swap_7────┼┼┼────swap_7──────QROM_15───swap_7────┼┼┼────swap_7──────
+                          │         │         │││    │           │         │         │││    │
+_c0: ─────────────────────Anc───────┼─────────┼┼┼────┼───────────Anc───────┼─────────┼┼┼────┼───────────
+                          │         │         │││    │           │         │         │││    │
+_c1: ─────────────────────Anc───────┼─────────┼┼┼────┼───────────Anc───────┼─────────┼┼┼────┼───────────
+                          │         │         │││    │           │         │         │││    │
+_c2: ─────────────────────Anc───────┼─────────┼┼┼────┼───────────Anc───────┼─────────┼┼┼────┼───────────
+                          │         │         │││    │           │         │         │││    │
+selection_0: ───In_q──────In────────┼─────────┼┼┼────┼───────────In────────┼─────────┼┼┼────┼───────────
+                │         │         │         │││    │           │         │         │││    │
+selection_1: ───In_q──────In────────┼─────────┼┼┼────┼───────────In────────┼─────────┼┼┼────┼───────────
+                │         │         │         │││    │           │         │         │││    │
+selection_2: ───In_q──────In────────┼─────────┼┼┼────┼───────────In────────┼─────────┼┼┼────┼───────────
+                │         │         │         │││    │           │         │         │││    │
+selection_3: ───In_q──────In────────┼─────────┼┼┼────┼───────────In^-1─────┼─────────┼┼┼────┼───────────
+                │                   │         │││    │                     │         │││    │
+selection_4: ───In_r────────────────@(r⇋0)────┼┼┼────@(r⇋0)────────────────@(r⇋0)────┼┼┼────@(r⇋0)──────
+                │                   │         │││    │                     │         │││    │
+selection_5: ───In_r────────────────@(r⇋0)────┼┼┼────@(r⇋0)────────────────@(r⇋0)────┼┼┼────@(r⇋0)──────
+                │                   │         │││    │                     │         │││    │
+selection_6: ───In_r────────────────@(r⇋0)────┼┼┼────@(r⇋0)^-1─────────────@(r⇋0)────┼┼┼────@(r⇋0)^-1───
+                │                             │││                                    │││
+target_0_0: ────QROAM_0───────────────────────X┼┼────────────────────────────────────X┼┼────────────────
+                │                              ││                                     ││
+target_1_0: ────QROAM_1────────────────────────X┼─────────────────────────────────────X┼────────────────
+                │                               │                                      │
+target_1_1: ────QROAM_1─────────────────────────X──────────────────────────────────────X────────────────
+                                             └───┘                                  └───┘
 """,
     )

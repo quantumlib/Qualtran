@@ -1,11 +1,9 @@
 import abc
 import dataclasses
 import sys
-from typing import Sequence, Dict, Iterable, List, Union, overload
+from typing import Dict, Iterable, List, overload, Sequence, Union
 
 import cirq
-
-from cirq_qubitization.qubit_manager import QubitManager
 
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
@@ -114,7 +112,7 @@ class Registers:
         return self._registers == other._registers
 
 
-QidSource = Union[cirq.Qid, Sequence[cirq.Qid], QubitManager]
+QidSource = Union[cirq.Qid, Sequence[cirq.Qid]]
 
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
@@ -137,14 +135,8 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     def on_registers(self, **qubit_regs_or_manager: QidSource) -> cirq.Operation:
         qubit_regs = {}
         for key, value in qubit_regs_or_manager.items():
-            if isinstance(value, QubitManager):
-                qubit_regs[key] = value.qalloc(self.registers[key].bitsize)
-            else:
-                qubit_regs[key] = value
+            qubit_regs[key] = value
         ret_op = self.on(*self.registers.merge_qubits(**qubit_regs))
-        for key, value in qubit_regs_or_manager.items():
-            if isinstance(value, QubitManager):
-                value.qfree(qubit_regs[key])
         return ret_op
 
     # @classmethod

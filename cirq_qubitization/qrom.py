@@ -1,6 +1,8 @@
-from typing import Tuple, Sequence, Optional, Callable
 from functools import cached_property
+from typing import Callable, Optional, Sequence, Tuple
+
 import cirq
+
 from cirq_qubitization import unary_iteration
 from cirq_qubitization.gate_with_registers import Registers
 
@@ -66,3 +68,11 @@ class QROM(unary_iteration.UnaryIterationGate):
 
     def __eq__(self, other: 'QROM'):
         return self.data == other.data and self._target_bitsizes == other._target_bitsizes
+
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["@"] * self.control_registers.bitsize
+        wire_symbols += ["In"] * self.selection_registers.bitsize
+        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
+        for i, target in enumerate(self.target_registers):
+            wire_symbols += [f"QROM_{i}"] * target.bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
