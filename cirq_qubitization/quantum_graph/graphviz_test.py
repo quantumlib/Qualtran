@@ -1,16 +1,20 @@
 import re
 from functools import cached_property
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict
 
-import cirq
+import pytest
 from attrs import frozen
 
+import cirq_qubitization.testing as cq_testing
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
-from cirq_qubitization.quantum_graph.graphviz import _assign_ids_to_bloqs_and_soqs
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.graphviz import (
+    _assign_ids_to_bloqs_and_soqs,
+    GraphDrawer,
+    PrettyGraphDrawer,
+)
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
-from cirq_qubitization.quantum_graph.util_bloqs import Join, Partition, Split, Unpartition
 
 
 @frozen
@@ -56,3 +60,18 @@ def test_assign_ids():
             continue
         prefixes.add(ma.group(1))
     assert sorted(prefixes) == ['Atom', 'Join', 'Split', 'join', 'q', 'split', 'stuff']
+
+
+@pytest.mark.parametrize('draw_cls', [GraphDrawer, PrettyGraphDrawer])
+def test_graphviz(draw_cls):
+    bloq = TestParallelBloq().decompose_bloq()
+    graph = draw_cls(bloq).get_graph()
+
+    assert len(graph.get_nodes()) == 1 + 3 + 1  # split, atoms, join
+    assert len(graph.get_subgraphs()) == 2  # left, right dangling labels go in a subgraph
+    assert len(graph.get_edges()) == 1 + 3 + 3 + 1
+    assert len(graph.create_svg()) > 0
+
+
+def test_notebook():
+    cq_testing.execute_notebook('quantum_graph/graphviz')

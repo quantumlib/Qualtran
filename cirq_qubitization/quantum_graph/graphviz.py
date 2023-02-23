@@ -17,7 +17,7 @@ from cirq_qubitization.quantum_graph.util_bloqs import Join, Partition, Split, U
 
 
 def _assign_ids_to_bloqs_and_soqs(
-    bloq_instances: Set[BloqInstance], all_soquets: Set[Soquet]
+    bloq_instances: Iterable[BloqInstance], all_soquets: Iterable[Soquet]
 ) -> Dict[Any, str]:
     """Assign unique identifiers to bloq instances, soquets, and register groups.
 
@@ -163,7 +163,7 @@ class GraphDrawer:
         This should have a `colspan="2"` to make sure there aren't separate left and right
         cells / soquets.
         """
-        return f'<TR><TD colspan="2" port="{self.ids[thru]}">{self.soq_label(thru)}</TD></TR>'
+        return f'  <TR><TD colspan="2" port="{self.ids[thru]}">{self.soq_label(thru)}</TD></TR>\n'
 
     def _register_td(self, soq: Optional[Soquet], *, with_empty_td: bool, rowspan: int = 1) -> str:
         """Return the html code for an individual <TD>.
@@ -213,15 +213,15 @@ class GraphDrawer:
             right_rowspan: If greater than `1`, include the `rowspan` html attribute on right TDs to
                 span multiple rows.
         """
-        tr_code = '<TR>'
+        tr_code = '  <TR>'
         tr_code += self._register_td(left, rowspan=left_rowspan, with_empty_td=with_empty_td)
         tr_code += self._register_td(right, rowspan=right_rowspan, with_empty_td=with_empty_td)
-        tr_code += '</TR>'
+        tr_code += '</TR>\n'
         return tr_code
 
     def get_binst_table_attributes(self) -> str:
         """Overridable method to configure the desired table attributes for the bloq."""
-        return 'BORDER="1" CELLBORDER="1" CELLSPACING="3"'
+        return ''
 
     def get_binst_header_text(self, binst: BloqInstance) -> str:
         """Overridable method returning the text used for the header cell of a bloq."""
@@ -231,9 +231,9 @@ class GraphDrawer:
         """Process and add a bloq instance to the Graph."""
 
         label = '<'  # graphviz: start an HTML section
-        label += f'<TABLE {self.get_binst_table_attributes()}>'
+        label += f'<TABLE {self.get_binst_table_attributes()}>\n'
 
-        label += f'<tr><td colspan="2">{self.get_binst_header_text(binst)}</td></tr>'
+        label += f'  <TR><TD colspan="2">{self.get_binst_header_text(binst)}</TD></TR>\n'
 
         for groupname, groupregs in binst.bloq.registers.groups():
             lefts, rights, thrus = _parition_registers_in_a_group(groupregs, binst)
@@ -290,6 +290,10 @@ class GraphDrawer:
         """Overridable method to return labels for connections."""
         return str(cxn.shape)
 
+    def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
+        """Overridable method to style a pydot.Edge for connecionts."""
+        return pydot.Edge(left_id, right_id, label=self.cxn_label(cxn))
+
     def add_cxn(self, graph: pydot.Graph, cxn: Connection) -> pydot.Graph:
         """Process and add a connection to the Graph.
 
@@ -311,18 +315,7 @@ class GraphDrawer:
         else:
             right = f'{self.ids[cxn.right.binst]}:{self.ids[cxn.right]}:w'
 
-        graph.add_edge(
-            pydot.Edge(
-                left,
-                right,
-                label=str(cxn.shape),
-                labelfloat=True,
-                fontsize=10,
-                arrowhead='dot',
-                arrowsize=0.25,
-            )
-        )
-
+        graph.add_edge(self.cxn_edge(left, right, cxn))
         return graph
 
     def get_graph(self) -> pydot.Graph:
@@ -367,3 +360,14 @@ class PrettyGraphDrawer(GraphDrawer):
             return '\u2b24'
 
         return reg.name
+
+    def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
+        return pydot.Edge(
+            left_id,
+            right_id,
+            label=self.cxn_label(cxn),
+            labelfloat=True,
+            fontsize=10,
+            arrowhead='dot',
+            arrowsize=0.25,
+        )
