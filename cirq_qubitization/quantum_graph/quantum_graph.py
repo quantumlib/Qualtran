@@ -1,4 +1,3 @@
-from functools import cached_property
 from typing import Tuple, Union
 
 from attrs import field, frozen
@@ -92,8 +91,8 @@ def _singleton_error(self, x):
 
 DanglingT.__init__ = _singleton_error
 
-# attrs note: Slots come into play because of our use of cached_property??? TODO: figure out
-@frozen(slots=False)
+
+@frozen
 class Connection:
     """A connection between two `Soquet`s.
 
@@ -104,12 +103,11 @@ class Connection:
     left: Soquet
     right: Soquet
 
-    @cached_property
+    @property
     def shape(self) -> int:
         ls = self.left.reg.bitsize
         rs = self.right.reg.bitsize
 
         if ls != rs:
-            # raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
-            print(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
+            raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
         return ls
