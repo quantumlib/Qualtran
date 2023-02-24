@@ -1,8 +1,12 @@
 import itertools
+from typing import List
 
 import cirq
+import pytest
 
 import cirq_qubitization
+import cirq_qubitization.testing as cq_testing
+from cirq_qubitization import bit_tools
 
 
 def test_less_than_gate():
@@ -28,6 +32,27 @@ def test_less_than_gate():
         0b_111_1: 0b_111_1,
     }
     cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
+
+
+@pytest.mark.parametrize("bits", [*range(8)])
+@pytest.mark.parametrize("val", [3, 5, 7])
+def test_decompose_less_than_gate(bits: List[int], val: int):
+    qubit_states = list(bit_tools.iter_bits(bits, 3))
+    circuit = cirq.Circuit(
+        cirq.decompose_once(
+            cirq_qubitization.LessThanGate([2, 2, 2], val).on(*cirq.LineQubit.range(4))
+        )
+    )
+    if val < 8:
+        initial_state = qubit_states + [0] * 5
+        output_state = qubit_states + [int(bits < val)] + [0] * 4
+    else:
+        # When val >= 2**number_qubits the decomposition doesn't create any ancillas since the answer is always 1.
+        initial_state = qubit_states + [0]
+        output_state = qubit_states + [1]
+    cq_testing.assert_circuit_inp_out_cirqsim(
+        circuit, sorted(circuit.all_qubits()), initial_state, output_state
+    )
 
 
 def test_multi_in_less_equal_than_gate():

@@ -1,4 +1,5 @@
-from typing import Union, Sequence, Iterable
+from typing import Iterable, Sequence, Union
+
 import cirq
 
 from cirq_qubitization import bit_tools
@@ -64,6 +65,9 @@ class LessThanGate(cirq.ArithmeticGate):
                 adjoint.append(cirq.CNOT(a, are_equal))
 
         yield from reversed(adjoint)
+
+    def _has_unitary_(self):
+        return True
 
 
 class LessThanEqualGate(cirq.ArithmeticGate):
