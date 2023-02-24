@@ -12,7 +12,6 @@ if TYPE_CHECKING:
         SoquetT,
     )
     from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
-    from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -33,7 +32,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', **soqs: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
+    ) -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
         Bloq definers should override this method. If you already have an instance of a `Bloq`,
