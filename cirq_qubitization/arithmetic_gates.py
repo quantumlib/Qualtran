@@ -4,6 +4,7 @@ import cirq
 from cirq_qubitization import bit_tools
 from cirq_qubitization.and_gate import And
 
+
 class LessThanGate(cirq.ArithmeticGate):
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
 
@@ -24,46 +25,46 @@ class LessThanGate(cirq.ArithmeticGate):
     def __repr__(self) -> str:
         return f"cirq_qubitization.LessThanGate({self._input_register, self._val})"
 
-
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         qubits, target = qubits[:-1], qubits[-1]
-        # trivial case, self._val is larger than any value the registers could represent
-        if self._val >= 2**len(self._input_register):
-            yield cirq.CNOT(target)
+        # Trivial case, self._val is larger than any value the registers could represent
+        if self._val >= 2 ** len(self._input_register):
+            yield cirq.X(target)
             return
-        
-        # scanning from left to right, initially our belief is that the numbers are equal.
-        equal = cirq.NamedQubit('equal')
-        yield cirq.X(equal)
 
-        # uses n+1 ancilla => finishes with n+1  dirty ancilla
-        # ancilla = cirq.NamedQubit.range(len(qubits), prefix='ancilla')
-        # for a, b, q in zip(ancilla, bit_tools.iter_bits(self._val, len(self._input_register)), qubits):
-        #     if b:
-        #         yield cirq.X(q)
-        #         yield cirq.CCNOT(q, equal, a)
-        #         yield cirq.CNOT(a, target)
-        #         yield cirq.CNOT(a, equal)
-        #         yield cirq.X(q)
-        #     else:
-        #         yield cirq.CCNOT(q, equal, a)
-        #         yield cirq.CNOT(a, equal)
+        adjoint = []
 
-        # uses 2 ancillas => finishes with 1 dirty
-        # might have phase error
-        ancilla = cirq.NamedQubit('ancilla')
-        for b, q in zip(bit_tools.iter_bits(self._val, len(self._input_register)), qubits):
+        # Initially our belief is that the numbers are equal.
+        are_equal = cirq.NamedQubit('e')
+        yield cirq.X(are_equal)
+        adjoint.append(cirq.X(are_equal))
+
+        # Scan from left to right.
+        # `are_equal` contains whether the numbers are equal so far.
+        ancilla = cirq.NamedQubit.range(len(self._input_register), prefix='c')
+        for b, q, a in zip(
+            bit_tools.iter_bits(self._val, len(self._input_register)), qubits, ancilla
+        ):
             if b:
                 yield cirq.X(q)
-                yield And().on(q, equal, ancilla)
-                yield cirq.CNOT(ancilla, target)
-                yield cirq.CNOT(ancilla, equal)
-                yield And(adjoint=True).on(q, equal, ancilla)
-                yield cirq.X(q)
+                adjoint.append(cirq.X(q))
+
+                yield And().on(q, are_equal, a)
+                adjoint.append(And(adjoint=True).on(q, are_equal, a))
+
+                yield cirq.CNOT(a, target)
+
+                yield cirq.CNOT(a, are_equal)
+                adjoint.append(cirq.CNOT(a, are_equal))
             else:
-                yield And().on(q, equal, ancilla)
-                yield cirq.CNOT(ancilla, equal)
-                yield And(adjoint=True).on(q, equal, ancilla)
+                yield And().on(q, are_equal, a)
+                adjoint.append(And(adjoint=True).on(q, are_equal, a))
+
+                yield cirq.CNOT(a, are_equal)
+                adjoint.append(cirq.CNOT(a, are_equal))
+
+        yield from reversed(adjoint)
+
 
 class LessThanEqualGate(cirq.ArithmeticGate):
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>"""
