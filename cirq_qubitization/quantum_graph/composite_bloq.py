@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -281,7 +281,7 @@ class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
-def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
+def _initialize_soquets(regs: Optional[FancyRegisters]) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
     """Initialize input Soquets from left registers for bookkeeping in `CompositeBloqBuilder`.
 
     Returns:
@@ -294,6 +294,9 @@ def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[S
     """
     available: Set[Soquet] = set()
     initial_soqs: Dict[str, SoquetT] = {}
+    if regs is None:
+        return initial_soqs, available
+
     soqs: SoquetT
     for reg in regs.lefts():
         if reg.wireshape:
@@ -321,10 +324,12 @@ class CompositeBloqBuilder:
     provided as the first argument.
 
     Args:
-        parent_regs: The `Registers` argument for the parent bloq.
+        parent_regs: The `Registers` argument for the parent bloq. If not provided, the bloq
+            will not have any left registers and you must use `fancy_finalize` (TODO: rename)
+            to declare any right registers.
     """
 
-    def __init__(self, parent_regs: FancyRegisters):
+    def __init__(self, parent_regs: Optional[FancyRegisters] = None):
         # To be appended to:
         self._cxns: List[Connection] = []
 
@@ -335,6 +340,19 @@ class CompositeBloqBuilder:
 
         # Bookkeeping for linear types; Soquets must be used exactly once.
         self._initial_soquets, self._available = _initialize_soquets(parent_regs)
+
+    @classmethod
+    def make_with_soqs(
+        cls, parent_regs: Optional[FancyRegisters] = None
+    ) -> Tuple['CompositeBloqBuilder', Tuple[SoquetT, ...]]:
+        """Construct and return a CompositeBloqBuilder *and* its initial soquets.
+
+        This can be used to quickly start a new composite bloq building session. The
+        soquets are ordered according to their registers order.
+        """
+        bb = cls(parent_regs)
+        initial_soqets = bb.initial_soquets()
+        return bb, tuple(initial_soqets.values())
 
     def initial_soquets(self) -> Dict[str, SoquetT]:
         """Input soquets (by name) to start building a quantum compute graph."""
@@ -411,12 +429,40 @@ class CompositeBloqBuilder:
 
         return tuple(out_soqs)
 
+    def _infer_finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
+        """Finalize and infer `parent_regs`.
+
+        Instead of using `final_soqs` for error checking, use it to define the parent registers.
+        """
+        assert self._parent_regs is None
+
+        def _infer_reg(name: str, soq: SoquetT) -> FancyRegister:
+            if isinstance(soq, Soquet):
+                return FancyRegister(name=name, bitsize=soq.reg.bitsize, side=Side.RIGHT)
+
+            # Get info from 0th soquet in an ndarray.
+            return FancyRegister(
+                name=name,
+                bitsize=soq.reshape(-1)[0].reg.bitsize,
+                wireshape=soq.shape,
+                side=Side.RIGHT,
+            )
+
+        self._parent_regs = FancyRegisters(
+            [_infer_reg(name, soq) for name, soq in final_soqs.items()]
+        )
+        return self.finalize(**final_soqs)
+
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
 
         This method is similar to calling `add()` but instead of adding a new Bloq,
-        it validates the final "dangling" soquets that serve as the outputs for
+        it validates or declares the final "dangling" soquets that serve as the outputs for
         the composite bloq as a whole.
+
+        If this builder was constructed with no `parent_regs` argument, the keyword arguments
+        to this function will be used to declare the registers. Otherwise, the keyword arguments
+        will be used to check against this builder's `parent_regs`
 
         This method is called at the end of `Bloq.decompose_bloq`. Users overriding
         `Bloq.build_composite_bloq` should not call this method.
@@ -425,6 +471,9 @@ class CompositeBloqBuilder:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
+        if self._parent_regs is None:
+            return self._infer_finalize(**final_soqs)
+
         for reg in self._parent_regs.rights():
             try:
                 in_soq = np.asarray(final_soqs[reg.name])
