@@ -1,6 +1,7 @@
 import abc
-from typing import Dict, TYPE_CHECKING
+from typing import Any, Dict, TYPE_CHECKING
 
+import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -85,6 +86,16 @@ class Bloq(metaclass=abc.ABCMeta):
         assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        raise NotImplementedError("This bloq does not support tensor contraction.")
 
     # ----- cirq stuff -----
 
