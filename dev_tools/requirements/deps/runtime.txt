@@ -3,3 +3,4 @@ pyscf
 openfermion
 cirq-core
 sphinx
+pydot
