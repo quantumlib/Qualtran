@@ -102,3 +102,12 @@ class Connection:
 
     left: Soquet
     right: Soquet
+
+    @property
+    def shape(self) -> int:
+        ls = self.left.reg.bitsize
+        rs = self.right.reg.bitsize
+
+        if ls != rs:
+            raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
+        return ls

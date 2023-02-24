@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, FrozenSet, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
 
 import cirq
 import networkx as nx
@@ -54,6 +54,12 @@ class CompositeBloq(Bloq):
         }
 
     @cached_property
+    def all_soquets(self) -> FrozenSet[Soquet]:
+        soquets = {cxn.left for cxn in self._cxns}
+        soquets |= {cxn.right for cxn in self._cxns}
+        return frozenset(soquets)
+
+    @cached_property
     def _binst_graph(self) -> nx.DiGraph:
         """Get a cached version of this composite bloq's BloqInstance graph.
 
@@ -78,6 +84,10 @@ class CompositeBloq(Bloq):
         # First, convert register names to registers.
         quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
         return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
+
+    def as_composite_bloq(self) -> 'CompositeBloq':
+        """This override just returns the present composite bloq."""
+        return self
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
