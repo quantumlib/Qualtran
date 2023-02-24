@@ -1,14 +1,28 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, FrozenSet, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
+import attrs
 import cirq
 import networkx as nx
 import numpy as np
+from attrs import frozen
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -20,6 +34,41 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
+
+
+def find_generic(soq: Soquet, cxns: Iterable[Connection], pred=True):
+    for papa_cxn in cxns:
+        if pred:
+            compare = papa_cxn.right
+            ret = papa_cxn.left
+        else:
+            compare = papa_cxn.left
+            ret = papa_cxn.left
+
+        if compare.reg == soq.reg and compare.idx == soq.idx:
+            return ret
+    raise ValueError()
+
+
+def find_something(cxn, papa_pred):
+    # Find in papa_preds
+    api_reg = cxn.left.reg
+    api_idx = cxn.left.idx
+    for papa_cxn in papa_pred:
+        if papa_cxn.right.reg == api_reg and papa_cxn.right.idx == api_idx:
+            found_from = papa_cxn.left
+            return found_from
+    raise ValueError()
+
+
+def find_somethign2(cxn, papa_succ):
+    api_reg = cxn.right.reg
+    api_idx = cxn.right.idx
+    for papa_cxn in papa_succ:
+        if papa_cxn.left.reg == api_reg and papa_cxn.left.idx == api_idx:
+            found_to = papa_cxn.left
+            return found_to
+    raise ValueError()
 
 
 class CompositeBloq(Bloq):
@@ -42,6 +91,14 @@ class CompositeBloq(Bloq):
     @property
     def connections(self) -> Tuple[Connection, ...]:
         return self._cxns
+
+    @cached_property
+    def internal_connections(self) -> Tuple[Connection, ...]:
+        return tuple(
+            cxn
+            for cxn in self._cxns
+            if not (isinstance(cxn.left.binst, DanglingT) or isinstance(cxn.right.binst, DanglingT))
+        )
 
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
@@ -90,7 +147,50 @@ class CompositeBloq(Bloq):
         return self
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        raise NotImplementedError("Come back later.")
+        i = 1_000
+        cxns = []
+
+        papa_soq_map: Dict[Soquet, Soquet] = {}
+        for papa_binst, papa_pred, papa_succ in self.iter_bloqnections():
+            assert isinstance(papa_binst.bloq, Bloq)
+
+            binst_map: Dict[BloqInstance, BloqInstance] = {}
+
+            def map_soq(soq: Soquet) -> Soquet:
+                if isinstance(soq.binst, DanglingT):
+                    return soq
+                return attrs.evolve(soq, binst=binst_map[soq.binst])
+
+            cbloq = papa_binst.bloq.decompose_bloq()
+            for binst, pred, succ in cbloq.iter_bloqnections():
+                assert isinstance(binst.bloq, Bloq)
+
+                new_binst = BloqInstance(binst.bloq, i)
+                i += 1
+                binst_map[binst] = new_binst
+
+                for cxn in pred:
+                    if cxn.left.binst is LeftDangle:
+                        # Find in papa
+                        found_from = find_something(cxn, papa_pred)
+                        if not isinstance(found_from.binst, DanglingT):
+                            # Map
+                            found_from = papa_soq_map[found_from]
+
+                        cxns.append(Connection(found_from, map_soq(cxn.right)))
+                    else:
+                        # Add as normal
+                        cxns.append(Connection(map_soq(cxn.left), map_soq(cxn.right)))
+
+                for cxn in succ:
+                    if cxn.right.binst is RightDangle:
+                        found_to = find_somethign2(cxn, papa_succ)
+                        papa_soq_map[found_to] = map_soq(cxn.left)
+
+        pred_cxns, _ = _binst_to_cxns(RightDangle, self._binst_graph)
+        for cxn in pred_cxns:
+            cxns.append(Connection(papa_soq_map[cxn.left], cxn.right))
+        return CompositeBloq(cxns, self.registers)
 
     def iter_bloqnections(
         self,
@@ -314,6 +414,9 @@ def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[S
     return initial_soqs, available
 
 
+BINST_COUNTER: int = 0
+
+
 class CompositeBloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
@@ -329,9 +432,6 @@ class CompositeBloqBuilder:
         # To be appended to:
         self._cxns: List[Connection] = []
 
-        # Initialize our BloqInstance counter
-        self._i = 0
-
         self._parent_regs = parent_regs
 
         # Bookkeeping for linear types; Soquets must be used exactly once.
@@ -342,9 +442,87 @@ class CompositeBloqBuilder:
         return self._initial_soquets
 
     def _new_binst(self, bloq: Bloq) -> BloqInstance:
-        inst = BloqInstance(bloq, self._i)
-        self._i += 1
+        global BINST_COUNTER
+        inst = BloqInstance(bloq, BINST_COUNTER)
+        BINST_COUNTER += 1
         return inst
+
+    def extensible_add(
+        self,
+        registers: FancyRegisters,
+        in_soqs: Dict[str, SoquetT],
+        debug_name: str,  # for error messages
+        get_in_soq: Callable[[FancyRegister, Tuple[int, ...]], Soquet],
+        get_out_soq: Callable[[FancyRegister, Tuple[int, ...]], Soquet],
+        do_nonsense: Callable[['CompositeBloqBuilder'], None],
+    ) -> Tuple[SoquetT, ...]:
+        """Add connections to the compute graph in an extensible way.
+
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`s or an array thereof. This is likely the output soquets from a prior
+                operation.
+
+        Returns:
+            A `Soquet` or an array thereof for each output register ordered according to
+                `bloq.registers`.
+                Note: Analogous to a Python function call using kwargs and multiple return values,
+                the ordering is irrespective of the order of `in_soqs` that have been passed in
+                and depends only on the convention of the bloq's registers.
+        """
+
+        for reg in registers.lefts():
+            try:
+                # if we want fancy indexing (which we do), we need numpy
+                # this also supports length-zero indexing natively, which is good too.
+                in_soq = np.asarray(in_soqs[reg.name])
+            except KeyError:
+                raise BloqBuilderError(
+                    f"{debug_name} requires an input Soquet named `{reg.name}`."
+                ) from None
+
+            del in_soqs[reg.name]  # so we can check for surplus arguments.
+
+            for li in reg.wire_idxs():
+                idxed_soq = in_soq[li]
+                assert isinstance(idxed_soq, Soquet), idxed_soq
+                try:
+                    self._available.remove(idxed_soq)
+                except KeyError:
+                    raise BloqBuilderError(
+                        f"{idxed_soq} is not an available input Soquet for {reg}."
+                    ) from None
+
+                my_in_soq = get_in_soq(reg, li)
+                cxn = Connection(idxed_soq, my_in_soq)
+                self._cxns.append(cxn)
+
+        if in_soqs:
+            raise BloqBuilderError(
+                f"{debug_name} does not accept input Soquets: {in_soqs.keys()}."
+            ) from None
+
+        do_nonsense(self)
+
+        out_soqs: List[SoquetT] = []
+        out: SoquetT
+        for reg in registers.rights():
+            if reg.wireshape:
+                out = np.empty(reg.wireshape, dtype=object)
+                for ri in reg.wire_idxs():
+                    out_soq = get_out_soq(reg, ri)
+                    out[ri] = out_soq
+                    self._available.add(out_soq)
+            else:
+                # Annoyingly, the 0-dim case must be handled seprately.
+                # Otherwise, x[i] = thing will nest *array* objects.
+                out = get_out_soq(reg, tuple())
+                self._available.add(out)
+
+            out_soqs.append(out)
+
+        return tuple(out_soqs)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
@@ -364,53 +542,67 @@ class CompositeBloqBuilder:
         """
         binst = self._new_binst(bloq)
 
-        for reg in bloq.registers.lefts():
-            try:
-                # if we want fancy indexing (which we do), we need numpy
-                # this also supports length-zero indexing natively, which is good too.
-                in_soq = np.asarray(in_soqs[reg.name])
-            except KeyError:
-                raise BloqBuilderError(
-                    f"{bloq} requires an input Soquet named `{reg.name}`."
-                ) from None
+        def get_my_in_soq(reg, li):
+            return Soquet(binst, reg, idx=li)
 
-            del in_soqs[reg.name]  # so we can check for surplus arguments.
+        def get_my_out_soq(reg, ri):
+            return Soquet(binst, reg, idx=ri)
 
-            for li in reg.wire_idxs():
-                idxed_soq = in_soq[li]
-                assert isinstance(idxed_soq, Soquet), idxed_soq
-                try:
-                    self._available.remove(idxed_soq)
-                except KeyError:
-                    raise BloqBuilderError(
-                        f"{idxed_soq} is not an available input Soquet for {reg}."
-                    ) from None
-                cxn = Connection(idxed_soq, Soquet(binst, reg, idx=li))
-                self._cxns.append(cxn)
+        return self.extensible_add(
+            registers=bloq.registers,
+            in_soqs=in_soqs,
+            debug_name=str(bloq),
+            get_in_soq=get_my_in_soq,
+            get_out_soq=get_my_out_soq,
+            do_nonsense=lambda x: None,
+        )
 
-        if in_soqs:
-            raise BloqBuilderError(
-                f"{bloq} does not accept input Soquets: {in_soqs.keys()}."
-            ) from None
+    def add_expand(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
+        """Add a new bloq instance to the compute graph.
 
-        out_soqs: List[SoquetT] = []
-        out: SoquetT
-        for reg in bloq.registers.rights():
-            if reg.wireshape:
-                out = np.empty(reg.wireshape, dtype=object)
-                for ri in reg.wire_idxs():
-                    out_soq = Soquet(binst, reg, idx=ri)
-                    out[ri] = out_soq
-                    self._available.add(out_soq)
-            else:
-                # Annoyingly, the 0-dim case must be handled seprately.
-                # Otherwise, x[i] = thing will nest *array* objects.
-                out = Soquet(binst, reg)
-                self._available.add(out)
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`s or an array thereof. This is likely the output soquets from a prior
+                operation.
 
-            out_soqs.append(out)
+        Returns:
+            A `Soquet` or an array thereof for each output register ordered according to
+                `bloq.registers`.
+                Note: Analogous to a Python function call using kwargs and multiple return values,
+                the ordering is irrespective of the order of `in_soqs` that have been passed in
+                and depends only on the convention of the bloq's registers.
+        """
+        cbloq = bloq.decompose_bloq()
+        _, first_cxns = _binst_to_cxns(LeftDangle, cbloq._binst_graph)
 
-        return tuple(out_soqs)
+        def get_my_in_soq(reg, li):
+            # Find soquet with register and index in first_cxns
+            for xx in first_cxns:
+                if xx.left.reg == reg and xx.left.idx == li:
+                    return xx.right
+            raise ValueError()
+
+        final_cxns, _ = _binst_to_cxns(RightDangle, cbloq._binst_graph)
+
+        def get_my_out_soq(reg, ri):
+            # Find soquet with register and index in first_cxns
+            for xx in final_cxns:
+                if xx.right.reg == reg and xx.right.idx == ri:
+                    return xx.left
+            raise ValueError()
+
+        def do_nonesense(bb):
+            bb._cxns.extend(cbloq.internal_connections)
+
+        return self.extensible_add(
+            registers=bloq.registers,
+            in_soqs=in_soqs,
+            debug_name=str(bloq),
+            get_in_soq=get_my_in_soq,
+            get_out_soq=get_my_out_soq,
+            do_nonsense=do_nonesense,
+        )
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.

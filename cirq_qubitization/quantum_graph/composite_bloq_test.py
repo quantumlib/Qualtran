@@ -17,6 +17,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     SoquetT,
 )
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.meta_bloq import TestParallelBloq
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -310,3 +311,19 @@ def test_util_convenience_methods_errors():
     qs = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
         bb.free(qs)
+
+
+def test_flatten():
+    bb = CompositeBloqBuilder(FancyRegisters.build(ruff=3))
+    soqs = bb.initial_soquets()
+    ruff = soqs['ruff']
+
+    (ruff,) = bb.add(TestParallelBloq(), stuff=ruff)
+    (ruff,) = bb.add(TestParallelBloq(), stuff=ruff)
+
+    cbloq = bb.finalize(ruff=ruff)
+
+    cbloq2 = cbloq.decompose_bloq()
+    print()
+    print(cbloq2.debug_text())
+    print()
