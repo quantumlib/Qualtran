@@ -188,9 +188,7 @@ class SelectSwapQROM(GateWithRegisters):
         q, r = selection[: self.selection_q], selection[self.selection_q :]
         qrom_gate = QROM(*qrom_data, target_bitsizes=qrom_target_bitsizes)
         qrom_op = qrom_gate.on_registers(
-            selection=q,
-            ancilla=qalloc_clean(qrom_gate.ancilla_registers.bitsize),
-            **qrom_gate.target_registers.split_qubits(ordered_target_qubits),
+            selection=q, **qrom_gate.target_registers.split_qubits(ordered_target_qubits)
         )
         swap_with_zero_gate = SwapWithZeroGate(k, self.target_registers.bitsize, self.block_size)
         swap_with_zero_op = swap_with_zero_gate.on_registers(

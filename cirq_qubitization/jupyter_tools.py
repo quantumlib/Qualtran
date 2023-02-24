@@ -1,6 +1,6 @@
-import IPython.display
 import cirq
 import cirq.contrib.svg.svg as ccsvg
+import IPython.display
 import ipywidgets
 
 import cirq_qubitization.testing as cq_testing
@@ -42,6 +42,7 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
 
     if registers is not None:
         qubit_order = registers.merge_qubits(**registers.get_named_qubits())
+        qubit_order = qubit_order + sorted(circuit.all_qubits() - set(qubit_order))
     else:
         qubit_order = cirq.QubitOrder.DEFAULT
     tdd = circuit.to_text_diagram_drawer(transpose=False, qubit_order=qubit_order)

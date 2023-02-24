@@ -1,5 +1,5 @@
-from typing import Sequence, Type
 from functools import cached_property
+from typing import Sequence, Type
 
 import cirq
 import numpy as np
@@ -52,7 +52,6 @@ def test_programmable_rotation_gate_array(angles, kappa, gate_type):
         gate_type, angles, kappa, rotation_gate
     )
     qubit_regs = programmable_rotation_gate.registers.get_named_qubits()
-    all_qubits = programmable_rotation_gate.registers.merge_qubits(**qubit_regs)
     # Get interleaved unitaries.
     interleaved_unitaries = [
         programmable_rotation_gate.interleaved_unitary(i, **qubit_regs)
@@ -66,13 +65,14 @@ def test_programmable_rotation_gate_array(angles, kappa, gate_type):
         ]
     )
     rotations_and_unitary_qubits = rotations_and_unitary_registers.merge_qubits(**qubit_regs)
+    # Build circuit.
+    circuit = cirq.Circuit(cirq.decompose(programmable_rotation_gate.on_registers(**qubit_regs)))
+    all_qubits = list(circuit.all_qubits())
     # Set qubit order s.t. rotations_and_unitary_qubits are at the beginning of the list.
     for q in rotations_and_unitary_qubits:
         all_qubits.insert(0, all_qubits.pop(all_qubits.index(q)))
-    # Build circuit.
-    circuit = cirq.Circuit(programmable_rotation_gate.on_registers(**qubit_regs))
-    simulator = cirq.Simulator(dtype=np.complex128)
 
+    simulator = cirq.Simulator(dtype=np.complex128)
     selection = qubit_regs["selection"]
 
     def rotation_ops(theta: int) -> cirq.OP_TREE:

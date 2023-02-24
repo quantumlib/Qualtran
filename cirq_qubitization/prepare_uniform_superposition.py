@@ -6,6 +6,7 @@ import numpy as np
 
 from cirq_qubitization.arithmetic_gates import LessThanGate
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.qubit_manager import qalloc_clean
 
 
 class PrepareUniformSuperposition(GateWithRegisters):
@@ -22,7 +23,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
     @cached_property
     def registers(self) -> Registers:
         return Registers.build(
-            controls=self._num_controls, logL_qubits=self._logL, k_qubits=self._K, ancilla=1
+            controls=self._num_controls, logL_qubits=self._logL, k_qubits=self._K
         )
 
     def __repr__(self) -> str:
@@ -38,12 +39,11 @@ class PrepareUniformSuperposition(GateWithRegisters):
         controls: Sequence[cirq.Qid],
         logL_qubits: Sequence[cirq.Qid],
         k_qubits: Sequence[cirq.Qid],
-        ancilla: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
-        (ancilla,) = ancilla
         yield [op.controlled_by(*controls) for op in cirq.H.on_each(*(k_qubits + logL_qubits))]
         if not logL_qubits:
             return
+        ancilla = qalloc_clean(1)[0]
         theta = np.arccos(1 - (2 ** np.floor(np.log2(self._L))) / self._L)
 
         yield LessThanGate([2] * self._logL, self._L).on(*logL_qubits, ancilla)

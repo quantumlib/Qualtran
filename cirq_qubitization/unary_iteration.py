@@ -6,6 +6,7 @@ import cirq
 
 from cirq_qubitization import and_gate
 from cirq_qubitization.gate_with_registers import GateWithRegisters, Register, Registers
+from cirq_qubitization.qubit_manager import qalloc_clean
 
 
 def _unary_iteration_segtree(
@@ -214,7 +215,6 @@ class UnaryIterationGate(GateWithRegisters):
             [
                 *self.control_registers,
                 *self.selection_registers,
-                *Registers.build(ancilla=self.ancilla_registers.bitsize),
                 *self.target_registers,
                 *self.extra_registers,
             ]
@@ -272,7 +272,9 @@ class UnaryIterationGate(GateWithRegisters):
         num_loops = len(self.iteration_lengths)
         target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
         extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
-        ancilla_regs = self.ancilla_registers.split_qubits(qubit_regs['ancilla'])
+        ancilla_regs = self.ancilla_registers.split_qubits(
+            qalloc_clean(self.ancilla_registers.bitsize)
+        )
 
         def unary_iteration_loops(
             nested_depth: int,
@@ -332,6 +334,5 @@ class UnaryIterationGate(GateWithRegisters):
         """
         wire_symbols = ["@"] * self.control_registers.bitsize
         wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
         wire_symbols += [self.__class__.__name__] * self.target_registers.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

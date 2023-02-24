@@ -14,7 +14,12 @@ from cirq_qubitization.programmable_rotation_gate_array import (
 )
 from cirq_qubitization.qid_types import BorrowableQubit, CleanQubit
 from cirq_qubitization.qrom import QROM
-from cirq_qubitization.qubit_manager import qalloc_borrow, qalloc_clean, qalloc_reset
+from cirq_qubitization.qubit_manager import (
+    expand_composite_and_allocate_qubits,
+    qalloc_borrow,
+    qalloc_clean,
+    qalloc_reset,
+)
 from cirq_qubitization.select_swap_qroam import SelectSwapQROM
 from cirq_qubitization.selected_majorana_fermion import SelectedMajoranaFermionGate
 from cirq_qubitization.swap_network import (

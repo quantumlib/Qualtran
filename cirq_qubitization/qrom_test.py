@@ -12,11 +12,11 @@ from cirq_qubitization.bit_tools import iter_bits
 def test_qrom(data):
     qrom = cirq_qubitization.QROM(*data)
     qubit_regs = qrom.registers.get_named_qubits()
-    all_qubits = qrom.registers.merge_qubits(**qubit_regs)
+
     selection = qubit_regs["selection"]
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
-    circuit = cirq.Circuit(qrom.on_registers(**qubit_regs))
-
+    circuit = cirq.Circuit(cirq.decompose(qrom.on_registers(**qubit_regs)))
+    all_qubits = list(circuit.all_qubits())
     for selection_integer in range(qrom.iteration_length):
         svals = list(iter_bits(selection_integer, len(selection)))
         qubit_vals = {x: 0 for x in all_qubits}
