@@ -300,7 +300,7 @@ def _initialize_soquets(reg: FancyRegister, available: Set[Soquet]) -> SoquetT:
     Args:
         reg: The register
         available: A set that we will add each individual soquet to (used for bookkeeping in
-            `CompositeBloqBuilder`.
+            `CompositeBloqBuilder`).
 
     Returns:
         a Soquet or Soquets. For multi-dimensional
