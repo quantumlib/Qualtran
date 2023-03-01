@@ -28,7 +28,7 @@ def test_register_sizes_add_up(bloq_cls, n):
 
 
 def test_util_bloqs():
-    bb = CompositeBloqBuilder(FancyRegisters([]))
+    bb = CompositeBloqBuilder()
     (qs1,) = bb.add(Allocate(10))
     assert isinstance(qs1, Soquet)
     (qs2,) = bb.add(Split(10), split=qs1)

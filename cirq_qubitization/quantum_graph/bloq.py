@@ -66,12 +66,12 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
-        bb = CompositeBloqBuilder(self.registers)
-        out_soqs = self.build_composite_bloq(bb=bb, **bb.initial_soquets())
+        bb, initial_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
         if out_soqs is NotImplemented:
             raise NotImplementedError(f"Cannot decompose {self}.")
 
-        return bb.finalize(**out_soqs)
+        return bb.finalize_strict(**out_soqs)
 
     def as_composite_bloq(self) -> 'CompositeBloq':
         """Wrap this Bloq into a size-1 CompositeBloq.
@@ -81,11 +81,11 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
-        bb = CompositeBloqBuilder(self.registers)
-        ret_soqs_tuple = bb.add(self, **bb.initial_soquets())
+        bb, initial_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        ret_soqs_tuple = bb.add(self, **initial_soqs)
         assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
-        return bb.finalize(**ret_soqs)
+        return bb.finalize_strict(**ret_soqs)
 
     # ----- cirq stuff -----
 
