@@ -14,8 +14,10 @@ _ONE = np.array([0, 1], dtype=np.complex128)
 
 
 @frozen
-class ZVector(Bloq):
+class _ZVector(Bloq):
     """The |0> or |1> state or effect.
+
+    Please use the explicitly named subclasses instead of the boolean arguments.
 
     Args:
         bit: False chooses |0>, True chooses |1>
@@ -26,6 +28,11 @@ class ZVector(Bloq):
 
     bit: bool
     state: bool = True
+    n: int = 1
+
+    def __attrs_post_init__(self):
+        if self.n != 1:
+            raise NotImplementedError("Come back later.")
 
     def pretty_name(self) -> str:
         s = self.short_name()
@@ -56,7 +63,40 @@ class ZVector(Bloq):
         )
 
 
-ZERO = ZVector(False)
-ONE = ZVector(True)
-ZERO_EFFECT = ZVector(False, state=False)
-ONE_EFFECT = ZVector(True, state=True)
+def _hide_base_fields(cls, fields):
+    # for use in attrs `field_trasnformer`.
+    return [
+        field.evolve(repr=False) if field.name in ['bit', 'state'] else field for field in fields
+    ]
+
+
+@frozen(init=False, field_transformer=_hide_base_fields)
+class ZeroState(_ZVector):
+    """The state |0>"""
+
+    def __init__(self, n: int = 1):
+        self.__attrs_init__(bit=False, state=True, n=n)
+
+
+@frozen(init=False, field_transformer=_hide_base_fields)
+class ZeroEffect(_ZVector):
+    """The effect <0|"""
+
+    def __init__(self, n: int = 1):
+        self.__attrs_init__(bit=False, state=False, n=n)
+
+
+@frozen(init=False, field_transformer=_hide_base_fields)
+class OneState(_ZVector):
+    """The state |1>"""
+
+    def __init__(self, n: int = 1):
+        self.__attrs_init__(bit=True, state=True, n=n)
+
+
+@frozen(init=False, field_transformer=_hide_base_fields)
+class OneEffect(_ZVector):
+    """The effect <1|"""
+
+    def __init__(self, n: int = 1):
+        self.__attrs_init__(bit=True, state=False, n=n)
