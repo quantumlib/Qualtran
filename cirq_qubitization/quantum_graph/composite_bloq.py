@@ -303,7 +303,7 @@ def _initialize_soquets(reg: FancyRegister, available: Set[Soquet]) -> SoquetT:
             `CompositeBloqBuilder`).
 
     Returns:
-        a Soquet or Soquets. For multi-dimensional
+        A Soquet or Soquets. For multi-dimensional
         registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
         registers, the value will be a `Soquet` object.
     """
