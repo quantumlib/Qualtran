@@ -10,7 +10,7 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
-COPY = [1.0, 0, 0, 0, 0, 0, 0, 1]
+COPY = [1, 0, 0, 0, 0, 0, 0, 1]
 COPY = np.array(COPY).reshape((2, 2, 2))
 
 XOR = np.array(list(itertools.product([0, 1], repeat=3)))
