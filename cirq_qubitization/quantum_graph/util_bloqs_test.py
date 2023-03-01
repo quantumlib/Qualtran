@@ -3,7 +3,7 @@ import pytest
 
 import cirq_qubitization.testing as cq_testing
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
+from cirq_qubitization.quantum_graph.fancy_registers import Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
