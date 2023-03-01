@@ -1,19 +1,14 @@
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict
 
-import cirq
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from cirq_qubitization.algos.basic_gates.cnot import COPY, XOR
-from cirq_qubitization.algos.basic_gates.zero_state import ZERO
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
+from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
-from cirq_qubitization.quantum_graph.quantum_graph import Soquet
-from cirq_qubitization.quantum_graph.util_bloqs import Partition, Unpartition
 
 
 @frozen

@@ -1,9 +1,9 @@
 from functools import cached_property
-from typing import Dict, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Sequence, TYPE_CHECKING, Union
 
 import numpy as np
 import quimb.tensor as qtn
-from attrs import field, frozen
+from attrs import frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
