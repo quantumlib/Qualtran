@@ -74,7 +74,7 @@ def _cxn_to_soq_dict(
         get_me: A function that says which soquet is used to derive keys for the returned
             dictionary. Generally: if `cxns` is predecessor connections, this will return the
             `right` element of the connection and opposite of successor connections.
-        get_assign: A function that says which soquet is used to dervice the values for the
+        get_assign: A function that says which soquet is used to derive the values for the
             returned dictionary. Generally, this is the opposite side vs. `get_me`, but we
             do something fancier in `cbloq_to_quimb`.
     """
