@@ -1,6 +1,7 @@
 import itertools
 
 import numpy as np
+import pytest
 
 from cirq_qubitization.algos.and_bloq import And
 from cirq_qubitization.algos.basic_gates import OneState, ZeroEffect, ZeroState
@@ -16,22 +17,23 @@ def _make_and():
     return And()
 
 
-def test_truth_table():
-    k = [ZeroState(), OneState()]
-    d = [ZeroEffect(), OneEffect()]
+@pytest.mark.parametrize('cv2', [0, 1])
+@pytest.mark.parametrize('cv1', [0, 1])
+def test_truth_table(cv1, cv2):
+    state = [ZeroState(), OneState()]
+    eff = [ZeroEffect(), OneEffect()]
 
     for a, b in itertools.product([0, 1], repeat=2):
-
         bb = CompositeBloqBuilder()
-        (q_a,) = bb.add(k[a])
-        (q_b,) = bb.add(k[b])
-        (q_a, q_b), res = bb.add(And(), ctrl=[q_a, q_b])
-        bb.add(d[a], q=q_a)
-        bb.add(d[b], q=q_b)
+        (q_a,) = bb.add(state[a])
+        (q_b,) = bb.add(state[b])
+        (q_a, q_b), res = bb.add(And(cv1, cv2), ctrl=[q_a, q_b])
+        bb.add(eff[a], q=q_a)
+        bb.add(eff[b], q=q_b)
         cbloq = bb.finalize(res=res)
 
         vec = cbloq_to_dense(cbloq)
-        if a and b:
+        if (a == cv1) and (b == cv2):
             np.testing.assert_allclose([0, 1], vec)
         else:
             np.testing.assert_allclose([1, 0], vec)
