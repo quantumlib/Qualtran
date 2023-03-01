@@ -10,6 +10,8 @@ from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
+PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
+
 
 @frozen
 class PlusState(Bloq):
@@ -41,8 +43,7 @@ class PlusState(Bloq):
         out_soq = outgoing['q']
         assert isinstance(out_soq, Soquet)
 
-        data = np.ones(2, dtype=np.complex64) / np.sqrt(2)
-        tn.add(qtn.Tensor(data=data, inds=(outgoing['q'],), tags=['+', binst]))
+        tn.add(qtn.Tensor(data=PLUS, inds=(outgoing['q'],), tags=['+', binst]))
 
 
 @frozen
@@ -73,5 +74,4 @@ class PlusEffect(Bloq):
 
         assert list(outgoing.keys()) == []
 
-        data = np.ones(2, dtype=np.complex64) / np.sqrt(2)
-        tn.add(qtn.Tensor(data=data, inds=(incoming['q'],), tags=['+', binst]))
+        tn.add(qtn.Tensor(data=PLUS, inds=(incoming['q'],), tags=['+', binst]))

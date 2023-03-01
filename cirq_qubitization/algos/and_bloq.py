@@ -47,7 +47,7 @@ class And(Bloq):
     ):
 
         # Fill in our tensor using "and" logic.
-        data = np.zeros((2, 2, 2, 2, 2))
+        data = np.zeros((2, 2, 2, 2, 2), dtype=np.complex128)
         for c1, c2 in itertools.product((0, 1), repeat=2):
             if c1 == self.cv1 and c2 == self.cv2:
                 data[c1, c2, c1, c2, 1] = 1

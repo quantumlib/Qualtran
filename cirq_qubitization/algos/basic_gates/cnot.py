@@ -11,11 +11,11 @@ from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
 COPY = [1, 0, 0, 0, 0, 0, 0, 1]
-COPY = np.array(COPY).reshape((2, 2, 2))
+COPY = np.array(COPY, dtype=np.complex128).reshape((2, 2, 2))
 
 XOR = np.array(list(itertools.product([0, 1], repeat=3)))
 XOR = 1 - np.sum(XOR, axis=1) % 2
-XOR = XOR.reshape((2, 2, 2))
+XOR = XOR.reshape((2, 2, 2)).astype(np.complex128)
 
 
 @frozen
