@@ -43,6 +43,9 @@ class CNOT(Bloq):
 
         This bloq uses the factored form of CNOT composed of a COPY and XOR tensor joined
         by an internal index.
+
+        References:
+            [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
         """
         internal = qtn.rand_uuid()
         tn.add(
