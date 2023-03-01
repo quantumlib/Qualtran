@@ -71,6 +71,7 @@ def test_create_binst_graph():
 def test_composite_bloq():
     cxns, regs = _manually_make_test_cbloq_cxns()
     cbloq = CompositeBloq(cxns=cxns, registers=regs)
+    cbloq.validate_registers()
     circuit = cbloq.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
     cirq.testing.assert_has_diagram(
         circuit,
@@ -106,6 +107,7 @@ BloqInstance(bloq=TestBloq(), i=2)
 
 def test_bb_composite_bloq():
     cbloq_auto = TestComposite().decompose_bloq()
+    cbloq_auto.validate_registers()
     circuit = cbloq_auto.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
     cirq.testing.assert_has_diagram(
         circuit,
@@ -289,6 +291,7 @@ def test_util_convenience_methods():
     qs = bb.join(qs)
     bb.free(qs)
     cbloq = bb.finalize()
+    cbloq.validate_registers()
     assert len(cbloq.connections) == 1 + 10 + 1
 
 

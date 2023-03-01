@@ -35,6 +35,56 @@ class CompositeBloq(Bloq):
         self._cxns = tuple(cxns)
         self._registers = registers
 
+    def validate_registers(self) -> None:
+        """Raise a `ValueError` if `connections` does not match `registers`."""
+
+        left_cxns = []
+        right_cxns = []
+        for cxn in self._cxns:
+            if isinstance(cxn.left.binst, DanglingT):
+                if cxn.left.binst is LeftDangle:
+                    left_cxns.append(cxn)
+                else:
+                    raise ValueError("Left side of a connection is dangling, but not LeftDangle.")
+
+            if isinstance(cxn.right.binst, DanglingT):
+                if cxn.right.binst is RightDangle:
+                    right_cxns.append(cxn)
+                else:
+                    raise ValueError("Right side of a connection is dangling, but not RightDangle.")
+
+        # all registers must have connections (left)
+        for left in self.registers.lefts():
+            for cxn in left_cxns:
+                if cxn.left.reg == left:
+                    break
+            else:
+                raise ValueError(f"{left} has no associated left dangling connection.")
+
+        # all registers must have connections (right)
+        for right in self.registers.rights():
+            for cxn in right_cxns:
+                if cxn.right.reg == right:
+                    break
+            else:
+                raise ValueError(f"{right} has no associated right dangling connection.")
+
+        # all connections must have registers (left)
+        for cxn in left_cxns:
+            for left in self.registers.lefts():
+                if left == cxn.left.reg:
+                    break
+            else:
+                raise ValueError(f"{cxn} has no associated register.")
+
+        # all connections must have registers (right)
+        for cxn in right_cxns:
+            for right in self.registers.rights():
+                if right == cxn.right.reg:
+                    break
+            else:
+                raise ValueError(f"{cxn} has no associated register.")
+
     @property
     def registers(self) -> FancyRegisters:
         return self._registers
