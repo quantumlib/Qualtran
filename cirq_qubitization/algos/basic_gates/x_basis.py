@@ -9,18 +9,18 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
-_ZERO = np.array([1, 0], dtype=np.complex128)
-_ONE = np.array([0, 1], dtype=np.complex128)
+_PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
+_MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
 
 
 @frozen
-class _ZVector(Bloq):
-    """The |0> or |1> state or effect.
+class _XVector(Bloq):
+    """The |+> or |-> state or effect.
 
     Please use the explicitly named subclasses instead of the boolean arguments.
 
     Args:
-        bit: False chooses |0>, True chooses |1>
+        bit: False chooses |+>, True chooses |->
         state: True means this is a state with right registers; False means this is an
             effect with left registers.
         n: bitsize of the vector.
@@ -40,7 +40,7 @@ class _ZVector(Bloq):
         return f'|{s}>' if self.state else f'<{s}|'
 
     def short_name(self) -> str:
-        return '1' if self.bit else '0'
+        return '-' if self.bit else '+'
 
     @cached_property
     def registers(self) -> 'FancyRegisters':
@@ -59,7 +59,9 @@ class _ZVector(Bloq):
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), binst]
+                data=_MINUS if self.bit else _PLUS,
+                inds=(side['q'],),
+                tags=[self.short_name(), binst],
             )
         )
 
@@ -72,32 +74,32 @@ def _hide_base_fields(cls, fields):
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
-class ZeroState(_ZVector):
-    """The state |0>"""
+class PlusState(_XVector):
+    """The state |+>"""
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=True, n=n)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
-class ZeroEffect(_ZVector):
-    """The effect <0|"""
+class PlusEffect(_XVector):
+    """The effect <+|"""
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=False, n=n)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
-class OneState(_ZVector):
-    """The state |1>"""
+class MinusState(_XVector):
+    """The state |->"""
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=True, n=n)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
-class OneEffect(_ZVector):
-    """The effect <1|"""
+class MinusEffect(_XVector):
+    """The effect <-|"""
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)

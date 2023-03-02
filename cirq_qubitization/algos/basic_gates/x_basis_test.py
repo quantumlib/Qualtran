@@ -29,7 +29,7 @@ def test_plus_effect():
     vector = bloq_to_dense(bloq)
 
     # Note: we don't do "column vectors" or anything for kets.
-    # Everything is squeezed. Keep track of your own shapes or use compositebloq.
+    # Everything is squeezed. Keep track manually or use compositebloq.
     should_be = np.array([1, 1]) / np.sqrt(2)
     np.testing.assert_allclose(should_be, vector)
 

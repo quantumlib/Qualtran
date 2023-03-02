@@ -40,7 +40,7 @@ from sphinx.ext.napoleon import Config, GoogleDocstring
 
 import cirq_qubitization.algos.and_bloq_test
 import cirq_qubitization.algos.basic_gates.cnot_test
-import cirq_qubitization.algos.basic_gates.plus_state_test
+import cirq_qubitization.algos.basic_gates.x_basis_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
 import cirq_qubitization.quantum_graph
 from cirq_qubitization.gate_with_registers import GateWithRegisters
