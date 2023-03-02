@@ -110,7 +110,8 @@ class TensorAdderSimple(Bloq):
 
 
 def test_cbloq_to_quimb():
-    bb, (x,) = CompositeBloqBuilder.make_with_soqs(FancyRegisters.build(x=1))
+    bb = CompositeBloqBuilder()
+    x = bb.add_register('x', 1)
     (x,) = bb.add(TensorAdderSimple(), x=x)
     (x,) = bb.add(TensorAdderSimple(), x=x)
     (x,) = bb.add(TensorAdderSimple(), x=x)

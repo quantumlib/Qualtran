@@ -27,8 +27,7 @@ def test_cnot():
 
 
 def test_cnot_cbloq():
-    bb = CompositeBloqBuilder(FancyRegisters.build(c=1, t=1))
-    soqs = bb.initial_soquets()
+    bb, soqs = CompositeBloqBuilder.from_registers(FancyRegisters.build(c=1, t=1))
     c, t = bb.add(CNOT(), ctrl=soqs['c'], target=soqs['t'])
     cbloq = bb.finalize(c=c, t=t)
     matrix = cbloq_to_dense(cbloq)

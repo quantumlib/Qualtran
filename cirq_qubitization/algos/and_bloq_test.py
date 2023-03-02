@@ -40,7 +40,9 @@ def test_truth_table(cv1, cv2):
 
 
 def test_inverse():
-    bb, (q0, q1) = CompositeBloqBuilder.make_with_soqs(FancyRegisters.build(q0=1, q1=1))
+    bb = CompositeBloqBuilder()
+    q0 = bb.add_register('q0', 1)
+    q1 = bb.add_register('q1', 1)
     qs, trg = bb.add(And(), ctrl=[q0, q1])
     (qs,) = bb.add(And(adjoint=True), ctrl=qs, target=trg)
     cbloq = bb.finalize(q0=qs[0], q1=qs[1])
