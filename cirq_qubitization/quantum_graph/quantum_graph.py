@@ -1,8 +1,9 @@
-from typing import Union
+from typing import Tuple, Union
 
-from attrs import frozen
+from attrs import field, frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister
 
 
 @frozen
@@ -11,7 +12,7 @@ class BloqInstance:
 
     Attributes:
         bloq: The `Bloq`.
-        i: An arbitary index to disambiguate this instance from other Bloqs of the same type
+        i: An arbitrary index to disambiguate this instance from other Bloqs of the same type
             within a `CompositeBloq`.
     """
 
@@ -34,19 +35,50 @@ class DanglingT:
         return self._name
 
 
+def _to_tuple(x: Union[int, Tuple[int, ...]]):
+    if isinstance(x, int):
+        return (x,)
+    return x
+
+
 @frozen
 class Soquet:
-    """One half of a `Wire` connection.
+    """One half of a connection.
+
+    Users should not construct these directly. They should be marshalled
+    by a `CompositeBloqBuilder`.
 
     A `Soquet` acts as the node type in our quantum compute graph. It is a particular
-    register (by name) on a particular `Bloq`.
+    register (by name and optional index) on a particular `Bloq` instance.
 
-    A `Soquet` can also be present in a dangling wire (i.e. represent an unconnected input or
-    output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
+    A `Soquet` can also be present in an external connection (i.e. represent an unconnected input
+    or output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
+
+    Args:
+        binst: The BloqInstance to which this soquet belongs.
+        reg: The register that this soquet is an instance of.
+        idx: Registers with non-empty `wireshape` attributes are multi-dimensional. A soquet
+            is an explicitly indexed instantiation of one element of the multi-dimensional
+            register.
     """
 
     binst: Union[BloqInstance, DanglingT]
-    reg_name: str
+    reg: FancyRegister
+    idx: Tuple[int, ...] = field(converter=_to_tuple, default=tuple())
+
+    @idx.validator
+    def _check_idx(self, attribute, value):
+        if len(value) != len(self.reg.wireshape):
+            raise ValueError(f"Bad index shape {value} for {self.reg}.")
+        for i, shape in zip(value, self.reg.wireshape):
+            if i >= shape:
+                raise ValueError(f"Bad index {i} for {self.reg}.")
+
+    def pretty(self) -> str:
+        label = self.reg.name
+        if len(self.idx) > 0:
+            return f'{label}[{", ".join(str(i) for i in self.idx)}]'
+        return label
 
 
 LeftDangle = DanglingT("LeftDangle")
@@ -61,12 +93,21 @@ DanglingT.__init__ = _singleton_error
 
 
 @frozen
-class Wire:
+class Connection:
     """A connection between two `Soquet`s.
 
-    Quantum data flows from left to right. The graph implied by a collection of `Wire`s
+    Quantum data flows from left to right. The graph implied by a collection of `Connections`s
     is directed.
     """
 
     left: Soquet
     right: Soquet
+
+    @property
+    def shape(self) -> int:
+        ls = self.left.reg.bitsize
+        rs = self.right.reg.bitsize
+
+        if ls != rs:
+            raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
+        return ls
