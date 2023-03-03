@@ -4,6 +4,7 @@ import cirq
 
 from cirq_qubitization import bit_tools
 from cirq_qubitization.and_gate import And
+from cirq_qubitization.t_complexity_protocol import TComplexity
 
 
 class LessThanGate(cirq.ArithmeticGate):
@@ -32,7 +33,6 @@ class LessThanGate(cirq.ArithmeticGate):
         if self._val >= 2 ** len(self._input_register):
             yield cirq.X(target)
             return
-
         adjoint = []
 
         # Initially our belief is that the numbers are equal.
@@ -68,6 +68,12 @@ class LessThanGate(cirq.ArithmeticGate):
 
     def _has_unitary_(self):
         return True
+
+    def _t_complexity_(self) -> TComplexity:
+        n = len(self._input_register)
+        if self._val >= 2**n:
+            return TComplexity(clifford=1)
+        return TComplexity(t=4 * n, clifford=15 * n + 3 * self._val.bit_count() + 2)
 
 
 class LessThanEqualGate(cirq.ArithmeticGate):
