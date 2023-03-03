@@ -55,9 +55,10 @@ def test_decompose_less_than_gate(bits: List[int], val: int):
     )
 
 
+@pytest.mark.parametrize("n", [*range(2, 5)])
 @pytest.mark.parametrize("val", [3, 4, 5, 7, 8, 9])
-def test_t_complexity(val: int):
-    g = cirq_qubitization.LessThanGate([2, 2, 2], val)
+def test_t_complexity(n: int, val: int):
+    g = cirq_qubitization.LessThanGate(n * [2], val)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
 
