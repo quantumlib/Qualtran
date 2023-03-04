@@ -66,12 +66,14 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
-        bb, initial_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        bb, initial_soqs = CompositeBloqBuilder.from_registers(
+            self.registers, add_registers_allowed=False
+        )
         out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
         if out_soqs is NotImplemented:
             raise NotImplementedError(f"Cannot decompose {self}.")
 
-        return bb.finalize_strict(**out_soqs)
+        return bb.finalize(**out_soqs)
 
     def as_composite_bloq(self) -> 'CompositeBloq':
         """Wrap this Bloq into a size-1 CompositeBloq.
@@ -81,11 +83,13 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
-        bb, initial_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        bb, initial_soqs = CompositeBloqBuilder.from_registers(
+            self.registers, add_registers_allowed=False
+        )
         ret_soqs_tuple = bb.add(self, **initial_soqs)
         assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
-        return bb.finalize_strict(**ret_soqs)
+        return bb.finalize(**ret_soqs)
 
     def add_my_tensors(
         self,

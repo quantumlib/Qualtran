@@ -330,17 +330,22 @@ class CompositeBloqBuilder:
 
     When overriding `build_composite_bloq`, the Bloq class will ensure that the bloq under
     construction has the correct registers: namely, those of the decomposed bloq and parent
-    bloq are the same. This affords some additional error checking (see `bb.finalize_strict()`).
+    bloq are the same. This affords some additional error checking.
     Initial soquets are passed as **kwargs (by register name) to the `build_composite_bloq` method.
     See `from_registers` for more details.
 
-    To use this class directly, you must call `add_register` to set up the composite bloq's
+    When using this class directly, you must call `add_register` to set up the composite bloq's
     registers. When adding a LEFT or THRU register, the method will return soquets to be
-    used when adding more bloqs. Adding a THRU or RIGHT register will enable more checks during
-    `finalize()`. These checks can be made manditory with `finalize_strict()`.
+    used when adding more bloqs. Adding a THRU or RIGHT register can enable more checks during
+    `finalize()`.
+
+    Args:
+        add_registers_allowed: Whether we allow the addition of registers during bloq building.
+        This affords some additional error checking if set to `False` but you must specify
+        all registers ahead-of-time.
     """
 
-    def __init__(self):
+    def __init__(self, add_registers_allowed=True):
         # To be appended to:
         self._cxns: List[Connection] = []
         self._regs: List[FancyRegister] = []
@@ -351,8 +356,8 @@ class CompositeBloqBuilder:
         # Bookkeeping for linear types; Soquets must be used exactly once.
         self._available: Set[Soquet] = set()
 
-        # Whether we can call `add_register` and do non-strict `finalize`().
-        self._add_register_allowed = True
+        # Whether we can call `add_register` and do non-strict `finalize()`.
+        self.add_register_allowed = add_registers_allowed
 
     @overload
     def add_register(self, reg: FancyRegister, bitsize: None = None) -> Union[None, SoquetT]:
@@ -380,7 +385,7 @@ class CompositeBloqBuilder:
             initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
             and will be used for error checking in `finalize()` and nothing is returned.
         """
-        if not self._add_register_allowed:
+        if not self.add_register_allowed:
             raise ValueError(
                 "This BloqBuilder was constructed from pre-specified registers. "
                 "Ad hoc addition of more registers is not allowed."
@@ -405,15 +410,14 @@ class CompositeBloqBuilder:
         return None
 
     @classmethod
-    def from_registers(cls, parent_regs: FancyRegisters):
+    def from_registers(cls, parent_regs: FancyRegisters, add_registers_allowed=False):
         """Construct a CompositeBloqBuilder with pre-specified registers.
 
         This is safer if e.g. you're decomposing an existing Bloq and need the registers
         to match. This constructor is used by `Bloq.decompose_bloq()`.
-
-        Using this constructor disables `add_register` and makes all `finalize` calls strict.
         """
-        bb = cls()
+        # Initial construction: allow register addition for the following loop.
+        bb = cls(add_registers_allowed=True)
 
         initial_soqs: Dict[str, SoquetT] = {}
         for reg in parent_regs:
@@ -421,6 +425,9 @@ class CompositeBloqBuilder:
                 initial_soqs[reg.name] = bb.add_register(reg)
             else:
                 bb.add_register(reg)
+
+        # Now we can set it to the desired value.
+        bb.add_register_allowed = add_registers_allowed
 
         return bb, initial_soqs
 
@@ -502,15 +509,20 @@ class CompositeBloqBuilder:
         it configures the final "dangling" soquets that serve as the outputs for
         the composite bloq as a whole.
 
+        If `self.add_registers_allowed` is set to `True`, additional register
+        names passed to this function will be added as RIGHT registers. Otherwise,
+        this method validates the provided `final_soqs` against our list of RIGHT
+        (and THRU) registers.
+
         Args:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
-        if not self._add_register_allowed:
-            return self.finalize_strict(**final_soqs)
+        if not self.add_register_allowed:
+            return self._finalize_strict(**final_soqs)
 
         # If items from `final_soqs` don't already exist in `_regs`, add RIGHT registers
-        # for them. Then call `finalize_strict` where the actual dangling connections are added.
+        # for them. Then call `_finalize_strict` where the actual dangling connections are added.
 
         def _infer_reg(name: str, soq: SoquetT) -> FancyRegister:
             """Go from Soquet -> register, but use a specific name for the register."""
@@ -530,13 +542,10 @@ class CompositeBloqBuilder:
             if name not in right_reg_names:
                 self._regs.append(_infer_reg(name, soq))
 
-        return self.finalize_strict(**final_soqs)
+        return self._finalize_strict(**final_soqs)
 
-    def finalize_strict(self, **final_soqs: SoquetT) -> CompositeBloq:
+    def _finalize_strict(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
-
-        In contrast to `finalize()`, this method verifies the provided final_soqs
-        against our list of RIGHT (and THRU) registers.
 
         Args:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
