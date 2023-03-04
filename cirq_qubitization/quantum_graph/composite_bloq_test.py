@@ -227,8 +227,9 @@ def test_finalize_strict_too_many_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
+    bb.add_register_allowed = False
     with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
-        bb.finalize_strict(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
 
 
 def test_finalize_bad_args():
