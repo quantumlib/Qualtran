@@ -351,7 +351,7 @@ class CompositeBloqBuilder:
         # Bookkeeping for linear types; Soquets must be used exactly once.
         self._available: Set[Soquet] = set()
 
-        # Whether we can call `add_register` and do non-strict `finalize`().
+        # Whether we can call `add_register` and do non-strict `finalize()`.
         self._add_register_allowed = True
 
     @overload
