@@ -3,7 +3,7 @@ import pytest
 
 import cirq_qubitization.testing as cq_testing
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
+from cirq_qubitization.quantum_graph.fancy_registers import Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
@@ -28,7 +28,7 @@ def test_register_sizes_add_up(bloq_cls, n):
 
 
 def test_util_bloqs():
-    bb = CompositeBloqBuilder(FancyRegisters([]))
+    bb = CompositeBloqBuilder()
     (qs1,) = bb.add(Allocate(10))
     assert isinstance(qs1, Soquet)
     (qs2,) = bb.add(Split(10), split=qs1)

@@ -1,6 +1,18 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, FrozenSet, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Dict,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    overload,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import cirq
 import networkx as nx
@@ -8,7 +20,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -281,64 +293,143 @@ class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
-def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
-    """Initialize input Soquets from left registers for bookkeeping in `CompositeBloqBuilder`.
+def _initialize_soquets(reg: FancyRegister, available: Set[Soquet]) -> SoquetT:
+    """Initialize input Soquets from left registers.
+
+    Args:
+        reg: The register
+        available: A set that we will add each individual soquet to (used for bookkeeping in
+            `CompositeBloqBuilder`).
 
     Returns:
-        initial_soqs: A mapping from register name to a Soquet or Soquets. For multi-dimensional
-            registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
-            registers, the value will be a `Soquet` object.
-        available: A flat set of all the `Soquet`s. During initialization, all Soquets are
-            available to be consumed. `CompositeBloqBuilder` will keep the set of available
-            Soquets up-to-date.
+        A Soquet or Soquets. For multi-dimensional
+        registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
+        registers, the value will be a `Soquet` object.
     """
-    available: Set[Soquet] = set()
-    initial_soqs: Dict[str, SoquetT] = {}
-    soqs: SoquetT
-    for reg in regs.lefts():
-        if reg.wireshape:
-            soqs = np.empty(reg.wireshape, dtype=object)
-            for ri in reg.wire_idxs():
-                soq = Soquet(LeftDangle, reg, idx=ri)
-                soqs[ri] = soq
-                available.add(soq)
-        else:
-            # Annoyingly, this must be a special case.
-            # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
-            # 'object'. This wouldn't happen--for example--with an integer array.
-            soqs = Soquet(LeftDangle, reg)
-            available.add(soqs)
+    if reg.wireshape:
+        soqs = np.empty(reg.wireshape, dtype=object)
+        for ri in reg.wire_idxs():
+            soq = Soquet(LeftDangle, reg, idx=ri)
+            soqs[ri] = soq
+            available.add(soq)
+        return soqs
 
-        initial_soqs[reg.name] = soqs
-    return initial_soqs, available
+    # Annoyingly, this must be a special case.
+    # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
+    # 'object'. This wouldn't happen--for example--with an integer array.
+    soqs = Soquet(LeftDangle, reg)
+    available.add(soqs)
+    return soqs
 
 
 class CompositeBloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
-    Users should not instantiate a CompositeBloqBuilder directly. To build a composite bloq,
-    override `Bloq.build_composite_bloq`. A properly-initialized builder instance will be
-    provided as the first argument.
+    Users may instantiate this class directly or use its methods by
+    overriding `Bloq.build_composite_bloq`.
+
+    When overriding `build_composite_bloq`, the Bloq class will ensure that the bloq under
+    construction has the correct registers: namely, those of the decomposed bloq and parent
+    bloq are the same. This affords some additional error checking.
+    Initial soquets are passed as **kwargs (by register name) to the `build_composite_bloq` method.
+    See `from_registers` for more details.
+
+    When using this class directly, you must call `add_register` to set up the composite bloq's
+    registers. When adding a LEFT or THRU register, the method will return soquets to be
+    used when adding more bloqs. Adding a THRU or RIGHT register can enable more checks during
+    `finalize()`.
 
     Args:
-        parent_regs: The `Registers` argument for the parent bloq.
+        add_registers_allowed: Whether we allow the addition of registers during bloq building.
+        This affords some additional error checking if set to `False` but you must specify
+        all registers ahead-of-time.
     """
 
-    def __init__(self, parent_regs: FancyRegisters):
+    def __init__(self, add_registers_allowed=True):
         # To be appended to:
         self._cxns: List[Connection] = []
+        self._regs: List[FancyRegister] = []
 
         # Initialize our BloqInstance counter
         self._i = 0
 
-        self._parent_regs = parent_regs
-
         # Bookkeeping for linear types; Soquets must be used exactly once.
-        self._initial_soquets, self._available = _initialize_soquets(parent_regs)
+        self._available: Set[Soquet] = set()
 
-    def initial_soquets(self) -> Dict[str, SoquetT]:
-        """Input soquets (by name) to start building a quantum compute graph."""
-        return self._initial_soquets
+        # Whether we can call `add_register` and do non-strict `finalize()`.
+        self.add_register_allowed = add_registers_allowed
+
+    @overload
+    def add_register(self, reg: FancyRegister, bitsize: None = None) -> Union[None, SoquetT]:
+        ...
+
+    @overload
+    def add_register(self, reg: str, bitsize: int) -> SoquetT:
+        ...
+
+    def add_register(
+        self, reg: Union[str, FancyRegister], bitsize: Optional[int] = None
+    ) -> Union[None, SoquetT]:
+        """Add a new register to the composite bloq being built.
+
+        If this bloq builder was constructed with `from_registers`, this operation is not allowed.
+
+        Args:
+            reg: Either the register or a register name. If this is a register, then `bitsize`
+                must also be provided and a default THRU register will be added.
+            bitsize: If `reg` is a register name, this is the bitsize for the added register.
+                Otherwise, this must not be provided.
+
+        Returns:
+            If `reg` is a LEFT or THRU register, return the soquet(s) corresponding to the
+            initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
+            and will be used for error checking in `finalize()` and nothing is returned.
+        """
+        if not self.add_register_allowed:
+            raise ValueError(
+                "This BloqBuilder was constructed from pre-specified registers. "
+                "Ad hoc addition of more registers is not allowed."
+            )
+
+        if isinstance(reg, FancyRegister):
+            if bitsize is not None:
+                raise ValueError("`bitsize` must not be specified if `reg` is a Register.")
+        else:
+            if not isinstance(reg, str):
+                raise ValueError("`reg` must be a string register name if not a Register.")
+            if not isinstance(bitsize, int):
+                raise ValueError(
+                    "`bitsize` must be specified and must be an "
+                    "integer if `reg` is a register name."
+                )
+            reg = FancyRegister(name=reg, bitsize=bitsize)
+
+        self._regs.append(reg)
+        if reg.side & Side.LEFT:
+            return _initialize_soquets(reg, available=self._available)
+        return None
+
+    @classmethod
+    def from_registers(cls, parent_regs: FancyRegisters, add_registers_allowed=False):
+        """Construct a CompositeBloqBuilder with pre-specified registers.
+
+        This is safer if e.g. you're decomposing an existing Bloq and need the registers
+        to match. This constructor is used by `Bloq.decompose_bloq()`.
+        """
+        # Initial construction: allow register addition for the following loop.
+        bb = cls(add_registers_allowed=True)
+
+        initial_soqs: Dict[str, SoquetT] = {}
+        for reg in parent_regs:
+            if reg.side & Side.LEFT:
+                initial_soqs[reg.name] = bb.add_register(reg)
+            else:
+                bb.add_register(reg)
+
+        # Now we can set it to the desired value.
+        bb.add_register_allowed = add_registers_allowed
+
+        return bb, initial_soqs
 
     def _new_binst(self, bloq: Bloq) -> BloqInstance:
         inst = BloqInstance(bloq, self._i)
@@ -415,17 +506,53 @@ class CompositeBloqBuilder:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
 
         This method is similar to calling `add()` but instead of adding a new Bloq,
-        it validates the final "dangling" soquets that serve as the outputs for
+        it configures the final "dangling" soquets that serve as the outputs for
         the composite bloq as a whole.
 
-        This method is called at the end of `Bloq.decompose_bloq`. Users overriding
-        `Bloq.build_composite_bloq` should not call this method.
+        If `self.add_registers_allowed` is set to `True`, additional register
+        names passed to this function will be added as RIGHT registers. Otherwise,
+        this method validates the provided `final_soqs` against our list of RIGHT
+        (and THRU) registers.
 
         Args:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
-        for reg in self._parent_regs.rights():
+        if not self.add_register_allowed:
+            return self._finalize_strict(**final_soqs)
+
+        # If items from `final_soqs` don't already exist in `_regs`, add RIGHT registers
+        # for them. Then call `_finalize_strict` where the actual dangling connections are added.
+
+        def _infer_reg(name: str, soq: SoquetT) -> FancyRegister:
+            """Go from Soquet -> register, but use a specific name for the register."""
+            if isinstance(soq, Soquet):
+                return FancyRegister(name=name, bitsize=soq.reg.bitsize, side=Side.RIGHT)
+
+            # Get info from 0th soquet in an ndarray.
+            return FancyRegister(
+                name=name,
+                bitsize=soq.reshape(-1)[0].reg.bitsize,
+                wireshape=soq.shape,
+                side=Side.RIGHT,
+            )
+
+        right_reg_names = [reg.name for reg in self._regs if reg.side & Side.RIGHT]
+        for name, soq in final_soqs.items():
+            if name not in right_reg_names:
+                self._regs.append(_infer_reg(name, soq))
+
+        return self._finalize_strict(**final_soqs)
+
+    def _finalize_strict(self, **final_soqs: SoquetT) -> CompositeBloq:
+        """Finish building a CompositeBloq and return the immutable CompositeBloq.
+
+        Args:
+            **final_soqs: Keyword arguments mapping the composite bloq's register names to
+                final`Soquet`s, e.g. the output soquets from a prior, final operation.
+        """
+        registers = FancyRegisters(self._regs)
+        for reg in registers.rights():
             try:
                 in_soq = np.asarray(final_soqs[reg.name])
             except KeyError:
@@ -456,7 +583,7 @@ class CompositeBloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(cxns=self._cxns, registers=self._parent_regs)
+        return CompositeBloq(cxns=self._cxns, registers=registers)
 
     def allocate(self, n: int = 1) -> Soquet:
         from cirq_qubitization.quantum_graph.util_bloqs import Allocate

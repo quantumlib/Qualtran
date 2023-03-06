@@ -120,8 +120,7 @@ def test_bb_composite_bloq():
 def test_bloq_builder():
     registers = FancyRegisters.build(x=1, y=1)
     x, y = registers
-    bb = CompositeBloqBuilder(registers)
-    initial_soqs = bb.initial_soquets()
+    bb, initial_soqs = CompositeBloqBuilder.from_registers(registers)
     assert initial_soqs == {'x': Soquet(LeftDangle, x), 'y': Soquet(LeftDangle, y)}
 
     x = initial_soqs['x']
@@ -138,11 +137,9 @@ def test_bloq_builder():
 
 
 def _get_bb():
-    registers = FancyRegisters.build(x=1, y=1)
-    bb = CompositeBloqBuilder(registers)
-    initial_soqs = bb.initial_soquets()
-    x = initial_soqs['x']
-    y = initial_soqs['y']
+    bb = CompositeBloqBuilder()
+    x = bb.add_register('x', 1)
+    y = bb.add_register('y', 1)
     return bb, x, y
 
 
@@ -226,12 +223,30 @@ def test_finalize_missing_args():
         bb.finalize(y=y2)
 
 
-def test_finalize_too_many_args():
+def test_finalize_strict_too_many_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
+    bb.add_register_allowed = False
     with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+
+
+def test_finalize_bad_args():
+    bb, x, y = _get_bb()
+    x2, y2 = bb.add(TestBloq(), control=x, target=y)
+
+    with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet.*z.*'):
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+
+
+def test_finalize_alloc():
+    bb, x, y = _get_bb()
+    x2, y2 = bb.add(TestBloq(), control=x, target=y)
+    z = bb.allocate(1)
+
+    cbloq = bb.finalize(x=x2, y=y2, z=z)
+    assert len(list(cbloq.registers.rights())) == 3
 
 
 class TestMultiCNOT(Bloq):
@@ -282,7 +297,7 @@ target[1, 2, 0]: ─────────────────────
 
 
 def test_util_convenience_methods():
-    bb = CompositeBloqBuilder(FancyRegisters([]))
+    bb = CompositeBloqBuilder()
 
     qs = bb.allocate(10)
     qs = bb.split(qs)
@@ -293,7 +308,7 @@ def test_util_convenience_methods():
 
 
 def test_util_convenience_methods_errors():
-    bb = CompositeBloqBuilder(FancyRegisters([]))
+    bb = CompositeBloqBuilder()
 
     qs = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
