@@ -480,12 +480,7 @@ class CompositeBloqBuilder:
         return inst
 
     def _add_cxn(
-        self,
-        binst: BloqInstance,
-        idxed_soq: Soquet,
-        reg: FancyRegister,
-        idx: Tuple[int, ...],
-        map=False,
+        self, binst: BloqInstance, idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]
     ) -> None:
         """Helper function to be used as the base for the `add_func` argument of `_process_soquets`.
 
@@ -495,14 +490,11 @@ class CompositeBloqBuilder:
         try:
             self._available.remove(idxed_soq)
         except KeyError:
+            bloq = binst if isinstance(binst, DanglingT) else binst.bloq
             raise BloqBuilderError(
-                f"{idxed_soq} is not an available input Soquet for {reg}."
+                f"{idxed_soq} is not an available Soquet for `{bloq}.{reg.name}`."
             ) from None
-        mine = Soquet(binst, reg, idx)
-        if map:
-            cxn = Connection(self._map_soq(idxed_soq), mine)
-        else:
-            cxn = Connection(idxed_soq, mine)
+        cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
         self._cxns.append(cxn)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
@@ -524,8 +516,8 @@ class CompositeBloqBuilder:
         binst = self._new_binst(bloq)
 
         def _add(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
-            # close over `binst` and `map=False`.
-            return self._add_cxn(binst, idxed_soq, reg, idx, map=False)
+            # close over `binst`
+            return self._add_cxn(binst, idxed_soq, reg, idx)
 
         _process_soquets(
             registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), add_func=_add
@@ -586,8 +578,8 @@ class CompositeBloqBuilder:
         registers = FancyRegisters(self._regs)
 
         def _fin(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
-            # close over `RightDangle` and `map`
-            return self._add_cxn(RightDangle, idxed_soq, reg, idx, map=map)
+            # close over `RightDangle`
+            return self._add_cxn(RightDangle, idxed_soq, reg, idx)
 
         _process_soquets(
             registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, add_func=_fin

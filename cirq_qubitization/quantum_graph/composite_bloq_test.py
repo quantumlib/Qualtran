@@ -146,9 +146,7 @@ def _get_bb():
 def test_wrong_soquet():
     bb, x, y = _get_bb()
 
-    with pytest.raises(
-        BloqBuilderError, match=r'.*is not an available input Soquet for .*target.*'
-    ):
+    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet for .*target.*'):
         bad_target_arg = Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2))
         bb.add(TestBloq(), control=x, target=bad_target_arg)
 
@@ -157,7 +155,7 @@ def test_double_use_1():
     bb, x, y = _get_bb()
 
     with pytest.raises(
-        BloqBuilderError, match=r'.*is not an available input Soquet for .*target.*'
+        BloqBuilderError, match=r'.*is not an available Soquet for `TestBloq.*target`.*'
     ):
         bb.add(TestBloq(), control=x, target=x)
 
@@ -168,7 +166,7 @@ def test_double_use_2():
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
     with pytest.raises(
-        BloqBuilderError, match=r'.*is not an available input Soquet for .*control.*'
+        BloqBuilderError, match=r'.*is not an available Soquet for `TestBloq\(\)\.control`\.'
     ):
         x3, y3 = bb.add(TestBloq(), control=x, target=y)
 
@@ -176,16 +174,14 @@ def test_double_use_2():
 def test_missing_args():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqBuilderError, match=r'.*requires an input Soquet named `control`.'):
+    with pytest.raises(BloqBuilderError, match=r'.*requires a Soquet named `control`.'):
         bb.add(TestBloq(), target=y)
 
 
 def test_too_many_args():
     bb, x, y = _get_bb()
 
-    with pytest.raises(
-        BloqBuilderError, match=r'.*does not accept input Soquets.*another_control.*'
-    ):
+    with pytest.raises(BloqBuilderError, match=r'.*does not accept Soquets.*another_control.*'):
         bb.add(TestBloq(), control=x, target=y, another_control=x)
 
 
@@ -195,7 +191,7 @@ def test_finalize_wrong_soquet():
     assert x != x2
     assert y != y2
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet for .*y.*'):
+    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet for .*y.*'):
         bb.finalize(x=x2, y=Soquet(BloqInstance(TestBloq(), i=12), FancyRegister('target', 2)))
 
 
@@ -203,7 +199,7 @@ def test_finalize_double_use_1():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet for .*y.*'):
+    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet for .*y.*'):
         bb.finalize(x=x2, y=x2)
 
 
@@ -211,7 +207,9 @@ def test_finalize_double_use_2():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet for .*x.*'):
+    with pytest.raises(
+        BloqBuilderError, match=r'.*is not an available Soquet for `RightDangle\.x`\.'
+    ):
         bb.finalize(x=x, y=y2)
 
 
@@ -219,7 +217,7 @@ def test_finalize_missing_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
-    with pytest.raises(BloqBuilderError, match=r'.*requires a final Soquet named `x`.'):
+    with pytest.raises(BloqBuilderError, match=r'Finalizing requires a Soquet named `x`.'):
         bb.finalize(y=y2)
 
 
@@ -228,7 +226,7 @@ def test_finalize_strict_too_many_args():
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
     bb.add_register_allowed = False
-    with pytest.raises(BloqBuilderError, match=r'.*does not accept final Soquet.*z.*'):
+    with pytest.raises(BloqBuilderError, match=r'Finalizing does not accept Soquets.*z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
 
 
@@ -236,7 +234,7 @@ def test_finalize_bad_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestBloq(), control=x, target=y)
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available final Soquet.*z.*'):
+    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet.*RightDangle\.z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
 
 
