@@ -1,6 +1,7 @@
 from collections import defaultdict
 from functools import cached_property
 from typing import (
+    Callable,
     Dict,
     FrozenSet,
     Iterable,
@@ -293,13 +294,16 @@ class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
-def _initialize_soquets(reg: FancyRegister, available: Set[Soquet]) -> SoquetT:
-    """Initialize input Soquets from left registers.
+def _reg_to_soq(
+    binst: Union[BloqInstance, DanglingT], reg: FancyRegister, available: Set[Soquet]
+) -> SoquetT:
+    """Create the soquet or array of soquets for a register.
 
     Args:
+        binst: The output soquet's bloq instance.
         reg: The register
-        available: A set that we will add each individual soquet to (used for bookkeeping in
-            `CompositeBloqBuilder`).
+        available: A set that we will add each individual, indexed soquet to (used for bookkeeping
+            in `CompositeBloqBuilder`).
 
     Returns:
         A Soquet or Soquets. For multi-dimensional
@@ -309,7 +313,7 @@ def _initialize_soquets(reg: FancyRegister, available: Set[Soquet]) -> SoquetT:
     if reg.wireshape:
         soqs = np.empty(reg.wireshape, dtype=object)
         for ri in reg.wire_idxs():
-            soq = Soquet(LeftDangle, reg, idx=ri)
+            soq = Soquet(binst, reg, idx=ri)
             soqs[ri] = soq
             available.add(soq)
         return soqs
@@ -317,9 +321,48 @@ def _initialize_soquets(reg: FancyRegister, available: Set[Soquet]) -> SoquetT:
     # Annoyingly, this must be a special case.
     # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
     # 'object'. This wouldn't happen--for example--with an integer array.
-    soqs = Soquet(LeftDangle, reg)
+    soqs = Soquet(binst, reg)
     available.add(soqs)
     return soqs
+
+
+def _process_soquets(
+    registers: Iterable[FancyRegister],
+    in_soqs: Dict[str, SoquetT],
+    debug_str: str,
+    add_func: Callable[[Soquet, FancyRegister, Tuple[int, ...]], None],
+) -> None:
+    """Process and validate `in_soqs` in the context of `registers`.
+
+    This is the "outer loop" of processing the input soquets for `bb.add()` and `bb.update()`
+    and the final soquets for `bb.finalize_strict()`.
+
+    Args:
+        registers: The registers to use for expected keys of `in_soqs`.
+        in_soqs: A dictionary from register name to input soquets.
+        debug_str: A string to use in error messages identifying what's being processed.
+        add_func: A callable for operating on an individual (indexed) soquet. Must accept
+            the incoming, indexed soquet as well as the register and (left-)index it
+            has been mapped to.
+    """
+
+    for reg in registers:
+        try:
+            # if we want fancy indexing (which we do), we need numpy
+            # this also supports length-zero indexing natively, which is good too.
+            in_soq = np.asarray(in_soqs[reg.name])
+        except KeyError:
+            raise BloqBuilderError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
+
+        del in_soqs[reg.name]  # so we can check for surplus arguments.
+
+        for li in reg.wire_idxs():
+            idxed_soq = in_soq[li]
+            assert isinstance(idxed_soq, Soquet), idxed_soq
+            add_func(idxed_soq, reg, li)
+
+    if in_soqs:
+        raise BloqBuilderError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
 
 
 class CompositeBloqBuilder:
@@ -406,7 +449,7 @@ class CompositeBloqBuilder:
 
         self._regs.append(reg)
         if reg.side & Side.LEFT:
-            return _initialize_soquets(reg, available=self._available)
+            return _reg_to_soq(LeftDangle, reg, available=self._available)
         return None
 
     @classmethod
@@ -436,6 +479,32 @@ class CompositeBloqBuilder:
         self._i += 1
         return inst
 
+    def _add_cxn(
+        self,
+        binst: BloqInstance,
+        idxed_soq: Soquet,
+        reg: FancyRegister,
+        idx: Tuple[int, ...],
+        map=False,
+    ) -> None:
+        """Helper function to be used as the base for the `add_func` argument of `_process_soquets`.
+
+        This creates a connection between the provided input `idxed_soq` to the current binst's
+        `(reg, idx)`. If `map`, map binsts in the input `idxed_soq`.
+        """
+        try:
+            self._available.remove(idxed_soq)
+        except KeyError:
+            raise BloqBuilderError(
+                f"{idxed_soq} is not an available input Soquet for {reg}."
+            ) from None
+        mine = Soquet(binst, reg, idx)
+        if map:
+            cxn = Connection(self._map_soq(idxed_soq), mine)
+        else:
+            cxn = Connection(idxed_soq, mine)
+        self._cxns.append(cxn)
+
     def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
 
@@ -454,53 +523,16 @@ class CompositeBloqBuilder:
         """
         binst = self._new_binst(bloq)
 
-        for reg in bloq.registers.lefts():
-            try:
-                # if we want fancy indexing (which we do), we need numpy
-                # this also supports length-zero indexing natively, which is good too.
-                in_soq = np.asarray(in_soqs[reg.name])
-            except KeyError:
-                raise BloqBuilderError(
-                    f"{bloq} requires an input Soquet named `{reg.name}`."
-                ) from None
+        def _add(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
+            # close over `binst` and `map=False`.
+            return self._add_cxn(binst, idxed_soq, reg, idx, map=False)
 
-            del in_soqs[reg.name]  # so we can check for surplus arguments.
-
-            for li in reg.wire_idxs():
-                idxed_soq = in_soq[li]
-                assert isinstance(idxed_soq, Soquet), idxed_soq
-                try:
-                    self._available.remove(idxed_soq)
-                except KeyError:
-                    raise BloqBuilderError(
-                        f"{idxed_soq} is not an available input Soquet for {reg}."
-                    ) from None
-                cxn = Connection(idxed_soq, Soquet(binst, reg, idx=li))
-                self._cxns.append(cxn)
-
-        if in_soqs:
-            raise BloqBuilderError(
-                f"{bloq} does not accept input Soquets: {in_soqs.keys()}."
-            ) from None
-
-        out_soqs: List[SoquetT] = []
-        out: SoquetT
-        for reg in bloq.registers.rights():
-            if reg.wireshape:
-                out = np.empty(reg.wireshape, dtype=object)
-                for ri in reg.wire_idxs():
-                    out_soq = Soquet(binst, reg, idx=ri)
-                    out[ri] = out_soq
-                    self._available.add(out_soq)
-            else:
-                # Annoyingly, the 0-dim case must be handled seprately.
-                # Otherwise, x[i] = thing will nest *array* objects.
-                out = Soquet(binst, reg)
-                self._available.add(out)
-
-            out_soqs.append(out)
-
-        return tuple(out_soqs)
+        _process_soquets(
+            registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), add_func=_add
+        )
+        return tuple(
+            _reg_to_soq(binst, reg, available=self._available) for reg in bloq.registers.rights()
+        )
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
@@ -552,32 +584,14 @@ class CompositeBloqBuilder:
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
         registers = FancyRegisters(self._regs)
-        for reg in registers.rights():
-            try:
-                in_soq = np.asarray(final_soqs[reg.name])
-            except KeyError:
-                raise BloqBuilderError(
-                    f"Finalizing the build requires a final Soquet named `{reg.name}`."
-                ) from None
 
-            del final_soqs[reg.name]  # so we can check for surplus arguments.
+        def _fin(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
+            # close over `RightDangle` and `map`
+            return self._add_cxn(RightDangle, idxed_soq, reg, idx, map=map)
 
-            for li in reg.wire_idxs():
-                idxed_soq = in_soq[li]
-                assert isinstance(idxed_soq, Soquet)
-                try:
-                    self._available.remove(idxed_soq)
-                except KeyError:
-                    raise BloqBuilderError(
-                        f"{in_soq} is not an available final Soquet for {reg}."
-                    ) from None
-                self._cxns.append(Connection(idxed_soq, Soquet(RightDangle, reg, idx=li)))
-
-        if final_soqs:
-            raise BloqBuilderError(
-                f"Finalizing the build does not accept final Soquets: {final_soqs.keys()}."
-            ) from None
-
+        _process_soquets(
+            registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, add_func=_fin
+        )
         if self._available:
             raise BloqBuilderError(
                 f"During finalization, {self._available} Soquets were not used."
