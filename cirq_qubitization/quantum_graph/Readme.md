@@ -1,7 +1,7 @@
 Quantum Graph
 -------------
 
-## Data structures
+## Data structure
 
 We represent our quantum program as a directed graph of quantum variables passing through
 operations called `Bloq`s. The container representing a program or subroutine is 
@@ -14,7 +14,7 @@ to help us build composite bloqs.
 >>> bb.free(q)               # discard our quantum variable, get nothing back.
 >>> cbloq = bb.finalize()    # finish building, turn into a `CompositeBloq`
 
-## Classes
+## Components
 
 `Bloq`s are analogous to functions. Any class attributes on a `Bloq` are analogous to
 C++ template parameters. `Bloq`s follow value-equality with respect to these parameters.
@@ -22,7 +22,7 @@ C++ template parameters. `Bloq`s follow value-equality with respect to these par
 >>> MultiCNOT(n=100) == MultiCNOT(n=100)
 
 `BloqInstance`s are unique instantiations of a `Bloq` contained in a `CompositeBloq`, because
-we could have many instances of the same `Bloq` and it matters (for control flow) which one
+we could have many instances of the same `Bloq` and it matters (for data flow) which one
 is which.
 
 >>> binst1, (q,) = bb.add_2(H, q=q)
@@ -34,7 +34,7 @@ property of a `Bloq`.
 
 `Soquet`s are the "quantum variables" that follow linear typing rules (each must be used exactly
 once) and are instantiations of registers. There is generally a 1-to-many relationship between
-`FancyRegister` and `Soquet`.
+`FancyRegister` and `Soquet` because we support multidimensional quantum arrays.
 
 `SoquetT` is a union type between `Soquet` and ndarray of `Soquet`. It means all the soquets
 for a given register. When you see variable names like `soqdict`, `in_soqs`, or `final_soqs`
@@ -46,16 +46,3 @@ from a potentially-multidimensional array of them.
 `Soquet`s are the main quantum variables a user-developer uses to wire up bloqs. The user
 should assign meaningful names to the soquets or array of soquets and treat them as opaque
 types.
-
-### Other naming conventions
-
-`soqdict` is a mapping from register name to `SoquetT`. when used as a `**kwarg` name, we
-use `**in_soqs: SoquetT` or `**final_soqs: SoquetT` because the kwarg implies we're dealing
-with a string-keyed dictionary.
-
-`bloqnections` is the short name for a `BloqInstance` and its associated predecessor and
-successor `Connection`s
-
-`bloqsoqs` is the short name for a `BloqInstance` and its associated `soqdict` of incoming
-(left) soquets. 
-
