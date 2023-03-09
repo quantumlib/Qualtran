@@ -57,3 +57,10 @@ def test_soquet_idxed():
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
         _ = Soquet(binst, reg, idx=(5,))
+
+
+def test_bloq_instance():
+    binst_a = BloqInstance(TestBloq(), i=1)
+    binst_b = BloqInstance(TestBloq(), i=1)
+    assert binst_a == binst_b
+    assert str(binst_a) == 'TestBloq()<1>'
