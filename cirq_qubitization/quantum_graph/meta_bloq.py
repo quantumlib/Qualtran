@@ -19,6 +19,9 @@ class ControlledBloq(Bloq):
     def short_name(self) -> str:
         return f'C[{self.subbloq.short_name()}]'
 
+    def __str__(self) -> str:
+        return f'C[{self.subbloq}]'
+
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters(
