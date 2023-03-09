@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import Dict
 
+import attrs
 import cirq
 import networkx as nx
 import numpy as np
@@ -20,6 +21,7 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
+    DanglingT,
     LeftDangle,
     RightDangle,
     Soquet,
@@ -97,11 +99,30 @@ TestBloq()<2>
   target -> RightDangle.q2"""
     )
 
+
+def test_iter_bloqnections():
+    cbloq = TestComposite().decompose_bloq()
     assert len(list(cbloq.iter_bloqnections())) == len(cbloq.bloq_instances)
     for binst, preds, succs in cbloq.iter_bloqnections():
         assert isinstance(binst, BloqInstance)
         assert len(preds) > 0
         assert len(succs) > 0
+
+
+def test_iter_bloqsoqs():
+    cbloq = TestComposite().decompose_bloq()
+    assert len(list(cbloq.iter_bloqsoqs())) == len(cbloq.bloq_instances)
+
+    for binst, soqs in cbloq.iter_bloqsoqs():
+        assert isinstance(binst, BloqInstance)
+        assert sorted(soqs.keys()) == ['control', 'target']
+
+    mapping = {binst: attrs.evolve(binst, i=100 + binst.i) for binst in cbloq.bloq_instances}
+    for binst, soqs in cbloq.iter_bloqsoqs(binst_map=mapping):
+        assert isinstance(binst, BloqInstance)
+        for s in soqs.values():
+            if not isinstance(s.binst, DanglingT):
+                assert s.binst.i >= 100
 
 
 def test_bb_composite_bloq():
@@ -134,6 +155,18 @@ def test_bloq_builder():
     inds = {binst.i for binst in cbloq.bloq_instances}
     assert len(inds) == 2
     assert len(cbloq.bloq_instances) == 2
+
+
+def test_bloq_builder_add_2():
+    bb = CompositeBloqBuilder()
+    x = bb.add_register('x', 1)
+    y = bb.add_register('y', 1)
+
+    binst1, (x, y) = bb.add_2(TestBloq(), control=x, target=y)
+    binst2, (x, y) = bb.add_2(TestBloq(), control=x, target=y)
+    cbloq = bb.finalize(x=x, y=y)
+
+    assert sorted(cbloq.bloq_instances, key=lambda x: x.i) == [binst1, binst2]
 
 
 def _get_bb():
