@@ -330,18 +330,26 @@ def _process_soquets(
     registers: Iterable[FancyRegister],
     in_soqs: Dict[str, SoquetT],
     debug_str: str,
-    add_func: Callable[[Soquet, FancyRegister, Tuple[int, ...]], None],
+    func: Callable[[Soquet, FancyRegister, Tuple[int, ...]], None],
 ) -> None:
     """Process and validate `in_soqs` in the context of `registers`.
 
-    This is the "outer loop" of processing the input soquets for `bb.add()` and `bb.update()`
-    and the final soquets for `bb.finalize_strict()`.
+    This implements the following "outer loop" and calls
+    `func(indexed_soquet, register, index)` for every `register` and
+    corresponding soquets (from `in_soqs`) in the input.
+
+    >>> for reg in registers:
+    >>>     for idx in reg.wire_idxs():
+    >>>        func(in_soqs[reg.name][idx], reg, idx)
+
+    We also perform input validation to make sure that the set of register names
+    used as keys for `in_soqs` is identical to set of registers passed in `registers`.
 
     Args:
         registers: The registers to use for expected keys of `in_soqs`.
         in_soqs: A dictionary from register name to input soquets.
         debug_str: A string to use in error messages identifying what's being processed.
-        add_func: A callable for operating on an individual (indexed) soquet. Must accept
+        func: A callable for operating on an individual (indexed) soquet. Must accept
             the incoming, indexed soquet as well as the register and (left-)index it
             has been mapped to.
     """
@@ -359,7 +367,7 @@ def _process_soquets(
         for li in reg.wire_idxs():
             idxed_soq = in_soq[li]
             assert isinstance(idxed_soq, Soquet), idxed_soq
-            add_func(idxed_soq, reg, li)
+            func(idxed_soq, reg, li)
 
     if in_soqs:
         raise BloqBuilderError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
@@ -482,10 +490,10 @@ class CompositeBloqBuilder:
     def _add_cxn(
         self, binst: BloqInstance, idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]
     ) -> None:
-        """Helper function to be used as the base for the `add_func` argument of `_process_soquets`.
+        """Helper function to be used as the base for the `func` argument of `_process_soquets`.
 
         This creates a connection between the provided input `idxed_soq` to the current binst's
-        `(reg, idx)`. If `map`, map binsts in the input `idxed_soq`.
+        `(reg, idx)`.
         """
         try:
             self._available.remove(idxed_soq)
@@ -520,7 +528,7 @@ class CompositeBloqBuilder:
             return self._add_cxn(binst, idxed_soq, reg, idx)
 
         _process_soquets(
-            registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), add_func=_add
+            registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
         )
         return tuple(
             _reg_to_soq(binst, reg, available=self._available) for reg in bloq.registers.rights()
@@ -582,7 +590,7 @@ class CompositeBloqBuilder:
             return self._add_cxn(RightDangle, idxed_soq, reg, idx)
 
         _process_soquets(
-            registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, add_func=_fin
+            registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
         )
         if self._available:
             raise BloqBuilderError(
