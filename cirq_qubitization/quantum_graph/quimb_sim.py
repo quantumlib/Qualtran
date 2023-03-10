@@ -1,12 +1,16 @@
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.composite_bloq import (
+    _cxn_to_soq_dict,
+    _reg_to_soq,
+    CompositeBloq,
+    SoquetT,
+)
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -20,8 +24,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT]:
     """Get instantiated dangling soquets from a `FancyRegisters`.
 
-    These are the external indices in a tensor network representation. This code is similar
-    to `composite_bloq._initialize_soquets` except we don't keep track of an `available` set.
+    These are the external indices in a tensor network representation.
 
     Args:
         regs: The registers
@@ -32,6 +35,8 @@ def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT
             registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
             registers, the value will be a `Soquet` object.
     """
+    available = set()  # TODO: remove
+
     if right:
         regs = regs.rights()
         dang = RightDangle
@@ -42,61 +47,8 @@ def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT
     all_soqs: Dict[str, SoquetT] = {}
     soqs: SoquetT
     for reg in regs:
-        if reg.wireshape:
-            soqs = np.empty(reg.wireshape, dtype=object)
-            for ri in reg.wire_idxs():
-                soq = Soquet(dang, reg, idx=ri)
-                soqs[ri] = soq
-        else:
-            # Annoyingly, this must be a special case.
-            # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
-            # 'object'. This wouldn't happen--for example--with an integer array.
-            soqs = Soquet(dang, reg)
-
-        all_soqs[reg.name] = soqs
+        all_soqs[reg.name] = _reg_to_soq(dang, reg, available)
     return all_soqs
-
-
-def _cxn_to_soq_dict(
-    regs: Iterable[FancyRegister],
-    cxns: Iterable[Connection],
-    get_me: Callable[[Connection], Soquet],
-    get_assign: Callable[[Connection], Soquet],
-) -> Dict[str, SoquetT]:
-    """Helper function to get a dictionary of incoming or outgoing soquets.
-
-    This is used in `cbloq_to_quimb`.
-
-    Args:
-        regs: Left or right registers (used as a reference to initialize multidimensional
-            registers correctly).
-        cxns: Predecessor or successor connections from which we get the soquets of interest.
-        get_me: A function that says which soquet is used to derive keys for the returned
-            dictionary. Generally: if `cxns` is predecessor connections, this will return the
-            `right` element of the connection and opposite of successor connections.
-        get_assign: A function that says which soquet is used to derive the values for the
-            returned dictionary. Generally, this is the opposite side vs. `get_me`, but we
-            do something fancier in `cbloq_to_quimb`.
-    """
-    soqdict: Dict[str, SoquetT] = {}
-
-    # Initialize multi-dimensional dictionary values.
-    for reg in regs:
-        if reg.wireshape:
-            soqdict[reg.name] = np.empty(reg.wireshape, dtype=object)
-
-    # In the abstract: set `soqdict[me] = assign`. Specifically: use the register name as
-    # keys and handle multi-dimensional registers.
-    for cxn in cxns:
-        me = get_me(cxn)
-        assign = get_assign(cxn)
-
-        if me.reg.wireshape:
-            soqdict[me.reg.name][me.idx] = assign
-        else:
-            soqdict[me.reg.name] = assign
-
-    return soqdict
 
 
 def cbloq_to_quimb(
