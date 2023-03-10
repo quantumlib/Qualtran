@@ -1,12 +1,12 @@
 import numpy as np
 
-from cirq_qubitization.algos.basic_gates import PlusEffect, PlusState
+from cirq_qubitization.bloq_algos.basic_gates import PlusEffect, PlusState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.quimb_sim import bloq_to_dense, cbloq_to_dense
 
 
 def _make_plus_state():
-    from cirq_qubitization.algos.basic_gates import PlusState
+    from cirq_qubitization.bloq_algos.basic_gates import PlusState
 
     return PlusState()
 
@@ -19,7 +19,7 @@ def test_plus_state():
 
 
 def _make_plus_effect():
-    from cirq_qubitization.algos.basic_gates import PlusEffect
+    from cirq_qubitization.bloq_algos.basic_gates import PlusEffect
 
     return PlusEffect()
 

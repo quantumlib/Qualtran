@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from cirq_qubitization.algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.quimb_sim import bloq_to_dense, cbloq_to_dense
 

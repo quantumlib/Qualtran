@@ -38,9 +38,9 @@ from typing import Callable, Dict, List, Tuple, Type, Union
 import nbformat
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
-import cirq_qubitization.algos.and_bloq_test
-import cirq_qubitization.algos.basic_gates.cnot_test
-import cirq_qubitization.algos.basic_gates.x_basis_test
+import cirq_qubitization.bloq_algos.and_bloq_test
+import cirq_qubitization.bloq_algos.basic_gates.cnot_test
+import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
 import cirq_qubitization.quantum_graph
 from cirq_qubitization.gate_with_registers import GateWithRegisters
@@ -140,18 +140,18 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
     ),
     'basic_gates': NotebookSpec(
         title='Basic Gates',
-        module=cirq_qubitization.algos.basic_gates,
+        module=cirq_qubitization.bloq_algos.basic_gates,
         gate_specs=[
-            BloqNbSpec(cirq_qubitization.algos.basic_gates.cnot_test._make_CNOT),
-            BloqNbSpec(cirq_qubitization.algos.basic_gates.plus_state_test._make_plus_state),
+            BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.cnot_test._make_CNOT),
+            BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.x_basis_test._make_plus_state),
         ],
-        directory='./algos',
+        directory='./bloq_algos',
     ),
     'and_bloq': NotebookSpec(
         title='And',
-        module=cirq_qubitization.algos.and_bloq,
-        gate_specs=[BloqNbSpec(cirq_qubitization.algos.and_bloq_test._make_and)],
-        directory='./algos',
+        module=cirq_qubitization.bloq_algos.and_bloq,
+        gate_specs=[BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and)],
+        directory='./bloq_algos',
     ),
 }
 

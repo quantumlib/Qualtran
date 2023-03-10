@@ -1,14 +1,14 @@
 import cirq
 import numpy as np
 
-from cirq_qubitization.algos.basic_gates import CNOT, PlusState, ZeroState
+from cirq_qubitization.bloq_algos.basic_gates import CNOT, PlusState, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 from cirq_qubitization.quantum_graph.quimb_sim import bloq_to_dense, cbloq_to_dense
 
 
 def _make_CNOT():
-    from cirq_qubitization.algos.basic_gates import CNOT
+    from cirq_qubitization.bloq_algos.basic_gates import CNOT
 
     return CNOT()
 
