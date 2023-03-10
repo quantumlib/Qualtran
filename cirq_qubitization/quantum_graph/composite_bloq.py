@@ -15,6 +15,7 @@ from typing import (
     Union,
 )
 
+import attrs
 import cirq
 import networkx as nx
 import numpy as np
@@ -124,6 +125,74 @@ class CompositeBloq(Bloq):
                 continue
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=g)
             yield binst, pred_cxns, succ_cxns
+
+    def iter_bloqsoqs(
+        self,
+        *,
+        in_soqs: Optional[Dict[str, SoquetT]] = None,
+        binst_map: Optional[Dict[BloqInstance, BloqInstance]] = None,
+    ) -> Iterator[Tuple[BloqInstance, Dict[str, SoquetT]]]:
+        """Iterate over bloq instances and their input soquets.
+
+        This method is helpful for "adding from" a composite bloq.
+
+        >>> bb, init_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        >>> binst_map = {}
+        >>> for binst, soqs in self.iter_bloqsoqs(in_soqs=init_soqs, binst_map=binst_map):
+        >>>     new_binst, _ = bb.add_2(binst.bloq, **soqs)
+        >>>     binst_map[binst] = new_binst
+        >>> return bb.finalize(**self.final_soqs(binst_map))
+
+        Args:
+            in_soqs: If provided, map LeftDangle soquets to these already-existing soquets.
+            binst_map: If provided, replace the bloq instance field of each returned soquet
+                according to this mapping. This is useful if you are building up a new
+                composite bloq based on the iteration results of this funciton: the returned
+                soquets can be updated to point to the new composite bloq constituents.
+        """
+        if in_soqs is not None:
+            if not sorted(in_soqs.keys()) == sorted(reg.name for reg in self.registers.lefts()):
+                raise ValueError(
+                    f"Improper input soquets for `iter_bloqsoqs()`. "
+                    f"Expected {self.registers.lefts()}."
+                ) from None
+
+        for binst, preds, succs in self.iter_bloqnections():
+            soqdict = _cxn_to_soq_dict(
+                binst.bloq.registers, preds, get_me=lambda x: x.right, get_assign=lambda x: x.left
+            )
+            if binst_map is not None or in_soqs is not None:
+                soqdict = _map_soq_dict(soqdict, in_soqs, binst_map)
+            yield binst, soqdict
+
+    def final_soqs(
+        self, binst_map: Optional[Dict[BloqInstance, BloqInstance]] = None
+    ) -> Dict[str, SoquetT]:
+        """Return the final output soquets.
+
+        This method is helpful for finalizing an "add from" operation, see `iter_bloqsoqs`.
+
+        Args:
+            binst_map: If provided, replace the bloq instance field of each returned soquet
+                according to this mapping.
+        """
+        final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
+        soqdict = _cxn_to_soq_dict(
+            self.registers, final_preds, get_me=lambda x: x.right, get_assign=lambda x: x.left
+        )
+        if binst_map is not None:
+            soqdict = _map_soq_dict(soqdict, None, binst_map)
+        return soqdict
+
+    def copy(self) -> 'CompositeBloq':
+        """Create a copy of this composite bloq by re-building it."""
+        bb, init_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        binst_map = {}
+        for binst, soqs in self.iter_bloqsoqs(in_soqs=init_soqs, binst_map=binst_map):
+            new_binst, _ = bb.add_2(binst.bloq, **soqs)
+            binst_map[binst] = new_binst
+
+        return bb.finalize(**self.final_soqs(binst_map))
 
     @staticmethod
     def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
@@ -290,6 +359,46 @@ def _cbloq_to_cirq_circuit(
     return cirq.Circuit(moments)
 
 
+def _cxn_to_soq_dict(
+    regs: Iterable[FancyRegister],
+    cxns: Iterable[Connection],
+    get_me: Callable[[Connection], Soquet],
+    get_assign: Callable[[Connection], Soquet],
+) -> Dict[str, SoquetT]:
+    """Helper function to get a dictionary of incoming or outgoing soquets from a connection.
+
+    Args:
+        regs: Left or right registers (used as a reference to initialize multidimensional
+            registers correctly).
+        cxns: Predecessor or successor connections from which we get the soquets of interest.
+        get_me: A function that says which soquet is used to derive keys for the returned
+            dictionary. Generally: if `cxns` is predecessor connections, this will return the
+            `right` element of the connection and opposite of successor connections.
+        get_assign: A function that says which soquet is used to dervice the values for the
+            returned dictionary. Generally, this is the opposite side vs. `get_me`, but we
+            do something fancier in `cbloq_to_quimb`.
+    """
+    soqdict: Dict[str, SoquetT] = {}
+
+    # Initialize multi-dimensional dictionary values.
+    for reg in regs:
+        if reg.wireshape:
+            soqdict[reg.name] = np.empty(reg.wireshape, dtype=object)
+
+    # In the abstract: set `soqdict[me] = assign`. Specifically: use the register name as
+    # keys and handle multi-dimensional registers.
+    for cxn in cxns:
+        me = get_me(cxn)
+        assign = get_assign(cxn)
+
+        if me.reg.wireshape:
+            soqdict[me.reg.name][me.idx] = assign
+        else:
+            soqdict[me.reg.name] = assign
+
+    return soqdict
+
+
 class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
@@ -371,6 +480,67 @@ def _process_soquets(
 
     if in_soqs:
         raise BloqBuilderError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
+
+
+def _map_soq_dict(
+    soqdict: Dict[str, SoquetT],
+    in_soqs: Optional[Dict[str, SoquetT]],
+    binst_map: Optional[Dict[BloqInstance, BloqInstance]],
+) -> Dict[str, SoquetT]:
+    """Map the `binst` field of soquets.
+
+    Args:
+        soqdict: A dictionary containing the soquets to be mapped.
+        in_soqs: The mapping used for any LeftDangle encountered. This lets us map
+            left dangling soquets to output soquets from elsewhere in the composite bloq graph.
+        binst_map: The mapping used to transform the `binst` field of non-dangling soquets.
+    """
+
+    if in_soqs is None:
+
+        def _map_in_soq(soq: Soquet) -> Soquet:
+            return soq
+
+    else:
+
+        def _map_in_soq(soq: Soquet) -> Soquet:
+            if soq.binst is not LeftDangle:
+                raise ValueError("We cannot map RightDangle soquets.")
+
+            if soq.reg.name not in in_soqs:
+                return soq
+
+            if soq.idx:
+                return in_soqs[soq.reg.name][soq.idx]
+            else:
+                return in_soqs[soq.reg.name]
+
+    if binst_map is None:
+
+        def _map_binst(soq: Soquet) -> Soquet:
+            return soq
+
+    else:
+
+        def _map_binst(soq: Soquet) -> Soquet:
+            return attrs.evolve(soq, binst=binst_map.get(soq.binst, soq.binst))
+
+    def _map_soq(soq: Soquet) -> Soquet:
+        # Helper function to map an individual soquet.
+        if isinstance(soq.binst, DanglingT):
+            return _map_in_soq(soq)
+
+        return _map_binst(soq)
+
+    # Use `vectorize` to call `_map_soq` on each element of the array.
+    vmap = np.vectorize(_map_soq, otypes=[object])
+
+    def _map_soqs(soqs: SoquetT) -> SoquetT:
+        if isinstance(soqs, Soquet):
+            return _map_soq(soqs)
+        return vmap(soqs)
+
+    return {name: _map_soqs(soqs) for name, soqs in soqdict.items()}
 
 
 class CompositeBloqBuilder:
@@ -521,6 +691,27 @@ class CompositeBloqBuilder:
                 the ordering is irrespective of the order of `in_soqs` that have been passed in
                 and depends only on the convention of the bloq's registers.
         """
+        _, out_soqs = self.add_2(bloq=bloq, **in_soqs)
+        return out_soqs
+
+    def add_2(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[BloqInstance, Tuple[SoquetT, ...]]:
+        """Add a new bloq instance to the compute graph. Return the binst and the out soquets.
+
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`s or an array thereof. This is likely the output soquets from a prior
+                operation.
+
+        Returns:
+            binst: The newly constructed bloq instance.
+            out_soqs: A `Soquet` or an array thereof for each output register ordered according to
+                `bloq.registers`.
+                Note: Analogous to a Python function call using kwargs and multiple return values,
+                the ordering is irrespective of the order of `in_soqs` that have been passed in
+                and depends only on the convention of the bloq's registers.
+
+        """
         binst = self._new_binst(bloq)
 
         def _add(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
@@ -530,9 +721,27 @@ class CompositeBloqBuilder:
         _process_soquets(
             registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
         )
-        return tuple(
+        out_soqs = tuple(
             _reg_to_soq(binst, reg, available=self._available) for reg in bloq.registers.rights()
         )
+        return binst, out_soqs
+
+    def add_from(self, cbloq: CompositeBloq, **insoqs: SoquetT) -> Tuple[SoquetT, ...]:
+        """Add all the sub-bloqs from `cbloq` to the composite bloq under construction.
+
+        Args:
+            cbloq: Where to add from.
+            insoqs: Input soquets for `cbloq`; used to connect its left-dangling soquets.
+
+        Returns:
+            The output soquets from `cbloq`.
+        """
+        binst_map = {}
+        for binst, soqs in cbloq.iter_bloqsoqs(in_soqs=insoqs, binst_map=binst_map):
+            new_binst, _ = self.add_2(binst.bloq, **soqs)
+            binst_map[binst] = new_binst
+        fsoqs = cbloq.final_soqs(binst_map)
+        return tuple(fsoqs[reg.name] for reg in cbloq.registers.rights())
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.

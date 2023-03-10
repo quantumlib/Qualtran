@@ -1,6 +1,6 @@
 import pytest
 
-from cirq_qubitization.quantum_graph.bloq_test import TestBloq
+from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
@@ -36,14 +36,14 @@ def test_dangling_hash():
 
 
 def test_soquet():
-    soq = Soquet(BloqInstance(TestBloq(), i=0), FancyRegister('x', 10))
+    soq = Soquet(BloqInstance(TestCNOT(), i=0), FancyRegister('x', 10))
     assert soq.reg.side is Side.THRU
     assert soq.idx == ()
     assert soq.pretty() == 'x'
 
 
 def test_soquet_idxed():
-    binst = BloqInstance(TestBloq(), i=0)
+    binst = BloqInstance(TestCNOT(), i=0)
     reg = FancyRegister('y', 10, wireshape=(10, 2))
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
@@ -57,3 +57,10 @@ def test_soquet_idxed():
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
         _ = Soquet(binst, reg, idx=(5,))
+
+
+def test_bloq_instance():
+    binst_a = BloqInstance(TestCNOT(), i=1)
+    binst_b = BloqInstance(TestCNOT(), i=1)
+    assert binst_a == binst_b
+    assert str(binst_a) == 'TestCNOT()<1>'
