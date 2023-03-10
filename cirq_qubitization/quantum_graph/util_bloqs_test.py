@@ -36,7 +36,7 @@ def test_util_bloqs():
     (qs3,) = bb.add(Join(10), join=qs2)
     assert isinstance(qs3, Soquet)
     no_return = bb.add(Free(10), free=qs3)
-    assert no_return is tuple()
+    assert no_return == tuple()
 
 
 def test_notebook():
