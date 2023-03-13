@@ -1,4 +1,10 @@
-from cirq_qubitization.quantum_graph.composite_bloq_test import TestParallelBloq, TestSerialBloq
+import pytest
+
+from cirq_qubitization.quantum_graph.composite_bloq_test import (
+    Atom,
+    TestParallelBloq,
+    TestSerialBloq,
+)
 from cirq_qubitization.quantum_graph.meta_bloq import ControlledBloq
 
 
@@ -66,3 +72,9 @@ C[Join(n=3)]<4>
   join -> RightDangle.stuff
   control -> RightDangle.control"""
     )
+
+
+def test_doubly_controlled():
+    with pytest.raises(NotImplementedError):
+        # TODO: https://github.com/quantumlib/cirq-qubitization/issues/149
+        ControlledBloq(ControlledBloq(Atom()))

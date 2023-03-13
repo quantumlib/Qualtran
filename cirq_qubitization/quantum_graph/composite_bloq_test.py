@@ -440,3 +440,11 @@ Join(n=3)<5>
   Atom()<4>.stuff -> join[2]
   join -> RightDangle.stuff"""
     )
+
+
+def test_add_duplicate_register():
+    bb = CompositeBloqBuilder()
+    _ = bb.add_register('control', 1)
+    y = bb.add_register('control', 2)
+    with pytest.raises(ValueError):
+        bb.finalize(control=y)

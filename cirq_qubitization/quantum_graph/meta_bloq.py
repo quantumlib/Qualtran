@@ -1,17 +1,24 @@
 from functools import cached_property
 
-from attrs import frozen
+from attrs import field, frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 
 
+def _no_nesting_ctrls_yet(instance, field, val):
+    # https://github.com/quantumlib/cirq-qubitization/issues/149
+    assert isinstance(val, Bloq)
+    if 'control' in [reg.name for reg in val.registers]:
+        raise NotImplementedError("`ControlledBloq` doesn't support nesting yet.") from None
+
+
 @frozen
 class ControlledBloq(Bloq):
     """A controlled version of `subbloq`."""
 
-    subbloq: Bloq
+    subbloq: Bloq = field(validator=_no_nesting_ctrls_yet)
 
     def pretty_name(self) -> str:
         return f'C[{self.subbloq.pretty_name()}]'

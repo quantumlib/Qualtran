@@ -57,6 +57,16 @@ class FancyRegister:
         return self.bitsize * np.product(self.wireshape).item()
 
 
+def _dedupe(kv_iter: Iterable[Tuple[str, FancyRegister]]) -> Dict[str, FancyRegister]:
+    # throw ValueError if duplicate keys are provided.
+    d = {}
+    for k, v in kv_iter:
+        if k in d:
+            raise ValueError(f"Register {k} is specified more than once per side.") from None
+        d[k] = v
+    return d
+
+
 class FancyRegisters:
     """An ordered collection of `FancyRegister`.
 
@@ -66,8 +76,8 @@ class FancyRegisters:
 
     def __init__(self, registers: Iterable[FancyRegister]):
         self._registers = tuple(registers)
-        self._lefts = {reg.name: reg for reg in self._registers if reg.side & Side.LEFT}
-        self._rights = {reg.name: reg for reg in self._registers if reg.side & Side.RIGHT}
+        self._lefts = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.LEFT)
+        self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
     def build(cls, **registers: int) -> 'FancyRegisters':
