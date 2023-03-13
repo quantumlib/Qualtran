@@ -107,3 +107,13 @@ def test_get_named_qubits_multidim():
     quregs = regs.get_named_qubits()
     assert quregs['matt'].shape == (2, 3, 4)
     assert quregs['matt'][1, 2, 3] == cirq.NamedQubit('matt[1, 2, 3]')
+
+
+def test_duplicate_names():
+    regs = FancyRegisters(
+        [FancyRegister('control', 1, side=Side.LEFT), FancyRegister('control', 1, side=Side.RIGHT)]
+    )
+    assert len(list(regs.lefts())) == 1
+
+    with pytest.raises(ValueError, match=r'.*control is specified more than once per side.'):
+        FancyRegisters([FancyRegister('control', 1), FancyRegister('control', 1)])
