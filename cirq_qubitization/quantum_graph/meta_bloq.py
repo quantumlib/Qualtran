@@ -9,7 +9,7 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 
 @frozen
 class ControlledBloq(Bloq):
-    """A controlled version of `cbloq`."""
+    """A controlled version of `subbloq`."""
 
     subbloq: Bloq
 
