@@ -37,6 +37,31 @@ def test_truth_table(cv1, cv2):
             np.testing.assert_allclose([1, 0], vec)
 
 
+@pytest.mark.parametrize('cv2', [0, 1])
+@pytest.mark.parametrize('cv1', [0, 1])
+def test_bad_adjoint(cv1, cv2):
+    state = [ZeroState(), OneState()]
+    eff = [ZeroEffect(), OneEffect()]
+    and_ = And(cv1, cv2, adjoint=True)
+
+    for a, b in itertools.product([0, 1], repeat=2):
+        bb = CompositeBloqBuilder()
+        (q_a,) = bb.add(state[a])
+        (q_b,) = bb.add(state[b])
+        if (a == cv1) and (b == cv2):
+            (res,) = bb.add(ZeroState())
+        else:
+            (res,) = bb.add(OneState())
+
+        ((q_a, q_b),) = bb.add(and_, ctrl=[q_a, q_b], target=res)
+        bb.add(eff[a], q=q_a)
+        bb.add(eff[b], q=q_b)
+        cbloq = bb.finalize()
+
+        val = cbloq_to_dense(cbloq)
+        assert np.abs(val) < 1e-8
+
+
 def test_inverse():
     bb = CompositeBloqBuilder()
     q0 = bb.add_register('q0', 1)
