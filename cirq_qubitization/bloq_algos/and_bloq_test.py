@@ -3,6 +3,7 @@ import itertools
 import numpy as np
 import pytest
 
+import cirq_qubitization.testing as cq_testing
 from cirq_qubitization.bloq_algos.and_bloq import And
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
@@ -72,3 +73,7 @@ def test_inverse():
 
     mat = cbloq_to_dense(cbloq)
     np.testing.assert_allclose(np.eye(4), mat)
+
+
+def test_notebook():
+    cq_testing.execute_notebook('bloq_algos/and_bloq')
