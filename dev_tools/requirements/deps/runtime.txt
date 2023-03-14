@@ -4,3 +4,8 @@ openfermion
 cirq-core
 sphinx
 pydot
+
+# quimb and its tensor dependencies
+quimb
+opt_einsum
+autoray
