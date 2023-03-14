@@ -1,10 +1,14 @@
 from functools import cached_property
-from typing import Sequence, TYPE_CHECKING, Union
+from typing import Dict, Sequence, TYPE_CHECKING, Union
 
+import numpy as np
+import quimb.tensor as qtn
 from attrs import frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
 
 if TYPE_CHECKING:
     import cirq
@@ -58,6 +62,22 @@ class Join(Bloq):
         self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
     ) -> 'cirq.GateOperation':
         return None
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        binst: BloqInstance,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
+                inds=incoming['join'].tolist() + [outgoing['join']],
+                tags=['Join', binst],
+            )
+        )
 
 
 @frozen
