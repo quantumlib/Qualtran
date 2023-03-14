@@ -11,7 +11,7 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
 
 
 @frozen
-class TestBloq(Bloq):
+class TestCNOT(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters.build(control=1, target=1)
@@ -25,11 +25,11 @@ class TestBloq(Bloq):
 
 
 def test_bloq():
-    tb = TestBloq()
+    tb = TestCNOT()
     assert len(tb.registers) == 2
     assert tb.registers['control'].bitsize == 1
     assert tb.registers['control'].side == Side.THRU
-    assert tb.pretty_name() == 'TestBloq'
+    assert tb.pretty_name() == 'TestCNOT'
 
     quregs = tb.registers.get_named_qubits()
     circuit = cirq.Circuit(tb.on_registers(**quregs))
@@ -40,7 +40,7 @@ def test_bloq():
 
 
 def test_as_composite_bloq():
-    tb = TestBloq()
+    tb = TestCNOT()
     cb = tb.as_composite_bloq()
     assert isinstance(cb, CompositeBloq)
     bloqs = list(cb.bloq_instances)
