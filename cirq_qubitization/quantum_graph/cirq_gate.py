@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
 import cirq
 import numpy as np
@@ -55,6 +55,9 @@ class CirqGate(Bloq):
                 tags=[self.short_name(), tag],
             )
         )
+
+    def on_registers(self, qubits: Sequence[cirq.Qid]) -> cirq.Operation:
+        return self.gate.on(*qubits)
 
 
 def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:

@@ -39,5 +39,21 @@ def test_cirq_circuit_to_cbloq():
     np.testing.assert_allclose(cirq_unitary, bloq_unitary, atol=1e-8)
 
 
+def test_cbloq_to_cirq_circuit():
+    qubits = cirq.LineQubit.range(6)
+    circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
+    cbloq = cirq_circuit_to_cbloq(circuit)
+
+    # important! we lose moment structure
+    circuit = cirq.Circuit(circuit.all_operations())
+
+    # Note: a 1d `wireshape` bloq register is actually two-dimensional in cirq-world
+    # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
+    # CirqGate has registers of bitsize=1 and wireshape=(n,); hence the list transpose below.
+    circuit2 = cbloq.to_cirq_circuit(qubits=[[q] for q in qubits])
+
+    assert circuit == circuit2
+
+
 def test_notebook():
     cq_testing.execute_notebook('quantum_graph/cirq_gate')

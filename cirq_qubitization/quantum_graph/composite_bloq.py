@@ -95,7 +95,7 @@ class CompositeBloq(Bloq):
                 Consider using `**self.registers.get_named_qubits()` for this argument.
         """
         # First, convert register names to registers.
-        quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
+        quregs = {reg: quregs[reg.name] for reg in self.registers.lefts()}
         return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
 
     @classmethod
