@@ -118,9 +118,9 @@ class CompositeBloq(Bloq):
         a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
         of (right, left) indices.
         """
-        from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_dense
+        from cirq_qubitization.quantum_graph.quimb_sim import _cbloq_to_dense
 
-        return cbloq_to_dense(self)
+        return _cbloq_to_dense(self)
 
     def as_composite_bloq(self) -> 'CompositeBloq':
         """This override just returns the present composite bloq."""

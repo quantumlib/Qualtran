@@ -4,7 +4,6 @@ import numpy as np
 from cirq_qubitization.bloq_algos.basic_gates import CNOT, PlusState, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
-from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_dense
 
 
 def _make_CNOT():
@@ -30,7 +29,7 @@ def test_cnot_cbloq():
     bb, soqs = CompositeBloqBuilder.from_registers(FancyRegisters.build(c=1, t=1))
     c, t = bb.add(CNOT(), ctrl=soqs['c'], target=soqs['t'])
     cbloq = bb.finalize(c=c, t=t)
-    matrix = cbloq_to_dense(cbloq)
+    matrix = cbloq.tensor_contract()
 
     c_qs = cirq.LineQubit.range(2)
     c_circ = cirq.Circuit(cirq.CNOT(c_qs[0], c_qs[1]))
@@ -48,7 +47,7 @@ def test_bell_state():
     q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
 
     cbloq = bb.finalize(q0=q0, q1=q1)
-    matrix = cbloq_to_dense(cbloq)
+    matrix = cbloq.tensor_contract()
 
     should_be = np.array([1, 0, 0, 1]) / np.sqrt(2)
     np.testing.assert_allclose(should_be, matrix)

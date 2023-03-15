@@ -3,7 +3,6 @@ import pytest
 
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_dense
 
 
 def test_zero_state():
@@ -63,7 +62,7 @@ def test_zero_state_effect(bit):
     (q0,) = bb.add(state)
     bb.add(eff, q=q0)
     cbloq = bb.finalize()
-    val = cbloq_to_dense(cbloq)
+    val = cbloq.tensor_contract()
 
     should_be = 1
     np.testing.assert_allclose(should_be, val)

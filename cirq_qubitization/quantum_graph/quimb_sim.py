@@ -147,8 +147,11 @@ def get_right_and_left_inds(registers: FancyRegisters) -> List[List[Soquet]]:
     return inds
 
 
-def cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
+def _cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
     """Return a contracted, dense ndarray representing the composite bloq.
+
+    The public version of this function is available as the `CompositeBloq.tensor_contract()`
+    method.
 
     This constructs a tensor network and then contracts it according to the cbloq's registers,
     i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is

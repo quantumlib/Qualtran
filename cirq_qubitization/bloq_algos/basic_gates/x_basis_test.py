@@ -2,7 +2,6 @@ import numpy as np
 
 from cirq_qubitization.bloq_algos.basic_gates import PlusEffect, PlusState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_dense
 
 
 def _make_plus_state():
@@ -40,7 +39,7 @@ def test_plus_state_effect():
     (q0,) = bb.add(PlusState())
     bb.add(PlusEffect(), q=q0)
     cbloq = bb.finalize()
-    val = cbloq_to_dense(cbloq)
+    val = cbloq.tensor_contract()
 
     should_be = 1
     np.testing.assert_allclose(should_be, val)
