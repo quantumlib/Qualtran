@@ -98,6 +98,18 @@ class CompositeBloq(Bloq):
         quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
         return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
 
+    @classmethod
+    def from_cirq_circuit(cls, circuit: cirq.Circuit) -> 'CompositeBloq':
+        """Construct a composite bloq from a Cirq circuit.
+
+        Each `cirq.Operation` will be wrapped into a `CirqGate` wrapper bloq. The
+        resultant composite bloq will represent a unitary with one thru-register
+        named "qubits" of wireshape `(n_qubits,)`.
+        """
+        from cirq_qubitization.quantum_graph.cirq_gate import cirq_circuit_to_cbloq
+
+        return cirq_circuit_to_cbloq(circuit)
+
     def tensor_contract(self) -> NDArray:
         """Return a contracted, dense ndarray representing this composite bloq.
 
