@@ -151,14 +151,13 @@ def cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
     """Return a contracted, dense ndarray representing the composite bloq.
 
     This constructs a tensor network and then contracts it according to the cbloq's registers,
-    i.e. the dangling indices. The returned array will be 1- or 2- dimensional. If it is
+    i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
     a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
     of (right, left) indices.
 
     For more fine grained control over the final shape of the tensor, use
     `cbloq_to_quimb` and `TensorNetwork.to_dense` directly.
     """
-
     tn, _ = cbloq_to_quimb(cbloq)
     inds = get_right_and_left_inds(cbloq.registers)
 
@@ -166,21 +165,3 @@ def cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
         return tn.to_dense(*inds)
 
     return tn.contract()
-
-
-def bloq_to_dense(bloq: Bloq) -> NDArray:
-    """Return a dense ndarray representing this bloq.
-
-    This constructs a tensor network and then contracts it according to the bloq's registers,
-    i.e. the dangling indices. The returned array will be 1- or 2- dimensional. If it is
-    a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
-    of (right, left) indices.
-    """
-    tn = qtn.TensorNetwork([])
-    lsoqs = _get_dangling_soquets(bloq.registers, right=False)
-    rsoqs = _get_dangling_soquets(bloq.registers, right=True)
-    bloq.add_my_tensors(tn, None, incoming=lsoqs, outgoing=rsoqs)
-
-    inds = get_right_and_left_inds(bloq.registers)
-    matrix = tn.to_dense(*inds)
-    return matrix

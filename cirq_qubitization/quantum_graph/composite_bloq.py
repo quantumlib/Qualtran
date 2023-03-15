@@ -98,6 +98,18 @@ class CompositeBloq(Bloq):
         quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
         return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
 
+    def tensor_contract(self) -> NDArray:
+        """Return a contracted, dense ndarray representing this composite bloq.
+
+        This constructs a tensor network and then contracts it according to our registers,
+        i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
+        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
+        of (right, left) indices.
+        """
+        from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_dense
+
+        return cbloq_to_dense(self)
+
     def as_composite_bloq(self) -> 'CompositeBloq':
         """This override just returns the present composite bloq."""
         return self

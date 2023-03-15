@@ -91,6 +91,16 @@ class Bloq(metaclass=abc.ABCMeta):
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
 
+    def tensor_contract(self) -> NDArray:
+        """Return a contracted, dense ndarray representing this bloq.
+
+        This constructs a tensor network and then contracts it according to our registers,
+        i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
+        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
+        of (right, left) indices.
+        """
+        return self.as_composite_bloq().tensor_contract()
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
