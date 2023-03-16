@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Optional, Set
+from typing import Dict, Optional, Set, Tuple
 
 import cirq
 
