@@ -3,14 +3,13 @@ import pytest
 
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.quimb_sim import bloq_to_dense, cbloq_to_dense
 
 
 def test_zero_state():
     bloq = ZeroState()
     assert str(bloq) == 'ZeroState(n=1)'
     assert not bloq.bit
-    vector = bloq_to_dense(bloq)
+    vector = bloq.tensor_contract()
     should_be = np.array([1, 0])
     np.testing.assert_allclose(should_be, vector)
 
@@ -26,13 +25,13 @@ def test_one_state():
     bloq = OneState()
     assert bloq.bit
     assert bloq.state
-    vector = bloq_to_dense(bloq)
+    vector = bloq.tensor_contract()
     should_be = np.array([0, 1])
     np.testing.assert_allclose(should_be, vector)
 
 
 def test_zero_effect():
-    vector = bloq_to_dense(ZeroEffect())
+    vector = ZeroEffect().tensor_contract()
 
     # Note: we don't do "column vectors" or anything for kets.
     # Everything is squeezed. Keep track manually or use compositebloq.
@@ -41,7 +40,7 @@ def test_zero_effect():
 
 
 def test_one_effect():
-    vector = bloq_to_dense(OneEffect())
+    vector = OneEffect().tensor_contract()
 
     # Note: we don't do "column vectors" or anything for kets.
     # Everything is squeezed. Keep track manually or use compositebloq.
@@ -63,7 +62,7 @@ def test_zero_state_effect(bit):
     (q0,) = bb.add(state)
     bb.add(eff, q=q0)
     cbloq = bb.finalize()
-    val = cbloq_to_dense(cbloq)
+    val = cbloq.tensor_contract()
 
     should_be = 1
     np.testing.assert_allclose(should_be, val)
