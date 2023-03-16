@@ -4,6 +4,7 @@ from typing import Dict
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
@@ -11,8 +12,8 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 from cirq_qubitization.quantum_graph.quantum_graph import DanglingT, RightDangle, Soquet
 from cirq_qubitization.quantum_graph.quimb_sim import (
     _get_dangling_soquets,
-    bloq_to_dense,
     cbloq_to_quimb,
+    get_right_and_left_inds,
 )
 from cirq_qubitization.quantum_graph.util_bloqs import Join
 
@@ -51,12 +52,12 @@ class TensorAdderTester(Bloq):
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
-        assert list(incoming.keys()) == ['x', 'qubits']
+        assert sorted(incoming.keys()) == ['qubits', 'x']
         in_qubits = incoming['qubits']
         assert in_qubits.shape == (2,)
         assert incoming['x'].reg.bitsize == 2
 
-        assert list(outgoing.keys()) == ['qubits', 'y']
+        assert sorted(outgoing.keys()) == ['qubits', 'y']
         out_qubits = outgoing['qubits']
         assert out_qubits.shape == (2,)
         assert outgoing['y'].reg.bitsize == 1
@@ -79,15 +80,30 @@ class TensorAdderTester(Bloq):
         )
 
 
+def _old_bloq_to_dense(bloq: Bloq) -> NDArray:
+    """Old code for tensor-contracting a bloq without wrapping it in length-1 composite bloq."""
+    tn = qtn.TensorNetwork([])
+    lsoqs = _get_dangling_soquets(bloq.registers, right=False)
+    rsoqs = _get_dangling_soquets(bloq.registers, right=True)
+    bloq.add_my_tensors(tn, None, incoming=lsoqs, outgoing=rsoqs)
+
+    inds = get_right_and_left_inds(bloq.registers)
+    matrix = tn.to_dense(*inds)
+    return matrix
+
+
 def test_bloq_to_dense():
-    mat = bloq_to_dense(TensorAdderTester())
+    mat1 = _old_bloq_to_dense(TensorAdderTester())
+    mat2 = TensorAdderTester().tensor_contract()
+    np.testing.assert_allclose(mat1, mat2, atol=1e-8)
+
     # Right inds: qubits=(1,0), y=0
     right = 1 * 2**2 + 0 * 2**1 + 0 * 2**0
 
     # Left inds: x=3, qubits=(0,1)
     left = 3 * 2**2 + 0 * 2**1 + 1 * 2**0
 
-    assert np.where(mat) == (right, left)
+    assert np.where(mat2) == (right, left)
 
 
 @frozen

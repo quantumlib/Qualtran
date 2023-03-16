@@ -7,7 +7,6 @@ import cirq_qubitization.testing as cq_testing
 from cirq_qubitization.bloq_algos.and_bloq import And
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_dense
 
 
 def _make_and():
@@ -31,7 +30,7 @@ def test_truth_table(cv1, cv2):
         bb.add(eff[b], q=q_b)
         cbloq = bb.finalize(res=res)
 
-        vec = cbloq_to_dense(cbloq)
+        vec = cbloq.tensor_contract()
         if (a == cv1) and (b == cv2):
             np.testing.assert_allclose([0, 1], vec)
         else:
@@ -59,7 +58,7 @@ def test_bad_adjoint(cv1, cv2):
         bb.add(eff[b], q=q_b)
         cbloq = bb.finalize()
 
-        val = cbloq_to_dense(cbloq)
+        val = cbloq.tensor_contract()
         assert np.abs(val) < 1e-8
 
 
@@ -71,7 +70,7 @@ def test_inverse():
     (qs,) = bb.add(And(adjoint=True), ctrl=qs, target=trg)
     cbloq = bb.finalize(q0=qs[0], q1=qs[1])
 
-    mat = cbloq_to_dense(cbloq)
+    mat = cbloq.tensor_contract()
     np.testing.assert_allclose(np.eye(4), mat)
 
 
