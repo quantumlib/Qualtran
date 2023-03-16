@@ -57,7 +57,7 @@ ancilla_0: ───X───X───
         )
 
     with cqi.memory_management_context(cqi.GreedyQubitManager(prefix="ancilla", size=2)):
-        # Qubit manager with 2 managed qubits and parallelize=True, tries to minimize adding additional
+        # Qubit manager with 2 managed qubits and maximize_reuse=True, tries to minimize adding additional
         # data dependencies by minimizing reuse.
         circuit = make_circuit()
         cirq.testing.assert_has_diagram(
@@ -76,9 +76,9 @@ ancilla_1: ─────X────
         )
 
     with cqi.memory_management_context(
-        cqi.GreedyQubitManager(prefix="ancilla", size=2, parallelize=False)
+        cqi.GreedyQubitManager(prefix="ancilla", size=2, maximize_reuse=False)
     ):
-        # Qubit manager with 2 managed qubits and parallelize=False, tries to minimize reuse by potentially
+        # Qubit manager with 2 managed qubits and maximize_reuse=False, tries to minimize reuse by potentially
         # adding new data dependencies.
         circuit = make_circuit()
         cirq.testing.assert_has_diagram(

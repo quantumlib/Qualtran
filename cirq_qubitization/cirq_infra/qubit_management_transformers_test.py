@@ -63,7 +63,7 @@ _c1: ────┼X────
         )
 
         # Maximize parallelism by maximizing qubit width and minimizing qubit reuse.
-        qubit_manager = cqi.GreedyQubitManager(prefix='ancilla', size=2, parallelize=True)
+        qubit_manager = cqi.GreedyQubitManager(prefix='ancilla', size=2, maximize_reuse=False)
         allocated_circuit = cqi.map_clean_and_borrowable_qubits(unrolled_circuit, qm=qubit_manager)
         cirq.testing.assert_has_diagram(
             allocated_circuit,
@@ -81,7 +81,7 @@ ancilla_1: ─────X────
         )
 
         # Minimize parallelism by minimizing qubit width and maximizing qubit reuse.
-        qubit_manager = cqi.GreedyQubitManager(prefix='ancilla', size=2, parallelize=False)
+        qubit_manager = cqi.GreedyQubitManager(prefix='ancilla', size=2, maximize_reuse=True)
         allocated_circuit = cqi.map_clean_and_borrowable_qubits(unrolled_circuit, qm=qubit_manager)
         cirq.testing.assert_has_diagram(
             allocated_circuit,
