@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 
 import cirq
 
-from cirq_qubitization import unary_iteration
+from cirq_qubitization.cirq_algos import unary_iteration
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 
 
@@ -63,19 +63,17 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         self,
         control: cirq.Qid,
         selection: Sequence[cirq.Qid],
-        ancilla: Sequence[cirq.Qid],
         target: Sequence[cirq.Qid],
         accumulator: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         yield cirq.CNOT(control, accumulator[0])
         yield from super()._decompose_single_control(
-            control, selection, ancilla, target, accumulator=accumulator
+            control, selection, target, accumulator=accumulator
         )
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_registers.bitsize
         wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
         wire_symbols += [f"Z{self._target_gate}"] * self.target_registers.bitsize
         wire_symbols += ["Acc"]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

@@ -11,26 +11,22 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     gate = cirq_qubitization.ApplyGateToLthQubit(
         selection_bitsize, target_bitsize, lambda _: cirq.X
     )
-    q = gate.registers.get_named_qubits()
-    circuit = cirq.Circuit(gate.on_registers(**q))
-    all_qubits = sorted(circuit.all_qubits())
-    (control,), selection, ancilla, target = (
-        q["control"],
-        q["selection"],
-        q["ancilla"],
-        q["target"],
-    )
-    for n in range(len(target)):
-        svals = iter_bits(n, len(selection))
-        # turn on control bit to activate circuit:
-        qubit_vals = {x: int(x == control) for x in all_qubits}
-        # Initialize selection bits appropriately:
-        qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
+    g = cq_testing.GateHelper(gate)
+    for n in range(target_bitsize):
 
-        initial_state = [qubit_vals[x] for x in all_qubits]
-        final_state = initial_state.copy()
-        final_state[-(n + 1)] = 1
-        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+        # Initial qubit values
+        qubit_vals = {q: 0 for q in g.all_qubits}
+        # All controls 'on' to activate circuit
+        qubit_vals |= {c: 1 for c in g.quregs['control']}
+        # Set selection according to `n`
+        qubit_vals |= zip(g.quregs['selection'], iter_bits(n, selection_bitsize))
+
+        initial_state = [qubit_vals[x] for x in g.all_qubits]
+        qubit_vals[g.quregs['target'][-(n + 1)]] = 1
+        final_state = [qubit_vals[x] for x in g.all_qubits]
+        cq_testing.assert_circuit_inp_out_cirqsim(
+            g.decomposed_circuit, g.all_qubits, initial_state, final_state
+        )
 
 
 def test_apply_gate_to_lth_qubit_diagram():
@@ -43,34 +39,26 @@ def test_apply_gate_to_lth_qubit_diagram():
     cirq.testing.assert_has_diagram(
         circuit,
         """
-control0: ─────@─────
+control0: ─────@────
                │
-control1: ─────@─────
+control1: ─────@────
                │
-selection0: ───In────
+selection0: ───In───
                │
-selection1: ───In────
+selection1: ───In───
                │
-selection2: ───In────
+selection2: ───In───
                │
-ancilla0: ─────Anc───
+target0: ──────I────
                │
-ancilla1: ─────Anc───
+target1: ──────Z────
                │
-ancilla2: ─────Anc───
+target2: ──────I────
                │
-ancilla3: ─────Anc───
+target3: ──────Z────
                │
-target0: ──────I─────
-               │
-target1: ──────Z─────
-               │
-target2: ──────I─────
-               │
-target3: ──────Z─────
-               │
-target4: ──────I─────
-    """,
+target4: ──────I────
+""",
         qubit_order=qubits,
     )
 

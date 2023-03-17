@@ -43,7 +43,9 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
         raise ValueError("Circuit is empty.")
 
     if registers is not None:
-        qubit_order = registers.merge_qubits(**registers.get_named_qubits())
+        qubit_order = cirq.QubitOrder.explicit(
+            registers.merge_qubits(**registers.get_named_qubits()), fallback=cirq.QubitOrder.DEFAULT
+        )
     else:
         qubit_order = cirq.QubitOrder.DEFAULT
     tdd = circuit.to_text_diagram_drawer(transpose=False, qubit_order=qubit_order)

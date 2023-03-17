@@ -54,10 +54,10 @@ def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
         qubit_vals |= zip(g.quregs['selection'], iter_bits(n, selection_bitsize))
 
         initial_state = [qubit_vals[x] for x in g.all_qubits]
-        final_state = initial_state.copy()
-        final_state[-(n + 1)] = 1
+        qubit_vals[g.quregs['target'][-(n + 1)]] = 1
+        final_state = [qubit_vals[x] for x in g.all_qubits]
         cq_testing.assert_circuit_inp_out_cirqsim(
-            g.circuit, g.all_qubits, initial_state, final_state
+            g.decomposed_circuit, g.all_qubits, initial_state, final_state
         )
 
 
@@ -101,27 +101,27 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
 
 
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
-def test_multi_dimensional_unary_iteration(target_shape):
+def test_multi_dimensional_unary_iteration(target_shape: Tuple[int, int, int]):
     gate = ApplyXToIJKthQubit(target_shape)
-    qubit_regs = gate.registers.get_named_qubits()
-    all_qubits = gate.registers.merge_qubits(**qubit_regs)
+    g = cq_testing.GateHelper(gate)
 
-    circuit = cirq.Circuit(gate.on_registers(**qubit_regs))
     max_i, max_j, max_k = target_shape
     i_len, j_len, k_len = tuple(reg.bitsize for reg in gate.selection_registers)
     for i, j, k in itertools.product(range(max_i), range(max_j), range(max_k)):
-        qubit_vals = {x: 0 for x in all_qubits}
+        qubit_vals = {x: 0 for x in g.all_qubits}
         # Initialize selection bits appropriately:
-        qubit_vals.update(zip(qubit_regs['i'], iter_bits(i, i_len)))
-        qubit_vals.update(zip(qubit_regs['j'], iter_bits(j, j_len)))
-        qubit_vals.update(zip(qubit_regs['k'], iter_bits(k, k_len)))
+        qubit_vals.update(zip(g.quregs['i'], iter_bits(i, i_len)))
+        qubit_vals.update(zip(g.quregs['j'], iter_bits(j, j_len)))
+        qubit_vals.update(zip(g.quregs['k'], iter_bits(k, k_len)))
         # Construct initial state
-        initial_state = [qubit_vals[x] for x in all_qubits]
+        initial_state = [qubit_vals[x] for x in g.all_qubits]
         # Build correct statevector with selection_integer bit flipped in the target register:
         for reg_name, idx in zip(['t1', 't2', 't3'], [i, j, k]):
-            qubit_vals[qubit_regs[reg_name][idx]] = 1
-        final_state = [qubit_vals[x] for x in all_qubits]
-        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+            qubit_vals[g.quregs[reg_name][idx]] = 1
+        final_state = [qubit_vals[x] for x in g.all_qubits]
+        cq_testing.assert_circuit_inp_out_cirqsim(
+            g.decomposed_circuit, g.all_qubits, initial_state, final_state
+        )
 
 
 def test_notebook():

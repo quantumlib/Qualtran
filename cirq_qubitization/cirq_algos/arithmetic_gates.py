@@ -1,4 +1,5 @@
-from typing import Union, Sequence, Iterable
+from typing import Iterable, Sequence, Union
+
 import cirq
 
 

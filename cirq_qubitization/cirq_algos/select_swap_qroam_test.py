@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 import cirq_qubitization
+from cirq_qubitization import cirq_infra
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
 
@@ -12,23 +13,25 @@ from cirq_qubitization.cirq_infra import testing as cq_testing
 def test_select_swap_qrom(data, block_size):
     qrom = cirq_qubitization.SelectSwapQROM(*data, block_size=block_size)
     qubit_regs = qrom.registers.get_named_qubits()
-    all_qubits = qrom.registers.merge_qubits(**qubit_regs)
-    selection_q = qubit_regs["selection_q"]
-    selection_r = qubit_regs["selection_r"]
+    selection = qubit_regs["selection"]
+    selection_q, selection_r = selection[: qrom.selection_q], selection[qrom.selection_q :]
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
-    dirty_target_ancilla = qrom.target_dirty_ancilla.merge_qubits(**qubit_regs)
+    qrom_circuit = cirq.Circuit(cirq.decompose(qrom.on_registers(**qubit_regs)))
+    dirty_target_ancilla = [
+        q for q in qrom_circuit.all_qubits() if isinstance(q, cirq_infra.BorrowableQubit)
+    ]
 
     circuit = cirq.Circuit(
         # Prepare dirty ancillas in an arbitrary state.
         cirq.H.on_each(*dirty_target_ancilla),
         cirq.T.on_each(*dirty_target_ancilla),
         # The dirty ancillas should remain unaffected by qroam.
-        qrom.on_registers(**qubit_regs),
+        *qrom_circuit,
         # Bring back the dirty ancillas to their original state.
         (cirq.T**-1).on_each(*dirty_target_ancilla),
         cirq.H.on_each(*dirty_target_ancilla),
     )
-
+    all_qubits = circuit.all_qubits()
     for selection_integer in range(qrom.iteration_length):
         svals_q = list(iter_bits(selection_integer // qrom.block_size, len(selection_q)))
         svals_r = list(iter_bits(selection_integer % qrom.block_size, len(selection_r)))
@@ -61,39 +64,19 @@ def test_qroam_diagram():
     cirq.testing.assert_has_diagram(
         circuit,
         """
-0: ────In_q───────
-       │
-1: ────In_r───────
-       │
-2: ────QROAM_0────
-       │
-3: ────QROAM_0────
-       │
-4: ────QROAM_1────
-       │
-5: ────QROAM_1────
-       │
-6: ────QROAM_1────
-       │
-7: ────TAnc_0_0───
-       │
-8: ────TAnc_0_0───
-       │
-9: ────TAnc_0_1───
-       │
-10: ───TAnc_0_1───
-       │
-11: ───TAnc_0_1───
-       │
-12: ───TAnc_1_0───
-       │
-13: ───TAnc_1_0───
-       │
-14: ───TAnc_1_1───
-       │
-15: ───TAnc_1_1───
-       │
-16: ───TAnc_1_1───
+0: ───In_q──────
+      │
+1: ───In_r──────
+      │
+2: ───QROAM_0───
+      │
+3: ───QROAM_0───
+      │
+4: ───QROAM_1───
+      │
+5: ───QROAM_1───
+      │
+6: ───QROAM_1───
 """,
     )
 

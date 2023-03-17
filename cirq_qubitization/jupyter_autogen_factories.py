@@ -24,7 +24,7 @@ import cirq_qubitization.cirq_infra.testing as cq_testing
 
 
 def _make_ApplyGateToLthQubit():
-    from cirq_qubitization.apply_gate_to_lth_target import ApplyGateToLthQubit
+    from cirq_qubitization.cirq_algos.apply_gate_to_lth_target import ApplyGateToLthQubit
 
     def _z_to_odd(n: int):
         if n % 2 == 1:
@@ -39,19 +39,19 @@ def _make_ApplyGateToLthQubit():
 
 
 def _make_QROM():
-    from cirq_qubitization import QROM
+    from cirq_qubitization.cirq_algos import QROM
 
     return QROM([1, 2, 3, 4, 5])
 
 
 def _make_MultiTargetCSwap():
-    from cirq_qubitization.swap_network import MultiTargetCSwap
+    from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 
     return MultiTargetCSwap(3)
 
 
 def _make_MultiTargetCSwapApprox():
-    from cirq_qubitization.swap_network import MultiTargetCSwapApprox
+    from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwapApprox
 
     return MultiTargetCSwapApprox(2)
 

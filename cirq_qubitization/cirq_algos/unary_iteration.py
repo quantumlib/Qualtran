@@ -4,15 +4,14 @@ from typing import Dict, Iterator, List, Sequence, Tuple
 
 import cirq
 
-from cirq_qubitization import and_gate
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Register, Registers
+from cirq_qubitization import cirq_infra
+from cirq_qubitization.cirq_algos import and_gate
 
 
 def _unary_iteration_segtree(
     ops: List[cirq.Operation],
     control: cirq.Qid,
     selection: Sequence[cirq.Qid],
-    ancilla: Sequence[cirq.Qid],
     sl: int,
     l: int,
     r: int,
@@ -31,74 +30,60 @@ def _unary_iteration_segtree(
     m = (l + r) >> 1
     if r_iter <= m:
         # Yield only left sub-tree.
-        yield from _unary_iteration_segtree(
-            ops, control, selection, ancilla, sl + 1, l, m, l_iter, r_iter
-        )
+        yield from _unary_iteration_segtree(ops, control, selection, sl + 1, l, m, l_iter, r_iter)
         return
     if l_iter >= m:
         # Yield only right sub-tree
-        yield from _unary_iteration_segtree(
-            ops, control, selection, ancilla, sl + 1, m, r, l_iter, r_iter
-        )
+        yield from _unary_iteration_segtree(ops, control, selection, sl + 1, m, r, l_iter, r_iter)
         return
-    anc, sq = ancilla[sl], selection[sl]
+    anc, sq = cirq_infra.qalloc(1)[0], selection[sl]
     ops.append(and_gate.And((1, 0)).on(control, sq, anc))
-    yield from _unary_iteration_segtree(ops, anc, selection, ancilla, sl + 1, l, m, l_iter, r_iter)
+    yield from _unary_iteration_segtree(ops, anc, selection, sl + 1, l, m, l_iter, r_iter)
     ops.append(cirq.CNOT(control, anc))
-    yield from _unary_iteration_segtree(ops, anc, selection, ancilla, sl + 1, m, r, l_iter, r_iter)
+    yield from _unary_iteration_segtree(ops, anc, selection, sl + 1, m, r, l_iter, r_iter)
     ops.append(and_gate.And(adjoint=True).on(control, sq, anc))
+    cirq_infra.qfree(anc)
 
 
 def _unary_iteration_zero_control(
-    ops: List[cirq.Operation],
-    selection: Sequence[cirq.Qid],
-    ancilla: Sequence[cirq.Qid],
-    l_iter: int,
-    r_iter: int,
+    ops: List[cirq.Operation], selection: Sequence[cirq.Qid], l_iter: int, r_iter: int
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
     m = (l + r) >> 1
     ops.append(cirq.X(selection[0]))
-    yield from _unary_iteration_segtree(
-        ops, selection[0], selection[1:], ancilla, sl, l, m, l_iter, r_iter
-    )
+    yield from _unary_iteration_segtree(ops, selection[0], selection[1:], sl, l, m, l_iter, r_iter)
     ops.append(cirq.X(selection[0]))
-    yield from _unary_iteration_segtree(
-        ops, selection[0], selection[1:], ancilla, sl, m, r, l_iter, r_iter
-    )
+    yield from _unary_iteration_segtree(ops, selection[0], selection[1:], sl, m, r, l_iter, r_iter)
 
 
 def _unary_iteration_single_control(
     ops: List[cirq.Operation],
     control: cirq.Qid,
     selection: Sequence[cirq.Qid],
-    ancilla: Sequence[cirq.Qid],
     l_iter: int,
     r_iter: int,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
-    yield from _unary_iteration_segtree(ops, control, selection, ancilla, sl, l, r, l_iter, r_iter)
+    yield from _unary_iteration_segtree(ops, control, selection, sl, l, r, l_iter, r_iter)
 
 
 def _unary_iteration_multi_controls(
     ops: List[cirq.Operation],
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
-    ancilla: Sequence[cirq.Qid],
     l_iter: int,
     r_iter: int,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     num_controls = len(controls)
-    and_ancilla = ancilla[: num_controls - 2]
-    and_target = ancilla[num_controls - 2]
+    and_ancilla = cirq_infra.qalloc(num_controls - 2)
+    and_target = cirq_infra.qalloc(1)[0]
     multi_controlled_and = and_gate.And((1,) * len(controls)).on_registers(
         control=controls, ancilla=and_ancilla, target=and_target
     )
     ops.append(multi_controlled_and)
-    yield from _unary_iteration_single_control(
-        ops, and_target, selection, ancilla[num_controls - 1 :], l_iter, r_iter
-    )
+    yield from _unary_iteration_single_control(ops, and_target, selection, l_iter, r_iter)
     ops.append(multi_controlled_and**-1)
+    cirq_infra.qfree(and_ancilla)
 
 
 def unary_iteration(
@@ -107,7 +92,6 @@ def unary_iteration(
     flanking_ops: List[cirq.Operation],
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
-    ancilla: Sequence[cirq.Qid],
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     """The method performs unary iteration on `selection` integer in `range(l_iter, r_iter)`.
 
@@ -120,13 +104,12 @@ def unary_iteration(
     >>> N, M = 5, 7
     >>> target = [[cirq.q(f't({i}, {j})') for j in range(M)] for i in range(N)]
     >>> selection = [[cirq.q(f's({i}, {j})') for j in range(3)] for i in range(3)]
-    >>> ancilla = [[cirq.q(f'a({i}, {j})') for j in range(3)] for i in range(3)]
     >>> circuit = cirq.Circuit()
     >>> i_ops = []
-    >>> for i_optree, i_control, i in unary_iteration(0, N, i_ops, [], selection[0], ancilla[0]):
+    >>> for i_optree, i_control, i in unary_iteration(0, N, i_ops, [], selection[0]):
     >>>     circuit.append(i_optree)
     >>>     j_ops = []
-    >>>     for j_optree, j_control, j in unary_iteration(0, M, j_ops, [i_control], selection[1], ancilla[1]):
+    >>>     for j_optree, j_control, j in unary_iteration(0, M, j_ops, [i_control], selection[1]):
     >>>         circuit.append(j_optree)
     >>>         # Conditionally perform operations on target register using `j_control`, `i` and `j`.
     >>>         circuit.append(cirq.CNOT(j_control, target[i][j]))
@@ -143,7 +126,6 @@ def unary_iteration(
             to the function, list represents operations to be inserted at the end of last iteration.
         controls: Control register of qubits.
         selection: Selection register of qubits.
-        ancilla: Ancillas to be used for unary iteration and multi-controlled AND gate.
 
     Yields:
         (r_iter - l_iter) different tuples, each corresponding to an integer in range
@@ -155,39 +137,34 @@ def unary_iteration(
             on the returned integer.
         - int: The current integer in the iteration `range(l_iter, r_iter)`.
     """
-    if len(selection) + len(controls) - 1 != len(ancilla):
-        raise ValueError(
-            f'ancilla count should be {len(selection) + len(controls) - 1}\n'
-            f'selection: {selection}\ncontrols: {controls}\nancilla: {ancilla}'
-        )
     assert 2 ** len(selection) >= r_iter - l_iter
     assert len(selection) > 0
     if len(controls) == 0:
-        yield from _unary_iteration_zero_control(flanking_ops, selection, ancilla, l_iter, r_iter)
+        yield from _unary_iteration_zero_control(flanking_ops, selection, l_iter, r_iter)
     elif len(controls) == 1:
         yield from _unary_iteration_single_control(
-            flanking_ops, controls[0], selection, ancilla, l_iter, r_iter
+            flanking_ops, controls[0], selection, l_iter, r_iter
         )
     elif len(controls) == 2:
         yield from _unary_iteration_multi_controls(
-            flanking_ops, controls, selection, ancilla, l_iter, r_iter
+            flanking_ops, controls, selection, l_iter, r_iter
         )
 
 
-class UnaryIterationGate(GateWithRegisters):
+class UnaryIterationGate(cirq_infra.GateWithRegisters):
     @cached_property
     @abc.abstractmethod
-    def control_registers(self) -> Registers:
+    def control_registers(self) -> cirq_infra.Registers:
         pass
 
     @cached_property
     @abc.abstractmethod
-    def selection_registers(self) -> Registers:
+    def selection_registers(self) -> cirq_infra.Registers:
         pass
 
     @cached_property
     @abc.abstractmethod
-    def target_registers(self) -> Registers:
+    def target_registers(self) -> cirq_infra.Registers:
         pass
 
     @cached_property
@@ -196,33 +173,19 @@ class UnaryIterationGate(GateWithRegisters):
         pass
 
     @cached_property
-    def ancilla_registers(self) -> Registers:
-        ancillas = [
-            Register(name=f'{s.name}_ancilla', bitsize=s.bitsize) for s in self.selection_registers
-        ]
-        ancillas[0] = Register(
-            name=ancillas[0].name,
-            bitsize=max(
-                0, self.selection_registers[0].bitsize + self.control_registers.bitsize - 1
-            ),
-        )
-        return Registers(ancillas)
-
-    @cached_property
-    def registers(self) -> Registers:
-        return Registers(
+    def registers(self) -> cirq_infra.Registers:
+        return cirq_infra.Registers(
             [
                 *self.control_registers,
                 *self.selection_registers,
-                *Registers.build(ancilla=self.ancilla_registers.bitsize),
                 *self.target_registers,
                 *self.extra_registers,
             ]
         )
 
     @cached_property
-    def extra_registers(self) -> Registers:
-        return Registers([])
+    def extra_registers(self) -> cirq_infra.Registers:
+        return cirq_infra.Registers([])
 
     @abc.abstractmethod
     def nth_operation(self, **kwargs) -> cirq.OP_TREE:
@@ -272,7 +235,6 @@ class UnaryIterationGate(GateWithRegisters):
         num_loops = len(self.iteration_lengths)
         target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
         extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
-        ancilla_regs = self.ancilla_registers.split_qubits(qubit_regs['ancilla'])
 
         def unary_iteration_loops(
             nested_depth: int,
@@ -312,7 +274,6 @@ class UnaryIterationGate(GateWithRegisters):
                 flanking_ops=ops,
                 controls=controls,
                 selection=qubit_regs[self.selection_registers[nested_depth].name],
-                ancilla=ancilla_regs[self.ancilla_registers[nested_depth].name],
             )
             for op_tree, control_qid, n in ith_for_loop:
                 yield op_tree
@@ -332,6 +293,5 @@ class UnaryIterationGate(GateWithRegisters):
         """
         wire_symbols = ["@"] * self.control_registers.bitsize
         wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
         wire_symbols += [self.__class__.__name__] * self.target_registers.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

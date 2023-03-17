@@ -4,7 +4,7 @@ from typing import List, Sequence, Tuple
 
 import cirq
 
-from cirq_qubitization import unary_iteration
+from cirq_qubitization.cirq_algos import unary_iteration
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 
 

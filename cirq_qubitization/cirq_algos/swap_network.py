@@ -3,7 +3,7 @@ from typing import Any, Sequence
 
 import cirq
 
-from cirq_qubitization import multi_target_cnot
+from cirq_qubitization.cirq_algos import multi_target_cnot
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import TComplexity
 

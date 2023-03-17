@@ -8,7 +8,7 @@ import pytest
 
 import cirq_qubitization
 import cirq_qubitization.cirq_infra.testing as cq_testing
-from cirq_qubitization.and_gate import And
+from cirq_qubitization.cirq_algos.and_gate import And
 
 random.seed(12345)
 
@@ -56,7 +56,7 @@ def test_multi_controlled_and_gate(cv: List[int]):
         # Test adjoint.
         cq_testing.assert_circuit_inp_out_cirqsim(
             circuit + cirq.Circuit(and_op**-1),
-            qubits=qubit_order,
+            qubit_order=qubit_order,
             inputs=initial_state,
             outputs=initial_state,
         )

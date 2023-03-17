@@ -3,8 +3,8 @@ from typing import Callable, Sequence, Tuple
 
 import cirq
 
+from cirq_qubitization.cirq_algos.unary_iteration import UnaryIterationGate
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers
-from cirq_qubitization.unary_iteration import UnaryIterationGate
 
 
 class ApplyGateToLthQubit(UnaryIterationGate):
@@ -72,7 +72,6 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_registers.bitsize
         wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += ["Anc"] * self.ancilla_registers.bitsize
         wire_symbols += [str(self._nth_gate(i)) for i in range(self._target_bitsize)]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 

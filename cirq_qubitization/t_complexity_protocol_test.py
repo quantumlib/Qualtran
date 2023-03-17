@@ -1,7 +1,7 @@
 import cirq
 import pytest
 
-from cirq_qubitization.and_gate import And
+from cirq_qubitization.cirq_algos.and_gate import And
 from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 

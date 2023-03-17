@@ -6,8 +6,8 @@ import cirq
 import numpy as np
 
 from cirq_qubitization.bit_tools import iter_bits
+from cirq_qubitization.cirq_algos.qrom import QROM
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
-from cirq_qubitization.qrom import QROM
 
 
 class ProgrammableRotationGateArrayBase(GateWithRegisters):
@@ -94,10 +94,6 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         return Registers.build(selection=self._selection_bitsize)
 
     @cached_property
-    def selection_ancilla(self) -> Registers:
-        return Registers.build(selection_ancilla=self._selection_bitsize - 1)
-
-    @cached_property
     def kappa_load_target(self) -> Registers:
         return Registers.build(kappa_load_target=self.kappa)
 
@@ -115,7 +111,6 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         return Registers(
             [
                 *self.selection_registers,
-                *self.selection_ancilla,
                 *self.kappa_load_target,
                 *self.rotations_target,
                 *self.interleaved_unitary_target,
@@ -125,7 +120,6 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
     def decompose_from_registers(
         self,
         selection: Sequence[cirq.Qid],
-        selection_ancilla: Sequence[cirq.Qid],
         kappa_load_target: Sequence[cirq.Qid],
         rotations_target: Sequence[cirq.Qid],
         **interleaved_unitary_target: Sequence[cirq.Qid],
@@ -151,7 +145,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
             en = min(st + self.kappa, num_bits)
             data ^= angles_bits[:, st:en].dot(power_of_2s[: en - st])
             yield QROM(data.tolist(), target_bitsizes=[self.kappa]).on_registers(
-                selection=selection, ancilla=selection_ancilla, target0=kappa_load_target
+                selection=selection, target0=kappa_load_target
             )
             data = angles_bits[:, st:en].dot(power_of_2s[: en - st])
             for cqid, bpow, idx in zip(kappa_load_target, angles_bit_pow[st:en], angles_idx[st:en]):
@@ -162,7 +156,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
                     last_id = idx
                 yield self.rotation_gate(bpow).on(*rotations_target).controlled_by(cqid)
         yield QROM(data.tolist(), target_bitsizes=[self.kappa]).on_registers(
-            selection=selection, ancilla=selection_ancilla, target0=kappa_load_target
+            selection=selection, target0=kappa_load_target
         )
 
 
