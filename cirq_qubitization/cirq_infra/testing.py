@@ -39,7 +39,9 @@ class GateHelper:
     @cached_property
     def all_qubits(self) -> List[cirq.Qid]:
         """All qubits in Register order."""
-        return self.r.merge_qubits(**self.quregs)
+        merged_qubits = self.r.merge_qubits(**self.quregs)
+        decomposed_qubits = self.decomposed_circuit.all_qubits()
+        return merged_qubits + sorted(decomposed_qubits - frozenset(merged_qubits))
 
     @cached_property
     def operation(self) -> cirq.Operation:
@@ -51,10 +53,15 @@ class GateHelper:
         """The `gate` applied to example qubits wrapped in a `cirq.Circuit`."""
         return cirq.Circuit(self.operation)
 
+    @cached_property
+    def decomposed_circuit(self) -> cirq.Circuit:
+        """The `gate` applied to example qubits, decomposed and wrapped in a `cirq.Circuit`."""
+        return cirq.Circuit(cirq.decompose(self.operation))
+
 
 def assert_circuit_inp_out_cirqsim(
     circuit: cirq.AbstractCircuit,
-    qubits: Sequence[cirq.Qid],
+    qubit_order: Sequence[cirq.Qid],
     inputs: Sequence[int],
     outputs: Sequence[int],
     decimals: int = 2,
@@ -63,7 +70,7 @@ def assert_circuit_inp_out_cirqsim(
 
     Args:
         circuit: The circuit representing the reversible classical operation.
-        qubits: The qubits in a definite order.
+        qubit_order: The qubit order to pass to the cirq simulator.
         inputs: The input state bit values.
         outputs: The (correct) output state bit values.
         decimals: The number of decimals of precision to use when comparing
@@ -71,7 +78,7 @@ def assert_circuit_inp_out_cirqsim(
             that are 0 or 1.
     """
     result = cirq.Simulator(dtype=np.complex128).simulate(
-        circuit, initial_state=inputs, qubit_order=qubits
+        circuit, initial_state=inputs, qubit_order=qubit_order
     )
     actual = result.dirac_notation(decimals=decimals)[1:-1]
     should_be = "".join(str(x) for x in outputs)

@@ -2,7 +2,7 @@ import cirq
 import pytest
 
 import cirq_qubitization.cirq_infra.testing as cq_testing
-from cirq_qubitization.and_gate import And
+from cirq_qubitization.cirq_algos.and_gate import And
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 from cirq_qubitization.t_complexity_protocol import TComplexity
 

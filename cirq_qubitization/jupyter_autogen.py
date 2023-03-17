@@ -114,19 +114,24 @@ class NotebookSpec:
 NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
     'apply_gate_to_lth_target': NotebookSpec(
         title='Apply to L-th Target',
-        module=cirq_qubitization.apply_gate_to_lth_target,
+        module=cirq_qubitization.cirq_algos.apply_gate_to_lth_target,
+        directory='./cirq_algos',
         gate_specs=[GateNbSpec(jaf._make_ApplyGateToLthQubit)],
     ),
     'qrom': NotebookSpec(
-        title='QROM', module=cirq_qubitization.qrom, gate_specs=[GateNbSpec(jaf._make_QROM)]
+        title='QROM',
+        module=cirq_qubitization.cirq_algos.qrom,
+        gate_specs=[GateNbSpec(jaf._make_QROM)],
+        directory='./cirq_algos',
     ),
     'swap_network': NotebookSpec(
         title='Swap Network',
-        module=cirq_qubitization.swap_network,
+        module=cirq_qubitization.cirq_algos.swap_network,
         gate_specs=[
             GateNbSpec(jaf._make_MultiTargetCSwap),
             GateNbSpec(jaf._make_MultiTargetCSwapApprox),
         ],
+        directory='./cirq_algos',
     ),
     'generic_select': NotebookSpec(
         title='Generic Select',

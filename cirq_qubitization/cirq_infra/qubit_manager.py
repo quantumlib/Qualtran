@@ -1,6 +1,6 @@
 import abc
 import contextlib
-from typing import Iterable, List, Set, TypeVar
+from typing import Iterable, List, Set, TypeVar, Union
 
 import cirq
 
@@ -58,7 +58,8 @@ def qborrow(n: int) -> List[cirq.Qid]:
     return _global_qubit_manager.qborrow(n)
 
 
-def qfree(qubits: Iterable[cirq.Qid]) -> None:
+def qfree(qubits: Union[cirq.Qid, Iterable[cirq.Qid]]) -> None:
+    qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
     return _global_qubit_manager.qfree(qubits)
 
 

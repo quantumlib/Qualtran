@@ -18,12 +18,10 @@ def test_generic_subprepare(num_sites, epsilon):
         subprepare_gate.selection_bitsize : subprepare_gate.selection_bitsize
         + subprepare_gate.temp_bitsize
     ]
-    ancilla = q[-subprepare_gate.ancilla_bitsize :]
-    result = cirq.Simulator(dtype=np.complex128).simulate(
-        cirq.Circuit(
-            subprepare_gate.on_registers(selection=selection, temp=temp, selection_ancilla=ancilla)
-        )
-    )
+    op = subprepare_gate.on_registers(selection=selection, temp=temp)
+    circuit = cirq.Circuit(cirq.I.on_each(*q), cirq.decompose(op))
+    all_qubits = q + sorted(circuit.all_qubits() - frozenset(q))
+    result = cirq.Simulator(dtype=np.complex128).simulate(circuit, qubit_order=all_qubits)
     state_vector = result.final_state_vector
     # State vector is of the form |l>|temp_{l}>. We trace out the |temp_{l}> part to
     # get the coefficients corresponding to |l>.
