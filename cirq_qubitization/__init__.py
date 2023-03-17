@@ -23,4 +23,4 @@ from cirq_qubitization.swap_network import (
 from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 from cirq_qubitization.unary_iteration import UnaryIterationGate
 
-from . import bloq_algos
+from . import bloq_algos, cirq_infra
