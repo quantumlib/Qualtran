@@ -11,6 +11,7 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
+_PAULIZ = np.array([[1, 0], [0, -1]], dtype=np.complex128)
 
 
 @frozen
@@ -101,3 +102,29 @@ class OneEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+
+@frozen
+class ZGate(Bloq):
+    """The Z gate.
+
+    This causes a phase flip: Z|+> = |-> and vice-versa.
+    """
+
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(q=1)
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        binst,
+        *,
+        incoming: Dict[str, SoquetT],
+        outgoing: Dict[str, SoquetT],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+            )
+        )

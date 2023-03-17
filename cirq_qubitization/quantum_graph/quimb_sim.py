@@ -59,7 +59,12 @@ def cbloq_to_quimb(
     External indices are the dangling soquets of the compute graph.
 
     Args:
-        cbloq: The composite bloq.
+        cbloq: The composite bloq. A composite bloq is a container class analogous to a
+            `TensorNetwork`. This function will simply add the tensor(s) for each Bloq
+            that constitutes the `CompositeBloq`. Each `Bloq` must implement the `add_my_tensors`
+            method (or the default implementation will throw a `NotImplementedError`. Please
+            see `flatten_cbloq_for_quimb` to recursively decompose high-level bloqs into
+            ones that support `add_my_tensors`.
         pos: Optional mapping of each `binst` to (x, y) coordinates which will be converted
             into a `fix` dictionary appropriate for `qtn.TensorNetwork.draw()`.
 
@@ -147,6 +152,24 @@ def get_right_and_left_inds(registers: FancyRegisters) -> List[List[Soquet]]:
     return inds
 
 
+def _bloq_defines_add_my_tensors(bloq: Bloq):
+    # whether a bloq defines `add_my_tensors()`
+    # namely: whether it overrides the default `Bloq.add_my_tensors()` which throws
+    # a NotImplementedError.
+    return not bloq.add_my_tensors.__qualname__.startswith('Bloq.')
+
+
+def flatten_cbloq_for_quimb(cbloq: CompositeBloq) -> CompositeBloq:
+    """Call `cbloq.flatten()` with a predicate for quimb conversion.
+
+    This method will flatten a composite bloq composed of Bloqs that
+    may not implement `add_my_tensors()`. Such bloqs are decomposed
+    and added in place. The resulting composite bloq will be composed only of bloqs
+    that support `add_my_tensors`.
+    """
+    return cbloq.flatten(lambda binst: not _bloq_defines_add_my_tensors(binst.bloq))
+
+
 def _cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
     """Return a contracted, dense ndarray representing the composite bloq.
 
@@ -161,6 +184,8 @@ def _cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
     For more fine grained control over the final shape of the tensor, use
     `cbloq_to_quimb` and `TensorNetwork.to_dense` directly.
     """
+    cbloq = flatten_cbloq_for_quimb(cbloq)
+
     tn, _ = cbloq_to_quimb(cbloq)
     inds = get_right_and_left_inds(cbloq.registers)
 

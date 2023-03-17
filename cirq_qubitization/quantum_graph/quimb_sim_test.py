@@ -1,16 +1,20 @@
 from functools import cached_property
 from typing import Dict
 
+import cirq
 import numpy as np
+import pytest
 import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
+from cirq_qubitization.bloq_algos.basic_gates import XGate
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import DanglingT, RightDangle, Soquet
 from cirq_qubitization.quantum_graph.quimb_sim import (
+    _bloq_defines_add_my_tensors,
     _get_dangling_soquets,
     cbloq_to_quimb,
     get_right_and_left_inds,
@@ -139,3 +143,61 @@ def test_cbloq_to_quimb():
     for oi in tn.outer_inds():
         assert isinstance(oi, Soquet)
         assert isinstance(oi.binst, DanglingT)
+
+
+@frozen
+class XNest(Bloq):
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(r=1)
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', r: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        (r,) = bb.add(XGate(), q=r)
+        return {'r': r}
+
+
+@frozen
+class XDoubleNest(Bloq):
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(s=1)
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', s: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        (s,) = bb.add(XNest(), r=s)
+        return {'s': s}
+
+
+def test_nest():
+    x = XNest()
+    should_be = cirq.unitary(cirq.X)
+    np.testing.assert_allclose(should_be, x.tensor_contract())
+    np.testing.assert_allclose(should_be, x.decompose_bloq().tensor_contract())
+
+
+def test_bloq_defines_add_my_tensors():
+    assert not _bloq_defines_add_my_tensors(XNest())
+    assert not _bloq_defines_add_my_tensors(XDoubleNest())
+    assert not _bloq_defines_add_my_tensors(XNest().decompose_bloq())
+    assert not _bloq_defines_add_my_tensors(XDoubleNest().decompose_bloq())
+    assert _bloq_defines_add_my_tensors(TensorAdderSimple())
+    assert _bloq_defines_add_my_tensors(XGate())
+
+    with pytest.raises(NotImplementedError):
+        XNest().add_my_tensors(qtn.TensorNetwork([]), None, incoming={}, outgoing={})
+
+
+def test_double_nest():
+    xx = XDoubleNest()
+    should_be = cirq.unitary(cirq.X)
+    np.testing.assert_allclose(should_be, xx.tensor_contract())
+    np.testing.assert_allclose(should_be, xx.decompose_bloq().tensor_contract())
+
+    with pytest.raises(AttributeError, match=r".*has no attribute 'iter_bloqnections'"):
+        cbloq_to_quimb(xx)
+
+    with pytest.raises(NotImplementedError):
+        cbloq_to_quimb(xx.decompose_bloq())

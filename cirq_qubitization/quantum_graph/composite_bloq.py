@@ -226,6 +226,46 @@ class CompositeBloq(Bloq):
 
         return bb.finalize(**self.final_soqs(binst_map))
 
+    def flatten_once(self, pred: Callable[[BloqInstance], bool]):
+        bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+        soq_map: List[Tuple[SoquetT, SoquetT]] = []
+        did_work = False
+        for old_binst, in_soqs in self.iter_bloqsoqs():
+            in_soqs = _map_soq_dict_2(in_soqs, soq_map)  # update `in_soqs` from old to new.
+
+            bloq = old_binst.bloq
+            old_out_soqs = tuple(
+                _reg_to_soq(old_binst, reg, available=set()) for reg in bloq.registers.rights()
+            )
+
+            if pred(old_binst):
+                print(f"Flattening {old_binst}")
+                new_out_soqs = bb.add_from(bloq.decompose_bloq(), **in_soqs)
+                did_work = True
+            else:
+                print(f"Keeping {old_binst}")
+                new_out_soqs = bb.add(bloq, **in_soqs)
+
+            soq_map.extend(zip(old_out_soqs, new_out_soqs))
+
+        if not did_work:
+            raise DidNotFlattenAnythingError()
+
+        fsoqs = _map_soq_dict_2(self.final_soqs(), soq_map)
+        return bb.finalize(**fsoqs)
+
+    def flatten(self, pred: Callable[[BloqInstance], bool], max_depth=1_000):
+        cbloq = self
+        for _ in range(max_depth):
+            try:
+                cbloq = cbloq.flatten_once(pred)
+            except DidNotFlattenAnythingError:
+                break
+        else:
+            raise ValueError("Max recursion depth exceeded in `flatten`.")
+
+        return cbloq
+
     @staticmethod
     def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
         """Helper method used in `debug_text`"""
@@ -435,6 +475,10 @@ class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
+class DidNotFlattenAnythingError(BloqBuilderError):
+    """An exception raised if `flatten_once()` did not find anything to flatten."""
+
+
 def _reg_to_soq(
     binst: Union[BloqInstance, DanglingT], reg: FancyRegister, available: Set[Soquet]
 ) -> SoquetT:
@@ -563,6 +607,39 @@ def _map_soq_dict(
             return _map_in_soq(soq)
 
         return _map_binst(soq)
+
+    # Use `vectorize` to call `_map_soq` on each element of the array.
+    vmap = np.vectorize(_map_soq, otypes=[object])
+
+    def _map_soqs(soqs: SoquetT) -> SoquetT:
+        if isinstance(soqs, Soquet):
+            return _map_soq(soqs)
+        return vmap(soqs)
+
+    return {name: _map_soqs(soqs) for name, soqs in soqdict.items()}
+
+
+def _map_soq_dict_2(
+    soqdict: Dict[str, SoquetT], soqmap: Iterable[Tuple[SoquetT, SoquetT]]
+) -> Dict[str, SoquetT]:
+    """Map tuples of SoquetT"""
+    flatsoqmap = {}
+    for fr, to in soqmap:
+
+        if isinstance(fr, Soquet):
+            assert isinstance(to, Soquet)
+            flatsoqmap[fr] = to
+            continue
+
+        assert isinstance(fr, np.ndarray)
+        assert isinstance(to, np.ndarray)
+        assert fr.shape == to.shape
+        for f, t in zip(fr.reshape(-1), to.reshape(-1)):
+            flatsoqmap[f] = t
+
+    def _map_soq(soq: Soquet) -> Soquet:
+        # Helper function to map an individual soquet.
+        return flatsoqmap.get(soq, soq)
 
     # Use `vectorize` to call `_map_soq` on each element of the array.
     vmap = np.vectorize(_map_soq, otypes=[object])

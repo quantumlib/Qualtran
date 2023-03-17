@@ -110,7 +110,7 @@ class Bloq(metaclass=abc.ABCMeta):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
-        raise NotImplementedError("This bloq does not support tensor contraction.")
+        raise NotImplementedError(f"{self.pretty_name()} does not support tensor contraction.")
 
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.
