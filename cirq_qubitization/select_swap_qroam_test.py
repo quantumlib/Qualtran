@@ -1,10 +1,10 @@
+import cirq
 import numpy as np
 import pytest
-import cirq
 
 import cirq_qubitization
-from cirq_qubitization.cirq_infra import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
+from cirq_qubitization.cirq_infra import testing as cq_testing
 
 
 @pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])

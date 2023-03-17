@@ -1,7 +1,9 @@
-from typing import Tuple, Sequence, Optional, List
 from functools import cached_property
-import numpy as np
+from typing import List, Optional, Sequence, Tuple
+
 import cirq
+import numpy as np
+
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.qrom import QROM
 from cirq_qubitization.swap_network import SwapWithZeroGate

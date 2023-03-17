@@ -1,14 +1,14 @@
 import itertools
 import random
-from typing import Tuple, List
+from typing import List, Tuple
 
 import cirq
 import numpy as np
 import pytest
 
 import cirq_qubitization
-from cirq_qubitization.and_gate import And
 import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.and_gate import And
 
 random.seed(12345)
 

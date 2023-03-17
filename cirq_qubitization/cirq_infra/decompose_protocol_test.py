@@ -1,6 +1,7 @@
 import cirq
 import numpy as np
-from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations, _fredkin
+
+from cirq_qubitization.cirq_infra.decompose_protocol import _fredkin, decompose_once_into_operations
 
 
 def test_fredkin_unitary():

@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Sequence, Dict, List
+from typing import Any, Dict, List, Sequence
 
 import cirq
-import numpy as np
 import nbformat
+import numpy as np
 from nbconvert.preprocessors import ExecutePreprocessor
-from cirq_qubitization.t_complexity_protocol import t_complexity
-from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
 
+from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.t_complexity_protocol import t_complexity
 
 
 @dataclass(frozen=True)
