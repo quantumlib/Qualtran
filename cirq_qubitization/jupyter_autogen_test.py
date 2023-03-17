@@ -6,11 +6,11 @@ import inspect
 
 import cirq_qubitization
 from cirq_qubitization.jupyter_autogen import (
-    GateNbSpec,
-    NotebookSpec,
-    get_markdown_docstring_lines,
-    _get_lines_for_constructing_an_object,
     _get_code_for_demoing_a_gate,
+    _get_lines_for_constructing_an_object,
+    GateNbSpec,
+    get_markdown_docstring_lines,
+    NotebookSpec,
     render_notebook_cells,
 )
 
