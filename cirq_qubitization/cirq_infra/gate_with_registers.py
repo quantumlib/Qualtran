@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 import sys
-from typing import Sequence, Dict, Iterable, List, Union, overload
+from typing import Dict, Iterable, List, overload, Sequence, Union
 
 import cirq
 

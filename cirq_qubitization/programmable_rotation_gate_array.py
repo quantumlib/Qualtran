@@ -1,13 +1,13 @@
 import abc
-from typing import Tuple, Sequence
-from functools import cached_property, cache
-import numpy as np
+from functools import cache, cached_property
+from typing import Sequence, Tuple
 
 import cirq
+import numpy as np
 
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
-from cirq_qubitization.qrom import QROM
 from cirq_qubitization.bit_tools import iter_bits
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.qrom import QROM
 
 
 class ProgrammableRotationGateArrayBase(GateWithRegisters):

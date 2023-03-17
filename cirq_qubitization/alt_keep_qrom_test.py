@@ -2,8 +2,8 @@ import cirq
 import numpy as np
 
 from cirq_qubitization import construct_alt_keep_qrom
-from cirq_qubitization import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
+from cirq_qubitization.cirq_infra import testing as cq_testing
 from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
 
 

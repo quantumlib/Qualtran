@@ -43,7 +43,7 @@ import cirq_qubitization.bloq_algos.basic_gates.cnot_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
 import cirq_qubitization.quantum_graph
-from cirq_qubitization.gate_with_registers import GateWithRegisters
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 from cirq_qubitization.quantum_graph.bloq import Bloq
 
 
@@ -226,7 +226,7 @@ _IMPORTS = """\
 import cirq
 import numpy as np
 import cirq_qubitization
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.jupyter_tools import display_gate_and_compilation, show_bloq
 from typing import *\
 """

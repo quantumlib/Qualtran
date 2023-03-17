@@ -3,7 +3,7 @@ from typing import Callable, Sequence, Tuple
 
 import cirq
 
-from cirq_qubitization.gate_with_registers import Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 from cirq_qubitization.unary_iteration import UnaryIterationGate
 
 

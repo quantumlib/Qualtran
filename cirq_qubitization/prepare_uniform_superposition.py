@@ -5,7 +5,7 @@ import cirq
 import numpy as np
 
 from cirq_qubitization.arithmetic_gates import LessThanGate
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 
 
 class PrepareUniformSuperposition(GateWithRegisters):

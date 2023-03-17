@@ -3,8 +3,8 @@ from typing import Sequence
 import cirq
 import pytest
 
-import cirq_qubitization.testing as cq_testing
-from cirq_qubitization.gate_with_registers import Register, Registers, GateWithRegisters
+import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Register, Registers
 
 
 def test_register():
