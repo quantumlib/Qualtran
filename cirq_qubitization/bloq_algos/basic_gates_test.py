@@ -1,5 +1,5 @@
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 
 
 def test_notebook():
-    cq_testing.execute_notebook('bloq_algos/basic_gates')
+    cq_testing.execute_notebook('basic_gates')

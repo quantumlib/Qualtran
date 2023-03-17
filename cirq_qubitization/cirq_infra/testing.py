@@ -8,9 +8,9 @@ import numpy as np
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 from cirq_qubitization.t_complexity_protocol import t_complexity
-from cirq_qubitization.decompose_protocol import decompose_once_into_operations
+from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
 
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 
 
 @dataclass(frozen=True)
@@ -85,7 +85,11 @@ def execute_notebook(name: str):
         name: The name of the notebook without extension.
 
     """
-    notebook_path = Path(__file__).parent / f"{name}.ipynb"
+    import traceback
+
+    # Assumes that the notebook is in the same path from where the function was called,
+    # which may be different from `__file__`.
+    notebook_path = Path(traceback.extract_stack()[-2].filename).parent / f"{name}.ipynb"
     with notebook_path.open() as f:
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")

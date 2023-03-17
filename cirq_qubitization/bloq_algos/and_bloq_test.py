@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import pytest
 
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.bloq_algos.and_bloq import And
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
@@ -75,4 +75,4 @@ def test_inverse():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('bloq_algos/and_bloq')
+    cq_testing.execute_notebook('and_bloq')

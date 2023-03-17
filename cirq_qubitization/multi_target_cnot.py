@@ -3,7 +3,7 @@ from typing import Sequence
 
 import cirq
 
-from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers, GateWithRegisters
 
 
 class MultiTargetCNOT(GateWithRegisters):

@@ -13,7 +13,7 @@ import cirq
 from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 from cirq_qubitization.arithmetic_gates import LessThanEqualGate
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
 from cirq_qubitization.qrom import QROM
 from cirq_qubitization.swap_network import MultiTargetCSwap

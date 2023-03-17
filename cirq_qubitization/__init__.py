@@ -2,8 +2,8 @@ from cirq_qubitization.alt_keep_qrom import construct_alt_keep_qrom
 from cirq_qubitization.and_gate import And
 from cirq_qubitization.apply_gate_to_lth_target import ApplyGateToLthQubit
 from cirq_qubitization.arithmetic_gates import LessThanEqualGate, LessThanGate
-from cirq_qubitization.decompose_protocol import decompose_once_into_operations
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.generic_select import GenericSelect
 from cirq_qubitization.generic_subprepare import GenericSubPrepare
 from cirq_qubitization.multi_target_cnot import MultiTargetCNOT

@@ -8,7 +8,7 @@ import pytest
 
 import cirq_qubitization
 from cirq_qubitization.and_gate import And
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 
 random.seed(12345)
 

@@ -1,7 +1,7 @@
 import IPython.display
 import ipywidgets
 
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization import And
 from cirq_qubitization.jupyter_tools import svg_circuit, display_gate_and_compilation
 

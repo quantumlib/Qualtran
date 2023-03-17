@@ -3,8 +3,8 @@ import cirq.contrib.svg.svg as ccsvg
 import IPython.display
 import ipywidgets
 
-import cirq_qubitization.testing as cq_testing
-from cirq_qubitization.gate_with_registers import Registers
+import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.graphviz import PrettyGraphDrawer
 

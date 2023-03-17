@@ -1,7 +1,7 @@
 from typing import Any, Sequence
 from functools import cached_property
 import cirq
-from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers, GateWithRegisters
 from cirq_qubitization.t_complexity_protocol import TComplexity
 
 

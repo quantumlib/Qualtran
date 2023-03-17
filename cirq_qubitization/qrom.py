@@ -2,7 +2,7 @@ from typing import Tuple, Sequence, Optional, Callable
 from functools import cached_property
 import cirq
 from cirq_qubitization import unary_iteration
-from cirq_qubitization.gate_with_registers import Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 
 
 class QROM(unary_iteration.UnaryIterationGate):

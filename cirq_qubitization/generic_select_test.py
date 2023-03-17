@@ -4,7 +4,7 @@ import cirq
 import numpy as np
 
 import cirq_qubitization
-from cirq_qubitization import testing as cq_testing
+from cirq_qubitization.cirq_infra import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
 
 

@@ -5,7 +5,7 @@ from typing import Dict, Iterator, List, Sequence, Tuple
 import cirq
 
 from cirq_qubitization import and_gate
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Register, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Register, Registers
 
 
 def _unary_iteration_segtree(
