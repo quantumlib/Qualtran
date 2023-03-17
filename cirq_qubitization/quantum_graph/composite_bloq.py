@@ -21,6 +21,7 @@ import networkx as nx
 import numpy as np
 from numpy.typing import NDArray
 
+from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
@@ -109,6 +110,13 @@ class CompositeBloq(Bloq):
         from cirq_qubitization.quantum_graph.quimb_sim import _cbloq_to_dense
 
         return _cbloq_to_dense(self)
+
+    def t_complexity(self) -> TComplexity:
+        """The `TComplexity` for a composite bloq is the sum of its components' counts."""
+        rc = TComplexity()
+        for binst in self.bloq_instances:
+            rc += binst.bloq.t_complexity()
+        return rc
 
     def as_composite_bloq(self) -> 'CompositeBloq':
         """This override just returns the present composite bloq."""
