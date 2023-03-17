@@ -12,11 +12,11 @@ from typing import List, Sequence
 import cirq
 from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
-from cirq_qubitization.arithmetic_gates import LessThanEqualGate
-from cirq_qubitization.gate_with_registers import GateWithRegisters, Registers
-from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
-from cirq_qubitization.qrom import QROM
-from cirq_qubitization.swap_network import MultiTargetCSwap
+from cirq_qubitization.cirq_algos.arithmetic_gates import LessThanEqualGate
+from cirq_qubitization.cirq_algos.prepare_uniform_superposition import PrepareUniformSuperposition
+from cirq_qubitization.cirq_algos.qrom import QROM
+from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 
 
 class GenericSubPrepare(GateWithRegisters):
@@ -45,7 +45,6 @@ class GenericSubPrepare(GateWithRegisters):
             - alt: A lg(L)-sized register of alternate indices
             - keep: a mu-sized register of probabilities of keeping the initially sampled index.
             - one bit for the result of the comparison.
-        selection_ancilla: Ancilla space for QROM loading.
 
     This gate corresponds to the following operations:
      - UNIFORM_L on the selection register
@@ -101,16 +100,8 @@ class GenericSubPrepare(GateWithRegisters):
         return self.sigma_mu_bitsize + self.alternates_bitsize + self.keep_bitsize + 1
 
     @property
-    def ancilla_bitsize(self) -> int:
-        return self._selection_bitsize
-
-    @property
     def registers(self) -> Registers:
-        return Registers.build(
-            selection=self.selection_bitsize,
-            temp=self.temp_bitsize,
-            selection_ancilla=self.ancilla_bitsize,
-        )
+        return Registers.build(selection=self.selection_bitsize, temp=self.temp_bitsize)
 
     def __repr__(self) -> str:
         return (
@@ -121,10 +112,7 @@ class GenericSubPrepare(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self,
-        selection: Sequence[cirq.Qid],
-        temp: Sequence[cirq.Qid],
-        selection_ancilla: Sequence[cirq.Qid],
+        self, selection: Sequence[cirq.Qid], temp: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
 
         sigma_mu, alt, keep, less_than_equal = (
@@ -134,11 +122,9 @@ class GenericSubPrepare(GateWithRegisters):
             temp[-1],
         )
 
-        yield PrepareUniformSuperposition(len(self._lcu_probs)).on(*selection, selection_ancilla[0])
+        yield PrepareUniformSuperposition(len(self._lcu_probs)).on(*selection)
         qrom = QROM(self._alt, self._keep, target_bitsizes=[len(alt), len(keep)])
-        yield qrom.on_registers(
-            selection=selection, ancilla=selection_ancilla[1:], target0=alt, target1=keep
-        )
+        yield qrom.on_registers(selection=selection, target0=alt, target1=keep)
         yield cirq.H.on_each(*sigma_mu)
         yield LessThanEqualGate([2] * self._mu, [2] * self._mu).on(
             *sigma_mu, *keep, less_than_equal
