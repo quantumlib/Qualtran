@@ -1,18 +1,36 @@
 import abc
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, Sequence, Tuple, TYPE_CHECKING
 
+import cirq
 import quimb.tensor as qtn
+from attrs import frozen
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
-    import cirq
-
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
         SoquetT,
     )
-    from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+    from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
+
+QUBITS = set()
+
+
+def new_qubit() -> cirq.LineQubit:
+    global QUBITS
+    i = 0
+    while True:
+        q = cirq.LineQubit(i)
+        if q not in QUBITS:
+            QUBITS.add(q)
+            return q
+        i += 1
+
+
+def free_qubit(q: cirq.Qid):
+    global QUBITS
+    QUBITS.remove(q)
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -115,6 +133,47 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def decompose_from_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
         yield from self.decompose_bloq().to_cirq_circuit(**qubit_regs)
+
+    def on_registers(self, quregs: Dict[str, 'cirq.Qid']) -> 'cirq.Operation':
+        from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
+
+        big_ol_qubits = []
+        names = []
+        for reg in self.registers:
+            if reg.side is Side.THRU:
+                for i, q in enumerate(quregs[reg.name]):
+                    big_ol_qubits.append(q)
+                    names.append(f'{reg.name}{i}')
+            elif reg.side is Side.LEFT:
+                for i, q in enumerate(quregs[reg.name]):
+                    big_ol_qubits.append(q)
+                    names.append(f'{reg.name}{i}')
+                    free_qubit(q)
+            elif reg.side is Side.RIGHT:
+                qs = []
+                for i in range(reg.total_bits()):
+                    q = new_qubit()
+                    qs.append(q)
+                    big_ol_qubits.append(q)
+                    names.append(f'{reg.name}{i}')
+                quregs[reg.name] = qs
+
+        return BloqToCirq(self, len(big_ol_qubits), tuple(names)).on(*big_ol_qubits)
+
+
+@frozen
+class BloqToCirq(cirq.Gate):
+    bloq: Bloq
+    nq: int
+    names: Tuple[str, ...]
+
+    def _num_qubits_(self):
+        return self.nq
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        syms = [self.bloq.short_name()]
+        syms.extend(self.names[i] for i in range(1, self.nq))
+        return cirq.CircuitDiagramInfo(wire_symbols=syms)
 
 
 class NoCirqEquivalent(NotImplementedError):

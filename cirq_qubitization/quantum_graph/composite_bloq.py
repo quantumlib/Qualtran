@@ -329,8 +329,9 @@ def _process_binst(
             soq = Soquet(binst, reg, idx=li)
             quregs[reg.name].extend(soqmap[soq])
             del soqmap[soq]
+    quregs = dict(quregs)
 
-    op = bloq.on_registers(**quregs)
+    op = bloq.on_registers(quregs)
 
     # We pluck things back out from their collapsed by-name qumap into soqmap
     # This does implicit splitting.

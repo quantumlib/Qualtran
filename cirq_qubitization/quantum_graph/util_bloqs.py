@@ -33,9 +33,7 @@ class Split(Bloq):
             ]
         )
 
-    def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
-    ) -> 'cirq.GateOperation':
+    def on_registers(self, quregs: Dict[str, Sequence['cirq.Qid']]) -> 'cirq.GateOperation':
         return None
 
 
@@ -58,9 +56,7 @@ class Join(Bloq):
             ]
         )
 
-    def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
-    ) -> 'cirq.GateOperation':
+    def on_registers(self, quregs: Dict[str, Sequence['cirq.Qid']]) -> 'cirq.GateOperation':
         return None
 
     def add_my_tensors(

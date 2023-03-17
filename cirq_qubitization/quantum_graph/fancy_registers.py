@@ -54,7 +54,7 @@ class FancyRegister:
 
         This is the product of bitsize and all wireshapes.
         """
-        return self.bitsize * np.product(self.wireshape).item()
+        return self.bitsize * int(np.product(self.wireshape))
 
 
 def _dedupe(kv_iter: Iterable[Tuple[str, FancyRegister]]) -> Dict[str, FancyRegister]:
