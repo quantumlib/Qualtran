@@ -2,8 +2,8 @@ from functools import cached_property
 from typing import Callable, Optional, Sequence, Tuple
 
 import cirq
-from cirq_qubiization.cirq_algos import unary_iteration
 
+from cirq_qubitization.cirq_algos import unary_iteration
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 
 
