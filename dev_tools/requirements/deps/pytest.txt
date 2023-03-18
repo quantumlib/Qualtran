@@ -4,3 +4,4 @@ pytest
 pytest-asyncio
 pytest-cov
 pytest-xdist
+pytest-durations
