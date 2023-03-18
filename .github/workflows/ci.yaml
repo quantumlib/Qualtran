@@ -19,7 +19,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r dev_tools/requirements/pytest.env.txt
       - run: |
-          check/pytest -n auto -v -durations=0
+          check/pytest -n auto -v --durations=0
 
   format:
     runs-on: ubuntu-latest
