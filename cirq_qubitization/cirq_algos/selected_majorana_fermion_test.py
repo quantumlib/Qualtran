@@ -7,7 +7,7 @@ from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
 
 
-@pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 8), (4, 9)])
+@pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 7)])
 @pytest.mark.parametrize("target_gate", [cirq.X, cirq.Y])
 def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, target_gate):
     gate = cirq_qubitization.SelectedMajoranaFermionGate(

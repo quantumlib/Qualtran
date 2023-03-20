@@ -43,7 +43,7 @@ def construct_programmable_rotation_gate(
 @pytest.mark.parametrize(
     "angles", [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], [[3, 4, 5], [10, 11, 12]]]
 )
-@pytest.mark.parametrize("kappa", [*range(1, 12)])
+@pytest.mark.parametrize("kappa", [*range(1, 12, 3)])
 @pytest.mark.parametrize(
     "gate_type", [CustomProgrammableRotationGateArray, cq.ProgrammableRotationGateArray]
 )

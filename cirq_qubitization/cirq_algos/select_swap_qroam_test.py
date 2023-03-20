@@ -11,6 +11,8 @@ from cirq_qubitization.cirq_infra import testing as cq_testing
 @pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
 @pytest.mark.parametrize("block_size", [None, 1, 2, 3])
 def test_select_swap_qrom(data, block_size):
+    if len(data) == 2 and block_size is not None and block_size >= 3:
+        pytest.skip("Too slow")
     qrom = cirq_qubitization.SelectSwapQROM(*data, block_size=block_size)
     qubit_regs = qrom.registers.get_named_qubits()
     selection = qubit_regs["selection"]

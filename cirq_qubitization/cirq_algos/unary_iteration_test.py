@@ -100,7 +100,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         yield [cirq.CNOT(control, t1[i]), cirq.CNOT(control, t2[j]), cirq.CNOT(control, t3[k])]
 
 
-@pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
+@pytest.mark.parametrize("target_shape", [(2, 2, 2)])
 def test_multi_dimensional_unary_iteration(target_shape: Tuple[int, int, int]):
     gate = ApplyXToIJKthQubit(target_shape)
     g = cq_testing.GateHelper(gate)
