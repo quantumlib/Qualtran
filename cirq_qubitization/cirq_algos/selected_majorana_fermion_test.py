@@ -2,7 +2,7 @@ import cirq
 import numpy as np
 import pytest
 
-import cirq_qubitization
+import cirq_qubitization as cq
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
 
@@ -10,10 +10,14 @@ from cirq_qubitization.cirq_infra import testing as cq_testing
 @pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 8), (4, 9)])
 @pytest.mark.parametrize("target_gate", [cirq.X, cirq.Y])
 def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, target_gate):
-    gate = cirq_qubitization.SelectedMajoranaFermionGate(
-        selection_bitsize, target_bitsize, target_gate=target_gate
-    )
-    g = cq_testing.GateHelper(gate)
+    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cq.cirq_infra.memory_management_context(greedy_mm):
+        gate = cq.SelectedMajoranaFermionGate(
+            selection_bitsize, target_bitsize, target_gate=target_gate
+        )
+        g = cq_testing.GateHelper(gate)
+        assert len(g.all_qubits) <= gate.registers.bitsize + selection_bitsize
+
     sim = cirq.Simulator(dtype=np.complex128)
     for n in range(target_bitsize):
         # Initial qubit values
@@ -47,9 +51,7 @@ def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, targe
 
 def test_selected_majorana_fermion_gate_diagram():
     selection_bitsize, target_bitsize = 3, 5
-    gate = cirq_qubitization.SelectedMajoranaFermionGate(
-        selection_bitsize, target_bitsize, target_gate=cirq.X
-    )
+    gate = cq.SelectedMajoranaFermionGate(selection_bitsize, target_bitsize, target_gate=cirq.X)
     circuit = cirq.Circuit(gate.on_registers(**gate.registers.get_named_qubits()))
     qubits = list(q for v in gate.registers.get_named_qubits().values() for q in v)
     cirq.testing.assert_has_diagram(
@@ -81,11 +83,9 @@ accumulator: ───Acc───
 
 def test_selected_majorana_fermion_gate_make_on():
     selection_bitsize, target_bitsize = 3, 5
-    gate = cirq_qubitization.SelectedMajoranaFermionGate(
-        selection_bitsize, target_bitsize, target_gate=cirq.X
-    )
+    gate = cq.SelectedMajoranaFermionGate(selection_bitsize, target_bitsize, target_gate=cirq.X)
     op = gate.on_registers(**gate.registers.get_named_qubits())
-    op2 = cirq_qubitization.SelectedMajoranaFermionGate.make_on(
+    op2 = cq.SelectedMajoranaFermionGate.make_on(
         target_gate=cirq.X, **gate.registers.get_named_qubits()
     )
     assert op == op2
