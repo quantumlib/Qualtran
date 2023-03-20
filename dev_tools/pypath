@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 #####
-# The main file to use to setup your PYTHONPATH. It sets up all cirq modules on the path.
+# The main file to use to setup your PYTHONPATH.
+# It prepends the cirq-qubitization base directory to the PYTHONPATH.
 # The file can be sourced from any location with bash or zsh.
 # Usage:
 #   source dev_tools/pypath
