@@ -5,6 +5,7 @@ from typing import Sequence, Tuple
 import cirq
 import pytest
 
+import cirq_qubitization as cq
 from cirq_qubitization import Registers, UnaryIterationGate
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
@@ -42,8 +43,12 @@ class ApplyXToLthQubit(UnaryIterationGate):
     "selection_bitsize, target_bitsize, control_bitsize", [(3, 5, 1), (2, 4, 2)]
 )
 def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
-    gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
-    g = cq_testing.GateHelper(gate)
+    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cq.cirq_infra.memory_management_context(greedy_mm):
+        gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
+        g = cq_testing.GateHelper(gate)
+        assert len(g.all_qubits) <= 2 * (selection_bitsize + control_bitsize) + target_bitsize - 1
+
     for n in range(target_bitsize):
 
         # Initial qubit values
@@ -102,8 +107,11 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
 
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
 def test_multi_dimensional_unary_iteration(target_shape: Tuple[int, int, int]):
-    gate = ApplyXToIJKthQubit(target_shape)
-    g = cq_testing.GateHelper(gate)
+    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cq.cirq_infra.memory_management_context(greedy_mm):
+        gate = ApplyXToIJKthQubit(target_shape)
+        g = cq_testing.GateHelper(gate)
+        assert len(g.all_qubits) <= gate.registers.bitsize + gate.selection_registers.bitsize - 1
 
     max_i, max_j, max_k = target_shape
     i_len, j_len, k_len = tuple(reg.bitsize for reg in gate.selection_registers)
