@@ -103,7 +103,7 @@ fi
 flynt "${format_files[@]}" "${flynt_args[@]}"
 FLYNTSTATUS=$?
 
-isort_args=("--color")
+isort_args=()
 if (( only_print == 1 )); then
     isort_args+=("--check" "--diff")
 fi
