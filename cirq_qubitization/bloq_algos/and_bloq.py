@@ -42,6 +42,7 @@ class And(Bloq):
     def apply_classical(self, ctrl):
         # (bitsize,)
         # (wx1, wx2, bitsize)
+        assert ctrl.shape == (2, 1)
         c1, c2 = ctrl[:, 0]
         if c1 == self.cv1 and c2 == self.cv2:
             target = np.array([1])
