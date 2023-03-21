@@ -43,7 +43,6 @@ def _process_classical_binst(binst: BloqInstance, pred_cxns, datamap: Dict[Soque
     # Track inter-Bloq name changes
     for cxn in pred_cxns:
         datamap[cxn.right] = datamap[cxn.left]
-        del datamap[cxn.left]
 
     bloq = binst.bloq
 
@@ -57,7 +56,6 @@ def _process_classical_binst(binst: BloqInstance, pred_cxns, datamap: Dict[Soque
         for idx in reg.wire_idxs():
             soq = Soquet(binst, reg, idx=idx)
             arg[idx, :] = datamap[soq]
-            del datamap[soq]
 
         indata[reg.name] = arg
 
@@ -96,7 +94,6 @@ def _apply_classical_cbloq(
     final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
     for cxn in final_preds:
         datamap[cxn.right] = datamap[cxn.left]
-        del datamap[cxn.left]
 
     final_data = {}
     for reg in registers.rights():
@@ -106,8 +103,7 @@ def _apply_classical_cbloq(
         for idx in reg.wire_idxs():
             soq = Soquet(RightDangle, reg, idx=idx)
             arg[idx] = datamap[soq]
-            del datamap[soq]
 
         final_data[reg.name] = arg
 
-    return final_data
+    return final_data, datamap

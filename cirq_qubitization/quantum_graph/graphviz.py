@@ -1,6 +1,7 @@
 import itertools
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
+import numpy as np
 import pydot
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -368,6 +369,46 @@ class PrettyGraphDrawer(GraphDrawer):
             label=self.cxn_label(cxn),
             labelfloat=True,
             fontsize=10,
+            arrowhead='dot',
+            arrowsize=0.25,
+        )
+
+
+class ClassicalSimGraphDrawer(PrettyGraphDrawer):
+    def __init__(self, bloq, data):
+        super().__init__(bloq=bloq)
+        from cirq_qubitization.quantum_graph.classical_sim import _apply_classical_cbloq
+
+        res, datamap = _apply_classical_cbloq(self._cbloq.registers, data, self._cbloq._binst_graph)
+        self.datamap = datamap
+
+    def cxn_label(self, cxn: Connection) -> str:
+        """Overridable method to return labels for connections."""
+
+        if cxn.left in self.datamap:
+            arr1 = self.datamap[cxn.left]
+            arr = arr1
+        else:
+            print(f'left {cxn.left} not in')
+
+        if cxn.right in self.datamap:
+            arr2 = self.datamap[cxn.right]
+            arr = arr2
+        else:
+            print(f'right {cxn.right} not in')
+
+        if cxn.left in self.datamap and cxn.right in self.datamap:
+            print(np.array_equal(arr1, arr2))
+        return str(arr)
+
+    def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
+        return pydot.Edge(
+            left_id,
+            right_id,
+            label=self.cxn_label(cxn),
+            labelfloat=True,
+            fontsize=10,
+            fontcolor='darkblue',
             arrowhead='dot',
             arrowsize=0.25,
         )
