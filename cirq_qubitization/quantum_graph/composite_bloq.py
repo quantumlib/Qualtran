@@ -1,6 +1,7 @@
 from collections import defaultdict
 from functools import cached_property
 from typing import (
+    Any,
     Callable,
     Dict,
     FrozenSet,
@@ -371,6 +372,79 @@ def _cbloq_to_cirq_circuit(
     return cirq.Circuit(moments)
 
 
+def _process_classical_binst(binst: BloqInstance, pred_cxns, datamap: Dict[Soquet, NDArray]):
+    print(f"Applying {binst}")
+    for k, v in datamap.items():
+        print('  ', k.pretty(), v)
+
+    # Track inter-Bloq name changes
+    for cxn in pred_cxns:
+        datamap[cxn.right] = datamap[cxn.left]
+        del datamap[cxn.left]
+
+    bloq = binst.bloq
+
+    # Pull out the qubits from soqmap into qumap which has string keys.
+    # This implicitly joins things with the same name.
+    indata = {}
+    for reg in bloq.registers.lefts():
+        full_shape = reg.wireshape + (reg.bitsize,)
+        arg = np.empty(full_shape)
+
+        for idx in reg.wire_idxs():
+            soq = Soquet(binst, reg, idx=idx)
+            arg[idx, :] = datamap[soq]
+            del datamap[soq]
+
+        indata[reg.name] = arg
+
+    outdata = bloq.apply_classical(**indata)
+
+    # We pluck things back out from their collapsed by-name qumap into soqmap
+    # This does implicit splitting.
+    for reg, arr in zip(bloq.registers.rights(), outdata):
+        arr = np.asarray(arr)
+        for ri in reg.wire_idxs():
+            soq = Soquet(binst, reg, idx=ri)
+            datamap[soq] = arr[ri]
+
+
+def _apply_classical_cbloq(
+    registers: FancyRegisters, data: Dict[str, NDArray], binst_graph: nx.DiGraph
+):
+    datamap: Dict[Soquet, Any] = {}
+    for reg in registers.lefts():
+        arr = np.asarray(data[reg.name])
+        assert arr.shape == reg.wireshape + (reg.bitsize,), arr.shape
+        for ii in reg.wire_idxs():
+            datamap[Soquet(LeftDangle, reg, idx=ii)] = arr[ii]
+
+    for binst in nx.topological_sort(binst_graph):
+        if isinstance(binst, DanglingT):
+            continue
+        pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
+        _process_classical_binst(binst, pred_cxns, datamap)
+
+    final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
+    for cxn in final_preds:
+        datamap[cxn.right] = datamap[cxn.left]
+        del datamap[cxn.left]
+
+    final_data = {}
+    for reg in registers.rights():
+        full_shape = reg.wireshape + (reg.bitsize,)
+        arg = np.empty(full_shape)
+
+        for idx in reg.wire_idxs():
+            soq = Soquet(RightDangle, reg, idx=idx)
+            arg[idx] = datamap[soq]
+            del datamap[soq]
+
+        final_data[reg.name] = arg
+
+    return final_data
+
+
 def _cxn_to_soq_dict(
     regs: Iterable[FancyRegister],
     cxns: Iterable[Connection],
@@ -523,7 +597,7 @@ def _map_soq_dict(
                 return soq
 
             if soq.idx:
-                return in_soqs[soq.reg.name][soq.idx]
+                return np.asarray(in_soqs[soq.reg.name])[soq.idx]
             else:
                 return in_soqs[soq.reg.name]
 
@@ -738,7 +812,7 @@ class CompositeBloqBuilder:
         )
         return binst, out_soqs
 
-    def add_from(self, cbloq: CompositeBloq, **insoqs: SoquetT) -> Tuple[SoquetT, ...]:
+    def add_from(self, bloq: Bloq, **insoqs: SoquetT) -> Tuple[SoquetT, ...]:
         """Add all the sub-bloqs from `cbloq` to the composite bloq under construction.
 
         Args:
@@ -748,6 +822,11 @@ class CompositeBloqBuilder:
         Returns:
             The output soquets from `cbloq`.
         """
+        if isinstance(bloq, CompositeBloq):
+            cbloq = bloq
+        else:
+            cbloq = bloq.decompose_bloq()
+
         binst_map = {}
         for binst, soqs in cbloq.iter_bloqsoqs(in_soqs=insoqs, binst_map=binst_map):
             new_binst, _ = self.add_2(binst.bloq, **soqs)
