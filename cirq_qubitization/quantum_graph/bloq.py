@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 if TYPE_CHECKING:
     import cirq
 
+    from cirq_qubitization import TComplexity
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
@@ -110,6 +111,14 @@ class Bloq(metaclass=abc.ABCMeta):
         outgoing: Dict[str, 'SoquetT'],
     ):
         raise NotImplementedError("This bloq does not support tensor contraction.")
+
+    def t_complexity(self) -> 'TComplexity':
+        """The `TComplexity` for this bloq.
+
+        By default, this will recurse into this bloq's decomposition but this
+        method can be overriden with a known value.
+        """
+        return self.decompose_bloq().t_complexity()
 
     # ----- cirq stuff -----
 
