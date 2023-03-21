@@ -55,5 +55,5 @@ bloqs can represent high-level computations like "ModularExponentiation" or
 "Quantum Phase Estimation".
 
 Low-level `Bloq`s where all `FancyRegister`s have `bitsize=1`, `wireshape=(n,)`,
-and `side=Side.THRU` we generally name "gates". Registers that satisfy these conditions
+and `side=Side.THRU` we generally name "gates". Bloqs that satisfy these conditions
 are similar to gates found in other quantum computing libraries.
