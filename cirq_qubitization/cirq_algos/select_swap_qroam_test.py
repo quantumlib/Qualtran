@@ -2,7 +2,7 @@ import cirq
 import numpy as np
 import pytest
 
-import cirq_qubitization
+import cirq_qubitization as cq
 from cirq_qubitization import cirq_infra
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
@@ -11,12 +11,16 @@ from cirq_qubitization.cirq_infra import testing as cq_testing
 @pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
 @pytest.mark.parametrize("block_size", [None, 1, 2, 3])
 def test_select_swap_qrom(data, block_size):
-    qrom = cirq_qubitization.SelectSwapQROM(*data, block_size=block_size)
+    qrom = cq.SelectSwapQROM(*data, block_size=block_size)
     qubit_regs = qrom.registers.get_named_qubits()
     selection = qubit_regs["selection"]
     selection_q, selection_r = selection[: qrom.selection_q], selection[qrom.selection_q :]
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
-    qrom_circuit = cirq.Circuit(cirq.decompose(qrom.on_registers(**qubit_regs)))
+
+    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cq.cirq_infra.memory_management_context(greedy_mm):
+        qrom_circuit = cirq.Circuit(cirq.decompose(qrom.on_registers(**qubit_regs)))
+
     dirty_target_ancilla = [
         q for q in qrom_circuit.all_qubits() if isinstance(q, cirq_infra.BorrowableQubit)
     ]
@@ -51,14 +55,14 @@ def test_select_swap_qrom(data, block_size):
 
 
 def test_qrom_repr():
-    qrom = cirq_qubitization.SelectSwapQROM([1, 2], [3, 5])
+    qrom = cq.SelectSwapQROM([1, 2], [3, 5])
     cirq.testing.assert_equivalent_repr(qrom, setup_code="import cirq_qubitization\n")
 
 
 def test_qroam_diagram():
     data = [[1, 2, 3], [4, 5, 6]]
     blocksize = 2
-    qrom = cirq_qubitization.SelectSwapQROM(*data, block_size=blocksize)
+    qrom = cq.SelectSwapQROM(*data, block_size=blocksize)
     q = cirq.LineQubit.range(cirq.num_qubits(qrom))
     circuit = cirq.Circuit(qrom.on_registers(**qrom.registers.split_qubits(q)))
     cirq.testing.assert_has_diagram(
@@ -83,4 +87,4 @@ def test_qroam_diagram():
 
 def test_qroam_raises():
     with pytest.raises(ValueError, match="must be of equal length"):
-        _ = cirq_qubitization.SelectSwapQROM([1, 2], [1, 2, 3])
+        _ = cq.SelectSwapQROM([1, 2], [1, 2, 3])
