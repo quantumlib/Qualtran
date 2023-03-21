@@ -5,6 +5,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
+from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
@@ -38,6 +39,9 @@ class Split(Bloq):
     ) -> 'cirq.GateOperation':
         return None
 
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity()
+
 
 @frozen
 class Join(Bloq):
@@ -62,6 +66,9 @@ class Join(Bloq):
         self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
     ) -> 'cirq.GateOperation':
         return None
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity()
 
     def add_my_tensors(
         self,

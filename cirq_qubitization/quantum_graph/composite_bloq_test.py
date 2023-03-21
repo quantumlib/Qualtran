@@ -9,6 +9,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
+from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 from cirq_qubitization.quantum_graph.composite_bloq import (
@@ -365,6 +366,9 @@ class Atom(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters.build(stuff=1)
 
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(t=100)
+
 
 class TestSerialBloq(Bloq):
     @cached_property
@@ -448,3 +452,12 @@ def test_add_duplicate_register():
     y = bb.add_register('control', 2)
     with pytest.raises(ValueError):
         bb.finalize(control=y)
+
+
+def test_t_complexity():
+    assert Atom().t_complexity().t == 100
+    assert TestSerialBloq().decompose_bloq().t_complexity().t == 3 * 100
+    assert TestParallelBloq().decompose_bloq().t_complexity().t == 3 * 100
+
+    assert TestSerialBloq().t_complexity().t == 3 * 100
+    assert TestParallelBloq().t_complexity().t == 3 * 100

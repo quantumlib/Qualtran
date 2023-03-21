@@ -6,7 +6,8 @@ Quantum Graph
 We represent our quantum program as a directed graph of quantum variables passing through
 operations called `Bloq`s. The container representing a program or subroutine is 
 `CompositeBloq`. Since it is an immutable data structure, we use `CompositeBloqBuilder`
-to help us build composite bloqs.
+to help us build composite bloqs. We use the abbreviated variable name `cbloq` for
+generic composite bloqs.
 
 >>> bb = CompositeBloqBuilder()
 >>> q = bb.allocate(1)       # allocate a quantum variable.
@@ -46,3 +47,13 @@ from a potentially-multidimensional array of them.
 `Soquet`s are the main quantum variables a user-developer uses to wire up bloqs. The user
 should assign meaningful names to the soquets or array of soquets and treat them as opaque
 types.
+
+## Gates
+
+Bloqs support multi-dimensional, arbitrary-bitwidth, potentially asymmetric registers. As such,
+bloqs can represent high-level computations like "ModularExponentiation" or 
+"Quantum Phase Estimation".
+
+Low-level `Bloq`s where all `FancyRegister`s have `bitsize=1`, `wireshape=(n,)`,
+and `side=Side.THRU` we generally name "gates". Bloqs that satisfy these conditions
+are similar to gates found in other quantum computing libraries.
