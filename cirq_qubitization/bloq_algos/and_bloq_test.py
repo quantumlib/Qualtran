@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 import cirq_qubitization.cirq_infra.testing as cq_testing
-from cirq_qubitization.bloq_algos.and_bloq import And
+from cirq_qubitization.bloq_algos.and_bloq import And, MultiAnd
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
@@ -13,6 +13,12 @@ def _make_and():
     from cirq_qubitization.bloq_algos.and_bloq import And
 
     return And()
+
+
+def _make_multi_and():
+    from cirq_qubitization.bloq_algos.and_bloq import MultiAnd
+
+    return MultiAnd(cvs=(1, 1, 1, 1))
 
 
 @pytest.mark.parametrize('cv2', [0, 1])
@@ -72,6 +78,34 @@ def test_inverse():
 
     mat = cbloq.tensor_contract()
     np.testing.assert_allclose(np.eye(4), mat)
+
+
+def test_multi_truth_table():
+    state = [ZeroState(), OneState()]
+    eff = [ZeroEffect(), OneEffect()]
+
+    n = 4
+    rs = np.random.RandomState(52)
+    all_cvs = rs.choice([0, 1], size=(2, n))
+    # ctrl_strings = np.array(list(itertools.product([0,1], repeat=n)))
+    ctrl_strings = rs.choice([0, 1], size=(10, n))
+
+    for cvs in all_cvs:
+        for ctrl_string in ctrl_strings:
+            bb = CompositeBloqBuilder()
+            ctrl_qs = [bb.add(state[c])[0] for c in ctrl_string]
+
+            ctrl_qs, junk, res = bb.add_from(MultiAnd(cvs), ctrl=ctrl_qs)
+
+            for c, q in zip(ctrl_string, ctrl_qs):
+                bb.add(eff[c], q=q)
+
+            cbloq = bb.finalize(junk=junk, res=res)
+
+            vec = cbloq.tensor_contract()
+            should_be = np.all(ctrl_string == cvs)
+            *junk_is, res_i = np.where(vec.reshape((2,) * (n - 1)))
+            assert res_i == should_be, ctrl_string
 
 
 def test_notebook():
