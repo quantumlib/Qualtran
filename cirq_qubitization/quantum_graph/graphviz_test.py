@@ -5,7 +5,7 @@ from typing import Dict
 import pytest
 from attrs import frozen
 
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
@@ -74,4 +74,4 @@ def test_graphviz(draw_cls):
 
 
 def test_notebook():
-    cq_testing.execute_notebook('quantum_graph/graphviz')
+    cq_testing.execute_notebook('graphviz')

@@ -1,8 +1,8 @@
+import fqe
 import numpy as np
 from pyscf import gto, scf
-import fqe
 
-from cirq_qubitization.pyscf_utils.fci_utility import get_spectrum, get_fqe_wfns
+from cirq_qubitization.pyscf_utils.fci_utility import get_fqe_wfns, get_spectrum
 
 
 def test_fci_util():

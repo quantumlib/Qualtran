@@ -43,7 +43,7 @@ import cirq_qubitization.bloq_algos.basic_gates.cnot_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
 import cirq_qubitization.quantum_graph
-from cirq_qubitization.gate_with_registers import GateWithRegisters
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 from cirq_qubitization.quantum_graph.bloq import Bloq
 
 
@@ -114,19 +114,24 @@ class NotebookSpec:
 NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
     'apply_gate_to_lth_target': NotebookSpec(
         title='Apply to L-th Target',
-        module=cirq_qubitization.apply_gate_to_lth_target,
+        module=cirq_qubitization.cirq_algos.apply_gate_to_lth_target,
+        directory='./cirq_algos',
         gate_specs=[GateNbSpec(jaf._make_ApplyGateToLthQubit)],
     ),
     'qrom': NotebookSpec(
-        title='QROM', module=cirq_qubitization.qrom, gate_specs=[GateNbSpec(jaf._make_QROM)]
+        title='QROM',
+        module=cirq_qubitization.cirq_algos.qrom,
+        gate_specs=[GateNbSpec(jaf._make_QROM)],
+        directory='./cirq_algos',
     ),
     'swap_network': NotebookSpec(
         title='Swap Network',
-        module=cirq_qubitization.swap_network,
+        module=cirq_qubitization.cirq_algos.swap_network,
         gate_specs=[
             GateNbSpec(jaf._make_MultiTargetCSwap),
             GateNbSpec(jaf._make_MultiTargetCSwapApprox),
         ],
+        directory='./cirq_algos',
     ),
     'generic_select': NotebookSpec(
         title='Generic Select',
@@ -226,7 +231,7 @@ _IMPORTS = """\
 import cirq
 import numpy as np
 import cirq_qubitization
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.jupyter_tools import display_gate_and_compilation, show_bloq
 from typing import *\
 """

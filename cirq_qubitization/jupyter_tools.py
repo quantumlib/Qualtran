@@ -3,8 +3,8 @@ import cirq.contrib.svg.svg as ccsvg
 import IPython.display
 import ipywidgets
 
-import cirq_qubitization.testing as cq_testing
-from cirq_qubitization.gate_with_registers import Registers
+import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.graphviz import PrettyGraphDrawer
 
@@ -43,7 +43,9 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
         raise ValueError("Circuit is empty.")
 
     if registers is not None:
-        qubit_order = registers.merge_qubits(**registers.get_named_qubits())
+        qubit_order = cirq.QubitOrder.explicit(
+            registers.merge_qubits(**registers.get_named_qubits()), fallback=cirq.QubitOrder.DEFAULT
+        )
     else:
         qubit_order = cirq.QubitOrder.DEFAULT
     tdd = circuit.to_text_diagram_drawer(transpose=False, qubit_order=qubit_order)
