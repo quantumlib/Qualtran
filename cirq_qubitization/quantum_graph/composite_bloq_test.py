@@ -51,7 +51,7 @@ def _manually_make_test_cbloq_cxns():
 class TestTwoCNOT(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(q1=1, q2=2)
+        return FancyRegisters.build(q1=1, q2=1)
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', q1: 'Soquet', q2: 'Soquet'

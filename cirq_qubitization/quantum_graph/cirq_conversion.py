@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TypeVar,
     Union,
 )
 
@@ -34,17 +35,30 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     Soquet,
 )
 
-SoquetT = Union[Soquet, NDArray[Soquet]]
+
+def _for_in_vals(
+    reg: FancyRegister, binst: BloqInstance, soq_assign: Dict[Soquet, NDArray['cirq.Qid']]
+) -> NDArray['cirq.Qid']:
+    full_shape = reg.wireshape + (reg.bitsize,)
+    arg = np.empty(full_shape, dtype=object)
+
+    for idx in reg.wire_idxs():
+        soq = Soquet(binst, reg, idx=idx)
+        arg[idx] = soq_assign[soq]
+
+    return arg
 
 
 def _process_binst(
-    binst: BloqInstance, soqmap: Dict[Soquet, Sequence[cirq.Qid]], binst_graph: nx.DiGraph
+    binst: BloqInstance,
+    pred_cxns: Iterable[Connection],
+    soq_assign: Dict[Soquet, NDArray[cirq.Qid]],
 ) -> Optional[cirq.Operation]:
     """Helper function used in `_cbloq_to_cirq_circuit`.
 
     Args:
         binst: The current BloqInstance to process
-        soqmap: The current mapping between soquets and qubits that *is updated by this function*.
+        soq_assign: The current mapping between soquets and qubits that *is updated by this function*.
             At input, the mapping should contain values for all of binst's soquets. Afterwards,
             it should contain values for all of binst's successors' soquets.
         binst_graph: Used for finding binst's successors to update soqmap.
@@ -53,47 +67,31 @@ def _process_binst(
         an operation if there is a corresponding one in Cirq. Some bookkeeping Bloqs will not
         correspond to Cirq operations.
     """
-    if isinstance(binst, DanglingT):
-        return None
-
-    pred_cxns, _ = _binst_to_cxns(binst, binst_graph)
-
     # Track inter-Bloq name changes
     for cxn in pred_cxns:
-        soqmap[cxn.right] = soqmap[cxn.left]
-        del soqmap[cxn.left]
+        soq_assign[cxn.right] = soq_assign[cxn.left]
+        del soq_assign[cxn.left]
+
+    def _in_vals(reg: FancyRegister):
+        return _for_in_vals(reg, binst, soq_assign=soq_assign)
 
     bloq = binst.bloq
+    in_vals = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
 
-    # Pull out the qubits from soqmap into qumap which has string keys.
-    # This implicitly joins things with the same name.
-    quregs: Dict[str, List[cirq.Qid]] = defaultdict(list)
-    for reg in bloq.registers.lefts():
-        for li in reg.wire_idxs():
-            soq = Soquet(binst, reg, idx=li)
-            quregs[reg.name].extend(soqmap[soq])
-            del soqmap[soq]
+    op = bloq.on_registers(**in_vals)
+    out_vals = in_vals.copy()
 
-    op = bloq.on_registers(**quregs)
-
-    # We pluck things back out from their collapsed by-name qumap into soqmap
-    # This does implicit splitting.
     for reg in bloq.registers.rights():
-        qarr = np.asarray(quregs[reg.name])
-        for ri in reg.wire_idxs():
-            soq = Soquet(binst, reg, idx=ri)
-            qs = qarr[ri]
-            if isinstance(qs, np.ndarray):
-                qs = qs.tolist()
-            else:
-                qs = [qs]
-            soqmap[soq] = qs
+        arr = np.asarray(out_vals[reg.name])
+        for idx in reg.wire_idxs():
+            soq = Soquet(binst, reg, idx=idx)
+            soq_assign[soq] = arr[idx]
 
     return op
 
 
 def _cbloq_to_cirq_circuit(
-    quregs: Dict[FancyRegister, NDArray[cirq.Qid]], binst_graph: nx.DiGraph
+    registers: FancyRegisters, quregs: Dict[str, NDArray[cirq.Qid]], binst_graph: nx.DiGraph
 ) -> cirq.Circuit:
     """Transform CompositeBloq components into a `cirq.Circuit`.
 
@@ -107,21 +105,32 @@ def _cbloq_to_cirq_circuit(
     Returns:
         A `cirq.Circuit` for the quantum compute graph.
     """
-    # A mapping of soquet to qubits that we update as operations are appended to the circuit.
-    soqmap = {}
-    for reg in quregs.keys():
-        qarr = np.asarray(quregs[reg])
-        for ii in reg.wire_idxs():
-            soqmap[Soquet(LeftDangle, reg, idx=ii)] = qarr[ii]
+    soq_assign: Dict[Soquet, NDArray[cirq.Qid]] = {}
+
+    # LeftDangle assignment
+    for reg in registers.lefts():
+        qarr = np.asarray(quregs[reg.name]).astype(object, copy=False)
+
+        if qarr.shape != reg.wireshape + (reg.bitsize,):
+            raise ValueError(f"Cirq qubit array for {reg} is the wrong shape: {qarr.shape}")
+
+        for idx in reg.wire_idxs():
+            soq = Soquet(LeftDangle, reg, idx=idx)
+            soq_assign[soq] = qarr[idx]
 
     moments: List[cirq.Moment] = []
-    for i, binsts in enumerate(nx.topological_generations(binst_graph)):
-        mom: List[cirq.Operation] = []
+    for binsts in nx.topological_generations(binst_graph):
+        moment: List[cirq.Operation] = []
+
         for binst in binsts:
-            op = _process_binst(binst, soqmap, binst_graph)
+            if isinstance(binst, DanglingT):
+                continue
+
+            pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
+            op = _process_binst(binst, pred_cxns, soq_assign)
             if op:
-                mom.append(op)
-        if mom:
-            moments.append(cirq.Moment(mom))
+                moment.append(op)
+        if moment:
+            moments.append(cirq.Moment(moment))
 
     return cirq.Circuit(moments)

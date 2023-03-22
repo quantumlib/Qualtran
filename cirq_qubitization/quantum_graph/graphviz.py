@@ -381,9 +381,9 @@ class PrettyGraphDrawer(GraphDrawer):
 class ClassicalSimGraphDrawer(PrettyGraphDrawer):
     def __init__(self, bloq, data):
         super().__init__(bloq=bloq)
-        from cirq_qubitization.quantum_graph.classical_sim import _apply_classical_cbloq
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_apply_classical
 
-        res, datamap = _apply_classical_cbloq(self._cbloq.registers, data, self._cbloq._binst_graph)
+        res, datamap = _cbloq_apply_classical(self._cbloq.registers, data, self._cbloq._binst_graph)
         self.datamap = datamap
 
     def cxn_label(self, cxn: Connection) -> str:

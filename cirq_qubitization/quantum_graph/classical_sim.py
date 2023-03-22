@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TypeVar,
     Union,
 )
 
@@ -34,76 +35,79 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     Soquet,
 )
 
-SoquetT = Union[Soquet, NDArray[Soquet]]
+T = TypeVar('T')
 
 
-def _process_classical_binst(binst: BloqInstance, pred_cxns, datamap: Dict[Soquet, NDArray]):
+def _for_in_vals(
+    reg: FancyRegister, binst: BloqInstance, soq_assign: Dict[Soquet, NDArray[np.uint8]]
+) -> NDArray[np.uint8]:
+    full_shape = reg.wireshape + (reg.bitsize,)
+    arg = np.empty(full_shape, dtype=np.int8)
+
+    for idx in reg.wire_idxs():
+        soq = Soquet(binst, reg, idx=idx)
+        arg[idx] = soq_assign[soq]
+
+    return arg
+
+
+def _process_classical_binst(
+    binst: BloqInstance, pred_cxns: Iterable[Connection], soq_assign: Dict[Soquet, NDArray[int]]
+):
     print(f"Applying {binst}")
 
     # Track inter-Bloq name changes
     for cxn in pred_cxns:
-        datamap[cxn.right] = datamap[cxn.left]
+        soq_assign[cxn.right] = soq_assign[cxn.left]
+
+    # Formulate input with expected API
+    def _in_vals(reg: FancyRegister):
+        return _for_in_vals(reg, binst, soq_assign=soq_assign)
 
     bloq = binst.bloq
+    in_vals = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
 
-    # Pull out the qubits from soqmap into qumap which has string keys.
-    # This implicitly joins things with the same name.
-    indata = {}
-    for reg in bloq.registers.lefts():
-        full_shape = reg.wireshape + (reg.bitsize,)
-        arg = np.empty(full_shape)
+    # Apply function
+    out_vals = bloq.apply_classical(**in_vals)
 
+    # Use output
+    for out_i, reg in bloq.registers.rights():
+        arr = np.asarray(out_vals[out_i]).astype(np.uint8, casting='safe', copy=False)
         for idx in reg.wire_idxs():
             soq = Soquet(binst, reg, idx=idx)
-            arg[idx, :] = datamap[soq]
-
-        indata[reg.name] = arg
-
-    for k, v in indata.items():
-        print('  ', k, v)
-    outdata = bloq.apply_classical(**indata)
-    print('--')
-    for v in outdata:
-        print('  ', v)
-
-    # We pluck things back out from their collapsed by-name qumap into soqmap
-    # This does implicit splitting.
-    for reg, arr in zip(bloq.registers.rights(), outdata):
-        arr = np.asarray(arr)
-        for ri in reg.wire_idxs():
-            soq = Soquet(binst, reg, idx=ri)
-            datamap[soq] = arr[ri]
+            soq_assign[soq] = arr[idx]
 
 
-def _apply_classical_cbloq(
-    registers: FancyRegisters, data: Dict[str, NDArray], binst_graph: nx.DiGraph
+def _cbloq_apply_classical(
+    registers: FancyRegisters, vals: Dict[str, NDArray], binst_graph: nx.DiGraph
 ):
-    datamap: Dict[Soquet, Any] = {}
-    for reg in registers.lefts():
-        arr = np.asarray(data[reg.name])
-        assert arr.shape == reg.wireshape + (reg.bitsize,), arr.shape
-        for ii in reg.wire_idxs():
-            datamap[Soquet(LeftDangle, reg, idx=ii)] = arr[ii]
+    soq_assign: Dict[Soquet, NDArray[int]] = {}
 
+    # LeftDangle assignment
+    for reg in registers.lefts():
+        arr = np.asarray(vals[reg.name]).astype(np.uint8, casting='safe', copy=False)
+        if arr.shape != reg.wireshape + (reg.bitsize,):
+            raise ValueError(f"Classical values for {reg} are the wrong shape: {arr.shape}")
+
+        for idx in reg.wire_idxs():
+            soq = Soquet(LeftDangle, reg, idx=idx)
+            soq_assign[soq] = arr[idx]
+
+    # Bloq-by-bloq application
     for binst in nx.topological_sort(binst_graph):
         if isinstance(binst, DanglingT):
             continue
         pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-        _process_classical_binst(binst, pred_cxns, datamap)
+        _process_classical_binst(binst, pred_cxns, soq_assign)
 
+    # Track bloq-to-dangle name changes
     final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
     for cxn in final_preds:
-        datamap[cxn.right] = datamap[cxn.left]
+        soq_assign[cxn.right] = soq_assign[cxn.left]
 
-    final_data = {}
-    for reg in registers.rights():
-        full_shape = reg.wireshape + (reg.bitsize,)
-        arg = np.empty(full_shape)
+    # Formulate output with expected API
+    def _f_vals(reg: FancyRegister):
+        return _for_in_vals(reg, RightDangle, soq_assign)
 
-        for idx in reg.wire_idxs():
-            soq = Soquet(RightDangle, reg, idx=idx)
-            arg[idx] = datamap[soq]
-
-        final_data[reg.name] = arg
-
-    return final_data, datamap
+    final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}
+    return final_vals, soq_assign

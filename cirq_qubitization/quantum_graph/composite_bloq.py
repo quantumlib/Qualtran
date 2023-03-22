@@ -99,8 +99,7 @@ class CompositeBloq(Bloq):
         # First, convert register names to registers.
         from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
 
-        quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
-        return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
+        return _cbloq_to_cirq_circuit(self.registers, quregs, self._binst_graph)
 
     @classmethod
     def from_cirq_circuit(cls, circuit: cirq.Circuit) -> 'CompositeBloq':
