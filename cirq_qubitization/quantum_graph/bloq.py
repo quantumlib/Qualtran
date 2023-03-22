@@ -120,10 +120,9 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().t_complexity()
 
-    # ----- cirq stuff -----
-
-    def decompose_from_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
-        yield from self.decompose_bloq().to_cirq_circuit(**qubit_regs)
+    def on_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
+        """Support for conversion to a Cirq circuit."""
+        raise NotImplementedError("This bloq does not support Cirq conversion.")
 
 
 class NoCirqEquivalent(NotImplementedError):
