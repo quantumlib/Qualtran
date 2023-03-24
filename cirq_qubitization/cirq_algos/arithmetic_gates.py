@@ -2,8 +2,8 @@ from typing import Iterable, Sequence, Union
 
 import cirq
 
-from cirq_qubitization import bit_tools
-from cirq_qubitization.and_gate import And
+from cirq_qubitization import bit_tools, cirq_infra
+from cirq_qubitization.cirq_algos.and_gate import And
 from cirq_qubitization.t_complexity_protocol import TComplexity
 
 
@@ -36,13 +36,13 @@ class LessThanGate(cirq.ArithmeticGate):
         adjoint = []
 
         # Initially our belief is that the numbers are equal.
-        are_equal = cirq.NamedQubit('e')
+        [are_equal] = cirq_infra.qalloc(1)
         yield cirq.X(are_equal)
         adjoint.append(cirq.X(are_equal))
 
         # Scan from left to right.
         # `are_equal` contains whether the numbers are equal so far.
-        ancilla = cirq.NamedQubit.range(len(self._input_register), prefix='c')
+        ancilla = cirq_infra.qalloc(len(self._input_register))
         for b, q, a in zip(
             bit_tools.iter_bits(self._val, len(self._input_register)), qubits, ancilla
         ):
@@ -65,6 +65,7 @@ class LessThanGate(cirq.ArithmeticGate):
                 adjoint.append(cirq.CNOT(a, are_equal))
 
         yield from reversed(adjoint)
+        cirq_infra.qfree([are_equal] + ancilla)
 
     def _has_unitary_(self):
         return True
