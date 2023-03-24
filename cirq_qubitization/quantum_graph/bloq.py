@@ -1,18 +1,19 @@
 import abc
-from typing import Dict, TYPE_CHECKING
+from typing import Any, Dict, TYPE_CHECKING
 
+import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     import cirq
 
+    from cirq_qubitization import TComplexity
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
         SoquetT,
     )
     from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
-    from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -33,7 +34,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', **soqs: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
+    ) -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
         Bloq definers should override this method. If you already have an instance of a `Bloq`,
@@ -66,8 +67,10 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
-        bb = CompositeBloqBuilder(self.registers)
-        out_soqs = self.build_composite_bloq(bb=bb, **bb.initial_soquets())
+        bb, initial_soqs = CompositeBloqBuilder.from_registers(
+            self.registers, add_registers_allowed=False
+        )
+        out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
         if out_soqs is NotImplemented:
             raise NotImplementedError(f"Cannot decompose {self}.")
 
@@ -81,16 +84,45 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
-        bb = CompositeBloqBuilder(self.registers)
-        ret_soqs_tuple = bb.add(self, **bb.initial_soquets())
+        bb, initial_soqs = CompositeBloqBuilder.from_registers(
+            self.registers, add_registers_allowed=False
+        )
+        ret_soqs_tuple = bb.add(self, **initial_soqs)
         assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
 
-    # ----- cirq stuff -----
+    def tensor_contract(self) -> NDArray:
+        """Return a contracted, dense ndarray representing this bloq.
 
-    def decompose_from_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
-        yield from self.decompose_bloq().to_cirq_circuit(**qubit_regs)
+        This constructs a tensor network and then contracts it according to our registers,
+        i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
+        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
+        of (right, left) indices.
+        """
+        return self.as_composite_bloq().tensor_contract()
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        raise NotImplementedError("This bloq does not support tensor contraction.")
+
+    def t_complexity(self) -> 'TComplexity':
+        """The `TComplexity` for this bloq.
+
+        By default, this will recurse into this bloq's decomposition but this
+        method can be overriden with a known value.
+        """
+        return self.decompose_bloq().t_complexity()
+
+    def on_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
+        """Support for conversion to a Cirq circuit."""
+        raise NotImplementedError("This bloq does not support Cirq conversion.")
 
 
 class NoCirqEquivalent(NotImplementedError):

@@ -1,14 +1,29 @@
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, FrozenSet, Iterable, Iterator, List, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    overload,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
+import attrs
 import cirq
 import networkx as nx
 import numpy as np
 from numpy.typing import NDArray
 
+from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -81,8 +96,39 @@ class CompositeBloq(Bloq):
                 Consider using `**self.registers.get_named_qubits()` for this argument.
         """
         # First, convert register names to registers.
-        quregs = {self.registers.get_left(reg_name): qubits for reg_name, qubits in quregs.items()}
+        quregs = {reg: quregs[reg.name] for reg in self.registers.lefts()}
         return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
+
+    @classmethod
+    def from_cirq_circuit(cls, circuit: cirq.Circuit) -> 'CompositeBloq':
+        """Construct a composite bloq from a Cirq circuit.
+
+        Each `cirq.Operation` will be wrapped into a `CirqGate` wrapper bloq. The
+        resultant composite bloq will represent a unitary with one thru-register
+        named "qubits" of wireshape `(n_qubits,)`.
+        """
+        from cirq_qubitization.quantum_graph.cirq_gate import cirq_circuit_to_cbloq
+
+        return cirq_circuit_to_cbloq(circuit)
+
+    def tensor_contract(self) -> NDArray:
+        """Return a contracted, dense ndarray representing this composite bloq.
+
+        This constructs a tensor network and then contracts it according to our registers,
+        i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
+        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
+        of (right, left) indices.
+        """
+        from cirq_qubitization.quantum_graph.quimb_sim import _cbloq_to_dense
+
+        return _cbloq_to_dense(self)
+
+    def t_complexity(self) -> TComplexity:
+        """The `TComplexity` for a composite bloq is the sum of its components' counts."""
+        rc = TComplexity()
+        for binst in self.bloq_instances:
+            rc += binst.bloq.t_complexity()
+        return rc
 
     def as_composite_bloq(self) -> 'CompositeBloq':
         """This override just returns the present composite bloq."""
@@ -111,6 +157,74 @@ class CompositeBloq(Bloq):
                 continue
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=g)
             yield binst, pred_cxns, succ_cxns
+
+    def iter_bloqsoqs(
+        self,
+        *,
+        in_soqs: Optional[Dict[str, SoquetT]] = None,
+        binst_map: Optional[Dict[BloqInstance, BloqInstance]] = None,
+    ) -> Iterator[Tuple[BloqInstance, Dict[str, SoquetT]]]:
+        """Iterate over bloq instances and their input soquets.
+
+        This method is helpful for "adding from" a composite bloq.
+
+        >>> bb, init_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        >>> binst_map = {}
+        >>> for binst, soqs in self.iter_bloqsoqs(in_soqs=init_soqs, binst_map=binst_map):
+        >>>     new_binst, _ = bb.add_2(binst.bloq, **soqs)
+        >>>     binst_map[binst] = new_binst
+        >>> return bb.finalize(**self.final_soqs(binst_map))
+
+        Args:
+            in_soqs: If provided, map LeftDangle soquets to these already-existing soquets.
+            binst_map: If provided, replace the bloq instance field of each returned soquet
+                according to this mapping. This is useful if you are building up a new
+                composite bloq based on the iteration results of this funciton: the returned
+                soquets can be updated to point to the new composite bloq constituents.
+        """
+        if in_soqs is not None:
+            if not sorted(in_soqs.keys()) == sorted(reg.name for reg in self.registers.lefts()):
+                raise ValueError(
+                    f"Improper input soquets for `iter_bloqsoqs()`. "
+                    f"Expected {self.registers.lefts()}."
+                ) from None
+
+        for binst, preds, succs in self.iter_bloqnections():
+            soqdict = _cxn_to_soq_dict(
+                binst.bloq.registers, preds, get_me=lambda x: x.right, get_assign=lambda x: x.left
+            )
+            if binst_map is not None or in_soqs is not None:
+                soqdict = _map_soq_dict(soqdict, in_soqs, binst_map)
+            yield binst, soqdict
+
+    def final_soqs(
+        self, binst_map: Optional[Dict[BloqInstance, BloqInstance]] = None
+    ) -> Dict[str, SoquetT]:
+        """Return the final output soquets.
+
+        This method is helpful for finalizing an "add from" operation, see `iter_bloqsoqs`.
+
+        Args:
+            binst_map: If provided, replace the bloq instance field of each returned soquet
+                according to this mapping.
+        """
+        final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
+        soqdict = _cxn_to_soq_dict(
+            self.registers, final_preds, get_me=lambda x: x.right, get_assign=lambda x: x.left
+        )
+        if binst_map is not None:
+            soqdict = _map_soq_dict(soqdict, None, binst_map)
+        return soqdict
+
+    def copy(self) -> 'CompositeBloq':
+        """Create a copy of this composite bloq by re-building it."""
+        bb, init_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        binst_map = {}
+        for binst, soqs in self.iter_bloqsoqs(in_soqs=init_soqs, binst_map=binst_map):
+            new_binst, _ = bb.add_2(binst.bloq, **soqs)
+            binst_map[binst] = new_binst
+
+        return bb.finalize(**self.final_soqs(binst_map))
 
     @staticmethod
     def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
@@ -277,73 +391,321 @@ def _cbloq_to_cirq_circuit(
     return cirq.Circuit(moments)
 
 
+def _cxn_to_soq_dict(
+    regs: Iterable[FancyRegister],
+    cxns: Iterable[Connection],
+    get_me: Callable[[Connection], Soquet],
+    get_assign: Callable[[Connection], Soquet],
+) -> Dict[str, SoquetT]:
+    """Helper function to get a dictionary of incoming or outgoing soquets from a connection.
+
+    Args:
+        regs: Left or right registers (used as a reference to initialize multidimensional
+            registers correctly).
+        cxns: Predecessor or successor connections from which we get the soquets of interest.
+        get_me: A function that says which soquet is used to derive keys for the returned
+            dictionary. Generally: if `cxns` is predecessor connections, this will return the
+            `right` element of the connection and opposite of successor connections.
+        get_assign: A function that says which soquet is used to dervice the values for the
+            returned dictionary. Generally, this is the opposite side vs. `get_me`, but we
+            do something fancier in `cbloq_to_quimb`.
+    """
+    soqdict: Dict[str, SoquetT] = {}
+
+    # Initialize multi-dimensional dictionary values.
+    for reg in regs:
+        if reg.wireshape:
+            soqdict[reg.name] = np.empty(reg.wireshape, dtype=object)
+
+    # In the abstract: set `soqdict[me] = assign`. Specifically: use the register name as
+    # keys and handle multi-dimensional registers.
+    for cxn in cxns:
+        me = get_me(cxn)
+        assign = get_assign(cxn)
+
+        if me.reg.wireshape:
+            soqdict[me.reg.name][me.idx] = assign
+        else:
+            soqdict[me.reg.name] = assign
+
+    return soqdict
+
+
 class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
 
 
-def _initialize_soquets(regs: FancyRegisters) -> Tuple[Dict[str, SoquetT], Set[Soquet]]:
-    """Initialize input Soquets from left registers for bookkeeping in `CompositeBloqBuilder`.
+def _reg_to_soq(
+    binst: Union[BloqInstance, DanglingT], reg: FancyRegister, available: Set[Soquet]
+) -> SoquetT:
+    """Create the soquet or array of soquets for a register.
+
+    Args:
+        binst: The output soquet's bloq instance.
+        reg: The register
+        available: A set that we will add each individual, indexed soquet to (used for bookkeeping
+            in `CompositeBloqBuilder`).
 
     Returns:
-        initial_soqs: A mapping from register name to a Soquet or Soquets. For multi-dimensional
-            registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
-            registers, the value will be a `Soquet` object.
-        available: A flat set of all the `Soquet`s. During initialization, all Soquets are
-            available to be consumed. `CompositeBloqBuilder` will keep the set of available
-            Soquets up-to-date.
+        A Soquet or Soquets. For multi-dimensional
+        registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
+        registers, the value will be a `Soquet` object.
     """
-    available: Set[Soquet] = set()
-    initial_soqs: Dict[str, SoquetT] = {}
-    soqs: SoquetT
-    for reg in regs.lefts():
-        if reg.wireshape:
-            soqs = np.empty(reg.wireshape, dtype=object)
-            for ri in reg.wire_idxs():
-                soq = Soquet(LeftDangle, reg, idx=ri)
-                soqs[ri] = soq
-                available.add(soq)
-        else:
-            # Annoyingly, this must be a special case.
-            # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
-            # 'object'. This wouldn't happen--for example--with an integer array.
-            soqs = Soquet(LeftDangle, reg)
-            available.add(soqs)
+    if reg.wireshape:
+        soqs = np.empty(reg.wireshape, dtype=object)
+        for ri in reg.wire_idxs():
+            soq = Soquet(binst, reg, idx=ri)
+            soqs[ri] = soq
+            available.add(soq)
+        return soqs
 
-        initial_soqs[reg.name] = soqs
-    return initial_soqs, available
+    # Annoyingly, this must be a special case.
+    # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
+    # 'object'. This wouldn't happen--for example--with an integer array.
+    soqs = Soquet(binst, reg)
+    available.add(soqs)
+    return soqs
+
+
+def _process_soquets(
+    registers: Iterable[FancyRegister],
+    in_soqs: Dict[str, SoquetT],
+    debug_str: str,
+    func: Callable[[Soquet, FancyRegister, Tuple[int, ...]], None],
+) -> None:
+    """Process and validate `in_soqs` in the context of `registers`.
+
+    This implements the following "outer loop" and calls
+    `func(indexed_soquet, register, index)` for every `register` and
+    corresponding soquets (from `in_soqs`) in the input.
+
+    >>> for reg in registers:
+    >>>     for idx in reg.wire_idxs():
+    >>>        func(in_soqs[reg.name][idx], reg, idx)
+
+    We also perform input validation to make sure that the set of register names
+    used as keys for `in_soqs` is identical to set of registers passed in `registers`.
+
+    Args:
+        registers: The registers to use for expected keys of `in_soqs`.
+        in_soqs: A dictionary from register name to input soquets.
+        debug_str: A string to use in error messages identifying what's being processed.
+        func: A callable for operating on an individual (indexed) soquet. Must accept
+            the incoming, indexed soquet as well as the register and (left-)index it
+            has been mapped to.
+    """
+
+    for reg in registers:
+        try:
+            # if we want fancy indexing (which we do), we need numpy
+            # this also supports length-zero indexing natively, which is good too.
+            in_soq = np.asarray(in_soqs[reg.name])
+        except KeyError:
+            raise BloqBuilderError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
+
+        del in_soqs[reg.name]  # so we can check for surplus arguments.
+
+        for li in reg.wire_idxs():
+            idxed_soq = in_soq[li]
+            assert isinstance(idxed_soq, Soquet), idxed_soq
+            func(idxed_soq, reg, li)
+
+    if in_soqs:
+        raise BloqBuilderError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
+
+
+def _map_soq_dict(
+    soqdict: Dict[str, SoquetT],
+    in_soqs: Optional[Dict[str, SoquetT]],
+    binst_map: Optional[Dict[BloqInstance, BloqInstance]],
+) -> Dict[str, SoquetT]:
+    """Map the `binst` field of soquets.
+
+    Args:
+        soqdict: A dictionary containing the soquets to be mapped.
+        in_soqs: The mapping used for any LeftDangle encountered. This lets us map
+            left dangling soquets to output soquets from elsewhere in the composite bloq graph.
+        binst_map: The mapping used to transform the `binst` field of non-dangling soquets.
+    """
+
+    if in_soqs is None:
+
+        def _map_in_soq(soq: Soquet) -> Soquet:
+            return soq
+
+    else:
+
+        def _map_in_soq(soq: Soquet) -> Soquet:
+            if soq.binst is not LeftDangle:
+                raise ValueError("We cannot map RightDangle soquets.")
+
+            if soq.reg.name not in in_soqs:
+                return soq
+
+            if soq.idx:
+                return in_soqs[soq.reg.name][soq.idx]
+            else:
+                return in_soqs[soq.reg.name]
+
+    if binst_map is None:
+
+        def _map_binst(soq: Soquet) -> Soquet:
+            return soq
+
+    else:
+
+        def _map_binst(soq: Soquet) -> Soquet:
+            return attrs.evolve(soq, binst=binst_map.get(soq.binst, soq.binst))
+
+    def _map_soq(soq: Soquet) -> Soquet:
+        # Helper function to map an individual soquet.
+        if isinstance(soq.binst, DanglingT):
+            return _map_in_soq(soq)
+
+        return _map_binst(soq)
+
+    # Use `vectorize` to call `_map_soq` on each element of the array.
+    vmap = np.vectorize(_map_soq, otypes=[object])
+
+    def _map_soqs(soqs: SoquetT) -> SoquetT:
+        if isinstance(soqs, Soquet):
+            return _map_soq(soqs)
+        return vmap(soqs)
+
+    return {name: _map_soqs(soqs) for name, soqs in soqdict.items()}
 
 
 class CompositeBloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
-    Users should not instantiate a CompositeBloqBuilder directly. To build a composite bloq,
-    override `Bloq.build_composite_bloq`. A properly-initialized builder instance will be
-    provided as the first argument.
+    Users may instantiate this class directly or use its methods by
+    overriding `Bloq.build_composite_bloq`.
+
+    When overriding `build_composite_bloq`, the Bloq class will ensure that the bloq under
+    construction has the correct registers: namely, those of the decomposed bloq and parent
+    bloq are the same. This affords some additional error checking.
+    Initial soquets are passed as **kwargs (by register name) to the `build_composite_bloq` method.
+    See `from_registers` for more details.
+
+    When using this class directly, you must call `add_register` to set up the composite bloq's
+    registers. When adding a LEFT or THRU register, the method will return soquets to be
+    used when adding more bloqs. Adding a THRU or RIGHT register can enable more checks during
+    `finalize()`.
 
     Args:
-        parent_regs: The `Registers` argument for the parent bloq.
+        add_registers_allowed: Whether we allow the addition of registers during bloq building.
+        This affords some additional error checking if set to `False` but you must specify
+        all registers ahead-of-time.
     """
 
-    def __init__(self, parent_regs: FancyRegisters):
+    def __init__(self, add_registers_allowed=True):
         # To be appended to:
         self._cxns: List[Connection] = []
+        self._regs: List[FancyRegister] = []
 
         # Initialize our BloqInstance counter
         self._i = 0
 
-        self._parent_regs = parent_regs
-
         # Bookkeeping for linear types; Soquets must be used exactly once.
-        self._initial_soquets, self._available = _initialize_soquets(parent_regs)
+        self._available: Set[Soquet] = set()
 
-    def initial_soquets(self) -> Dict[str, SoquetT]:
-        """Input soquets (by name) to start building a quantum compute graph."""
-        return self._initial_soquets
+        # Whether we can call `add_register` and do non-strict `finalize()`.
+        self.add_register_allowed = add_registers_allowed
+
+    @overload
+    def add_register(self, reg: FancyRegister, bitsize: None = None) -> Union[None, SoquetT]:
+        ...
+
+    @overload
+    def add_register(self, reg: str, bitsize: int) -> SoquetT:
+        ...
+
+    def add_register(
+        self, reg: Union[str, FancyRegister], bitsize: Optional[int] = None
+    ) -> Union[None, SoquetT]:
+        """Add a new register to the composite bloq being built.
+
+        If this bloq builder was constructed with `from_registers`, this operation is not allowed.
+
+        Args:
+            reg: Either the register or a register name. If this is a register, then `bitsize`
+                must also be provided and a default THRU register will be added.
+            bitsize: If `reg` is a register name, this is the bitsize for the added register.
+                Otherwise, this must not be provided.
+
+        Returns:
+            If `reg` is a LEFT or THRU register, return the soquet(s) corresponding to the
+            initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
+            and will be used for error checking in `finalize()` and nothing is returned.
+        """
+        if not self.add_register_allowed:
+            raise ValueError(
+                "This BloqBuilder was constructed from pre-specified registers. "
+                "Ad hoc addition of more registers is not allowed."
+            )
+
+        if isinstance(reg, FancyRegister):
+            if bitsize is not None:
+                raise ValueError("`bitsize` must not be specified if `reg` is a Register.")
+        else:
+            if not isinstance(reg, str):
+                raise ValueError("`reg` must be a string register name if not a Register.")
+            if not isinstance(bitsize, int):
+                raise ValueError(
+                    "`bitsize` must be specified and must be an "
+                    "integer if `reg` is a register name."
+                )
+            reg = FancyRegister(name=reg, bitsize=bitsize)
+
+        self._regs.append(reg)
+        if reg.side & Side.LEFT:
+            return _reg_to_soq(LeftDangle, reg, available=self._available)
+        return None
+
+    @classmethod
+    def from_registers(cls, parent_regs: FancyRegisters, add_registers_allowed=False):
+        """Construct a CompositeBloqBuilder with pre-specified registers.
+
+        This is safer if e.g. you're decomposing an existing Bloq and need the registers
+        to match. This constructor is used by `Bloq.decompose_bloq()`.
+        """
+        # Initial construction: allow register addition for the following loop.
+        bb = cls(add_registers_allowed=True)
+
+        initial_soqs: Dict[str, SoquetT] = {}
+        for reg in parent_regs:
+            if reg.side & Side.LEFT:
+                initial_soqs[reg.name] = bb.add_register(reg)
+            else:
+                bb.add_register(reg)
+
+        # Now we can set it to the desired value.
+        bb.add_register_allowed = add_registers_allowed
+
+        return bb, initial_soqs
 
     def _new_binst(self, bloq: Bloq) -> BloqInstance:
         inst = BloqInstance(bloq, self._i)
         self._i += 1
         return inst
+
+    def _add_cxn(
+        self, binst: BloqInstance, idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]
+    ) -> None:
+        """Helper function to be used as the base for the `func` argument of `_process_soquets`.
+
+        This creates a connection between the provided input `idxed_soq` to the current binst's
+        `(reg, idx)`.
+        """
+        try:
+            self._available.remove(idxed_soq)
+        except KeyError:
+            bloq = binst if isinstance(binst, DanglingT) else binst.bloq
+            raise BloqBuilderError(
+                f"{idxed_soq} is not an available Soquet for `{bloq}.{reg.name}`."
+            ) from None
+        cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
+        self._cxns.append(cxn)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
@@ -361,102 +723,122 @@ class CompositeBloqBuilder:
                 the ordering is irrespective of the order of `in_soqs` that have been passed in
                 and depends only on the convention of the bloq's registers.
         """
+        _, out_soqs = self.add_2(bloq=bloq, **in_soqs)
+        return out_soqs
+
+    def add_2(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[BloqInstance, Tuple[SoquetT, ...]]:
+        """Add a new bloq instance to the compute graph. Return the binst and the out soquets.
+
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`s or an array thereof. This is likely the output soquets from a prior
+                operation.
+
+        Returns:
+            binst: The newly constructed bloq instance.
+            out_soqs: A `Soquet` or an array thereof for each output register ordered according to
+                `bloq.registers`.
+                Note: Analogous to a Python function call using kwargs and multiple return values,
+                the ordering is irrespective of the order of `in_soqs` that have been passed in
+                and depends only on the convention of the bloq's registers.
+
+        """
         binst = self._new_binst(bloq)
 
-        for reg in bloq.registers.lefts():
-            try:
-                # if we want fancy indexing (which we do), we need numpy
-                # this also supports length-zero indexing natively, which is good too.
-                in_soq = np.asarray(in_soqs[reg.name])
-            except KeyError:
-                raise BloqBuilderError(
-                    f"{bloq} requires an input Soquet named `{reg.name}`."
-                ) from None
+        def _add(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
+            # close over `binst`
+            return self._add_cxn(binst, idxed_soq, reg, idx)
 
-            del in_soqs[reg.name]  # so we can check for surplus arguments.
+        _process_soquets(
+            registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
+        )
+        out_soqs = tuple(
+            _reg_to_soq(binst, reg, available=self._available) for reg in bloq.registers.rights()
+        )
+        return binst, out_soqs
 
-            for li in reg.wire_idxs():
-                idxed_soq = in_soq[li]
-                assert isinstance(idxed_soq, Soquet), idxed_soq
-                try:
-                    self._available.remove(idxed_soq)
-                except KeyError:
-                    raise BloqBuilderError(
-                        f"{idxed_soq} is not an available input Soquet for {reg}."
-                    ) from None
-                cxn = Connection(idxed_soq, Soquet(binst, reg, idx=li))
-                self._cxns.append(cxn)
+    def add_from(self, cbloq: CompositeBloq, **insoqs: SoquetT) -> Tuple[SoquetT, ...]:
+        """Add all the sub-bloqs from `cbloq` to the composite bloq under construction.
 
-        if in_soqs:
-            raise BloqBuilderError(
-                f"{bloq} does not accept input Soquets: {in_soqs.keys()}."
-            ) from None
+        Args:
+            cbloq: Where to add from.
+            insoqs: Input soquets for `cbloq`; used to connect its left-dangling soquets.
 
-        out_soqs: List[SoquetT] = []
-        out: SoquetT
-        for reg in bloq.registers.rights():
-            if reg.wireshape:
-                out = np.empty(reg.wireshape, dtype=object)
-                for ri in reg.wire_idxs():
-                    out_soq = Soquet(binst, reg, idx=ri)
-                    out[ri] = out_soq
-                    self._available.add(out_soq)
-            else:
-                # Annoyingly, the 0-dim case must be handled seprately.
-                # Otherwise, x[i] = thing will nest *array* objects.
-                out = Soquet(binst, reg)
-                self._available.add(out)
-
-            out_soqs.append(out)
-
-        return tuple(out_soqs)
+        Returns:
+            The output soquets from `cbloq`.
+        """
+        binst_map = {}
+        for binst, soqs in cbloq.iter_bloqsoqs(in_soqs=insoqs, binst_map=binst_map):
+            new_binst, _ = self.add_2(binst.bloq, **soqs)
+            binst_map[binst] = new_binst
+        fsoqs = cbloq.final_soqs(binst_map)
+        return tuple(fsoqs[reg.name] for reg in cbloq.registers.rights())
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
 
         This method is similar to calling `add()` but instead of adding a new Bloq,
-        it validates the final "dangling" soquets that serve as the outputs for
+        it configures the final "dangling" soquets that serve as the outputs for
         the composite bloq as a whole.
 
-        This method is called at the end of `Bloq.decompose_bloq`. Users overriding
-        `Bloq.build_composite_bloq` should not call this method.
+        If `self.add_registers_allowed` is set to `True`, additional register
+        names passed to this function will be added as RIGHT registers. Otherwise,
+        this method validates the provided `final_soqs` against our list of RIGHT
+        (and THRU) registers.
 
         Args:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
-        for reg in self._parent_regs.rights():
-            try:
-                in_soq = np.asarray(final_soqs[reg.name])
-            except KeyError:
-                raise BloqBuilderError(
-                    f"Finalizing the build requires a final Soquet named `{reg.name}`."
-                ) from None
+        if not self.add_register_allowed:
+            return self._finalize_strict(**final_soqs)
 
-            del final_soqs[reg.name]  # so we can check for surplus arguments.
+        # If items from `final_soqs` don't already exist in `_regs`, add RIGHT registers
+        # for them. Then call `_finalize_strict` where the actual dangling connections are added.
 
-            for li in reg.wire_idxs():
-                idxed_soq = in_soq[li]
-                assert isinstance(idxed_soq, Soquet)
-                try:
-                    self._available.remove(idxed_soq)
-                except KeyError:
-                    raise BloqBuilderError(
-                        f"{in_soq} is not an available final Soquet for {reg}."
-                    ) from None
-                self._cxns.append(Connection(idxed_soq, Soquet(RightDangle, reg, idx=li)))
+        def _infer_reg(name: str, soq: SoquetT) -> FancyRegister:
+            """Go from Soquet -> register, but use a specific name for the register."""
+            if isinstance(soq, Soquet):
+                return FancyRegister(name=name, bitsize=soq.reg.bitsize, side=Side.RIGHT)
 
-        if final_soqs:
-            raise BloqBuilderError(
-                f"Finalizing the build does not accept final Soquets: {final_soqs.keys()}."
-            ) from None
+            # Get info from 0th soquet in an ndarray.
+            return FancyRegister(
+                name=name,
+                bitsize=soq.reshape(-1)[0].reg.bitsize,
+                wireshape=soq.shape,
+                side=Side.RIGHT,
+            )
 
+        right_reg_names = [reg.name for reg in self._regs if reg.side & Side.RIGHT]
+        for name, soq in final_soqs.items():
+            if name not in right_reg_names:
+                self._regs.append(_infer_reg(name, soq))
+
+        return self._finalize_strict(**final_soqs)
+
+    def _finalize_strict(self, **final_soqs: SoquetT) -> CompositeBloq:
+        """Finish building a CompositeBloq and return the immutable CompositeBloq.
+
+        Args:
+            **final_soqs: Keyword arguments mapping the composite bloq's register names to
+                final`Soquet`s, e.g. the output soquets from a prior, final operation.
+        """
+        registers = FancyRegisters(self._regs)
+
+        def _fin(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
+            # close over `RightDangle`
+            return self._add_cxn(RightDangle, idxed_soq, reg, idx)
+
+        _process_soquets(
+            registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
+        )
         if self._available:
             raise BloqBuilderError(
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(cxns=self._cxns, registers=self._parent_regs)
+        return CompositeBloq(cxns=self._cxns, registers=registers)
 
     def allocate(self, n: int = 1) -> Soquet:
         from cirq_qubitization.quantum_graph.util_bloqs import Allocate

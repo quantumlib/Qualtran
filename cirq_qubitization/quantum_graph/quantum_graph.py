@@ -19,6 +19,9 @@ class BloqInstance:
     bloq: Bloq
     i: int
 
+    def __str__(self):
+        return f'{self.bloq}<{self.i}>'
+
 
 class DanglingT:
     """The type of the singleton objects `LeftDangle` and `RightDangle`.

@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-import cirq_qubitization.testing as cq_testing
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
+from cirq_qubitization.quantum_graph.fancy_registers import Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
@@ -28,7 +28,7 @@ def test_register_sizes_add_up(bloq_cls, n):
 
 
 def test_util_bloqs():
-    bb = CompositeBloqBuilder(FancyRegisters([]))
+    bb = CompositeBloqBuilder()
     (qs1,) = bb.add(Allocate(10))
     assert isinstance(qs1, Soquet)
     (qs2,) = bb.add(Split(10), split=qs1)
@@ -36,8 +36,8 @@ def test_util_bloqs():
     (qs3,) = bb.add(Join(10), join=qs2)
     assert isinstance(qs3, Soquet)
     no_return = bb.add(Free(10), free=qs3)
-    assert no_return is tuple()
+    assert no_return == tuple()
 
 
 def test_notebook():
-    cq_testing.execute_notebook('quantum_graph/util_bloqs')
+    cq_testing.execute_notebook('util_bloqs')
