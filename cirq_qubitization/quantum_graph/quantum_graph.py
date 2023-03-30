@@ -114,3 +114,6 @@ class Connection:
         if ls != rs:
             raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
         return ls
+
+    def __str__(self) -> str:
+        return f'{self.left.binst}.{self.left.pretty()} -> {self.right.binst}.{self.right.pretty()}'
