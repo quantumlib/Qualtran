@@ -741,6 +741,10 @@ class CompositeBloqBuilder:
         else:
             cbloq = bloq.decompose_bloq()
 
+        for k, v in in_soqs.items():
+            if not isinstance(v, Soquet):
+                in_soqs[k] = np.asarray(v)
+
         # Initial mapping of LeftDangle according to user-provided in_soqs.
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
             (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.registers.lefts()
