@@ -1,7 +1,6 @@
 from functools import cached_property
 from typing import Dict, List, Tuple
 
-import attrs
 import cirq
 import networkx as nx
 import numpy as np
@@ -25,7 +24,6 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
-    DanglingT,
     LeftDangle,
     RightDangle,
     Soquet,

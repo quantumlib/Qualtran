@@ -731,7 +731,7 @@ class CompositeBloqBuilder:
         Args:
             bloq: Where to add from. If this is a composite bloq, use its contents directly.
                 Otherwise, we call `decompose_bloq()` first.
-            insoqs: Input soquets for `bloq`; used to connect its left-dangling soquets.
+            in_soqs: Input soquets for `bloq`; used to connect its left-dangling soquets.
 
         Returns:
             The output soquets from `cbloq`.
