@@ -1,15 +1,15 @@
 from functools import cached_property
+from typing import Dict
 
 import numpy as np
+from attrs import frozen
 from numpy.typing import NDArray
 
-from typing import Dict
-from attrs import frozen
-
+from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, Soquet, SoquetT
-from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+
 
 @frozen
 class CSWAP(Bloq):
@@ -24,6 +24,7 @@ class CSWAP(Bloq):
      - x: first bit to swap
      - y: second bit to swap
     """
+
     cv1: int = 1
 
     @cached_property
@@ -31,8 +32,8 @@ class CSWAP(Bloq):
         return FancyRegisters(
             [
                 FancyRegister('ctrl', 1, wireshape=(1,)),
-                FancyRegister('x', 1, wireshape=(1,),),
-                FancyRegister('y', 1, wireshape=(1,),)
+                FancyRegister('x', 1, wireshape=(1,)),
+                FancyRegister('y', 1, wireshape=(1,)),
             ]
         )
 
@@ -40,13 +41,11 @@ class CSWAP(Bloq):
         """The `TComplexity` for this bloq.
 
         C-swap is decomposed into two CNOT + 1 Toffoli.
-        Each Toffoli is 7 T-gates, 8 Cliffords, and 0 rotations 
+        Each Toffoli is 7 T-gates, 8 Cliffords, and 0 rotations
         """
         num_toffoli = 1
-        return TComplexity(t=num_toffoli * 7, 
-                           clifford=2 + 8 * num_toffoli, 
-                           rotations=0
-        )
+        return TComplexity(t=num_toffoli * 7, clifford=2 + 8 * num_toffoli, rotations=0)
+
 
 @frozen
 class CMultiSWAP(Bloq):
@@ -71,30 +70,28 @@ class CMultiSWAP(Bloq):
         return FancyRegisters(
             [
                 FancyRegister('ctrl', 1, wireshape=(1,)),
-                FancyRegister('reg_x', self.reg_length, wireshape=(1,),),
-                FancyRegister('reg_y', self.reg_length, wireshape=(1,),)
+                FancyRegister('reg_x', self.reg_length, wireshape=(1,)),
+                FancyRegister('reg_y', self.reg_length, wireshape=(1,)),
             ]
         )
+
     def pretty_name(self) -> str:
         return f'CSWAP'
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', *, cntrl_and_targets: NDArray[Soquet]
     ) -> Dict[str, 'SoquetT']:
-        """Decomposes multi-cswap `CnSWAP` in-terms of an `CSWAP`       
-        """    
-        ctrl = cntrl_and_targets[0],
-        reg_x = cntrl_and_targets[1:self.reg_length+1]
-        reg_y = cntrl_and_targets[self.reg_length+1:]
+        """Decomposes multi-cswap `CnSWAP` in-terms of an `CSWAP`"""
+        ctrl = (cntrl_and_targets[0],)
+        reg_x = cntrl_and_targets[1 : self.reg_length + 1]
+        reg_y = cntrl_and_targets[self.reg_length + 1 :]
         returned_x = []
         returned_y = []
         for n_idx in range(self.reg_length):
             # overwrite control with same control
-            ctrl, out_reg_x, out_reg_y  = bb.add(CSWAP(cv1=self.cv1), 
-                                                 ctrl=ctrl, 
-                                                 x=reg_x[n_idx], 
-                                                 y=reg_y[n_idx]
-                                                 )
+            ctrl, out_reg_x, out_reg_y = bb.add(
+                CSWAP(cv1=self.cv1), ctrl=ctrl, x=reg_x[n_idx], y=reg_y[n_idx]
+            )
             returned_x.append(out_reg_x)
             returned_y.append(out_reg_y)
         return {
