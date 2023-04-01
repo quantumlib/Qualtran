@@ -49,7 +49,7 @@ class CSWAP(Bloq):
         )
 
 @frozen
-class CnSWAP(Bloq):
+class CMultiSWAP(Bloq):
     """A controlled n-bit swap between two registers
 
     Args:
