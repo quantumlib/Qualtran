@@ -76,7 +76,7 @@ class CMultiSWAP(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return f'CSWAP'
+        return "CSWAP"
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', *, cntrl_and_targets: NDArray[Soquet]
