@@ -49,6 +49,17 @@ class And(Bloq):
         dag = '†' if self.adjoint else ''
         return f'And{dag}'
 
+    def apply_classical(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        if self.adjoint:
+            raise NotImplementedError()
+        assert ctrl.shape == (2,)
+        c1, c2 = ctrl
+        if c1 == self.cv1 and c2 == self.cv2:
+            target = 1
+        else:
+            target = 0
+        return {'ctrl': ctrl, 'target': target}
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
@@ -156,3 +167,16 @@ class MultiAnd(Bloq):
             'junk': np.concatenate(([anc], junk)),
             'target': target,
         }
+
+    def apply_classical(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        if self.adjoint:
+            raise NotImplementedError()
+
+        target = True
+        for cv, c in zip(self.cvs, ctrl):
+            target = target and (c == cv)
+
+        junk = np.zeros(len(self.cvs) - 2, dtype=np.uint8)
+        target = 1 if target else 0
+
+        return {'ctrl': ctrl, 'junk': junk, 'target': target}

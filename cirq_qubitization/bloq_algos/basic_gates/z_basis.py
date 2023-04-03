@@ -63,6 +63,22 @@ class _ZVector(Bloq):
             )
         )
 
+    def apply_classical(self, **vals: int) -> Dict[str, int]:
+        if self.state:
+            if self.bit:
+                return {'q': 1}
+            else:
+                return {'q': 0}
+
+        q = vals.pop('q')
+        if vals:
+            raise ValueError(f"Extra arguments: {vals}")
+        if self.bit:
+            assert q == 1
+        else:
+            assert q == 0
+        return {}
+
 
 def _hide_base_fields(cls, fields):
     # for use in attrs `field_trasnformer`.

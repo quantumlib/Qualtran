@@ -13,6 +13,9 @@ def test_zero_state():
     should_be = np.array([1, 0])
     np.testing.assert_allclose(should_be, vector)
 
+    classical = bloq.apply_classical()
+    assert classical['q'] == 0
+
 
 def test_multiq_zero_state():
     # Verifying the attrs trickery that I can plumb through *some*
@@ -29,23 +32,40 @@ def test_one_state():
     should_be = np.array([0, 1])
     np.testing.assert_allclose(should_be, vector)
 
+    classical = bloq.apply_classical()
+    assert classical['q'] == 1
+
 
 def test_zero_effect():
-    vector = ZeroEffect().tensor_contract()
+    bloq = ZeroEffect()
+    vector = bloq.tensor_contract()
 
     # Note: we don't do "column vectors" or anything for kets.
     # Everything is squeezed. Keep track manually or use compositebloq.
     should_be = np.array([1, 0])
     np.testing.assert_allclose(should_be, vector)
 
+    classical = bloq.apply_classical(q=0)
+    assert classical == {}
+
+    with pytest.raises(AssertionError):
+        bloq.apply_classical(q=1)
+
 
 def test_one_effect():
-    vector = OneEffect().tensor_contract()
+    bloq = OneEffect()
+    vector = bloq.tensor_contract()
 
     # Note: we don't do "column vectors" or anything for kets.
     # Everything is squeezed. Keep track manually or use compositebloq.
     should_be = np.array([0, 1])
     np.testing.assert_allclose(should_be, vector)
+
+    classical = bloq.apply_classical(q=1)
+    assert classical == {}
+
+    with pytest.raises(AssertionError):
+        bloq.apply_classical(q=0)
 
 
 @pytest.mark.parametrize('bit', [False, True])
@@ -66,3 +86,6 @@ def test_zero_state_effect(bit):
 
     should_be = 1
     np.testing.assert_allclose(should_be, val)
+
+    res = cbloq.apply_classical()
+    assert res == {}
