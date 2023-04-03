@@ -1,6 +1,7 @@
 import abc
 from typing import Any, Dict, TYPE_CHECKING
 
+import numpy as np
 import quimb.tensor as qtn
 from numpy.typing import NDArray
 
@@ -91,6 +92,20 @@ class Bloq(metaclass=abc.ABCMeta):
         assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
+
+    def apply_classical(self, **vals: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        """Apply this bloq to classical date.
+
+        Override this method if your bloq represents classical, reversible logic. For example:
+        quantum circuits composed of X and C^nNOT gates are classically simulable.
+
+        Args:
+            **vals: The input numpy array bit values for each left (or thru) register.
+
+        Returns:
+            a dictionary mapping right (or thru) register name to output bit arrays.
+        """
+        raise NotImplementedError(f"{self} does not support classical simulation.")
 
     def tensor_contract(self) -> NDArray:
         """Return a contracted, dense ndarray representing this bloq.

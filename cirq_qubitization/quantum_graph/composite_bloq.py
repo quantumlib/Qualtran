@@ -123,6 +123,12 @@ class CompositeBloq(Bloq):
 
         return _cbloq_to_dense(self)
 
+    def apply_classical(self, **vals: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_apply_classical
+
+        out_vals, _ = _cbloq_apply_classical(self.registers, vals, self._binst_graph)
+        return out_vals
+
     def t_complexity(self) -> TComplexity:
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""
         rc = TComplexity()
