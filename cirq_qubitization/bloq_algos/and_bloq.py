@@ -8,22 +8,28 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
+from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 @frozen
 class And(Bloq):
-    """A two-bit and operation.
+    """A two-bit 'and' operation.
 
     Args:
         cv1: Whether the first bit is a positive control.
         cv2: Whether the second bit is a positive control.
 
     Registers:
-     - control: A two-bit control register.
+     - ctrl: A two-bit control register.
      - (right) target: The output bit.
+
+    References:
+        (Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity)[https://arxiv.org/abs/1805.03662].
+            Babbush et. al. 2018. Section III.A. and Fig. 4.
+        (Verifying Measurement Based Uncomputation)[https://algassert.com/post/1903].
+            Gidney, C. 2019.
     """
 
     cv1: int = 1
@@ -49,6 +55,10 @@ class And(Bloq):
         else:
             target = np.array([0])
         return ctrl, target
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f'And{dag}'
 
     def add_my_tensors(
         self,
@@ -90,44 +100,71 @@ class And(Bloq):
 
 @frozen
 class MultiAnd(Bloq):
+    """A many-bit (multi-control) 'and' operation.
+
+    Args:
+        cvs: A tuple of control variable settings. Each entry specifies whether that
+            control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
+
+    Registers:
+     - ctrl: An n-bit control register.
+     - (right) An `n-2` bit junk register to be cleaned up by the inverse operation.
+     - (right) target: The output bit.
+    """
+
     cvs: Tuple[int, ...] = field(validator=lambda i, f, v: len(v) >= 3)
     adjoint: bool = False
 
     @cached_property
     def registers(self) -> FancyRegisters:
+        one_side = Side.RIGHT if not self.adjoint else Side.LEFT
         return FancyRegisters(
             [
                 FancyRegister('ctrl', 1, wireshape=(len(self.cvs),)),
-                FancyRegister('junk', 1, wireshape=(len(self.cvs) - 2,), side=Side.RIGHT),
-                FancyRegister('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
+                FancyRegister('junk', 1, wireshape=(len(self.cvs) - 2,), side=one_side),
+                FancyRegister('target', 1, side=one_side),
             ]
         )
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f'And{dag}'
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        cbloq = super().decompose_bloq()
+        if self.adjoint:
+            raise NotImplementedError("Come back soon.")
+        return cbloq
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', *, ctrl: NDArray[Soquet]
     ) -> Dict[str, 'SoquetT']:
-        """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
-        c1c2, anc = bb.add(
-            And(cv1=self.cvs[0], cv2=self.cvs[1], adjoint=self.adjoint), ctrl=ctrl[:2]
-        )
+        """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls-1.
+
+        This method builds the `adjoint=False` composite bloq. `self.decompose_bloq()`
+        will throw if `self.adjoint=True`.
+        """
+        # 'and' the first two control lines together into an ancilla.
+        cv1, cv2, *_ = self.cvs
+        c1c2, anc = bb.add(And(cv1=cv1, cv2=cv2), ctrl=ctrl[:2])
+
         if len(self.cvs) == 3:
-            # Base case: add a final `And`.
-            (c3, junk), target = bb.add(
-                And(cv1=1, cv2=self.cvs[2], adjoint=self.adjoint), ctrl=[anc, ctrl[2]]
-            )
+            # Base case: add a final `And` to complete the ladder.
+            (anc, c3), target = bb.add(And(cv1=1, cv2=self.cvs[2]), ctrl=[anc, ctrl[2]])
             return {
-                'ctrl': np.asarray(c1c2.tolist() + [c3]),
-                'junk': np.asarray([junk]),
+                'ctrl': np.concatenate((c1c2, [c3])),
+                'junk': np.asarray([anc]),
                 'target': target,
             }
 
-        # Note: change from `add_from` to `add` for non-auto-decomposing.
+        # Recursive step: Replace the first two controls with the ancilla.
+        # Note: change `bb.add_from` to `bb.add` to decompose one recursive step at a time.
         (anc, *c_rest), junk, target = bb.add_from(
-            MultiAnd(cvs=(1, *self.cvs[2:]), adjoint=self.adjoint), ctrl=[anc] + ctrl[2:].tolist()
+            MultiAnd(cvs=(1, *self.cvs[2:])), ctrl=np.concatenate(([anc], ctrl[2:]))
         )
         return {
-            'ctrl': np.asarray(c1c2.tolist() + c_rest),
-            'junk': np.asarray([anc] + junk.tolist()),
+            'ctrl': np.concatenate((c1c2, c_rest)),
+            'junk': np.concatenate(([anc], junk)),
             'target': target,
         }
 

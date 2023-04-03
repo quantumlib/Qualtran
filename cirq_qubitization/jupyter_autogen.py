@@ -155,7 +155,10 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
     'and_bloq': NotebookSpec(
         title='And',
         module=cirq_qubitization.bloq_algos.and_bloq,
-        gate_specs=[BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and)],
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and),
+            BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_multi_and),
+        ],
         directory='./bloq_algos',
     ),
 }

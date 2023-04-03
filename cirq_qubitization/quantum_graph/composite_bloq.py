@@ -97,9 +97,8 @@ class CompositeBloq(Bloq):
                 Consider using `**self.registers.get_named_qubits()` for this argument.
         """
         # First, convert register names to registers.
-        from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
-
-        return _cbloq_to_cirq_circuit(self.registers, quregs, self._binst_graph)
+        quregs = {reg: quregs[reg.name] for reg in self.registers.lefts()}
+        return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
 
     @classmethod
     def from_cirq_circuit(cls, circuit: cirq.Circuit) -> 'CompositeBloq':
@@ -671,11 +670,12 @@ class CompositeBloqBuilder:
         return binst, out_soqs
 
     def add_from(self, bloq: Bloq, **insoqs: SoquetT) -> Tuple[SoquetT, ...]:
-        """Add all the sub-bloqs from `cbloq` to the composite bloq under construction.
+        """Add all the sub-bloqs from `bloq` to the composite bloq under construction.
 
         Args:
-            cbloq: Where to add from.
-            insoqs: Input soquets for `cbloq`; used to connect its left-dangling soquets.
+            bloq: Where to add from. If this is a composite bloq, use its contents directly.
+                Otherwise, we call `decompose_bloq()` first.
+            insoqs: Input soquets for `bloq`; used to connect its left-dangling soquets.
 
         Returns:
             The output soquets from `cbloq`.
