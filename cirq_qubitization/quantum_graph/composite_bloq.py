@@ -543,7 +543,7 @@ def _map_soq_dict(
                 return soq
 
             if soq.idx:
-                return in_soqs[soq.reg.name][soq.idx]
+                return np.asarray(in_soqs[soq.reg.name])[soq.idx]
             else:
                 return in_soqs[soq.reg.name]
 
@@ -758,16 +758,22 @@ class CompositeBloqBuilder:
         )
         return binst, out_soqs
 
-    def add_from(self, cbloq: CompositeBloq, **insoqs: SoquetT) -> Tuple[SoquetT, ...]:
-        """Add all the sub-bloqs from `cbloq` to the composite bloq under construction.
+    def add_from(self, bloq: Bloq, **insoqs: SoquetT) -> Tuple[SoquetT, ...]:
+        """Add all the sub-bloqs from `bloq` to the composite bloq under construction.
 
         Args:
-            cbloq: Where to add from.
-            insoqs: Input soquets for `cbloq`; used to connect its left-dangling soquets.
+            bloq: Where to add from. If this is a composite bloq, use its contents directly.
+                Otherwise, we call `decompose_bloq()` first.
+            insoqs: Input soquets for `bloq`; used to connect its left-dangling soquets.
 
         Returns:
             The output soquets from `cbloq`.
         """
+        if isinstance(bloq, CompositeBloq):
+            cbloq = bloq
+        else:
+            cbloq = bloq.decompose_bloq()
+
         binst_map = {}
         for binst, soqs in cbloq.iter_bloqsoqs(in_soqs=insoqs, binst_map=binst_map):
             new_binst, _ = self.add_2(binst.bloq, **soqs)

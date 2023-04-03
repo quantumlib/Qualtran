@@ -51,7 +51,7 @@ def _manually_make_test_cbloq_cxns():
 class TestTwoCNOT(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(q1=1, q2=2)
+        return FancyRegisters.build(q1=1, q2=1)
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', q1: 'Soquet', q2: 'Soquet'
@@ -409,11 +409,15 @@ def test_copy(cls):
     assert cbloq.debug_text() == cbloq2.debug_text()
 
 
-def test_add_from():
+@pytest.mark.parametrize('call_decompose', [False, True])
+def test_add_from(call_decompose):
     bb = CompositeBloqBuilder()
     stuff = bb.add_register('stuff', 3)
     (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
-    (stuff,) = bb.add_from(TestParallelBloq().decompose_bloq(), stuff=stuff)
+    if call_decompose:
+        (stuff,) = bb.add_from(TestParallelBloq().decompose_bloq(), stuff=stuff)
+    else:
+        (stuff,) = bb.add_from(TestParallelBloq(), stuff=stuff)
     bloq = bb.finalize(stuff=stuff)
     assert (
         bloq.debug_text()
