@@ -83,6 +83,9 @@ class Soquet:
             return f'{label}[{", ".join(str(i) for i in self.idx)}]'
         return label
 
+    def __str__(self) -> str:
+        return f'{self.binst}.{self.pretty()}'
+
 
 LeftDangle = DanglingT("LeftDangle")
 RightDangle = DanglingT("RightDangle")
@@ -116,4 +119,4 @@ class Connection:
         return ls
 
     def __str__(self) -> str:
-        return f'{self.left.binst}.{self.left.pretty()} -> {self.right.binst}.{self.right.pretty()}'
+        return f'{self.left} -> {self.right}'
