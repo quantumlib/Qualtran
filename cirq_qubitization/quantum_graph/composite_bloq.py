@@ -164,7 +164,7 @@ class CompositeBloq(Bloq):
         """Iterate over bloq instances and their input soquets.
 
         This method is helpful for "adding from" this existing composite bloq. You must
-        use `_map_soq_dict_2` to map this cbloq's soquets to the correct ones for the
+        use `map_soqs` to map this cbloq's soquets to the correct ones for the
         new bloq.
 
         >>> bb, _ = CompositeBloqBuilder.from_registers(self.registers)
