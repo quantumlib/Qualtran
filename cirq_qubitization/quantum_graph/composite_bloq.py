@@ -170,7 +170,8 @@ class CompositeBloq(Bloq):
         >>> bb, _ = CompositeBloqBuilder.from_registers(self.registers)
         >>> soq_map: List[Tuple[SoquetT, SoquetT]] = []
         >>> for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
-        >>>    new_out_soqs = bb.add(binst.bloq, **map_soqs(in_soqs, soq_map))
+        >>>    in_soqs = map_soqs(in_soqs, soq_map)
+        >>>    new_out_soqs = bb.add(binst.bloq, **in_soqs)
         >>>    soq_map.extend(zip(old_out_soqs, new_out_soqs))
         >>> return bb.finalize(**map_soqs(self.final_soqs(), soq_map))
 
