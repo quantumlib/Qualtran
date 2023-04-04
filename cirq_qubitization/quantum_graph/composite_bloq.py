@@ -537,13 +537,13 @@ def map_soqs(
     flat_soq_map = {}
     for old_soqs, new_soqs in soq_map:
         if isinstance(old_soqs, Soquet):
-            assert isinstance(new_soqs, Soquet)
+            assert isinstance(new_soqs, Soquet), new_soqs
             flat_soq_map[old_soqs] = new_soqs
             continue
 
-        assert isinstance(old_soqs, np.ndarray)
-        assert isinstance(new_soqs, np.ndarray)
-        assert old_soqs.shape == new_soqs.shape
+        assert isinstance(old_soqs, np.ndarray), old_soqs
+        assert isinstance(new_soqs, np.ndarray), new_soqs
+        assert old_soqs.shape == new_soqs.shape, (old_soqs.shape, new_soqs.shape)
         for o, n in zip(old_soqs.reshape(-1), new_soqs.reshape(-1)):
             flat_soq_map[o] = n
 
