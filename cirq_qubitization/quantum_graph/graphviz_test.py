@@ -2,6 +2,7 @@ import re
 from functools import cached_property
 from typing import Dict
 
+import IPython.display
 import pytest
 from attrs import frozen
 
@@ -65,12 +66,19 @@ def test_assign_ids():
 @pytest.mark.parametrize('draw_cls', [GraphDrawer, PrettyGraphDrawer])
 def test_graphviz(draw_cls):
     bloq = TestParallelBloq().decompose_bloq()
-    graph = draw_cls(bloq).get_graph()
-
+    drawer = draw_cls(bloq)
+    graph = drawer.get_graph()
     assert len(graph.get_nodes()) == 1 + 3 + 1  # split, atoms, join
     assert len(graph.get_subgraphs()) == 2  # left, right dangling labels go in a subgraph
     assert len(graph.get_edges()) == 1 + 3 + 3 + 1
     assert len(graph.create_svg()) > 0
+
+    svg_bytes = drawer.get_svg_bytes()
+    assert svg_bytes.startswith(b'<?xml')
+    assert svg_bytes.decode().startswith('<?xml')
+
+    svg_widget = drawer.get_svg()
+    assert isinstance(svg_widget, IPython.display.DisplayObject)
 
 
 def test_notebook():
