@@ -19,8 +19,8 @@ from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 
 
-class GenericSubPrepare(GateWithRegisters):
-    r"""Initialize a state with $L$ unique coefficients.
+class StatePreparationAliasSampling(GateWithRegisters):
+    r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
 
     In particular, we take the zero state to:
 
@@ -80,8 +80,8 @@ class GenericSubPrepare(GateWithRegisters):
         )
 
     @property
-    def selection_bitsize(self) -> int:
-        return self._selection_bitsize
+    def selection_registers(self) -> Registers:
+        return Registers.build(selection=self._selection_bitsize)
 
     @property
     def sigma_mu_bitsize(self) -> int:
@@ -96,39 +96,33 @@ class GenericSubPrepare(GateWithRegisters):
         return self._mu
 
     @property
-    def temp_bitsize(self) -> int:
-        return self.sigma_mu_bitsize + self.alternates_bitsize + self.keep_bitsize + 1
+    def temp_registers(self) -> Registers:
+        return Registers.build(
+            sigma_mu=self.sigma_mu_bitsize,
+            alt=self.alternates_bitsize,
+            keep=self.keep_bitsize,
+            less_than_equal=1,
+        )
 
     @property
     def registers(self) -> Registers:
-        return Registers.build(selection=self.selection_bitsize, temp=self.temp_bitsize)
-
-    def __repr__(self) -> str:
-        return (
-            f"cirq_qubitization.GenericSubPrepare("
-            f"lcu_probabilities={self._lcu_probs},"
-            f"probability_epsilon={self._probability_epsilon}"
-            f")"
-        )
+        return Registers([*self.selection_registers, *self.temp_registers])
 
     def decompose_from_registers(
-        self, selection: Sequence[cirq.Qid], temp: Sequence[cirq.Qid]
+        self,
+        selection: Sequence[cirq.Qid],
+        sigma_mu: Sequence[cirq.Qid],
+        alt: Sequence[cirq.Qid],
+        keep: Sequence[cirq.Qid],
+        less_than_equal: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
-
-        sigma_mu, alt, keep, less_than_equal = (
-            temp[: self._mu],
-            temp[self._mu : self._mu + self._selection_bitsize],
-            temp[-(self._mu + 1) : -1],
-            temp[-1],
-        )
-
         yield PrepareUniformSuperposition(len(self._lcu_probs)).on(*selection)
+        yield cirq.H.on_each(*sigma_mu)
         qrom = QROM(self._alt, self._keep, target_bitsizes=[len(alt), len(keep)])
         yield qrom.on_registers(selection=selection, target0=alt, target1=keep)
-        yield cirq.H.on_each(*sigma_mu)
         yield LessThanEqualGate([2] * self._mu, [2] * self._mu).on(
-            *sigma_mu, *keep, less_than_equal
+            *keep, *sigma_mu, *less_than_equal
         )
-        yield MultiTargetCSwap(self.selection_bitsize).on_registers(
+        yield MultiTargetCSwap(self._selection_bitsize).on_registers(
             control=less_than_equal, target_x=alt, target_y=selection
         )
