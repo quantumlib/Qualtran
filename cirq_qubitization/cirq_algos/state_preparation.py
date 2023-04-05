@@ -123,6 +123,4 @@ class StatePreparationAliasSampling(GateWithRegisters):
         yield LessThanEqualGate([2] * self._mu, [2] * self._mu).on(
             *keep, *sigma_mu, *less_than_equal
         )
-        yield MultiTargetCSwap(self._selection_bitsize).on_registers(
-            control=less_than_equal, target_x=alt, target_y=selection
-        )
+        yield MultiTargetCSwap.make_on(control=less_than_equal, target_x=alt, target_y=selection)

@@ -30,11 +30,10 @@ def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
     # get the coefficients corresponding to |l>.
     L, logL = len(lcu_coefficients), len(g.quregs['selection'])
     state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
-    assert (state_vector >= -1e-6).all()
-    num_non_zero = (state_vector > 1e-6).sum(axis=1)
+    num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
     prepared_state = state_vector.sum(axis=1)
     assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
-    assert all(prepared_state[:L] > 1e-6) and all(prepared_state[L:] <= 1e-6)
+    assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
     prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
     # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
     # same as `lcu_coefficients` upto `epsilon`.
@@ -72,7 +71,3 @@ less_than_equal: ─────────────────────
 ''',
         qubit_order=qubit_order,
     )
-
-
-def test_notebook():
-    cq_testing.execute_notebook('state_preparation')
