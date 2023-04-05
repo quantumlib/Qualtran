@@ -1,0 +1,76 @@
+from functools import cached_property
+from typing import Sequence
+
+import cirq
+
+from cirq_qubitization.cirq_infra import qubit_manager
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
+
+
+class MultiTargetCNOT(GateWithRegisters):
+    """Implements single control, multi-target CNOT_{n} gate in 2*log(n) + 1 CNOT depth.
+
+    Implements CNOT_{n} = |0><0| I + |1><1| X^{n} using a circuit of depth 2*log(n) + 1
+    containing only CNOT gates. See Appendix B.1 of https://arxiv.org/abs/1812.00954 for
+    reference.
+    """
+
+    def __init__(self, num_targets: int):
+        self._num_targets = num_targets
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(control=1, targets=self._num_targets)
+
+    def decompose_from_registers(self, control: Sequence[cirq.Qid], targets: Sequence[cirq.Qid]):
+        def cnots_for_depth_i(i: int, q: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+            for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
+                yield cirq.CNOT(c, t)
+
+        (control,) = control
+        depth = len(targets).bit_length()
+        for i in range(depth):
+            yield cirq.Moment(cnots_for_depth_i(depth - i - 1, targets))
+        yield cirq.CNOT(control, targets[0])
+        for i in range(depth):
+            yield cirq.Moment(cnots_for_depth_i(i, targets))
+
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self._num_targets)
+
+
+class MultiControlNOT(GateWithRegisters):
+    """Implements multi-control, single-target C^{n}NOT gate.
+
+    Implements $C^{n}NOT = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| X^{n}$ using $n-2$
+    dirty ancillas and 4n - 8 TOFFOLI gates. See Appendix B.1 of https://arxiv.org/abs/1812.00954 for
+    reference.
+
+    References:
+        [Factoring with $n+2$ clean qubits and $n-1$ dirty qubits](https://arxiv.org/abs/1706.07884).
+        Craig Gidney (2018). Figure 25.
+        [Constructing Large Controlled Nots]
+        (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
+    """
+
+    def __init__(self, num_controls: int):
+        self._num_controls = num_controls
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers.build(controls=self._num_controls, target=1)
+
+    def decompose_from_registers(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
+        if len(controls) == 2:
+            return cirq.CCNOT(*controls, *target)
+        anc = qubit_manager.qborrow(len(controls) - 2)
+        ops = [cirq.CCNOT(anc[-i], controls[-i], anc[-i + 1]) for i in range(2, len(anc) + 1)]
+        inverted_v_ladder = ops + [cirq.CCNOT(*controls[:2], anc[0])] + ops[::-1]
+
+        yield cirq.CCNOT(anc[-1], controls[-1], *target)
+        yield inverted_v_ladder
+        yield cirq.CCNOT(anc[-1], controls[-1], *target)
+        yield inverted_v_ladder
+
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        return cirq.CircuitDiagramInfo(wire_symbols=["@"] * self._num_controls + ["X"])
