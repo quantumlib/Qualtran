@@ -6,7 +6,7 @@ import IPython.display
 import pytest
 from attrs import frozen
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
@@ -82,4 +82,4 @@ def test_graphviz(draw_cls):
 
 
 def test_notebook():
-    cq_testing.execute_notebook('graphviz')
+    execute_notebook('graphviz')

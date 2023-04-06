@@ -1,5 +1,5 @@
-import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def test_notebook():
-    cq_testing.execute_notebook('basic_gates')
+    execute_notebook('basic_gates')
