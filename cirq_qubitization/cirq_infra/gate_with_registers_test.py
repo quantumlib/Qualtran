@@ -3,8 +3,8 @@ from typing import Sequence
 import cirq
 import pytest
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Register, Registers
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def test_register():
@@ -99,4 +99,4 @@ def test_gate_with_registers():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('gate_with_registers')
+    execute_notebook('gate_with_registers')
