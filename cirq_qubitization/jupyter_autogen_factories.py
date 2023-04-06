@@ -66,10 +66,10 @@ def _make_GenericSelect():
     return GenericSelect(selection_bitsize, target_bitsize, select_unitaries=us)
 
 
-def _make_GenericSubPrepare():
-    from cirq_qubitization.generic_subprepare import GenericSubPrepare
+def _make_StatePreparationAliasSampling():
+    from cirq_qubitization.cirq_algos.state_preparation import StatePreparationAliasSampling
 
     coeffs = np.array([1.0, 1, 3, 2])
     mu = 3
 
-    return GenericSubPrepare(coeffs, probability_epsilon=2**-mu / len(coeffs))
+    return StatePreparationAliasSampling(coeffs, probability_epsilon=2**-mu / len(coeffs))
