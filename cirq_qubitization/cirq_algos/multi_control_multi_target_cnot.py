@@ -5,6 +5,7 @@ import cirq
 
 from cirq_qubitization.cirq_infra import qubit_manager
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 
 class MultiTargetCNOT(GateWithRegisters):
@@ -74,3 +75,6 @@ class MultiControlNOT(GateWithRegisters):
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] * self._num_controls + ["X"])
+
+    def _t_complexity_(self) -> TComplexity:
+        return (4 * self._num_controls - 8) * t_complexity(cirq.CCNOT)

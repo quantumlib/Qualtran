@@ -20,6 +20,12 @@ class TComplexity:
             self.t + other.t, self.clifford + other.clifford, self.rotations + other.rotations
         )
 
+    def __mul__(self, other: int) -> 'TComplexity':
+        return TComplexity(self.t * other, self.clifford * other, self.rotations * other)
+
+    def __rmul__(self, other: int):
+        return self.__mul__(other)
+
 
 class SupportsTComplexity(Protocol):
     """An object whose TComplexity can be computed.

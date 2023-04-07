@@ -53,3 +53,9 @@ target: ──────X─────────────────�
 ''',
         qubit_order=qubit_order,
     )
+
+
+@pytest.mark.parametrize("num_controls", [*range(7, 17)])
+def test_t_complexity(num_controls: int):
+    gate = cirq_qubitization.MultiControlNOT(num_controls)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(gate)
