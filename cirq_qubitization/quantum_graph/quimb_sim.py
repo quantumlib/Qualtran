@@ -35,7 +35,6 @@ def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT
             registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
             registers, the value will be a `Soquet` object.
     """
-    available = set()  # TODO: remove
 
     if right:
         regs = regs.rights()
@@ -47,7 +46,7 @@ def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT
     all_soqs: Dict[str, SoquetT] = {}
     soqs: SoquetT
     for reg in regs:
-        all_soqs[reg.name] = _reg_to_soq(dang, reg, available)
+        all_soqs[reg.name] = _reg_to_soq(dang, reg)
     return all_soqs
 
 
