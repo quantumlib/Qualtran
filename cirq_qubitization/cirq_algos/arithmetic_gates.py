@@ -20,8 +20,10 @@ class LessThanGate(cirq.ArithmeticGate):
     def apply(self, input_val, max_val, target_register_val) -> Union[int, Iterable[int]]:
         return input_val, max_val, target_register_val ^ (input_val < max_val)
 
-    def __repr__(self) -> str:
-        return f"cirq_qubitization.LessThanGate({self._input_register, self._val})"
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["In(x)"] * len(self._input_register)
+        wire_symbols += [f'+(x < {self._val})']
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
 
 class LessThanEqualGate(cirq.ArithmeticGate):
@@ -49,5 +51,8 @@ class LessThanEqualGate(cirq.ArithmeticGate):
             target_register_val ^ (first_input_val <= second_input_val),
         )
 
-    def __repr__(self) -> str:
-        return f"cirq_qubitization.LessThanEqualGate({self._first_input_register, self._second_input_register})"
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["In(x)"] * len(self._first_input_register)
+        wire_symbols += ["In(y)"] * len(self._second_input_register)
+        wire_symbols += ['+(x <= y)']
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

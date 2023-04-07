@@ -55,4 +55,4 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
 
 
 def show_bloq(bloq: Bloq):
-    return IPython.display.SVG(PrettyGraphDrawer(bloq).get_graph().create_svg())
+    return PrettyGraphDrawer(bloq).get_svg()
