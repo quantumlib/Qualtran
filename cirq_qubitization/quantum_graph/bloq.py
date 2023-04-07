@@ -76,6 +76,15 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return bb.finalize(**out_soqs)
 
+    def supports_decompose_bloq(self) -> bool:
+        """Whether this bloq supports `.decompose_bloq()`.
+
+        By default, we check that the method `build_composite_bloq` is overriden. For
+        extraordinary circumstances, you may need to override this method directly to
+        return an accurate value.
+        """
+        return not self.build_composite_bloq.__qualname__.startswith('Bloq.')
+
     def as_composite_bloq(self) -> 'CompositeBloq':
         """Wrap this Bloq into a size-1 CompositeBloq.
 

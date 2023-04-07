@@ -218,6 +218,65 @@ class CompositeBloq(Bloq):
         fsoqs = map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
+    def flatten_once(self, pred: Callable[[BloqInstance], bool]) -> 'CompositeBloq':
+        """Decompose and flatten each subbloq that satisfies `pred`.
+
+        This will only flatten "once". That is, we will go through the bloq instances
+        contained in this composite bloq and (optionally) flatten each one but will not
+        recursively flatten the results. For a recursive version see `flatten`.
+
+        Args:
+            pred: A predicate that takes a bloq instance and returns True if it should
+                be flattened or False if it should remain undecomposed.
+
+        Raises:
+            `DidNotFlattenAnythingError` if none of the bloq instances satisfied `pred`.
+        """
+        bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+        soq_map: List[Tuple[SoquetT, SoquetT]] = []
+        did_work = False
+        for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
+            in_soqs = map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
+
+            bloq = binst.bloq
+            if pred(binst):
+                new_out_soqs = bb.add_from(bloq.decompose_bloq(), **in_soqs)
+                did_work = True
+            else:
+                new_out_soqs = bb.add(bloq, **in_soqs)
+
+            soq_map.extend(zip(old_out_soqs, new_out_soqs))
+
+        if not did_work:
+            raise DidNotFlattenAnythingError()
+
+        fsoqs = map_soqs(self.final_soqs(), soq_map)
+        return bb.finalize(**fsoqs)
+
+    def flatten(
+        self, pred: Callable[[BloqInstance], bool], max_depth: int = 1_000
+    ) -> 'CompositeBloq':
+        """Recursively decompose and flatten subbloqs until none satisfy `pred`.
+
+        This will continue flattening the results of subbloq.decompose_bloq() until
+        all bloqs which would satisfy `pred` have been flattened.
+
+        Args:
+            pred: A predicate that takes a bloq instance and returns True if it should
+                be flattened or False if it should remain undecomposed.
+            max_depth: To avoid infinite recursion, give up after this many recursive steps.
+        """
+        cbloq = self
+        for _ in range(max_depth):
+            try:
+                cbloq = cbloq.flatten_once(pred)
+            except DidNotFlattenAnythingError:
+                break
+        else:
+            raise ValueError("Max recursion depth exceeded in `flatten`.")
+
+        return cbloq
+
     @staticmethod
     def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
         """Helper method used in `debug_text`"""
@@ -425,6 +484,10 @@ def _cxn_to_soq_dict(
 
 class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
+
+
+class DidNotFlattenAnythingError(BloqBuilderError):
+    """An exception raised if `flatten_once()` did not find anything to flatten."""
 
 
 class _IgnoreAvailable:
