@@ -535,7 +535,7 @@ def map_soqs(
     """
 
     # First: flatten out any numpy arrays
-    flat_soq_map = {}
+    flat_soq_map: Dict[Soquet, Soquet] = {}
     for old_soqs, new_soqs in soq_map:
         if isinstance(old_soqs, Soquet):
             assert isinstance(new_soqs, Soquet), new_soqs
