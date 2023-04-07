@@ -83,6 +83,9 @@ class Soquet:
             return f'{label}[{", ".join(str(i) for i in self.idx)}]'
         return label
 
+    def __str__(self) -> str:
+        return f'{self.binst}.{self.pretty()}'
+
 
 LeftDangle = DanglingT("LeftDangle")
 RightDangle = DanglingT("RightDangle")
@@ -114,3 +117,6 @@ class Connection:
         if ls != rs:
             raise ValueError(f"Invalid Connection {self}: shape mismatch: {ls} != {rs}")
         return ls
+
+    def __str__(self) -> str:
+        return f'{self.left} -> {self.right}'

@@ -2,6 +2,7 @@ import itertools
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
+import IPython.display
 import pydot
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -114,9 +115,8 @@ class GraphDrawer:
 
     To display a graph in a jupyter notebook consider using the SVG utilities:
 
-    >>> from IPython.display import SVG
     >>> dr = GraphDrawer(cbloq)
-    >>> SVG(dr.get_graph().create_svg())
+    >>> dr.get_svg()
 
     Args:
         bloq: The bloq or composite bloq to draw.
@@ -337,6 +337,14 @@ class GraphDrawer:
             graph = self.add_cxn(graph, cxn)
 
         return graph
+
+    def get_svg_bytes(self) -> bytes:
+        """Get the SVG code (as bytes) for drawing the graph."""
+        return self.get_graph().create_svg()
+
+    def get_svg(self) -> IPython.display.SVG:
+        """Get an IPython SVG object displaying the graph."""
+        return IPython.display.SVG(self.get_svg_bytes())
 
 
 class PrettyGraphDrawer(GraphDrawer):
