@@ -23,7 +23,7 @@ class TComplexity:
     def __mul__(self, other: int) -> 'TComplexity':
         return TComplexity(self.t * other, self.clifford * other, self.rotations * other)
 
-    def __rmul__(self, other: int):
+    def __rmul__(self, other: int) -> 'TComplexity':
         return self.__mul__(other)
 
 
