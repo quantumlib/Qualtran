@@ -1,11 +1,13 @@
 from functools import cached_property
 from typing import Dict
 
+import cirq
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
+from cirq_qubitization.bloq_algos.basic_gates import XGate
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
@@ -139,3 +141,43 @@ def test_cbloq_to_quimb():
     for oi in tn.outer_inds():
         assert isinstance(oi, Soquet)
         assert isinstance(oi.binst, DanglingT)
+
+
+@frozen
+class XNest(Bloq):
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(r=1)
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', r: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        (r,) = bb.add(XGate(), q=r)
+        return {'r': r}
+
+
+@frozen
+class XDoubleNest(Bloq):
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(s=1)
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', s: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        (s,) = bb.add(XNest(), r=s)
+        return {'s': s}
+
+
+def test_nest():
+    x = XNest()
+    should_be = cirq.unitary(cirq.X)
+    np.testing.assert_allclose(should_be, x.tensor_contract())
+    np.testing.assert_allclose(should_be, x.decompose_bloq().tensor_contract())
+
+
+def test_double_nest():
+    xx = XDoubleNest()
+    should_be = cirq.unitary(cirq.X)
+    np.testing.assert_allclose(should_be, xx.tensor_contract())
+    np.testing.assert_allclose(should_be, xx.decompose_bloq().tensor_contract())

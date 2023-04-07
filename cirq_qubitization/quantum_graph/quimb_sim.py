@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional, Tuple
+import itertools
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import quimb.tensor as qtn
 from numpy.typing import NDArray
@@ -59,7 +60,9 @@ def cbloq_to_quimb(
     External indices are the dangling soquets of the compute graph.
 
     Args:
-        cbloq: The composite bloq.
+        cbloq: The composite bloq. A composite bloq is a container class analogous to a
+            `TensorNetwork`. This function will simply add the tensor(s) for each Bloq
+            that constitutes the `CompositeBloq`.
         pos: Optional mapping of each `binst` to (x, y) coordinates which will be converted
             into a `fix` dictionary appropriate for `qtn.TensorNetwork.draw()`.
 
@@ -115,16 +118,24 @@ def cbloq_to_quimb(
     return tn, fix
 
 
-def _get_flat_dangling_soqs(registers: FancyRegisters, right: bool) -> List[Soquet]:
-    """Flatten out the values of the soquet dictionaries from `_get_dangling_soquets`."""
-    soqdict = _get_dangling_soquets(registers, right=right)
+def _flatten_soquet_collection(vals: Iterable[SoquetT]) -> List[Soquet]:
+    """Flatten SoquetT into a flat list of Soquet.
+
+    SoquetT is either a unit Soquet or an ndarray thereof.
+    """
     soqvals = []
-    for soq_or_arr in soqdict.values():
+    for soq_or_arr in vals:
         if isinstance(soq_or_arr, Soquet):
             soqvals.append(soq_or_arr)
         else:
-            soqvals.extend(soq_or_arr)
+            soqvals.extend(soq_or_arr.reshape(-1))
     return soqvals
+
+
+def _get_flat_dangling_soqs(registers: FancyRegisters, right: bool) -> List[Soquet]:
+    """Flatten out the values of the soquet dictionaries from `_get_dangling_soquets`."""
+    soqdict = _get_dangling_soquets(registers, right=right)
+    return _flatten_soquet_collection(soqdict.values())
 
 
 def get_right_and_left_inds(registers: FancyRegisters) -> List[List[Soquet]]:
@@ -132,7 +143,7 @@ def get_right_and_left_inds(registers: FancyRegisters) -> List[List[Soquet]]:
 
     In general, this will be returned as a list of length-2 corresponding
     to the right and left indices, respectively. If there *are* no right
-    or left indices, that entry will be ommitted from the returned list.
+    or left indices, that entry will be omitted from the returned list.
 
     Right indices come first to match the quantum computing / matrix multiplication
     convention where U_tot = U_n ... U_2 U_1.
@@ -168,3 +179,38 @@ def _cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
         return tn.to_dense(*inds)
 
     return tn.contract()
+
+
+def _cbloq_as_contracted_tensor_data_and_inds(
+    cbloq: CompositeBloq,
+    registers: FancyRegisters,
+    incoming: Dict[str, SoquetT],
+    outgoing: Dict[str, SoquetT],
+) -> Tuple[NDArray, List[Soquet]]:
+    """`add_my_tensors` helper for contracting `cbloq` and adding it as a dense tensor.
+
+    First, we turn the composite bloq into a TensorNetwork with `cbloq_to_quimb`. Then
+    we contract it to a dense ndarray. This function returns the dense array as well as
+    the indices munged from `incoming` and `outgoing` to match the structure of the ndarray.
+    """
+
+    # Turn into a dense ndarray, but instead of folding into a 1- or 2-
+    # dimensional state/effect or unitary; we keep all the indices as
+    # distinct dimensions.
+    rsoqs = _get_flat_dangling_soqs(registers, right=True)
+    lsoqs = _get_flat_dangling_soqs(registers, right=False)
+    inds_for_contract = rsoqs + lsoqs
+    assert len(inds_for_contract) > 0
+    tn, _ = cbloq_to_quimb(cbloq)
+    data = tn.to_dense(*([x] for x in inds_for_contract))
+    assert data.ndim == len(inds_for_contract)
+
+    # Now we just need to make sure the Soquets provided to us are in the correct
+    # order: namely the same order as how we got the indices to contract the composite bloq.
+    isoqs = (incoming[reg.name] for reg in registers.lefts())
+    osoqs = (outgoing[reg.name] for reg in registers.rights())
+    inds_for_adding = _flatten_soquet_collection(itertools.chain(isoqs, osoqs))
+    assert len(inds_for_adding) == len(inds_for_contract)
+
+    # Data and `inds_for_adding` can be used as `Tensor(data, inds)` arguments.
+    return data, inds_for_adding

@@ -11,6 +11,7 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
 _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
+_PAULIX = np.array([[0, 1], [1, 0]], dtype=np.complex128)
 
 
 @frozen
@@ -103,3 +104,24 @@ class MinusEffect(_XVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+
+@frozen
+class XGate(Bloq):
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(q=1)
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        binst,
+        *,
+        incoming: Dict[str, SoquetT],
+        outgoing: Dict[str, SoquetT],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+            )
+        )
