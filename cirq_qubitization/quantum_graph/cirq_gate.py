@@ -57,7 +57,7 @@ class CirqGate(Bloq):
         )
 
     def on_registers(self, qubits: Sequence[cirq.Qid]) -> cirq.Operation:
-        return self.gate.on(*qubits[:, 0])
+        return self.gate.on(*qubits)
 
 
 def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:

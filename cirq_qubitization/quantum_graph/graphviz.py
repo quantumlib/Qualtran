@@ -1,7 +1,6 @@
 import itertools
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-import numpy as np
 import IPython.display
 import pydot
 
