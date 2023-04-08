@@ -24,7 +24,7 @@ https://arxiv.org/abs/1905.09749
 
 """
 from functools import cached_property
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Tuple
 
 import numpy as np
 import sympy
@@ -68,7 +68,25 @@ def big_endian_bits_to_int(bitstrings):
 
 
 def int_to_bits(x: int, w: int):
-    return np.asarray([int(b) for b in f'{x:0{w}b}'])
+    return np.asarray([int(b) for b in f'{x:0{w}b}'], dtype=np.uint8)
+
+
+@frozen
+class AllocateBits(Bloq):
+    """Allocate an `n` bit register.
+
+    Args:
+          n: the bitsize of the allocated register.
+    """
+
+    bits: Tuple[int, ...]
+
+    @cached_property
+    def registers(self) -> FancyRegisters:
+        return FancyRegisters([FancyRegister('alloc', bitsize=len(self.bits), side=Side.RIGHT)])
+
+    def apply_classical(self) -> Dict[str, NDArray[np.uint8]]:
+        return {'alloc': np.asarray(self.bits, dtype=np.uint8)}
 
 
 @frozen
@@ -95,7 +113,18 @@ class ModExp(Bloq):
 
     @classmethod
     def make_for_shor(cls, big_n: int, g=None):
-        little_n = int(np.ceil(np.log2(big_n)))
+        """Factory method that sets up the modular exponentiation for a run of shors.
+
+        Args:
+            big_n: The large composite number N. Used to set `mod_N`. Its bitsize is used
+                to set `x_bitsize` and `exp_bitsize`.
+            g: Optional base of the exponentiation. If `None`, pick a random base.
+        """
+        if isinstance(big_n, sympy.Expr):
+            little_n = sympy.ceiling(sympy.log(big_n, 2))
+            little_n = little_n.subs(little_n, sympy.Symbol('n'))
+        else:
+            little_n = int(np.ceil(np.log2(big_n)))
         if g is None:
             g = np.random.randint(big_n)
         return cls(g=g, mod_N=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
@@ -115,7 +144,7 @@ class ModExp(Bloq):
         res = self.g**exp_number
         res %= self.mod_N
         res = int_to_bits(res, self.x_bitsize)
-        return exponent, res
+        return {'exponent': exponent, 'x': res}
 
     def CtrlModMul(self, k: int):
         return CtrlModMul(k=k, x_bitsize=self.x_bitsize, mod_N=self.mod_N)
@@ -123,12 +152,17 @@ class ModExp(Bloq):
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', exponent: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
-        x = bb.allocate(self.x_bitsize)  # TODO: initialize into "1" state.
+        (x,) = bb.add(AllocateBits(tuple(int_to_bits(1, self.x_bitsize))))
         exponent = bb.split(exponent)
 
+        # https://en.wikipedia.org/wiki/Modular_exponentiation
+        k = 1
         for j in range(self.exp_bitsize):
-            k = (self.g ** (2**j)) % self.mod_N
-            exponent[j], x = bb.add(self.CtrlModMul(k=k), ctrl=exponent[j], x=x)
+            k_exp = 2**j
+            k = (k * k_exp) % self.mod_N
+
+            lsb = self.exp_bitsize - j - 1
+            exponent[lsb], x = bb.add(self.CtrlModMul(k=k), ctrl=exponent[lsb], x=x)
 
         return {'exponent': bb.join(exponent), 'x': x}
 
@@ -151,6 +185,20 @@ class CtrlModMul(Bloq):
         return FancyRegisters(
             [FancyRegister('ctrl', bitsize=1), FancyRegister('x', bitsize=self.x_bitsize)]
         )
+
+    def apply_classical(
+        self, ctrl: NDArray[np.uint8], x: NDArray[np.uint8]
+    ) -> Dict[str, NDArray[np.uint8]]:
+        (ctrl_val,) = ctrl
+        if ctrl_val == 0:
+            return {'ctrl': ctrl, 'x': x}
+
+        assert ctrl_val == 1
+        # do the mod mul
+        (x_val,) = big_endian_bits_to_int(x)
+        res_val = (x_val * self.k) % self.mod_N
+        res = int_to_bits(res_val, self.x_bitsize)
+        return {'ctrl': ctrl, 'x': res}
 
     def Add(self, k: int):
         return CtrlScaleAdd(k=k, x_bitsize=self.x_bitsize, mod_N=self.mod_N)

@@ -58,10 +58,7 @@ class And(Bloq):
             target = np.array([1], dtype=np.uint8)
         else:
             target = np.array([0], dtype=np.uint8)
-        return {
-            'ctrl': ctrl,
-            'target': target,
-        }
+        return {'ctrl': ctrl, 'target': target}
 
     def add_my_tensors(
         self,
@@ -171,7 +168,7 @@ class MultiAnd(Bloq):
             'target': target,
         }
 
-    def apply_classical(self, ctrl:NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def apply_classical(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
         target = True
         for cv, c in zip(self.cvs, ctrl[:, 0]):
             target = target and (c == cv)
@@ -180,9 +177,4 @@ class MultiAnd(Bloq):
         target = [1] if target else [0]
         target = np.array(target, dtype=np.uint8)
 
-        return {
-            'ctrl': ctrl,
-            'junk': junk,
-            'target': target,
-        }
-
+        return {'ctrl': ctrl, 'junk': junk, 'target': target}

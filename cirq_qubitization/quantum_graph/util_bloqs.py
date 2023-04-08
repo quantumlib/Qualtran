@@ -4,6 +4,7 @@ from typing import Dict, Sequence, TYPE_CHECKING, Union
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from numpy.typing import NDArray
 
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -41,6 +42,11 @@ class Split(Bloq):
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
+
+    def apply_classical(self, split: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        # bitsize is last
+        assert split.shape == (self.n,)
+        return {'split': split[:, np.newaxis]}
 
 
 @frozen
@@ -86,6 +92,10 @@ class Join(Bloq):
             )
         )
 
+    def apply_classical(self, join: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        assert join.shape == (self.n, 1)
+        return {'join': join[:, 0]}
+
 
 @frozen
 class Allocate(Bloq):
@@ -100,6 +110,9 @@ class Allocate(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters([FancyRegister('alloc', bitsize=self.n, side=Side.RIGHT)])
+
+    def apply_classical(self) -> Dict[str, NDArray[np.uint8]]:
+        return {'alloc': np.zeros(self.n, dtype=np.uint8)}
 
 
 @frozen
