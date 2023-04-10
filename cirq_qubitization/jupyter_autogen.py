@@ -138,10 +138,11 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         module=cirq_qubitization.generic_select,
         gate_specs=[GateNbSpec(jaf._make_GenericSelect, draw_vertical=True)],
     ),
-    'generic_subprepare': NotebookSpec(
-        title='Subprepare',
-        module=cirq_qubitization.generic_subprepare,
-        gate_specs=[GateNbSpec(jaf._make_GenericSubPrepare)],
+    'state_preparation': NotebookSpec(
+        title='State Preparation using Coherent Alias Sampling',
+        module=cirq_qubitization.cirq_algos.state_preparation,
+        gate_specs=[GateNbSpec(jaf._make_StatePreparationAliasSampling)],
+        directory='./cirq_algos',
     ),
     'basic_gates': NotebookSpec(
         title='Basic Gates',
@@ -155,7 +156,10 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
     'and_bloq': NotebookSpec(
         title='And',
         module=cirq_qubitization.bloq_algos.and_bloq,
-        gate_specs=[BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and)],
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and),
+            BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_multi_and),
+        ],
         directory='./bloq_algos',
     ),
 }
