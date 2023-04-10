@@ -1,4 +1,5 @@
 from typing import List
+
 import cirq
 
 import cirq_qubitization.cirq_infra as cqi
