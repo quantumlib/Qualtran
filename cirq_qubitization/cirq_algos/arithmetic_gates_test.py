@@ -1,6 +1,7 @@
 import itertools
 
 import cirq
+import pytest
 
 import cirq_qubitization
 
@@ -47,3 +48,24 @@ def test_multi_in_less_equal_than_gate():
             assert true_out_int == int(out_bin, 2)
             maps[input_int] = output_int
     cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
+
+
+def test_contiguous_register_gate():
+    circuit = cirq.Circuit(
+        cirq_qubitization.ContiguousRegisterGate(3, 6).on(*cirq.LineQubit.range(12))
+    )
+    maps = {}
+    for p in range(2**3):
+        for q in range(p):
+            inp = f'0b_{p:03b}_{q:03b}_{0:06b}'
+            out = f'0b_{p:03b}_{q:03b}_{(p * (p - 1))//2 + q:06b}'
+            maps[int(inp, 2)] = int(out, 2)
+
+    cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
+
+
+@pytest.mark.parametrize('n', [*range(1, 10)])
+def test_contiguous_register_gate_t_complexity(n):
+    gate = cirq_qubitization.ContiguousRegisterGate(n, 2 * n)
+    toffoli_complexity = cirq_qubitization.t_complexity(cirq.CCNOT)
+    assert cirq_qubitization.t_complexity(gate) == (n**2 + n - 1) * toffoli_complexity
