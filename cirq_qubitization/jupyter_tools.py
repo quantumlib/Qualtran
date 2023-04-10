@@ -1,11 +1,9 @@
 from pathlib import Path
-from typing import Optional
 
 import cirq
 import cirq.contrib.svg.svg as ccsvg
 import IPython.display
 import ipywidgets
-import nbconvert
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
@@ -80,19 +78,3 @@ def execute_notebook(name: str):
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
     ep.preprocess(nb)
-
-
-def export_notebook(nbpath: Path, htmlpath: Path) -> Optional[Exception]:
-    with nbpath.open() as f:
-        nb = nbformat.read(f, as_version=4)
-
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-    try:
-        nb, resources = ep.preprocess(nb)
-    except Exception as e:
-        print(f'{nbpath} failed!')
-        print(e)
-        return e
-    html, resources = nbconvert.export(nbconvert.HTMLExporter(), nb, resources=resources)
-    with htmlpath.open('w') as f:
-        f.write(html)

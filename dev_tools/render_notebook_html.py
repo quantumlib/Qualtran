@@ -3,9 +3,11 @@ import subprocess
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
-from cirq_qubitization.jupyter_tools import export_notebook
+import nbconvert
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
 
 SOURCE_DIR_NAME = 'cirq_qubitization'
 DOC_OUT_DIR_NAME = 'docs/nbs'
@@ -57,6 +59,27 @@ def is_out_of_date(nbpath: Path, htmlpath: Path) -> bool:
     return ood
 
 
+def export_notebook_to_html(nbpath: Path, htmlpath: Path) -> Optional[Exception]:
+    """Export the notebook at `nbpath` to an html file at `htmlpath`.
+
+    This will execute the notebook. We catch any exceptions raised by notebook execution
+    and return it. Otherwise, we return `None`.
+    """
+    with nbpath.open() as f:
+        nb = nbformat.read(f, as_version=4)
+
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    try:
+        nb, resources = ep.preprocess(nb)
+    except Exception as e:
+        print(f'{nbpath} failed!')
+        print(e)
+        return e
+    html, resources = nbconvert.export(nbconvert.HTMLExporter(), nb, resources=resources)
+    with htmlpath.open('w') as f:
+        f.write(html)
+
+
 def main(render_all: bool = False):
     """Find, execute, and export all checked-in ipynbs.
 
@@ -75,7 +98,7 @@ def main(render_all: bool = False):
             continue
 
         htmlpath.parent.mkdir(parents=True, exist_ok=True)
-        err = export_notebook(nbpath=nbpath, htmlpath=htmlpath)
+        err = export_notebook_to_html(nbpath=nbpath, htmlpath=htmlpath)
         if err is not None:
             bad_nbs.append(nbpath)
 
