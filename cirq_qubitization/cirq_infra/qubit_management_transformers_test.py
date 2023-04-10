@@ -1,3 +1,4 @@
+from typing import List
 import cirq
 
 import cirq_qubitization.cirq_infra as cqi
@@ -194,3 +195,19 @@ ancilla_3: ───┼───┼───×───┼─────┼─�
 original: ────@───@───@───@─────@───@───@───@───@───@───@─────@───@───@───
 """,
         )
+
+
+def test_map_clean_and_borrowable_qubits_deallocates_only_once():
+    q: List[cirq.Qid] = [cqi.BorrowableQubit(i) for i in range(2)] + [cirq.q('q')]
+    circuit = cirq.Circuit(cirq.X.on_each(*q), cirq.X(q[1]))
+    greedy_mm = cqi.GreedyQubitManager(prefix="a", size=2)
+    mapped_circuit = cqi.map_clean_and_borrowable_qubits(circuit, qm=greedy_mm)
+    cirq.testing.assert_has_diagram(
+        mapped_circuit,
+        '''
+a_0: ───X───────
+
+a_1: ───X───X───
+
+q: ─────X───────''',
+    )
