@@ -23,3 +23,4 @@ from cirq_qubitization.cirq_algos.swap_network import (
     MultiTargetCSwapApprox,
     SwapWithZeroGate,
 )
+from cirq_qubitization.cirq_algos.unary_iteration import unary_iteration, UnaryIterationGate
