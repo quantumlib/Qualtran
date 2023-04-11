@@ -92,7 +92,8 @@ class AllocateInt(Bloq):
 
 @frozen
 class ModExp(Bloq):
-    """
+    """Perform $b^e mod m$ for constant `base` $b$, `mod` $m$, and register `exponent` $e$.
+
     The reference implementation works the way most implementations of Shor’s algorithm do, by
     decomposing exponentiation into iterative controlled modular multiplication [6, 31, 42, 87, 90, 91].
     A register x is initialized to the |1> state, then a controlled modular multiplication of the classical
@@ -100,38 +101,18 @@ class ModExp(Bloq):
     each integer j from n_e − 1 down to 0. After the multiplications are done, x is storing g^e (mod N)
     and measuring x completes the hard part of Shor’s algorithm.
 
-
+    Args:
+        base: The integer base of the exponentiation
+        mod: The integer modulus
+        exp_bitsize: The size of the `exponent` thru-register
+        x_bitsize: The size of the `x` right-register for returning the result of the
+            exponentiation.
     """
 
-    g: int
-    mod_N: int
+    base: int
+    mod: int
     exp_bitsize: int
     x_bitsize: int
-
-    def short_name(self) -> str:
-        return f'{self.g}^e % {self.mod_N}'
-
-    @property
-    def little_n(self):
-        return int(np.ceil(self.mod_N))
-
-    @classmethod
-    def make_for_shor(cls, big_n: int, g=None):
-        """Factory method that sets up the modular exponentiation for a run of shors.
-
-        Args:
-            big_n: The large composite number N. Used to set `mod_N`. Its bitsize is used
-                to set `x_bitsize` and `exp_bitsize`.
-            g: Optional base of the exponentiation. If `None`, pick a random base.
-        """
-        if isinstance(big_n, sympy.Expr):
-            little_n = sympy.ceiling(sympy.log(big_n, 2))
-            little_n = little_n.subs(little_n, sympy.Symbol('n'))
-        else:
-            little_n = int(np.ceil(np.log2(big_n)))
-        if g is None:
-            g = np.random.randint(big_n)
-        return cls(g=g, mod_N=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
     @cached_property
     def registers(self) -> 'FancyRegisters':
@@ -142,12 +123,33 @@ class ModExp(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return f'{self.base}^e % {self.mod}'
+
+    @classmethod
+    def make_for_shor(cls, big_n: int, g=None):
+        """Factory method that sets up the modular exponentiation for a run of shors.
+
+        Args:
+            big_n: The large composite number N. Used to set `mod`. Its bitsize is used
+                to set `x_bitsize` and `exp_bitsize`.
+            g: Optional base of the exponentiation. If `None`, pick a random base.
+        """
+        if isinstance(big_n, sympy.Expr):
+            little_n = sympy.ceiling(sympy.log(big_n, 2))
+            # little_n = little_n.subs(little_n, sympy.Symbol('n'))
+        else:
+            little_n = int(np.ceil(np.log2(big_n)))
+        if g is None:
+            g = np.random.randint(big_n)
+        return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
+
     def apply_classical(self, exponent: int):
         assert 0 <= exponent < 2**self.exp_bitsize
-        return {'exponent': exponent, 'x': (self.g**exponent) % self.mod_N}
+        return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
     def CtrlModMul(self, k: int):
-        return CtrlModMul(k=k, x_bitsize=self.x_bitsize, mod_N=self.mod_N)
+        return CtrlModMul(k=k, x_bitsize=self.x_bitsize, mod=self.mod)
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', exponent: 'SoquetT'
@@ -156,26 +158,31 @@ class ModExp(Bloq):
         exponent = bb.split(exponent)
 
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
-        base = self.g
+        base = self.base
         for j in range(self.exp_bitsize - 1, 0 - 1, -1):
             exponent[j], x = bb.add(self.CtrlModMul(k=base), ctrl=exponent[j], x=x)
-            base = base * base % self.mod_N
+            base = base * base % self.mod
 
         return {'exponent': bb.join(exponent), 'x': x}
 
 
 @frozen
 class CtrlModMul(Bloq):
+    """Perform controlled `x *= k mod m`
+
+    Args:
+        k: The integer multiplicative constant.
+        mod: The integer modulus
+        x_bitsize: The size of the `x` register.
+    """
+
     k: int
+    mod: int
     x_bitsize: int
-    mod_N: int
 
     def __attrs_post_init__(self):
         pass
         # assert self.k < self.mod_N # todo: work with sympy
-
-    def short_name(self) -> str:
-        return f'x *= {self.k}'
 
     @cached_property
     def registers(self) -> 'FancyRegisters':
@@ -183,16 +190,18 @@ class CtrlModMul(Bloq):
             [FancyRegister('ctrl', bitsize=1), FancyRegister('x', bitsize=self.x_bitsize)]
         )
 
+    def short_name(self) -> str:
+        return f'x *= {self.k}'
+
     def apply_classical(self, ctrl, x) -> Dict[str, NDArray[np.uint8]]:
         if ctrl == 0:
             return {'ctrl': ctrl, 'x': x}
 
-        assert ctrl == 1
-        # do the mod mul
-        return {'ctrl': ctrl, 'x': (x * self.k) % self.mod_N}
+        assert ctrl == 1, ctrl
+        return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
 
     def Add(self, k: int):
-        return CtrlScaleAdd(k=k, x_bitsize=self.x_bitsize, mod_N=self.mod_N)
+        return CtrlScaleAdd(k=k, x_bitsize=self.x_bitsize, mod_N=self.mod)
 
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT'
