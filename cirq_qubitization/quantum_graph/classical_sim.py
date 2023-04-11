@@ -63,16 +63,22 @@ def int_to_bits(x: int, w: int):
     assert x >= 0
     assert x.bit_length() <= 64
     mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=np.uint64).reshape((1, w))
-    return (x & mask).astype(bool).astype(int)
+    return (x & mask).astype(bool).astype(int)[0]
 
 
 def _get_in_vals(
     binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, NDArray[np.uint8]]
 ) -> NDArray[np.uint8]:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
-    full_shape = reg.wireshape + (reg.bitsize,)
-    arg = np.empty(full_shape, dtype=np.uint8)
+    # TODO: use for left dangle?
 
+    if not reg.wireshape:
+        return soq_assign[Soquet(binst, reg)]
+
+    if reg.bitsize > 64:
+        raise NotImplementedError("Come back later")
+
+    arg = np.empty(reg.wireshape, dtype=np.uint64)
     for idx in reg.wire_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
@@ -103,10 +109,16 @@ def _binst_apply_classical(
 
     # Use output
     for reg in bloq.registers.rights():
-        arr = np.asarray(out_vals[reg.name]).astype(np.uint8, casting='safe', copy=False)
-        for idx in reg.wire_idxs():
-            soq = Soquet(binst, reg, idx=idx)
-            soq_assign[soq] = arr[idx]
+        arr = out_vals[reg.name]
+
+        if reg.wireshape:
+            arr = np.asarray(arr)
+            for idx in reg.wire_idxs():
+                soq = Soquet(binst, reg, idx=idx)
+                soq_assign[soq] = arr[idx]
+        else:
+            soq = Soquet(binst, reg)
+            soq_assign[soq] = arr
 
 
 def _cbloq_apply_classical(
@@ -125,13 +137,18 @@ def _cbloq_apply_classical(
 
     # LeftDangle assignment
     for reg in registers.lefts():
-        arr = np.asarray(vals[reg.name]).astype(np.uint8, casting='safe', copy=False)
-        if arr.shape != reg.wireshape + (reg.bitsize,):
-            raise ValueError(f"Classical values for {reg} are the wrong shape: {arr.shape}")
+        arr = vals[reg.name]
+        # arr = np.asarray(vals[reg.name]).astype(np.uint8, casting='safe', copy=False)
+        # if arr.shape != reg.wireshape + (reg.bitsize,):
+        #     raise ValueError(f"Classical values for {reg} are the wrong shape: {arr.shape}")
 
-        for idx in reg.wire_idxs():
-            soq = Soquet(LeftDangle, reg, idx=idx)
-            soq_assign[soq] = arr[idx]
+        if reg.wireshape:
+            for idx in reg.wire_idxs():
+                soq = Soquet(LeftDangle, reg, idx=idx)
+                soq_assign[soq] = arr[idx]
+        else:
+            soq = Soquet(LeftDangle, reg)
+            soq_assign[soq] = arr
 
     # Bloq-by-bloq application
     for binst in nx.topological_sort(binst_graph):

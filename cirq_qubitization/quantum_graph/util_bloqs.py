@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.classical_sim import big_endian_bits_to_int, int_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
@@ -43,10 +44,10 @@ class Split(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def apply_classical(self, split: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        # bitsize is last
-        assert split.shape == (self.n,)
-        return {'split': split[:, np.newaxis]}
+    def apply_classical(self, split: int) -> Dict[str, NDArray[np.uint8]]:
+        assert split >= 0
+        assert split.bit_length() <= self.n
+        return {'split': int_to_bits(split, self.n)}
 
 
 @frozen
@@ -93,8 +94,8 @@ class Join(Bloq):
         )
 
     def apply_classical(self, join: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        assert join.shape == (self.n, 1)
-        return {'join': join[:, 0]}
+        assert join.shape == (self.n,)
+        return {'join': big_endian_bits_to_int(join)[0]}
 
 
 @frozen

@@ -72,21 +72,22 @@ def int_to_bits(x: int, w: int):
 
 
 @frozen
-class AllocateBits(Bloq):
-    """Allocate an `n` bit register.
+class AllocateInt(Bloq):
+    """Allocate an `n` bit register storing `val` ."""
 
-    Args:
-          n: the bitsize of the allocated register.
-    """
+    val: int
+    width: int
 
-    bits: Tuple[int, ...]
+    def __attrs_post_init__(self):
+        assert self.val >= 0
+        assert self.val.bit_length() <= self.width
 
     @cached_property
     def registers(self) -> FancyRegisters:
-        return FancyRegisters([FancyRegister('alloc', bitsize=len(self.bits), side=Side.RIGHT)])
+        return FancyRegisters([FancyRegister('x', bitsize=self.width, side=Side.RIGHT)])
 
     def apply_classical(self) -> Dict[str, NDArray[np.uint8]]:
-        return {'alloc': np.asarray(self.bits, dtype=np.uint8)}
+        return {'x': self.val}
 
 
 @frozen
@@ -106,6 +107,9 @@ class ModExp(Bloq):
     mod_N: int
     exp_bitsize: int
     x_bitsize: int
+
+    def short_name(self) -> str:
+        return f'{self.g}^e % {self.mod_N}'
 
     @property
     def little_n(self):
@@ -138,13 +142,9 @@ class ModExp(Bloq):
             ]
         )
 
-    def apply_classical(self, exponent):
-        assert exponent.shape == (self.exp_bitsize,)
-        (exp_number,) = big_endian_bits_to_int(exponent)
-        res = self.g**exp_number
-        res %= self.mod_N
-        res = int_to_bits(res, self.x_bitsize)
-        return {'exponent': exponent, 'x': res}
+    def apply_classical(self, exponent: int):
+        assert 0 <= exponent < 2**self.exp_bitsize
+        return {'exponent': exponent, 'x': (self.g**exponent) % self.mod_N}
 
     def CtrlModMul(self, k: int):
         return CtrlModMul(k=k, x_bitsize=self.x_bitsize, mod_N=self.mod_N)
@@ -152,17 +152,14 @@ class ModExp(Bloq):
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', exponent: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
-        (x,) = bb.add(AllocateBits(tuple(int_to_bits(1, self.x_bitsize))))
+        (x,) = bb.add(AllocateInt(val=1, width=self.x_bitsize))
         exponent = bb.split(exponent)
 
-        # https://en.wikipedia.org/wiki/Modular_exponentiation
-        k = 1
-        for j in range(self.exp_bitsize):
-            k_exp = 2**j
-            k = (k * k_exp) % self.mod_N
-
-            lsb = self.exp_bitsize - j - 1
-            exponent[lsb], x = bb.add(self.CtrlModMul(k=k), ctrl=exponent[lsb], x=x)
+        # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
+        base = self.g
+        for j in range(self.exp_bitsize - 1, 0 - 1, -1):
+            exponent[j], x = bb.add(self.CtrlModMul(k=base), ctrl=exponent[j], x=x)
+            base = base * base % self.mod_N
 
         return {'exponent': bb.join(exponent), 'x': x}
 
@@ -186,19 +183,13 @@ class CtrlModMul(Bloq):
             [FancyRegister('ctrl', bitsize=1), FancyRegister('x', bitsize=self.x_bitsize)]
         )
 
-    def apply_classical(
-        self, ctrl: NDArray[np.uint8], x: NDArray[np.uint8]
-    ) -> Dict[str, NDArray[np.uint8]]:
-        (ctrl_val,) = ctrl
-        if ctrl_val == 0:
+    def apply_classical(self, ctrl, x) -> Dict[str, NDArray[np.uint8]]:
+        if ctrl == 0:
             return {'ctrl': ctrl, 'x': x}
 
-        assert ctrl_val == 1
+        assert ctrl == 1
         # do the mod mul
-        (x_val,) = big_endian_bits_to_int(x)
-        res_val = (x_val * self.k) % self.mod_N
-        res = int_to_bits(res_val, self.x_bitsize)
-        return {'ctrl': ctrl, 'x': res}
+        return {'ctrl': ctrl, 'x': (x * self.k) % self.mod_N}
 
     def Add(self, k: int):
         return CtrlScaleAdd(k=k, x_bitsize=self.x_bitsize, mod_N=self.mod_N)
