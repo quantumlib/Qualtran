@@ -5,6 +5,7 @@ import cirq
 import cirq.contrib.svg.svg as ccsvg
 import IPython.display
 import ipywidgets
+import jinja2
 import nbconvert
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
@@ -93,6 +94,15 @@ def export_notebook(nbpath: Path, htmlpath: Path) -> Optional[Exception]:
         print(f'{nbpath} failed!')
         print(e)
         return e
-    html, resources = nbconvert.export(nbconvert.HTMLExporter(), nb, resources=resources)
+    nb['metadata']['title'] = 'heyo'
+    template_file = Path(__file__).parent / '../dev_tools/index.html.j2'
+    exporter = nbconvert.HTMLExporter(
+        # extra_template_basedirs=[Path(__file__).parent /'../dev_tools'],
+        extra_loaders=[jinja2.FileSystemLoader(Path(__file__).parent / '../dev_tools')],
+        # template_name='nbconvert_style',
+        template_file ='crazy.html.j2',
+    )
+
+    html, resources = nbconvert.export(exporter, nb, resources=resources)
     with htmlpath.open('w') as f:
         f.write(html)

@@ -63,10 +63,13 @@ def main(render_all: bool = False):
     Args:
         render_all: If False (the default) only render out-of-date html outputs.
     """
+    render_all = True
     print("render_all:", render_all)
     reporoot = get_git_root()
     sourceroot = reporoot / SOURCE_DIR_NAME
     nb_rel_paths = get_nb_rel_paths(rootdir=sourceroot)
+    nb_rel_paths = [p for p in nb_rel_paths if 'Tutorial' in str(p)]
+
     bad_nbs = []
     for nb_rel_path in nb_rel_paths:
         htmlpath = reporoot / get_html_rel_path(nb_rel_path)
