@@ -1,12 +1,18 @@
+from typing import *
+
 import networkx as nx
 import numpy as np
 
-from typing import *
-
-from cirq_qubitization.quantum_graph.composite_bloq import _binst_to_cxns
+from cirq_qubitization.quantum_graph.composite_bloq import _binst_to_cxns, CompositeBloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
-from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance, Soquet, LeftDangle, \
-    DanglingT, Connection, RightDangle
+from cirq_qubitization.quantum_graph.quantum_graph import (
+    BloqInstance,
+    Connection,
+    DanglingT,
+    LeftDangle,
+    RightDangle,
+    Soquet,
+)
 
 
 class Allocator:
@@ -25,9 +31,7 @@ class Allocator:
         self._free.append(i)
 
 
-def _get_in_vals(
-        binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, Any]
-):
+def _get_in_vals(binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, Any]):
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     # TODO: use for left dangle?
 
@@ -45,12 +49,7 @@ def _get_in_vals(
     return arg
 
 
-def _binst_do_score(
-        binst: BloqInstance,
-        pred_cxns: Iterable[Connection],
-        assign,
-        alloc,
-):
+def _binst_do_score(binst: BloqInstance, pred_cxns: Iterable[Connection], assign, alloc):
     """Call `apply_classical` on a given binst."""
 
     # Track inter-Bloq name changes
@@ -58,7 +57,6 @@ def _binst_do_score(
     for cxn in pred_cxns:
         assign[cxn.right] = assign[cxn.left]
         layer.append(assign[cxn.right])
-
 
     # def _in_vals(reg: FancyRegister):
     #     # close over binst and `soq_assign`
@@ -97,11 +95,7 @@ def _binst_do_score(
     return layer
 
 
-
-
-def cbloq_musical_score(
-        registers: FancyRegisters, binst_graph: nx.DiGraph
-):
+def cbloq_musical_score(registers: FancyRegisters, binst_graph: nx.DiGraph):
     """Propogate `apply_classical` calls through a composite bloq's contents.
 
     Args:
@@ -125,7 +119,6 @@ def cbloq_musical_score(
             soq = Soquet(LeftDangle, reg)
             assign[soq] = alloc.alloc()
 
-
     # Bloq-by-bloq application
     for binst in nx.topological_sort(binst_graph):
         if isinstance(binst, DanglingT):
@@ -134,16 +127,48 @@ def cbloq_musical_score(
         layer = _binst_do_score(binst, pred_cxns, assign, alloc)
         layers.append(layer)
 
-
     # Track bloq-to-dangle name changes
     final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
     for cxn in final_preds:
         assign[cxn.right] = assign[cxn.left]
     return layers, assign
-    #
-    # # Formulate output with expected API
-    # def _f_vals(reg: FancyRegister):
-    #     return _get_in_vals(RightDangle, reg, soq_assign)
-    #
-    # final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}
-    # return final_vals, soq_assign
+
+
+def draw(bloq: CompositeBloq):
+    from matplotlib import pyplot as plt
+
+    layers, assign = cbloq_musical_score(bloq.registers, bloq._binst_graph)
+    fig, ax = plt.subplots(figsize=(7, 5))
+
+    ax.set_xlim((-2, len(bloq.bloq_instances) + 1))
+    ax.set_ylim((min(assign.values()) - 1, max(assign.values()) + 1))
+
+    for soq in bloq.all_soquets:
+        y = assign[soq]
+        if soq.binst is LeftDangle:
+            x = -1
+        elif soq.binst is RightDangle:
+            x = len(bloq.bloq_instances)
+        else:
+            x = soq.binst.i
+
+        if soq.binst is LeftDangle or soq.binst is RightDangle:
+            bbox = dict(fc='white', ec='none')
+        elif soq.reg.side is Side.LEFT:
+            bbox = dict(fc='white', boxstyle='RArrow')
+        elif soq.reg.side is Side.RIGHT:
+            bbox = dict(fc='white', boxstyle='LArrow')
+        else:
+            bbox = dict(fc='white')
+        ax.text(
+            x,
+            y,
+            f'{soq.reg.name}',
+            transform=ax.transData,
+            fontsize=10,
+            ha='center',
+            va='center',
+            bbox=bbox,
+        )
+
+    return fig, ax
