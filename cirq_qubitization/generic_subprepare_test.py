@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 import cirq_qubitization
+from cirq_qubitization import cirq_infra
 from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
 
 
@@ -19,7 +20,10 @@ def test_generic_subprepare(num_sites, epsilon):
         + subprepare_gate.temp_bitsize
     ]
     op = subprepare_gate.on_registers(selection=selection, temp=temp)
-    circuit = cirq.Circuit(cirq.I.on_each(*q), cirq.decompose(op))
+    with cirq_infra.memory_management_context(
+        cirq_infra.GreedyQubitManager('_a', maximize_reuse=True)
+    ):
+        circuit = cirq.Circuit(cirq.I.on_each(*q), cirq.decompose(op))
     all_qubits = q + sorted(circuit.all_qubits() - frozenset(q))
     result = cirq.Simulator(dtype=np.complex128).simulate(circuit, qubit_order=all_qubits)
     state_vector = result.final_state_vector
