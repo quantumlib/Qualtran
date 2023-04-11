@@ -3,7 +3,7 @@ from typing import Any, Sequence
 
 import cirq
 
-from cirq_qubitization.cirq_algos import multi_target_cnot
+from cirq_qubitization.cirq_algos import multi_control_multi_target_cnot
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import TComplexity
 
@@ -95,7 +95,7 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
         g_on_y = [list(g(q)) for q in target_y]  # Uses len(target_y) T-gates
 
         yield [cnot_y_to_x, g_inv_on_y, cnot_x_to_y, g_inv_on_y]
-        yield multi_target_cnot.MultiTargetCNOT(len(target_y)).on(control, *target_y)
+        yield multi_control_multi_target_cnot.MultiTargetCNOT(len(target_y)).on(control, *target_y)
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:

@@ -79,3 +79,22 @@ def test_decompose_less_than_gate(bits: List[int], val: int):
 def test_t_complexity(n: int, val: int):
     g = cirq_qubitization.LessThanGate(n * [2], val)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+def test_contiguous_register_gate():
+    circuit = cirq.Circuit(
+        cirq_qubitization.ContiguousRegisterGate(3, 6).on(*cirq.LineQubit.range(12))
+    )
+    maps = {}
+    for p in range(2**3):
+        for q in range(p):
+            inp = f'0b_{p:03b}_{q:03b}_{0:06b}'
+            out = f'0b_{p:03b}_{q:03b}_{(p * (p - 1))//2 + q:06b}'
+            maps[int(inp, 2)] = int(out, 2)
+
+    cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
+
+
+@pytest.mark.parametrize('n', [*range(1, 10)])
+def test_contiguous_register_gate_t_complexity(n):
+    gate = cirq_qubitization.ContiguousRegisterGate(n, 2 * n)
+    toffoli_complexity = cirq_qubitization.t_complexity(cirq.CCNOT)
+    assert cirq_qubitization.t_complexity(gate) == (n**2 + n - 1) * toffoli_complexity

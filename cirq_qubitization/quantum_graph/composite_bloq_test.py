@@ -1,7 +1,6 @@
 from functools import cached_property
-from typing import Dict
+from typing import Dict, List, Tuple
 
-import attrs
 import cirq
 import networkx as nx
 import numpy as np
@@ -9,6 +8,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
@@ -17,13 +17,13 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     BloqBuilderError,
     CompositeBloq,
     CompositeBloqBuilder,
+    map_soqs,
     SoquetT,
 )
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
-    DanglingT,
     LeftDangle,
     RightDangle,
     Soquet,
@@ -115,16 +115,35 @@ def test_iter_bloqsoqs():
     cbloq = TestTwoCNOT().decompose_bloq()
     assert len(list(cbloq.iter_bloqsoqs())) == len(cbloq.bloq_instances)
 
-    for binst, soqs in cbloq.iter_bloqsoqs():
+    for binst, isoqs, osoqs in cbloq.iter_bloqsoqs():
         assert isinstance(binst, BloqInstance)
-        assert sorted(soqs.keys()) == ['control', 'target']
+        assert sorted(isoqs.keys()) == ['control', 'target']
+        assert len(osoqs) == 2
 
-    mapping = {binst: attrs.evolve(binst, i=100 + binst.i) for binst in cbloq.bloq_instances}
-    for binst, soqs in cbloq.iter_bloqsoqs(binst_map=mapping):
-        assert isinstance(binst, BloqInstance)
-        for s in soqs.values():
-            if not isinstance(s.binst, DanglingT):
-                assert s.binst.i >= 100
+
+def test_map_soqs():
+    cbloq = TestTwoCNOT().decompose_bloq()
+    bb, _ = CompositeBloqBuilder.from_registers(cbloq.registers)
+    bb._i = 100
+
+    soq_map: List[Tuple[SoquetT, SoquetT]] = []
+    for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
+        if binst.i == 0:
+            assert in_soqs == map_soqs(in_soqs, soq_map)
+        elif binst.i == 1:
+            for k, val in map_soqs(in_soqs, soq_map).items():
+                assert val.binst.i >= 100
+        else:
+            raise AssertionError()
+
+        in_soqs = map_soqs(in_soqs, soq_map)
+        new_out_soqs = bb.add(binst.bloq, **in_soqs)
+        soq_map.extend(zip(old_out_soqs, new_out_soqs))
+
+    fsoqs = map_soqs(cbloq.final_soqs(), soq_map)
+    for k, val in fsoqs.items():
+        assert val.binst.i >= 100
+    return bb.finalize(**fsoqs)
 
 
 def test_bb_composite_bloq():
@@ -157,18 +176,6 @@ def test_bloq_builder():
     inds = {binst.i for binst in cbloq.bloq_instances}
     assert len(inds) == 2
     assert len(cbloq.bloq_instances) == 2
-
-
-def test_bloq_builder_add_2():
-    bb = CompositeBloqBuilder()
-    x = bb.add_register('x', 1)
-    y = bb.add_register('y', 1)
-
-    binst1, (x, y) = bb.add_2(TestCNOT(), control=x, target=y)
-    binst2, (x, y) = bb.add_2(TestCNOT(), control=x, target=y)
-    cbloq = bb.finalize(x=x, y=y)
-
-    assert sorted(cbloq.bloq_instances, key=lambda x: x.i) == [binst1, binst2]
 
 
 def _get_bb():
@@ -465,3 +472,7 @@ def test_t_complexity():
 
     assert TestSerialBloq().t_complexity().t == 3 * 100
     assert TestParallelBloq().t_complexity().t == 3 * 100
+
+
+def test_notebook():
+    cq_testing.execute_notebook('composite_bloq')

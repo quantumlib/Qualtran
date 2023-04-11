@@ -39,7 +39,7 @@ def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, targe
         )
 
         expected_target_state = cirq.Circuit(
-            [cirq.Z(q) for q in g.quregs['target'][: n - 1]],
+            [cirq.Z(q) for q in g.quregs['target'][:n]],
             target_gate(g.quregs['target'][n]),
             [cirq.I(q) for q in g.quregs['target'][n + 1 :]],
         ).final_state_vector(qubit_order=g.quregs['target'])
@@ -76,6 +76,45 @@ target3: ───────ZX────
 target4: ───────ZX────
                 │
 accumulator: ───Acc───
+    """,
+        qubit_order=qubits,
+    )
+
+
+def test_selected_majorana_fermion_gate_decomposed_diagram():
+    selection_bitsize, target_bitsize = 2, 3
+    gate = cq.SelectedMajoranaFermionGate(selection_bitsize, target_bitsize, target_gate=cirq.X)
+    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cq.cirq_infra.memory_management_context(greedy_mm):
+        g = cq_testing.GateHelper(gate)
+        circuit = cirq.Circuit(cirq.decompose_once(g.operation))
+    ancillas = sorted(set(circuit.all_qubits()) - set(g.operation.qubits))
+    qubits = (
+        g.quregs['control']
+        + [q for qs in zip(g.quregs['selection'], ancillas) for q in qs]
+        + g.quregs['accumulator']
+        + g.quregs['target']
+    )
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """
+control: ───────@───@──────────────────────────────────────@───────────@──────
+                │   │                                      │           │
+selection0: ────┼───(0)────────────────────────────────────┼───────────@──────
+                │   │                                      │           │
+_a_0: ──────────┼───And───@─────────────@───────────@──────X───@───@───And†───
+                │         │             │           │          │   │
+selection1: ────┼─────────(0)───────────┼───────────@──────────┼───┼──────────
+                │         │             │           │          │   │
+_a_1: ──────────┼─────────And───@───@───X───@───@───And†───────┼───┼──────────
+                │               │   │       │   │              │   │
+accumulator: ───X───────────────X───┼───@───X───┼───@──────────X───┼───@──────
+                                    │   │       │   │              │   │
+target0: ───────────────────────────X───@───────┼───┼──────────────┼───┼──────
+                                                │   │              │   │
+target1: ───────────────────────────────────────X───@──────────────┼───┼──────
+                                                                   │   │
+target2: ──────────────────────────────────────────────────────────X───@──────
     """,
         qubit_order=qubits,
     )

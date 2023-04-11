@@ -59,17 +59,9 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
     def extra_registers(self) -> Registers:
         return Registers.build(accumulator=1)
 
-    def _decompose_single_control(
-        self,
-        control: cirq.Qid,
-        selection: Sequence[cirq.Qid],
-        target: Sequence[cirq.Qid],
-        accumulator: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
-        yield cirq.CNOT(control, accumulator[0])
-        yield from super()._decompose_single_control(
-            control, selection, target, accumulator=accumulator
-        )
+    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        yield cirq.CNOT(*qubit_regs['control'], *qubit_regs['accumulator'])
+        yield super().decompose_from_registers(**qubit_regs)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_registers.bitsize
