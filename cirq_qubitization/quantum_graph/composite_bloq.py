@@ -830,10 +830,10 @@ class CompositeBloqBuilder:
 
         return CompositeBloq(cxns=self._cxns, registers=registers)
 
-    def allocate(self, n: int = 1) -> Soquet:
+    def allocate(self, bitsize: int = 1, val: int = 0) -> Soquet:
         from cirq_qubitization.quantum_graph.util_bloqs import Allocate
 
-        (out_soq,) = self.add(Allocate(n=n))
+        (out_soq,) = self.add(Allocate(bitsize=bitsize, val=val))
         return out_soq
 
     def free(self, soq: Soquet) -> None:

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, TypeVar
+from typing import Dict, Iterable, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -15,34 +15,10 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     Soquet,
 )
 
-T = TypeVar('T')
+ValT = Union[int, NDArray[int]]
 
 
-def big_endian_bits_to_int_cirq(bits: Iterable[Any]) -> int:
-    """Returns the big-endian integer specified by the given bits.
-    Args:
-        bits: Descending bits of the integer, with the 1s bit at the end.
-    Returns:
-        The integer.
-    Examples:
-        >>> cirq.big_endian_bits_to_int([0, 1])
-        1
-        >>> cirq.big_endian_bits_to_int([1, 0])
-        2
-        >>> cirq.big_endian_bits_to_int([0, 1, 0])
-        2
-        >>> cirq.big_endian_bits_to_int([1, 0, 0, 1, 0])
-        18
-    """
-    result = 0
-    for e in bits:
-        result <<= 1
-        if e:
-            result |= 1
-    return result
-
-
-def big_endian_bits_to_int(bitstrings):
+def bits_to_ints(bitstrings):
     """Returns the big-endian integer specified by the given bits.
     Args:
         bits: Descending bits of the integer, with the 1s bit at the end.
@@ -55,23 +31,15 @@ def big_endian_bits_to_int(bitstrings):
     return np.sum(basis * bitstrings, axis=1)
 
 
-def int_to_bits_ref(x: int, w: int):
-    return np.asarray([int(b) for b in f'{x:0{w}b}'])
+def ints_to_bits(x: NDArray[np.uint], w: int):
+    assert np.issubdtype(x.dtype, np.uint)
+    assert w <= np.iinfo(x.dtype).bits
+    mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=x.dtype).reshape((w, 1))
+    return (x & mask).astype(bool).astype(np.uint8).T
 
 
-def int_to_bits(x: int, w: int):
-    assert x >= 0
-    assert x.bit_length() <= 64
-    mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=np.uint64).reshape((1, w))
-    return (x & mask).astype(bool).astype(int)[0]
-
-
-def _get_in_vals(
-    binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, NDArray[np.uint8]]
-) -> NDArray[np.uint8]:
+def _get_in_vals(binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, ValT]) -> ValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
-    # TODO: use for left dangle?
-
     if not reg.wireshape:
         return soq_assign[Soquet(binst, reg)]
 
@@ -86,10 +54,35 @@ def _get_in_vals(
     return arg
 
 
-def _binst_apply_classical(
+def _update_assign_from_vals(
+    regs: Iterable[FancyRegister],
     binst: BloqInstance,
-    pred_cxns: Iterable[Connection],
-    soq_assign: Dict[Soquet, NDArray[np.uint8]],
+    vals: Dict[str, ValT],
+    soq_assign: Dict[Soquet, ValT],
+):
+    for reg in regs:
+        try:
+            arr = vals[reg.name]
+        except KeyError:
+            raise ValueError(f"{binst} requires an input register named {reg.name}")
+
+        if reg.wireshape:
+            arr = np.asarray(arr)
+            if arr.shape != reg.wireshape:
+                raise ValueError(f"Incorrect shape {arr.shape} received for {binst}.{reg.name}")
+
+            for idx in reg.wire_idxs():
+                soq = Soquet(binst, reg, idx=idx)
+                soq_assign[soq] = arr[idx]
+        else:
+            if not isinstance(arr, (int, np.uint)):
+                raise ValueError(f"{binst}.{reg.name} should be an integer, not {arr!r}")
+            soq = Soquet(binst, reg)
+            soq_assign[soq] = arr
+
+
+def _binst_apply_classical(
+    binst: BloqInstance, pred_cxns: Iterable[Connection], soq_assign: Dict[Soquet, ValT]
 ):
     """Call `apply_classical` on a given binst."""
 
@@ -107,48 +100,22 @@ def _binst_apply_classical(
     # Apply function
     out_vals = bloq.apply_classical(**in_vals)
 
-    # Use output
-    for reg in bloq.registers.rights():
-        arr = out_vals[reg.name]
-
-        if reg.wireshape:
-            arr = np.asarray(arr)
-            for idx in reg.wire_idxs():
-                soq = Soquet(binst, reg, idx=idx)
-                soq_assign[soq] = arr[idx]
-        else:
-            soq = Soquet(binst, reg)
-            soq_assign[soq] = arr
+    _update_assign_from_vals(bloq.registers.rights(), binst, out_vals, soq_assign)
 
 
 def _cbloq_apply_classical(
-    registers: FancyRegisters, vals: Dict[str, NDArray], binst_graph: nx.DiGraph
-) -> Dict[str, NDArray]:
-    """Propogate `apply_classical` calls through a composite bloq's contents.
+    registers: FancyRegisters, vals: Dict[str, ValT], binst_graph: nx.DiGraph
+) -> Tuple[Dict[str, ValT], Dict[Soquet, ValT]]:
+    """Propagate `apply_classical` calls through a composite bloq's contents.
 
     Args:
         registers: The cbloq's registers for validating inputs
         vals: Mapping from register name to bit values
         binst_graph: The cbloq's binst graph.
     """
-
-    # Keep track of each soquet's bit array.
-    soq_assign: Dict[Soquet, NDArray[np.uint8]] = {}
-
-    # LeftDangle assignment
-    for reg in registers.lefts():
-        arr = vals[reg.name]
-        # arr = np.asarray(vals[reg.name]).astype(np.uint8, casting='safe', copy=False)
-        # if arr.shape != reg.wireshape + (reg.bitsize,):
-        #     raise ValueError(f"Classical values for {reg} are the wrong shape: {arr.shape}")
-
-        if reg.wireshape:
-            for idx in reg.wire_idxs():
-                soq = Soquet(LeftDangle, reg, idx=idx)
-                soq_assign[soq] = arr[idx]
-        else:
-            soq = Soquet(LeftDangle, reg)
-            soq_assign[soq] = arr
+    # Keep track of each soquet's bit array. Initialize with LeftDangle
+    soq_assign: Dict[Soquet, ValT] = {}
+    _update_assign_from_vals(registers.lefts(), LeftDangle, vals, soq_assign)
 
     # Bloq-by-bloq application
     for binst in nx.topological_sort(binst_graph):
@@ -158,9 +125,10 @@ def _cbloq_apply_classical(
         _binst_apply_classical(binst, pred_cxns, soq_assign)
 
     # Track bloq-to-dangle name changes
-    final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
-    for cxn in final_preds:
-        soq_assign[cxn.right] = soq_assign[cxn.left]
+    if len(list(registers.rights())) > 0:
+        final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
+        for cxn in final_preds:
+            soq_assign[cxn.right] = soq_assign[cxn.left]
 
     # Formulate output with expected API
     def _f_vals(reg: FancyRegister):

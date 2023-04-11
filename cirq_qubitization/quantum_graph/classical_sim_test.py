@@ -1,26 +1,41 @@
 from typing import Dict
 
+import cirq
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.classical_sim import _cbloq_apply_classical, int_to_bits
+from cirq_qubitization.quantum_graph.classical_sim import (
+    _cbloq_apply_classical,
+    bits_to_ints,
+    ints_to_bits,
+)
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
 
-@frozen
-class SetBitsTest(Bloq):
-    x: int
-    w: int
+def test_bits_to_int():
+    rs = np.random.RandomState(52)
+    bitstrings = rs.choice([0, 1], size=(100, 23))
 
-    @property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters([FancyRegister('bits', self.w, side=Side.RIGHT)])
+    nums = bits_to_ints(bitstrings)
+    assert nums.shape == (100,)
 
-    def apply_classical(self) -> Dict[str, NDArray[np.uint8]]:
-        return {'bits': int_to_bits(self.x, self.w)}
+    for num, bs in zip(nums, bitstrings):
+        ref_num = cirq.big_endian_bits_to_int(bs.tolist())
+        assert num == ref_num
+
+
+def test_int_to_bits():
+    rs = np.random.RandomState(52)
+    nums = rs.randint(0, 2**23 - 1, size=(100,), dtype=np.uint64)
+    bitstrings = ints_to_bits(nums, w=23)
+    assert bitstrings.shape == (100, 23)
+
+    for num, bs in zip(nums, bitstrings):
+        ref_bs = cirq.big_endian_int_to_bits(int(num), bit_count=23)
+        np.testing.assert_array_equal(ref_bs, bs)
 
 
 @frozen

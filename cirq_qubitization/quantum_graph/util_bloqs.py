@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.classical_sim import big_endian_bits_to_int, int_to_bits
+from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
@@ -47,7 +47,7 @@ class Split(Bloq):
     def apply_classical(self, split: int) -> Dict[str, NDArray[np.uint8]]:
         assert split >= 0
         assert split.bit_length() <= self.n
-        return {'split': int_to_bits(split, self.n)}
+        return {'split': ints_to_bits(split, self.n)}
 
 
 @frozen
@@ -95,7 +95,7 @@ class Join(Bloq):
 
     def apply_classical(self, join: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
         assert join.shape == (self.n,)
-        return {'join': big_endian_bits_to_int(join)[0]}
+        return {'join': bits_to_ints(join)[0]}
 
 
 @frozen
@@ -106,11 +106,22 @@ class Allocate(Bloq):
           n: the bitsize of the allocated register.
     """
 
-    n: int
+    bitsize: int
+    val: int = 0
+
+    def __attrs_post_init__(self):
+        if self.val < 0:
+            raise ValueError("`val` must be positive")
+
+        if self.val >= 2**self.bitsize:
+            raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
 
     @cached_property
     def registers(self) -> FancyRegisters:
-        return FancyRegisters([FancyRegister('alloc', bitsize=self.n, side=Side.RIGHT)])
+        return FancyRegisters([FancyRegister('alloc', bitsize=self.bitsize, side=Side.RIGHT)])
+
+    def apply_classical(self) -> Dict[str, int]:
+        return {'alloc': self.val}
 
     def apply_classical(self) -> Dict[str, NDArray[np.uint8]]:
         return {'alloc': np.zeros(self.n, dtype=np.uint8)}
