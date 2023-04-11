@@ -79,6 +79,8 @@ def test_decompose_less_than_gate(bits: List[int], val: int):
 def test_t_complexity(n: int, val: int):
     g = cirq_qubitization.LessThanGate(n * [2], val)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+
+
 def test_contiguous_register_gate():
     circuit = cirq.Circuit(
         cirq_qubitization.ContiguousRegisterGate(3, 6).on(*cirq.LineQubit.range(12))
