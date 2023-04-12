@@ -141,7 +141,7 @@ def test_multi_target_cswap_make_on():
 
 
 def test_notebook():
-    execute_notebook('qrom')
+    execute_notebook('swap_network')
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
