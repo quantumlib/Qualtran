@@ -73,12 +73,10 @@ class QROM(unary_iteration.UnaryIterationGate):
 
     def decompose_zero_selection(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         controls = self.control_registers.merge_qubits(**qubit_regs)
-        target_regs = self.target_registers.split_qubits(
-            self.target_registers.merge_qubits(**qubit_regs)
-        )
-        if len(controls) == 0:
+        target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
+        if self._num_controls == 0:
             yield from self._load_nth_data(0, cirq.X, **target_regs)
-        elif len(controls) == 1:
+        elif self._num_controls == 1:
             yield from self._load_nth_data(0, lambda q: cirq.CNOT(controls[0], q), **target_regs)
         else:
             and_ancilla = cirq_infra.qalloc(len(controls) - 2)
