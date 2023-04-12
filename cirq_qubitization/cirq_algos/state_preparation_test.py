@@ -5,6 +5,7 @@ import pytest
 import cirq_qubitization as cq
 import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def construct_gate_helper_and_qubit_order(data, eps):
@@ -92,4 +93,4 @@ less_than_equal: ─────────────────────
 
 
 def test_notebook():
-    cq_testing.execute_notebook('state_preparation')
+    execute_notebook('state_preparation')
