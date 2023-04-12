@@ -89,3 +89,7 @@ less_than_equal: ─────────────────────
 ''',
         qubit_order=qubit_order,
     )
+
+
+def test_notebook():
+    cq_testing.execute_notebook('state_preparation')
