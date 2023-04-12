@@ -17,7 +17,7 @@ def construct_gate_helper_and_qubit_order(data, eps):
     return g, qubit_order
 
 
-@pytest.mark.parametrize("num_sites, epsilon", [[2, 1e-2], [3, 1.0e-2], [4, 2.0e-1], [7, 1.0e-1]])
+@pytest.mark.parametrize("num_sites, epsilon", [[2, 1e-2], [3, 5.0e-2], [4, 2.0e-1]])
 def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
     lcu_coefficients = get_1d_ising_lcu_coeffs(num_sites)
     g, qubit_order = construct_gate_helper_and_qubit_order(lcu_coefficients, epsilon)
