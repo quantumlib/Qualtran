@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import IPython.display
 import pydot
@@ -16,6 +16,9 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     Soquet,
 )
 from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
+
+if TYPE_CHECKING:
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 
 def _assign_ids_to_bloqs_and_soqs(
@@ -386,12 +389,14 @@ class PrettyGraphDrawer(GraphDrawer):
 
 
 class ClassicalSimGraphDrawer(PrettyGraphDrawer):
-    def __init__(self, bloq, data):
+    def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):
         super().__init__(bloq=bloq)
         from cirq_qubitization.quantum_graph.classical_sim import _cbloq_apply_classical
 
-        res, datamap = _cbloq_apply_classical(self._cbloq.registers, data, self._cbloq._binst_graph)
-        self.datamap = datamap
+        _, soq_assign = _cbloq_apply_classical(
+            self._cbloq.registers, vals, self._cbloq._binst_graph
+        )
+        self.soq_assign = soq_assign
 
     def cxn_label(self, cxn: Connection) -> str:
         """Overridable method to return labels for connections."""
@@ -399,22 +404,8 @@ class ClassicalSimGraphDrawer(PrettyGraphDrawer):
         # Warning! pay careful attention to thru registers which share the same soquet
         # key in the datamap for a bloqs left and right. The value will be for the right, output
         # value. So we need cxn.left as the correct value.
-
-        if cxn.left in self.datamap:
-            arr1 = self.datamap[cxn.left]
-            arr = arr1
-        else:
-            print(f'left {cxn.left} not in')
-
-        # if cxn.right in self.datamap:
-        #     arr2 = self.datamap[cxn.right]
-        #     arr = arr2
-        # else:
-        #     print(f'right {cxn.right} not in')
-        #
-        # if cxn.left in self.datamap and cxn.right in self.datamap:
-        #     print(np.array_equal(arr1, arr2))
-        return str(arr)
+        val = self.soq_assign[cxn.left]
+        return str(val)
 
     def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
         return pydot.Edge(

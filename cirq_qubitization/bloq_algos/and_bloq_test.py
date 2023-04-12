@@ -129,7 +129,7 @@ def test_multi_truth_table():
             assert classical['res'] == should_be
 
 
-def test_multiand_classical_decomp():
+def test_multiand_consitent_apply_classical():
     rs = np.random.RandomState(52)
     n = 5
     all_cvs = rs.choice([0, 1], size=(2, n))
@@ -140,16 +140,15 @@ def test_multiand_classical_decomp():
         bloq = MultiAnd(cvs=cvs)
         cbloq = bloq.decompose_bloq()
 
-        in_vals = {'ctrl': ctrl_string}
-        bloq_outs = bloq.apply_classical(**in_vals)
-        cbloq_outs = cbloq.apply_classical(**in_vals)
+        bloq_classical = bloq.apply_classical(ctrl=ctrl_string)
+        cbloq_classical = cbloq.apply_classical(ctrl=ctrl_string)
 
-        assert sorted(bloq_outs.keys()) == sorted(cbloq_outs.keys())
-        for k in bloq_outs.keys():
+        assert sorted(bloq_classical.keys()) == sorted(cbloq_classical.keys())
+        for k in bloq_classical.keys():
             if k == 'junk':
                 # TODO!
                 continue
-            np.testing.assert_array_equal(bloq_outs[k], cbloq_outs[k])
+            np.testing.assert_array_equal(bloq_classical[k], cbloq_classical[k])
 
 
 def test_notebook():

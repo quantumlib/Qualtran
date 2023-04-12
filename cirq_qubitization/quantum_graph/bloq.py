@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     import cirq
 
     from cirq_qubitization import TComplexity
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
@@ -93,17 +94,22 @@ class Bloq(metaclass=abc.ABCMeta):
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
 
-    def apply_classical(self, **vals: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        """Apply this bloq to classical date.
+    def apply_classical(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
         quantum circuits composed of X and C^nNOT gates are classically simulable.
 
         Args:
-            **vals: The input numpy array bit values for each left (or thru) register.
+            **vals: The input classical values for each left (or thru) register. The data
+                types are guaranteed *todo* to match `self.registers`. Values for registers
+                with bitsize `n` will be integers of that bitsize. Values for registers with
+                `wireshape` will be an ndarray of integers of the given bitsize. Note: integers
+                can be either Numpy or Python integers. If they are Python integers, they
+                are unsigned.
 
         Returns:
-            a dictionary mapping right (or thru) register name to output bit arrays.
+            A dictionary mapping right (or thru) register name to output classical values.
         """
         raise NotImplementedError(f"{self} does not support classical simulation.")
 

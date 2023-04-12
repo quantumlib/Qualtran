@@ -15,7 +15,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     Soquet,
 )
 
-ValT = Union[int, NDArray[int]]
+ClassicalValT = Union[int, NDArray[int]]
 
 
 def bits_to_ints(bitstrings):
@@ -38,7 +38,9 @@ def ints_to_bits(x: NDArray[np.uint], w: int):
     return (x & mask).astype(bool).astype(np.uint8).T
 
 
-def _get_in_vals(binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, ValT]) -> ValT:
+def _get_in_vals(
+    binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, ClassicalValT]
+) -> ClassicalValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.wireshape:
         return soq_assign[Soquet(binst, reg)]
@@ -57,9 +59,11 @@ def _get_in_vals(binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soque
 def _update_assign_from_vals(
     regs: Iterable[FancyRegister],
     binst: BloqInstance,
-    vals: Dict[str, ValT],
-    soq_assign: Dict[Soquet, ValT],
+    vals: Dict[str, ClassicalValT],
+    soq_assign: Dict[Soquet, ClassicalValT],
 ):
+    # TODO: note error checking happens here
+    # TODO: check for positive values?
     for reg in regs:
         try:
             arr = vals[reg.name]
@@ -82,7 +86,7 @@ def _update_assign_from_vals(
 
 
 def _binst_apply_classical(
-    binst: BloqInstance, pred_cxns: Iterable[Connection], soq_assign: Dict[Soquet, ValT]
+    binst: BloqInstance, pred_cxns: Iterable[Connection], soq_assign: Dict[Soquet, ClassicalValT]
 ):
     """Call `apply_classical` on a given binst."""
 
@@ -99,13 +103,12 @@ def _binst_apply_classical(
 
     # Apply function
     out_vals = bloq.apply_classical(**in_vals)
-
     _update_assign_from_vals(bloq.registers.rights(), binst, out_vals, soq_assign)
 
 
 def _cbloq_apply_classical(
-    registers: FancyRegisters, vals: Dict[str, ValT], binst_graph: nx.DiGraph
-) -> Tuple[Dict[str, ValT], Dict[Soquet, ValT]]:
+    registers: FancyRegisters, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
+) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `apply_classical` calls through a composite bloq's contents.
 
     Args:
@@ -114,7 +117,7 @@ def _cbloq_apply_classical(
         binst_graph: The cbloq's binst graph.
     """
     # Keep track of each soquet's bit array. Initialize with LeftDangle
-    soq_assign: Dict[Soquet, ValT] = {}
+    soq_assign: Dict[Soquet, ClassicalValT] = {}
     _update_assign_from_vals(registers.lefts(), LeftDangle, vals, soq_assign)
 
     # Bloq-by-bloq application
