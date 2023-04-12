@@ -229,6 +229,10 @@ class CompositeBloq(Bloq):
             pred: A predicate that takes a bloq instance and returns True if it should
                 be flattened or False if it should remain undecomposed.
 
+        Returns:
+            A new composite bloq where subbloqs matching `pred` have been decomposed and
+            flattened.
+
         Raises:
             `DidNotFlattenAnythingError` if none of the bloq instances satisfied `pred`.
         """
