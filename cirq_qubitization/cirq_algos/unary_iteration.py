@@ -145,7 +145,7 @@ def unary_iteration(
         yield from _unary_iteration_single_control(
             flanking_ops, controls[0], selection, l_iter, r_iter
         )
-    elif len(controls) == 2:
+    else:
         yield from _unary_iteration_multi_controls(
             flanking_ops, controls, selection, l_iter, r_iter
         )

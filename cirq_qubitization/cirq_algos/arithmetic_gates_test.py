@@ -6,10 +6,14 @@ import pytest
 import cirq_qubitization
 
 
+def identity_map(n: int):
+    return {i: i for i in range(2**n)}
+
+
 def test_less_than_gate():
-    circuit = cirq.Circuit(
-        cirq_qubitization.LessThanGate([2, 2, 2], 5).on(*cirq.LineQubit.range(4))
-    )
+    qubits = cirq.LineQubit.range(4)
+    op = cirq_qubitization.LessThanGate([2, 2, 2], 5).on(*qubits)
+    circuit = cirq.Circuit(op)
     maps = {
         0b_000_0: 0b_000_1,
         0b_000_1: 0b_000_0,
@@ -29,12 +33,14 @@ def test_less_than_gate():
         0b_111_1: 0b_111_1,
     }
     cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
+    circuit += op**-1
+    cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
 
 
 def test_multi_in_less_equal_than_gate():
-    circuit = cirq.Circuit(
-        cirq_qubitization.LessThanEqualGate([2, 2, 2], [2, 2, 2]).on(*cirq.LineQubit.range(7))
-    )
+    qubits = cirq.LineQubit.range(7)
+    op = cirq_qubitization.LessThanEqualGate([2, 2, 2], [2, 2, 2]).on(*qubits)
+    circuit = cirq.Circuit(op)
     maps = {}
     for in1, in2 in itertools.product(range(2**3), repeat=2):
         for target_reg_val in range(2):
@@ -47,7 +53,10 @@ def test_multi_in_less_equal_than_gate():
             output_int = int(in1_bin + in2_bin + out_bin, 2)
             assert true_out_int == int(out_bin, 2)
             maps[input_int] = output_int
+
     cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
+    circuit += op**-1
+    cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
 
 
 def test_contiguous_register_gate():
