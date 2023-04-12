@@ -136,8 +136,7 @@ class LessThanEqualGate(cirq.ArithmeticGate):
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * len(self._first_input_register)
         wire_symbols += ["In(y)"] * len(self._second_input_register)
-        # TODO: use '<=' symbol https://github.com/quantumlib/cirq-qubitization/issues/189
-        wire_symbols += ['+(x le y)']
+        wire_symbols += ['+(x <= y)']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power: int):
