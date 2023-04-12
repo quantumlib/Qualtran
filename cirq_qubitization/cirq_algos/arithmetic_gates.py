@@ -97,7 +97,7 @@ class LessThanGate(cirq.ArithmeticGate):
         yield from reversed(adjoint)
 
     def _has_unitary_(self):
-        return False
+        return True
 
     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
         n = len(self._input_register)
