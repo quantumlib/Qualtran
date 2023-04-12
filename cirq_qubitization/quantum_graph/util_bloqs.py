@@ -93,7 +93,7 @@ class Join(Bloq):
             )
         )
 
-    def apply_classical(self, join: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def apply_classical(self, join: NDArray[np.uint8]) -> Dict[str, int]:
         assert join.shape == (self.n,)
         return {'join': bits_to_ints(join)[0]}
 

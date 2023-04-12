@@ -64,7 +64,15 @@ class _ZVector(Bloq):
         )
 
     def apply_classical(self, **vals: int) -> Dict[str, int]:
+        """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
+
+        If `self.state`, we return a bit in the `q` register. Otherwise,
+        we assert that the inputted `q` register is the correct bit.
+        """
         if self.state:
+            if vals:
+                raise ValueError(f"Extra values to `apply_classical`: {vals}")
+
             if self.bit:
                 return {'q': 1}
             else:
@@ -72,11 +80,11 @@ class _ZVector(Bloq):
 
         q = vals.pop('q')
         if vals:
-            raise ValueError(f"Extra arguments: {vals}")
+            raise ValueError(f"Extra values to `apply_classical`: {vals}")
         if self.bit:
-            assert q == 1
+            assert q == 1, q
         else:
-            assert q == 0
+            assert q == 0, q
         return {}
 
 

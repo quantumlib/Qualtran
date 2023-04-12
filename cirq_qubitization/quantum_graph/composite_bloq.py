@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -32,6 +33,9 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+
+if TYPE_CHECKING:
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
 
@@ -123,7 +127,8 @@ class CompositeBloq(Bloq):
 
         return _cbloq_to_dense(self)
 
-    def apply_classical(self, **vals: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def apply_classical(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        """Support classical data by recursing into the composite bloq."""
         from cirq_qubitization.quantum_graph.classical_sim import _cbloq_apply_classical
 
         out_vals, _ = _cbloq_apply_classical(self.registers, vals, self._binst_graph)
