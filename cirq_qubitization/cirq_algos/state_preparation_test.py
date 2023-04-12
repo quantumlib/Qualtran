@@ -9,8 +9,7 @@ from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
 
 def construct_gate_helper_and_qubit_order(data, eps):
     gate = cq.StatePreparationAliasSampling(lcu_probabilities=data, probability_epsilon=eps)
-    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
+    with cq.cirq_infra.memory_management_context():
         g = cq_testing.GateHelper(gate)
         _ = g.decomposed_circuit
     ordered_input = sum(g.quregs.values(), start=[])
@@ -18,7 +17,7 @@ def construct_gate_helper_and_qubit_order(data, eps):
     return g, qubit_order
 
 
-@pytest.mark.parametrize("num_sites, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
+@pytest.mark.parametrize("num_sites, epsilon", [[2, 1e-4], [3, 1.0e-3], [4, 2.0e-3], [7, 2.0e-3]])
 def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
     lcu_coefficients = get_1d_ising_lcu_coeffs(num_sites)
     g, qubit_order = construct_gate_helper_and_qubit_order(lcu_coefficients, epsilon)
