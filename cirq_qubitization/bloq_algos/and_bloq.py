@@ -169,6 +169,17 @@ class MultiAnd(Bloq):
             'target': target,
         }
 
+    def _get_classical_junk(self, ctrl: NDArray[np.uint8]) -> NDArray[np.uint8]:
+        """Helper function to also get the correct junk registers values."""
+        junk = np.zeros(len(self.cvs) - 2, dtype=np.uint8)
+        cv1, cv2, *_ = self.cvs
+        c1, c2, *_ = ctrl
+        for i in range(len(self.cvs) - 2):
+            junk[i] = (c1 == cv1) & (c2 == cv2)
+            c1, c2 = junk[i], ctrl[i + 2]
+            cv1, cv2 = 1, self.cvs[i + 2]
+        return junk
+
     def apply_classical(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
         if self.adjoint:
             raise NotImplementedError()
@@ -177,7 +188,7 @@ class MultiAnd(Bloq):
         for cv, c in zip(self.cvs, ctrl):
             target = target and (c == cv)
 
-        junk = np.zeros(len(self.cvs) - 2, dtype=np.uint8)
+        junk = self._get_classical_junk(ctrl)
         target = 1 if target else 0
 
         return {'ctrl': ctrl, 'junk': junk, 'target': target}

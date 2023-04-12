@@ -145,9 +145,6 @@ def test_multiand_consitent_apply_classical():
 
         assert sorted(bloq_classical.keys()) == sorted(cbloq_classical.keys())
         for k in bloq_classical.keys():
-            if k == 'junk':
-                # TODO!
-                continue
             np.testing.assert_array_equal(bloq_classical[k], cbloq_classical[k])
 
 
