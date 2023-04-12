@@ -9,21 +9,39 @@ from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
 
 def construct_gate_helper_and_qubit_order(data, eps):
     gate = cq.StatePreparationAliasSampling(lcu_probabilities=data, probability_epsilon=eps)
-    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        g = cq_testing.GateHelper(gate)
-        _ = g.decomposed_circuit
+    g = cq_testing.GateHelper(gate)
+
+    def map_func(op: cirq.Operation, _):
+        gateset = cirq.Gateset(cq.And)
+        return cirq.Circuit(cirq.decompose(op, on_stuck_raise=None, keep=gateset.validate))
+
+    with cq.cirq_infra.memory_management_context():
+        # TODO: Do not decompose `cq.And` because the `cq.map_clean_and_borrowable_qubits` currently
+        # gets confused and is not able to re-map qubits optimally; which results in a higher number
+        # of ancillas and thus the tests fails due to OOO.
+        decomposed_circuit = cirq.map_operations_and_unroll(
+            g.circuit, map_func, raise_if_add_qubits=False
+        )
+    greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", size=25, maximize_reuse=True)
+    decomposed_circuit = cq.map_clean_and_borrowable_qubits(decomposed_circuit, qm=greedy_mm)
+    # We are fine decomposing the `cq.And` gates once the qubit re-mapping is complete. Ideally,
+    # we shouldn't require this two step process.
+    decomposed_circuit = cirq.Circuit(cirq.decompose(decomposed_circuit))
     ordered_input = sum(g.quregs.values(), start=[])
     qubit_order = cirq.QubitOrder.explicit(ordered_input, fallback=cirq.QubitOrder.DEFAULT)
-    return g, qubit_order
+    return g, qubit_order, decomposed_circuit
 
 
 @pytest.mark.parametrize("num_sites, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
 def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
     lcu_coefficients = get_1d_ising_lcu_coeffs(num_sites)
-    g, qubit_order = construct_gate_helper_and_qubit_order(lcu_coefficients, epsilon)
+    g, qubit_order, decomposed_circuit = construct_gate_helper_and_qubit_order(
+        lcu_coefficients, epsilon
+    )
+    # assertion to ensure that simulating the `decomposed_circuit` doesn't run out of memory.
+    assert len(decomposed_circuit.all_qubits()) < 25
     result = cirq.Simulator(dtype=np.complex128).simulate(
-        g.decomposed_circuit, qubit_order=qubit_order
+        decomposed_circuit, qubit_order=qubit_order
     )
     state_vector = result.final_state_vector
     # State vector is of the form |l>|temp_{l}>. We trace out the |temp_{l}> part to
@@ -42,7 +60,7 @@ def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
 
 def test_state_preparation_via_coherent_alias_sampling_diagram():
     data = np.asarray(range(1, 5)) / np.sum(range(1, 5))
-    g, qubit_order = construct_gate_helper_and_qubit_order(data, 0.05)
+    g, qubit_order, _ = construct_gate_helper_and_qubit_order(data, 0.05)
     circuit = cirq.Circuit(cirq.decompose_once(g.operation))
     cirq.testing.assert_has_diagram(
         circuit,
@@ -71,3 +89,7 @@ less_than_equal: ─────────────────────
 ''',
         qubit_order=qubit_order,
     )
+
+
+def test_notebook():
+    cq_testing.execute_notebook('state_preparation')

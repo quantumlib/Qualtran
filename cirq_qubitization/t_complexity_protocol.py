@@ -45,7 +45,10 @@ def _has_t_complexity(
     estimator = getattr(stc, '_t_complexity_', None)
     if estimator is not None:
         result = estimator()
-        return None if result is NotImplemented else result
+        if result is not NotImplemented:
+            return result
+    if isinstance(stc, cirq.Operation) and stc.gate is not None:
+        return _has_t_complexity(stc.gate, cache, fail_quietly)
     return None
 
 
