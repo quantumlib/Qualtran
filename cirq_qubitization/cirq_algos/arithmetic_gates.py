@@ -90,6 +90,7 @@ class LessThanGate(cirq.ArithmeticGate):
                 adjoint.append(cirq.CNOT(a, are_equal))
 
         yield from reversed(adjoint)
+        cirq_infra.qfree([are_equal] + ancilla)
 
     def _has_unitary_(self):
         return True
@@ -101,6 +102,11 @@ class LessThanGate(cirq.ArithmeticGate):
         return t_complexity_protocol.TComplexity(
             t=4 * n, clifford=15 * n + 3 * self._val.bit_count() + 2
         )
+
+    def __pow__(self, power: int):
+        if power in [1, -1]:
+            return self
+        return NotImplemented
 
 
 class LessThanEqualGate(cirq.ArithmeticGate):
@@ -133,6 +139,15 @@ class LessThanEqualGate(cirq.ArithmeticGate):
         wire_symbols += ["In(y)"] * len(self._second_input_register)
         wire_symbols += ['+(x <= y)']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __pow__(self, power: int):
+        if power in [1, -1]:
+            return self
+        return NotImplemented
+
+    def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
+        # TODO(#112): This is rough cost that ignores cliffords.
+        return t_complexity_protocol.TComplexity(t=4 * len(self._first_input_register))
 
 
 class ContiguousRegisterGate(cirq.ArithmeticGate):

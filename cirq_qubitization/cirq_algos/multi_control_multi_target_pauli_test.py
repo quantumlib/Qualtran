@@ -19,8 +19,9 @@ def test_multi_target_cnot(num_targets):
     assert len(optimal_circuit) == 2 * np.ceil(np.log2(num_targets)) + 1
 
 
-def test_multi_controlled_not_diagram():
-    gate = cirq_qubitization.MultiControlNOT(5)
+@pytest.mark.parametrize('pauli, c', [(cirq.Z, '@'), (cirq.X, 'X'), (cirq.Y, 'Y')])
+def test_multi_controlled_not_diagram(pauli, c):
+    gate = cirq_qubitization.MultiControlPauli(5, target_gate=pauli)
     with cirq_infra.memory_management_context():
         g = cq_testing.GateHelper(gate)
         circuit = cirq.Circuit(cirq.decompose_once(g.operation))
@@ -32,7 +33,7 @@ def test_multi_controlled_not_diagram():
     )
     cirq.testing.assert_has_diagram(
         circuit,
-        '''
+        f'''
 controls0: ───────────────@───────────────────────@───────────
                           │                       │
 controls1: ───────────────@───────────────────────@───────────
@@ -49,13 +50,14 @@ _b2: ─────────@───X────────────�
               │                       │
 controls4: ───@───────────────────────@───────────────────────
               │                       │
-target: ──────X───────────────────────X───────────────────────
+target: ──────{c}───────────────────────{c}───────────────────────
 ''',
         qubit_order=qubit_order,
     )
 
 
 @pytest.mark.parametrize("num_controls", [*range(7, 17)])
-def test_t_complexity(num_controls: int):
-    gate = cirq_qubitization.MultiControlNOT(num_controls)
+@pytest.mark.parametrize("pauli", [cirq.X, cirq.Y, cirq.Z])
+def test_t_complexity(num_controls: int, pauli: cirq.Pauli):
+    gate = cirq_qubitization.MultiControlPauli(num_controls, target_gate=pauli)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(gate)
