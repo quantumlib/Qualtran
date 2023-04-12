@@ -40,11 +40,11 @@ class LessThanGate(cirq.ArithmeticGate):
         while maintaining whether the qubit sequence is equal to the current prefix of the `_val` or not.
 
         The bare-bone logic is:
-        if ith bit of `_val` is 1 the
-            the qubit sequence is less than `_val` iff they are equal so far and the current qubit is 0.
-        are_equal &= ith bit == ith qubit.
+        1. if ith bit of `_val` is 1 then:
+            - the qubit sequence is less than `_val` iff they are equal so far and the current qubit is 0.
+        2. update are_equal: `are_equal := are_equal and (ith bit == ith qubit).`
 
-        This logic is implemented using $n$ And & And† operations and n+1 ancillas where
+        This logic is implemented using $n$ And & And† operations and n+1 clean ancillas where
             - one ancilla `are_equal` contains the equality informaiton
             - ancilla[i] contain whether the qubits[:i+1] != (i+1)th prefix of `_val`
         """
@@ -97,7 +97,7 @@ class LessThanGate(cirq.ArithmeticGate):
         yield from reversed(adjoint)
 
     def _has_unitary_(self):
-        return True
+        return False
 
     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
         n = len(self._input_register)
