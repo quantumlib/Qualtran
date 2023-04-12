@@ -95,8 +95,8 @@ def map_clean_and_borrowable_qubits(
                 #   manager, we can free it immediately after the previous operation ends. This
                 #   assumes that a managed qubit is not considered by the transformer as part of
                 #   borrowing qubits (first point of the notes above).
-                # idx > last_op_idx: if `q is mapped to a system qubit, which is not managed by the
-                #   qubit manager, we it only at the end of the moment.
+                # idx > last_op_idx: if `q` is mapped to a system qubit, which is not managed by the
+                #   qubit manager, we free it only at the end of the moment.
                 if is_managed_qubit:
                     qm.qfree([allocated_map[q]])
                 allocated_map.pop(q)
