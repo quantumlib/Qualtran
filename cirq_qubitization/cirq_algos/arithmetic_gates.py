@@ -28,6 +28,11 @@ class LessThanGate(cirq.ArithmeticGate):
         wire_symbols += [f'+(x < {self._val})']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
+    def __pow__(self, power: int):
+        if power in [1, -1]:
+            return self
+        return NotImplemented
+
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
@@ -133,6 +138,15 @@ class LessThanEqualGate(cirq.ArithmeticGate):
         wire_symbols += ["In(y)"] * len(self._second_input_register)
         wire_symbols += ['+(x <= y)']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __pow__(self, power: int):
+        if power in [1, -1]:
+            return self
+        return NotImplemented
+
+    def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
+        # TODO(#112): This is rough cost that ignores cliffords.
+        return t_complexity_protocol.TComplexity(t=4 * len(self._first_input_register))
 
 
 class ContiguousRegisterGate(cirq.ArithmeticGate):

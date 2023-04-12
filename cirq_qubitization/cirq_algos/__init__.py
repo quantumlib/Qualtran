@@ -5,8 +5,8 @@ from cirq_qubitization.cirq_algos.arithmetic_gates import (
     LessThanEqualGate,
     LessThanGate,
 )
-from cirq_qubitization.cirq_algos.multi_control_multi_target_cnot import (
-    MultiControlNOT,
+from cirq_qubitization.cirq_algos.multi_control_multi_target_pauli import (
+    MultiControlPauli,
     MultiTargetCNOT,
 )
 from cirq_qubitization.cirq_algos.prepare_uniform_superposition import PrepareUniformSuperposition
