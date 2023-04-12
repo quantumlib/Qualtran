@@ -5,7 +5,7 @@ from cirq_qubitization.cirq_algos import (
     ContiguousRegisterGate,
     LessThanEqualGate,
     LessThanGate,
-    MultiControlNOT,
+    MultiControlPauli,
     MultiTargetCNOT,
     MultiTargetCSwap,
     MultiTargetCSwapApprox,
