@@ -1,25 +1,41 @@
 from cirq_qubitization.alt_keep_qrom import construct_alt_keep_qrom
-from cirq_qubitization.and_gate import And
-from cirq_qubitization.apply_gate_to_lth_target import ApplyGateToLthQubit
-from cirq_qubitization.arithmetic_gates import LessThanGate, LessThanEqualGate
-from cirq_qubitization.prepare_uniform_superposition import PrepareUniformSuperposition
-from cirq_qubitization.multi_target_cnot import MultiTargetCNOT
-from cirq_qubitization.unary_iteration import UnaryIterationGate
-from cirq_qubitization.gate_with_registers import Registers, GateWithRegisters
-from cirq_qubitization.generic_select import GenericSelect
-from cirq_qubitization.generic_subprepare import GenericSubPrepare
-from cirq_qubitization.selected_majorana_fermion import SelectedMajoranaFermionGate
-from cirq_qubitization.swap_network import (
+from cirq_qubitization.cirq_algos import (
+    And,
+    ApplyGateToLthQubit,
+    ContiguousRegisterGate,
+    LessThanEqualGate,
+    LessThanGate,
+    MultiControlPauli,
+    MultiTargetCNOT,
     MultiTargetCSwap,
     MultiTargetCSwapApprox,
-    SwapWithZeroGate,
-)
-from cirq_qubitization.qrom import QROM
-from cirq_qubitization.select_swap_qroam import SelectSwapQROM
-from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
-from cirq_qubitization.decompose_protocol import decompose_once_into_operations
-from cirq_qubitization.select_swap_qroam import SelectSwapQROM
-from cirq_qubitization.programmable_rotation_gate_array import (
+    PrepareUniformSuperposition,
     ProgrammableRotationGateArray,
     ProgrammableRotationGateArrayBase,
+    QROM,
+    SelectedMajoranaFermionGate,
+    SelectSwapQROM,
+    StatePreparationAliasSampling,
+    SwapWithZeroGate,
+    unary_iteration,
+    UnaryIterationGate,
 )
+from cirq_qubitization.cirq_infra import (
+    BorrowableQubit,
+    CleanQubit,
+    decompose_once_into_operations,
+    GateWithRegisters,
+    GreedyQubitManager,
+    map_clean_and_borrowable_qubits,
+    memory_management_context,
+    qalloc,
+    qborrow,
+    qfree,
+    Register,
+    Registers,
+    SimpleQubitManager,
+)
+from cirq_qubitization.generic_select import GenericSelect
+from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
+
+from . import bloq_algos, cirq_infra

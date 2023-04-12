@@ -33,14 +33,18 @@ import inspect
 import re
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, List, Type, Dict
+from typing import Callable, Dict, List, Tuple, Type, Union
 
 import nbformat
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
-import cirq_qubitization
+import cirq_qubitization.bloq_algos.and_bloq_test
+import cirq_qubitization.bloq_algos.basic_gates.cnot_test
+import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
-from cirq_qubitization.gate_with_registers import GateWithRegisters
+import cirq_qubitization.quantum_graph
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
+from cirq_qubitization.quantum_graph.bloq import Bloq
 
 
 @dataclasses.dataclass
@@ -69,6 +73,28 @@ class GateNbSpec:
 
 
 @dataclasses.dataclass
+class BloqNbSpec:
+    """Notebook specification for a particular Bloq.
+
+    Attributes:
+        factory: A factory function that produces the bloq. Its source code will be rendered
+            to the notebook. See the `jupyter_autogen_factories_2` module.
+    """
+
+    factory: Callable[[], Bloq]
+
+    @property
+    def cqid(self):
+        """A cirq_qubitization-unique id for this `BloqNbSpec` to tag generated cells."""
+        return self.factory.__name__
+
+    @property
+    def gate_cls(self):
+        gate_obj = self.factory()
+        return gate_obj.__class__
+
+
+@dataclasses.dataclass
 class NotebookSpec:
     """Specification for rendering a jupyter notebook for a given module.
 
@@ -76,40 +102,65 @@ class NotebookSpec:
         title: The title of the notebook
         module: The module it documents. This is used to render the module docstring
             at the top of the notebook.
-        gate_specs: A list of `GateNbSpec`.
+        gate_specs: A list of gate or bloq specs.
     """
 
     title: str
     module: ModuleType
-    gate_specs: List[GateNbSpec]
+    gate_specs: List[Union[GateNbSpec, BloqNbSpec]]
+    directory: str = '.'
 
 
 NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
     'apply_gate_to_lth_target': NotebookSpec(
         title='Apply to L-th Target',
-        module=cirq_qubitization.apply_gate_to_lth_target,
+        module=cirq_qubitization.cirq_algos.apply_gate_to_lth_target,
+        directory='./cirq_algos',
         gate_specs=[GateNbSpec(jaf._make_ApplyGateToLthQubit)],
     ),
     'qrom': NotebookSpec(
-        title='QROM', module=cirq_qubitization.qrom, gate_specs=[GateNbSpec(jaf._make_QROM)]
+        title='QROM',
+        module=cirq_qubitization.cirq_algos.qrom,
+        gate_specs=[GateNbSpec(jaf._make_QROM)],
+        directory='./cirq_algos',
     ),
     'swap_network': NotebookSpec(
         title='Swap Network',
-        module=cirq_qubitization.swap_network,
+        module=cirq_qubitization.cirq_algos.swap_network,
         gate_specs=[
             GateNbSpec(jaf._make_MultiTargetCSwap),
             GateNbSpec(jaf._make_MultiTargetCSwapApprox),
         ],
+        directory='./cirq_algos',
     ),
     'generic_select': NotebookSpec(
         title='Generic Select',
         module=cirq_qubitization.generic_select,
         gate_specs=[GateNbSpec(jaf._make_GenericSelect, draw_vertical=True)],
     ),
-    'generic_subprepare': NotebookSpec(
-        title='Subprepare',
-        module=cirq_qubitization.generic_subprepare,
-        gate_specs=[GateNbSpec(jaf._make_GenericSubPrepare)],
+    'state_preparation': NotebookSpec(
+        title='State Preparation using Coherent Alias Sampling',
+        module=cirq_qubitization.cirq_algos.state_preparation,
+        gate_specs=[GateNbSpec(jaf._make_StatePreparationAliasSampling)],
+        directory='./cirq_algos',
+    ),
+    'basic_gates': NotebookSpec(
+        title='Basic Gates',
+        module=cirq_qubitization.bloq_algos.basic_gates,
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.cnot_test._make_CNOT),
+            BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.x_basis_test._make_plus_state),
+        ],
+        directory='./bloq_algos',
+    ),
+    'and_bloq': NotebookSpec(
+        title='And',
+        module=cirq_qubitization.bloq_algos.and_bloq,
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and),
+            BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_multi_and),
+        ],
+        directory='./bloq_algos',
     ),
 }
 
@@ -184,8 +235,8 @@ _IMPORTS = """\
 import cirq
 import numpy as np
 import cirq_qubitization
-import cirq_qubitization.testing as cq_testing
-from cirq_qubitization.jupyter_tools import display_gate_and_compilation
+import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.jupyter_tools import display_gate_and_compilation, show_bloq
 from typing import *\
 """
 
@@ -196,6 +247,12 @@ g = cq_testing.GateHelper(
 )
 
 display_gate_and_compilation(g{vert_str})\
+"""
+
+_BLOQ_DISPLAY = """\
+{lines}
+bloq = {obj_expression}
+show_bloq(bloq)\
 """
 
 
@@ -213,6 +270,23 @@ def _get_code_for_demoing_a_gate(gate_func: Callable, vertical: bool) -> str:
     return _GATE_DISPLAY.format(
         lines='\n'.join(lines), obj_expression=obj_expression, vert_str=vert_str
     )
+
+
+def _get_code_for_demoing_a_bloq(bloq_func: Callable) -> str:
+    """Render the Python code for constructing and visualizing a Bloq.
+
+    This renders into the `_BLOQ_DISPLAY` template.
+    """
+    lines, obj_expression = _get_lines_for_constructing_an_object(bloq_func)
+
+    return _BLOQ_DISPLAY.format(lines='\n'.join(lines), obj_expression=obj_expression)
+
+
+def _get_code_for_demoing(spec: Union[GateNbSpec, BloqNbSpec]) -> str:
+    if isinstance(spec, GateNbSpec):
+        return _get_code_for_demoing_a_gate(gate_func=spec.factory, vertical=spec.draw_vertical)
+    if isinstance(spec, BloqNbSpec):
+        return _get_code_for_demoing_a_bloq(bloq_func=spec.factory)
 
 
 def _get_title_cell_with_module_docstring(title: str, mod: ModuleType) -> str:
@@ -306,19 +380,16 @@ def render_notebook_cells(nbspec: NotebookSpec) -> NbCells:
                     '\n'.join(get_markdown_docstring_lines(cls=gspec.gate_cls)),
                     cqid=f'{gspec.cqid}.md',
                 ),
-                py=_code_cell(
-                    _get_code_for_demoing_a_gate(
-                        gate_func=gspec.factory, vertical=gspec.draw_vertical
-                    ),
-                    cqid=f'{gspec.cqid}.py',
-                ),
+                py=_code_cell(_get_code_for_demoing(gspec), cqid=f'{gspec.cqid}.py'),
             )
             for gspec in nbspec.gate_specs
         },
     )
 
 
-def _init_notebook(modname: str, overwrite=False) -> nbformat.NotebookNode:
+def _init_notebook(
+    modname: str, overwrite=False, directory: str = '.'
+) -> Tuple[nbformat.NotebookNode, Path]:
     """Initialize a jupyter notebook.
 
     If one already exists: load it in. Otherwise, create a new one.
@@ -328,14 +399,14 @@ def _init_notebook(modname: str, overwrite=False) -> nbformat.NotebookNode:
         overwrite: If set, remove any existing notebook and start from scratch.
     """
 
-    nb_path = Path(f'{modname}.ipynb')
+    nb_path = Path(f'{directory}/{modname}.ipynb')
 
     if overwrite:
         nb_path.unlink(missing_ok=True)
 
     if nb_path.exists():
         with nb_path.open('r') as f:
-            return nbformat.read(f, as_version=4)
+            return nbformat.read(f, as_version=4), nb_path
 
     nb = nbformat.v4.new_notebook()
     nb['metadata'].update(
@@ -344,13 +415,13 @@ def _init_notebook(modname: str, overwrite=False) -> nbformat.NotebookNode:
             'language_info': {'name': 'python'},
         }
     )
-    return nb
+    return nb, nb_path
 
 
 def render_notebooks():
     for modname, nbspec in NOTEBOOK_SPECS.items():
         # 1. get a notebook (existing or empty)
-        nb = _init_notebook(modname=modname)
+        nb, nb_path = _init_notebook(modname=modname, directory=nbspec.directory)
 
         # 2. Render all the cells we can render
         cells = render_notebook_cells(nbspec)
@@ -375,7 +446,7 @@ def render_notebooks():
             nb.cells.append(new_cell)
 
         # 5. Write the notebook.
-        with open(f'{modname}.ipynb', 'w') as f:
+        with nb_path.open('w') as f:
             nbformat.write(nb, f)
 
 

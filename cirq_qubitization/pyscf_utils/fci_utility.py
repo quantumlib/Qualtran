@@ -1,9 +1,10 @@
 """Helper functions for getting FCI coefficients"""
 from typing import List
-import numpy as np
-from pyscf import scf, fci
-from pyscf.fci.cistring import make_strings
+
 import fqe
+import numpy as np
+from pyscf import fci, scf
+from pyscf.fci.cistring import make_strings
 
 
 def pyscf_to_fqe_wf(

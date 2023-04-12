@@ -1,3 +1,5 @@
+pip-tools
+
 -r mypy.txt
 -r pytest.txt
 -r format.txt

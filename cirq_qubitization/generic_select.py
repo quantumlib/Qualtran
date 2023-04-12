@@ -1,12 +1,14 @@
 """Gates for applying generic selected unitaries."""
-from typing import Sequence, List, Tuple
 from functools import cached_property
+from typing import List, Sequence, Tuple
+
 import cirq
-from cirq_qubitization import unary_iteration
-from cirq_qubitization.gate_with_registers import Registers
+
+from cirq_qubitization.cirq_algos.unary_iteration import UnaryIterationGate
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 
 
-class GenericSelect(unary_iteration.UnaryIterationGate):
+class GenericSelect(UnaryIterationGate):
     r"""A SELECT gate for selecting and applying operators from an array of `PauliString`s.
 
     $$

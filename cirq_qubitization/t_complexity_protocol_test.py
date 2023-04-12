@@ -1,8 +1,8 @@
 import cirq
 import pytest
 
-from cirq_qubitization.and_gate import And
-from cirq_qubitization.t_complexity_protocol import TComplexity, t_complexity
+from cirq_qubitization.cirq_algos.and_gate import And
+from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 
 class SupportTComplexity(cirq.Operation):
@@ -11,6 +11,14 @@ class SupportTComplexity(cirq.Operation):
 
     def with_qubits(self, _):
         pass
+
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(t=1)
+
+
+class SupportTComplexityGate(cirq.Gate):
+    def _num_qubits_(self) -> int:
+        return 1
 
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=1)
@@ -33,6 +41,7 @@ def test_t_complexity():
     assert t_complexity(DoesNotSupportTComplexity(), fail_quietly=True) is None
 
     assert t_complexity(SupportTComplexity()) == TComplexity(t=1)
+    assert t_complexity(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)
 
     assert t_complexity([cirq.T, cirq.X]) == TComplexity(t=1, clifford=1)
 
@@ -127,3 +136,31 @@ def test_tagged_operations():
     assert t_complexity(cirq.X(q).with_tags('tag1')) == TComplexity(clifford=1)
     assert t_complexity(cirq.T(q).with_tags('tage1')) == TComplexity(t=1)
     assert t_complexity(cirq.Ry(rads=0.1)(q).with_tags('tag1', 'tag2')) == TComplexity(rotations=1)
+
+
+class IsCachable(cirq.Operation):
+    def __init__(self) -> None:
+        super().__init__()
+        self.num_calls = 0
+        self._gate = cirq.X
+
+    def _t_complexity_(self) -> TComplexity:
+        self.num_calls += 1
+        return TComplexity()
+
+    @property
+    def qubits(self):
+        return tuple(cirq.LineQubit(3).range(3))
+
+    def with_qubits(self, _):
+        pass
+
+    @property
+    def gate(self):
+        return self._gate
+
+
+def test_cache():
+    op = IsCachable()
+    assert t_complexity([op, op]) == TComplexity()
+    assert op.num_calls == 1

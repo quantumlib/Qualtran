@@ -1,9 +1,8 @@
-import cirq
 import numpy as np
 
 from cirq_qubitization import construct_alt_keep_qrom
-from cirq_qubitization import testing as cq_testing
 from cirq_qubitization.bit_tools import iter_bits
+from cirq_qubitization.cirq_infra import testing as cq_testing
 from cirq_qubitization.generic_select_test import get_1d_ising_lcu_coeffs
 
 
@@ -35,21 +34,19 @@ def test_alt_keep_qrom():
 
     # now prepare qubits and iterate through selection register to confirm
     # QROM data output
-    qubit_regs = qrom.registers.get_named_qubits()
-    all_qubits = qrom.registers.merge_qubits(**qubit_regs)
-    selection = qubit_regs["selection"]
-    targets = [qubit_regs[f"target{i}"] for i in range(len(qrom._data))]
-    circuit = cirq.Circuit(qrom.on_registers(**qubit_regs))
+    g = cq_testing.GateHelper(qrom)
 
     for selection_integer in range(qrom.iteration_length):
-        svals = list(iter_bits(selection_integer, len(selection)))
-        qubit_vals = {x: 0 for x in all_qubits}
-        qubit_vals.update({s: sval for s, sval in zip(selection, svals)})
+        qubit_vals = {x: 0 for x in g.all_qubits}
+        qubit_vals |= zip(
+            g.quregs['selection'], iter_bits(selection_integer, g.r['selection'].bitsize)
+        )
+        initial_state = [qubit_vals[x] for x in g.all_qubits]
+        for ti, d in enumerate(qrom._data):
+            target = g.quregs[f"target{ti}"]
+            qubit_vals |= zip(target, iter_bits(d[selection_integer], len(target)))
+        final_state = [qubit_vals[x] for x in g.all_qubits]
 
-        initial_state = [qubit_vals[x] for x in all_qubits]
-        for target, d in zip(targets, qrom._data):
-            for q, b in zip(target, iter_bits(d[selection_integer], len(target))):
-                qubit_vals[q] = b
-        final_state = [qubit_vals[x] for x in all_qubits]
-
-        cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+        cq_testing.assert_circuit_inp_out_cirqsim(
+            g.decomposed_circuit, g.all_qubits, initial_state, final_state
+        )
