@@ -16,6 +16,14 @@ class SupportTComplexity(cirq.Operation):
         return TComplexity(t=1)
 
 
+class SupportTComplexityGate(cirq.Gate):
+    def _num_qubits_(self) -> int:
+        return 1
+
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(t=1)
+
+
 class DoesNotSupportTComplexity(cirq.Gate):
     def _num_qubits_(self):
         return 1
@@ -33,6 +41,7 @@ def test_t_complexity():
     assert t_complexity(DoesNotSupportTComplexity(), fail_quietly=True) is None
 
     assert t_complexity(SupportTComplexity()) == TComplexity(t=1)
+    assert t_complexity(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)
 
     assert t_complexity([cirq.T, cirq.X]) == TComplexity(t=1, clifford=1)
 

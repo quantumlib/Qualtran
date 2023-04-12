@@ -89,11 +89,16 @@ def map_clean_and_borrowable_qubits(
         nonlocal last_op_idx, to_free
 
         for q in sorted(to_free):
-            if allocated_map[q] not in all_qubits:
-                # New operation, free up all clean qubits released by the previous operation.
-                qm.qfree([allocated_map[q]])
-            if idx > last_op_idx or isinstance(q, qid_types.CleanQubit):
-                # For borrowed system qubits, free them only if it's a new moment.
+            is_managed_qubit = allocated_map[q] not in all_qubits
+            if idx > last_op_idx or is_managed_qubit:
+                # is_managed_qubit: if `q` is mapped to a newly allocated qubit managed by the qubit
+                #   manager, we can free it immediately after the previous operation ends. This
+                #   assumes that a managed qubit is not considered by the transformer as part of
+                #   borrowing qubits (first point of the notes above).
+                # idx > last_op_idx: if `q` is mapped to a system qubit, which is not managed by the
+                #   qubit manager, we free it only at the end of the moment.
+                if is_managed_qubit:
+                    qm.qfree([allocated_map[q]])
                 allocated_map.pop(q)
                 to_free.remove(q)
 
