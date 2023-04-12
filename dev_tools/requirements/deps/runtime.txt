@@ -2,7 +2,6 @@ fqe
 pyscf
 openfermion
 cirq-core==1.2.0.dev20230407222835
-cirq-google==1.2.0.dev20230407222835
 sphinx
 pydot
 
