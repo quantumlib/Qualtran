@@ -3,9 +3,9 @@ import itertools
 import numpy as np
 import pytest
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.bloq_algos.and_bloq import And, MultiAnd
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
 
@@ -109,4 +109,4 @@ def test_multi_truth_table():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('and_bloq')
+    execute_notebook('and_bloq')

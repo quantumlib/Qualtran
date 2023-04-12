@@ -1,7 +1,11 @@
+from pathlib import Path
+
 import cirq
 import cirq.contrib.svg.svg as ccsvg
 import IPython.display
 import ipywidgets
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
 
 import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers
@@ -56,3 +60,21 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
 
 def show_bloq(bloq: Bloq):
     return PrettyGraphDrawer(bloq).get_svg()
+
+
+def execute_notebook(name: str):
+    """Execute a jupyter notebook in the caller's directory.
+
+    Args:
+        name: The name of the notebook without extension.
+
+    """
+    import traceback
+
+    # Assumes that the notebook is in the same path from where the function was called,
+    # which may be different from `__file__`.
+    notebook_path = Path(traceback.extract_stack()[-2].filename).parent / f"{name}.ipynb"
+    with notebook_path.open() as f:
+        nb = nbformat.read(f, as_version=4)
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    ep.preprocess(nb)

@@ -6,6 +6,7 @@ import pytest
 
 import cirq_qubitization
 import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 random.seed(12345)
@@ -140,7 +141,7 @@ def test_multi_target_cswap_make_on():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('qrom')
+    execute_notebook('swap_network')
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
