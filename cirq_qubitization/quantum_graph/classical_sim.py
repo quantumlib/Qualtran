@@ -62,6 +62,8 @@ def _update_assign_from_vals(
     vals: Dict[str, ClassicalValT],
     soq_assign: Dict[Soquet, ClassicalValT],
 ):
+    # TODO: note error checking happens here
+    # TODO: check for positive values?
     for reg in regs:
         try:
             arr = vals[reg.name]
@@ -101,7 +103,6 @@ def _binst_apply_classical(
 
     # Apply function
     out_vals = bloq.apply_classical(**in_vals)
-
     _update_assign_from_vals(bloq.registers.rights(), binst, out_vals, soq_assign)
 
 
