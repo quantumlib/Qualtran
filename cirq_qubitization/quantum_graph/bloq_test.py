@@ -45,6 +45,7 @@ def test_bloq():
 
 def test_as_composite_bloq():
     tb = TestCNOT()
+    assert not tb.supports_decompose_bloq()
     cb = tb.as_composite_bloq()
     assert isinstance(cb, CompositeBloq)
     bloqs = list(cb.bloq_instances)

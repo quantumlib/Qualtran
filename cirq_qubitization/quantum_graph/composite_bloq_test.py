@@ -409,6 +409,7 @@ class TestParallelBloq(Bloq):
 
 @pytest.mark.parametrize('cls', [TestSerialBloq, TestParallelBloq])
 def test_copy(cls):
+    assert cls().supports_decompose_bloq()
     cbloq = cls().decompose_bloq()
     cbloq2 = cbloq.copy()
     assert cbloq is not cbloq2
@@ -463,6 +464,25 @@ def test_add_duplicate_register():
     y = bb.add_register('control', 2)
     with pytest.raises(ValueError):
         bb.finalize(control=y)
+
+
+def test_flatten():
+    bb = CompositeBloqBuilder()
+    stuff = bb.add_register('stuff', 3)
+    (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
+    (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
+    cbloq = bb.finalize(stuff=stuff)
+    assert len(cbloq.bloq_instances) == 2
+
+    cbloq2 = cbloq.flatten_once(lambda binst: True)
+    assert len(cbloq2.bloq_instances) == 5 * 2
+
+    with pytest.raises(NotImplementedError):
+        # Will keep trying to flatten non-decomposable things
+        cbloq.flatten(lambda x: True)
+
+    cbloq3 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
+    assert len(cbloq3.bloq_instances) == 5 * 2
 
 
 def test_t_complexity():
