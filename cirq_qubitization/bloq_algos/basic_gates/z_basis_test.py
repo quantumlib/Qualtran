@@ -51,6 +51,10 @@ def test_zero_effect():
     with pytest.raises(AssertionError):
         bloq.apply_classical(q=1)
 
+    with pytest.raises(ValueError, match=r'.*q should be an integer, not \[0\, 0\, 0\]'):
+        # TODO: error checking by default
+        bloq.as_composite_bloq().apply_classical(q=[0, 0, 0])
+
 
 def test_one_effect():
     bloq = OneEffect()
