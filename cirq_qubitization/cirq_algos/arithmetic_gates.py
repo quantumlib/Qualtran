@@ -48,26 +48,52 @@ class LessThanGate(cirq.ArithmeticGate):
             - one ancilla `are_equal` contains the equality informaiton
             - ancilla[i] contain whether the qubits[:i+1] != (i+1)th prefix of `_val`
         """
-
+        if self._val <= 0:
+            return
         qubits, target = qubits[:-1], qubits[-1]
         # Trivial case, self._val is larger than any value the registers could represent
         if self._val >= 2 ** len(self._input_register):
             yield cirq.X(target)
             return
+        if len(self._input_register) == 1:
+            # This case is when we have one qubit and since 0 < _val < 2^len(self._input_register) => _val = 1.
+            # This means that the gate is checking if the qubit is in the zero state or not.
+            # In this case we don't need ancillas at all.
+            yield cirq.X(target)
+            yield cirq.CNOT(qubits[0], target)
+            return
+
         adjoint = []
-
-        [are_equal] = cirq_infra.qalloc(1)
-
-        # Initially our belief is that the numbers are equal.
-        yield cirq.X(are_equal)
-        adjoint.append(cirq.X(are_equal))
-
         # Scan from left to right.
         # `are_equal` contains whether the numbers are equal so far.
         ancilla = cirq_infra.qalloc(len(self._input_register))
+        are_equal = ancilla[0]
+        is_most_significant_bit = True
         for b, q, a in zip(
             bit_tools.iter_bits(self._val, len(self._input_register)), qubits, ancilla
         ):
+            if is_most_significant_bit:
+                # This optimization is equivalent to the normal logic below when run on the initial state.
+                # When processing the first bit `are_equal=1` so the And gate is not needed.
+                # So instead of setting are_equal to 1 and then using the normal procedure we can use this shortcut.
+                # This saves 4 T gates.
+                is_most_significant_bit = False
+                if b:
+                    yield cirq.CNOT(q, are_equal)
+                    adjoint.append(cirq.CNOT(q, are_equal))
+
+                    yield cirq.X(q)
+                    adjoint.append(cirq.X(q))
+
+                    yield cirq.CNOT(q, target)
+                else:
+                    yield cirq.X(q)
+                    adjoint.append(cirq.X(q))
+
+                    yield cirq.CNOT(q, are_equal)
+                    adjoint.append(cirq.CNOT(q, are_equal))
+                continue
+
             if b:
                 yield cirq.X(q)
                 adjoint.append(cirq.X(q))
@@ -100,11 +126,16 @@ class LessThanGate(cirq.ArithmeticGate):
         return True
 
     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
+        if self._val <= 0:
+            return t_complexity_protocol.TComplexity()
         n = len(self._input_register)
         if self._val >= 2**n:
             return t_complexity_protocol.TComplexity(clifford=1)
+        if n == 1:
+            return t_complexity_protocol.TComplexity(clifford=2)
+        msb = (self._val >> (n - 1)) & 1
         return t_complexity_protocol.TComplexity(
-            t=4 * n, clifford=15 * n + 3 * self._val.bit_count() + 2
+            t=4 * (n - 1), clifford=15 * (n - 1) + 3 * (self._val.bit_count() - msb) + 4 + msb
         )
 
 
