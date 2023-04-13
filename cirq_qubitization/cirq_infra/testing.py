@@ -1,12 +1,9 @@
 from dataclasses import dataclass
 from functools import cached_property
-from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 import cirq
-import nbformat
 import numpy as np
-from nbconvert.preprocessors import ExecutePreprocessor
 
 from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
@@ -83,24 +80,6 @@ def assert_circuit_inp_out_cirqsim(
     actual = result.dirac_notation(decimals=decimals)[1:-1]
     should_be = "".join(str(x) for x in outputs)
     assert actual == should_be, (actual, should_be)
-
-
-def execute_notebook(name: str):
-    """Execute a jupyter notebook in this directory.
-
-    Args:
-        name: The name of the notebook without extension.
-
-    """
-    import traceback
-
-    # Assumes that the notebook is in the same path from where the function was called,
-    # which may be different from `__file__`.
-    notebook_path = Path(traceback.extract_stack()[-2].filename).parent / f"{name}.ipynb"
-    with notebook_path.open() as f:
-        nb = nbformat.read(f, as_version=4)
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
-    ep.preprocess(nb)
 
 
 def assert_decompose_is_consistent_with_t_complexity(val: Any):
