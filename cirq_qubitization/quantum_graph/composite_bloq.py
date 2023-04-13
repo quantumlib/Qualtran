@@ -227,14 +227,18 @@ class CompositeBloq(Bloq):
 
         Args:
             pred: A predicate that takes a bloq instance and returns True if it should
-                be flattened or False if it should remain undecomposed.
+                be decomposed and flattened or False if it should remain undecomposed.
+                All bloqs for which this callable returns True must support decomposition.
 
         Returns:
             A new composite bloq where subbloqs matching `pred` have been decomposed and
             flattened.
 
         Raises:
-            `DidNotFlattenAnythingError` if none of the bloq instances satisfied `pred`.
+            NotImplementedError: If `pred` returns True but the underlying bloq does not
+                support `decompose_bloq()`.
+            DidNotFlattenAnythingError: If none of the bloq instances satisfied `pred`.
+
         """
         bb, _ = CompositeBloqBuilder.from_registers(self.registers)
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -267,8 +271,17 @@ class CompositeBloq(Bloq):
 
         Args:
             pred: A predicate that takes a bloq instance and returns True if it should
-                be flattened or False if it should remain undecomposed.
+                be decomposed and flattened or False if it should remain undecomposed.
+                All bloqs for which this callable returns True must support decomposition.
             max_depth: To avoid infinite recursion, give up after this many recursive steps.
+
+        Returns:
+            A new composite bloq where all recursive subbloqs matching `pred` have been
+            decomposed and flattened.
+
+        Raises:
+            NotImplementedError: If `pred` returns True but the underlying bloq does not
+                support `decompose_bloq()`.
         """
         cbloq = self
         for _ in range(max_depth):

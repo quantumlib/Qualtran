@@ -62,8 +62,8 @@ class Bloq(metaclass=abc.ABCMeta):
             A CompositeBloq containing the decomposition of this Bloq.
 
         Raises:
-            NotImplementedError if there is no decomposition defined; namely: if
-            `build_composite_bloq` returns `NotImplemented`.
+            NotImplementedError: If there is no decomposition defined; namely: if
+                `build_composite_bloq` returns `NotImplemented`.
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
