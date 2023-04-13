@@ -9,6 +9,7 @@ import cirq_qubitization as cq
 from cirq_qubitization import Registers, UnaryIterationGate
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 class ApplyXToLthQubit(UnaryIterationGate):
@@ -133,4 +134,4 @@ def test_multi_dimensional_unary_iteration(target_shape: Tuple[int, int, int]):
 
 
 def test_notebook():
-    cq_testing.execute_notebook('unary_iteration')
+    execute_notebook('unary_iteration')
