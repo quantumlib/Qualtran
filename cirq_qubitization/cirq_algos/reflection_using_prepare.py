@@ -10,13 +10,13 @@ from cirq_qubitization.cirq_algos import state_preparation
 
 
 class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
-    """Applies $R_{s} = I - 2|S><S|$ using $R_{s} = P^{\dagger}(I - 2|0><0|)P$ s.t. $P|0> = |S>$
+    """Applies $R_{s} = I - 2|S><S|$ using $R_{s} = P^†(I - 2|0><0|)P$ s.t. $P|0> = |S>$
 
     The composite gate corresponds to implementing the following circuit:
 
-    |control> -------------------------- Z -------------------
-                                         |
-    |\ell>    ---- PREPARE^{\dagger} --- o --- PREPARE -------
+    |control> ------------------ Z -------------------
+                                 |
+    |L>       ---- PREPARE^† --- o --- PREPARE -------
 
 
     Args:
@@ -39,7 +39,7 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         self.prepare_gate = prepare_gate
         self._num_controls = num_controls
         if self._num_controls > 1:
-            raise NotImplementedError(f"num_controls > 1 is not yet implemented.")
+            raise NotImplementedError("num_controls > 1 is not yet implemented.")
 
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
