@@ -53,7 +53,6 @@ class And(Bloq):
         if self.adjoint:
             raise NotImplementedError("Come back later.")
 
-        assert ctrl.shape == (2,)
         c1, c2 = ctrl
         if c1 == self.cv1 and c2 == self.cv2:
             target = 1
