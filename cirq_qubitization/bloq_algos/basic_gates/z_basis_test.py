@@ -13,8 +13,8 @@ def test_zero_state():
     should_be = np.array([1, 0])
     np.testing.assert_allclose(should_be, vector)
 
-    classical = bloq.apply_classical()
-    assert classical['q'] == 0
+    (x,) = bloq.call_classically()
+    assert x == 0
 
 
 def test_multiq_zero_state():
@@ -32,8 +32,8 @@ def test_one_state():
     should_be = np.array([0, 1])
     np.testing.assert_allclose(should_be, vector)
 
-    classical = bloq.apply_classical()
-    assert classical['q'] == 1
+    (x,) = bloq.call_classically()
+    assert x == 1
 
 
 def test_zero_effect():
@@ -45,15 +45,14 @@ def test_zero_effect():
     should_be = np.array([1, 0])
     np.testing.assert_allclose(should_be, vector)
 
-    classical = bloq.apply_classical(q=0)
-    assert classical == {}
+    ret = bloq.call_classically(q=0)
+    assert ret == ()
 
     with pytest.raises(AssertionError):
-        bloq.apply_classical(q=1)
+        bloq.call_classically(q=1)
 
     with pytest.raises(ValueError, match=r'.*q should be an integer, not \[0\, 0\, 0\]'):
-        # TODO: error checking by default
-        bloq.as_composite_bloq().apply_classical(q=[0, 0, 0])
+        bloq.call_classically(q=[0, 0, 0])
 
 
 def test_one_effect():
@@ -65,11 +64,11 @@ def test_one_effect():
     should_be = np.array([0, 1])
     np.testing.assert_allclose(should_be, vector)
 
-    classical = bloq.apply_classical(q=1)
-    assert classical == {}
+    ret = bloq.call_classically(q=1)
+    assert ret == ()
 
     with pytest.raises(AssertionError):
-        bloq.apply_classical(q=0)
+        bloq.call_classically(q=0)
 
 
 @pytest.mark.parametrize('bit', [False, True])
@@ -91,5 +90,5 @@ def test_zero_state_effect(bit):
     should_be = 1
     np.testing.assert_allclose(should_be, val)
 
-    res = cbloq.apply_classical()
-    assert res == {}
+    res = cbloq.call_classically()
+    assert res == ()

@@ -44,7 +44,7 @@ class Split(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def apply_classical(self, split: int) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, split: int) -> Dict[str, NDArray[np.uint8]]:
         assert split >= 0
         assert split.bit_length() <= self.n
         return {'split': ints_to_bits(split, self.n)}
@@ -93,7 +93,7 @@ class Join(Bloq):
             )
         )
 
-    def apply_classical(self, join: NDArray[np.uint8]) -> Dict[str, int]:
+    def on_classical_vals(self, join: NDArray[np.uint8]) -> Dict[str, int]:
         assert join.shape == (self.n,)
         return {'join': bits_to_ints(join)[0]}
 
@@ -120,7 +120,7 @@ class Allocate(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters([FancyRegister('alloc', bitsize=self.bitsize, side=Side.RIGHT)])
 
-    def apply_classical(self) -> Dict[str, int]:
+    def on_classical_vals(self) -> Dict[str, int]:
         return {'alloc': self.val}
 
 

@@ -391,9 +391,9 @@ class PrettyGraphDrawer(GraphDrawer):
 class ClassicalSimGraphDrawer(PrettyGraphDrawer):
     def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):
         super().__init__(bloq=bloq)
-        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_apply_classical
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
 
-        _, soq_assign = _cbloq_apply_classical(
+        _, soq_assign = _cbloq_call_classically(
             self._cbloq.registers, vals, self._cbloq._binst_graph
         )
         self.soq_assign = soq_assign

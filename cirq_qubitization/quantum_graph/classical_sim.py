@@ -85,10 +85,10 @@ def _update_assign_from_vals(
             soq_assign[soq] = arr
 
 
-def _binst_apply_classical(
+def _binst_on_classical_vals(
     binst: BloqInstance, pred_cxns: Iterable[Connection], soq_assign: Dict[Soquet, ClassicalValT]
 ):
-    """Call `apply_classical` on a given binst."""
+    """Call `on_classical_vals` on a given binst."""
 
     # Track inter-Bloq name changes
     for cxn in pred_cxns:
@@ -102,18 +102,21 @@ def _binst_apply_classical(
     in_vals = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
 
     # Apply function
-    out_vals = bloq.apply_classical(**in_vals)
+    out_vals = bloq.on_classical_vals(**in_vals)
     _update_assign_from_vals(bloq.registers.rights(), binst, out_vals, soq_assign)
 
 
-def _cbloq_apply_classical(
+def _cbloq_call_classically(
     registers: FancyRegisters, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
-    """Propagate `apply_classical` calls through a composite bloq's contents.
+    """Propagate `on_classical_vals` calls through a composite bloq's contents.
+
+    While we're handling the plumbing, we also do error checking on the arguments; see
+    `update_assign_from_vals`.
 
     Args:
         registers: The cbloq's registers for validating inputs
-        vals: Mapping from register name to bit values
+        vals: Mapping from register name to classical values
         binst_graph: The cbloq's binst graph.
     """
     # Keep track of each soquet's bit array. Initialize with LeftDangle
@@ -125,7 +128,7 @@ def _cbloq_apply_classical(
         if isinstance(binst, DanglingT):
             continue
         pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-        _binst_apply_classical(binst, pred_cxns, soq_assign)
+        _binst_on_classical_vals(binst, pred_cxns, soq_assign)
 
     # Track bloq-to-dangle name changes
     if len(list(registers.rights())) > 0:

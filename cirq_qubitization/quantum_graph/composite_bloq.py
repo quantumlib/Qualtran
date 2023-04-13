@@ -127,12 +127,19 @@ class CompositeBloq(Bloq):
 
         return _cbloq_to_dense(self)
 
-    def apply_classical(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """Support classical data by recursing into the composite bloq."""
-        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_apply_classical
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
 
-        out_vals, _ = _cbloq_apply_classical(self.registers, vals, self._binst_graph)
+        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
         return out_vals
+
+    def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
+        """Support classical data by recursing into the composite bloq."""
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
+
+        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
+        return tuple(out_vals[reg.name] for reg in self.registers.rights())
 
     def t_complexity(self) -> TComplexity:
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""

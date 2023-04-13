@@ -57,11 +57,11 @@ def test_truth_table(cv1, cv2):
 @pytest.mark.parametrize('cv1', [0, 1])
 def test_truth_table_classical(cv1, cv2):
     for cbloq, a, b in _iter_and_truth_table(cv1, cv2):
-        out = cbloq.apply_classical()
+        (res,) = cbloq.call_classically()
         if (a == cv1) and (b == cv2):
-            assert out['res'] == 1
+            assert res == 1
         else:
-            assert out['res'] == 0
+            assert res == 0
 
 
 @pytest.mark.parametrize('cv2', [0, 1])
@@ -130,8 +130,8 @@ def test_multi_truth_table():
             assert res_i == should_be, ctrl_string
 
             # Classical simulation
-            classical = cbloq.apply_classical()
-            assert classical['res'] == should_be
+            junk, res = cbloq.call_classically()
+            assert res == should_be
 
 
 def test_multiand_consitent_apply_classical():
@@ -145,12 +145,12 @@ def test_multiand_consitent_apply_classical():
         bloq = MultiAnd(cvs=cvs)
         cbloq = bloq.decompose_bloq()
 
-        bloq_classical = bloq.apply_classical(ctrl=ctrl_string)
-        cbloq_classical = cbloq.apply_classical(ctrl=ctrl_string)
+        bloq_classical = bloq.call_classically(ctrl=ctrl_string)
+        cbloq_classical = cbloq.call_classically(ctrl=ctrl_string)
 
-        assert sorted(bloq_classical.keys()) == sorted(cbloq_classical.keys())
-        for k in bloq_classical.keys():
-            np.testing.assert_array_equal(bloq_classical[k], cbloq_classical[k])
+        assert len(bloq_classical) == len(cbloq_classical)
+        for i in range(len(bloq_classical)):
+            np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
 
 def test_notebook():
