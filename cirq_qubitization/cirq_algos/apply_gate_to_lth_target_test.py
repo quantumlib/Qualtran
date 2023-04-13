@@ -4,6 +4,7 @@ import pytest
 import cirq_qubitization as cq
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 @pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
@@ -78,4 +79,4 @@ def test_apply_gate_to_lth_qubit_make_on():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('apply_gate_to_lth_target')
+    execute_notebook('apply_gate_to_lth_target')

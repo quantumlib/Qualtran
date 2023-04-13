@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
@@ -40,4 +40,4 @@ def test_util_bloqs():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('util_bloqs')
+    execute_notebook('util_bloqs')

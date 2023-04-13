@@ -1,12 +1,10 @@
 import abc
 from typing import Any, Dict, TYPE_CHECKING
 
-import numpy as np
-import quimb.tensor as qtn
-from numpy.typing import NDArray
-
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
+    from numpy.typing import NDArray
 
     from cirq_qubitization import TComplexity
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
@@ -64,8 +62,8 @@ class Bloq(metaclass=abc.ABCMeta):
             A CompositeBloq containing the decomposition of this Bloq.
 
         Raises:
-            NotImplementedError if there is no decomposition defined; namely: if
-            `build_composite_bloq` returns `NotImplemented`.
+            NotImplementedError: If there is no decomposition defined; namely: if
+                `build_composite_bloq` returns `NotImplemented`.
         """
         from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
@@ -77,6 +75,15 @@ class Bloq(metaclass=abc.ABCMeta):
             raise NotImplementedError(f"Cannot decompose {self}.")
 
         return bb.finalize(**out_soqs)
+
+    def supports_decompose_bloq(self) -> bool:
+        """Whether this bloq supports `.decompose_bloq()`.
+
+        By default, we check that the method `build_composite_bloq` is overriden. For
+        extraordinary circumstances, you may need to override this method directly to
+        return an accurate value.
+        """
+        return not self.build_composite_bloq.__qualname__.startswith('Bloq.')
 
     def as_composite_bloq(self) -> 'CompositeBloq':
         """Wrap this Bloq into a size-1 CompositeBloq.
@@ -113,11 +120,11 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError(f"{self} does not support classical simulation.")
 
-    def tensor_contract(self) -> NDArray:
+    def tensor_contract(self) -> 'NDArray':
         """Return a contracted, dense ndarray representing this bloq.
 
         This constructs a tensor network and then contracts it according to our registers,
-        i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
+        i.e. the dangling indices. The returned array will be 0-, 1- or 2-dimensional. If it is
         a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
         of (right, left) indices.
         """
@@ -125,13 +132,41 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
-        raise NotImplementedError("This bloq does not support tensor contraction.")
+        """Override this method to support native quimb simulation of this Bloq.
+
+        This method is responsible for adding a tensor corresponding to the unitary, state, or
+        effect of the bloq to the provided tensor network `tn`. Often, this method will add
+        one tensor for a given Bloq, but some bloqs can be represented in a factorized form
+        requiring the addition of more than one tensor.
+
+        If this method is not overriden, the default implementation will try to use the bloq's
+        decomposition to find a dense representation for this bloq.
+
+        Args:
+            tn: The tensor network to which we add our tensor(s)
+            tag: An arbitrary tag that must be forwarded to `qtn.Tensor`'s `tag` attribute.
+            incoming: A mapping from register name to SoquetT to order left indices for
+                the tensor network.
+            outgoing: A mapping from register name to SoquetT to order right indices for
+                the tensor network.
+        """
+        import quimb.tensor as qtn
+
+        from cirq_qubitization.quantum_graph.quimb_sim import (
+            _cbloq_as_contracted_tensor_data_and_inds,
+        )
+
+        cbloq = self.decompose_bloq()
+        data, inds = _cbloq_as_contracted_tensor_data_and_inds(
+            cbloq=cbloq, registers=self.registers, incoming=incoming, outgoing=outgoing
+        )
+        tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.
@@ -141,7 +176,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().t_complexity()
 
-    def on_registers(self, **qubit_regs: NDArray['cirq.Qid']) -> 'cirq.OP_TREE':
+    def on_registers(self, **qubit_regs: 'NDArray[cirq.Qid]') -> 'cirq.OP_TREE':
         """Support for conversion to a Cirq circuit."""
         raise NotImplementedError("This bloq does not support Cirq conversion.")
 
