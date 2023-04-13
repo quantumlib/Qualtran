@@ -1,14 +1,18 @@
 import itertools
 from functools import cached_property
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+
+if TYPE_CHECKING:
+    import cirq
 
 COPY = [1, 0, 0, 0, 0, 0, 0, 1]
 COPY = np.array(COPY, dtype=np.complex128).reshape((2, 2, 2))
@@ -58,3 +62,12 @@ class CNOT(Bloq):
                 data=XOR, inds=(incoming['target'], outgoing['target'], internal), tags=['XOR']
             )
         )
+
+    def on_registers(
+        self, ctrl: 'NDArray[cirq.Qid]', target: 'NDArray[cirq.Qid]'
+    ) -> 'cirq.OP_TREE':
+        import cirq
+
+        (ctrl,) = ctrl
+        (target,) = target
+        return cirq.CNOT(ctrl, target)

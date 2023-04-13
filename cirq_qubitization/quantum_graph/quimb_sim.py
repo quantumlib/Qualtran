@@ -206,9 +206,9 @@ def _cbloq_as_contracted_tensor_data_and_inds(
 
     # Now we just need to make sure the Soquets provided to us are in the correct
     # order: namely the same order as how we got the indices to contract the composite bloq.
-    isoqs = (incoming[reg.name] for reg in registers.lefts())
     osoqs = (outgoing[reg.name] for reg in registers.rights())
-    inds_for_adding = _flatten_soquet_collection(itertools.chain(isoqs, osoqs))
+    isoqs = (incoming[reg.name] for reg in registers.lefts())
+    inds_for_adding = _flatten_soquet_collection(itertools.chain(osoqs, isoqs))
     assert len(inds_for_adding) == len(inds_for_contract)
 
     # Data and `inds_for_adding` can be used as `Tensor(data, inds)` arguments.
