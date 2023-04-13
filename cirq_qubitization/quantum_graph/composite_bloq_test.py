@@ -8,8 +8,8 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization import TComplexity
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 from cirq_qubitization.quantum_graph.composite_bloq import (
@@ -495,4 +495,4 @@ def test_t_complexity():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('composite_bloq')
+    execute_notebook('composite_bloq')

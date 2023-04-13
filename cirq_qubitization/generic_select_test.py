@@ -6,6 +6,7 @@ import numpy as np
 import cirq_qubitization
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def get_1d_ising_hamiltonian(
@@ -217,4 +218,4 @@ def test_select_application_to_eigenstates():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('generic_select')
+    execute_notebook('generic_select')

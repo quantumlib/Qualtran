@@ -1,9 +1,12 @@
 import itertools
+from typing import List
 
 import cirq
 import pytest
 
 import cirq_qubitization
+import cirq_qubitization.cirq_infra.testing as cq_testing
+from cirq_qubitization import bit_tools
 
 
 def identity_map(n: int):
@@ -57,6 +60,34 @@ def test_multi_in_less_equal_than_gate():
     cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
     circuit += op**-1
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
+
+
+@pytest.mark.parametrize("bits", [*range(8)])
+@pytest.mark.parametrize("val", [3, 5, 7, 8, 9])
+def test_decompose_less_than_gate(bits: List[int], val: int):
+    qubit_states = list(bit_tools.iter_bits(bits, 3))
+    circuit = cirq.Circuit(
+        cirq.decompose_once(
+            cirq_qubitization.LessThanGate([2, 2, 2], val).on(*cirq.LineQubit.range(4))
+        )
+    )
+    if val < 8:
+        initial_state = [0] * 4 + qubit_states + [0]
+        output_state = [0] * 4 + qubit_states + [int(bits < val)]
+    else:
+        # When val >= 2**number_qubits the decomposition doesn't create any ancillas since the answer is always 1.
+        initial_state = [0]
+        output_state = [1]
+    cq_testing.assert_circuit_inp_out_cirqsim(
+        circuit, sorted(circuit.all_qubits()), initial_state, output_state
+    )
+
+
+@pytest.mark.parametrize("n", [*range(2, 5)])
+@pytest.mark.parametrize("val", [3, 4, 5, 7, 8, 9])
+def test_t_complexity(n: int, val: int):
+    g = cirq_qubitization.LessThanGate(n * [2], val)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
 
 def test_contiguous_register_gate():
