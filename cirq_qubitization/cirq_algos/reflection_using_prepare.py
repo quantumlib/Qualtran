@@ -11,7 +11,14 @@ from cirq_qubitization.cirq_algos import state_preparation
 
 @cirq.value_equality()
 class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
-    """Applies $R_{s} = I - 2|S><S|$ using $R_{s} = P^†(I - 2|0><0|)P$ s.t. $P|0> = |S>$
+    """Applies reflection around a state prepared by `prepare_gate`
+
+    Applies $R_{s} = I - 2|s><s|$ using $R_{s} = P^†(I - 2|0><0|)P$ s.t. $P|0> = |s>$.
+    Here
+        $|s>$: The state along which we want to reflect.
+        $P$: Unitary that prepares that state $|s>$ from the zero state $|0>$
+        $R_{s}$: Reflection operator that adds a `-1` phase to all states in the subspace
+            spanned by $|s>$.
 
     The composite gate corresponds to implementing the following circuit:
 
@@ -22,9 +29,9 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
 
     Args:
         prepare_gate: An instance of `cq.StatePreparationAliasSampling` gate the corresponds to
-                      `PREPARE`.
-        num_controls: If 1, a controlled version of the reflection operator is constructed.
-                      Defaults to 0.
+            `PREPARE`.
+        control_val: If 0/1, a controlled version of the reflection operator is constructed.
+            Defaults to None, in which case the resulting reflection operator is not controlled.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
@@ -51,33 +58,33 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         return cirq_infra.Registers([*self.control_registers, *self.target_registers])
 
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        if self._control_val is not None:
-            phase_ancilla = qubit_regs.pop('control')[0]
-            yield cirq.X(phase_ancilla) if self._control_val == 0 else []
-        else:
-            phase_ancilla = cirq_infra.qalloc(1)[0]
-            yield cirq.X(phase_ancilla)
-        state_prep_ancilla = {}
-        for reg in self.prepare_gate.temp_registers:
-            state_prep_ancilla[reg.name] = cirq_infra.qalloc(reg.bitsize)
-        phase_controls = [*itertools.chain(*qubit_regs.values())]
-
-        yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla) ** -1
-        # Phase the all zero state.
-        yield cirq.X.on_each(*phase_controls)
-        yield mcmt.MultiControlPauli(len(phase_controls), target_gate=cirq.Z).on_registers(
-            controls=phase_controls, target=phase_ancilla
+        # 0. Allocate new ancillas, if needed.
+        phase_target = (
+            cirq_infra.qalloc(1)[0] if self._control_val is None else qubit_regs.pop('control')[0]
         )
-        yield cirq.X.on_each(*phase_controls)
+        state_prep_ancilla = {
+            reg.name: cirq_infra.qalloc(reg.bitsize) for reg in self.prepare_gate.temp_registers
+        }
 
+        phase_controls = self.target_registers.merge_qubits(**qubit_regs)
+
+        # 1. PREPARE†
+        yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla) ** -1
+        # 2. MultiControlled Z, controlled on |000..00> state.
+        yield cirq.X.on_each(*phase_controls)
+        yield cirq.X(phase_target) if not self._control_val else []
+        yield mcmt.MultiControlPauli(len(phase_controls), target_gate=cirq.Z).on_registers(
+            controls=phase_controls, target=phase_target
+        )
+        yield cirq.X(phase_target) if not self._control_val else []
+        yield cirq.X.on_each(*phase_controls)
+        # 3. PREPARE
         yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla)
 
+        # 4. Deallocate ancilla.
         cirq_infra.qfree([q for anc in state_prep_ancilla.values() for q in anc])
         if self._control_val is None:
-            yield cirq.X(phase_ancilla)
-            cirq_infra.qfree(phase_ancilla)
-        elif self._control_val == 0:
-            yield cirq.X(phase_ancilla)
+            cirq_infra.qfree(phase_target)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if self._control_val else '@(0)'] * self.control_registers.bitsize
