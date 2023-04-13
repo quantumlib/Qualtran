@@ -9,6 +9,7 @@ from cirq_qubitization.cirq_algos import multi_control_multi_target_pauli as mcm
 from cirq_qubitization.cirq_algos import state_preparation
 
 
+@cirq.value_equality()
 class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
     """Applies $R_{s} = I - 2|S><S|$ using $R_{s} = P^†(I - 2|0><0|)P$ s.t. $P|0> = |S>$
 
@@ -96,3 +97,9 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         if len(control_values) == 1 and self._control_val is None:
             return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[-1])
         raise NotImplementedError(f'Cannot create a controlled version of {self}')
+
+    def _value_equality_values_(self):
+        return self.prepare_gate, self._control_val
+
+
+ReflectionUsingPrepare.__hash__ = cirq._compat.cached_method(ReflectionUsingPrepare.__hash__)
