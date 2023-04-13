@@ -1,6 +1,6 @@
 import itertools
 from functools import cached_property
-from typing import Sequence
+from typing import Collection, Optional, Sequence, Tuple, Union
 
 import cirq
 
@@ -31,23 +31,15 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
     """
 
     def __init__(
-        self,
-        prepare_gate: state_preparation.StatePreparationAliasSampling,
-        *,
-        num_controls: int = 0,
+        self, prepare_gate: state_preparation.StatePreparationAliasSampling, *, control_val=None
     ):
         self.prepare_gate = prepare_gate
-        self._num_controls = num_controls
-        if self._num_controls > 1:
-            raise NotImplementedError("num_controls > 1 is not yet implemented.")
+        self._control_val = control_val
 
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
-        return (
-            cirq_infra.Registers.build(control=self._num_controls)
-            if self._num_controls
-            else cirq_infra.Registers([])
-        )
+        registers = [] if self._control_val is None else [cirq_infra.Register('control', 1)]
+        return cirq_infra.Registers(registers)
 
     @cached_property
     def target_registers(self) -> cirq_infra.Registers:
@@ -58,8 +50,9 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         return cirq_infra.Registers([*self.control_registers, *self.target_registers])
 
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        if self._num_controls:
-            phase_ancilla = qubit_regs.pop('control')
+        if self._control_val is not None:
+            phase_ancilla = qubit_regs.pop('control')[0]
+            yield cirq.X(phase_ancilla) if self._control_val == 0 else []
         else:
             phase_ancilla = cirq_infra.qalloc(1)[0]
             yield cirq.X(phase_ancilla)
@@ -79,11 +72,27 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla)
 
         cirq_infra.qfree([q for anc in state_prep_ancilla.values() for q in anc])
-        if not self._num_controls:
+        if self._control_val is None:
             yield cirq.X(phase_ancilla)
             cirq_infra.qfree(phase_ancilla)
+        elif self._control_val == 0:
+            yield cirq.X(phase_ancilla)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@'] * self.control_registers.bitsize
+        wire_symbols = ['@' if self._control_val else '@(0)'] * self.control_registers.bitsize
         wire_symbols += ['R_L'] * self.target_registers.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def controlled(
+        self,
+        num_controls: int = None,
+        control_values: Sequence[Union[int, Collection[int]]] = None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+    ) -> 'ReflectionUsingPrepare':
+        if num_controls is None:
+            num_controls = 1
+        if control_values is None:
+            control_values = [1] * num_controls
+        if len(control_values) == 1 and self._control_val is None:
+            return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[-1])
+        raise NotImplementedError(f'Cannot create a controlled version of {self}')
