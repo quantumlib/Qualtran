@@ -75,9 +75,10 @@ def test_apply_classical():
 
 
 def test_cnot_assign_dict():
+    # TODO: can't we just use real CNOT
     cbloq = CNOTExample().as_composite_bloq()
 
-    in_data = {'ctrl': np.array([1], dtype=np.uint8), 'target': np.array([0], dtype=np.uint8)}
+    in_data = {'ctrl': 1, 'target': 0}
 
     out_vals, soq_assign = _cbloq_apply_classical(cbloq.registers, in_data, cbloq._binst_graph)
     print(soq_assign)
@@ -90,10 +91,8 @@ def test_apply_classical_cbloq():
     y, z = bb.add(ApplyClassicalTest(), x=y)
     cbloq = bb.finalize(x=x, y=y, z=z)
 
-    xarr = np.zeros(5, dtype=np.uint8)
+    xarr = 0
     ret = cbloq.apply_classical(x=xarr)
     np.testing.assert_array_equal(ret['x'], xarr)
-    np.testing.assert_array_equal(
-        ret['y'], [not xarr[0], xarr[1], not xarr[2], xarr[3], not xarr[4]]
-    )
+    np.testing.assert_array_equal(ret['y'], bits_to_ints([1, 0, 1, 0, 1])[0])
     np.testing.assert_array_equal(ret['z'], xarr)
