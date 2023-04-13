@@ -112,6 +112,7 @@ class XGate(Bloq):
 
     This causes a bit flip: X|0> = |1> and vice-versa.
     """
+
     @cached_property
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters.build(q=1)
