@@ -148,21 +148,6 @@ class LessThanEqualGate(cirq.ArithmeticGate):
         return True
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
-
-        The decomposition proceeds from the most significant qubit -bit 0- to the least significant qubit
-        while maintaining whether the qubit sequence is equal to the current prefix of the `_val` or not.
-
-        The bare-bone logic is:
-        1. if ith bit of `_val` is 1 then:
-            - the qubit sequence is less than `_val` iff they are equal so far and the current qubit is 0.
-        2. update are_equal: `are_equal := are_equal and (ith bit == ith qubit).`
-
-        This logic is implemented using $n$ And & And† operations and n+1 clean ancillas where
-            - one ancilla `are_equal` contains the equality informaiton
-            - ancilla[i] contain whether the qubits[:i+1] != (i+1)th prefix of `_val`
-        """
-
         P, Q, target = (
             qubits[: len(self._first_input_register)],
             qubits[len(self._first_input_register) : -1],
@@ -257,7 +242,7 @@ class LessThanEqualGate(cirq.ArithmeticGate):
             return t_complexity_protocol.TComplexity(t=12 * n - 8, clifford=48 * n - 23)
         elif d == 1:
             return t_complexity_protocol.TComplexity(
-                t=12 * n + 4 * (d - 1), clifford=48 * n + 3 + is_second_longer
+                t=12 * n, clifford=48 * n + 5 + is_second_longer
             )
         else:
             return t_complexity_protocol.TComplexity(
