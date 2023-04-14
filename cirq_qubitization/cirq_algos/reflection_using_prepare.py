@@ -71,13 +71,11 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         # 1. PREPARE†
         yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla) ** -1
         # 2. MultiControlled Z, controlled on |000..00> state.
-        yield cirq.X.on_each(*phase_controls)
-        yield cirq.X(phase_target) if not self._control_val else []
+        yield cirq.X.on_each(*phase_controls, phase_target if not self._control_val else [])
         yield mcmt.MultiControlPauli(len(phase_controls), target_gate=cirq.Z).on_registers(
             controls=phase_controls, target=phase_target
         )
-        yield cirq.X(phase_target) if not self._control_val else []
-        yield cirq.X.on_each(*phase_controls)
+        yield cirq.X.on_each(*phase_controls, phase_target if not self._control_val else [])
         # 3. PREPARE
         yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla)
 
