@@ -1,4 +1,3 @@
-import itertools
 from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
@@ -69,19 +68,18 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         state_prep_ancilla = {
             reg.name: cirq_infra.qalloc(reg.bitsize) for reg in self.prepare_gate.temp_registers
         }
-
-        phase_controls = self.target_registers.merge_qubits(**qubit_regs)
-
+        state_prep_target_regs = qubit_regs
         # 1. PREPARE†
-        yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla) ** -1
+        yield self.prepare_gate.on_registers(**state_prep_target_regs, **state_prep_ancilla) ** -1
         # 2. MultiControlled Z, controlled on |000..00> state.
-        yield cirq.X.on_each(*phase_controls, phase_target if not self._control_val else [])
-        yield mcmt.MultiControlPauli(len(phase_controls), target_gate=cirq.Z).on_registers(
-            controls=phase_controls, target=phase_target
+        phase_control = self.target_registers.merge_qubits(**state_prep_target_regs)
+        yield cirq.X.on_each(*phase_control, phase_target if not self._control_val else [])
+        yield mcmt.MultiControlPauli(len(phase_control), target_gate=cirq.Z).on_registers(
+            controls=phase_control, target=phase_target
         )
-        yield cirq.X.on_each(*phase_controls, phase_target if not self._control_val else [])
+        yield cirq.X.on_each(*phase_control, phase_target if not self._control_val else [])
         # 3. PREPARE
-        yield self.prepare_gate.on_registers(**qubit_regs, **state_prep_ancilla)
+        yield self.prepare_gate.on_registers(**state_prep_target_regs, **state_prep_ancilla)
 
         # 4. Deallocate ancilla.
         cirq_infra.qfree([q for anc in state_prep_ancilla.values() for q in anc])
