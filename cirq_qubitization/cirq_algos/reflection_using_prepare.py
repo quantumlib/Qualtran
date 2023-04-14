@@ -41,8 +41,12 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
     def __init__(
         self, prepare_gate: state_preparation.StatePreparationAliasSampling, *, control_val=None
     ):
-        self.prepare_gate = prepare_gate
+        self._prepare_gate = prepare_gate
         self._control_val = control_val
+
+    @property
+    def prepare_gate(self):
+        return self._prepare_gate
 
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
