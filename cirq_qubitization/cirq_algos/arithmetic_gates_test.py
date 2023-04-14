@@ -85,7 +85,7 @@ def test_decompose_less_than_gate(bits: List[int], val: int):
 
 @pytest.mark.parametrize("P,n", [(v, n) for n in range(1, 3) for v in range(1 << n)])
 @pytest.mark.parametrize("Q,m", [(v, n) for n in range(1, 3) for v in range(1 << n)])
-def test_decompose_less_than_gate(P: List[int], n: int, Q: List[int], m: int):
+def test_decompose_less_than_equal_gate(P: List[int], n: int, Q: List[int], m: int):
     qubit_states = list(bit_tools.iter_bits(P, n)) + list(bit_tools.iter_bits(Q, m))
     circuit = cirq.Circuit(
         cirq.decompose_once(
