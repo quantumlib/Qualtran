@@ -83,10 +83,36 @@ def test_decompose_less_than_gate(bits: List[int], val: int):
     )
 
 
+@pytest.mark.parametrize("P,n", [(v, n) for n in range(1, 3) for v in range(1 << n)])
+@pytest.mark.parametrize("Q,m", [(v, n) for n in range(1, 3) for v in range(1 << n)])
+def test_decompose_less_than_gate(P: List[int], n: int, Q: List[int], m: int):
+    qubit_states = list(bit_tools.iter_bits(P, n)) + list(bit_tools.iter_bits(Q, m))
+    circuit = cirq.Circuit(
+        cirq.decompose_once(
+            cirq_qubitization.LessThanEqualGate([2] * n, [2] * m).on(
+                *cirq.LineQubit.range(n + m + 1)
+            )
+        )
+    )
+    num_ancillas = len(circuit.all_qubits()) - n - m - 1
+    initial_state = [0] * num_ancillas + qubit_states + [0]
+    output_state = [0] * num_ancillas + qubit_states + [int(P <= Q)]
+    cq_testing.assert_circuit_inp_out_cirqsim(
+        circuit, sorted(circuit.all_qubits()), initial_state, output_state
+    )
+
+
 @pytest.mark.parametrize("n", [*range(2, 5)])
 @pytest.mark.parametrize("val", [3, 4, 5, 7, 8, 9])
-def test_t_complexity(n: int, val: int):
+def test_t_complexity_less_than_gate(n: int, val: int):
     g = cirq_qubitization.LessThanGate(n * [2], val)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+
+
+@pytest.mark.parametrize("n", [*range(1, 5)])
+@pytest.mark.parametrize("m", [*range(1, 5)])
+def test_t_complexity_less_than_equal_gate(n: int, m: int):
+    g = cirq_qubitization.LessThanEqualGate([2] * m, [2] * n)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
 

@@ -144,9 +144,125 @@ class LessThanEqualGate(cirq.ArithmeticGate):
             return self
         return NotImplemented
 
+    def _has_unitary_(self):
+        return True
+
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
+
+        The decomposition proceeds from the most significant qubit -bit 0- to the least significant qubit
+        while maintaining whether the qubit sequence is equal to the current prefix of the `_val` or not.
+
+        The bare-bone logic is:
+        1. if ith bit of `_val` is 1 then:
+            - the qubit sequence is less than `_val` iff they are equal so far and the current qubit is 0.
+        2. update are_equal: `are_equal := are_equal and (ith bit == ith qubit).`
+
+        This logic is implemented using $n$ And & And† operations and n+1 clean ancillas where
+            - one ancilla `are_equal` contains the equality informaiton
+            - ancilla[i] contain whether the qubits[:i+1] != (i+1)th prefix of `_val`
+        """
+
+        P, Q, target = (
+            qubits[: len(self._first_input_register)],
+            qubits[len(self._first_input_register) : -1],
+            qubits[-1],
+        )
+
+        n = min(len(P), len(Q))
+        equal = cirq_infra.qalloc(n)
+        less_than = cirq_infra.qalloc(n)
+
+        equal_so_far = None
+        adjoint = []
+
+        if abs(len(P) - len(Q)) == 1:
+            [equal_so_far] = cirq_infra.qalloc(1)
+            yield cirq.X(equal_so_far)
+            adjoint.append(cirq.X(equal_so_far))
+
+            if len(P) > len(Q):
+                yield cirq.CNOT(P[0], equal_so_far)
+                adjoint.append(cirq.CNOT(P[0], equal_so_far))
+                P = P[1:]
+            else:
+                yield cirq.CNOT(Q[0], equal_so_far)
+                adjoint.append(cirq.CNOT(Q[0], equal_so_far))
+
+                yield cirq.CNOT(Q[0], target)
+                Q = Q[1:]
+        elif len(P) > len(Q):
+            [equal_so_far] = cirq_infra.qalloc(1)
+
+            m = len(P) - n
+            ancilla = cirq_infra.qalloc(m - 2)
+            yield And(cv=[0] * m).on(*P[:m], *ancilla, equal_so_far)
+            adjoint.append(And(cv=[0] * m, adjoint=True).on(*P[:m], *ancilla, equal_so_far))
+
+            P = P[-n:]
+        elif len(P) < len(Q):
+            [equal_so_far] = cirq_infra.qalloc(1)
+
+            m = len(Q) - n
+            ancilla = cirq_infra.qalloc(m - 2)
+            yield And(cv=[0] * m)(*Q[:m], *ancilla, equal_so_far)
+            adjoint.append(And(cv=[0] * m, adjoint=True)(*Q[:m], *ancilla, equal_so_far))
+
+            yield cirq.X(target), cirq.CNOT(equal_so_far, target)
+
+            Q = Q[-n:]
+
+        ancilla = cirq_infra.qalloc(n)
+        for p, q, e_i, l_i, a in zip(P, Q, equal, less_than, ancilla):
+            if equal_so_far is not None:
+                yield And([0, 1, 1]).on(p, q, equal_so_far, a, l_i)
+                adjoint.append(And([0, 1, 1], adjoint=True).on(p, q, equal_so_far, a, l_i))
+                yield cirq.CNOT(l_i, target)
+
+                yield cirq.CNOT(p, q)
+                adjoint.append(cirq.CNOT(p, q))
+
+                yield cirq.X(q)  # q now has `p_i == q_i`
+                adjoint.append(cirq.X(q))
+
+                yield And().on(equal_so_far, q, e_i)  # e_i = AND(p_j == q_j) for j <= i
+                adjoint.append(And(adjoint=True).on(equal_so_far, q, e_i))
+            else:
+                # These are the first/most significant qubits.
+                yield And([0, 1]).on(p, q, l_i)
+                adjoint.append(And([0, 1], adjoint=True).on(p, q, l_i))
+                yield cirq.CNOT(l_i, target)
+
+                yield cirq.CNOT(p, q)
+                adjoint.append(cirq.CNOT(p, q))
+
+                yield cirq.X(q)  # q now has `p_i == q_i`
+                adjoint.append(cirq.X(q))
+
+                yield cirq.CNOT(q, e_i)
+                adjoint.append(cirq.CNOT(q, e_i))
+
+            equal_so_far = e_i
+
+        if equal_so_far is not None:
+            yield cirq.CNOT(equal_so_far, target)
+
+        yield from reversed(adjoint)
+
     def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
-        # TODO(#112): This is rough cost that ignores cliffords.
-        return t_complexity_protocol.TComplexity(t=4 * len(self._first_input_register))
+        n = min(len(self._first_input_register), len(self._second_input_register))
+        d = max(len(self._first_input_register), len(self._second_input_register)) - n
+        is_second_longer = len(self._second_input_register) > len(self._first_input_register)
+        if d == 0:
+            return t_complexity_protocol.TComplexity(t=12 * n - 8, clifford=48 * n - 23)
+        elif d == 1:
+            return t_complexity_protocol.TComplexity(
+                t=12 * n + 4 * (d - 1), clifford=48 * n + 3 + is_second_longer
+            )
+        else:
+            return t_complexity_protocol.TComplexity(
+                t=12 * n + 4 * (d - 1), clifford=48 * n + 17 * d - 12 + 2 * is_second_longer
+            )
 
 
 class ContiguousRegisterGate(cirq.ArithmeticGate):
