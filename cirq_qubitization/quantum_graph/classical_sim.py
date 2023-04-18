@@ -100,7 +100,7 @@ def _update_assign_from_vals(
                 soq = Soquet(binst, reg, idx=idx)
                 soq_assign[soq] = arr[idx]
         else:
-            if not isinstance(arr, (int, np.uint)):
+            if not isinstance(arr, (int, np.uint, np.int_)):
                 raise ValueError(f"{binst}.{reg.name} should be an integer, not {arr!r}")
             if arr < 0:
                 raise ValueError(f"Negative classical value encountered in {binst}.{reg.name}")

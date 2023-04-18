@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
+from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ClassicalValT, ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
@@ -44,10 +44,10 @@ class Split(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def on_classical_vals(self, split: int) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, split: int) -> Dict[str, 'ClassicalValT']:
         assert split >= 0
         assert split.bit_length() <= self.n
-        return {'split': ints_to_bits(split, self.n)}
+        return {'split': ints_to_bits(np.array([split]), self.n)[0]}
 
 
 @frozen
@@ -94,7 +94,6 @@ class Join(Bloq):
         )
 
     def on_classical_vals(self, join: NDArray[np.uint8]) -> Dict[str, int]:
-        assert join.shape == (self.n,)
         return {'join': bits_to_ints(join)[0]}
 
 
