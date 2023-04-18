@@ -9,7 +9,7 @@ from cirq_qubitization.cirq_algos import reflection_using_prepare, state_prepara
 
 @cirq.value_equality()
 class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
-    """Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
+    r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
     Constructs a Szegedy quantum walk operator $W = R_{L} . SELECT$, which is a product of
     two reflections $R_{L} = (2|L><L| - I)$ and $SELECT=\sum_{l}|l><l|H_{l}$.
