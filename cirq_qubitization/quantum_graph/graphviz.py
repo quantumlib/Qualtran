@@ -389,6 +389,15 @@ class PrettyGraphDrawer(GraphDrawer):
 
 
 class ClassicalSimGraphDrawer(PrettyGraphDrawer):
+    """A graph drawer that labels each edge with a classical value.
+
+    The (composite) bloq must be composed entirely of classically-simulable bloqs.
+
+    Args:
+        bloq: The (composite) bloq to draw.
+        vals: Input classical values to propogate through the composite bloq.
+    """
+
     def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):
         super().__init__(bloq=bloq)
         from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
@@ -399,13 +408,12 @@ class ClassicalSimGraphDrawer(PrettyGraphDrawer):
         self.soq_assign = soq_assign
 
     def cxn_label(self, cxn: Connection) -> str:
-        """Overridable method to return labels for connections."""
-
-        # Warning! pay careful attention to thru registers which share the same soquet
-        # key in the datamap for a bloqs left and right. The value will be for the right, output
-        # value. So we need cxn.left as the correct value.
-        val = self.soq_assign[cxn.left]
-        return str(val)
+        """Label the connection with its classical value."""
+        # Thru registers share the same soquet
+        # key in `soq_assign` for a bloq's left and right ports.
+        # The value in `soq_assign` will be for the right, output
+        # value. So we need `cxn.left` as the correct connection label.
+        return str(self.soq_assign[cxn.left])
 
     def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
         return pydot.Edge(

@@ -18,21 +18,33 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 ClassicalValT = Union[int, NDArray[int]]
 
 
-def bits_to_ints(bitstrings):
-    """Returns the big-endian integer specified by the given bits.
+def bits_to_ints(bitstrings: NDArray[np.uint]) -> NDArray[np.uint]:
+    """Returns the integer specified by the given big-endian bitstrings.
+
     Args:
-        bits: Descending bits of the integer, with the 1s bit at the end.
+        bitstrings: A bitstring or array of bitstrings, each of which has the 1s bit at the end.
     Returns:
-        The integer.
+        An array of integers; one for each bitstring.
     """
     bitstrings = np.atleast_2d(bitstrings)
-    assert bitstrings.shape[1] <= 64
+    if bitstrings.shape[1] > 64:
+        raise NotImplementedError()
     basis = 2 ** np.arange(bitstrings.shape[1] - 1, 0 - 1, -1, dtype=np.uint64)
     return np.sum(basis * bitstrings, axis=1)
 
 
-def ints_to_bits(x: NDArray[np.uint], w: int):
-    assert np.issubdtype(x.dtype, np.uint)
+def ints_to_bits(x: NDArray[np.uint], w: int) -> NDArray[np.uint8]:
+    """Returns the big-endian bitstrings specified by the given integers.
+
+    Args:
+        x: An integer or array of unsigned integers.
+
+    """
+    x = np.atleast_1d(x)
+    if not np.issubdtype(x.dtype, np.uint):
+        assert np.all(x >= 0)
+        assert np.iinfo(x.dtype).bits <= 64
+        x = x.astype(np.uint64)
     assert w <= np.iinfo(x.dtype).bits
     mask = 2 ** np.arange(w - 1, 0 - 1, -1, dtype=x.dtype).reshape((w, 1))
     return (x & mask).astype(bool).astype(np.uint8).T
@@ -46,7 +58,10 @@ def _get_in_vals(
         return soq_assign[Soquet(binst, reg)]
 
     if reg.bitsize > 64:
-        raise NotImplementedError("Come back later")
+        raise NotImplementedError(
+            "We currently only support up to 64-bit "
+            "multi-dimensional registers in classical simulation."
+        )
 
     arg = np.empty(reg.wireshape, dtype=np.uint64)
     for idx in reg.wire_idxs():
@@ -62,8 +77,12 @@ def _update_assign_from_vals(
     vals: Dict[str, ClassicalValT],
     soq_assign: Dict[Soquet, ClassicalValT],
 ):
-    # TODO: note error checking happens here
-    # TODO: check for positive values?
+    """Update `soq_assign` using `vals`.
+
+    This helper function is responsible for error checking. We use `regs` to make sure all the
+    keys are present in the vals dictionary. We check the classical value shapes, types, and
+    ranges.
+    """
     for reg in regs:
         try:
             arr = vals[reg.name]
@@ -74,6 +93,8 @@ def _update_assign_from_vals(
             arr = np.asarray(arr)
             if arr.shape != reg.wireshape:
                 raise ValueError(f"Incorrect shape {arr.shape} received for {binst}.{reg.name}")
+            if np.any(arr < 0):
+                raise ValueError(f"Negative classical values encountered in {binst}.{reg.name}")
 
             for idx in reg.wire_idxs():
                 soq = Soquet(binst, reg, idx=idx)
@@ -81,6 +102,8 @@ def _update_assign_from_vals(
         else:
             if not isinstance(arr, (int, np.uint)):
                 raise ValueError(f"{binst}.{reg.name} should be an integer, not {arr!r}")
+            if arr < 0:
+                raise ValueError(f"Negative classical value encountered in {binst}.{reg.name}")
             soq = Soquet(binst, reg)
             soq_assign[soq] = arr
 
@@ -88,7 +111,13 @@ def _update_assign_from_vals(
 def _binst_on_classical_vals(
     binst: BloqInstance, pred_cxns: Iterable[Connection], soq_assign: Dict[Soquet, ClassicalValT]
 ):
-    """Call `on_classical_vals` on a given binst."""
+    """Call `on_classical_vals` on a given binst.
+
+    Args:
+        binst: The bloq instance whose bloq we will call `on_classical_vals`.
+        pred_cxns: Predecessor connections for the bloq instance.
+        soq_assign: Current assignment of soquets to classical values.
+    """
 
     # Track inter-Bloq name changes
     for cxn in pred_cxns:
@@ -112,12 +141,18 @@ def _cbloq_call_classically(
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
     While we're handling the plumbing, we also do error checking on the arguments; see
-    `update_assign_from_vals`.
+    `_update_assign_from_vals`.
 
     Args:
         registers: The cbloq's registers for validating inputs
         vals: Mapping from register name to classical values
         binst_graph: The cbloq's binst graph.
+
+    Returns:
+        final_vals: A mapping from register name to output classical values
+        soq_assign: An assignment from each soquet to its classical value. Soquets
+            corresponding to thru registers will be mapped to the *output* classical
+            value.
     """
     # Keep track of each soquet's bit array. Initialize with LeftDangle
     soq_assign: Dict[Soquet, ClassicalValT] = {}
