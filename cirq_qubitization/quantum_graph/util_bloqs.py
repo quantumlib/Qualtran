@@ -45,7 +45,6 @@ class Split(Bloq):
         return TComplexity()
 
     def on_classical_vals(self, split: int) -> Dict[str, 'ClassicalValT']:
-        assert split >= 0
         assert split.bit_length() <= self.n
         return {'split': ints_to_bits(np.array([split]), self.n)[0]}
 
