@@ -74,10 +74,13 @@ def test_apply_classical():
     bloq = ApplyClassicalTest()
     x, z = bloq.call_classically(x=np.zeros(5, dtype=np.uint8))
     np.testing.assert_array_equal(x, np.zeros(5))
+    assert x.dtype == np.uint8
     assert z.dtype == np.uint8
     np.testing.assert_array_equal(z, [1, 0, 1, 0, 1])
 
-    x2, z2 = bloq.on_classical_vals(x=np.ones(5, dtype=np.uint8))
+    x2, z2 = bloq.call_classically(x=np.ones(5, dtype=np.uint8))
+    assert x2.dtype == np.uint8
+    assert z2.dtype == np.uint8
     np.testing.assert_array_equal(x2, np.ones(5))
     np.testing.assert_array_equal(z2, [0, 1, 0, 1, 0])
 

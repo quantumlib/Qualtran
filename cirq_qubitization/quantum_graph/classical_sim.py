@@ -38,7 +38,7 @@ def ints_to_bits(x: NDArray[np.uint], w: int) -> NDArray[np.uint8]:
 
     Args:
         x: An integer or array of unsigned integers.
-
+        w: The bit width of the returned bitstrings.
     """
     x = np.atleast_1d(x)
     if not np.issubdtype(x.dtype, np.uint):
@@ -57,13 +57,21 @@ def _get_in_vals(
     if not reg.wireshape:
         return soq_assign[Soquet(binst, reg)]
 
-    if reg.bitsize > 64:
+    if reg.bitsize <= 8:
+        dtype = np.uint8
+    elif reg.bitsize <= 16:
+        dtype = np.uint16
+    elif reg.bitsize <= 32:
+        dtype = np.uint32
+    elif reg.bitsize <= 64:
+        dtype = np.uint64
+    else:
         raise NotImplementedError(
             "We currently only support up to 64-bit "
             "multi-dimensional registers in classical simulation."
         )
 
-    arg = np.empty(reg.wireshape, dtype=np.uint64)
+    arg = np.empty(reg.wireshape, dtype=dtype)
     for idx in reg.wire_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
@@ -95,6 +103,8 @@ def _update_assign_from_vals(
                 raise ValueError(f"Incorrect shape {arr.shape} received for {binst}.{reg.name}")
             if np.any(arr < 0):
                 raise ValueError(f"Negative classical values encountered in {binst}.{reg.name}")
+            if np.any(arr >= 2**reg.bitsize):
+                raise ValueError(f"Too-large classical values encountered in {binst}.{reg.name}")
 
             for idx in reg.wire_idxs():
                 soq = Soquet(binst, reg, idx=idx)
@@ -104,6 +114,8 @@ def _update_assign_from_vals(
                 raise ValueError(f"{binst}.{reg.name} should be an integer, not {arr!r}")
             if arr < 0:
                 raise ValueError(f"Negative classical value encountered in {binst}.{reg.name}")
+            if arr >= 2**reg.bitsize:
+                raise ValueError(f"Too-large classical value encountered in {binst}.{reg.name}")
             soq = Soquet(binst, reg)
             soq_assign[soq] = arr
 
