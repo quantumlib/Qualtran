@@ -27,8 +27,7 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
 
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
-        registers = [] if self._control_val is None else [cirq_infra.Register('control', 1)]
-        return cirq_infra.Registers(registers)
+        return self._select.control_registers
 
     @cached_property
     def selection_registers(self) -> cirq_infra.Registers:
