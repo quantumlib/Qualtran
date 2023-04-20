@@ -2,7 +2,7 @@ import cirq
 import numpy as np
 
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.cirq_gate import cirq_circuit_to_cbloq, CirqGate
+from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq, CirqGate
 from cirq_qubitization.quantum_graph.fancy_registers import Side
 
 
@@ -56,4 +56,4 @@ def test_cbloq_to_cirq_circuit():
 
 
 def test_notebook():
-    execute_notebook('cirq_gate')
+    execute_notebook('cirq_conversion')
