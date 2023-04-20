@@ -100,7 +100,10 @@ def _update_assign_from_vals(
         if reg.wireshape:
             arr = np.asarray(arr)
             if arr.shape != reg.wireshape:
-                raise ValueError(f"Incorrect shape {arr.shape} received for {binst}.{reg.name}")
+                raise ValueError(
+                    f"Incorrect shape {arr.shape} received for {binst}.{reg.name}. "
+                    f"Want {reg.wireshape}."
+                )
             if np.any(arr < 0):
                 raise ValueError(f"Negative classical values encountered in {binst}.{reg.name}")
             if np.any(arr >= 2**reg.bitsize):
@@ -110,7 +113,7 @@ def _update_assign_from_vals(
                 soq = Soquet(binst, reg, idx=idx)
                 soq_assign[soq] = arr[idx]
         else:
-            if not isinstance(arr, (int, np.uint, np.int_)):
+            if not isinstance(arr, (int, np.integer)):
                 raise ValueError(f"{binst}.{reg.name} should be an integer, not {arr!r}")
             if arr < 0:
                 raise ValueError(f"Negative classical value encountered in {binst}.{reg.name}")

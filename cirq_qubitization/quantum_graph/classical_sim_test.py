@@ -11,6 +11,7 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.classical_sim import (
     _cbloq_call_classically,
+    _update_assign_from_vals,
     bits_to_ints,
     ints_to_bits,
 )
@@ -51,6 +52,43 @@ def test_int_to_bits():
     # check bounds
     with pytest.raises(AssertionError):
         ints_to_bits([4, -2], w=8)
+
+
+def test_dtype_validation():
+    # set up mocks for `_update_assign_from_vals`
+    soq_assign = {}  # gets assigned to; we discard in this test.
+    binst = 'MyBinst'  # binst is only used for error messages, so we can mock with a string
+
+    # set up different register dtypes
+    regs = [
+        FancyRegister('one_bit_int', 1),
+        FancyRegister('int', 5),
+        FancyRegister('bit_arr', 1, wireshape=(5,)),
+        FancyRegister('int_arr', 32, wireshape=(5,)),
+    ]
+
+    # base case: vals are as-expected.
+    vals = {
+        'one_bit_int': 1,
+        'int': 5,
+        'bit_arr': np.array([1, 0, 1, 0, 1], dtype=np.uint8),
+        'int_arr': np.arange(5),
+    }
+    _update_assign_from_vals(regs, binst, vals, soq_assign)
+
+    # bad integer
+    vals2 = {**vals, 'one_bit_int': 2}
+    with pytest.raises(ValueError, match=r'Too-large.*one_bit_int'):
+        _update_assign_from_vals(regs, binst, vals2, soq_assign)
+
+    # int is a numpy int
+    vals3 = {**vals, 'int': np.arange(5, dtype=np.uint8)[4]}
+    _update_assign_from_vals(regs, binst, vals3, soq_assign)
+
+    # wrong shape
+    vals4 = {**vals, 'int_arr': np.arange(6)}
+    with pytest.raises(ValueError, match=r'Incorrect shape.*Want \(5,\)\.'):
+        _update_assign_from_vals(regs, binst, vals4, soq_assign)
 
 
 @frozen
