@@ -1,7 +1,14 @@
 import numpy as np
 import pytest
 
-from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from cirq_qubitization.bloq_algos.basic_gates import (
+    IntEffect,
+    IntState,
+    OneEffect,
+    OneState,
+    ZeroEffect,
+    ZeroState,
+)
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
 
@@ -92,3 +99,29 @@ def test_zero_state_effect(bit):
 
     res = cbloq.call_classically()
     assert res == ()
+
+
+def test_int_state():
+    k = IntState(255, bitsize=8)
+    assert k.short_name() == '255'
+    assert k.pretty_name() == '|255>'
+    (val,) = k.call_classically()
+    assert val == 255
+
+    with pytest.raises(ValueError):
+        _ = IntState(255, bitsize=7)
+    with pytest.raises(ValueError):
+        _ = IntState(-1, bitsize=8)
+
+    np.testing.assert_allclose(k.tensor_contract(), k.decompose_bloq().tensor_contract())
+
+
+def test_int_effect():
+    k = IntEffect(255, bitsize=8)
+    assert k.short_name() == '255'
+    assert k.pretty_name() == '<255|'
+    ret = k.call_classically(val=255)
+    assert ret == ()
+
+    with pytest.raises(AssertionError):
+        k.call_classically(val=245)
