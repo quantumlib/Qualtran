@@ -53,11 +53,7 @@ class And(Bloq):
         if self.adjoint:
             raise NotImplementedError("Come back later.")
 
-        c1, c2 = ctrl
-        if c1 == self.cv1 and c2 == self.cv2:
-            target = 1
-        else:
-            target = 0
+        target = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
         return {'ctrl': ctrl, 'target': target}
 
     def add_my_tensors(
