@@ -43,7 +43,7 @@ def test_util_bloqs():
 
 def test_classical_sim():
     bb = CompositeBloqBuilder()
-    x = bb.allocate(4, val=2)
+    x = bb.allocate(4)
     xs = bb.split(x)
     xs_1_orig = xs[1]  # keep a copy for later
     (xs[1],) = bb.add(XGate(), q=xs[1])
@@ -51,17 +51,17 @@ def test_classical_sim():
     cbloq = bb.finalize(y=y)
 
     ret, assign = _cbloq_call_classically(cbloq.registers, vals={}, binst_graph=cbloq._binst_graph)
-    assert assign[x] == 2
+    assert assign[x] == 0
 
     assert assign[xs[0]] == 0
     assert assign[xs_1_orig] == 0
-    assert assign[xs[2]] == 1
+    assert assign[xs[2]] == 0
     assert assign[xs[3]] == 0
 
     assert assign[xs[1]] == 1
-    assert assign[y] == 6
+    assert assign[y] == 4
 
-    assert ret == {'y': 6}
+    assert ret == {'y': 4}
 
 
 def test_notebook():

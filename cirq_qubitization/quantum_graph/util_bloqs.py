@@ -104,22 +104,14 @@ class Allocate(Bloq):
           n: the bitsize of the allocated register.
     """
 
-    bitsize: int
-    val: int = 0
-
-    def __attrs_post_init__(self):
-        if self.val < 0:
-            raise ValueError("`val` must be positive")
-
-        if self.val >= 2**self.bitsize:
-            raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
+    n: int
 
     @cached_property
     def registers(self) -> FancyRegisters:
-        return FancyRegisters([FancyRegister('alloc', bitsize=self.bitsize, side=Side.RIGHT)])
+        return FancyRegisters([FancyRegister('alloc', bitsize=self.n, side=Side.RIGHT)])
 
     def on_classical_vals(self) -> Dict[str, int]:
-        return {'alloc': self.val}
+        return {'alloc': 0}
 
 
 @frozen
