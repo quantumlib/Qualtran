@@ -91,7 +91,7 @@ class Registers:
     def merge_qubits(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> List[cirq.Qid]:
         ret: List[cirq.Qid] = []
         for reg in self:
-            assert reg.name in qubit_regs, "All qubit registers must pe present"
+            assert reg.name in qubit_regs, f"Missing {reg.name}"
             qubits = qubit_regs[reg.name]
             qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
             assert len(qubits) == reg.bitsize, f"{reg.name} register must of length {reg.bitsize}."

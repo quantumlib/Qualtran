@@ -2,14 +2,14 @@ import cirq
 import numpy as np
 
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq, CirqGate
+from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq, CirqGateAsBloq
 from cirq_qubitization.quantum_graph.fancy_registers import Side
 
 
 def test_cirq_gate():
-    x = CirqGate(cirq.X)
-    rx = CirqGate(cirq.Rx(rads=0.123 * np.pi))
-    toffoli = CirqGate(cirq.TOFFOLI)
+    x = CirqGateAsBloq(cirq.X)
+    rx = CirqGateAsBloq(cirq.Rx(rads=0.123 * np.pi))
+    toffoli = CirqGateAsBloq(cirq.TOFFOLI)
 
     for b in [x, rx, toffoli]:
         assert len(b.registers) == 1
@@ -18,7 +18,7 @@ def test_cirq_gate():
     assert x.registers[0].wireshape == (1,)
     assert toffoli.registers[0].wireshape == (3,)
 
-    assert str(x) == 'CirqGate(gate=cirq.X)'
+    assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
     assert x.pretty_name() == 'cirq.X'
     assert x.short_name() == 'cirq.X'
 
@@ -50,7 +50,7 @@ def test_cbloq_to_cirq_circuit():
     # Note: a 1d `wireshape` bloq register is actually two-dimensional in cirq-world
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
     # CirqGate has registers of bitsize=1 and wireshape=(n,); hence the list transpose below.
-    circuit2 = cbloq.to_cirq_circuit(qubits=[[q] for q in qubits])
+    circuit2 = cbloq.to_cirq_circuit({'qubits': [[q] for q in qubits]})
 
     assert circuit == circuit2
 

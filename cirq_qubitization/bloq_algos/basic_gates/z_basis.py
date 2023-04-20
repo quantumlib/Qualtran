@@ -149,8 +149,8 @@ class ZGate(Bloq):
             )
         )
 
-    def on_registers(self, q: 'NDArray[cirq.Qid]') -> 'cirq.OP_TREE':
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
         import cirq
 
-        (q,) = q
+        (q,) = cirq_quregs['q']
         return cirq.Z(q)

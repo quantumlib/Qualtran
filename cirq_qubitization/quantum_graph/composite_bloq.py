@@ -16,7 +16,6 @@ from typing import (
     Union,
 )
 
-import cirq
 import networkx as nx
 import numpy as np
 from numpy.typing import NDArray
@@ -34,6 +33,8 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 )
 
 if TYPE_CHECKING:
+    import cirq
+
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
@@ -90,22 +91,28 @@ class CompositeBloq(Bloq):
         """
         return _create_binst_graph(self.connections)
 
-    def to_cirq_circuit(self, **quregs: NDArray[cirq.Qid]) -> cirq.Circuit:
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+        import cirq
+
+        return cirq.CircuitOperation(self.to_cirq_circuit(**cirq_quregs))
+
+    def to_cirq_circuit(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.FrozenCircuit':
         """Convert this CompositeBloq to a `cirq.Circuit`.
+
+        TODO: mutates quregs
 
         Args:
             quregs: These keyword arguments map from register name to a sequence of `cirq.Qid`.
                 Cirq operations operate on individual qubit objects.
-                Consider using `**self.registers.get_named_qubits()` for this argument.
+                Consider using `**self.registers.get_cirq_quregs()` for this argument.
         """
+        # First, convert register names to registers.
         from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
 
-        # First, convert register names to registers.
-        quregs = {reg: quregs[reg.name] for reg in self.registers.lefts()}
-        return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
+        return _cbloq_to_cirq_circuit(self.registers, cirq_quregs, self._binst_graph)
 
     @classmethod
-    def from_cirq_circuit(cls, circuit: cirq.Circuit) -> 'CompositeBloq':
+    def from_cirq_circuit(cls, circuit: 'cirq.Circuit') -> 'CompositeBloq':
         """Construct a composite bloq from a Cirq circuit.
 
         Each `cirq.Operation` will be wrapped into a `CirqGate` wrapper bloq. The

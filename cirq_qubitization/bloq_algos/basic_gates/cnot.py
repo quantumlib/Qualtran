@@ -67,11 +67,9 @@ class CNOT(Bloq):
     def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
-    def on_registers(
-        self, ctrl: 'NDArray[cirq.Qid]', target: 'NDArray[cirq.Qid]'
-    ) -> 'cirq.OP_TREE':
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
         import cirq
 
-        (ctrl,) = ctrl
-        (target,) = target
+        (ctrl,) = cirq_quregs['ctrl']
+        (target,) = cirq_quregs['target']
         return cirq.CNOT(ctrl, target)

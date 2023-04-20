@@ -130,6 +130,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         gate_specs=[
             GateNbSpec(jaf._make_MultiTargetCSwap),
             GateNbSpec(jaf._make_MultiTargetCSwapApprox),
+            GateNbSpec(jaf._make_SwapWithZeroGate),
         ],
         directory='./cirq_algos',
     ),

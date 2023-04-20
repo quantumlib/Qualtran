@@ -202,13 +202,21 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().t_complexity()
 
-    def on_registers(self, **qubit_regs: 'NDArray[cirq.Qid]') -> 'cirq.OP_TREE':
-        """Support for conversion to a Cirq circuit."""
-        raise NotImplementedError("This bloq does not support Cirq conversion.")
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+        """Override this method to support conversion to a Cirq operation.
 
+        If this method is not overriden, the default implementation will wrap this bloq
+        in a `BloqAsCirqGate` shim.
 
-class NoCirqEquivalent(NotImplementedError):
-    """Raise this in `Bloq.on_registers` to signify that it should be omitted from Cirq circuits.
+        Args:
+            cirq_quregs: A mapping from this bloq's register names to an ndarray of `cirq.Qid`.
+                The final dimension of this array corresponds to the registers `bitsize` size.
+                Any additional dimensions come first and correspond to the register `wireshape`
+                sizes. Something about mutation.
 
-    For example, this would apply for qubit bookkeeping operations.
-    """
+        Returns:
+            A cirq operation acting on the provided cirq qubits.
+        """
+        from cirq_qubitization.quantum_graph.cirq_conversion import BloqAsCirqGate
+
+        return BloqAsCirqGate.make_from_bloq_on_registers(bloq=self, cirq_quregs=cirq_quregs)
