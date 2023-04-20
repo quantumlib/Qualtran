@@ -22,7 +22,7 @@ def bits_to_ints(bitstrings: NDArray[np.uint]) -> NDArray[np.uint]:
     """Returns the integer specified by the given big-endian bitstrings.
 
     Args:
-        bitstrings: A bitstring or array of bitstrings, each of which has the 1s bit at the end.
+        bitstrings: A bitstring or array of bitstrings, each of which has the 1s bit (LSB) at the end.
     Returns:
         An array of integers; one for each bitstring.
     """
