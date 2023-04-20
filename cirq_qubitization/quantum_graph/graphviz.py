@@ -5,7 +5,7 @@ import IPython.display
 import pydot
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.cirq_gate import CirqGate
+from cirq_qubitization.quantum_graph.cirq_conversion import CirqGate
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,

@@ -107,7 +107,7 @@ class CompositeBloq(Bloq):
         resultant composite bloq will represent a unitary with one thru-register
         named "qubits" of wireshape `(n_qubits,)`.
         """
-        from cirq_qubitization.quantum_graph.cirq_gate import cirq_circuit_to_cbloq
+        from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
 
         return cirq_circuit_to_cbloq(circuit)
 
