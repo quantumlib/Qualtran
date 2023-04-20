@@ -56,6 +56,12 @@ def _make_MultiTargetCSwapApprox():
     return MultiTargetCSwapApprox(2)
 
 
+def _make_SwapWithZeroGate():
+    from cirq_qubitization.cirq_algos.swap_network import SwapWithZeroGate
+
+    return SwapWithZeroGate(selection_bitsize=2, target_bitsize=3, n_target_registers=4)
+
+
 def _make_GenericSelect():
     from cirq_qubitization.generic_select import GenericSelect
 

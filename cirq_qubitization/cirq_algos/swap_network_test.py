@@ -23,7 +23,7 @@ def test_swap_with_zero_gate(selection_bitsize, target_bitsize, n_target_registe
     all_qubits = cirq.LineQubit.range(cirq.num_qubits(gate))
     selection = all_qubits[:selection_bitsize]
     targets = {
-        f'target{i}': all_qubits[st : st + target_bitsize]
+        f'targets_{i}': all_qubits[st : st + target_bitsize]
         for i, st in enumerate(range(selection_bitsize, len(all_qubits), target_bitsize))
     }
     # Create a circuit.
@@ -89,12 +89,8 @@ def test_swap_with_zero_gate_diagram():
 def test_multi_target_cswap():
     qubits = cirq.LineQubit.range(5)
     c, q_x, q_y = qubits[0], qubits[1:3], qubits[3:]
-    cswap = cirq_qubitization.MultiTargetCSwap(2).on_registers(
-        control=c, target_x=q_x, target_y=q_y
-    )
-    cswap_approx = cirq_qubitization.MultiTargetCSwapApprox(2).on_registers(
-        control=c, target_x=q_x, target_y=q_y
-    )
+    cswap = cirq_qubitization.MultiTargetCSwap(2).on_registers(ctrl=c, x=q_x, y=q_y)
+    cswap_approx = cirq_qubitization.MultiTargetCSwapApprox(2).on_registers(ctrl=c, x=q_x, y=q_y)
     setup_code = "import cirq\nimport cirq_qubitization"
     cirq.testing.assert_implements_consistent_protocols(cswap, setup_code=setup_code)
     cirq.testing.assert_implements_consistent_protocols(cswap_approx, setup_code=setup_code)
@@ -133,10 +129,8 @@ def test_multi_target_cswap():
 def test_multi_target_cswap_make_on():
     qubits = cirq.LineQubit.range(5)
     c, q_x, q_y = qubits[0], qubits[1:3], qubits[3:]
-    cswap1 = cirq_qubitization.MultiTargetCSwap(2).on_registers(
-        control=c, target_x=q_x, target_y=q_y
-    )
-    cswap2 = cirq_qubitization.MultiTargetCSwap.make_on(control=c, target_x=q_x, target_y=q_y)
+    cswap1 = cirq_qubitization.MultiTargetCSwap(2).on_registers(ctrl=c, x=q_x, y=q_y)
+    cswap2 = cirq_qubitization.MultiTargetCSwap.make_on(ctrl=c, x=q_x, y=q_y)
     assert cswap1 == cswap2
 
 

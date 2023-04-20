@@ -1,11 +1,12 @@
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.classical_sim import ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
     import cirq
 
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -155,3 +157,109 @@ class ZGate(Bloq):
 
         (q,) = q
         return cirq.Z(q), {'q': [q]}
+
+
+@frozen
+class _IntVector(Bloq):
+    """Represent a classical non-negative integer vector (state or effect).
+
+    Args:
+        val: the classical value
+        bitsize: The bitsize of the register
+        state: True if this is a state; an effect otherwise.
+
+    Registers:
+        val: The register of size `bitsize` which initializes the value `val`.
+    """
+
+    val: int
+    bitsize: int
+    state: bool
+
+    def __attrs_post_init__(self):
+        if self.val < 0:
+            raise ValueError("`val` must be positive")
+
+        if self.val >= 2**self.bitsize:
+            raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
+
+    @cached_property
+    def registers(self) -> FancyRegisters:
+        side = Side.RIGHT if self.state else Side.LEFT
+        return FancyRegisters([FancyRegister('val', bitsize=self.bitsize, side=side)])
+
+    def build_composite_bloq(self, bb: 'CompositeBloqBuilder') -> Dict[str, 'SoquetT']:
+        states = [ZeroState(), OneState()]
+        xs = []
+        for bit in ints_to_bits(np.array([self.val]), w=self.bitsize)[0]:
+            (x,) = bb.add(states[bit])
+            xs.append(x)
+        xs = np.array(xs)
+
+        return {'val': bb.join(xs)}
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        tag: Any,
+        *,
+        incoming: Dict[str, SoquetT],
+        outgoing: Dict[str, SoquetT],
+    ):
+        data = np.zeros(2**self.bitsize).reshape((2,) * self.bitsize)
+        bitstring = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
+        data[tuple(bitstring)] = 1
+        data = data.reshape(-1)
+
+        if self.state:
+            inds = (outgoing['val'],)
+        else:
+            inds = (incoming['val'],)
+
+        tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, int]:
+        if self.state:
+            assert not vals
+            return {'val': self.val}
+
+        assert vals['val'] == self.val, vals['val']
+
+    def short_name(self) -> str:
+        return f'{self.val}'
+
+    def pretty_name(self) -> str:
+        s = self.short_name()
+        return f'|{s}>' if self.state else f'<{s}|'
+
+
+@frozen(init=False, field_transformer=_hide_base_fields)
+class IntState(_IntVector):
+    """The state |val> for non-negative integer val
+
+    Args:
+        val: the classical value
+        bitsize: The bitsize of the register
+
+    Registers:
+        val: The register of size `bitsize` which initializes the value `val`.
+    """
+
+    def __init__(self, val: int, bitsize: int):
+        self.__attrs_init__(val=val, bitsize=bitsize, state=True)
+
+
+@frozen(init=False, field_transformer=_hide_base_fields)
+class IntEffect(_IntVector):
+    """The effect <val| for non-negative integer val
+
+    Args:
+        val: the classical value
+        bitsize: The bitsize of the register
+
+    Registers:
+        val: The register of size `bitsize` which de-allocates the value `val`.
+    """
+
+    def __init__(self, val: int, bitsize: int):
+        self.__attrs_init__(val=val, bitsize=bitsize, state=False)
