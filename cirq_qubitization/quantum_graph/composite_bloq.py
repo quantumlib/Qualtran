@@ -92,6 +92,7 @@ class CompositeBloq(Bloq):
         return _create_binst_graph(self.connections)
 
     def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+        """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
         import cirq
 
         return cirq.CircuitOperation(self.to_cirq_circuit(**cirq_quregs))
@@ -99,14 +100,12 @@ class CompositeBloq(Bloq):
     def to_cirq_circuit(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.FrozenCircuit':
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
-        TODO: mutates quregs
-
         Args:
-            quregs: These keyword arguments map from register name to a sequence of `cirq.Qid`.
-                Cirq operations operate on individual qubit objects.
-                Consider using `**self.registers.get_cirq_quregs()` for this argument.
+            cirq_quregs: Mapping from register name to Cirq qubit arrays. This dictionary is
+                mutated throughout the course of this method! After the method returns,
+                this will map output register names to output Cirq qubit arrays which may include
+                newly allocated qubits.
         """
-        # First, convert register names to registers.
         from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
 
         return _cbloq_to_cirq_circuit(self.registers, cirq_quregs, self._binst_graph)

@@ -212,11 +212,15 @@ class Bloq(metaclass=abc.ABCMeta):
             cirq_quregs: A mapping from this bloq's register names to an ndarray of `cirq.Qid`.
                 The final dimension of this array corresponds to the registers `bitsize` size.
                 Any additional dimensions come first and correspond to the register `wireshape`
-                sizes. Something about mutation.
+                sizes. Implementers can mutate this dictionary to correspond to qubit
+                allocations or deallocations.
 
         Returns:
-            A cirq operation acting on the provided cirq qubits.
+            A cirq operation corresponding to this bloq acting on the provided cirq qubits or None.
+            This method should return None if and only if the bloq instance truly should not
+            be included in the Cirq circuit (e.g. for reshaping bloqs). A bloq with no cirq
+            equivalent should raise an exception instead.
         """
         from cirq_qubitization.quantum_graph.cirq_conversion import BloqAsCirqGate
 
-        return BloqAsCirqGate.make_from_bloq_on_registers(bloq=self, cirq_quregs=cirq_quregs)
+        return BloqAsCirqGate.bloq_on(bloq=self, cirq_quregs=cirq_quregs)

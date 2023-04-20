@@ -157,6 +157,7 @@ class FancyRegisters:
         return len(self._registers)
 
     def get_cirq_quregs(self) -> Dict[str, 'NDArray[cirq.Qid]']:
+        """Get arrays of cirq qubits for these registers."""
         import cirq
 
         def _qubit_array(reg: FancyRegister):

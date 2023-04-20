@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
 import networkx as nx
@@ -50,12 +50,12 @@ class CirqGateAsBloq(Bloq):
         return f'cirq.{g}'
 
     @cached_property
-    def n_qubits(self):
-        return cirq.num_qubits(self.gate)
-
-    @cached_property
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters([FancyRegister('qubits', 1, wireshape=(self.n_qubits,))])
+
+    @cached_property
+    def n_qubits(self):
+        return cirq.num_qubits(self.gate)
 
     def add_my_tensors(
         self,
@@ -111,6 +111,7 @@ def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
 def _get_in_cirq_quregs(
     binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, 'NDArray[cirq.Qid]']
 ) -> 'NDArray[cirq.Qid]':
+    """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     full_shape = reg.wireshape + (reg.bitsize,)
     arg = np.empty(full_shape, dtype=object)
 
@@ -126,11 +127,11 @@ def _update_assign_from_cirq_quregs(
     binst: BloqInstance,
     cirq_quregs: Dict[str, CirqQuregT],
     soq_assign: Dict[Soquet, CirqQuregT],
-):
-    """Update `soq_assign` using `vals`.
+) -> None:
+    """Update `soq_assign` using `cirq_quregs`.
+
     This helper function is responsible for error checking. We use `regs` to make sure all the
-    keys are present in the vals dictionary. We check the classical value shapes, types, and
-    ranges.
+    keys are present in the vals dictionary. We check the quregs shapes.
     """
     unprocessed_reg_names = set(cirq_quregs.keys())
     for reg in regs:
@@ -157,19 +158,17 @@ def _binst_as_cirq_op(
     binst: BloqInstance,
     pred_cxns: Iterable[Connection],
     soq_assign: Dict[Soquet, NDArray[cirq.Qid]],
-) -> cirq.Operation:
+) -> Union[cirq.Operation, None]:
     """Helper function used in `_cbloq_to_cirq_circuit`.
 
     Args:
-        binst: The current BloqInstance to process
-        soq_assign: The current mapping between soquets and qubits that *is updated by this function*.
-            At input, the mapping should contain values for all of binst's soquets. Afterwards,
-            it should contain values for all of binst's successors' soquets.
-        binst_graph: Used for finding binst's successors to update soqmap.
+        binst: The current BloqInstance on which we wish to call `as_cirq_op`.
+        pred_cxns: Predecessor connections for the bloq instance.
+        soq_assign: The current assignment from soquets to cirq qubit arrays. This mapping
+            is mutated by this function.
 
     Returns:
-        an operation if there is a corresponding one in Cirq. Some bookkeeping Bloqs will not
-        correspond to Cirq operations.
+        The operation resulting from `binst.bloq.as_cirq_op(...)`.
     """
     # Track inter-Bloq name changes
     for cxn in pred_cxns:
@@ -192,14 +191,15 @@ def _binst_as_cirq_op(
 def _cbloq_to_cirq_circuit(
     registers: FancyRegisters, cirq_quregs: Dict[str, CirqQuregT], binst_graph: nx.DiGraph
 ) -> cirq.FrozenCircuit:
-    """Transform CompositeBloq components into a `cirq.Circuit`.
+    """Propagate `as_cirq_op` calls through a composite bloq's contents to export a `cirq.Circuit`.
 
     Args:
-        cirq_quregs: Assignment from each register to an array of `cirq.Qid` for the conversion
-            to a `cirq.Circuit`.
-        binst_graph: A graph connecting bloq instances with edge attributes containing the
-            full list of `Connection`s, as returned by `CompositeBloq._get_binst_graph()`.
-            This function does not mutate `binst_graph`.
+        registers: The cbloq's registers for validating inputs.
+        cirq_quregs: Mapping from register name to Cirq qubit arrays. This dictionary is
+            mutated throughout the course of this function! After the function returns,
+            this will map output register names to output Cirq qubit arrays which may include
+            newly allocated qubits.
+        binst_graph: The cbloq's binst graph. This is read only.
 
     Returns:
         A `cirq.FrozenCircuit` for the composite bloq.
@@ -217,7 +217,7 @@ def _cbloq_to_cirq_circuit(
 
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
             op = _binst_as_cirq_op(binst, pred_cxns, soq_assign)
-            if op:
+            if op is not None:
                 moment.append(op)
         if moment:
             moments.append(cirq.Moment(moment))
@@ -240,7 +240,10 @@ def _cbloq_to_cirq_circuit(
 class BloqAsCirqGate(GateWithRegisters):
     """A shim for using bloqs in a Cirq circuit.
 
-    ...
+    Args:
+        bloq: The bloq to wrap.
+        reg_to_wires: an optional callable to produce a list of wire symbols for each register
+            to match Cirq diagrams.
     """
 
     def __init__(
@@ -259,12 +262,23 @@ class BloqAsCirqGate(GateWithRegisters):
         return self._legacy_regs
 
     @staticmethod
-    def _init_legacy_regs(bloq: Bloq):
+    def _init_legacy_regs(
+        bloq: Bloq,
+    ) -> Tuple[LegacyRegisters, Mapping[str, Tuple[FancyRegister, Tuple[int, ...]]]]:
+        """Initialize legacy registers.
+
+        We flatten multidimensional registers and annotate non-thru registers with
+        modifications to their string name.
+
+        Returns:
+            legacy_registers: The flattened, cirq GateWithRegisters-style registers
+            compat_name_map: A mapping from the compatability-shim string names of the legacy
+                registers back to the original (register, idx) pair.
+        """
         legacy_regs: List[LegacyRegister] = []
         side_suffixes = {Side.LEFT: '_l', Side.RIGHT: '_r', Side.THRU: ''}
         compat_name_map = {}
         for reg in bloq.registers:
-
             if not reg.wireshape:
                 compat_name = f'{reg.name}{side_suffixes[reg.side]}'
                 compat_name_map[compat_name] = (reg, ())
@@ -280,10 +294,19 @@ class BloqAsCirqGate(GateWithRegisters):
         return LegacyRegisters(legacy_regs), compat_name_map
 
     @classmethod
-    def make_from_bloq_on_registers(
-        cls, bloq: Bloq, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']
-    ) -> 'cirq.Operation':
+    def bloq_on(cls, bloq: Bloq, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+        """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
+        This is used as a default implementation for `Bloq.as_cirq_op` if a native
+        cirq conversion is not specified.
+
+        Args:
+            bloq: The bloq to be wrapped with `BloqAsCirqGate`
+            cirq_quregs: The cirq qubit registers on which we call the gate.
+
+        Returns:
+            A cirq operation whose gate is the `BloqAsCirqGate`-wrapped version of `bloq`.
+        """
         qubits: List[cirq.Qid] = []
         for reg in bloq.registers:
             if reg.side is Side.THRU:
@@ -300,33 +323,46 @@ class BloqAsCirqGate(GateWithRegisters):
 
         return BloqAsCirqGate(bloq=bloq).on(*qubits)
 
-    def decompose_from_registers(self, **cirq_quregs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        """Implementation of the GatesWithRegisters decompose method.
+
+        This delegates to `self.bloq.decompose_bloq()` and converts the result to a cirq circuit.
+
+        Args:
+            **qubit_regs: Sequences of cirq qubits as expected for the legacy register shims
+            of the bloq's registers.
+
+        Returns:
+            A cirq circuit containing the cirq-exported version of the bloq decomposition.
+        """
         cbloq = self._bloq.decompose_bloq()
 
-        # initialize wireshape regs
-        qubit_regs = {}
+        # Initialize shapely qubit registers to pass to bloqs infrastructure
+        cirq_quregs: Dict[str, CirqQuregT] = {}
         for reg in self._bloq.registers:
             if reg.wireshape:
                 shape = reg.wireshape + (reg.bitsize,)
-                qubit_regs[reg.name] = np.empty(shape, dtype=object)
+                cirq_quregs[reg.name] = np.empty(shape, dtype=object)
 
-        # unflatten
-        for compat_name, qubits in cirq_quregs.items():
+        # Shapefy the provided cirq qubits
+        for compat_name, qubits in qubit_regs.items():
             reg, idx = self._compat_name_map[compat_name]
             if idx == ():
-                qubit_regs[reg.name] = qubits
+                cirq_quregs[reg.name] = np.asarray(qubits)
             else:
-                qubit_regs[reg.name][idx] = qubits
+                cirq_quregs[reg.name][idx] = np.asarray(qubits)
 
-        return cbloq.to_cirq_circuit(qubit_regs)
+        return cbloq.to_cirq_circuit(cirq_quregs)
 
     def _t_complexity_(self):
+        """Delegate to the bloq's t complexity."""
         return self._bloq.t_complexity()
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        """Default diagram info that uses register names to name the boxes in multi-qubit gates.
+        """Draw cirq diagrams.
 
-        Descendants can override this method with more meaningful circuit diagram information.
+        By default, we label each qubit with its register name. If `reg_to_wires` was provided
+        in the class constructor, we use that to get a list of wire symbols for each register.
         """
 
         if self._reg_to_wires is not None:
