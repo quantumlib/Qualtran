@@ -134,7 +134,7 @@ def test_multi_truth_table():
             assert res == should_be
 
 
-def test_multiand_consitent_apply_classical():
+def test_multiand_consistent_apply_classical():
     rs = np.random.RandomState(52)
     n = 5
     all_cvs = rs.choice([0, 1], size=(2, n))
