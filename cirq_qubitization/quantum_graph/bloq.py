@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import cirq
@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from cirq_qubitization import TComplexity
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
@@ -99,6 +100,51 @@ class Bloq(metaclass=abc.ABCMeta):
         assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
         ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        """How this bloq operates on classical data.
+
+        Override this method if your bloq represents classical, reversible logic. For example:
+        quantum circuits composed of X and C^nNOT gates are classically simulable.
+
+        Bloq definers should override this method. If you already have an instance of a `Bloq`,
+        consider calling `call_clasically(**vals)` which will do input validation before
+        calling this function.
+
+        Args:
+            **vals: The input classical values for each left (or thru) register. The data
+                types are guaranteed to match `self.registers`. Values for registers
+                with bitsize `n` will be integers of that bitsize. Values for registers with
+                `wireshape` will be an ndarray of integers of the given bitsize. Note: integers
+                can be either Numpy or Python integers. If they are Python integers, they
+                are unsigned.
+
+        Returns:
+            A dictionary mapping right (or thru) register name to output classical values.
+        """
+        raise NotImplementedError(f"{self} does not support classical simulation.")
+
+    def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
+        """Call this bloq on classical data.
+
+        Bloq users can call this function to apply bloqs to classical data. If you're
+        trying to define a bloq's action on classical values, consider overriding
+        `on_classical_vals` which promises type checking for arguments.
+
+        Args:
+            **vals: The input classical values for each left (or thru) register. The data
+                types must match `self.registers`. Values for registers
+                with bitsize `n` should be integers of that bitsize or less. Values for registers
+                with `wireshape` should be an ndarray of integers of the given bitsize.
+                Note: integers can be either Numpy or Python integers, but should be positive
+                and unsigned.
+
+        Returns:
+            A tuple of output classical values ordered according to this bloqs right (or thru)
+            registers.
+        """
+        res = self.as_composite_bloq().on_classical_vals(**vals)
+        return tuple(res[reg.name] for reg in self.registers.rights())
 
     def tensor_contract(self) -> 'NDArray':
         """Return a contracted, dense ndarray representing this bloq.

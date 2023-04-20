@@ -7,6 +7,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
@@ -134,6 +135,9 @@ class XGate(Bloq):
                 data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
             )
         )
+
+    def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
+        return {'q': (q + 1) % 2}
 
     def on_registers(self, q: 'NDArray[cirq.Qid]') -> 'cirq.OP_TREE':
         import cirq

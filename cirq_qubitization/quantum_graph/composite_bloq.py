@@ -12,6 +12,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -31,6 +32,9 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+
+if TYPE_CHECKING:
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
 
@@ -123,6 +127,20 @@ class CompositeBloq(Bloq):
         from cirq_qubitization.quantum_graph.quimb_sim import _cbloq_to_dense
 
         return _cbloq_to_dense(self)
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        """Support classical data by recursing into the composite bloq."""
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
+
+        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
+        return out_vals
+
+    def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
+        """Support classical data by recursing into the composite bloq."""
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
+
+        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
+        return tuple(out_vals[reg.name] for reg in self.registers.rights())
 
     def t_complexity(self) -> TComplexity:
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""
