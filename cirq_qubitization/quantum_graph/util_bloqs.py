@@ -37,7 +37,7 @@ class Split(Bloq):
             ]
         )
 
-    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> None:
         cirq_quregs['split'] = cirq_quregs['split'].reshape((self.n, 1))
         return None
 
@@ -68,7 +68,7 @@ class Join(Bloq):
             ]
         )
 
-    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> None:
         cirq_quregs['join'] = cirq_quregs['join'].reshape(self.n)
         return None
 

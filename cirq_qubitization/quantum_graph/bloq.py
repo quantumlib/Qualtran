@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -202,7 +202,9 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().t_complexity()
 
-    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def as_cirq_op(
+        self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']
+    ) -> Union['cirq.Operation', None]:
         """Override this method to support conversion to a Cirq operation.
 
         If this method is not overriden, the default implementation will wrap this bloq
