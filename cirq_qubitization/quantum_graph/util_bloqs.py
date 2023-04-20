@@ -13,7 +13,6 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
 
 if TYPE_CHECKING:
-    import cirq
     from numpy.typing import NDArray
 
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
@@ -46,8 +45,23 @@ class Split(Bloq):
         return TComplexity()
 
     def on_classical_vals(self, split: int) -> Dict[str, 'ClassicalValT']:
-        assert split.bit_length() <= self.n
         return {'split': ints_to_bits(np.array([split]), self.n)[0]}
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        binst: BloqInstance,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
+                inds=outgoing['split'].tolist() + [incoming['split']],
+                tags=['Split', binst],
+            )
+        )
 
 
 @frozen
