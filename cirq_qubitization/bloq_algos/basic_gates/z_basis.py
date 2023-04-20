@@ -74,19 +74,14 @@ class _ZVector(Bloq):
         If `self.state`, we return a bit in the `q` register. Otherwise,
         we assert that the inputted `q` register is the correct bit.
         """
+        bit_int = 1 if self.bit else 0  # guard against bad `self.bit` types.
         if self.state:
             assert not vals, vals
-            if self.bit:
-                return {'q': 1}
-            else:
-                return {'q': 0}
+            return {'q': bit_int}
 
         q = vals.pop('q')
         assert not vals, vals
-        if self.bit:
-            assert q == 1, q
-        else:
-            assert q == 0, q
+        assert q == bit_int, q
         return {}
 
 
