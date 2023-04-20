@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict, Sequence, TYPE_CHECKING, Union
+from typing import Dict, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
@@ -15,6 +15,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
 
 if TYPE_CHECKING:
     import cirq
+    from numpy.typing import NDArray
 
 
 @frozen
@@ -36,9 +37,9 @@ class Split(Bloq):
             ]
         )
 
-    def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
-    ) -> 'cirq.GateOperation':
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+        cirq_quregs['split'] = cirq_quregs['split'].reshape((self.n, 1))
+        # TODO: what to do here?
         return None
 
     def t_complexity(self) -> 'TComplexity':
@@ -68,9 +69,9 @@ class Join(Bloq):
             ]
         )
 
-    def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
-    ) -> 'cirq.GateOperation':
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+        cirq_quregs['join'] = cirq_quregs['join'].reshape(self.n)
+        # TODO: what should we do here?
         return None
 
     def t_complexity(self) -> 'TComplexity':

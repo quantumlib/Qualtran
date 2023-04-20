@@ -1,9 +1,10 @@
 from functools import cached_property
-from typing import Sequence
+from typing import Dict
 
 import cirq
 import pytest
 from attrs import frozen
+from numpy.typing import NDArray
 
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -17,11 +18,9 @@ class TestCNOT(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters.build(control=1, target=1)
 
-    def on_registers(
-        self, control: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
-    ) -> cirq.Operation:
-        (control,) = control
-        (target,) = target
+    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+        (control,) = cirq_quregs['control']
+        (target,) = cirq_quregs['target']
         return cirq.CNOT(control, target)
 
     def t_complexity(self) -> 'TComplexity':
@@ -35,8 +34,8 @@ def test_bloq():
     assert tb.registers['control'].side == Side.THRU
     assert tb.pretty_name() == 'TestCNOT'
 
-    quregs = tb.registers.get_named_qubits()
-    circuit = cirq.Circuit(tb.on_registers(**quregs))
+    quregs = tb.registers.get_cirq_quregs()
+    circuit = cirq.Circuit(tb.as_cirq_op(quregs))
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
 
     with pytest.raises(NotImplementedError):

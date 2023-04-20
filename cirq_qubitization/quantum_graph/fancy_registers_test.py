@@ -49,12 +49,12 @@ def test_registers():
         "r2": cirq.NamedQubit.range(2, prefix="r2"),
         "r3": [cirq.NamedQubit("r3")],
     }
-    assert regs.get_named_qubits() == expected_named_qubits
+    assert regs.get_cirq_quregs() == expected_named_qubits
     # Python dictionaries preserve insertion order, which should be same as insertion order of
     # initial registers.
     for reg_order in [[r1, r2, r3], [r2, r3, r1]]:
         flat_named_qubits = [
-            q for v in FancyRegisters(reg_order).get_named_qubits().values() for q in v
+            q for v in FancyRegisters(reg_order).get_cirq_quregs().values() for q in v
         ]
         expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
         assert flat_named_qubits == expected_qubits
@@ -104,7 +104,7 @@ def test_agg_split():
 
 def test_get_named_qubits_multidim():
     regs = FancyRegisters([FancyRegister('matt', wireshape=(2, 3), bitsize=4)])
-    quregs = regs.get_named_qubits()
+    quregs = regs.get_cirq_quregs()
     assert quregs['matt'].shape == (2, 3, 4)
     assert quregs['matt'][1, 2, 3] == cirq.NamedQubit('matt[1, 2, 3]')
 

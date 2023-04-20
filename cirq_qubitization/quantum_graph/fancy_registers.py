@@ -1,12 +1,14 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, overload, Tuple
+from typing import Dict, Iterable, Iterator, overload, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attr import frozen
 from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    import cirq
 
 
 class Side(enum.Flag):
@@ -54,7 +56,7 @@ class FancyRegister:
 
         This is the product of bitsize and all wireshapes.
         """
-        return self.bitsize * np.product(self.wireshape).item()
+        return self.bitsize * int(np.product(self.wireshape))
 
 
 def _dedupe(kv_iter: Iterable[Tuple[str, FancyRegister]]) -> Dict[str, FancyRegister]:
@@ -154,7 +156,9 @@ class FancyRegisters:
     def __len__(self) -> int:
         return len(self._registers)
 
-    def get_named_qubits(self) -> Dict[str, NDArray[cirq.Qid]]:
+    def get_cirq_quregs(self) -> Dict[str, 'NDArray[cirq.Qid]']:
+        import cirq
+
         def _qubit_array(reg: FancyRegister):
             qubits = np.empty(reg.wireshape + (reg.bitsize,), dtype=object)
             for ii in reg.wire_idxs():
@@ -174,7 +178,7 @@ class FancyRegisters:
                 else cirq.NamedQubit.range(reg.bitsize, prefix=reg.name)
             )
 
-        return {reg.name: _qubits_for_reg(reg) for reg in self}
+        return {reg.name: _qubits_for_reg(reg) for reg in self.lefts()}
 
     def __hash__(self):
         return hash(self._registers)
