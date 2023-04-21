@@ -8,8 +8,8 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization import TComplexity
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 from cirq_qubitization.quantum_graph.composite_bloq import (
@@ -409,6 +409,7 @@ class TestParallelBloq(Bloq):
 
 @pytest.mark.parametrize('cls', [TestSerialBloq, TestParallelBloq])
 def test_copy(cls):
+    assert cls().supports_decompose_bloq()
     cbloq = cls().decompose_bloq()
     cbloq2 = cbloq.copy()
     assert cbloq is not cbloq2
@@ -465,6 +466,25 @@ def test_add_duplicate_register():
         bb.finalize(control=y)
 
 
+def test_flatten():
+    bb = CompositeBloqBuilder()
+    stuff = bb.add_register('stuff', 3)
+    (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
+    (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
+    cbloq = bb.finalize(stuff=stuff)
+    assert len(cbloq.bloq_instances) == 2
+
+    cbloq2 = cbloq.flatten_once(lambda binst: True)
+    assert len(cbloq2.bloq_instances) == 5 * 2
+
+    with pytest.raises(NotImplementedError):
+        # Will keep trying to flatten non-decomposable things
+        cbloq.flatten(lambda x: True)
+
+    cbloq3 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
+    assert len(cbloq3.bloq_instances) == 5 * 2
+
+
 def test_t_complexity():
     assert Atom().t_complexity().t == 100
     assert TestSerialBloq().decompose_bloq().t_complexity().t == 3 * 100
@@ -475,4 +495,4 @@ def test_t_complexity():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('composite_bloq')
+    execute_notebook('composite_bloq')

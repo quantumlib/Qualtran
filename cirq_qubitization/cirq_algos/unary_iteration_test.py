@@ -9,6 +9,7 @@ import cirq_qubitization as cq
 from cirq_qubitization import Registers, UnaryIterationGate
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 class ApplyXToLthQubit(UnaryIterationGate):
@@ -40,7 +41,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
 
 @pytest.mark.parametrize(
-    "selection_bitsize, target_bitsize, control_bitsize", [(3, 5, 1), (2, 4, 2)]
+    "selection_bitsize, target_bitsize, control_bitsize", [(3, 5, 1), (2, 4, 2), (1, 2, 3)]
 )
 def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -133,4 +134,4 @@ def test_multi_dimensional_unary_iteration(target_shape: Tuple[int, int, int]):
 
 
 def test_notebook():
-    cq_testing.execute_notebook('unary_iteration')
+    execute_notebook('unary_iteration')

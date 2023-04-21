@@ -1,16 +1,21 @@
 from functools import cached_property
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
+if TYPE_CHECKING:
+    import cirq
+
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
 _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
+_PAULIX = np.array([[0, 1], [1, 0]], dtype=np.complex128)
 
 
 @frozen
@@ -103,3 +108,35 @@ class MinusEffect(_XVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+
+@frozen
+class XGate(Bloq):
+    """The Pauli X gate.
+
+    This causes a bit flip: X|0> = |1> and vice-versa.
+    """
+
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(q=1)
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        binst,
+        *,
+        incoming: Dict[str, SoquetT],
+        outgoing: Dict[str, SoquetT],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+            )
+        )
+
+    def on_registers(self, q: 'NDArray[cirq.Qid]') -> 'cirq.OP_TREE':
+        import cirq
+
+        (q,) = q
+        return cirq.X(q)

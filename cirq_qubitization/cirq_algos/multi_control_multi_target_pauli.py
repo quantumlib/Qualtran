@@ -2,6 +2,7 @@ from functools import cached_property
 from typing import Sequence
 
 import cirq
+import numpy as np
 
 from cirq_qubitization.cirq_infra import qubit_manager
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
@@ -40,10 +41,10 @@ class MultiTargetCNOT(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self._num_targets)
 
 
-class MultiControlNOT(GateWithRegisters):
-    """Implements multi-control, single-target C^{n}NOT gate.
+class MultiControlPauli(GateWithRegisters):
+    """Implements multi-control, single-target C^{n}P gate.
 
-    Implements $C^{n}NOT = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| X^{n}$ using $n-2$
+    Implements $C^{n}P = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| P^{n}$ using $n-2$
     dirty ancillas and 4n - 8 TOFFOLI gates. See Appendix B.1 of https://arxiv.org/abs/1812.00954 for
     reference.
 
@@ -54,8 +55,9 @@ class MultiControlNOT(GateWithRegisters):
         (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
     """
 
-    def __init__(self, num_controls: int):
+    def __init__(self, num_controls: int, *, target_gate: cirq.Pauli = cirq.X):
         self._num_controls = num_controls
+        self._target_gate = target_gate
 
     @cached_property
     def registers(self) -> Registers:
@@ -63,18 +65,28 @@ class MultiControlNOT(GateWithRegisters):
 
     def decompose_from_registers(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
         if len(controls) == 2:
-            return cirq.CCNOT(*controls, *target)
+            return self._target_gate(*target).controlled_by(*controls)
         anc = qubit_manager.qborrow(len(controls) - 2)
         ops = [cirq.CCNOT(anc[-i], controls[-i], anc[-i + 1]) for i in range(2, len(anc) + 1)]
         inverted_v_ladder = ops + [cirq.CCNOT(*controls[:2], anc[0])] + ops[::-1]
 
-        yield cirq.CCNOT(anc[-1], controls[-1], *target)
+        yield self._target_gate(*target).controlled_by(anc[-1], controls[-1])
         yield inverted_v_ladder
-        yield cirq.CCNOT(anc[-1], controls[-1], *target)
+        yield self._target_gate(*target).controlled_by(anc[-1], controls[-1])
         yield inverted_v_ladder
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        return cirq.CircuitDiagramInfo(wire_symbols=["@"] * self._num_controls + ["X"])
+        return cirq.CircuitDiagramInfo(
+            wire_symbols=["@"] * self._num_controls + [str(self._target_gate)]
+        )
 
     def _t_complexity_(self) -> TComplexity:
-        return (4 * self._num_controls - 8) * t_complexity(cirq.CCNOT)
+        toffoli_complexity = t_complexity(cirq.CCNOT)
+        controlled_pauli_complexity = t_complexity(self._target_gate.controlled(2))
+        return (4 * self._num_controls - 10) * toffoli_complexity + 2 * controlled_pauli_complexity
+
+    def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
+        return cirq.apply_unitary(self._target_gate.controlled(self._num_controls), args)
+
+    def _has_unitary_(self) -> bool:
+        return True

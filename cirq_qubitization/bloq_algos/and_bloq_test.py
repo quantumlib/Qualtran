@@ -1,12 +1,17 @@
 import itertools
+from functools import cached_property
+from typing import Dict
 
 import numpy as np
 import pytest
+from attrs import frozen
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.bloq_algos.and_bloq import And, MultiAnd
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
+from cirq_qubitization.jupyter_tools import execute_notebook
+from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
 
 def _make_and():
@@ -109,4 +114,24 @@ def test_multi_truth_table():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('and_bloq')
+    execute_notebook('and_bloq')
+
+
+@frozen
+class AndIdentity(Bloq):
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(q0=1, q1=1)
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        qs, trg = bb.add(And(), ctrl=[q0, q1])
+        ((q0, q1),) = bb.add(And(adjoint=True), ctrl=qs, target=trg)
+        return {'q0': q0, 'q1': q1}
+
+
+def test_and_identity_bloq():
+    bloq = AndIdentity()
+    np.testing.assert_allclose(np.eye(4), bloq.tensor_contract())
+    np.testing.assert_allclose(np.eye(4), bloq.decompose_bloq().tensor_contract())
