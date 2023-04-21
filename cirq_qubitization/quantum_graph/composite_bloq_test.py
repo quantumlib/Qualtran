@@ -75,7 +75,7 @@ def test_create_binst_graph():
 def test_composite_bloq():
     cxns, regs = _manually_make_test_cbloq_cxns()
     cbloq = CompositeBloq(cxns=cxns, registers=regs)
-    circuit = cbloq.to_cirq_circuit(dict(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]))
+    circuit, _ = cbloq.to_cirq_circuit(dict(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]))
     cirq.testing.assert_has_diagram(
         circuit,
         desired="""\
@@ -148,7 +148,7 @@ def test_map_soqs():
 
 def test_bb_composite_bloq():
     cbloq_auto = TestTwoCNOT().decompose_bloq()
-    circuit = cbloq_auto.to_cirq_circuit(dict(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]))
+    circuit, _ = cbloq_auto.to_cirq_circuit(dict(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]))
     cirq.testing.assert_has_diagram(
         circuit,
         desired="""\
@@ -316,7 +316,7 @@ def test_complicated_target_register():
     # note: this includes the two `Dangling` generations.
     assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
 
-    circuit = cbloq.to_cirq_circuit(bloq.registers.get_cirq_quregs())
+    circuit, _ = cbloq.to_cirq_circuit(bloq.registers.get_cirq_quregs())
     cirq.testing.assert_has_diagram(
         circuit,
         """\

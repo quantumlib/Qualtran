@@ -50,7 +50,7 @@ def test_cbloq_to_cirq_circuit():
     # Note: a 1d `wireshape` bloq register is actually two-dimensional in cirq-world
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
     # CirqGate has registers of bitsize=1 and wireshape=(n,); hence the list transpose below.
-    circuit2 = cbloq.to_cirq_circuit({'qubits': [[q] for q in qubits]})
+    circuit2, _ = cbloq.to_cirq_circuit({'qubits': [[q] for q in qubits]})
 
     assert circuit == circuit2
 

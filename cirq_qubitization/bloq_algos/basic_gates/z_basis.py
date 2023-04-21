@@ -1,10 +1,9 @@
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
-from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
@@ -12,6 +11,8 @@ from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Fancy
 
 if TYPE_CHECKING:
     import cirq
+
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -149,8 +150,10 @@ class ZGate(Bloq):
             )
         )
 
-    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def as_cirq_op(
+        self, cirq_quregs: Dict[str, 'CirqQuregT']
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = cirq_quregs['q']
-        return cirq.Z(q)
+        return cirq.Z(q), cirq_quregs

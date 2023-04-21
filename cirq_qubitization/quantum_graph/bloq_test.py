@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Tuple
 
 import cirq
 import pytest
@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
 
@@ -18,10 +19,12 @@ class TestCNOT(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters.build(control=1, target=1)
 
-    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def as_cirq_op(
+        self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         (control,) = cirq_quregs['control']
         (target,) = cirq_quregs['target']
-        return cirq.CNOT(control, target)
+        return cirq.CNOT(control, target), cirq_quregs
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(clifford=1)
@@ -35,7 +38,8 @@ def test_bloq():
     assert tb.pretty_name() == 'TestCNOT'
 
     quregs = tb.registers.get_cirq_quregs()
-    circuit = cirq.Circuit(tb.as_cirq_op(quregs))
+    op, _ = tb.as_cirq_op(quregs)
+    circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
 
     with pytest.raises(NotImplementedError):

@@ -219,7 +219,7 @@ ZGate()<2>
     )
     cirq_qubits = cirq.LineQubit.range(2)
     cirq_quregs = {'q0': [cirq_qubits[0]], 'q1': [cirq_qubits[1]]}
-    cirq_circuit = cb.decompose_bloq().to_cirq_circuit(cirq_quregs)
+    cirq_circuit, _ = cb.decompose_bloq().to_cirq_circuit(cirq_quregs)
     cirq_unitary = cirq_circuit.unitary(qubit_order=cirq_qubits)
     np.testing.assert_allclose(cirq_unitary, cb.decompose_bloq().tensor_contract())
     np.testing.assert_allclose(cirq_unitary, cb.tensor_contract())

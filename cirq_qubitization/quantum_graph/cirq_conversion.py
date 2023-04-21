@@ -75,10 +75,12 @@ class CirqGateAsBloq(Bloq):
             )
         )
 
-    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def as_cirq_op(
+        self, cirq_quregs: Dict[str, 'CirqQuregT']
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         qubits = cirq_quregs['qubits']
         assert qubits.shape == (self.n_qubits, 1)
-        return self.gate.on(*cirq_quregs['qubits'][:, 0])
+        return self.gate.on(*cirq_quregs['qubits'][:, 0]), cirq_quregs
 
 
 def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
@@ -183,26 +185,24 @@ def _binst_as_cirq_op(
     cirq_quregs = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
 
     # as_cirq_op mutates `vals`.
-    op = bloq.as_cirq_op(cirq_quregs)
-    _update_assign_from_cirq_quregs(bloq.registers.rights(), binst, cirq_quregs, soq_assign)
+    op, out_quregs = bloq.as_cirq_op(cirq_quregs)
+    _update_assign_from_cirq_quregs(bloq.registers.rights(), binst, out_quregs, soq_assign)
     return op
 
 
 def _cbloq_to_cirq_circuit(
-    registers: FancyRegisters, cirq_quregs: Dict[str, CirqQuregT], binst_graph: nx.DiGraph
-) -> cirq.FrozenCircuit:
+    registers: FancyRegisters, cirq_quregs: Dict[str, 'CirqQuregT'], binst_graph: nx.DiGraph
+) -> Tuple[cirq.FrozenCircuit, Dict[str, 'CirqQuregT']]:
     """Propagate `as_cirq_op` calls through a composite bloq's contents to export a `cirq.Circuit`.
 
     Args:
         registers: The cbloq's registers for validating inputs.
-        cirq_quregs: Mapping from register name to Cirq qubit arrays. This dictionary is
-            mutated throughout the course of this function! After the function returns,
-            this will map output register names to output Cirq qubit arrays which may include
-            newly allocated qubits.
+        cirq_quregs: Mapping from left register name to Cirq qubit arrays.
         binst_graph: The cbloq's binst graph. This is read only.
 
     Returns:
-        A `cirq.FrozenCircuit` for the composite bloq.
+        circuit: The cirq.FrozenCircuit version of this composite bloq.
+        cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
     soq_assign: Dict[Soquet, CirqQuregT] = {}
     _update_assign_from_cirq_quregs(registers.lefts(), LeftDangle, cirq_quregs, soq_assign)
@@ -232,9 +232,9 @@ def _cbloq_to_cirq_circuit(
     def _f_quregs(reg: FancyRegister):
         return _get_in_cirq_quregs(RightDangle, reg, soq_assign)
 
-    cirq_quregs |= {reg.name: _f_quregs(reg) for reg in registers.rights()}
+    out_quregs = {reg.name: _f_quregs(reg) for reg in registers.rights()}
 
-    return cirq.FrozenCircuit(moments)
+    return cirq.FrozenCircuit(moments), out_quregs
 
 
 class BloqAsCirqGate(GateWithRegisters):
@@ -294,7 +294,9 @@ class BloqAsCirqGate(GateWithRegisters):
         return LegacyRegisters(legacy_regs), compat_name_map
 
     @classmethod
-    def bloq_on(cls, bloq: Bloq, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def bloq_on(
+        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT']
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
         This is used as a default implementation for `Bloq.as_cirq_op` if a native
@@ -305,23 +307,27 @@ class BloqAsCirqGate(GateWithRegisters):
             cirq_quregs: The cirq qubit registers on which we call the gate.
 
         Returns:
-            A cirq operation whose gate is the `BloqAsCirqGate`-wrapped version of `bloq`.
+            op: A cirq operation whose gate is the `BloqAsCirqGate`-wrapped version of `bloq`.
+            cirq_quregs: The output cirq qubit registers.
         """
-        qubits: List[cirq.Qid] = []
+        flat_qubits: List[cirq.Qid] = []
+        out_quregs: Dict[str, 'CirqQuregT'] = {}
         for reg in bloq.registers:
             if reg.side is Side.THRU:
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
-                    qubits.append(q)
+                    flat_qubits.append(q)
+                out_quregs[reg.name] = cirq_quregs[reg.name]
             elif reg.side is Side.LEFT:
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
-                    qubits.append(q)
+                    flat_qubits.append(q)
                     cqm.qfree(q)
+                del out_quregs[reg.name]
             elif reg.side is Side.RIGHT:
                 new_qubits = cqm.qalloc(reg.total_bits())
-                qubits.extend(new_qubits)
-                cirq_quregs[reg.name] = np.array(new_qubits).reshape(reg.wireshape + (reg.bitsize,))
+                flat_qubits.extend(new_qubits)
+                out_quregs[reg.name] = np.array(new_qubits).reshape(reg.wireshape + (reg.bitsize,))
 
-        return BloqAsCirqGate(bloq=bloq).on(*qubits)
+        return BloqAsCirqGate(bloq=bloq).on(*flat_qubits), out_quregs
 
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         """Implementation of the GatesWithRegisters decompose method.

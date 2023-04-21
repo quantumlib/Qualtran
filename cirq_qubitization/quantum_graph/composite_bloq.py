@@ -35,6 +35,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 if TYPE_CHECKING:
     import cirq
 
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
@@ -91,20 +92,26 @@ class CompositeBloq(Bloq):
         """
         return _create_binst_graph(self.connections)
 
-    def as_cirq_op(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.Operation':
+    def as_cirq_op(
+        self, cirq_quregs: Dict[str, 'CirqQuregT']
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
         import cirq
 
-        return cirq.CircuitOperation(self.to_cirq_circuit(**cirq_quregs))
+        circuit, out_quregs = self.to_cirq_circuit(cirq_quregs)
+        return cirq.CircuitOperation(circuit), out_quregs
 
-    def to_cirq_circuit(self, cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']) -> 'cirq.FrozenCircuit':
+    def to_cirq_circuit(
+        self, cirq_quregs: Dict[str, 'CirqQuregT']
+    ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
-            cirq_quregs: Mapping from register name to Cirq qubit arrays. This dictionary is
-                mutated throughout the course of this method! After the method returns,
-                this will map output register names to output Cirq qubit arrays which may include
-                newly allocated qubits.
+            cirq_quregs: Mapping from left register names to Cirq qubit arrays.
+
+        Returns:
+            circuit: The cirq.FrozenCircuit version of this composite bloq.
+            cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
         """
         from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
 
