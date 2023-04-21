@@ -74,9 +74,7 @@ def assert_circuit_inp_out_cirqsim(
             amplitudes. Reversible classical operations should produce amplitudes
             that are 0 or 1.
     """
-    actual, should_be = get_circuit_inp_out_cirqsim(
-        circuit, qubit_order, inputs, outputs, decimals
-    )
+    actual, should_be = get_circuit_inp_out_cirqsim(circuit, qubit_order, inputs, outputs, decimals)
     assert actual == should_be
 
 
