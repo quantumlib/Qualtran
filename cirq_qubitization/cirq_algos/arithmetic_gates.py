@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence, Union
+from typing import Iterable, Sequence, Union, Tuple, List
 
 import cirq
 
@@ -108,6 +108,49 @@ class LessThanGate(cirq.ArithmeticGate):
         )
 
 
+def mix_double_qubit_registers(
+    x: Tuple[cirq.Qid, cirq.Qid], y: Tuple[cirq.Qid, cirq.Qid]
+) -> cirq.OP_TREE:
+    """Implements the COMPARE2 circuit (Fig. 1) in https://www.nature.com/articles/s41534-018-0071-5#Sec8"""
+    [ancilla] = cirq_infra.qalloc(1)
+    x_1, x_0 = x
+    y_1, y_0 = y
+
+    def _cswap(c, a, b) -> cirq.CNOT:
+        [q] = cirq_infra.qalloc(1)
+        yield cirq.CNOT(a, b)
+        yield And().on(c, b, q)
+        yield cirq.CNOT(q, a)
+        yield cirq.CNOT(a, b)
+
+    yield cirq.X(ancilla)
+    yield cirq.CNOT(y_1, x_1)
+    yield cirq.CNOT(y_0, x_0)
+    yield from _cswap(x_1, x_0, ancilla)
+    yield from _cswap(x_1, y_1, y_0)
+    yield cirq.CNOT(y_0, x_0)
+
+
+def compare_qubits(
+    x: cirq.Qid, y: cirq.Qid, less_than: cirq.Qid, greater_than: cirq.Qid
+) -> cirq.OP_TREE:
+    """Implements the comparison circuit (Fig. 3) in https://www.nature.com/articles/s41534-018-0071-5#Sec8
+
+    Args:
+        x: first qubit of the comparison and stays the same after circuit execution.
+        y: second qubit of the comparison. The qubit will store equality value `x==y` after circuit execution.
+        less_than: Assumed to be in zero state. Will store `x < y`.
+        greater_than: Assumed to be in zero state. Will store `x > y`.
+    """
+
+    yield And([0, 1]).on(x, y, less_than)
+    yield cirq.CNOT(less_than, greater_than)
+    yield cirq.CNOT(y, greater_than)
+    yield cirq.CNOT(x, y)
+    yield cirq.CNOT(x, greater_than)
+    yield cirq.X(y)
+
+
 class LessThanEqualGate(cirq.ArithmeticGate):
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>"""
 
@@ -147,6 +190,20 @@ class LessThanEqualGate(cirq.ArithmeticGate):
     def _has_unitary_(self):
         return True
 
+    def _decompose_via_tree(
+        self, X: Tuple[cirq.Qid], Y: Tuple[cirq.Qid]
+    ) -> Tuple[Sequence[cirq.Operation], Tuple[cirq.Qid, cirq.Qid]]:
+        assert len(X) == len(Y), f'{len(X)=} != {len(Y)=}'
+        if len(X) == 1:
+            return [], (X[0], Y[0])
+        if len(X) == 2:
+            return list(mix_double_qubit_registers(X, Y)), (X[1], Y[1])
+
+        m = len(X) // 2
+        op_left, ql = self._decompose_via_tree(X[:m], Y[:m])
+        op_right, qr = self._decompose_via_tree(X[m:], Y[m:])
+        return op_left + op_right + list(mix_double_qubit_registers(ql, qr)), (ql[1], qr[1])
+
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         P, Q, target = (
             qubits[: len(self._first_input_register)],
@@ -155,12 +212,12 @@ class LessThanEqualGate(cirq.ArithmeticGate):
         )
 
         n = min(len(P), len(Q))
-        equal = cirq_infra.qalloc(n)
-        less_than = cirq_infra.qalloc(n)
 
         equal_so_far = None
         adjoint = []
 
+        # if one of the registers is longer than the other compute store equality value
+        # into `equal_so_far` using d = |len(P) - len(Q)| And operations => 4d T.
         if abs(len(P) - len(Q)) == 1:
             [equal_so_far] = cirq_infra.qalloc(1)
             yield cirq.X(equal_so_far)
@@ -169,13 +226,11 @@ class LessThanEqualGate(cirq.ArithmeticGate):
             if len(P) > len(Q):
                 yield cirq.CNOT(P[0], equal_so_far)
                 adjoint.append(cirq.CNOT(P[0], equal_so_far))
-                P = P[1:]
             else:
                 yield cirq.CNOT(Q[0], equal_so_far)
                 adjoint.append(cirq.CNOT(Q[0], equal_so_far))
 
                 yield cirq.CNOT(Q[0], target)
-                Q = Q[1:]
         elif len(P) > len(Q):
             [equal_so_far] = cirq_infra.qalloc(1)
 
@@ -184,7 +239,6 @@ class LessThanEqualGate(cirq.ArithmeticGate):
             yield And(cv=[0] * m).on(*P[:m], *ancilla, equal_so_far)
             adjoint.append(And(cv=[0] * m, adjoint=True).on(*P[:m], *ancilla, equal_so_far))
 
-            P = P[-n:]
         elif len(P) < len(Q):
             [equal_so_far] = cirq_infra.qalloc(1)
 
@@ -195,42 +249,27 @@ class LessThanEqualGate(cirq.ArithmeticGate):
 
             yield cirq.X(target), cirq.CNOT(equal_so_far, target)
 
-            Q = Q[-n:]
+        # compare the `n` suffix of P and Q
+        P = P[-n:]
+        Q = Q[-n:]
+        decomposition, (x, y) = tuple(self._decompose_via_tree(P, Q))
+        yield from decomposition
+        adjoint.extend(op**-1 for op in decomposition)
 
-        ancilla = cirq_infra.qalloc(n)
-        for p, q, e_i, l_i, a in zip(P, Q, equal, less_than, ancilla):
-            if equal_so_far is not None:
-                yield And([0, 1, 1]).on(p, q, equal_so_far, a, l_i)
-                adjoint.append(And([0, 1, 1], adjoint=True).on(p, q, equal_so_far, a, l_i))
-                yield cirq.CNOT(l_i, target)
+        less_than, greater_than = cirq_infra.qalloc(2)
+        decomposition = tuple(compare_qubits(x, y, less_than, greater_than))
+        yield from decomposition
+        adjoint.extend(op**-1 for op in decomposition)
 
-                yield cirq.CNOT(p, q)
-                adjoint.append(cirq.CNOT(p, q))
+        if equal_so_far is None:
+            yield cirq.CNOT(greater_than, target)
+            yield cirq.X(target)
+        else:
+            [ancilla] = cirq_infra.qalloc(1)
+            yield And([1, 0]).on(equal_so_far, greater_than, ancilla)
+            adjoint.append(And([1, 0], adjoint=True).on(equal_so_far, greater_than, ancilla))
 
-                yield cirq.X(q)  # q now has `p_i == q_i`
-                adjoint.append(cirq.X(q))
-
-                yield And().on(equal_so_far, q, e_i)  # e_i = AND(p_j == q_j) for j <= i
-                adjoint.append(And(adjoint=True).on(equal_so_far, q, e_i))
-            else:
-                # These are the first/most significant qubits.
-                yield And([0, 1]).on(p, q, l_i)
-                adjoint.append(And([0, 1], adjoint=True).on(p, q, l_i))
-                yield cirq.CNOT(l_i, target)
-
-                yield cirq.CNOT(p, q)
-                adjoint.append(cirq.CNOT(p, q))
-
-                yield cirq.X(q)  # q now has `p_i == q_i`
-                adjoint.append(cirq.X(q))
-
-                yield cirq.CNOT(q, e_i)
-                adjoint.append(cirq.CNOT(q, e_i))
-
-            equal_so_far = e_i
-
-        if equal_so_far is not None:
-            yield cirq.CNOT(equal_so_far, target)
+            yield cirq.CNOT(ancilla, target)
 
         yield from reversed(adjoint)
 
@@ -239,14 +278,14 @@ class LessThanEqualGate(cirq.ArithmeticGate):
         d = max(len(self._first_input_register), len(self._second_input_register)) - n
         is_second_longer = len(self._second_input_register) > len(self._first_input_register)
         if d == 0:
-            return t_complexity_protocol.TComplexity(t=12 * n - 8, clifford=48 * n - 23)
+            return t_complexity_protocol.TComplexity(t=8 * n - 4, clifford=46 * n - 17)
         elif d == 1:
             return t_complexity_protocol.TComplexity(
-                t=12 * n, clifford=48 * n + 5 + is_second_longer
+                t=8 * n, clifford=46 * n + 3 + is_second_longer
             )
         else:
             return t_complexity_protocol.TComplexity(
-                t=12 * n + 4 * (d - 1), clifford=48 * n + 17 * d - 12 + 2 * is_second_longer
+                t=8 * n + 4 * d - 4, clifford=46 * n + 17 * d - 14 + 2 * is_second_longer
             )
 
 
