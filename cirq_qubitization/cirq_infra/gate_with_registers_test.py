@@ -3,7 +3,12 @@ from typing import Sequence
 import cirq
 import pytest
 
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Register, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import (
+    GateWithRegisters,
+    Register,
+    Registers,
+    SelectionRegisters,
+)
 from cirq_qubitization.jupyter_tools import execute_notebook
 
 
@@ -55,6 +60,17 @@ def test_registers():
         flat_named_qubits = [q for v in Registers(reg_order).get_named_qubits().values() for q in v]
         expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
         assert flat_named_qubits == expected_qubits
+
+
+@pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
+def test_selection_registers_indexing(n, N, m, M):
+    reg = SelectionRegisters.build(x=(n, N), y=(m, M))
+    assert reg.iteration_lengths == (N, M)
+    for x in range(N):
+        for y in range(M):
+            assert reg.to_flat_idx(x, y) == x * M + y
+
+    assert reg.total_iteration_size == N * M
 
 
 def test_registers_getitem_raises():

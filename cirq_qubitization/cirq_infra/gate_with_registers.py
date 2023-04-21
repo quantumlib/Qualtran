@@ -1,14 +1,15 @@
 import abc
-import dataclasses
 import sys
-from typing import Dict, Iterable, List, overload, Sequence, Union
+from typing import Dict, Iterable, List, overload, Sequence, Tuple, Union
 
 import cirq
+import numpy as np
+from attrs import frozen
 
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
-@dataclasses.dataclass(frozen=True)
+@frozen
 class Register:
     name: str
     bitsize: int
@@ -110,6 +111,59 @@ class Registers:
 
     def __eq__(self, other) -> bool:
         return self._registers == other._registers
+
+
+class SelectionRegisters(Registers):
+    """Registers used to represent SELECT registers for various LCU methods.
+
+    LCU methods often make use of coherent for-loops via UnaryIteration, iterating over a range
+    of values stored as a superposition over the `SELECT` register. The `SelectionRegisters` class
+    is used to represent such SELECT registers. In particular, it provides two additional features
+    on top of the regular `Registers` class:
+
+    - For each selection register, we store the iteration length corresponding to that register
+        along with it's size.
+    - We provide a default way of "flattening out" a composite index represented by a tuple of
+        values stored in multiple input selection registers to a single integer that can be used
+        to index a flat target register.
+    """
+
+    def __init__(self, registers: Iterable[Register], iteration_lengths: Sequence[int]):
+        super().__init__(registers)
+        self.iteration_lengths = tuple(iteration_lengths)
+        self._suffix_prod = np.multiply.accumulate(self.iteration_lengths[::-1])[::-1]
+        self._suffix_prod = np.append(self._suffix_prod, [1])
+        assert all(2**reg.bitsize >= it_len for reg, it_len in zip(registers, iteration_lengths))
+
+    def to_flat_idx(self, *selection_vals: int) -> int:
+        """Flattens a composite index represented by a Tuple[int, ...] to a single output integer.
+
+        For example:
+
+        1) We can flatten a 2D for-loop as follows
+        >>> for x in range(N):
+        >>>     for y in range(M):
+        >>>         flat_idx = x * M + y
+
+        2) Similarly, we can flatten a 3D for-loop as follows
+        >>> for x in range(N):
+        >>>     for y in range(M):
+        >>>         for z in range(O):
+        >>>             flat_idx = x * M * O + y * O + z
+
+        This is a general version of the mapping function described in Eq.45 of
+        https://arxiv.org/abs/1805.03662
+        """
+        assert len(selection_vals) == len(self)
+        return sum(v * self._suffix_prod[i + 1] for i, v in enumerate(selection_vals))
+
+    @property
+    def total_iteration_size(self) -> int:
+        return np.product(self.iteration_lengths)
+
+    @classmethod
+    def build(cls, **registers: Tuple[int, int]) -> 'SelectionRegisters':
+        return cls(*zip(*[(Register(name=k, bitsize=v[0]), v[1]) for k, v in registers.items()]))
 
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
