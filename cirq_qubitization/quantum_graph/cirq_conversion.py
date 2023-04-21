@@ -355,7 +355,8 @@ class BloqAsCirqGate(GateWithRegisters):
             else:
                 cirq_quregs[reg.name][idx] = np.asarray(qubits)
 
-        return cbloq.to_cirq_circuit(cirq_quregs)
+        circuit, _ = cbloq.to_cirq_circuit(**cirq_quregs)
+        return circuit
 
     def _t_complexity_(self):
         """Delegate to the bloq's t complexity."""
@@ -380,3 +381,9 @@ class BloqAsCirqGate(GateWithRegisters):
             wire_symbols.extend(symbs)
 
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __str__(self) -> str:
+        return f'bloq.{self.bloq}'
+
+    def __repr__(self) -> str:
+        return f'BloqAsCirqGate({self.bloq})'
