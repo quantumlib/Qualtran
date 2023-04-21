@@ -93,21 +93,21 @@ class CompositeBloq(Bloq):
         return _create_binst_graph(self.connections)
 
     def as_cirq_op(
-        self, cirq_quregs: Dict[str, 'CirqQuregT']
+        self, **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
         import cirq
 
-        circuit, out_quregs = self.to_cirq_circuit(cirq_quregs)
+        circuit, out_quregs = self.to_cirq_circuit(**cirq_quregs)
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit(
-        self, cirq_quregs: Dict[str, 'CirqQuregT']
+        self, **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
-            cirq_quregs: Mapping from left register names to Cirq qubit arrays.
+            **cirq_quregs: Mapping from left register names to Cirq qubit arrays.
 
         Returns:
             circuit: The cirq.FrozenCircuit version of this composite bloq.

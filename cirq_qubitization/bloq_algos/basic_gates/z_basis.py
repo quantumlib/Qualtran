@@ -150,10 +150,8 @@ class ZGate(Bloq):
             )
         )
 
-    def as_cirq_op(
-        self, cirq_quregs: Dict[str, 'CirqQuregT']
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
-        (q,) = cirq_quregs['q']
-        return cirq.Z(q), cirq_quregs
+        (q,) = q
+        return cirq.Z(q), {'q': [q]}

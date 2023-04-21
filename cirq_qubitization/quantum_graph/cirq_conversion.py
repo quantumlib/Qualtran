@@ -75,12 +75,9 @@ class CirqGateAsBloq(Bloq):
             )
         )
 
-    def as_cirq_op(
-        self, cirq_quregs: Dict[str, 'CirqQuregT']
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        qubits = cirq_quregs['qubits']
+    def as_cirq_op(self, qubits: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         assert qubits.shape == (self.n_qubits, 1)
-        return self.gate.on(*cirq_quregs['qubits'][:, 0]), cirq_quregs
+        return self.gate.on(*qubits[:, 0]), {'qubits': qubits}
 
 
 def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
@@ -185,7 +182,7 @@ def _binst_as_cirq_op(
     cirq_quregs = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
 
     # as_cirq_op mutates `vals`.
-    op, out_quregs = bloq.as_cirq_op(cirq_quregs)
+    op, out_quregs = bloq.as_cirq_op(**cirq_quregs)
     _update_assign_from_cirq_quregs(bloq.registers.rights(), binst, out_quregs, soq_assign)
     return op
 
