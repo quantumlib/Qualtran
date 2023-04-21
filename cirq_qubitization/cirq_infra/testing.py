@@ -83,14 +83,14 @@ def assert_circuit_inp_out_cirqsim(
     assert actual == should_be, (actual, should_be)
 
 
-def find_circuit_inp_out_cirqsim(
+def get_circuit_inp_out_cirqsim(
     circuit: cirq.AbstractCircuit,
     qubit_order: Sequence[cirq.Qid],
     inputs: Sequence[int],
     outputs: Sequence[int],
     decimals: int = 2,
 ) -> Tuple[str, str]:
-    """Use a Cirq simulator to test that `circuit` behaves correctly on an input.
+    """Use a Cirq simulator to get a outputs of a `circuit`.
 
     Args:
         circuit: The circuit representing the reversible classical operation.
@@ -102,8 +102,8 @@ def find_circuit_inp_out_cirqsim(
             that are 0 or 1.
 
     Returns:
-        actual: (bit) string representation of the simulated state.
-        should_be: (bit) string representation of the expected state defined by outputs.
+        actual: The simulated output state as a string bitstring.
+        should_be: The outputs argument formatted as a string bitstring for ease of comparison.
     """
     result = cirq.Simulator(dtype=np.complex128).simulate(
         circuit, initial_state=inputs, qubit_order=qubit_order
