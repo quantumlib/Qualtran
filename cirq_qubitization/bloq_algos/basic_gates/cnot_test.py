@@ -1,5 +1,8 @@
+import itertools
+
 import cirq
 import numpy as np
+import pytest
 
 from cirq_qubitization.bloq_algos.basic_gates import CNOT, PlusState, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
@@ -51,3 +54,15 @@ def test_bell_state():
 
     should_be = np.array([1, 0, 0, 1]) / np.sqrt(2)
     np.testing.assert_allclose(should_be, matrix)
+
+
+def test_classical_truth_table():
+    truth_table = []
+    for c, t in itertools.product([0, 1], repeat=2):
+        out_c, out_t = CNOT().call_classically(ctrl=c, target=t)
+        truth_table.append(((c, t), (out_c, out_t)))
+
+    assert truth_table == [((0, 0), (0, 0)), ((0, 1), (0, 1)), ((1, 0), (1, 1)), ((1, 1), (1, 0))]
+
+    with pytest.raises(ValueError):
+        CNOT().call_classically(ctrl=2, target=0)
