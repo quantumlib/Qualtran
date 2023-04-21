@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -74,12 +74,38 @@ def assert_circuit_inp_out_cirqsim(
             amplitudes. Reversible classical operations should produce amplitudes
             that are 0 or 1.
     """
+    actual, should_be = get_circuit_inp_out_cirqsim(circuit, qubit_order, inputs, outputs, decimals)
+    assert actual == should_be
+
+
+def get_circuit_inp_out_cirqsim(
+    circuit: cirq.AbstractCircuit,
+    qubit_order: Sequence[cirq.Qid],
+    inputs: Sequence[int],
+    outputs: Sequence[int],
+    decimals: int = 2,
+) -> Tuple[str, str]:
+    """Use a Cirq simulator to get a outputs of a `circuit`.
+
+    Args:
+        circuit: The circuit representing the reversible classical operation.
+        qubit_order: The qubit order to pass to the cirq simulator.
+        inputs: The input state bit values.
+        outputs: The (correct) output state bit values.
+        decimals: The number of decimals of precision to use when comparing
+            amplitudes. Reversible classical operations should produce amplitudes
+            that are 0 or 1.
+
+    Returns:
+        actual: The simulated output state as a string bitstring.
+        should_be: The outputs argument formatted as a string bitstring for ease of comparison.
+    """
     result = cirq.Simulator(dtype=np.complex128).simulate(
         circuit, initial_state=inputs, qubit_order=qubit_order
     )
     actual = result.dirac_notation(decimals=decimals)[1:-1]
     should_be = "".join(str(x) for x in outputs)
-    assert actual == should_be, (actual, should_be)
+    return actual, should_be
 
 
 def assert_decompose_is_consistent_with_t_complexity(val: Any):

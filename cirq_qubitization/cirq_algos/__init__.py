@@ -15,6 +15,7 @@ from cirq_qubitization.cirq_algos.programmable_rotation_gate_array import (
     ProgrammableRotationGateArrayBase,
 )
 from cirq_qubitization.cirq_algos.qrom import QROM
+from cirq_qubitization.cirq_algos.qubitization_walk_operator import QubitizationWalkOperator
 from cirq_qubitization.cirq_algos.reflection_using_prepare import ReflectionUsingPrepare
 from cirq_qubitization.cirq_algos.select_swap_qroam import SelectSwapQROM
 from cirq_qubitization.cirq_algos.selected_majorana_fermion import SelectedMajoranaFermionGate
