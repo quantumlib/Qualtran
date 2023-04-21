@@ -68,6 +68,22 @@ class _ZVector(Bloq):
             )
         )
 
+    def on_classical_vals(self, **vals: int) -> Dict[str, int]:
+        """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
+
+        If `self.state`, we return a bit in the `q` register. Otherwise,
+        we assert that the inputted `q` register is the correct bit.
+        """
+        bit_int = 1 if self.bit else 0  # guard against bad `self.bit` types.
+        if self.state:
+            assert not vals, vals
+            return {'q': bit_int}
+
+        q = vals.pop('q')
+        assert not vals, vals
+        assert q == bit_int, q
+        return {}
+
 
 def _hide_base_fields(cls, fields):
     # for use in attrs `field_trasnformer`.

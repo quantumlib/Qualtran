@@ -8,6 +8,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
@@ -62,6 +63,9 @@ class CNOT(Bloq):
                 data=XOR, inds=(incoming['target'], outgoing['target'], internal), tags=['XOR']
             )
         )
+
+    def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
     def on_registers(
         self, ctrl: 'NDArray[cirq.Qid]', target: 'NDArray[cirq.Qid]'

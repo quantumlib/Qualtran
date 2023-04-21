@@ -49,6 +49,13 @@ class And(Bloq):
         dag = '†' if self.adjoint else ''
         return f'And{dag}'
 
+    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        if self.adjoint:
+            raise NotImplementedError("Come back later.")
+
+        target = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
+        return {'ctrl': ctrl, 'target': target}
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
@@ -101,7 +108,7 @@ class MultiAnd(Bloq):
      - (right) target: The output bit.
     """
 
-    cvs: Tuple[int, ...] = field(validator=lambda i, f, v: len(v) >= 3)
+    cvs: Tuple[int, ...] = field(validator=lambda i, f, v: len(v) >= 3, converter=tuple)
     adjoint: bool = False
 
     @cached_property
@@ -156,3 +163,11 @@ class MultiAnd(Bloq):
             'junk': np.concatenate(([anc], junk)),
             'target': target,
         }
+
+    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+        if self.adjoint:
+            raise NotImplementedError("Come back later.")
+
+        accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
+        junk, target = accumulate_and[1:-1], accumulate_and[-1]
+        return {'ctrl': ctrl, 'junk': junk, 'target': target}

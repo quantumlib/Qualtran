@@ -26,9 +26,8 @@ def _make_multi_and():
     return MultiAnd(cvs=(1, 1, 1, 1))
 
 
-@pytest.mark.parametrize('cv2', [0, 1])
-@pytest.mark.parametrize('cv1', [0, 1])
-def test_truth_table(cv1, cv2):
+def _iter_and_truth_table(cv1: int, cv2: int):
+    # Iterate over And bra/ketted by all possible inputs
     state = [ZeroState(), OneState()]
     eff = [ZeroEffect(), OneEffect()]
 
@@ -40,12 +39,29 @@ def test_truth_table(cv1, cv2):
         bb.add(eff[a], q=q_a)
         bb.add(eff[b], q=q_b)
         cbloq = bb.finalize(res=res)
+        yield cbloq, a, b
 
+
+@pytest.mark.parametrize('cv2', [0, 1])
+@pytest.mark.parametrize('cv1', [0, 1])
+def test_truth_table(cv1, cv2):
+    for cbloq, a, b in _iter_and_truth_table(cv1, cv2):
         vec = cbloq.tensor_contract()
         if (a == cv1) and (b == cv2):
             np.testing.assert_allclose([0, 1], vec)
         else:
             np.testing.assert_allclose([1, 0], vec)
+
+
+@pytest.mark.parametrize('cv2', [0, 1])
+@pytest.mark.parametrize('cv1', [0, 1])
+def test_truth_table_classical(cv1, cv2):
+    for cbloq, a, b in _iter_and_truth_table(cv1, cv2):
+        (res,) = cbloq.call_classically()
+        if (a == cv1) and (b == cv2):
+            assert res == 1
+        else:
+            assert res == 0
 
 
 @pytest.mark.parametrize('cv2', [0, 1])
@@ -107,10 +123,34 @@ def test_multi_truth_table():
 
             cbloq = bb.finalize(junk=junk, res=res)
 
+            # Tensor simulation
             vec = cbloq.tensor_contract()
             should_be = np.all(ctrl_string == cvs)
             *junk_is, res_i = np.where(vec.reshape((2,) * (n - 1)))
             assert res_i == should_be, ctrl_string
+
+            # Classical simulation
+            junk, res = cbloq.call_classically()
+            assert res == should_be
+
+
+def test_multiand_consistent_apply_classical():
+    rs = np.random.RandomState(52)
+    n = 5
+    all_cvs = rs.choice([0, 1], size=(2, n))
+    # ctrl_strings = np.array(list(itertools.product([0,1], repeat=n)))
+    ctrl_strings = rs.choice([0, 1], size=(10, n))
+
+    for cvs, ctrl_string in itertools.product(all_cvs, ctrl_strings):
+        bloq = MultiAnd(cvs=cvs)
+        cbloq = bloq.decompose_bloq()
+
+        bloq_classical = bloq.call_classically(ctrl=ctrl_string)
+        cbloq_classical = cbloq.call_classically(ctrl=ctrl_string)
+
+        assert len(bloq_classical) == len(cbloq_classical)
+        for i in range(len(bloq_classical)):
+            np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
 
 def test_notebook():
