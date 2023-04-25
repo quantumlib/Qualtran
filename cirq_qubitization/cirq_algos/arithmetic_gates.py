@@ -1,9 +1,13 @@
 from typing import Iterable, Sequence, Union
+from functools import cached_property
 
 import cirq
 
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 from cirq_qubitization import bit_tools, cirq_infra, t_complexity_protocol
 from cirq_qubitization.cirq_algos.and_gate import And
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 
 
 class LessThanGate(cirq.ArithmeticGate):
@@ -206,3 +210,71 @@ class ContiguousRegisterGate(cirq.ArithmeticGate):
         toffoli_complexity = t_complexity_protocol.t_complexity(cirq.CCNOT)
         n = len(self._p_register)
         return (n**2 + n - 1) * toffoli_complexity
+
+
+class AdditionGate(GateWithRegisters):
+    """Applies U|p>|q> -> |p>|p+q>.
+
+    Assumes little-endian convention for storing integers.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
+    """
+    def __init__(self, bitsize: int):
+        self._input_bitsize = bitsize
+        self._output_bitsize = bitsize
+        self._nbits = bitsize
+        self._nancilla = self._nbits - 1
+
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers(
+            [
+                *Registers.build(input=self._input_bitsize),
+                *Registers.build(output=self._output_bitsize),
+            ]
+        )
+
+    def _left_building_block(self, inp, out, anc, depth):
+        if depth == self._nbits - 1:
+            return
+        else:
+            # yield cirq.XX.controlled(num_controls=1, control_values=[1]).on(
+            #     anc[depth-1], inp[depth], out[depth]
+            # )
+            yield cirq.CX(anc[depth-1], inp[depth])
+            yield cirq.CX(anc[depth-1], out[depth])
+            yield And().on(inp[depth], out[depth], anc[depth])
+            yield cirq.CX(anc[depth-1], anc[depth])
+            yield from self._left_building_block(inp, out, anc, depth+1)
+
+    def _right_building_block(self, inp, out, anc, depth):
+        if depth == 0:
+            return
+        else:
+            yield cirq.CX(anc[depth-1], anc[depth])
+            yield And(adjoint=True).on(inp[depth], out[depth], anc[depth])
+            yield cirq.CX(anc[depth-1], inp[depth])
+            yield cirq.CX(inp[depth], out[depth])
+            yield from self._right_building_block(inp, out, anc, depth-1)
+
+    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        input_bits = qubit_regs["input"]
+        output_bits = qubit_regs["output"]
+        ancillas = cirq_infra.qalloc(self._nbits-1)
+        # Start off the addition by anding into the ancilla
+        yield And().on(input_bits[0], output_bits[0], ancillas[0])
+        # Left part of Fig.2 from reference.
+        yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
+        yield cirq.CX(ancillas[-1], output_bits[-1])
+        yield cirq.CX(input_bits[-1], output_bits[-1])
+        # right part of Fig.2 from reference.
+        yield from self._right_building_block(input_bits, output_bits, ancillas, self._nbits-2)
+        yield And(adjoint=True).on(input_bits[0], output_bits[0], ancillas[0])
+        yield cirq.CX(input_bits[0], output_bits[0])
+
+    def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
+        # There are N - 2 building blocks each with one And/And^dag contributing 13 cliffords and 6 CXs.
+        # In addition there is one additional And/And^dag pair and 3 CXs.
+        num_clifford = (self._nbits-2)*19 + 16
+        return t_complexity_protocol.TComplexity(t=4 * self._nbits - 4, clifford=num_clifford)

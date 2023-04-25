@@ -5,6 +5,7 @@ import cirq
 import pytest
 
 import cirq_qubitization
+from cirq_qubitization.cirq_algos.arithmetic_gates import AdditionGate
 import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization import bit_tools
 
@@ -109,3 +110,43 @@ def test_contiguous_register_gate_t_complexity(n):
     gate = cirq_qubitization.ContiguousRegisterGate(n, 2 * n)
     toffoli_complexity = cirq_qubitization.t_complexity(cirq.CCNOT)
     assert cirq_qubitization.t_complexity(gate) == (n**2 + n - 1) * toffoli_complexity
+
+
+@pytest.mark.parametrize('a,b,nbits', itertools.product(range(4), range(4), range(3,5)))
+def test_add(a, b, nbits):
+    gate = AdditionGate(nbits)
+    g = cq_testing.GateHelper(gate)
+    qubit_vals = {q: 0 for q in g.all_qubits}
+    qubit_vals |= zip(g.quregs['input'], list(bit_tools.iter_bits(a, nbits))[::-1])
+    qubit_vals |= zip(g.quregs['output'], list(bit_tools.iter_bits(b, nbits))[::-1])
+    initial_state = [qubit_vals[x] for x in g.all_qubits]
+    qubit_vals = {q: 0 for q in g.all_qubits}
+    qubit_vals |= zip(g.quregs['input'], list(bit_tools.iter_bits(a, nbits))[::-1])
+    qubit_vals |= zip(g.quregs['output'], list(bit_tools.iter_bits(a+b, nbits))[::-1])
+    final_state = [qubit_vals[x] for x in g.all_qubits]
+    cq_testing.assert_circuit_inp_out_cirqsim(
+        g.decomposed_circuit, g.all_qubits, initial_state, final_state
+    )
+
+def test_add_truncated():
+    nbits = 3
+    gate = AdditionGate(nbits)
+    g = cq_testing.GateHelper(gate)
+    initial_state = [0, 0, 1, 0, 0, 1, 0, 0]
+    final_state = [0, 0, 1, 0, 0, 0, 0, 0]
+    cq_testing.assert_circuit_inp_out_cirqsim(
+        g.decomposed_circuit, g.all_qubits, initial_state, final_state
+    )
+    nbits = 3
+    gate = AdditionGate(nbits)
+    g = cq_testing.GateHelper(gate)
+    initial_state = [0, 0, 1, 1, 1, 1, 0, 0]
+    final_state = [0, 0, 1, 1, 1, 0, 0, 0]
+    cq_testing.assert_circuit_inp_out_cirqsim(
+        g.decomposed_circuit, g.all_qubits, initial_state, final_state
+    )
+
+@pytest.mark.parametrize("n", [*range(3, 10)])
+def test_addition_gate_t_complexity(n: int):
+    g = AdditionGate(n)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
