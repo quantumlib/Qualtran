@@ -5,9 +5,9 @@ import cirq
 import pytest
 
 import cirq_qubitization
-from cirq_qubitization.cirq_algos.arithmetic_gates import AdditionGate
 import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization import bit_tools
+from cirq_qubitization.cirq_algos.arithmetic_gates import AdditionGate
 
 
 def identity_map(n: int):

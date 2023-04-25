@@ -1,5 +1,4 @@
 from typing import Iterable, Sequence, Union
-from functools import cached_property
 
 import cirq
 
