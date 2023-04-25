@@ -3,11 +3,8 @@ from functools import cached_property
 
 import cirq
 
-from cirq_qubitization.cirq_infra.gate_with_registers import Registers
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 from cirq_qubitization import bit_tools, cirq_infra, t_complexity_protocol
 from cirq_qubitization.cirq_algos.and_gate import And
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 
 
 class LessThanGate(cirq.ArithmeticGate):
