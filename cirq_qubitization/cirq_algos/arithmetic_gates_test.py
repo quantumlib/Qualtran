@@ -112,39 +112,66 @@ def test_contiguous_register_gate_t_complexity(n):
     assert cirq_qubitization.t_complexity(gate) == (n**2 + n - 1) * toffoli_complexity
 
 
-@pytest.mark.parametrize('a,b,nbits', itertools.product(range(4), range(4), range(3,5)))
-def test_add(a, b, nbits):
-    gate = AdditionGate(nbits)
-    g = cq_testing.GateHelper(gate)
-    qubit_vals = {q: 0 for q in g.all_qubits}
-    qubit_vals |= zip(g.quregs['input'], list(bit_tools.iter_bits(a, nbits))[::-1])
-    qubit_vals |= zip(g.quregs['output'], list(bit_tools.iter_bits(b, nbits))[::-1])
-    initial_state = [qubit_vals[x] for x in g.all_qubits]
-    qubit_vals = {q: 0 for q in g.all_qubits}
-    qubit_vals |= zip(g.quregs['input'], list(bit_tools.iter_bits(a, nbits))[::-1])
-    qubit_vals |= zip(g.quregs['output'], list(bit_tools.iter_bits(a+b, nbits))[::-1])
-    final_state = [qubit_vals[x] for x in g.all_qubits]
+@pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
+def test_add(a, b, num_bits):
+    num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    initial_state = [0] * (2 * num_bits + num_anc)
+    initial_state[:num_bits] = list(bit_tools.iter_bits(a, num_bits))[::-1]
+    initial_state[num_bits : 2 * num_bits] = list(bit_tools.iter_bits(b, num_bits))[::-1]
+    final_state = [0] * (2 * num_bits + num_bits - 1)
+    final_state[:num_bits] = list(bit_tools.iter_bits(a, num_bits))[::-1]
+    final_state[num_bits : 2 * num_bits] = list(bit_tools.iter_bits(a + b, num_bits))[::-1]
     cq_testing.assert_circuit_inp_out_cirqsim(
-        g.decomposed_circuit, g.all_qubits, initial_state, final_state
+        circuit, qubits + ancillas, initial_state, final_state
     )
 
+
 def test_add_truncated():
-    nbits = 3
-    gate = AdditionGate(nbits)
-    g = cq_testing.GateHelper(gate)
+    num_bits = 3
+    num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    all_qubits = qubits + ancillas
     initial_state = [0, 0, 1, 0, 0, 1, 0, 0]
     final_state = [0, 0, 1, 0, 0, 0, 0, 0]
-    cq_testing.assert_circuit_inp_out_cirqsim(
-        g.decomposed_circuit, g.all_qubits, initial_state, final_state
-    )
+    cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
     nbits = 3
     gate = AdditionGate(nbits)
-    g = cq_testing.GateHelper(gate)
+    qubits = cirq.LineQubit.range(2 * num_bits)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    all_qubits = qubits + ancillas
     initial_state = [0, 0, 1, 1, 1, 1, 0, 0]
     final_state = [0, 0, 1, 1, 1, 0, 0, 0]
-    cq_testing.assert_circuit_inp_out_cirqsim(
-        g.decomposed_circuit, g.all_qubits, initial_state, final_state
-    )
+    cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+
+
+@pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
+def test_subtract(a, b, num_bits):
+    num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    initial_state = [0] * (2 * num_bits + num_anc)
+    initial_state[:num_bits] = list(bit_tools.iter_bits_twos_complement(a, num_bits))[::-1]
+    initial_state[num_bits : 2 * num_bits] = list(
+        bit_tools.iter_bits_twos_complement(-b, num_bits)
+    )[::-1]
+    final_state = [0] * (2 * num_bits + num_bits - 1)
+    final_state[:num_bits] = list(bit_tools.iter_bits_twos_complement(a, num_bits))[::-1]
+    final_state[num_bits : 2 * num_bits] = list(
+        bit_tools.iter_bits_twos_complement(a - b, num_bits)
+    )[::-1]
+    all_qubits = qubits + ancillas
+    cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_t_complexity(n: int):
