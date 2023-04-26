@@ -181,7 +181,6 @@ def _binst_as_cirq_op(
     bloq = binst.bloq
     cirq_quregs = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
 
-    # as_cirq_op mutates `vals`.
     op, out_quregs = bloq.as_cirq_op(**cirq_quregs)
     _update_assign_from_cirq_quregs(bloq.registers.rights(), binst, out_quregs, soq_assign)
     return op
