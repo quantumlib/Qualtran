@@ -1,20 +1,23 @@
 from functools import cached_property
-from typing import Dict, Sequence, TYPE_CHECKING, Union
+from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
-from numpy.typing import NDArray
 
 from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ClassicalValT, ints_to_bits
+from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
 
 if TYPE_CHECKING:
     import cirq
+    from numpy.typing import NDArray
+
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 
 @frozen
@@ -36,10 +39,8 @@ class Split(Bloq):
             ]
         )
 
-    def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
-    ) -> 'cirq.GateOperation':
-        return None
+    def as_cirq_op(self, split: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'split': split.reshape((self.n, 1))}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -68,10 +69,8 @@ class Join(Bloq):
             ]
         )
 
-    def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid']]
-    ) -> 'cirq.GateOperation':
-        return None
+    def as_cirq_op(self, join: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'join': join.reshape(self.n)}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -92,7 +91,7 @@ class Join(Bloq):
             )
         )
 
-    def on_classical_vals(self, join: NDArray[np.uint8]) -> Dict[str, int]:
+    def on_classical_vals(self, join: 'NDArray[np.uint8]') -> Dict[str, int]:
         return {'join': bits_to_ints(join)[0]}
 
 
