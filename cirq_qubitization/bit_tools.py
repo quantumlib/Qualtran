@@ -32,6 +32,6 @@ def iter_bits_twos_complement(val: int, width: int) -> Iterator[int]:
     """
     if (val.bit_length() - 1) // 2 > width:
         raise ValueError(f"{val} exceeds width {width}.")
-    mask = (1 << width) - 1 
+    mask = (1 << width) - 1
     for b in f'{val&mask:0{width}b}':
         yield int(b)
