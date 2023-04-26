@@ -6,7 +6,7 @@ import pytest
 
 import cirq_qubitization
 import cirq_qubitization.cirq_infra.testing as cq_testing
-from cirq_qubitization import bit_tools
+from cirq_qubitization import bit_tools, cirq_infra
 from cirq_qubitization.cirq_algos.arithmetic_gates import AdditionGate
 
 
@@ -115,10 +115,12 @@ def test_contiguous_register_gate_t_complexity(n):
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add(a, b, num_bits):
     num_anc = num_bits - 1
-    gate = AdditionGate(num_bits)
-    qubits = cirq.LineQubit.range(2 * num_bits)
-    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
-    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cirq_infra.memory_management_context(greedy_mm):
+        gate = AdditionGate(num_bits)
+        qubits = cirq.LineQubit.range(2 * num_bits)
+        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
     initial_state[:num_bits] = list(bit_tools.iter_bits(a, num_bits))[::-1]
     initial_state[num_bits : 2 * num_bits] = list(bit_tools.iter_bits(b, num_bits))[::-1]
@@ -133,18 +135,22 @@ def test_add(a, b, num_bits):
 def test_add_truncated():
     num_bits = 3
     num_anc = num_bits - 1
-    gate = AdditionGate(num_bits)
-    qubits = cirq.LineQubit.range(2 * num_bits)
-    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
-    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cirq_infra.memory_management_context(greedy_mm):
+        gate = AdditionGate(num_bits)
+        qubits = cirq.LineQubit.range(2 * num_bits)
+        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[-num_anc:]
     all_qubits = qubits + ancillas
     initial_state = [0, 0, 1, 0, 0, 1, 0, 0]
     final_state = [0, 0, 1, 0, 0, 0, 0, 0]
     cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
     nbits = 3
-    gate = AdditionGate(nbits)
-    qubits = cirq.LineQubit.range(2 * num_bits)
-    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cq.cirq_infra.memory_management_context(greedy_mm):
+        gate = AdditionGate(nbits)
+        qubits = cirq.LineQubit.range(2 * num_bits)
+        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
     ancillas = sorted(circuit.all_qubits())[:num_anc]
     all_qubits = qubits + ancillas
     initial_state = [0, 0, 1, 1, 1, 1, 0, 0]
@@ -155,10 +161,12 @@ def test_add_truncated():
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_subtract(a, b, num_bits):
     num_anc = num_bits - 1
-    gate = AdditionGate(num_bits)
-    qubits = cirq.LineQubit.range(2 * num_bits)
-    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
-    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cirq_infra.memory_management_context(greedy_mm):
+        gate = AdditionGate(num_bits)
+        qubits = cirq.LineQubit.range(2 * num_bits)
+        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
     initial_state[:num_bits] = list(bit_tools.iter_bits_twos_complement(a, num_bits))[::-1]
     initial_state[num_bits : 2 * num_bits] = list(
@@ -177,3 +185,21 @@ def test_subtract(a, b, num_bits):
 def test_addition_gate_t_complexity(n: int):
     g = AdditionGate(n)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+
+
+@pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
+def test_add_no_decompose(a, b):
+    num_bits = 5
+    qubits = cirq.LineQubit.range(2 * num_bits)
+    op = AdditionGate(num_bits).on(*qubits)
+    circuit = cirq.Circuit(op)
+    maps = {}
+    a_bin = format(a, f'0{num_bits}b')
+    b_bin = format(b, f'0{num_bits}b')
+    out_bin = format(a + b, f'0{num_bits}b')
+    true_out_int = a + b
+    input_int = int(a_bin + b_bin, 2)
+    output_int = int(a_bin + out_bin, 2)
+    assert true_out_int == int(out_bin, 2)
+    maps[input_int] = output_int
+    cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)

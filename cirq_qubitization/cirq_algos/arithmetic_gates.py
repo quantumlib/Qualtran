@@ -211,6 +211,11 @@ class ContiguousRegisterGate(cirq.ArithmeticGate):
 class AdditionGate(cirq.ArithmeticGate):
     """Applies U|p>|q> -> |p>|p+q>.
 
+    Args:
+        bitsize: The number of bits used to represent each integer p and q.
+            Note that this adder does not detect overflow if bitsize is not
+            large enough to hold p + q.
+
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
@@ -224,7 +229,7 @@ class AdditionGate(cirq.ArithmeticGate):
         return (self._input_register, self._output_register)
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> 'AdditionGate':
-        return AdditionGate(len(new_registers))
+        return AdditionGate(len(new_registers[0]))
 
     def apply(self, p: int, q: int) -> Union[int, Iterable[int]]:
         return p, p + q
@@ -233,6 +238,9 @@ class AdditionGate(cirq.ArithmeticGate):
         wire_symbols = ["In(x)"] * self._nbits
         wire_symbols += ["In(y)/Out(x+y)"] * self._nbits
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def _has_unitary_(self):
+        return True
 
     def _left_building_block(self, inp, out, anc, depth):
         if depth == self._nbits - 1:
@@ -268,6 +276,7 @@ class AdditionGate(cirq.ArithmeticGate):
         yield from self._right_building_block(input_bits, output_bits, ancillas, self._nbits - 2)
         yield And(adjoint=True).on(input_bits[0], output_bits[0], ancillas[0])
         yield cirq.CX(input_bits[0], output_bits[0])
+        cirq_infra.qfree(ancillas)
 
     def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
         # There are N - 2 building blocks each with one And/And^dag contributing 13 cliffords and 6 CXs.
