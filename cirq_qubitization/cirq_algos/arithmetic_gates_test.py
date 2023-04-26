@@ -142,18 +142,36 @@ def test_add_truncated():
         circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     all_qubits = qubits + ancillas
+    # Corresponds to 2^2 + 2^2 (4 + 4 = 8 = 2^3 (needs num_bits = 4 to work properly))
     initial_state = [0, 0, 1, 0, 0, 1, 0, 0]
+    # Should be 1000 (or 0001 below) but bit falls off the end
     final_state = [0, 0, 1, 0, 0, 0, 0, 0]
-    cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
-    nbits = 3
+    # increasing number of bits yields correct value
+    num_bits = 4
+    num_anc = num_bits - 1
     greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        gate = AdditionGate(nbits)
+    with cirq_infra.memory_management_context(greedy_mm):
+        gate = AdditionGate(num_bits)
         qubits = cirq.LineQubit.range(2 * num_bits)
         circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
-    ancillas = sorted(circuit.all_qubits())[:num_anc]
+    ancillas = sorted(circuit.all_qubits())[-num_anc:]
     all_qubits = qubits + ancillas
+    initial_state = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
+    final_state = [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0]
+    cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+    cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+    num_bits = 3
+    num_anc = num_bits - 1
+    greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    with cirq_infra.memory_management_context(greedy_mm):
+        gate = AdditionGate(num_bits)
+        qubits = cirq.LineQubit.range(2 * num_bits)
+        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    ancillas = sorted(circuit.all_qubits())[-num_anc:]
+    all_qubits = qubits + ancillas
+    # Corresponds to 2^2 + (2^2 + 2^1 + 2^0)  (4 + 7 = 11 = 1011 (needs num_bits = 4 to work properly))
     initial_state = [0, 0, 1, 1, 1, 1, 0, 0]
+    # Should be 1011 (or 1101 below) but last two bits are lost
     final_state = [0, 0, 1, 1, 1, 0, 0, 0]
     cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
