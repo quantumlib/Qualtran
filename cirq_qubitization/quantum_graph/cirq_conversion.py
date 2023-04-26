@@ -321,7 +321,7 @@ class BloqAsCirqGate(GateWithRegisters):
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
                     flat_qubits.append(q)
                     cqm.qfree(q)
-                del out_quregs[reg.name]
+                del cirq_quregs[reg.name]
             elif reg.side is Side.RIGHT:
                 new_qubits = cqm.qalloc(reg.total_bits())
                 flat_qubits.extend(new_qubits)

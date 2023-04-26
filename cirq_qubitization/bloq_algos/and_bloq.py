@@ -1,6 +1,6 @@
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import quimb.tensor as qtn
@@ -11,6 +11,11 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
+
+if TYPE_CHECKING:
+    import cirq
+
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
 
 
 @frozen
@@ -92,6 +97,25 @@ class And(Bloq):
                 tags=['And', tag],
             )
         )
+
+    def as_cirq_op(
+        self, ctrl: 'CirqQuregT', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        import cirq
+
+        import cirq_qubitization.cirq_algos.and_gate as cq_and
+        import cirq_qubitization.cirq_infra.qubit_manager as cqm
+
+        gate = cq_and.And(cv=(self.cv1, self.cv2), adjoint=self.adjoint)
+
+        ctrl0, ctrl1 = ctrl[:, 0]
+        if self.adjoint:
+            (target,) = cirq_quregs['target']
+            cqm.qfree([target])
+            return gate(ctrl0, ctrl1, target), {'ctrl': ctrl}
+
+        (target,) = cqm.qalloc(1)
+        return gate(ctrl0, ctrl1, target), {'ctrl': ctrl, 'target': np.array([target])}
 
 
 @frozen
