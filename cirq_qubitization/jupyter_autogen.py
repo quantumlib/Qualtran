@@ -39,6 +39,7 @@ import nbformat
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
 import cirq_qubitization.bloq_algos.and_bloq_test
+import cirq_qubitization.bloq_algos.arithmetic_bloqs_test
 import cirq_qubitization.bloq_algos.basic_gates.cnot_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
@@ -165,6 +166,17 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         gate_specs=[
             BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and),
             BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_multi_and),
+        ],
+        directory='./bloq_algos',
+    ),
+    'arithmetic_bloqs': NotebookSpec(
+        title='Arithmetic',
+        module=cirq_qubitization.bloq_algos.arithmetic_bloqs,
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_bloqs_test._make_add),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_bloqs_test._make_product),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_bloqs_test._make_square),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_bloqs_test._make_sum_of_squares),
         ],
         directory='./bloq_algos',
     ),
