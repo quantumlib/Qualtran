@@ -6,6 +6,7 @@ import numpy as np
 import cirq_qubitization
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def get_1d_ising_hamiltonian(
@@ -75,6 +76,7 @@ def test_ising_zero_bitflip_select():
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
+        control_val=1,
     ).on(control, *selection, *target)
     circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = circuit.all_qubits()
@@ -121,6 +123,7 @@ def test_ising_one_bitflip_select():
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
+        control_val=1,
     ).on(control, *selection, *target)
     circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = circuit.all_qubits()
@@ -190,6 +193,7 @@ def test_select_application_to_eigenstates():
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
+        control_val=1,
     ).on(control, *selection, *target)
     select_circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = select_circuit.all_qubits()
@@ -217,4 +221,4 @@ def test_select_application_to_eigenstates():
 
 
 def test_notebook():
-    cq_testing.execute_notebook('generic_select')
+    execute_notebook('generic_select')

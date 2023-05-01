@@ -144,6 +144,12 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         gate_specs=[GateNbSpec(jaf._make_StatePreparationAliasSampling)],
         directory='./cirq_algos',
     ),
+    'qubitization_walk_operator': NotebookSpec(
+        title='Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE',
+        module=cirq_qubitization.cirq_algos.qubitization_walk_operator,
+        gate_specs=[GateNbSpec(jaf._make_QubitizationWalkOperator)],
+        directory='./cirq_algos',
+    ),
     'basic_gates': NotebookSpec(
         title='Basic Gates',
         module=cirq_qubitization.bloq_algos.basic_gates,

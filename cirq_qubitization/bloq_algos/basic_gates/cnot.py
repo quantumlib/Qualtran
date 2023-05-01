@@ -1,6 +1,6 @@
 import itertools
 from functools import cached_property
-from typing import Any, Dict
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
@@ -9,6 +9,13 @@ from attrs import frozen
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+
+if TYPE_CHECKING:
+    import cirq
+
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
+
 
 COPY = [1, 0, 0, 0, 0, 0, 0, 1]
 COPY = np.array(COPY, dtype=np.complex128).reshape((2, 2, 2))
@@ -58,3 +65,15 @@ class CNOT(Bloq):
                 data=XOR, inds=(incoming['target'], outgoing['target'], internal), tags=['XOR']
             )
         )
+
+    def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
+
+    def as_cirq_op(
+        self, ctrl: 'CirqQuregT', target: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        import cirq
+
+        (ctrl,) = ctrl
+        (target,) = target
+        return cirq.CNOT(ctrl, target), {'ctrl': [ctrl], 'target': [target]}

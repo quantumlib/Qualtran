@@ -87,5 +87,5 @@ def decompose_once_into_operations(
             continue
         res = decomposer(val)
         if res is not None:
-            return res
+            return tuple(cirq.flatten_to_ops(res))
     return None

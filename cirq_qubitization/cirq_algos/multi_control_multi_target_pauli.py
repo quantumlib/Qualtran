@@ -2,6 +2,7 @@ from functools import cached_property
 from typing import Sequence
 
 import cirq
+import numpy as np
 
 from cirq_qubitization.cirq_infra import qubit_manager
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
@@ -83,3 +84,9 @@ class MultiControlPauli(GateWithRegisters):
         toffoli_complexity = t_complexity(cirq.CCNOT)
         controlled_pauli_complexity = t_complexity(self._target_gate.controlled(2))
         return (4 * self._num_controls - 10) * toffoli_complexity + 2 * controlled_pauli_complexity
+
+    def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
+        return cirq.apply_unitary(self._target_gate.controlled(self._num_controls), args)
+
+    def _has_unitary_(self) -> bool:
+        return True

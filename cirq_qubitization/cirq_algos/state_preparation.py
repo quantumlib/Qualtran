@@ -7,6 +7,7 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
 
+from functools import cached_property
 from typing import List, Sequence
 
 import cirq
@@ -19,6 +20,7 @@ from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 
 
+@cirq.value_equality()
 class StatePreparationAliasSampling(GateWithRegisters):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
 
@@ -78,24 +80,25 @@ class StatePreparationAliasSampling(GateWithRegisters):
         (self._alt, self._keep, self._mu) = preprocess_lcu_coefficients_for_reversible_sampling(
             lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
         )
+        (self._alt, self._keep) = tuple(self._alt), tuple(self._keep)
 
-    @property
+    @cached_property
     def selection_registers(self) -> Registers:
         return Registers.build(selection=self._selection_bitsize)
 
-    @property
+    @cached_property
     def sigma_mu_bitsize(self) -> int:
         return self._mu
 
-    @property
+    @cached_property
     def alternates_bitsize(self) -> int:
         return self._selection_bitsize
 
-    @property
+    @cached_property
     def keep_bitsize(self) -> int:
         return self._mu
 
-    @property
+    @cached_property
     def temp_registers(self) -> Registers:
         return Registers.build(
             sigma_mu=self.sigma_mu_bitsize,
@@ -104,7 +107,7 @@ class StatePreparationAliasSampling(GateWithRegisters):
             less_than_equal=1,
         )
 
-    @property
+    @cached_property
     def registers(self) -> Registers:
         return Registers([*self.selection_registers, *self.temp_registers])
 
@@ -124,3 +127,11 @@ class StatePreparationAliasSampling(GateWithRegisters):
             *keep, *sigma_mu, *less_than_equal
         )
         yield MultiTargetCSwap.make_on(control=less_than_equal, target_x=alt, target_y=selection)
+
+    def _value_equality_values_(self):
+        return self._selection_bitsize, self._alt, self._keep, self._mu
+
+
+StatePreparationAliasSampling.__hash__ = cirq._compat.cached_method(
+    StatePreparationAliasSampling.__hash__
+)

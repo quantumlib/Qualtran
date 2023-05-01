@@ -9,6 +9,7 @@ import pytest
 import cirq_qubitization
 import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.cirq_algos.and_gate import And
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 random.seed(12345)
 
@@ -195,7 +196,7 @@ def test_and_gate_adjoint(cv: Tuple[int, int], decomp: bool):
 
 
 def test_notebook():
-    cq_testing.execute_notebook('and_gate')
+    execute_notebook('and_gate')
 
 
 @pytest.mark.parametrize(

@@ -1,11 +1,11 @@
 import itertools
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import IPython.display
 import pydot
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.cirq_gate import CirqGate
+from cirq_qubitization.quantum_graph.cirq_conversion import CirqGateAsBloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
@@ -16,6 +16,9 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     Soquet,
 )
 from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
+
+if TYPE_CHECKING:
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 
 def _assign_ids_to_bloqs_and_soqs(
@@ -362,7 +365,7 @@ class PrettyGraphDrawer(GraphDrawer):
             soq.binst.bloq, self.INFRA_BLOQ_TYPES
         ):
             return ''
-        if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, CirqGate):
+        if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, CirqGateAsBloq):
             (ii,) = soq.idx
             return f'q{ii}'
         return soq.pretty()
@@ -380,6 +383,46 @@ class PrettyGraphDrawer(GraphDrawer):
             label=self.cxn_label(cxn),
             labelfloat=True,
             fontsize=10,
+            arrowhead='dot',
+            arrowsize=0.25,
+        )
+
+
+class ClassicalSimGraphDrawer(PrettyGraphDrawer):
+    """A graph drawer that labels each edge with a classical value.
+
+    The (composite) bloq must be composed entirely of classically-simulable bloqs.
+
+    Args:
+        bloq: The (composite) bloq to draw.
+        vals: Input classical values to propogate through the composite bloq.
+    """
+
+    def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):
+        super().__init__(bloq=bloq)
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
+
+        _, soq_assign = _cbloq_call_classically(
+            self._cbloq.registers, vals, self._cbloq._binst_graph
+        )
+        self.soq_assign = soq_assign
+
+    def cxn_label(self, cxn: Connection) -> str:
+        """Label the connection with its classical value."""
+        # Thru registers share the same soquet
+        # key in `soq_assign` for a bloq's left and right ports.
+        # The value in `soq_assign` will be for the right, output
+        # value. So we need `cxn.left` as the correct connection label.
+        return str(self.soq_assign[cxn.left])
+
+    def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
+        return pydot.Edge(
+            left_id,
+            right_id,
+            label=self.cxn_label(cxn),
+            labelfloat=True,
+            fontsize=10,
+            fontcolor='darkblue',
             arrowhead='dot',
             arrowsize=0.25,
         )

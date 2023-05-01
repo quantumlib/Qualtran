@@ -1,4 +1,3 @@
-from collections import defaultdict
 from functools import cached_property
 from typing import (
     Callable,
@@ -13,10 +12,10 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
-import cirq
 import networkx as nx
 import numpy as np
 from numpy.typing import NDArray
@@ -32,6 +31,12 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+
+if TYPE_CHECKING:
+    import cirq
+
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
 
@@ -87,27 +92,40 @@ class CompositeBloq(Bloq):
         """
         return _create_binst_graph(self.connections)
 
-    def to_cirq_circuit(self, **quregs: NDArray[cirq.Qid]) -> cirq.Circuit:
+    def as_cirq_op(
+        self, **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
+        import cirq
+
+        circuit, out_quregs = self.to_cirq_circuit(**cirq_quregs)
+        return cirq.CircuitOperation(circuit), out_quregs
+
+    def to_cirq_circuit(
+        self, **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
-            quregs: These keyword arguments map from register name to a sequence of `cirq.Qid`.
-                Cirq operations operate on individual qubit objects.
-                Consider using `**self.registers.get_named_qubits()` for this argument.
+            **cirq_quregs: Mapping from left register names to Cirq qubit arrays.
+
+        Returns:
+            circuit: The cirq.FrozenCircuit version of this composite bloq.
+            cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
         """
-        # First, convert register names to registers.
-        quregs = {reg: quregs[reg.name] for reg in self.registers.lefts()}
-        return _cbloq_to_cirq_circuit(quregs, self._binst_graph)
+        from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
+
+        return _cbloq_to_cirq_circuit(self.registers, cirq_quregs, self._binst_graph)
 
     @classmethod
-    def from_cirq_circuit(cls, circuit: cirq.Circuit) -> 'CompositeBloq':
+    def from_cirq_circuit(cls, circuit: 'cirq.Circuit') -> 'CompositeBloq':
         """Construct a composite bloq from a Cirq circuit.
 
         Each `cirq.Operation` will be wrapped into a `CirqGate` wrapper bloq. The
         resultant composite bloq will represent a unitary with one thru-register
         named "qubits" of wireshape `(n_qubits,)`.
         """
-        from cirq_qubitization.quantum_graph.cirq_gate import cirq_circuit_to_cbloq
+        from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
 
         return cirq_circuit_to_cbloq(circuit)
 
@@ -122,6 +140,20 @@ class CompositeBloq(Bloq):
         from cirq_qubitization.quantum_graph.quimb_sim import _cbloq_to_dense
 
         return _cbloq_to_dense(self)
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        """Support classical data by recursing into the composite bloq."""
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
+
+        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
+        return out_vals
+
+    def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
+        """Support classical data by recursing into the composite bloq."""
+        from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
+
+        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
+        return tuple(out_vals[reg.name] for reg in self.registers.rights())
 
     def t_complexity(self) -> TComplexity:
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""
@@ -218,6 +250,82 @@ class CompositeBloq(Bloq):
         fsoqs = map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
+    def flatten_once(self, pred: Callable[[BloqInstance], bool]) -> 'CompositeBloq':
+        """Decompose and flatten each subbloq that satisfies `pred`.
+
+        This will only flatten "once". That is, we will go through the bloq instances
+        contained in this composite bloq and (optionally) flatten each one but will not
+        recursively flatten the results. For a recursive version see `flatten`.
+
+        Args:
+            pred: A predicate that takes a bloq instance and returns True if it should
+                be decomposed and flattened or False if it should remain undecomposed.
+                All bloqs for which this callable returns True must support decomposition.
+
+        Returns:
+            A new composite bloq where subbloqs matching `pred` have been decomposed and
+            flattened.
+
+        Raises:
+            NotImplementedError: If `pred` returns True but the underlying bloq does not
+                support `decompose_bloq()`.
+            DidNotFlattenAnythingError: If none of the bloq instances satisfied `pred`.
+
+        """
+        bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+        soq_map: List[Tuple[SoquetT, SoquetT]] = []
+        did_work = False
+        for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
+            in_soqs = map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
+
+            bloq = binst.bloq
+            if pred(binst):
+                new_out_soqs = bb.add_from(bloq.decompose_bloq(), **in_soqs)
+                did_work = True
+            else:
+                new_out_soqs = bb.add(bloq, **in_soqs)
+
+            soq_map.extend(zip(old_out_soqs, new_out_soqs))
+
+        if not did_work:
+            raise DidNotFlattenAnythingError()
+
+        fsoqs = map_soqs(self.final_soqs(), soq_map)
+        return bb.finalize(**fsoqs)
+
+    def flatten(
+        self, pred: Callable[[BloqInstance], bool], max_depth: int = 1_000
+    ) -> 'CompositeBloq':
+        """Recursively decompose and flatten subbloqs until none satisfy `pred`.
+
+        This will continue flattening the results of subbloq.decompose_bloq() until
+        all bloqs which would satisfy `pred` have been flattened.
+
+        Args:
+            pred: A predicate that takes a bloq instance and returns True if it should
+                be decomposed and flattened or False if it should remain undecomposed.
+                All bloqs for which this callable returns True must support decomposition.
+            max_depth: To avoid infinite recursion, give up after this many recursive steps.
+
+        Returns:
+            A new composite bloq where all recursive subbloqs matching `pred` have been
+            decomposed and flattened.
+
+        Raises:
+            NotImplementedError: If `pred` returns True but the underlying bloq does not
+                support `decompose_bloq()`.
+        """
+        cbloq = self
+        for _ in range(max_depth):
+            try:
+                cbloq = cbloq.flatten_once(pred)
+            except DidNotFlattenAnythingError:
+                break
+        else:
+            raise ValueError("Max recursion depth exceeded in `flatten`.")
+
+        return cbloq
+
     @staticmethod
     def _debug_binst(g: nx.DiGraph, binst: BloqInstance) -> List[str]:
         """Helper method used in `debug_text`"""
@@ -293,96 +401,6 @@ def _binst_to_cxns(
     return pred_cxns, succ_cxns
 
 
-def _process_binst(
-    binst: BloqInstance, soqmap: Dict[Soquet, Sequence[cirq.Qid]], binst_graph: nx.DiGraph
-) -> Optional[cirq.Operation]:
-    """Helper function used in `_cbloq_to_cirq_circuit`.
-
-    Args:
-        binst: The current BloqInstance to process
-        soqmap: The current mapping between soquets and qubits that *is updated by this function*.
-            At input, the mapping should contain values for all of binst's soquets. Afterwards,
-            it should contain values for all of binst's successors' soquets.
-        binst_graph: Used for finding binst's successors to update soqmap.
-
-    Returns:
-        an operation if there is a corresponding one in Cirq. Some bookkeeping Bloqs will not
-        correspond to Cirq operations.
-    """
-    if isinstance(binst, DanglingT):
-        return None
-
-    pred_cxns, _ = _binst_to_cxns(binst, binst_graph)
-
-    # Track inter-Bloq name changes
-    for cxn in pred_cxns:
-        soqmap[cxn.right] = soqmap[cxn.left]
-        del soqmap[cxn.left]
-
-    bloq = binst.bloq
-
-    # Pull out the qubits from soqmap into qumap which has string keys.
-    # This implicitly joins things with the same name.
-    quregs: Dict[str, List[cirq.Qid]] = defaultdict(list)
-    for reg in bloq.registers.lefts():
-        for li in reg.wire_idxs():
-            soq = Soquet(binst, reg, idx=li)
-            quregs[reg.name].extend(soqmap[soq])
-            del soqmap[soq]
-
-    op = bloq.on_registers(**quregs)
-
-    # We pluck things back out from their collapsed by-name qumap into soqmap
-    # This does implicit splitting.
-    for reg in bloq.registers.rights():
-        qarr = np.asarray(quregs[reg.name])
-        for ri in reg.wire_idxs():
-            soq = Soquet(binst, reg, idx=ri)
-            qs = qarr[ri]
-            if isinstance(qs, np.ndarray):
-                qs = qs.tolist()
-            else:
-                qs = [qs]
-            soqmap[soq] = qs
-
-    return op
-
-
-def _cbloq_to_cirq_circuit(
-    quregs: Dict[FancyRegister, NDArray[cirq.Qid]], binst_graph: nx.DiGraph
-) -> cirq.Circuit:
-    """Transform CompositeBloq components into a `cirq.Circuit`.
-
-    Args:
-        quregs: Assignment from each register to a sequence of `cirq.Qid` for the conversion
-            to a `cirq.Circuit`.
-        binst_graph: A graph connecting bloq instances with edge attributes containing the
-            full list of `Connection`s, as returned by `CompositeBloq._get_binst_graph()`.
-            This function does not mutate `binst_graph`.
-
-    Returns:
-        A `cirq.Circuit` for the quantum compute graph.
-    """
-    # A mapping of soquet to qubits that we update as operations are appended to the circuit.
-    soqmap = {}
-    for reg in quregs.keys():
-        qarr = np.asarray(quregs[reg])
-        for ii in reg.wire_idxs():
-            soqmap[Soquet(LeftDangle, reg, idx=ii)] = qarr[ii]
-
-    moments: List[cirq.Moment] = []
-    for i, binsts in enumerate(nx.topological_generations(binst_graph)):
-        mom: List[cirq.Operation] = []
-        for binst in binsts:
-            op = _process_binst(binst, soqmap, binst_graph)
-            if op:
-                mom.append(op)
-        if mom:
-            moments.append(cirq.Moment(mom))
-
-    return cirq.Circuit(moments)
-
-
 def _cxn_to_soq_dict(
     regs: Iterable[FancyRegister],
     cxns: Iterable[Connection],
@@ -425,6 +443,10 @@ def _cxn_to_soq_dict(
 
 class BloqBuilderError(ValueError):
     """A value error raised during composite bloq building."""
+
+
+class DidNotFlattenAnythingError(BloqBuilderError):
+    """An exception raised if `flatten_once()` did not find anything to flatten."""
 
 
 class _IgnoreAvailable:

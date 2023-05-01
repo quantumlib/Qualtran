@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
@@ -9,8 +9,14 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
+if TYPE_CHECKING:
+    import cirq
+
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
+
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
+_PAULIZ = np.array([[1, 0], [0, -1]], dtype=np.complex128)
 
 
 @frozen
@@ -63,6 +69,22 @@ class _ZVector(Bloq):
             )
         )
 
+    def on_classical_vals(self, **vals: int) -> Dict[str, int]:
+        """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
+
+        If `self.state`, we return a bit in the `q` register. Otherwise,
+        we assert that the inputted `q` register is the correct bit.
+        """
+        bit_int = 1 if self.bit else 0  # guard against bad `self.bit` types.
+        if self.state:
+            assert not vals, vals
+            return {'q': bit_int}
+
+        q = vals.pop('q')
+        assert not vals, vals
+        assert q == bit_int, q
+        return {}
+
 
 def _hide_base_fields(cls, fields):
     # for use in attrs `field_trasnformer`.
@@ -101,3 +123,35 @@ class OneEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+
+@frozen
+class ZGate(Bloq):
+    """The Z gate.
+
+    This causes a phase flip: Z|+> = |-> and vice-versa.
+    """
+
+    @cached_property
+    def registers(self) -> 'FancyRegisters':
+        return FancyRegisters.build(q=1)
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        binst,
+        *,
+        incoming: Dict[str, SoquetT],
+        outgoing: Dict[str, SoquetT],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+            )
+        )
+
+    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        import cirq
+
+        (q,) = q
+        return cirq.Z(q), {'q': [q]}

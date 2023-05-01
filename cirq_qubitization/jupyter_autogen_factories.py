@@ -73,3 +73,11 @@ def _make_StatePreparationAliasSampling():
     mu = 3
 
     return StatePreparationAliasSampling(coeffs, probability_epsilon=2**-mu / len(coeffs))
+
+
+def _make_QubitizationWalkOperator():
+    from cirq_qubitization.cirq_algos.qubitization_walk_operator_test import (
+        get_walk_operator_for_1d_ising_model,
+    )
+
+    return get_walk_operator_for_1d_ising_model(4, 2e-1)

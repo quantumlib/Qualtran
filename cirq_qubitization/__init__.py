@@ -13,6 +13,8 @@ from cirq_qubitization.cirq_algos import (
     ProgrammableRotationGateArray,
     ProgrammableRotationGateArrayBase,
     QROM,
+    QubitizationWalkOperator,
+    ReflectionUsingPrepare,
     SelectedMajoranaFermionGate,
     SelectSwapQROM,
     StatePreparationAliasSampling,
