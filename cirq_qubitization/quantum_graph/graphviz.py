@@ -5,7 +5,7 @@ import IPython.display
 import pydot
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.cirq_conversion import CirqGate
+from cirq_qubitization.quantum_graph.cirq_conversion import CirqGateAsBloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
@@ -365,7 +365,7 @@ class PrettyGraphDrawer(GraphDrawer):
             soq.binst.bloq, self.INFRA_BLOQ_TYPES
         ):
             return ''
-        if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, CirqGate):
+        if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, CirqGateAsBloq):
             (ii,) = soq.idx
             return f'q{ii}'
         return soq.pretty()
