@@ -104,7 +104,8 @@ class SumOfSquares(Bloq):
 class Product(Bloq):
     r"""Compute the product of an `n` an `m` bit integer.
 
-    Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow |a\rangle|b\rangle|a*b\rangle$ using $2nm-n Toffolis$.
+    Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
+    |a\rangle|b\rangle|ab\rangle$ using $2nm-n$ Toffolis.
 
     Args:
         nbits: Number of bits used to represent the first integer.
