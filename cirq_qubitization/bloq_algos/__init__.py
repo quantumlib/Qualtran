@@ -1,1 +1,1 @@
-from . import and_bloq, basic_gates, arithmetic_bloqs
+from . import and_bloq, basic_gates, arithmetic
