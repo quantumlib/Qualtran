@@ -1,4 +1,5 @@
 from attrs import frozen
+import numpy as np
 
 from cirq_qubitization import t_complexity_protocol
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -72,12 +73,13 @@ class SumOfSquares(Bloq):
     Implements $U|a\rangle|b\rangle...|k\rangle|0\rangle \rightarrow |a\rangle|b\rangle..|k\rangle|a^2+b^2+..k^2\rangle$ using $4 k n^2$ Ts.
 
     Args:
-        nbits: Number of bits used to represent each integer. Must be large
-            enough to hold the result in the output register of sum_i i^2.
+        nbits_in: Number of bits used to represent each of the k integers.
+        nbits_out: Number of bits used to represent the output result. Should be
+            ~ 2 * nbits_in * log2(k).
 
     Registers:
-     - inputs: (kn)-bit-sized input registers.
-     - result: A 2*nbit-sized ouput register.
+     - inputs: nbits_in-sized input registers.
+     - result: nbits_out-sized register holding the result.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -85,16 +87,17 @@ class SumOfSquares(Bloq):
         complexity for squaring.
     """
 
-    nbits: int
+    nbits_in: int
+    nbits_out: int
     k: int
 
     @property
     def registers(self):
-        return FancyRegisters.build(inputs=self.k * self.nbits, result=self.nbits)
+        return FancyRegisters.build(inputs=self.k * self.nbits_in, result=self.nbits_out)
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
-        num_toff = self.k * self.nbits**2 - self.nbits
+        num_toff = self.k * self.nbits_in**2 - self.nbits_in
         if self.k % 3 == 0:
             num_toff -= 1
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
