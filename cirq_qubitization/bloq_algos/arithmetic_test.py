@@ -27,6 +27,11 @@ def _make_product():
 
     return Product(nbits=4, mbits=6)
 
+def _make_greater_than():
+    from cirq_qubitization.bloq_algos.arithmetic import GreaterThan
+
+    return GreaterThan(nbits=4)
+
 
 def test_add():
     bb = CompositeBloqBuilder()
@@ -76,7 +81,7 @@ def test_product():
         cbloq.decompose_bloq()
 
 
-def test_comparison_oracle():
+def test_greater_than():
     bb = CompositeBloqBuilder()
     nbits = 5
     q0 = bb.add_register('a', nbits)

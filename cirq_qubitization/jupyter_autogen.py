@@ -178,6 +178,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
             BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_product),
             BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_square),
             BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_sum_of_squares),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_greater_than),
         ],
         directory='./bloq_algos',
     ),

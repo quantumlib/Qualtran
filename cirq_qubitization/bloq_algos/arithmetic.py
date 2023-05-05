@@ -20,6 +20,7 @@ class Add(Bloq):
      - b: A nbit-sized input/ouput register (register b above).
 
     References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
     nbits: int
@@ -150,7 +151,7 @@ class Product(Bloq):
 class GreaterThan(Bloq):
     r"""Compare to n-bit integers.
 
-    Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
+    Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
 
@@ -174,7 +175,7 @@ class GreaterThan(Bloq):
         return FancyRegisters.build(a=self.nbits, b=self.nbits, anc=1)
 
     def pretty_name(self) -> str:
-        return "a > b"
+        return "a gt b"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
