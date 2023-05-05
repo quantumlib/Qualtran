@@ -28,6 +28,9 @@ class Add(Bloq):
     def registers(self):
         return FancyRegisters.build(a=self.nbits, b=self.nbits)
 
+    def pretty_name(self) -> str:
+        return "a + b"
+
     def t_complexity(self):
         num_clifford = (self.nbits - 2) * 19 + 16
         num_t_gates = 4 * self.nbits - 4
@@ -38,14 +41,14 @@ class Add(Bloq):
 class Square(Bloq):
     r"""Square an n-bit number.
 
-    Implements $U|a\rangle|0\rangle -\rightarrow |a\rangle|a^2\rangle$ using 4n - 4 T gates.
+    Implements $U|a\rangle|0\rangle -\rightarrow |a\rangle|a^2\rangle$ using $4n - 4 T$ gates.
 
     Args:
         nbits: Number of bits used to represent the integer and .
 
     Registers:
      - a: A nbit-sized input register (register a above).
-     - result: A 2-nbit-sized input/ouput register (register b above).
+     - result: A 2-nbit-sized input/ouput register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -57,7 +60,10 @@ class Square(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.nbits, result=2 * self.nbits)
+        return FancyRegisters.build(a=self.nbits, result=2*self.nbits)
+
+    def pretty_name(self) -> str:
+        return "a^2"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
@@ -72,13 +78,11 @@ class SumOfSquares(Bloq):
     Implements $U|a\rangle|b\rangle...|k\rangle|0\rangle \rightarrow |a\rangle|b\rangle..|k\rangle|a^2+b^2+..k^2\rangle$ using $4 k n^2$ Ts.
 
     Args:
-        nbits_in: Number of bits used to represent each of the k integers.
-        nbits_out: Number of bits used to represent the output result. Should be
-            ~ 2 * nbits_in * log2(k).
+        nbits: Number of bits used to represent each of the k integers.
 
     Registers:
-     - inputs: nbits_in-sized input registers.
-     - result: nbits_out-sized register holding the result.
+     - a_k: k n-bit registers.
+     - result: 2 * nbits + 1 sized output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -86,17 +90,20 @@ class SumOfSquares(Bloq):
         complexity for squaring.
     """
 
-    nbits_in: int
-    nbits_out: int
+    nbits: int
     k: int
 
     @property
     def registers(self):
-        return FancyRegisters.build(inputs=self.k * self.nbits_in, result=self.nbits_out)
+        regs = {f"a_{i}": self.nbits for i in range(self.k)}
+        return FancyRegisters.build(**regs, result=2*self.nbits+1)
+
+    def pretty_name(self) -> str:
+        return "SOS"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
-        num_toff = self.k * self.nbits_in**2 - self.nbits_in
+        num_toff = self.k * self.nbits **2 - self.nbits
         if self.k % 3 == 0:
             num_toff -= 1
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
@@ -116,7 +123,7 @@ class Product(Bloq):
     Registers:
      - a: nbit-sized input registers.
      - b: mbit-sized input registers.
-     - result: A nbit-sized ouput register (register b above).
+     - result: A 2nbit-sized ouput register (register b above).
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -129,7 +136,10 @@ class Product(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.nbits, b=self.mbits, result=max(self.nbits, self.mbits))
+        return FancyRegisters.build(a=self.nbits, b=self.mbits, result=2*max(self.nbits, self.mbits))
+
+    def pretty_name(self) -> str:
+        return "a*b"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
@@ -141,7 +151,7 @@ class GreaterThan(Bloq):
     r"""Compare to n-bit integers.
 
     Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
-    |a\rangle|b\rangle|a > b\rangle$ using 8n T gates.
+    |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
 
     Args:
@@ -162,6 +172,9 @@ class GreaterThan(Bloq):
     @property
     def registers(self):
         return FancyRegisters.build(a=self.nbits, b=self.nbits, anc=1)
+
+    def pretty_name(self) -> str:
+        return "a > b"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.

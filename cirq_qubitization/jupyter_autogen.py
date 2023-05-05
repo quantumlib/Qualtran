@@ -40,6 +40,7 @@ from sphinx.ext.napoleon import Config, GoogleDocstring
 
 import cirq_qubitization.bloq_algos.and_bloq_test
 import cirq_qubitization.bloq_algos.arithmetic_test
+import cirq_qubitization.bloq_algos.sorting_test
 import cirq_qubitization.bloq_algos.basic_gates.cnot_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
@@ -177,6 +178,15 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
             BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_product),
             BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_square),
             BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_sum_of_squares),
+        ],
+        directory='./bloq_algos',
+    ),
+    'sorting': NotebookSpec(
+        title='Sorting',
+        module=cirq_qubitization.bloq_algos.sorting,
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.sorting_test._make_comparator),
+            BloqNbSpec(cirq_qubitization.bloq_algos.sorting_test._make_bitonic_sort),
         ],
         directory='./bloq_algos',
     ),

@@ -54,10 +54,11 @@ def test_sum_of_squares():
     bb = CompositeBloqBuilder()
     nbits = 4
     k = 3
-    q0 = bb.add_register('a', nbits)
-    q1 = bb.add_register('result', 2 * nbits)
-    q0, q1 = bb.add(SumOfSquares(nbits, 9, k), inputs=q0, result=q1)
-    cbloq = bb.finalize(a=q0, result=q1)
+    regs = {f'a_{i}': bb.add_register(f'a_{i}', nbits) for i in range(k)}
+    regs['result'] = bb.add_register('result', 2 * nbits + 1)
+    out = bb.add(SumOfSquares(nbits, k), **regs)
+    regs = {k: v for k, v in zip(regs.keys(), out)}
+    cbloq = bb.finalize(**regs)
     with pytest.raises(NotImplementedError):
         cbloq.decompose_bloq()
 
@@ -73,6 +74,7 @@ def test_product():
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     with pytest.raises(NotImplementedError):
         cbloq.decompose_bloq()
+
 
 def test_comparison_oracle():
     bb = CompositeBloqBuilder()
