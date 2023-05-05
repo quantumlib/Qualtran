@@ -76,4 +76,4 @@ class BitonicSort(Bloq):
     def t_complexity(self):
         # Need k * log^2(k) comparisons.
         # TODO: This is Big-O complexity?
-        return self.k * np.ceil(max(np.log2(self.k)**2.0, 1)) * Comparator(self.nbits).t_complexity()
+        return self.k * int(np.ceil(max(np.log2(self.k)**2.0, 1))) * Comparator(self.nbits).t_complexity()
