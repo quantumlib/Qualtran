@@ -1,8 +1,8 @@
 from functools import cached_property
+from typing import Tuple, Dict
 
 import numpy as np
 from attrs import frozen
-from typing import Tuple, Dict
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
