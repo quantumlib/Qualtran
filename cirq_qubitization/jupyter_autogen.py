@@ -40,9 +40,9 @@ from sphinx.ext.napoleon import Config, GoogleDocstring
 
 import cirq_qubitization.bloq_algos.and_bloq_test
 import cirq_qubitization.bloq_algos.arithmetic_test
-import cirq_qubitization.bloq_algos.sorting_test
 import cirq_qubitization.bloq_algos.basic_gates.cnot_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
+import cirq_qubitization.bloq_algos.sorting_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
 import cirq_qubitization.quantum_graph
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters

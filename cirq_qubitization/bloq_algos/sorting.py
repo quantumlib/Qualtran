@@ -1,9 +1,9 @@
-from attrs import frozen
 import numpy as np
+from attrs import frozen
 
 from cirq_qubitization import t_complexity_protocol
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.bloq_algos.arithmetic import GreaterThan
+from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
 
