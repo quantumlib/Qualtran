@@ -1,5 +1,4 @@
 from attrs import frozen
-import numpy as np
 
 from cirq_qubitization import t_complexity_protocol
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -115,8 +114,8 @@ class Product(Bloq):
         mbits: Number of bits used to represent the second integer.
 
     Registers:
-     - a: bit-sized input registers.
-     - b: bit-sized input registers.
+     - a: nbit-sized input registers.
+     - b: mbit-sized input registers.
      - result: A nbit-sized ouput register (register b above).
 
     References:
@@ -136,3 +135,34 @@ class Product(Bloq):
         # TODO actual gate implementation + determine cliffords.
         num_toff = 2 * self.nbits * self.mbits - max(self.nbits, self.mbits)
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
+
+@frozen
+class GreaterThan(Bloq):
+    r"""Compare to n-bit integers.
+
+    Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
+    |a\rangle|b\rangle|a > b\rangle$ using 8n T gates.
+
+
+    Args:
+        nbits: Number of bits used to represent the two integers a and b.
+
+    Registers:
+     - a: n-bit-sized input registers.
+     - b: n-bit-sized input registers.
+     - result: A nbit-sized ouput register (register b above).
+
+    References:
+        [Improved techniques for preparing eigenstates of fermionic
+        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5#additional-information),
+        Comparison Oracle from SI: Appendix 2B (pg 3)
+    """
+    nbits: int
+
+    @property
+    def registers(self):
+        return FancyRegisters.build(a=self.nbits, b=self.nbits, anc=1)
+
+    def t_complexity(self):
+        # TODO actual gate implementation + determine cliffords.
+        return t_complexity_protocol.TComplexity(t=8 * self.nbits)
