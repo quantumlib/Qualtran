@@ -2,9 +2,11 @@ from functools import cached_property
 
 import numpy as np
 from attrs import frozen
+from typing import Tuple, Dict
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization import t_complexity_protocol
 
 
 @frozen

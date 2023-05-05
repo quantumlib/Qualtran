@@ -61,7 +61,7 @@ class Square(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.nbits, result=2*self.nbits)
+        return FancyRegisters.build(a=self.nbits, result=2 * self.nbits)
 
     def pretty_name(self) -> str:
         return "a^2"
@@ -97,14 +97,14 @@ class SumOfSquares(Bloq):
     @property
     def registers(self):
         regs = {f"a_{i}": self.nbits for i in range(self.k)}
-        return FancyRegisters.build(**regs, result=2*self.nbits+1)
+        return FancyRegisters.build(**regs, result=2 * self.nbits + 1)
 
     def pretty_name(self) -> str:
         return "SOS"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
-        num_toff = self.k * self.nbits **2 - self.nbits
+        num_toff = self.k * self.nbits**2 - self.nbits
         if self.k % 3 == 0:
             num_toff -= 1
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
@@ -137,7 +137,9 @@ class Product(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.nbits, b=self.mbits, result=2*max(self.nbits, self.mbits))
+        return FancyRegisters.build(
+            a=self.nbits, b=self.mbits, result=2 * max(self.nbits, self.mbits)
+        )
 
     def pretty_name(self) -> str:
         return "a*b"
@@ -146,6 +148,7 @@ class Product(Bloq):
         # TODO actual gate implementation + determine cliffords.
         num_toff = 2 * self.nbits * self.mbits - max(self.nbits, self.mbits)
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
+
 
 @frozen
 class GreaterThan(Bloq):

@@ -27,6 +27,7 @@ def _make_product():
 
     return Product(nbits=4, mbits=6)
 
+
 def _make_greater_than():
     from cirq_qubitization.bloq_algos.arithmetic import GreaterThan
 
