@@ -1,12 +1,12 @@
 from functools import cached_property
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import numpy as np
 from attrs import frozen
 
+from cirq_qubitization import t_complexity_protocol
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
-from cirq_qubitization import t_complexity_protocol
 
 
 @frozen

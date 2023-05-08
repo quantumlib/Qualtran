@@ -1,1 +1,1 @@
-from . import and_bloq, basic_gates, arithmetic, sorting
+from . import and_bloq, arithmetic, basic_gates, sorting
