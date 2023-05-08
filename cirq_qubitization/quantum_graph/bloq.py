@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from cirq_qubitization import TComplexity
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
@@ -202,13 +203,28 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().t_complexity()
 
-    def on_registers(self, **qubit_regs: 'NDArray[cirq.Qid]') -> 'cirq.OP_TREE':
-        """Support for conversion to a Cirq circuit."""
-        raise NotImplementedError("This bloq does not support Cirq conversion.")
+    def as_cirq_op(
+        self, **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        """Override this method to support conversion to a Cirq operation.
 
+        If this method is not overriden, the default implementation will wrap this bloq
+        in a `BloqAsCirqGate` shim.
 
-class NoCirqEquivalent(NotImplementedError):
-    """Raise this in `Bloq.on_registers` to signify that it should be omitted from Cirq circuits.
+        Args:
+            **cirq_quregs: kwargs mapping from this bloq's left register names to an ndarray of
+                `cirq.Qid`. The final dimension of this array corresponds to the registers
+                `bitsize` size. Any additional dimensions come first and correspond to the
+                register `wireshape` sizes.
 
-    For example, this would apply for qubit bookkeeping operations.
-    """
+        Returns:
+            op: A cirq operation corresponding to this bloq acting on the provided cirq qubits or
+                None. This method should return None if and only if the bloq instance truly should
+                not be included in the Cirq circuit (e.g. for reshaping bloqs). A bloq with no cirq
+                equivalent should raise an exception instead.
+            cirq_quregs: A mapping from this bloq's right register of the same format as the
+                `cirq_quregs` argument. The returned dictionary corresponds to the output qubits.
+        """
+        from cirq_qubitization.quantum_graph.cirq_conversion import BloqAsCirqGate
+
+        return BloqAsCirqGate.bloq_on(bloq=self, cirq_quregs=cirq_quregs)
