@@ -53,8 +53,7 @@ class Square(Bloq):
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
-        Quantization](https://arxiv.org/abs/2105.12767) pg 76 give a Toffoli
-        complexity for squaring.
+        Quantization](https://arxiv.org/abs/2105.12767). pg 76 for Toffoli complexity.
     """
 
     nbits: int
