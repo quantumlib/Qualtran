@@ -36,7 +36,7 @@ class Comparator(Bloq):
     def registers(self):
         return FancyRegisters.build(a=self.nbits, b=self.nbits, anc=1)
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "Cmprtr"
 
     def t_complexity(self):
@@ -74,6 +74,9 @@ class BitonicSort(Bloq):
         return FancyRegisters.build(**regs)
 
     def pretty_name(self) -> str:
+        return "BitonicSort"
+
+    def short_name(self) -> str:
         return "BSort"
 
     def t_complexity(self):
