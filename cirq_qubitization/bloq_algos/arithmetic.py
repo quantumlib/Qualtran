@@ -12,29 +12,29 @@ class Add(Bloq):
     Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $4n - 4 T$ gates.
 
     Args:
-        nbits: Number of bits used to represent each integer. Must be large
+        bitsize: Number of bits used to represent each integer. Must be large
             enough to hold the result in the output register of a + b.
 
     Registers:
-     - a: A nbit-sized input register (register a above).
-     - b: A nbit-sized input/ouput register (register b above).
+     - a: A bitsize-sized input register (register a above).
+     - b: A bitsize-sized input/output register (register b above).
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    nbits: int
+    bitsize: int
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.nbits, b=self.nbits)
+        return FancyRegisters.build(a=self.bitsize, b=self.bitsize)
 
     def pretty_name(self) -> str:
         return "a + b"
 
     def t_complexity(self):
-        num_clifford = (self.nbits - 2) * 19 + 16
-        num_t_gates = 4 * self.nbits - 4
+        num_clifford = (self.bitsize - 2) * 19 + 16
+        num_t_gates = 4 * self.bitsize - 4
         return t_complexity_protocol.TComplexity(t=num_t_gates, clifford=num_clifford)
 
 
@@ -45,11 +45,12 @@ class Square(Bloq):
     Implements $U|a\rangle|0\rangle -\rightarrow |a\rangle|a^2\rangle$ using $4n - 4 T$ gates.
 
     Args:
-        nbits: Number of bits used to represent the integer and .
+        bitsize: Number of bits used to represent the integer to be squared. The
+            result is stored in a register of size 2*bitsize.
 
     Registers:
-     - a: A nbit-sized input register (register a above).
-     - result: A 2-nbit-sized input/ouput register.
+     - a: A bitsize-sized input register (register a above).
+     - result: A 2-bitsize-sized input/ouput register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -57,18 +58,18 @@ class Square(Bloq):
         complexity for squaring.
     """
 
-    nbits: int
+    bitsize: int
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.nbits, result=2 * self.nbits)
+        return FancyRegisters.build(a=self.bitsize, result=2 * self.bitsize)
 
     def pretty_name(self) -> str:
         return "a^2"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
-        num_toff = self.nbits * (self.nbits - 1)
+        num_toff = self.bitsize * (self.bitsize - 1)
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
 
 
@@ -79,11 +80,11 @@ class SumOfSquares(Bloq):
     Implements $U|a\rangle|b\rangle...|k\rangle|0\rangle \rightarrow |a\rangle|b\rangle..|k\rangle|a^2+b^2+..k^2\rangle$ using $4 k n^2$ Ts.
 
     Args:
-        nbits: Number of bits used to represent each of the k integers.
+        bitsize: Number of bits used to represent each of the k integers.
 
     Registers:
      - a_k: k n-bit registers.
-     - result: 2 * nbits + 1 sized output register.
+     - result: 2 * bitsize + 1 sized output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -91,20 +92,20 @@ class SumOfSquares(Bloq):
         complexity for squaring.
     """
 
-    nbits: int
+    bitsize: int
     k: int
 
     @property
     def registers(self):
-        regs = {f"a_{i}": self.nbits for i in range(self.k)}
-        return FancyRegisters.build(**regs, result=2 * self.nbits + 1)
+        regs = {f"a_{i}": self.bitsize for i in range(self.k)}
+        return FancyRegisters.build(**regs, result=2 * self.bitsize + 1)
 
     def pretty_name(self) -> str:
         return "SOS"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
-        num_toff = self.k * self.nbits**2 - self.nbits
+        num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
@@ -118,13 +119,14 @@ class Product(Bloq):
     |a\rangle|b\rangle|ab\rangle$ using $2nm-n$ Toffolis.
 
     Args:
-        nbits: Number of bits used to represent the first integer.
+        bitsize: Number of bits used to represent the first integer.
         mbits: Number of bits used to represent the second integer.
 
     Registers:
-     - a: nbit-sized input registers.
+     - a: bitsize-sized input registers.
      - b: mbit-sized input registers.
-     - result: A 2nbit-sized ouput register (register b above).
+     - result: A 2nbit-sized output register (register b to be squared) The
+        result is stored in a register of size 2*bitsize..
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -132,13 +134,13 @@ class Product(Bloq):
         complexity for squaring.
     """
 
-    nbits: int
+    bitsize: int
     mbits: int
 
     @property
     def registers(self):
         return FancyRegisters.build(
-            a=self.nbits, b=self.mbits, result=2 * max(self.nbits, self.mbits)
+            a=self.bitsize, b=self.mbits, result=2 * max(self.bitsize, self.mbits)
         )
 
     def pretty_name(self) -> str:
@@ -146,7 +148,7 @@ class Product(Bloq):
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
-        num_toff = 2 * self.nbits * self.mbits - max(self.nbits, self.mbits)
+        num_toff = 2 * self.bitsize * self.mbits - max(self.bitsize, self.mbits)
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
 
 
@@ -159,27 +161,28 @@ class GreaterThan(Bloq):
 
 
     Args:
-        nbits: Number of bits used to represent the two integers a and b.
+        bitsize: Number of bits used to represent the two integers a and b.
 
     Registers:
      - a: n-bit-sized input registers.
      - b: n-bit-sized input registers.
-     - result: A nbit-sized ouput register (register b above).
+     - result: A bitsize-sized output register (register b to be squared) The
+        result is stored in a register of size 2*bitsize..
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
         Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5#additional-information),
         Comparison Oracle from SI: Appendix 2B (pg 3)
     """
-    nbits: int
+    bitsize: int
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.nbits, b=self.nbits, anc=1)
+        return FancyRegisters.build(a=self.bitsize, b=self.bitsize, anc=1)
 
     def pretty_name(self) -> str:
         return "a gt b"
 
     def t_complexity(self):
         # TODO actual gate implementation + determine cliffords.
-        return t_complexity_protocol.TComplexity(t=8 * self.nbits)
+        return t_complexity_protocol.TComplexity(t=8 * self.bitsize)
