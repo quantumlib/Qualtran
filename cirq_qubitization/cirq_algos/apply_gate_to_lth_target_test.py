@@ -11,7 +11,10 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     with cq.cirq_infra.memory_management_context(greedy_mm):
-        gate = cq.ApplyGateToLthQubit(selection_bitsize, target_bitsize, lambda _: cirq.X)
+        gate = cq.ApplyGateToLthQubit(
+            cq.SelectionRegisters.build(selection=(selection_bitsize, target_bitsize)),
+            lambda _: cirq.X,
+        )
         g = cq_testing.GateHelper(gate)
         # Upper bounded because not all ancillas may be used as part of unary iteration.
         assert (
@@ -28,7 +31,7 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
         qubit_vals |= zip(g.quregs['selection'], iter_bits(n, selection_bitsize))
 
         initial_state = [qubit_vals[x] for x in g.all_qubits]
-        qubit_vals[g.quregs['target'][-(n + 1)]] = 1
+        qubit_vals[g.quregs['target'][n]] = 1
         final_state = [qubit_vals[x] for x in g.all_qubits]
         cq_testing.assert_circuit_inp_out_cirqsim(
             g.decomposed_circuit, g.all_qubits, initial_state, final_state
@@ -37,7 +40,11 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
 
 def test_apply_gate_to_lth_qubit_diagram():
     # Apply Z gate to all odd targets and Identity to even targets.
-    gate = cq.ApplyGateToLthQubit(3, 5, lambda n: cirq.Z if n & 1 else cirq.I, control_bitsize=2)
+    gate = cq.ApplyGateToLthQubit(
+        cq.SelectionRegisters.build(selection=(3, 5)),
+        lambda n: cirq.Z if n & 1 else cirq.I,
+        control_regs=cq.Registers.build(control=2),
+    )
     circuit = cirq.Circuit(gate.on_registers(**gate.registers.get_named_qubits()))
     qubits = list(q for v in gate.registers.get_named_qubits().values() for q in v)
     cirq.testing.assert_has_diagram(
@@ -68,14 +75,19 @@ target4: ──────I────
 
 
 def test_apply_gate_to_lth_qubit_make_on():
-    gate = cq.ApplyGateToLthQubit(3, 5, lambda n: cirq.Z if n & 1 else cirq.I, control_bitsize=2)
+    gate = cq.ApplyGateToLthQubit(
+        cq.SelectionRegisters.build(selection=(3, 5)),
+        lambda n: cirq.Z if n & 1 else cirq.I,
+        control_regs=cq.Registers.build(control=2),
+    )
     op = gate.on_registers(**gate.registers.get_named_qubits())
     op2 = cq.ApplyGateToLthQubit.make_on(
         nth_gate=lambda n: cirq.Z if n & 1 else cirq.I, **gate.registers.get_named_qubits()
     )
     # Note: ApplyGateToLthQubit doesn't support value equality.
     assert op.qubits == op2.qubits
-    assert op.gate._selection_bitsize == op2.gate._selection_bitsize
+    assert op.gate.selection_regs == op2.gate.selection_regs
+    assert op.gate.control_regs == op2.gate.control_regs
 
 
 def test_notebook():

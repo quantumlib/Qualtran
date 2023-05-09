@@ -25,6 +25,7 @@ import cirq_qubitization.cirq_infra.testing as cq_testing
 
 def _make_ApplyGateToLthQubit():
     from cirq_qubitization.cirq_algos.apply_gate_to_lth_target import ApplyGateToLthQubit
+    from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
     def _z_to_odd(n: int):
         if n % 2 == 1:
@@ -32,7 +33,9 @@ def _make_ApplyGateToLthQubit():
         return cirq.I
 
     apply_z_to_odd = ApplyGateToLthQubit(
-        selection_bitsize=3, target_bitsize=4, nth_gate=_z_to_odd, control_bitsize=2
+        SelectionRegisters.build(selection=(3, 4)),
+        nth_gate=_z_to_odd,
+        control_regs=Registers.build(control=2),
     )
 
     return apply_z_to_odd

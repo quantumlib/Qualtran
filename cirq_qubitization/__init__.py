@@ -35,6 +35,7 @@ from cirq_qubitization.cirq_infra import (
     qfree,
     Register,
     Registers,
+    SelectionRegisters,
     SimpleQubitManager,
 )
 from cirq_qubitization.generic_select import GenericSelect

@@ -175,12 +175,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
     @cached_property
     def registers(self) -> cirq_infra.Registers:
         return cirq_infra.Registers(
-            [
-                *self.control_registers,
-                *self.selection_registers,
-                *self.target_registers,
-                *self.extra_registers,
-            ]
+            [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
     @cached_property
