@@ -140,3 +140,7 @@ class Free(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters([FancyRegister('free', bitsize=self.n, side=Side.LEFT)])
+
+    def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
+        assert free == 0, free
+        return {}

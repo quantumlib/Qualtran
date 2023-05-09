@@ -4,6 +4,7 @@ from typing import Any, Dict, Tuple, TYPE_CHECKING
 import attrs
 import numpy as np
 import quimb.tensor as qtn
+import sympy
 from attrs import frozen
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -179,6 +180,9 @@ class _IntVector(Bloq):
 
     @val.validator
     def check(self, attribute, val):
+        if isinstance(val, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            return
+
         if val < 0:
             raise ValueError("`val` must be positive")
 
