@@ -2,14 +2,14 @@ import abc
 import sys
 from typing import Dict, Iterable, List, overload, Sequence, Tuple, Union
 
+import attrs
 import cirq
 import numpy as np
-from attrs import frozen
 
 assert sys.version_info > (3, 6), "https://docs.python.org/3/whatsnew/3.6.html#whatsnew36-pep468"
 
 
-@frozen
+@attrs.frozen
 class Register:
     name: str
     bitsize: int
@@ -113,6 +113,16 @@ class Registers:
         return self._registers == other._registers
 
 
+@attrs.frozen
+class SelectionRegister(Register):
+    iteration_length: int = attrs.field()
+
+    @iteration_length.validator
+    def validate_iteration_length(self, attribute, value):
+        if not (0 <= value <= 2**self.bitsize):
+            raise ValueError(f'iteration length must be in range [0, 2^{self.bitsize}]')
+
+
 class SelectionRegisters(Registers):
     """Registers used to represent SELECT registers for various LCU methods.
 
@@ -122,18 +132,18 @@ class SelectionRegisters(Registers):
     on top of the regular `Registers` class:
 
     - For each selection register, we store the iteration length corresponding to that register
-        along with it's size.
+        along with its size.
     - We provide a default way of "flattening out" a composite index represented by a tuple of
         values stored in multiple input selection registers to a single integer that can be used
         to index a flat target register.
     """
 
-    def __init__(self, registers: Iterable[Register], iteration_lengths: Sequence[int]):
+    def __init__(self, registers: Iterable[SelectionRegister]):
         super().__init__(registers)
-        self.iteration_lengths = tuple(iteration_lengths)
+        self._registers = registers
+        self.iteration_lengths = tuple([reg.iteration_length for reg in registers])
         self._suffix_prod = np.multiply.accumulate(self.iteration_lengths[::-1])[::-1]
         self._suffix_prod = np.append(self._suffix_prod, [1])
-        assert all(2**reg.bitsize >= it_len for reg, it_len in zip(registers, iteration_lengths))
 
     def to_flat_idx(self, *selection_vals: int) -> int:
         """Flattens a composite index represented by a Tuple[int, ...] to a single output integer.
@@ -148,8 +158,8 @@ class SelectionRegisters(Registers):
         2) Similarly, we can flatten a 3D for-loop as follows
         >>> for x in range(N):
         >>>     for y in range(M):
-        >>>         for z in range(O):
-        >>>             flat_idx = x * M * O + y * O + z
+        >>>         for z in range(L):
+        >>>             flat_idx = x * M * L + y * L + z
 
         This is a general version of the mapping function described in Eq.45 of
         https://arxiv.org/abs/1805.03662
@@ -163,7 +173,12 @@ class SelectionRegisters(Registers):
 
     @classmethod
     def build(cls, **registers: Tuple[int, int]) -> 'SelectionRegisters':
-        return cls(*zip(*[(Register(name=k, bitsize=v[0]), v[1]) for k, v in registers.items()]))
+        return cls(
+            [
+                SelectionRegister(name=k, bitsize=v[0], iteration_length=v[1])
+                for k, v in registers.items()
+            ]
+        )
 
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
