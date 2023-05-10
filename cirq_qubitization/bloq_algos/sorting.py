@@ -42,6 +42,7 @@ class Comparator(Bloq):
     def t_complexity(self):
         # complexity is from less than on two n qubit numbers + controlled swap
         # Hard code for now until CSwap-Bloq is merged.
+        # Issue #219
         t_complexity = GreaterThan(self.nbits).t_complexity()
         t_complexity += t_complexity_protocol.TComplexity(t=14 * self.nbits)
         return t_complexity
@@ -51,8 +52,8 @@ class Comparator(Bloq):
 class BitonicSort(Bloq):
     r"""Sort k n-bit numbers.
 
-    TODO: actually implement the algorithm using comapritor Hiding ancilla cost
-        for the moment.
+    TODO: actually implement the algorithm using comparitor. Hiding ancilla cost
+        for the moment. Issue #219
 
     Args:
         nbits: Number of bits used to represent each integer.
@@ -81,7 +82,8 @@ class BitonicSort(Bloq):
 
     def t_complexity(self):
         # Need k * log^2(k) comparisons.
-        # TODO: This is Big-O complexity?
+        # TODO: This is Big-O complexity. Should work out constant factors or
+        # revert to sympy. Issue #219
         return (
             self.k
             * int(np.ceil(max(np.log2(self.k) ** 2.0, 1)))
