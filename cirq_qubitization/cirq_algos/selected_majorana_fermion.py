@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Sequence
 
 import cirq
 from attrs import frozen

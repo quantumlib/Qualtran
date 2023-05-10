@@ -2,9 +2,9 @@ import abc
 from functools import cached_property
 
 from cirq_qubitization.cirq_infra.gate_with_registers import (
-    SelectionRegisters,
-    Registers,
     GateWithRegisters,
+    Registers,
+    SelectionRegisters,
 )
 
 
