@@ -77,6 +77,6 @@ def test_greater_than():
     bitsize = 5
     q0 = bb.add_register('a', bitsize)
     q1 = bb.add_register('b', bitsize)
-    anc = bb.add_register('anc', 1)
-    q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, anc=anc)
-    cbloq = bb.finalize(a=q0, b=q1, anc=anc)
+    anc = bb.add_register('result', 1)
+    q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, result=anc)
+    cbloq = bb.finalize(a=q0, b=q1, result=anc)
