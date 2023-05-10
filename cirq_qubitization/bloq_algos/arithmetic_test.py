@@ -24,7 +24,7 @@ def _make_sum_of_squares():
 def _make_product():
     from cirq_qubitization.bloq_algos.arithmetic import Product
 
-    return Product(bitsize=4, mbits=6)
+    return Product(a_bitsize=4, b_bitsize=6)
 
 
 def _make_greater_than():
