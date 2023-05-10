@@ -2,6 +2,7 @@ import pytest
 
 from cirq_qubitization.bloq_algos.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 
 
 def _make_add():
@@ -41,8 +42,6 @@ def test_add():
     q1 = bb.add_register('b', bitsize)
     a, b = bb.add(Add(bitsize), a=q0, b=q1)
     cbloq = bb.finalize(a=a, b=b)
-    with pytest.raises(NotImplementedError):
-        cbloq.decompose_bloq()
 
 
 def test_square():
@@ -52,21 +51,16 @@ def test_square():
     q1 = bb.add_register('result', 2 * bitsize)
     q0, q1 = bb.add(Square(bitsize), a=q0, result=q1)
     cbloq = bb.finalize(a=q0, result=q1)
-    with pytest.raises(NotImplementedError):
-        cbloq.decompose_bloq()
 
 
 def test_sum_of_squares():
     bb = CompositeBloqBuilder()
     bitsize = 4
     k = 3
-    regs = {f'a_{i}': bb.add_register(f'a_{i}', bitsize) for i in range(k)}
-    regs['result'] = bb.add_register('result', 2 * bitsize + 1)
-    out = bb.add(SumOfSquares(bitsize, k), **regs)
-    regs = {k: v for k, v in zip(regs.keys(), out)}
-    cbloq = bb.finalize(**regs)
-    with pytest.raises(NotImplementedError):
-        cbloq.decompose_bloq()
+    inp = bb.add_register(FancyRegister("input", bitsize=bitsize, wireshape=(k,)))
+    out = bb.add_register(FancyRegister("result", bitsize=2*bitsize+1))
+    inp, out = bb.add(SumOfSquares(bitsize, k), input=inp, result=out)
+    cbloq = bb.finalize(input=inp, result=out)
 
 
 def test_product():
@@ -78,8 +72,6 @@ def test_product():
     q2 = bb.add_register('result', 2 * max(bitsize, mbits))
     q0, q1, q2 = bb.add(Product(bitsize, mbits), a=q0, b=q1, result=q2)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
-    with pytest.raises(NotImplementedError):
-        cbloq.decompose_bloq()
 
 
 def test_greater_than():
@@ -90,5 +82,3 @@ def test_greater_than():
     anc = bb.add_register('anc', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, anc=anc)
     cbloq = bb.finalize(a=q0, b=q1, anc=anc)
-    with pytest.raises(NotImplementedError):
-        cbloq.decompose_bloq()

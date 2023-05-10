@@ -84,6 +84,7 @@ class SumOfSquares(Bloq):
 
     Args:
         bitsize: Number of bits used to represent each of the k integers.
+        k: The number of integers we want to square.
 
     Registers:
      - input: k n-bit registers.
