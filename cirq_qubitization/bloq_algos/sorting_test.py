@@ -1,7 +1,6 @@
 import pytest
 
 from cirq_qubitization.bloq_algos.sorting import BitonicSort, Comparator
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 
 
 def _make_comparator():

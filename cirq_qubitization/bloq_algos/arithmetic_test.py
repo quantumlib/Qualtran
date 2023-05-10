@@ -1,8 +1,6 @@
-import pytest
-
 from cirq_qubitization.bloq_algos.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister
 
 
 def _make_add():
