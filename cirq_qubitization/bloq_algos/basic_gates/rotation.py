@@ -21,10 +21,10 @@ class Rz(Bloq):
         - q: One-bit register.
 
     References:
-        (Efficient synthesis of universal Repeat-Until-Success circuits)
-        [https://arxiv.org/abs/1404.5320], which offers a small improvement
-        (Optimal ancilla-free Clifford+T approximation of z-rotations)
-        [https://arxiv.org/pdf/1403.2975.pdf].
+        [Efficient synthesis of universal Repeat-Until-Success
+        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        [Optimal ancilla-free Clifford+T approximation
+        of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
     angle: float

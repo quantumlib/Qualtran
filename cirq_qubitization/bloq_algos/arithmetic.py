@@ -2,7 +2,7 @@ from attrs import frozen
 
 from cirq_qubitization import t_complexity_protocol
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 
 
 @frozen
@@ -79,7 +79,8 @@ class SumOfSquares(Bloq):
     r"""Compute the sum of squares of k n-bit numbers.
 
     Implements $U|a\rangle|b\rangle\dots k\rangle|0\rangle \rightarrow
-        |a\rangle|b\rangle\dots|k\rangle|a^2+b^2+\dotsk^2\rangle$ using $4 k n^2 T$ gates.
+        |a\rangle|b\rangle\dots|k\rangle|a^2+b^2+\dots k^2\rangle$ using
+        $4 k n^2 T$ gates.
 
     Args:
         bitsize: Number of bits used to represent each of the k integers.
@@ -175,7 +176,7 @@ class GreaterThan(Bloq):
      - a: n-bit-sized input registers.
      - b: n-bit-sized input registers.
      - result: A bitsize-sized output register (register b to be squared) The
-        result is stored in a register of size 2*bitsize..
+        result is stored in a register of size 2*bitsize.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
@@ -189,7 +190,7 @@ class GreaterThan(Bloq):
         return FancyRegisters.build(a=self.bitsize, b=self.bitsize, anc=1)
 
     def pretty_name(self) -> str:
-        return "a > b"
+        return "a gt b"
 
     def t_complexity(self):
         # TODO Determine precise clifford count and/or ignore.

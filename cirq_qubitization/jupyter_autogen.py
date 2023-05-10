@@ -41,6 +41,7 @@ from sphinx.ext.napoleon import Config, GoogleDocstring
 import cirq_qubitization.bloq_algos.and_bloq_test
 import cirq_qubitization.bloq_algos.arithmetic_test
 import cirq_qubitization.bloq_algos.basic_gates.cnot_test
+import cirq_qubitization.bloq_algos.basic_gates.rotation_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.bloq_algos.sorting_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
@@ -158,6 +159,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         gate_specs=[
             BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.cnot_test._make_CNOT),
             BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.x_basis_test._make_plus_state),
+            BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.rotation_test._make_Rz),
         ],
         directory='./bloq_algos',
     ),

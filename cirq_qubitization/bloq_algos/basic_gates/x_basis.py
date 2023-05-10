@@ -140,6 +140,10 @@ class XGate(Bloq):
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
         return {'q': (q + 1) % 2}
 
+    def pretty_name(self) -> str:
+        s = self.short_name()
+        return f'|{s}>' if self.state else f'<{s}|'
+
     def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
