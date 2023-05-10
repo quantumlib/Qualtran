@@ -58,7 +58,7 @@ def test_sum_of_squares():
     bitsize = 4
     k = 3
     inp = bb.add_register(FancyRegister("input", bitsize=bitsize, wireshape=(k,)))
-    out = bb.add_register(FancyRegister("result", bitsize=2*bitsize+1))
+    out = bb.add_register(FancyRegister("result", bitsize=2 * bitsize + 1))
     inp, out = bb.add(SumOfSquares(bitsize, k), input=inp, result=out)
     cbloq = bb.finalize(input=inp, result=out)
 

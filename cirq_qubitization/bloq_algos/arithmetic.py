@@ -101,10 +101,12 @@ class SumOfSquares(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters([
-            FancyRegister("input", bitsize=self.bitsize, wireshape=(self.k,)),
-            FancyRegister("result", bitsize=2*self.bitsize+1),
-        ])
+        return FancyRegisters(
+            [
+                FancyRegister("input", bitsize=self.bitsize, wireshape=(self.k,)),
+                FancyRegister("result", bitsize=2 * self.bitsize + 1),
+            ]
+        )
 
     def short_name(self) -> str:
         return "SOS"

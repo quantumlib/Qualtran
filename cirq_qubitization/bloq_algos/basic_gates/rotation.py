@@ -43,9 +43,7 @@ class Rz(Bloq):
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
         return t_complexity_protocol.TComplexity(t=num_t)
 
-    def as_cirq_op(
-        self, q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q
@@ -54,9 +52,7 @@ class Rz(Bloq):
 
 @frozen
 class Rx(Rz):
-    def as_cirq_op(
-        self, q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q
@@ -65,9 +61,7 @@ class Rx(Rz):
 
 @frozen
 class Ry(Rz):
-    def as_cirq_op(
-        self, q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q

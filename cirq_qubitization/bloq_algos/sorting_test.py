@@ -17,7 +17,7 @@ def _make_bitonic_sort():
 
 
 def test_comparator():
-    bloq = Comparator(4) 
+    bloq = Comparator(4)
     assert bloq.t_complexity().t == 88
     with pytest.raises(NotImplementedError):
         bloq.decompose_bloq()
