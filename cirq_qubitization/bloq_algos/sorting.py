@@ -17,7 +17,7 @@ class Comparator(Bloq):
     swapped if a > b. Forms the base primitive for sorting.
 
     Args:
-        nbits: Number of bits used to represent each integer.
+        bitsize: Number of bits used to represent each integer.
 
     Registers:
      - a: A nbit-sized input register (register a above).
@@ -30,14 +30,14 @@ class Comparator(Bloq):
         Fig. 1. in main text.
     """
 
-    nbits: int
+    bitsize: int
 
     @property
     def registers(self):
         return FancyRegisters(
             [
-                FancyRegister('a', 1, wireshape=(self.nbits,)),
-                FancyRegister('b', 1, wireshape=(self.nbits,)),
+                FancyRegister('a', 1, wireshape=(self.bitsize,)),
+                FancyRegister('b', 1, wireshape=(self.bitsize,)),
                 FancyRegister('out', 1, side=Side.RIGHT),
             ]
         )
@@ -49,8 +49,8 @@ class Comparator(Bloq):
         # complexity is from less than on two n qubit numbers + controlled swap
         # Hard code for now until CSwap-Bloq is merged.
         # Issue #219
-        t_complexity = GreaterThan(self.nbits).t_complexity()
-        t_complexity += t_complexity_protocol.TComplexity(t=14 * self.nbits)
+        t_complexity = GreaterThan(self.bitsize).t_complexity()
+        t_complexity += t_complexity_protocol.TComplexity(t=14 * self.bitsize)
         return t_complexity
 
 
@@ -62,7 +62,7 @@ class BitonicSort(Bloq):
         for the moment. Issue #219
 
     Args:
-        nbits: Number of bits used to represent each integer.
+        bitsize: Number of bits used to represent each integer.
         k: Number of integers to sort.
 
     Registers:
@@ -75,12 +75,12 @@ class BitonicSort(Bloq):
         Supporting Information Sec. II.
     """
 
-    nbits: int
+    bitsize: int
     k: int
 
     @property
     def registers(self):
-        return FancyRegisters([FancyRegister("input", bitsize=self.nbits, wireshape=(self.nbits,))])
+        return FancyRegisters([FancyRegister("input", bitsize=self.bitsize, wireshape=(self.bitsize,))])
 
     def pretty_name(self) -> str:
         return "BitonicSort"
@@ -95,5 +95,5 @@ class BitonicSort(Bloq):
         return (
             self.k
             * int(np.ceil(max(np.log2(self.k) ** 2.0, 1)))
-            * Comparator(self.nbits).t_complexity()
+            * Comparator(self.bitsize).t_complexity()
         )
