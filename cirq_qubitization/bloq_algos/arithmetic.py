@@ -126,17 +126,17 @@ class Product(Bloq):
     r"""Compute the product of an `n` and `m` bit integer.
 
     Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
-    |a\rangle|b\rangle|ab\rangle$ using $2nm-n$ Toffolis.
+    |a\rangle|b\rangle|a\times b\rangle$ using $2nm-n$ Toffolis.
 
     Args:
-        bitsize: Number of bits used to represent the first integer.
-        mbits: Number of bits used to represent the second integer.
+        a_bitsize: Number of bits used to represent the first integer.
+        b_bitsize: Number of bits used to represent the second integer.
 
     Registers:
-     - a: bitsize-sized input registers.
-     - b: mbit-sized input registers.
-     - result: A 2nbit-sized output register (register b to be squared). The
-        result is stored in a register of size 2*bitsize.
+     - a: a_bitsize-sized input register.
+     - b: b_bitsize-sized input register.
+     - result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store
+        the result a*b.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -144,13 +144,13 @@ class Product(Bloq):
         complexity for multiplying two numbers.
     """
 
-    bitsize: int
-    mbits: int
+    a_bitsize: int
+    b_bitsize: int
 
     @property
     def registers(self):
         return FancyRegisters.build(
-            a=self.bitsize, b=self.mbits, result=2 * max(self.bitsize, self.mbits)
+            a=self.a_bitsize, b=self.b_bitsize, result=2 * max(self.a_bitsize, self.b_bitsize)
         )
 
     def pretty_name(self) -> str:
@@ -160,7 +160,7 @@ class Product(Bloq):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        num_toff = 2 * self.bitsize * self.mbits - max(self.bitsize, self.mbits)
+        num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
 
 
@@ -178,8 +178,7 @@ class GreaterThan(Bloq):
     Registers:
      - a: n-bit-sized input registers.
      - b: n-bit-sized input registers.
-     - result: A bitsize-sized output register (register b to be squared) The
-        result is stored in a register of size 2*bitsize.
+     - result: A single bit output register to store the result of A > B.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
@@ -190,7 +189,7 @@ class GreaterThan(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters.build(a=self.bitsize, b=self.bitsize, anc=1)
+        return FancyRegisters.build(a=self.bitsize, b=self.bitsize, result=1)
 
     def pretty_name(self) -> str:
         return "a gt b"
