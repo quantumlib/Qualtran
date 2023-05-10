@@ -42,7 +42,7 @@ class Add(Bloq):
 class Square(Bloq):
     r"""Square an n-bit number.
 
-    Implements $U|a\rangle|0\rangle -\rightarrow |a\rangle|a^2\rangle$ using $4n - 4 T$ gates.
+    Implements $U|a\rangle|0\rangle \rightarrow |a\rangle|a^2\rangle$ using $4n - 4 T$ gates.
 
     Args:
         bitsize: Number of bits used to represent the integer to be squared. The
