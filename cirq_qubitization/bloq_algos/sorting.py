@@ -82,9 +82,6 @@ class BitonicSort(Bloq):
     def registers(self):
         return FancyRegisters([FancyRegister("input", bitsize=self.bitsize, wireshape=(self.bitsize,))])
 
-    def pretty_name(self) -> str:
-        return "BitonicSort"
-
     def short_name(self) -> str:
         return "BSort"
 
