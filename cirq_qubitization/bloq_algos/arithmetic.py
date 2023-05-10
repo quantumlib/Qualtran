@@ -67,7 +67,9 @@ class Square(Bloq):
         return "a^2"
 
     def t_complexity(self):
-        # TODO actual gate implementation + determine cliffords.
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = self.bitsize * (self.bitsize - 1)
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
 
@@ -76,13 +78,14 @@ class Square(Bloq):
 class SumOfSquares(Bloq):
     r"""Compute the sum of squares of k n-bit numbers.
 
-    Implements $U|a\rangle|b\rangle...|k\rangle|0\rangle \rightarrow |a\rangle|b\rangle..|k\rangle|a^2+b^2+..k^2\rangle$ using $4 k n^2$ Ts.
+    Implements $U|a\rangle|b\rangle\dots k\rangle|0\rangle \rightarrow
+        |a\rangle|b\rangle\dots|k\rangle|a^2+b^2+\dotsk^2\rangle$ using $4 k n^2 T$ gates.
 
     Args:
         bitsize: Number of bits used to represent each of the k integers.
 
     Registers:
-     - a_k: k n-bit registers.
+     - input: k n-bit registers.
      - result: 2 * bitsize + 1 sized output register.
 
     References:
@@ -96,14 +99,18 @@ class SumOfSquares(Bloq):
 
     @property
     def registers(self):
-        regs = {f"a_{i}": self.bitsize for i in range(self.k)}
-        return FancyRegisters.build(**regs, result=2 * self.bitsize + 1)
+        return FancyRegisters([
+            FancyRegister("input", bitsize=self.bitsize, wireshape=(self.k,)),
+            FancyRegister("result", bitsize=2*self.bitsize+1),
+        ])
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "SOS"
 
     def t_complexity(self):
-        # TODO actual gate implementation + determine cliffords.
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
@@ -112,7 +119,7 @@ class SumOfSquares(Bloq):
 
 @frozen
 class Product(Bloq):
-    r"""Compute the product of an `n` an `m` bit integer.
+    r"""Compute the product of an `n` and `m` bit integer.
 
     Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
     |a\rangle|b\rangle|ab\rangle$ using $2nm-n$ Toffolis.
@@ -124,13 +131,13 @@ class Product(Bloq):
     Registers:
      - a: bitsize-sized input registers.
      - b: mbit-sized input registers.
-     - result: A 2nbit-sized output register (register b to be squared) The
-        result is stored in a register of size 2*bitsize..
+     - result: A 2nbit-sized output register (register b to be squared). The
+        result is stored in a register of size 2*bitsize.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
-        Quantization](https://arxiv.org/abs/2105.12767) pg 81 give a Toffoli
-        complexity for squaring.
+        Quantization](https://arxiv.org/abs/2105.12767) pg 81 gives a Toffoli
+        complexity for multiplying two numbers.
     """
 
     bitsize: int
@@ -146,14 +153,16 @@ class Product(Bloq):
         return "a*b"
 
     def t_complexity(self):
-        # TODO actual gate implementation + determine cliffords.
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = 2 * self.bitsize * self.mbits - max(self.bitsize, self.mbits)
         return t_complexity_protocol.TComplexity(t=4 * num_toff)
 
 
 @frozen
 class GreaterThan(Bloq):
-    r"""Compare to n-bit integers.
+    r"""Compare two n-bit integers.
 
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
@@ -180,8 +189,10 @@ class GreaterThan(Bloq):
         return FancyRegisters.build(a=self.bitsize, b=self.bitsize, anc=1)
 
     def pretty_name(self) -> str:
-        return "a gt b"
+        return "a > b"
 
     def t_complexity(self):
-        # TODO actual gate implementation + determine cliffords.
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         return t_complexity_protocol.TComplexity(t=8 * self.bitsize)
