@@ -36,7 +36,7 @@ def test_alt_keep_qrom():
     # QROM data output
     g = cq_testing.GateHelper(qrom)
 
-    for selection_integer in range(qrom.iteration_length):
+    for selection_integer in range(n):
         qubit_vals = {x: 0 for x in g.all_qubits}
         qubit_vals |= zip(
             g.quregs['selection'], iter_bits(selection_integer, g.r['selection'].bitsize)

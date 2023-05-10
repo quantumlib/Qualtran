@@ -4,7 +4,11 @@ from typing import Any, Sequence
 import cirq
 
 from cirq_qubitization.cirq_algos import multi_control_multi_target_pauli
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import (
+    GateWithRegisters,
+    Registers,
+    SelectionRegisters,
+)
 from cirq_qubitization.t_complexity_protocol import TComplexity
 
 
@@ -144,8 +148,10 @@ class SwapWithZeroGate(GateWithRegisters):
         self._n_target_registers = n_target_registers
 
     @cached_property
-    def selection_registers(self) -> Registers:
-        return Registers.build(selection=self._selection_bitsize)
+    def selection_registers(self) -> SelectionRegisters:
+        return SelectionRegisters.build(
+            selection=(self._selection_bitsize, self._n_target_registers)
+        )
 
     @cached_property
     def target_registers(self) -> Registers:

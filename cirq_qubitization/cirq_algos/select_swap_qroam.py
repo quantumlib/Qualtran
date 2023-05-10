@@ -120,8 +120,10 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
         self._data = tuple(tuple(d) for d in data)
 
     @cached_property
-    def selection_registers(self) -> cirq_infra.Registers:
-        return cirq_infra.Registers.build(selection=self.selection_q + self.selection_r)
+    def selection_registers(self) -> cirq_infra.SelectionRegisters:
+        return cirq_infra.SelectionRegisters.build(
+            selection=(self.selection_q + self.selection_r, self._iteration_length)
+        )
 
     @cached_property
     def target_registers(self) -> cirq_infra.Registers:
@@ -133,10 +135,6 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
     @cached_property
     def registers(self) -> cirq_infra.Registers:
         return cirq_infra.Registers([*self.selection_registers, *self.target_registers])
-
-    @cached_property
-    def iteration_length(self) -> int:
-        return self._iteration_length
 
     @property
     def data(self) -> Tuple[Tuple[int, ...], ...]:

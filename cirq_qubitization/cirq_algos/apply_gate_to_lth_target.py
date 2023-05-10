@@ -1,6 +1,6 @@
 import itertools
 from functools import cached_property
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence
 
 import cirq
 from attrs import frozen
@@ -54,10 +54,6 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     @cached_property
     def target_registers(self) -> Registers:
         return Registers.build(target=self.selection_registers.total_iteration_size)
-
-    @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return self.selection_registers.iteration_lengths
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_registers.bitsize

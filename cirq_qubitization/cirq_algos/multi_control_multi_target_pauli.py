@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Sequence
+from typing import Iterator, Sequence
 
 import cirq
 import numpy as np
@@ -55,38 +55,46 @@ class MultiControlPauli(GateWithRegisters):
         (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
     """
 
-    def __init__(self, num_controls: int, *, target_gate: cirq.Pauli = cirq.X):
-        self._num_controls = num_controls
+    def __init__(self, cv: Iterator[int], *, target_gate: cirq.Pauli = cirq.X):
+        self._cv = tuple(cv)
         self._target_gate = target_gate
 
     @cached_property
     def registers(self) -> Registers:
-        return Registers.build(controls=self._num_controls, target=1)
+        return Registers.build(controls=len(self._cv), target=1)
 
     def decompose_from_registers(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
+        pre_post_x = [cirq.X(controls[i]) for i, b in enumerate(self._cv) if not b]
         if len(controls) == 2:
-            return self._target_gate(*target).controlled_by(*controls)
+            return [pre_post_x, self._target_gate(*target).controlled_by(*controls), pre_post_x]
         anc = qubit_manager.qborrow(len(controls) - 2)
         ops = [cirq.CCNOT(anc[-i], controls[-i], anc[-i + 1]) for i in range(2, len(anc) + 1)]
         inverted_v_ladder = ops + [cirq.CCNOT(*controls[:2], anc[0])] + ops[::-1]
 
+        yield pre_post_x
         yield self._target_gate(*target).controlled_by(anc[-1], controls[-1])
         yield inverted_v_ladder
         yield self._target_gate(*target).controlled_by(anc[-1], controls[-1])
         yield inverted_v_ladder
+        yield pre_post_x
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        return cirq.CircuitDiagramInfo(
-            wire_symbols=["@"] * self._num_controls + [str(self._target_gate)]
-        )
+        wire_symbols = ["@" if b else "@(0)" for b in self._cv]
+        wire_symbols += [str(self._target_gate)]
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _t_complexity_(self) -> TComplexity:
         toffoli_complexity = t_complexity(cirq.CCNOT)
         controlled_pauli_complexity = t_complexity(self._target_gate.controlled(2))
-        return (4 * self._num_controls - 10) * toffoli_complexity + 2 * controlled_pauli_complexity
+        pre_post_x_complexity = (len(self._cv) - sum(self._cv)) * t_complexity(cirq.X)
+        return (
+            (4 * len(self._cv) - 10) * toffoli_complexity
+            + 2 * controlled_pauli_complexity
+            + 2 * pre_post_x_complexity
+        )
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
-        return cirq.apply_unitary(self._target_gate.controlled(self._num_controls), args)
+        return cirq.apply_unitary(self._target_gate.controlled(control_values=self._cv), args)
 
     def _has_unitary_(self) -> bool:
         return True

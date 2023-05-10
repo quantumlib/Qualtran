@@ -112,6 +112,9 @@ class Registers:
     def __eq__(self, other) -> bool:
         return self._registers == other._registers
 
+    def __hash__(self):
+        return hash(self._registers)
+
 
 @attrs.frozen
 class SelectionRegister(Register):
@@ -179,6 +182,28 @@ class SelectionRegisters(Registers):
                 for k, v in registers.items()
             ]
         )
+
+    @overload
+    def __getitem__(self, key: int) -> SelectionRegister:
+        pass
+
+    @overload
+    def __getitem__(self, key: str) -> SelectionRegister:
+        pass
+
+    @overload
+    def __getitem__(self, key: slice) -> SelectionRegister:
+        pass
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return SelectionRegisters(self._registers[key])
+        elif isinstance(key, int):
+            return self._registers[key]
+        elif isinstance(key, str):
+            return self._register_dict[key]
+        else:
+            raise IndexError(f"key {key} must be of the type str/int/slice.")
 
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
