@@ -33,7 +33,7 @@ in both the PREPARE and SELECT operations corresponding to the terms in the Hami
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
 from functools import cached_property
-from typing import Sequence, Optional, Union, Collection, Tuple
+from typing import Collection, Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -41,15 +41,15 @@ from attrs import frozen
 
 from cirq_qubitization import cirq_infra
 from cirq_qubitization.cirq_algos import (
+    AddMod,
+    And,
     ApplyGateToLthQubit,
     MultiTargetCSwap,
-    SelectedMajoranaFermionGate,
-    PrepareUniformSuperposition,
-    And,
-    AddMod,
-    QubitizationWalkOperator,
-    SelectOracle,
     PrepareOracle,
+    PrepareUniformSuperposition,
+    QubitizationWalkOperator,
+    SelectedMajoranaFermionGate,
+    SelectOracle,
 )
 from cirq_qubitization.cirq_infra import Registers, SelectionRegisters
 
@@ -142,7 +142,7 @@ class SelectHubbard(SelectOracle):
         q_y: Sequence[cirq.Qid],
         beta: Sequence[cirq.Qid],
         target: Sequence[cirq.Qid],
-        control: Sequence[cirq.Qid] = [],
+        control: Sequence[cirq.Qid] = (),
     ) -> cirq.OP_TREE:
         # (control, U, V, alpha, beta) = (*control, *U, *V, *alpha, *beta)
 
