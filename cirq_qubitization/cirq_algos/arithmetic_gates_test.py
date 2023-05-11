@@ -132,6 +132,35 @@ def test_add(a, b, num_bits):
     )
 
 
+@pytest.mark.parametrize('bitsize', [3])
+@pytest.mark.parametrize('mod', [5, 8])
+@pytest.mark.parametrize('add_val', [1, 2])
+@pytest.mark.parametrize('cv', [[], [0, 1], [1, 0], [1, 1]])
+def test_add_mod_n(bitsize, mod, add_val, cv):
+    gate = cirq_qubitization.AddMod(bitsize, mod, add_val=add_val, cv=cv)
+    maps = {}
+    num_cvs = len(cv)
+    for x in range(2**bitsize):
+        y = (x + add_val) % mod if x < mod else x
+        if not num_cvs:
+            maps[x] = y
+            continue
+        for cb in range(2**num_cvs):
+            input = f'0b_{cb:0{num_cvs}b}_{x:0{bitsize}b}'
+            if tuple(int(x) for x in f'{cb:0{num_cvs}b}') == tuple(cv):
+                output = f'0b_{cb:0{num_cvs}b}_{y:0{bitsize}b}'
+                maps[int(input, 2)] = int(output, 2)
+            else:
+                maps[int(input, 2)] = int(input, 2)
+
+    num_qubits = gate.num_qubits()
+    op = gate.on(*cirq.LineQubit.range(num_qubits))
+    circuit = cirq.Circuit(op)
+    cirq.testing.assert_equivalent_computational_basis_map(maps, circuit)
+    circuit += op**-1
+    cirq.testing.assert_equivalent_computational_basis_map(identity_map(num_qubits), circuit)
+
+
 def test_add_truncated():
     num_bits = 3
     num_anc = num_bits - 1

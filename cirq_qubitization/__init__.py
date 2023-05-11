@@ -1,5 +1,6 @@
 from cirq_qubitization.alt_keep_qrom import construct_alt_keep_qrom
 from cirq_qubitization.cirq_algos import (
+    AddMod,
     And,
     ApplyGateToLthQubit,
     ContiguousRegisterGate,

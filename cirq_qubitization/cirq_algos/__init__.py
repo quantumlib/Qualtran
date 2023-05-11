@@ -1,6 +1,7 @@
 from cirq_qubitization.cirq_algos.and_gate import And
 from cirq_qubitization.cirq_algos.apply_gate_to_lth_target import ApplyGateToLthQubit
 from cirq_qubitization.cirq_algos.arithmetic_gates import (
+    AddMod,
     ContiguousRegisterGate,
     LessThanEqualGate,
     LessThanGate,

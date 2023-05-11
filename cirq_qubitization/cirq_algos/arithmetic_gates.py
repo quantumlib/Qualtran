@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence, Union
+from typing import Collection, Iterable, Optional, Sequence, Tuple, Union
 
 import cirq
 
@@ -106,6 +106,64 @@ class LessThanGate(cirq.ArithmeticGate):
         return t_complexity_protocol.TComplexity(
             t=4 * n, clifford=15 * n + 3 * self._val.bit_count() + 2
         )
+
+
+class AddMod(cirq.ArithmeticGate):
+    """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.
+
+    Applies modular addition to input register `|x>` given parameters `mod` and `add_val` s.t.
+        1) If integer `x` < `mod`: output is `|(x + add) % M>`
+        2) If integer `x` >= `mod`: output is `|x>`.
+
+    This condition is needed to ensure that the mapping of all input basis states (i.e. input
+    states |0>, |1>, ..., |2 ** bitsize - 1) to corresponding output states is bijective and thus
+    the gate is reversible.
+
+    Also supports controlled version of the gate by specifying a per qubit control value as a tuple
+    of integers passed as `cv`.
+    """
+
+    def __init__(self, bitsize: int, mod: int, *, add_val: int = 1, cv: Sequence[int] = ()) -> None:
+        self._mod = mod
+        self._add_val = add_val
+        self._bitsize = bitsize
+        self._cv = tuple(cv)
+
+    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        add_reg = (2,) * self._bitsize
+        control_reg = (2,) * len(self._cv)
+        return (control_reg, add_reg) if control_reg else (add_reg,)
+
+    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "AddMod":
+        raise NotImplementedError()
+
+    def apply(self, *args) -> Union[int, Iterable[int]]:
+        target_val = args[-1]
+        if target_val < self._mod:
+            new_target_val = (target_val + self._add_val) % self._mod
+        else:
+            new_target_val = target_val
+        if self._cv and args[0] != int(''.join(str(x) for x in self._cv), 2):
+            new_target_val = target_val
+        ret = (args[0], new_target_val) if self._cv else (new_target_val,)
+        print(args, ret)
+        return ret
+
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ['@' if b else '@(0)' for b in self._cv]
+        wire_symbols += [f"Add_{self._add_val}_Mod_{self._mod}"] * self._bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __pow__(self, power: int):
+        if power == 1:
+            return self
+        if power == -1:
+            return AddMod(self._bitsize, self._mod, add_val=-self._add_val, cv=self._cv)
+        return NotImplemented
+
+    def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
+        # Rough cost as given in https://arxiv.org/abs/1905.09749
+        return 5 * t_complexity_protocol.t_complexity(AdditionGate(self._bitsize))
 
 
 class LessThanEqualGate(cirq.ArithmeticGate):
