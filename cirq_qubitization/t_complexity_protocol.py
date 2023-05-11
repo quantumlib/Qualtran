@@ -28,9 +28,9 @@ class TComplexity:
 
     def __str__(self) -> str:
         return (
-            f'T-count:   {self.t:e}\n'
-            f'Rotations: {self.rotations:e}\n'
-            f'Cliffords: {self.clifford:e}\n'
+            f'T-count:   {self.t:g}\n'
+            f'Rotations: {self.rotations:g}\n'
+            f'Cliffords: {self.clifford:g}\n'
         )
 
 
