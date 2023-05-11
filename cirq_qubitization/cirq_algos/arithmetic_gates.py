@@ -1,4 +1,4 @@
-from typing import Collection, Iterable, Optional, Sequence, Tuple, Union
+from typing import Iterable, Sequence, Union
 
 import cirq
 
@@ -146,7 +146,6 @@ class AddMod(cirq.ArithmeticGate):
         if self._cv and args[0] != int(''.join(str(x) for x in self._cv), 2):
             new_target_val = target_val
         ret = (args[0], new_target_val) if self._cv else (new_target_val,)
-        print(args, ret)
         return ret
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:

@@ -146,12 +146,12 @@ def test_add_mod_n(bitsize, mod, add_val, cv):
             maps[x] = y
             continue
         for cb in range(2**num_cvs):
-            input = f'0b_{cb:0{num_cvs}b}_{x:0{bitsize}b}'
+            inp = f'0b_{cb:0{num_cvs}b}_{x:0{bitsize}b}'
             if tuple(int(x) for x in f'{cb:0{num_cvs}b}') == tuple(cv):
-                output = f'0b_{cb:0{num_cvs}b}_{y:0{bitsize}b}'
-                maps[int(input, 2)] = int(output, 2)
+                out = f'0b_{cb:0{num_cvs}b}_{y:0{bitsize}b}'
+                maps[int(inp, 2)] = int(out, 2)
             else:
-                maps[int(input, 2)] = int(input, 2)
+                maps[int(inp, 2)] = int(inp, 2)
 
     num_qubits = gate.num_qubits()
     op = gate.on(*cirq.LineQubit.range(num_qubits))
