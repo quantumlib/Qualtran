@@ -143,7 +143,6 @@ class SelectionRegisters(Registers):
 
     def __init__(self, registers: Iterable[SelectionRegister]):
         super().__init__(registers)
-        self._registers = registers
         self.iteration_lengths = tuple([reg.iteration_length for reg in registers])
         self._suffix_prod = np.multiply.accumulate(self.iteration_lengths[::-1])[::-1]
         self._suffix_prod = np.append(self._suffix_prod, [1])
