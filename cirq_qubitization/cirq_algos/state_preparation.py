@@ -16,12 +16,13 @@ from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_revers
 from cirq_qubitization.cirq_algos.arithmetic_gates import LessThanEqualGate
 from cirq_qubitization.cirq_algos.prepare_uniform_superposition import PrepareUniformSuperposition
 from cirq_qubitization.cirq_algos.qrom import QROM
+from cirq_qubitization.cirq_algos.select_and_prepare import PrepareOracle
 from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
 @cirq.value_equality()
-class StatePreparationAliasSampling(GateWithRegisters):
+class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
 
     In particular, we take the zero state to:
@@ -83,8 +84,8 @@ class StatePreparationAliasSampling(GateWithRegisters):
         (self._alt, self._keep) = tuple(self._alt), tuple(self._keep)
 
     @cached_property
-    def selection_registers(self) -> Registers:
-        return Registers.build(selection=self._selection_bitsize)
+    def selection_registers(self) -> SelectionRegisters:
+        return SelectionRegisters.build(selection=(self._selection_bitsize, len(self._lcu_probs)))
 
     @cached_property
     def sigma_mu_bitsize(self) -> int:
@@ -99,17 +100,13 @@ class StatePreparationAliasSampling(GateWithRegisters):
         return self._mu
 
     @cached_property
-    def temp_registers(self) -> Registers:
+    def junk_registers(self) -> Registers:
         return Registers.build(
             sigma_mu=self.sigma_mu_bitsize,
             alt=self.alternates_bitsize,
             keep=self.keep_bitsize,
             less_than_equal=1,
         )
-
-    @cached_property
-    def registers(self) -> Registers:
-        return Registers([*self.selection_registers, *self.temp_registers])
 
     def decompose_from_registers(
         self,
