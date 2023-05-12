@@ -124,6 +124,7 @@ class AddMod(cirq.ArithmeticGate):
     """
 
     def __init__(self, bitsize: int, mod: int, *, add_val: int = 1, cv: Sequence[int] = ()) -> None:
+        assert 1 <= mod <= 2**bitsize, f"mod: {mod} must be between [1, {2**bitsize}]."
         self._mod = mod
         self._add_val = add_val
         self._bitsize = bitsize
@@ -153,12 +154,8 @@ class AddMod(cirq.ArithmeticGate):
         wire_symbols += [f"Add_{self._add_val}_Mod_{self._mod}"] * self._bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def __pow__(self, power: int):
-        if power == 1:
-            return self
-        if power == -1:
-            return AddMod(self._bitsize, self._mod, add_val=-self._add_val, cv=self._cv)
-        return NotImplemented
+    def __pow__(self, power: int) -> 'AddMod':
+        return AddMod(self._bitsize, self._mod, add_val=self._add_val * power, cv=self._cv)
 
     def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
         # Rough cost as given in https://arxiv.org/abs/1905.09749
