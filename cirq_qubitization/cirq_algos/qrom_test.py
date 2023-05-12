@@ -22,7 +22,7 @@ def test_qrom(data, num_controls):
 
     assert inverse.all_qubits() == g.decomposed_circuit.all_qubits()
 
-    for selection_integer in range(qrom.iteration_length):
+    for selection_integer in range(len(data[0])):
         for cval in range(2):
             qubit_vals = {x: 0 for x in g.all_qubits}
             qubit_vals |= zip(

@@ -1,15 +1,25 @@
+from typing import Dict, Tuple
+
 import cirq
 import numpy as np
+from attrs import frozen
 
+from cirq_qubitization.bloq_algos.and_bloq import MultiAnd
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq, CirqGate
-from cirq_qubitization.quantum_graph.fancy_registers import Side
+from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.cirq_conversion import (
+    cirq_circuit_to_cbloq,
+    CirqGateAsBloq,
+    CirqQuregT,
+)
+from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
 
 
 def test_cirq_gate():
-    x = CirqGate(cirq.X)
-    rx = CirqGate(cirq.Rx(rads=0.123 * np.pi))
-    toffoli = CirqGate(cirq.TOFFOLI)
+    x = CirqGateAsBloq(cirq.X)
+    rx = CirqGateAsBloq(cirq.Rx(rads=0.123 * np.pi))
+    toffoli = CirqGateAsBloq(cirq.TOFFOLI)
 
     for b in [x, rx, toffoli]:
         assert len(b.registers) == 1
@@ -18,7 +28,7 @@ def test_cirq_gate():
     assert x.registers[0].wireshape == (1,)
     assert toffoli.registers[0].wireshape == (3,)
 
-    assert str(x) == 'CirqGate(gate=cirq.X)'
+    assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
     assert x.pretty_name() == 'cirq.X'
     assert x.short_name() == 'cirq.X'
 
@@ -50,9 +60,87 @@ def test_cbloq_to_cirq_circuit():
     # Note: a 1d `wireshape` bloq register is actually two-dimensional in cirq-world
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
     # CirqGate has registers of bitsize=1 and wireshape=(n,); hence the list transpose below.
-    circuit2 = cbloq.to_cirq_circuit(qubits=[[q] for q in qubits])
+    circuit2, _ = cbloq.to_cirq_circuit(**{'qubits': [[q] for q in qubits]})
 
     assert circuit == circuit2
+
+
+@frozen
+class SwapTwoBitsTest(Bloq):
+    @property
+    def registers(self):
+        return FancyRegisters.build(x=1, y=1)
+
+    def as_cirq_op(
+        self, x: CirqQuregT, y: CirqQuregT
+    ) -> Tuple[cirq.Operation, Dict[str, CirqQuregT]]:
+        (x,) = x
+        (y,) = y
+        return cirq.SWAP(x, y), {'x': [x], 'y': [y]}
+
+
+def test_swap_two_bits_to_cirq():
+    circuit, out_quregs = (
+        SwapTwoBitsTest()
+        .as_composite_bloq()
+        .to_cirq_circuit(x=[cirq.NamedQubit('q1')], y=[cirq.NamedQubit('q2')])
+    )
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """\
+q1: ───×───
+       │
+q2: ───×───""",
+    )
+
+
+@frozen
+class SwapTest(Bloq):
+    n: int
+
+    @property
+    def registers(self):
+        return FancyRegisters.build(x=self.n, y=self.n)
+
+    def build_composite_bloq(
+        self, bb: 'CompositeBloqBuilder', *, x: SoquetT, y: SoquetT
+    ) -> Dict[str, SoquetT]:
+        xs = bb.split(x)
+        ys = bb.split(y)
+        for i in range(self.n):
+            xs[i], ys[i] = bb.add(SwapTwoBitsTest(), x=xs[i], y=ys[i])
+        return {'x': bb.join(xs), 'y': bb.join(ys)}
+
+
+def test_swap():
+    swap_circuit, _ = (
+        SwapTest(n=5)
+        .as_composite_bloq()
+        .to_cirq_circuit(x=cirq.LineQubit.range(5), y=cirq.LineQubit.range(100, 105))
+    )
+    op = next(swap_circuit.all_operations())
+    swap_decomp_circuit = cirq.Circuit(cirq.decompose_once(op))
+
+    should_be = cirq.Circuit(
+        [
+            cirq.Moment(
+                cirq.SWAP(cirq.LineQubit(0), cirq.LineQubit(100)),
+                cirq.SWAP(cirq.LineQubit(1), cirq.LineQubit(101)),
+                cirq.SWAP(cirq.LineQubit(2), cirq.LineQubit(102)),
+                cirq.SWAP(cirq.LineQubit(3), cirq.LineQubit(103)),
+                cirq.SWAP(cirq.LineQubit(4), cirq.LineQubit(104)),
+            )
+        ]
+    )
+    assert swap_decomp_circuit == should_be
+
+
+def test_multi_and_allocates():
+    multi_and = MultiAnd(cvs=(1, 1, 1, 1))
+    cirq_quregs = multi_and.registers.get_cirq_quregs()
+    assert sorted(cirq_quregs.keys()) == ['ctrl']
+    multi_and_circuit, out_quregs = multi_and.decompose_bloq().to_cirq_circuit(**cirq_quregs)
+    assert sorted(out_quregs.keys()) == ['ctrl', 'junk', 'target']
 
 
 def test_notebook():

@@ -1,12 +1,15 @@
+import itertools
 from functools import cached_property
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence
 
 import cirq
+from attrs import frozen
 
 from cirq_qubitization.cirq_algos.unary_iteration import UnaryIterationGate
-from cirq_qubitization.cirq_infra.gate_with_registers import Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
+@frozen
 class ApplyGateToLthQubit(UnaryIterationGate):
     r"""A controlled SELECT operation for single-qubit gates.
 
@@ -20,62 +23,48 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     `selection`-th qubit of `target` all controlled by the `control` register.
 
     Args:
-        selection_bitsize: The size of the indexing `select` register. This should be at most
-            `log2(target_bitsize)`
-        target_bitsize: The size of the `target` register. This also serves as the iteration
-            length.
-        nth_gate: A function mapping the selection index to a single-qubit gate.
-        control_bitsize: The size of the control register.
+        selection_regs: Indexing `select` registers of type `SelectionRegisters`. It also contains
+            information about the iteration length of each selection register.
+        nth_gate: A function mapping the composite selection index to a single-qubit gate.
+        control_regs: Control registers for constructing a controlled version of the gate.
     """
-
-    def __init__(
-        self,
-        selection_bitsize: int,
-        target_bitsize: int,
-        nth_gate: Callable[[int], cirq.Gate],
-        *,
-        control_bitsize: int = 1,
-    ):
-        self._selection_bitsize = selection_bitsize
-        self._target_bitsize = target_bitsize
-        self._nth_gate = nth_gate
-        self._control_bitsize = control_bitsize
+    selection_regs: SelectionRegisters
+    nth_gate: Callable[[int, ...], cirq.Gate]
+    control_regs: Registers = Registers.build(control=1)
 
     @classmethod
     def make_on(
-        cls, *, nth_gate: Callable[[int], cirq.Gate], **quregs: Sequence[cirq.Qid]
+        cls, *, nth_gate: Callable[[int, ...], cirq.Gate], **quregs: Sequence[cirq.Qid]
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce bitsize attributes."""
         return cls(
-            selection_bitsize=len(quregs['selection']),
-            target_bitsize=len(quregs['target']),
+            SelectionRegisters.build(selection=(len(quregs['selection']), len(quregs['target']))),
             nth_gate=nth_gate,
-            control_bitsize=len(quregs['control']),
+            control_regs=Registers.build(control=len(quregs['control'])),
         ).on_registers(**quregs)
 
     @cached_property
     def control_registers(self) -> Registers:
-        return Registers.build(control=self._control_bitsize)
+        return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Registers:
-        return Registers.build(selection=self._selection_bitsize)
+    def selection_registers(self) -> SelectionRegisters:
+        return self.selection_regs
 
     @cached_property
     def target_registers(self) -> Registers:
-        return Registers.build(target=self._target_bitsize)
-
-    @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return (self._target_bitsize,)
+        return Registers.build(target=self.selection_registers.total_iteration_size)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_registers.bitsize
         wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += [str(self._nth_gate(i)) for i in range(self._target_bitsize)]
+        for it in itertools.product(*[range(x) for x in self.selection_regs.iteration_lengths]):
+            wire_symbols += [str(self.nth_gate(*it))]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def nth_operation(
-        self, selection: int, control: cirq.Qid, target: Sequence[cirq.Qid]
+        self, control: cirq.Qid, target: Sequence[cirq.Qid], **selection_indices: int
     ) -> cirq.OP_TREE:
-        return self._nth_gate(selection).on(target[-(selection + 1)]).controlled_by(control)
+        selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
+        target_idx = self.selection_registers.to_flat_idx(*selection_idx)
+        return self.nth_gate(*selection_idx).on(target[target_idx]).controlled_by(control)

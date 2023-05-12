@@ -37,22 +37,16 @@ class QROM(unary_iteration.UnaryIterationGate):
         )
 
     @cached_property
-    def selection_registers(self) -> cirq_infra.Registers:
-        return cirq_infra.Registers.build(selection=self._selection_bitsize)
+    def selection_registers(self) -> cirq_infra.SelectionRegisters:
+        return cirq_infra.SelectionRegisters.build(
+            selection=(self._selection_bitsize, len(self._data[0]))
+        )
 
     @cached_property
     def target_registers(self) -> cirq_infra.Registers:
         return cirq_infra.Registers.build(
             **{f'target{i}': len for i, len in enumerate(self._target_bitsizes)}
         )
-
-    @cached_property
-    def iteration_length(self) -> int:
-        return len(self._data[0])
-
-    @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return (len(self._data[0]),)
 
     @property
     def data(self) -> Tuple[Tuple[int, ...], ...]:

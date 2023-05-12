@@ -7,7 +7,11 @@ import numpy as np
 
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_algos.qrom import QROM
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import (
+    GateWithRegisters,
+    Registers,
+    SelectionRegisters,
+)
 
 
 class ProgrammableRotationGateArrayBase(GateWithRegisters):
@@ -62,7 +66,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         if len(set(len(thetas) for thetas in angles)) != 1:
             raise ValueError("All multiplexed angles sequences to apply must be of same length.")
         self._angles = tuple(tuple(thetas) for thetas in angles)
-        self._selection_bitsize = (self.iteration_length - 1).bit_length()
+        self._selection_bitsize = (len(self._angles[0]) - 1).bit_length()
         self._target_bitsize = cirq.num_qubits(rotation_gate)
         self._kappa = kappa
         self._rotation_gate = rotation_gate
@@ -70,10 +74,6 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
     @property
     def kappa(self) -> int:
         return self._kappa
-
-    @property
-    def iteration_length(self) -> int:
-        return len(self.angles[0])
 
     @property
     def angles(self) -> Tuple[Tuple[int, ...], ...]:
@@ -90,8 +90,8 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         pass
 
     @cached_property
-    def selection_registers(self) -> Registers:
-        return Registers.build(selection=self._selection_bitsize)
+    def selection_registers(self) -> SelectionRegisters:
+        return SelectionRegisters.build(selection=(self._selection_bitsize, len(self.angles[0])))
 
     @cached_property
     def kappa_load_target(self) -> Registers:
@@ -126,7 +126,8 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
     ) -> cirq.OP_TREE:
         # 1. Find a convenient way to process batches of size kappa.
         num_bits = sum(max(thetas).bit_length() for thetas in self.angles)
-        angles_bits = np.zeros(shape=(self.iteration_length, num_bits), dtype=int)
+        iteration_length = self.selection_registers[0].iteration_length
+        angles_bits = np.zeros(shape=(iteration_length, num_bits), dtype=int)
         angles_bit_pow = np.zeros(shape=(num_bits,), dtype=int)
         angles_idx = np.zeros(shape=(num_bits,), dtype=int)
         st, en = 0, 0
@@ -140,7 +141,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         # 2. Process batches of size kappa.
         power_of_2s = 2 ** np.arange(self.kappa)[::-1]
         last_id = 0
-        data = np.zeros(self.iteration_length, dtype=int)
+        data = np.zeros(iteration_length, dtype=int)
         for st in range(0, num_bits, self.kappa):
             en = min(st + self.kappa, num_bits)
             data ^= angles_bits[:, st:en].dot(power_of_2s[: en - st])

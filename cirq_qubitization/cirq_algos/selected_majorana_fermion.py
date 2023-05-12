@@ -1,82 +1,83 @@
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Sequence
 
 import cirq
+from attrs import frozen
 
+from cirq_qubitization import cirq_infra
 from cirq_qubitization.cirq_algos import unary_iteration
-from cirq_qubitization.cirq_infra.gate_with_registers import Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
-@cirq.value_equality()
+@frozen
 class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
     """Implements U s.t. U|l>|Psi> -> |l> T_{l} . Z_{l - 1} ... Z_{0} |Psi>
 
     where T = single qubit target gate. Defaults to pauli Y.
 
-    Uses:
-    * 1 Control qubit.
-    * 1 Accumulator qubit.
-    * `selection_bitsize` number of selection qubits.
-    * `target_bitsize` number of target qubits.
 
-    See Fig 9 of https://arxiv.org/abs/1805.03662 for more details.
+    Args:
+        selection_regs: Indexing `select` registers of type `SelectionRegisters`. It also contains
+            information about the iteration length of each selection register.
+        control_regs: Control registers for constructing a controlled version of the gate.
+        target_gate: Single qubit gate to be applied to the target qubits.
+
+    References:
+        See Fig 9 of https://arxiv.org/abs/1805.03662 for more details.
     """
 
-    def __init__(self, selection_bitsize: int, target_bitsize: int, target_gate=cirq.Y):
-        self._selection_bitsize = selection_bitsize
-        self._target_bitsize = target_bitsize
-        self._target_gate = target_gate
+    selection_regs: SelectionRegisters
+    control_regs: Registers = Registers.build(control=1)
+    target_gate: cirq.Gate = cirq.Y
 
     @classmethod
     def make_on(cls, *, target_gate=cirq.Y, **quregs: Sequence[cirq.Qid]) -> cirq.Operation:
-        """Helper constructor to automatically deduce bitsize attributes."""
+        """Helper constructor to automatically deduce selection_regs attribute."""
         return cls(
-            selection_bitsize=len(quregs['selection']),
-            target_bitsize=len(quregs['target']),
+            selection_regs=SelectionRegisters.build(
+                selection=(len(quregs['selection']), len(quregs['target']))
+            ),
             target_gate=target_gate,
         ).on_registers(**quregs)
 
-    def _value_equality_values_(self):
-        return self._selection_bitsize, self._target_bitsize, self._target_gate
-
     @cached_property
     def control_registers(self) -> Registers:
-        return Registers.build(control=1)
+        return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Registers:
-        return Registers.build(selection=self._selection_bitsize)
+    def selection_registers(self) -> SelectionRegisters:
+        return self.selection_regs
 
     @cached_property
     def target_registers(self) -> Registers:
-        return Registers.build(target=self._target_bitsize)
-
-    @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return (self._target_bitsize,)
+        return Registers.build(target=self.selection_regs.total_iteration_size)
 
     @cached_property
     def extra_registers(self) -> Registers:
         return Registers.build(accumulator=1)
 
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        yield cirq.CNOT(*qubit_regs['control'], *qubit_regs['accumulator'])
+        qubit_regs['accumulator'] = cirq_infra.qalloc(1)
+        control = qubit_regs[self.control_regs[0].name] if self.control_registers.bitsize else []
+        yield cirq.X(*qubit_regs['accumulator']).controlled_by(*control)
         yield super().decompose_from_registers(**qubit_regs)
+        cirq_infra.qfree(qubit_regs['accumulator'])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_registers.bitsize
         wire_symbols += ["In"] * self.selection_registers.bitsize
-        wire_symbols += [f"Z{self._target_gate}"] * self.target_registers.bitsize
-        wire_symbols += ["Acc"]
+        wire_symbols += [f"Z{self.target_gate}"] * self.target_registers.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def nth_operation(
         self,
-        selection: int,
         control: cirq.Qid,
         target: Sequence[cirq.Qid],
         accumulator: Sequence[cirq.Qid],
+        **selection_indices: int,
     ) -> cirq.OP_TREE:
-        yield cirq.CNOT(control, accumulator[0])
-        yield self._target_gate(target[selection]).controlled_by(control)
-        yield cirq.Z(target[selection]).controlled_by(accumulator[0])
+        selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
+        target_idx = self.selection_registers.to_flat_idx(*selection_idx)
+        yield cirq.CNOT(control, *accumulator)
+        yield self.target_gate(target[target_idx]).controlled_by(control)
+        yield cirq.CZ(*accumulator, target[target_idx])

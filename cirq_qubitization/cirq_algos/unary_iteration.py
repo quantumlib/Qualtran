@@ -159,7 +159,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
 
     @cached_property
     @abc.abstractmethod
-    def selection_registers(self) -> cirq_infra.Registers:
+    def selection_registers(self) -> cirq_infra.SelectionRegisters:
         pass
 
     @cached_property
@@ -168,19 +168,9 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
         pass
 
     @cached_property
-    @abc.abstractmethod
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        pass
-
-    @cached_property
     def registers(self) -> cirq_infra.Registers:
         return cirq_infra.Registers(
-            [
-                *self.control_registers,
-                *self.selection_registers,
-                *self.target_registers,
-                *self.extra_registers,
-            ]
+            [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
     @cached_property
@@ -193,10 +183,10 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
 
         The `UnaryIterationGate` class is a mixin that represents a coherent for-loop over
         different indices (i.e. selection registers). This method denotes the "body" of the
-        for-loop, which is executed `np.prod(self.iteration_lengths)` times and each iteration
-        represents a unique combination of values stored in selection registers. For each call,
-        the method should return the operations that should be applied to the target registers,
-        given the values stored in selection registers.
+        for-loop, which is executed `self.selection_registers.total_iteration_size` times and each
+        iteration represents a unique combination of values stored in selection registers. For each
+        call, the method should return the operations that should be applied to the target
+        registers, given the values stored in selection registers.
 
         The derived classes should specify the following arguments as `**kwargs`:
             1) `control: cirq.Qid`: A qubit which can be used as a control to selectively
@@ -232,7 +222,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
             yield from self.decompose_zero_selection(**qubit_regs)
             return
 
-        num_loops = len(self.iteration_lengths)
+        num_loops = len(self.selection_registers)
         target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
         extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
 
@@ -270,7 +260,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
             ops = []
             ith_for_loop = unary_iteration(
                 l_iter=0,
-                r_iter=self.iteration_lengths[nested_depth],
+                r_iter=self.selection_registers[nested_depth].iteration_length,
                 flanking_ops=ops,
                 controls=controls,
                 selection=qubit_regs[self.selection_registers[nested_depth].name],

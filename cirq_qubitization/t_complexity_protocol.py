@@ -26,6 +26,13 @@ class TComplexity:
     def __rmul__(self, other: int) -> 'TComplexity':
         return self.__mul__(other)
 
+    def __str__(self) -> str:
+        return (
+            f'T-count:   {self.t:g}\n'
+            f'Rotations: {self.rotations:g}\n'
+            f'Cliffords: {self.clifford:g}\n'
+        )
+
 
 class SupportsTComplexity(Protocol):
     """An object whose TComplexity can be computed.

@@ -1,18 +1,19 @@
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
-from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
 if TYPE_CHECKING:
     import cirq
+
+    from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
+    from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
 _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
@@ -139,8 +140,8 @@ class XGate(Bloq):
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
         return {'q': (q + 1) % 2}
 
-    def on_registers(self, q: 'NDArray[cirq.Qid]') -> 'cirq.OP_TREE':
+    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q
-        return cirq.X(q)
+        return cirq.X(q), {'q': [q]}

@@ -6,7 +6,7 @@ import cirq
 import numpy as np
 
 from cirq_qubitization.cirq_algos.unary_iteration import UnaryIterationGate
-from cirq_qubitization.cirq_infra.gate_with_registers import Register, Registers
+from cirq_qubitization.cirq_infra.gate_with_registers import Register, Registers, SelectionRegisters
 
 
 @cirq.value_equality()
@@ -57,15 +57,13 @@ class GenericSelect(UnaryIterationGate):
 
     @cached_property
     def selection_registers(self) -> Registers:
-        return Registers.build(selection=self._selection_bitsize)
+        return SelectionRegisters.build(
+            selection=(self._selection_bitsize, len(self.select_unitaries))
+        )
 
     @cached_property
     def target_registers(self) -> Registers:
         return Registers.build(target=self._target_bitsize)
-
-    @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return (len(self.select_unitaries),)
 
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         if self._control_val == 0:
