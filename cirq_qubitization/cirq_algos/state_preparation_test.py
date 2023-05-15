@@ -13,13 +13,13 @@ def construct_gate_helper_and_qubit_order(data, eps):
     g = cq_testing.GateHelper(gate)
 
     def map_func(op: cirq.Operation, _):
-        gateset = cirq.Gateset(cq.And)
+        gateset = cirq.Gateset(cq.And, cq.LessThanEqualGate, cq.LessThanGate)
         return cirq.Circuit(cirq.decompose(op, on_stuck_raise=None, keep=gateset.validate))
 
     with cq.cirq_infra.memory_management_context():
-        # TODO: Do not decompose `cq.And` because the `cq.map_clean_and_borrowable_qubits` currently
-        # gets confused and is not able to re-map qubits optimally; which results in a higher number
-        # of ancillas and thus the tests fails due to OOO.
+        # TODO: Do not decompose {cq.And, cq.LessThanEqualGate, cq.LessThanGate} because the
+        # `cq.map_clean_and_borrowable_qubits` currently gets confused and is not able to re-map
+        # qubits optimally; which results in a higher number of ancillas thus the tests fails due to OOO.
         decomposed_circuit = cirq.map_operations_and_unroll(
             g.circuit, map_func, raise_if_add_qubits=False
         )
@@ -27,7 +27,10 @@ def construct_gate_helper_and_qubit_order(data, eps):
     decomposed_circuit = cq.map_clean_and_borrowable_qubits(decomposed_circuit, qm=greedy_mm)
     # We are fine decomposing the `cq.And` gates once the qubit re-mapping is complete. Ideally,
     # we shouldn't require this two step process.
-    decomposed_circuit = cirq.Circuit(cirq.decompose(decomposed_circuit))
+    arithmetic_gateset = cirq.Gateset(cq.LessThanEqualGate, cq.LessThanGate)
+    decomposed_circuit = cirq.Circuit(
+        cirq.decompose(decomposed_circuit, keep=arithmetic_gateset.validate, on_stuck_raise=None)
+    )
     ordered_input = sum(g.quregs.values(), start=[])
     qubit_order = cirq.QubitOrder.explicit(ordered_input, fallback=cirq.QubitOrder.DEFAULT)
     return g, qubit_order, decomposed_circuit
