@@ -161,6 +161,18 @@ def test_add_mod_n(bitsize, mod, add_val, cv):
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(num_qubits), circuit)
 
 
+def test_add_mod_n_protocols():
+    with pytest.raises(ValueError, match="must be between"):
+        _ = cirq_qubitization.AddMod(3, 10)
+    add_one = cirq_qubitization.AddMod(3, 5, 1)
+    add_two = cirq_qubitization.AddMod(3, 5, 2, cv=[1, 0])
+
+    assert add_one == cirq_qubitization.AddMod(3, 5, 1)
+    assert add_one != add_two
+    assert hash(add_one) != hash(add_two)
+    assert add_two.cv == (1, 0)
+
+
 def test_add_truncated():
     num_bits = 3
     num_anc = num_bits - 1

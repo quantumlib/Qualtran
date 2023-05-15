@@ -1,6 +1,7 @@
-from typing import Iterable, Sequence, Union
+from typing import Iterable, Sequence, Tuple, Union
 
 import cirq
+from attrs import field, frozen
 
 from cirq_qubitization import bit_tools, cirq_infra, t_complexity_protocol
 from cirq_qubitization.cirq_algos.and_gate import And
@@ -108,6 +109,7 @@ class LessThanGate(cirq.ArithmeticGate):
         )
 
 
+@frozen
 class AddMod(cirq.ArithmeticGate):
     """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.
 
@@ -123,16 +125,19 @@ class AddMod(cirq.ArithmeticGate):
     of integers passed as `cv`.
     """
 
-    def __init__(self, bitsize: int, mod: int, *, add_val: int = 1, cv: Sequence[int] = ()) -> None:
-        assert 1 <= mod <= 2**bitsize, f"mod: {mod} must be between [1, {2**bitsize}]."
-        self._mod = mod
-        self._add_val = add_val
-        self._bitsize = bitsize
-        self._cv = tuple(cv)
+    bitsize: int
+    mod: int = field()
+    add_val: int = 1
+    cv: Tuple[int, ...] = field(converter=tuple, default=())
+
+    @mod.validator
+    def _validate_mod(self, attribute, value):
+        if not 1 <= value <= 2**self.bitsize:
+            raise ValueError(f"mod: {value} must be between [1, {2 ** self.bitsize}].")
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        add_reg = (2,) * self._bitsize
-        control_reg = (2,) * len(self._cv)
+        add_reg = (2,) * self.bitsize
+        control_reg = (2,) * len(self.cv)
         return (control_reg, add_reg) if control_reg else (add_reg,)
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "AddMod":
@@ -140,26 +145,26 @@ class AddMod(cirq.ArithmeticGate):
 
     def apply(self, *args) -> Union[int, Iterable[int]]:
         target_val = args[-1]
-        if target_val < self._mod:
-            new_target_val = (target_val + self._add_val) % self._mod
+        if target_val < self.mod:
+            new_target_val = (target_val + self.add_val) % self.mod
         else:
             new_target_val = target_val
-        if self._cv and args[0] != int(''.join(str(x) for x in self._cv), 2):
+        if self.cv and args[0] != int(''.join(str(x) for x in self.cv), 2):
             new_target_val = target_val
-        ret = (args[0], new_target_val) if self._cv else (new_target_val,)
+        ret = (args[0], new_target_val) if self.cv else (new_target_val,)
         return ret
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@' if b else '@(0)' for b in self._cv]
-        wire_symbols += [f"Add_{self._add_val}_Mod_{self._mod}"] * self._bitsize
+        wire_symbols = ['@' if b else '@(0)' for b in self.cv]
+        wire_symbols += [f"Add_{self.add_val}_Mod_{self.mod}"] * self.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power: int) -> 'AddMod':
-        return AddMod(self._bitsize, self._mod, add_val=self._add_val * power, cv=self._cv)
+        return AddMod(self.bitsize, self.mod, add_val=self.add_val * power, cv=self.cv)
 
     def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
         # Rough cost as given in https://arxiv.org/abs/1905.09749
-        return 5 * t_complexity_protocol.t_complexity(AdditionGate(self._bitsize))
+        return 5 * t_complexity_protocol.t_complexity(AdditionGate(self.bitsize))
 
 
 class LessThanEqualGate(cirq.ArithmeticGate):
