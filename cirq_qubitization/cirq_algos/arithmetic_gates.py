@@ -151,8 +151,6 @@ def compare_qubits(
     yield cirq.CNOT(x, greater_than)
     yield cirq.X(y)
 
-  
-
 
 class LessThanEqualGate(cirq.ArithmeticGate):
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>"""
