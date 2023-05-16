@@ -1,7 +1,7 @@
 from typing import Iterable, Sequence, Tuple, Union
 
 import cirq
-from attrs import field
+from attrs import field, frozen
 
 from cirq_qubitization import bit_tools, cirq_infra, t_complexity_protocol
 from cirq_qubitization.cirq_algos.and_gate import And
@@ -349,6 +349,7 @@ class ContiguousRegisterGate(cirq.ArithmeticGate):
         return (n**2 + n - 1) * toffoli_complexity
 
 
+@frozen
 class AddMod(cirq.ArithmeticGate):
     """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.
 
