@@ -40,15 +40,17 @@ def iter_bits_twos_complement(val: int, width: int) -> Iterator[int]:
 
 
 def iter_bits_fixed_point(val: float, width: int) -> Iterator[int]:
-    """Represent the floating point number 0 <= val <= 1 using `width` bits.
+    r"""Represent the floating point number 0 <= val <= 1 using `width` bits.
 
-    $$ val = \sum_{b=0}^{width - 1} val[b] / 2^{1+b} $$
+    $$
+        val = \sum_{b=0}^{width - 1} val[b] / 2^{1+b}
+    $$
 
     Args:
         val: Floating point number in [0, 1]
         width: The number of output bits in fixed point binary representation of `val`.
     """
-    assert 0 <= val <= 1, f"val must be between [0, 1]"
+    assert 0 <= val <= 1, f"{val} must be between [0, 1]"
     for b in range(width):
         val = val * 2
         out_bit = np.floor(val)

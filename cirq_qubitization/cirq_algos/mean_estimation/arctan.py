@@ -9,7 +9,7 @@ from cirq_qubitization import bit_tools, t_complexity_protocol
 
 @frozen
 class ArcTan(cirq.ArithmeticGate):
-    """Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
+    r"""Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
 
     Args:
         selection_bitsize: The bitsize of input register |x>.
