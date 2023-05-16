@@ -2,8 +2,8 @@ import cirq
 import numpy as np
 import pytest
 
-from cirq_qubitization.cirq_algos.mean_estimation.arctan import ArcTan
 from cirq_qubitization.bit_tools import iter_bits_fixed_point
+from cirq_qubitization.cirq_algos.mean_estimation.arctan import ArcTan
 
 
 @pytest.mark.parametrize('selection_bitsize', [3, 4])

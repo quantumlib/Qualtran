@@ -1,10 +1,10 @@
-from typing import Sequence, Union, Iterable
+from typing import Iterable, Sequence, Union
 
+import cirq
 import numpy as np
 from attrs import frozen
-import cirq
 
-from cirq_qubitization import t_complexity_protocol, bit_tools
+from cirq_qubitization import bit_tools, t_complexity_protocol
 
 
 @frozen

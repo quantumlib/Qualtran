@@ -1,12 +1,13 @@
 import math
+import random
 
 import pytest
-import random
+
 from cirq_qubitization.bit_tools import (
-    iter_bits,
-    iter_bits_twos_complement,
-    iter_bits_fixed_point,
     float_as_fixed_width_int,
+    iter_bits,
+    iter_bits_fixed_point,
+    iter_bits_twos_complement,
 )
 
 
