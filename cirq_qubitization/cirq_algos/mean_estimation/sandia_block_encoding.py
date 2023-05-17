@@ -1,8 +1,18 @@
+from typing import Sequence
+from attrs import field, frozen
+from dataclasses import dataclass
+import cirq
+
+
 import numpy 
 from math import factorial
 from sympy import factorint
 from cirq_qubitization.cirq_algos.mean_estimation.pvec_epsmat import pvec as pv
 from cirq_qubitization.cirq_algos.mean_estimation.pvec_epsmat import epsmat as eps_mt
+
+from cirq_qubitization import cirq_infra
+import cirq_qubitization as cq
+
 
 def M1(k, K):
     return numpy.ceil(numpy.log2(factorial(K) * numpy.sum([1/factorial(k1) for  k1 in range(k,  K + 1)]
@@ -43,7 +53,17 @@ def Er(zeta):
                  )
 
 
-def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, nbr, L, zeta, mpr, kmean, phase_estimation_costs=False):
+def _pw_qubitization_with_projectile_costs_from_v5(np: int, 
+                                                   nn: int, 
+                                                   eta: int, 
+                                                   Omega: int, 
+                                                   eps: float,
+                                                   nMc: int, 
+                                                   nbr: int, 
+                                                   L: int, 
+                                                   zeta: float, 
+                                                   mpr: float, 
+                                                   kmean: float):
     """
     :params:
        np is the number of bits in each direction for the momenta
@@ -57,14 +77,15 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
        zeta is the charge of the projectile
        mpr is the mass of the extra nucleus
        kmean is the mean momentum for the extra nucleas
-       phase_estimation_costs optional (bool) return phase estimation Toffoli count and qubit costs
-                              if false returns block encoding Toffoli, lambda, and num_logical qubits
     """
     # Total nuclear charge assumed to be equal to number of electrons. 
     lam_zeta = eta  
    
     # (*This is the number of bits used in rotations in preparations of equal superposition states.
     br = 7 
+
+# Probability of success for creating the superposition over 3 basis states
+    Peq0 = Eq(3, 8)
 
     # Probability of success for creating the superposition over i and j.
     # The extra + \[Zeta] is to account for the preparation with the extra 
@@ -245,7 +266,7 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
 
     # (*Qubits storing the momenta. Here \[Eta] is replaced with \[Eta]+1 for the extra nucleus.*)
     # state qubits
-    q1 = 3*(eta + 1) * np 
+    q1 = 3*(eta * np + nn)
 
     q2 = 2*numpy.ceil(numpy.log2(m1 if cq < cqaa else m2)) - 1
     # (*Qubits for phase estimation.*)
@@ -290,16 +311,150 @@ def pw_qubitization_with_projectile_costs_from_v5(np, nn, eta, Omega, eps, nMc, 
     q15 = 2*(nR - 2) 
     qt = q1 + q2 + q3 + q4 + q5 + q6 + q7 + q8 + q9 + q10 + q11 + q12 + q13 + q14
 
-    # final_cost_toffoli, final_lambda, qpe_lam = (cq, lam_1, m1) if cq * m1 < cqaa * m2 else (cqaa, lam_2, m2)
-
-    # return final_cost_toffoli, qt, final_lambda, qpe_lam, eps_ph
-    if phase_estimation_costs:
-        return min(cq, cqaa), qt
+    # return block encoding cost and qubit requirement without phase estimation qubits
+    if cq < cqaa:
+        return cq / m1, lam_1, int(qt) - int(q2)
     else:
-        # return block encoding cost and qubit requirement without phase estimation qubits
-        if cq < cqaa:
-            return cq / m1, lam_1, int(qt) - int(q2)
-        else:
-            return cqaa / m2, lam_2, int(qt) - int(q2)
+        return cqaa / m2, lam_2, int(qt) - int(q2)
 
 
+@dataclass
+class StoppingPowerSystem:
+    """Data representing the system we are stopping and projectile
+       :params:
+           np is the number of bits in each direction for the momenta
+           nn is the number of bits in each direction for the nucleus
+           eta is the number of electrons
+           Omega cell volume in Bohr^3
+           eps is the total allowable error
+           nMc is an adjustment for the number of bits for M (used in nu preparation
+           nbr is an adjustment in the number of bits used for the nuclear positions
+           L is the number of nuclei
+           zeta is the charge of the projectile
+           mpr is the mass of the extra nucleus
+           kmean is the mean momentum for the extra nucleas
+    """
+    np: int
+    nn: int
+    eta: int
+    Omega: float
+    eps: float
+    nMc: int
+    nbr: int
+    L: int
+    zeta: int
+    mpr: float
+    kmean: float
+
+    def get_system_size(self):
+        return 3 * (self.eta * self.np + self.nn)
+
+    def get_kmean_in_au(self):
+        projectile_ke = 0.5 * self.mpr * self.kmean**2
+        return numpy.sqrt(2 * projectile_ke / self.mpr) * self.mpr # p = m * v
+
+
+class SynthesizeOracle(cirq_infra.GateWithRegisters):
+    """Cost to build sythesizer 
+
+    This synthesizer produces 
+    $$
+    P|0> = \sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>
+    $$
+
+    where $$|w\rangle$$ is the system register and $$|\\mathrm{garbage}_{w}\\rangle$$
+    is the ancilla space associate with the walk operator
+    """
+    def __init__(
+        self,
+        stopping_system: StoppingPowerSystem,
+        evolution_precision: float,
+        evolution_time: float
+    ):
+        self.stop_sys= stopping_system
+        self.evolution_precision = evolution_precision
+        self.tau = evolution_time
+
+        blockencodingtoff, lambdaval, numlogicalqubit = \
+            _pw_qubitization_with_projectile_costs_from_v5(
+                np=self.stop_sys.np, 
+                nn=self.stop_sys.nn,
+                eta=self.stop_sys.eta, 
+                Omega=self.stop_sys.Omega, 
+                eps=self.stop_sys.eps, 
+                nMc=self.stop_sys.nMc,
+                nbr=self.stop_sys.nbr, 
+                L=self.stop_sys.L, 
+                zeta=self.stop_sys.zeta,
+                mpr=self.stop_sys.mpr,
+                kmean=self.stop_sys.get_kmean_in_au()
+            )
+        self.block_encoding_toff = blockencodingtoff
+        self.lambda_val = lambdaval
+        self.num_sys_qubits = self.stop_sys.get_system_size()
+        self.num_garbage_qubits = numlogicalqubit - self.num_sys_qubits
+
+        # Total toffoli times
+        # 2(λt + 1.04(λt)⅓)log(1/ε)⅔
+        lambda_by_time = numpy.abs(self.tau) * lambdaval
+        self.num_queries_to_block_encoding = 2 * (lambda_by_time + 1.04 * 
+                                                  (lambda_by_time)**(1/3)
+                                                  ) * numpy.log2(1/self.evolution_precision)**(2/3)
+
+    def system_register(self) -> cirq_infra.Register:
+        return cirq_infra.Register('system', self.num_sys_qubits)
+    
+    def garbage_register(self) -> cirq_infra.Register:
+        return cirq_infra.Register('garbage', self.num_garbage_qubits)
+
+    def registers(self) -> cirq_infra.Registers:
+        return cirq_infra.Registers(
+            [self.system_register, self.garbage_register]
+        )
+
+    def _num_qubits_(self) -> int:
+        return self.registers.bitsize
+    
+    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        return super().decompose_from_registers(**qubit_regs)
+    
+    def _t_complexity_(self) -> cq.TComplexity:
+        return cq.TComplexity(t=4 * self.num_queries_to_block_encoding * self.block_encoding_toff)
+
+
+if __name__ == "__main__":
+    ########################################################
+    #
+    # I will formalize this as a test before official merge
+    #
+    ########################################################
+    Omega = 2419.682821036357
+    num_bits_momenta = 6 # Number of bits in each direction for momenta
+    num_bits_nuclei_momenta = 8
+    eps_total = 1e-3 # Total allowable error
+    num_bits_nu = 6 # extra bits for nu 
+    num_bits_nuc = 8 # extra bits for nuclear positions 
+    num_nuclei = 216 # L
+    num_elec = 218 # eta
+    projectile_mass = 1836 * 4
+    projectile_charge = 2 # Helium
+    projectile_velocity = 4
+    nbr = 20
+
+    sts = StoppingPowerSystem(np=num_bits_momenta,
+                              nn=num_bits_nuclei_momenta,
+                              eta=num_elec,
+                              Omega=Omega,
+                              eps=eps_total,
+                              nMc=num_bits_nuc,
+                              nbr=nbr,
+                              L=num_nuclei,
+                              zeta=projectile_charge,
+                              mpr=projectile_mass,
+                              kmean=projectile_velocity)
+    
+    so_inst = SynthesizeOracle(stopping_system=sts,
+                               evolution_precision=1.0E-3,
+                               evolution_time=2
+                               )
+    print(so_inst)
