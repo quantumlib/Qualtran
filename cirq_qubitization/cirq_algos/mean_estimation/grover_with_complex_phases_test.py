@@ -2,9 +2,9 @@ import math
 from functools import cached_property
 
 import cirq
+import numpy as np
 import pytest
 from attrs import frozen
-import numpy as np
 
 import cirq_qubitization as cq
 from cirq_qubitization.cirq_algos.mean_estimation.grover_with_complex_phases import PhaseOracle
