@@ -1,13 +1,13 @@
-from typing import Sequence, Union, Iterable, Tuple
 from functools import cached_property
+from typing import Collection, Optional, Sequence, Tuple, Union
 
-import numpy as np
-from attrs import frozen, field
 import cirq
+from attrs import field, frozen
 
-from cirq_qubitization import cirq_infra, t_complexity_protocol
-from cirq_qubitization.cirq_algos import select_and_prepare as sp
+from cirq_qubitization import cirq_infra
 from cirq_qubitization.cirq_algos import reflection_using_prepare as rup
+from cirq_qubitization.cirq_algos import select_and_prepare as sp
+from cirq_qubitization.cirq_algos.mean_estimation import arctan
 
 
 @frozen
@@ -28,29 +28,6 @@ class CodeForRandomVariable:
 
     P: sp.PrepareOracle
     Y: sp.SelectOracle
-
-
-@frozen
-class ArcTan(cirq.ArithmeticGate):
-    """Applies U|x>|0> = |x>|-2 arctan(x) / pi> where the result is stored as a b-bit approximation."""
-
-    selection_bitsize: int
-    target_bitsize: int
-
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        return (2,) * self.selection_bitsize, (2,) * self.target_bitsize
-
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "ArcTan":
-        raise NotImplementedError()
-
-    def apply(self, input_val: int, target_val) -> Union[int, Iterable[int]]:
-        output_val = -2 * np.arctan(input_val) / np.pi
-        # TODO: Verify float to int conversion.
-        return input_val, target_val ^ int(output_val * 10**self.target_bitsize)
-
-    def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
-        # Approximate T-complexity of O(target_bitsize)
-        return t_complexity_protocol.TComplexity(t=self.target_bitsize)
 
 
 @frozen
@@ -76,22 +53,21 @@ class PhaseOracle(sp.SelectOracle):
         target_reg = {reg.name: qubit_regs[reg.name] for reg in self.target_registers}
         target_qubits = self.target_registers.merge_qubits(**target_reg)
 
-        arctan_ancilla = cirq_infra.qalloc(self.arctan_bitsize)
+        arctan_sign, arctan_target = cirq_infra.qalloc(1), cirq_infra.qalloc(self.arctan_bitsize)
+        arctan_op = arctan.ArcTan(len(target_qubits), self.arctan_bitsize).on(
+            *target_qubits, *arctan_sign, *arctan_target
+        )
 
         yield self.Y.on_registers(**qubit_regs)
-        yield ArcTan(len(self.target_qubits), self.arctan_bitsize).on(
-            *target_qubits, *arctan_ancilla
-        )
-        # TODO: Verify that the sequence of Z rotations correctly yields e^{i pi -2arctan(y)/pi}
-        for i, q in enumerate(arctan_ancilla):
-            yield cirq.Z(q) ** (1 / 2**i)
+        yield arctan_op
+        for i, q in enumerate(arctan_target):
+            yield (cirq.Z(q) ** (1 / 2 ** (1 + i))).controlled_by(*arctan_sign, control_values=[0])
+            yield (cirq.Z(q) ** (-1 / 2 ** (1 + i))).controlled_by(*arctan_sign, control_values=[1])
 
-        yield ArcTan(len(self.target_qubits), self.arctan_bitsize).on(
-            *target_qubits, *arctan_ancilla
-        )
+        yield arctan_op**-1
         yield self.Y.on_registers(**qubit_regs) ** -1
 
-        cirq_infra.qfree(arctan_ancilla)
+        cirq_infra.qfree([*arctan_sign, *arctan_target])
 
 
 @frozen
@@ -143,7 +119,7 @@ class MeanEstimationWalk(cirq_infra.GateWithRegisters):
             yield reflect_op
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = [] if selfcv == () else [["@(0)", "@"][self.cv[0]]]
+        wire_symbols = [] if self.cv == () else [["@(0)", "@"][self.cv[0]]]
         wire_symbols += ['W'] * (self.registers.bitsize - self.control_registers.bitsize)
         wire_symbols[-1] = f'MW^{self.power}' if self.power != 1 else 'MW'
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
@@ -153,7 +129,7 @@ class MeanEstimationWalk(cirq_infra.GateWithRegisters):
         num_controls: int = None,
         control_values: Sequence[Union[int, Collection[int]]] = None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'QubitizationWalkOperator':
+    ) -> 'MeanEstimationWalk':
         if num_controls is None:
             num_controls = 1
         if control_values is None:
