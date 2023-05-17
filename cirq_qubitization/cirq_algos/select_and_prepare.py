@@ -24,6 +24,12 @@ class SelectOracle(GateWithRegisters):
     def target_registers(self) -> Registers:
         ...
 
+    @cached_property
+    def registers(self) -> Registers:
+        return Registers(
+            [*self.control_registers, *self.selection_registers, *self.target_registers]
+        )
+
 
 class PrepareOracle(GateWithRegisters):
     @property
