@@ -12,7 +12,7 @@ from cirq_qubitization.cirq_algos.mean_estimation import arctan
 
 @frozen
 class CodeForRandomVariable:
-    """We say we have the "code" for a random variable y iff we have unitaries P and Y s.t.
+    r"""We say we have the "code" for a random variable y iff we have unitaries P and Y s.t.
     $$
     P|0> = \sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>
     $$
