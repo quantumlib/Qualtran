@@ -4,7 +4,6 @@ from typing import Sequence
 
 import cirq
 import numpy
-from attrs import field, frozen
 from sympy import factorint
 
 import cirq_qubitization as cq
@@ -20,10 +19,7 @@ def M1(k, K):
 
 
 def g1(x, n):
-    """
-    g1[x_, n_] := Floor[2^n*ArcSin[(1/2)/Sqrt[x]]/(2 \[Pi])
-                        ] * 2 \[Pi] / 2^n
-    """
+    """g1[x_, n_] := Floor[2^n*ArcSin[(1/2)/Sqrt[x]]/(2 Pi)] * 2 Pi / 2^n"""
     asin_val = numpy.arcsin(0.5 / numpy.sqrt(x))
     floored_val = numpy.floor(2**n * asin_val / (2 * numpy.pi))
     return floored_val * 2 * numpy.pi / 2**n
@@ -75,7 +71,7 @@ def _pw_qubitization_with_projectile_costs_from_v5(
     mpr: float,
     kmean: float,
 ):
-    """
+    """Internal function for costing out time evolution operator
     :params:
        np is the number of bits in each direction for the momenta
        nn is the number of bits in each direction for the nucleus
@@ -294,9 +290,8 @@ def _pw_qubitization_with_projectile_costs_from_v5(
     # state qubits
     q1 = 3 * (eta * np + nn)
 
+    # Qubits for phase estimation
     q2 = 2 * numpy.ceil(numpy.log2(m1 if cq < cqaa else m2)) - 1
-    # (*Qubits for phase estimation.*)
-    # q2 = 2*numpy.ceil(numpy.log2(Piecewise[{{m1, cq < cqaa}}, m2]]] - 1;
 
     # (*We are costing WITH nuclei, so the maximum precision of rotations is nR+1.*)
     q3 = nR + 1
@@ -395,10 +390,10 @@ class SynthesizeOracle(cirq_infra.GateWithRegisters):
 
     This synthesizer produces
     $$
-    P|0> = \sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>
+    P\\vert0\\rangle = \\sum_{w \\in W} \\sqrt{p(w)} \\vert w\\rangle \\vert garbage_{w}\\rangle
     $$
 
-    where $$|w\rangle$$ is the system register and $$|\\mathrm{garbage}_{w}\\rangle$$
+    where $$|w\\rangle$$ is the system register and $$|\\mathrm{garbage}_{w}\\rangle$$
     is the ancilla space associate with the walk operator
     """
 
