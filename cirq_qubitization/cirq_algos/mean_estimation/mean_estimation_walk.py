@@ -14,25 +14,26 @@ from cirq_qubitization.cirq_algos.mean_estimation import complex_phase_oracle
 class CodeForRandomVariable:
     r"""We say we have the "code" for a random variable y iff we have unitaries P and Y s.t.
     $$
-    P|0> = \sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>
+    synthesizer|0> = \sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>
     $$
     and
     $$
-    Y|w>|0^b> = |w>|y(w)>
+    encoder|w>|0^b> = |w>|y(w)>
     $$
-    where b is the number of bits required to encode the real range of y.
+    where b is the number of bits required to encode the real range of random variable y.
 
     References:
-        https://arxiv.org/abs/2208.07544, Definition 2.2 for P and Definition 2.10 for Y.
+        https://arxiv.org/abs/2208.07544, Definition 2.2 for synthesizer (P) and
+        Definition 2.10 for encoder (Y).
     """
 
-    P: sp.PrepareOracle
-    Y: sp.SelectOracle
+    synthesizer: sp.PrepareOracle
+    encoder: sp.SelectOracle
 
 
 @frozen
-class MeanEstimationWalk(cirq_infra.GateWithRegisters):
-    """Mean estimation walk operator as per Section 3.1 of https://arxiv.org/abs/2208.07544."""
+class MeanEstimationOperator(cirq_infra.GateWithRegisters):
+    r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544."""
 
     code: CodeForRandomVariable
     arctan_bitsize: int
@@ -46,24 +47,24 @@ class MeanEstimationWalk(cirq_infra.GateWithRegisters):
     @cached_property
     def reflect(self) -> rup.ReflectionUsingPrepare:
         return rup.ReflectionUsingPrepare(
-            self.code.P, control_val=None if self.cv == () else self.cv[0]
+            self.code.synthesizer, control_val=None if self.cv == () else self.cv[0]
         )
 
     @cached_property
     def select(self) -> complex_phase_oracle.ComplexPhaseOracle:
-        return complex_phase_oracle.ComplexPhaseOracle(self.code.Y, self.arctan_bitsize)
+        return complex_phase_oracle.ComplexPhaseOracle(self.code.encoder, self.arctan_bitsize)
 
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
-        return self.code.Y.control_registers
+        return self.code.encoder.control_registers
 
     @cached_property
     def selection_registers(self) -> cirq_infra.SelectionRegisters:
-        return self.code.Y.selection_registers
+        return self.code.encoder.selection_registers
 
     @cached_property
     def target_registers(self) -> cirq_infra.Registers:
-        return self.code.Y.target_registers
+        return self.code.encoder.target_registers
 
     @cached_property
     def registers(self) -> cirq_infra.Registers:
@@ -92,15 +93,16 @@ class MeanEstimationWalk(cirq_infra.GateWithRegisters):
         num_controls: int = None,
         control_values: Sequence[Union[int, Collection[int]]] = None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'MeanEstimationWalk':
+    ) -> 'MeanEstimationOperator':
         if num_controls is None:
             num_controls = 1
         if control_values is None:
             control_values = [1] * num_controls
         if len(control_values) == 1 and self._control_val is None:
-            return MeanEstimationWalk(
+            return MeanEstimationOperator(
                 CodeForRandomVariable(
-                    Y=self.code.Y.controlled(control_values=control_values), P=self.code.P
+                    Y=self.code.encoder.controlled(control_values=control_values),
+                    synthesizer=self.code.synthesizer,
                 ),
                 self.arctan_bitsize,
                 cv=control_values,
@@ -108,8 +110,8 @@ class MeanEstimationWalk(cirq_infra.GateWithRegisters):
             )
         raise NotImplementedError(f'Cannot create a controlled version of {self}')
 
-    def with_power(self, new_power: int) -> 'QubitizationWalkOperator':
-        return MeanEstimationWalk(self.code, cv=self.cv, power=new_power)
+    def with_power(self, new_power: int) -> 'MeanEstimationOperator':
+        return MeanEstimationOperator(self.code, cv=self.cv, power=new_power)
 
     def __pow__(self, power: int):
         return self.with_power(self.power * power)

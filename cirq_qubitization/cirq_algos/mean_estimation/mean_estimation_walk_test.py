@@ -7,7 +7,10 @@ import pytest
 from attrs import frozen
 
 import cirq_qubitization as cq
-from cirq_qubitization.cirq_algos.mean_estimation import CodeForRandomVariable, MeanEstimationWalk
+from cirq_qubitization.cirq_algos.mean_estimation import (
+    CodeForRandomVariable,
+    MeanEstimationOperator,
+)
 from cirq_qubitization.cirq_algos.select_and_prepare import PrepareOracle, SelectOracle
 
 
@@ -62,13 +65,13 @@ class GroverSelect(SelectOracle):
                 yield cirq.X(q).controlled_by(*selection, control_values=selection_cv)
 
 
-def compute_unitary(walk_op: cirq.Operation):
-    """Computes the reduced unitary, when the decomposition of walk_op can allocate new ancillas."""
-    qubits = walk_op.qubits
+def compute_unitary(op: cirq.Operation):
+    """Computes the reduced unitary, when the decomposition of op can allocate new ancillas."""
+    qubits = op.qubits
     qubit_order = cirq.QubitOrder.explicit(qubits, fallback=cirq.QubitOrder.DEFAULT)
-    circuit = cirq.Circuit(cirq.decompose(walk_op))
+    circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = qubit_order.order_for(circuit.all_qubits())
-    assert len(all_qubits) <= 13
+    assert len(all_qubits) <= 13, "Too many qubits to compute the reduced unitary for."
     qid_shape = (2,) * len(all_qubits)
     inputs_vars = 'abcdefghijklmnopqrstuvwxyz'
     output_vars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -86,23 +89,23 @@ def compute_unitary(walk_op: cirq.Operation):
     return u.reshape(2 ** len(qubits), 2 ** len(qubits))
 
 
-@pytest.mark.parametrize('N', [4])
-@pytest.mark.parametrize('arctan_bitsize', [5])
-def test_mean_estimation_walk(N: int, arctan_bitsize: int):
-    code = CodeForRandomVariable(P=GroverPrepare(N), Y=GroverSelect(N, 1))
-    walk = MeanEstimationWalk(code, arctan_bitsize=arctan_bitsize)
-    walk_op = walk.on_registers(**walk.registers.get_named_qubits())
-    prep_gate = walk.reflect.prepare_gate
+@pytest.mark.parametrize('N, arctan_bitsize, marked_item', [(4, 2, 1), (4, 2, 2)])
+def test_mean_estimation_walk(N: int, arctan_bitsize: int, marked_item: int):
+    # TODO: Make the test work for other combinations of (N, arctan_bitsize)
+    code = CodeForRandomVariable(synthesizer=GroverPrepare(N), encoder=GroverSelect(N, marked_item))
+    mean_gate = MeanEstimationOperator(code, arctan_bitsize=arctan_bitsize)
+    mean_op = mean_gate.on_registers(**mean_gate.registers.get_named_qubits())
+    prep_gate = mean_gate.reflect.prepare_gate
     prep_op = prep_gate.on_registers(**prep_gate.registers.get_named_qubits())
 
-    # Compute a reduced unitary for walk_op.
-    u = compute_unitary(walk_op)
+    # Compute a reduced unitary for mean_op.
+    u = compute_unitary(mean_op)
     eigvals, eigvects = np.linalg.eigh(u)
 
     # Compute the final state vector obtained using the synthesizer `Prep |0>`
     u = compute_unitary(prep_op)
     prep_state = cirq.Circuit(
-        cirq.MatrixGate(u).on(*prep_op.qubits), cirq.I.on_each(*walk_op.qubits)
+        cirq.MatrixGate(u).on(*prep_op.qubits), cirq.I.on_each(*mean_op.qubits)
     ).final_state_vector()
 
     def is_good_eigvect(eig_val, eig_vect):
@@ -111,8 +114,6 @@ def test_mean_estimation_walk(N: int, arctan_bitsize: int):
         # 2. Assert that the state `Prep |0>` has high overlap with eigenvector corresponding to
         # eigenvalue 2 * |u|.
         # TODO: 0.5 overlap exists in this case. Verify what should be the generic number here.
-        if np.isclose(abs(eig_val), 2 / np.sqrt(N)):
-            print(abs(np.dot(prep_state, eig_vect)))
         return np.isclose(abs(eig_val), 2 / np.sqrt(N)) and abs(np.dot(prep_state, eig_vect)) >= 0.5
 
     assert any(is_good_eigvect(eig_val, eig_vect) for (eig_val, eig_vect) in zip(eigvals, eigvects))
