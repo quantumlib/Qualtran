@@ -14,10 +14,10 @@ def test_arctan(selection_bitsize, target_bitsize):
     for x in range(2**selection_bitsize):
         inp = f'0b_{x:0{selection_bitsize}b}_0_{0:0{target_bitsize}b}'
         y = -2 * np.arctan(x) / np.pi
-        sign, y_bin = int(np.sign(y)), iter_bits_fixed_point(abs(y), target_bitsize)
-        sign_str = '01'[sign < 0]
+        bits = [*iter_bits_fixed_point(y, target_bitsize + 1, signed=True)]
+        sign, y_bin = bits[0], bits[1:]
         y_bin_str = ''.join(str(b) for b in y_bin)
-        out = f'0b_{x:0{selection_bitsize}b}_{sign_str}_{y_bin_str}'
+        out = f'0b_{x:0{selection_bitsize}b}_{sign}_{y_bin_str}'
         maps[int(inp, 2)] = int(out, 2)
     num_qubits = gate.num_qubits()
     op = gate.on(*cirq.LineQubit.range(num_qubits))

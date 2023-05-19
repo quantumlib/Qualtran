@@ -30,11 +30,9 @@ class ArcTan(cirq.ArithmeticGate):
     def apply(self, input_val: int, target_sign: int, target_val: int) -> Union[int, Iterable[int]]:
         output_val = -2 * np.arctan(input_val, dtype=np.double) / np.pi
         assert -1 <= output_val <= 1
-        output_sign = 1 if np.sign(output_val) < 0 else 0
-        output_bin = bit_tools.float_as_fixed_width_int(np.abs(output_val), self.target_bitsize)
-        if input_val == 0 and target_sign == 0 and target_val == 0:
-            print(output_sign, output_bin, target_val ^ output_bin)
-        # TODO: Verify float to int conversion.
+        output_sign, output_bin = bit_tools.float_as_fixed_width_int(
+            output_val, 1 + self.target_bitsize
+        )
         return input_val, target_sign ^ output_sign, target_val ^ output_bin
 
     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
