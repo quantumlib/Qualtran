@@ -67,26 +67,16 @@ class GroverSelect(SelectOracle):
 
 def compute_unitary(op: cirq.Operation):
     """Computes the reduced unitary, when the decomposition of op can allocate new ancillas."""
-    qubits = op.qubits
-    qubit_order = cirq.QubitOrder.explicit(qubits, fallback=cirq.QubitOrder.DEFAULT)
+    qubit_order = cirq.QubitOrder.explicit(op.qubits, fallback=cirq.QubitOrder.DEFAULT)
     circuit = cirq.Circuit(cirq.decompose(op))
-    all_qubits = qubit_order.order_for(circuit.all_qubits())
-    assert len(all_qubits) <= 13, "Too many qubits to compute the reduced unitary for."
-    qid_shape = (2,) * len(all_qubits)
-    inputs_vars = 'abcdefghijklmnopqrstuvwxyz'
-    output_vars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    u = circuit.unitary(qubit_order=qubit_order).reshape(2 * qid_shape)
-    einsum_expr = ''.join(inputs_vars[x] for x in range(len(all_qubits)))
-    einsum_expr += ''.join(output_vars[x] for x in range(len(all_qubits)))
-    einsum_expr += '->'
-    einsum_expr += ''.join(inputs_vars[x] for x in range(len(qubits)))
-    einsum_expr += ''.join(output_vars[x] for x in range(len(qubits)))
-    einsum_expr += ''.join(inputs_vars[x] for x in range(len(qubits), len(all_qubits)))
-    einsum_expr += ''.join(output_vars[x] for x in range(len(qubits), len(all_qubits)))
-    u = np.einsum(einsum_expr, u)
-    for x in range(len(qubits), len(all_qubits)):
+    nq, nall = len(op.qubits), len(circuit.all_qubits())
+    assert nall <= 13, "Too many qubits to compute the reduced unitary for."
+    u = circuit.unitary(qubit_order=qubit_order).reshape((2,) * 2 * nall)
+    new_order = [*range(nq), *range(nall, nall + nq), *range(nq, nall), *range(nall + nq, 2 * nall)]
+    u = np.transpose(u, axes=new_order)
+    for x in range(nq, nall):
         u = u[0, 0]
-    return u.reshape(2 ** len(qubits), 2 ** len(qubits))
+    return u.reshape(2**nq, 2**nq)
 
 
 @pytest.mark.parametrize('N, arctan_bitsize, marked_item', [(4, 2, 1), (4, 2, 2)])
