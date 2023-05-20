@@ -1,6 +1,9 @@
 import numpy
-import cirq_qubitization as cq
-from cirq_qubitization.cirq_algos.mean_estimation import sandia_block_encoding, kinetic_energy_code_oracle
+
+from cirq_qubitization.cirq_algos.mean_estimation import (
+    kinetic_energy_code_oracle,
+    sandia_block_encoding,
+)
 
 
 def test_projectile_ke_encoder_oracle():
