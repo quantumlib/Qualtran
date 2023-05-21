@@ -72,11 +72,40 @@ def compute_unitary(op: cirq.Operation):
     nq, nall = len(op.qubits), len(circuit.all_qubits())
     assert nall <= 13, "Too many qubits to compute the reduced unitary for."
     u = circuit.unitary(qubit_order=qubit_order).reshape((2,) * 2 * nall)
-    new_order = [*range(nq), *range(nall, nall + nq), *range(nq, nall), *range(nall + nq, 2 * nall)]
+    new_order = [*range(nq, nall), *range(nall + nq, 2 * nall), *range(nq), *range(nall, nall + nq)]
     u = np.transpose(u, axes=new_order)
-    for x in range(nq, nall):
-        u = u[0, 0]
+    u = u[(0, 0) * (nall - nq)]
     return u.reshape(2**nq, 2**nq)
+
+
+def _phase_kickback_via_cx(q: cirq.Qid, anc: cirq.Qid) -> cirq.OP_TREE:
+    yield [cirq.X(anc), cirq.H(anc)]
+    yield cirq.CX(q, anc)
+    yield [cirq.H(anc), cirq.X(anc)]
+
+
+def _phase_kickback_via_z(q: cirq.Qid, anc: cirq.Qid) -> cirq.OP_TREE:
+    yield cirq.CX(q, anc)
+    yield cirq.Z(anc)
+    yield cirq.CX(q, anc)
+
+
+@pytest.mark.parametrize(
+    'decompose_func, expected', [(_phase_kickback_via_z, cirq.Z), (_phase_kickback_via_cx, cirq.Z)]
+)
+def test_compute_unitary(decompose_func, expected):
+    class GateWithDecompose(cirq.Gate):
+        def _num_qubits_(self):
+            return 1
+
+        def _decompose_(self, q):
+            anc = cirq.NamedQubit("anc")
+            yield from decompose_func(*q, anc)
+
+    op = GateWithDecompose().on(*cirq.LineQubit.range(1))
+    u = compute_unitary(op)
+    assert cirq.is_unitary(u)
+    assert np.allclose(u, cirq.unitary(expected))
 
 
 @pytest.mark.parametrize('N, arctan_bitsize, marked_item', [(4, 2, 1), (4, 2, 2)])
