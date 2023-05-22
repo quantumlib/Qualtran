@@ -27,7 +27,8 @@ def test_prepare_uniform_superposition(n, num_controls):
 
 
 @pytest.mark.parametrize("n", [*range(3, 41, 3)])
-def test_prepare_uniform_superposition_t_complexity(n):
+def test_prepare_uniform_superposition_t_complexity(n: int):
     gate = cirq_qubitization.PrepareUniformSuperposition(n)
     result = cirq_qubitization.t_complexity(gate)
     assert result.rotations <= 2
+    assert result.t <= 12 * (n - 1).bit_length()

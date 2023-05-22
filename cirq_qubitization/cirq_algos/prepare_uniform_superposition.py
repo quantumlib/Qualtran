@@ -3,11 +3,11 @@ from typing import Sequence, Tuple
 
 import cirq
 import numpy as np
+from attrs import field, frozen
 
 from cirq_qubitization import cirq_infra
+from cirq_qubitization.cirq_algos.and_gate import And
 from cirq_qubitization.cirq_algos.arithmetic_gates import LessThanGate
-from cirq_qubitization.cirq_algos.multi_control_multi_target_pauli import MultiControlPauli
-from attrs import frozen, field
 
 
 @frozen
@@ -21,6 +21,11 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
 
     def __repr__(self) -> str:
         return f"cirq_qubitization.PrepareUniformSuperposition({self.n}, cv={self.cv})"
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["@" if cv else "@(0)" for cv in self.cv]
+        wire_symbols += [f"UNIFORM({self.n})"] * self.registers['target'].bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def decompose_from_registers(
         self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
@@ -47,10 +52,15 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
 
         yield cirq.H.on_each(*logL_qubits)
 
-        mcx = MultiControlPauli((0,) * logL + self.cv, target_gate=cirq.X)
-        yield mcx.on_registers(controls=[*logL_qubits, *controls], target=ancilla)
+        and_gate = And((0,) * logL + self.cv)
+        and_ancilla = cirq_infra.qalloc(and_gate.registers['ancilla'].bitsize)
+        yield and_gate.on_registers(
+            control=[*logL_qubits, *controls], ancilla=and_ancilla, target=ancilla
+        )
         yield cirq.Rz(rads=theta)(*ancilla)
-        yield mcx.on_registers(controls=[*logL_qubits, *controls], target=ancilla)
+        yield (and_gate**-1).on_registers(
+            control=[*logL_qubits, *controls], ancilla=and_ancilla, target=ancilla
+        )
 
         yield cirq.H.on_each(*logL_qubits)
-        cirq_infra.qfree(ancilla)
+        cirq_infra.qfree([*ancilla, *and_ancilla])
