@@ -80,6 +80,8 @@ class SelectHubbard(SelectOracle):
     Args:
         x_dim: the number of sites along the x axis.
         y_dim: the number of sites along the y axis.
+        control_val: Optional bit specifying the control value for constructing a controlled
+            version of this gate. Defaults to None, which means no control.
 
     Registers:
         control: A control bit for the entire gate.
