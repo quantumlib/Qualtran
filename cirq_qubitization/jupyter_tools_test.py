@@ -34,6 +34,6 @@ def test_display_gate_and_compilation(monkeypatch):
 
 def test_circuit_with_costs():
     g = cq_testing.GateHelper(And(cv=(1, 1, 1)))
-    circuit = cq.circuit_with_costs(g.circuit)
-    expected_circuit = cirq.Circuit(g.operation.with_tags(f't:8,r:0'))
+    circuit = cq.jupyter_tools.circuit_with_costs(g.circuit)
+    expected_circuit = cirq.Circuit(g.operation.with_tags('t:8,r:0'))
     cirq.testing.assert_same_circuits(circuit, expected_circuit)
