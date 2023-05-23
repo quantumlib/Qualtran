@@ -2,6 +2,7 @@ from typing import Sequence
 
 import cirq
 import numpy as np
+from attrs import field, frozen
 
 from cirq_qubitization import cirq_infra, t_complexity_protocol
 
@@ -24,8 +25,8 @@ class SlaterDeterminant(cirq_infra.GateWithRegisters):
         """ """
         self._eta = eta
         self._N = N
-        self._bitsize = max(np.ceil(np.log2(N)), 1)
-        self._n_eta = max(np.ceil(np.log2(self._eta + 1)), 1)
+        self._bitsize = int(max(np.ceil(np.log2(N)), 1))
+        self._n_eta = int(max(np.ceil(np.log2(self._eta + 1)), 1))
 
     @property
     def registers(self):
@@ -59,7 +60,7 @@ class SlaterDeterminant(cirq_infra.GateWithRegisters):
         return t_complexity_protocol.TComplexity(t=4 * num_toff, clifford=num_cliff)
 
 
-class PrepareFromSecondQuantization(cirq_infra.GateWithRegisters):
+class FromSecondQuantization(cirq_infra.GateWithRegisters):
     r"""Gate to copy an initial state from second quantized to first quantization.
 
     A slater determinant in second quantization can be represented as a set of occupations
@@ -77,20 +78,18 @@ class PrepareFromSecondQuantization(cirq_infra.GateWithRegisters):
     def __init__(self, eta: int, N: int):
         self._eta = eta
         self._N = N
-        self._bitsize = max(np.ceil(np.log2(N)), 1)
-        self._n_eta = max(np.ceil(np.log2(self._eta + 1)), 1)
+        self._bitsize = max(int(np.ceil(np.log2(N))), 1)
+        self._n_eta = max(int(np.ceil(np.log2(self._eta + 1))), 1)
 
     @property
     def registers(self):
-        return cirq_infra.Registers.build(q=self._N, p=self._eta * self._bitsize)
+        return cirq_infra.Registers.build(second=self._N, first=self._eta * self._bitsize)
 
-    def decompose_from_registers(
-        self, selection: Sequence[cirq.Qid], **targets: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    def decompose_from_registers(self) -> cirq.OP_TREE:
         raise NotImplementedError
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["From2NDQNT"] * (self._bitsize * self._eta + self._N)
+        wire_symbols = [self.__class__.__name__] * (self._bitsize * self._eta + self._N)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
@@ -138,7 +137,7 @@ class AntiSymmetrize(cirq_infra.GateWithRegisters):
         raise NotImplementedError
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["AntiSymm"] * self.bitsize * self._n
+        wire_symbols = ["AntiSymm"] * self.bitsize * self.n
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
