@@ -13,17 +13,17 @@ from cirq_qubitization.cirq_algos.arithmetic_gates import LessThanGate
 @frozen
 class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
     n: int
-    cv: Tuple[int, ...] = field(converter=tuple, default=())
+    cvs: Tuple[int, ...] = field(converter=tuple, default=())
 
     @cached_property
     def registers(self) -> cirq_infra.Registers:
-        return cirq_infra.Registers.build(controls=len(self.cv), target=(self.n - 1).bit_length())
+        return cirq_infra.Registers.build(controls=len(self.cvs), target=(self.n - 1).bit_length())
 
     def __repr__(self) -> str:
-        return f"cirq_qubitization.PrepareUniformSuperposition({self.n}, cv={self.cv})"
+        return f"cirq_qubitization.PrepareUniformSuperposition({self.n}, cvs={self.cvs})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        control_symbols = ["@" if cv else "@(0)" for cv in self.cv]
+        control_symbols = ["@" if cv else "@(0)" for cv in self.cvs]
         target_symbols = ['target'] * self.registers['target'].bitsize
         target_symbols[0] = f"UNIFORM({self.n})"
         return cirq.CircuitDiagramInfo(wire_symbols=control_symbols + target_symbols)
@@ -40,7 +40,7 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
         logL_qubits, k_qubits = target[:logL], target[logL:]
 
         yield [
-            op.controlled_by(*controls, control_values=self.cv) for op in cirq.H.on_each(*target)
+            op.controlled_by(*controls, control_values=self.cvs) for op in cirq.H.on_each(*target)
         ]
         if not logL_qubits:
             return
@@ -53,7 +53,7 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
 
         yield cirq.H.on_each(*logL_qubits)
 
-        and_gate = And((0,) * logL + self.cv)
+        and_gate = And((0,) * logL + self.cvs)
         and_ancilla = cirq_infra.qalloc(and_gate.registers['ancilla'].bitsize)
         yield and_gate.on_registers(
             control=[*logL_qubits, *controls], ancilla=and_ancilla, target=ancilla

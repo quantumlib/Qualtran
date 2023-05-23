@@ -31,6 +31,8 @@ def test_prepare_uniform_superposition_t_complexity(n: int):
     gate = cirq_qubitization.PrepareUniformSuperposition(n)
     result = cirq_qubitization.t_complexity(gate)
     assert result.rotations <= 2
+    # TODO(#235): Uncomputing `LessThanGate` should take 0 T-gates instead of 4 * n
+    # and therefore the total complexity should come down to `8 * logN`
     assert result.t <= 12 * (n - 1).bit_length()
 
     gate = cirq_qubitization.PrepareUniformSuperposition(n, cv=(1,))
