@@ -23,9 +23,10 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
         return f"cirq_qubitization.PrepareUniformSuperposition({self.n}, cv={self.cv})"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@" if cv else "@(0)" for cv in self.cv]
-        wire_symbols += [f"UNIFORM({self.n})"] * self.registers['target'].bitsize
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+        control_symbols = ["@" if cv else "@(0)" for cv in self.cv]
+        target_symbols = ['target'] * self.registers['target'].bitsize
+        target_symbols[0] = f"UNIFORM({self.n})"
+        return cirq.CircuitDiagramInfo(wire_symbols=control_symbols + target_symbols)
 
     def decompose_from_registers(
         self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
