@@ -56,6 +56,8 @@ class SlaterDeterminant(cirq_infra.GateWithRegisters):
 class AntiSymmetrize(cirq_infra.GateWithRegisters):
     r"""Gate to antisymmetrize a set of eta labelled registers each of size log N.
 
+    The antisymmetrization operator produces all permutations of eta labels with
+    the appropriate sign, e.g. for eta = 2
     $$
     \mathcal{A}|12\rangle = |12\rangle - |21\rangle,
     $$
