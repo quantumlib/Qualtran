@@ -8,7 +8,7 @@ import cirq_qubitization
 @pytest.mark.parametrize("n", [*range(3, 20), 25, 41])
 @pytest.mark.parametrize("num_controls", [0, 1])
 def test_prepare_uniform_superposition(n, num_controls):
-    gate = cirq_qubitization.PrepareUniformSuperposition(n, cv=[1] * num_controls)
+    gate = cirq_qubitization.PrepareUniformSuperposition(n, cvs=[1] * num_controls)
     all_qubits = cirq.LineQubit.range(cirq.num_qubits(gate))
     control, target = (all_qubits[:num_controls], all_qubits[num_controls:])
     turn_on_controls = [cirq.X(c) for c in control]
@@ -35,7 +35,7 @@ def test_prepare_uniform_superposition_t_complexity(n: int):
     # and therefore the total complexity should come down to `8 * logN`
     assert result.t <= 12 * (n - 1).bit_length()
 
-    gate = cirq_qubitization.PrepareUniformSuperposition(n, cv=(1,))
+    gate = cirq_qubitization.PrepareUniformSuperposition(n, cvs=(1,))
     result = cirq_qubitization.t_complexity(gate)
     # TODO(#233): Controlled-H is currently counted as a separate rotation, but it can be
     # implemented using 2 T-gates.
