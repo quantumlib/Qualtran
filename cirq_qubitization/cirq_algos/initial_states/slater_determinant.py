@@ -30,19 +30,19 @@ class SlaterDeterminant(cirq_infra.GateWithRegisters):
 
     @property
     def registers(self):
-        return cirq_infra.Registers.build(q=self._N, p=self._eta * self._bitsize)
+        return cirq_infra.Registers.build(second=self._N, first=self._eta * self._bitsize)
 
     def decompose_from_registers(
         self, selection: Sequence[cirq.Qid], **targets: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         # This is pseudocode
         # yield GivensRotation
-        # yield PrepareFromSecondQuantization
+        # yield FromSecondQuantization
         # yield AntiSymmetrize
         raise NotImplementedError
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["PrepareSlaterDet"] * (self._bitsize * self._eta + self._N)
+        wire_symbols = ["SlaterDet"] * (self._bitsize * self._eta + self._N)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
@@ -68,13 +68,14 @@ class FromSecondQuantization(cirq_infra.GateWithRegisters):
     copies this information to the first quantized registers in the following
     way. Registers in first quantization are represented by eta, log N sized registers.
 
-    Registers:
+    Args:
 
     References:
         [Quantum simulation of exact electron dynamics can be more efficient
         than classical mean-field methods](https://arxiv.org/pdf/2301.01203.pdf)
     """
 
+    # TODO: Move to factor + dataclass frozen
     def __init__(self, eta: int, N: int):
         self._eta = eta
         self._N = N
@@ -104,6 +105,35 @@ class FromSecondQuantization(cirq_infra.GateWithRegisters):
         # CX cost for setting first qunatized registers + controls
         num_cliff = self._N * self._eta * self._bitsize
         return t_complexity_protocol.TComplexity(t=4 * num_toff, clifford=num_cliff)
+
+
+@frozen
+class GivensRotation(cirq_infra.GateWithRegisters):
+    """GivensRotation Gate between to adjacent spin orbitals p and q.
+
+    Parameters:
+        theta: Rotation angle.
+
+    Registers:
+        p, q: spin orbitals to perform rotation on.
+    """
+
+    theta: float
+
+    @property
+    def registers(self):
+        return cirq_infra.Registers.build(p=1, q=1)
+
+    def decompose_from_registers(self) -> cirq.OP_TREE:
+        raise NotImplementedError
+
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["Givens"] * 2
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
+        # TODO: implement this.
+        raise NotImplementedError
 
 
 @frozen
