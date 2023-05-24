@@ -143,7 +143,8 @@ def test_map_soqs():
     fsoqs = map_soqs(cbloq.final_soqs(), soq_map)
     for k, val in fsoqs.items():
         assert val.binst.i >= 100
-    return bb.finalize(**fsoqs)
+    cbloq = bb.finalize(**fsoqs)
+    assert isinstance(cbloq, CompositeBloq)
 
 
 def test_bb_composite_bloq():
