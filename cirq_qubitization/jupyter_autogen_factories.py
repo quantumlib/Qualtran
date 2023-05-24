@@ -75,7 +75,9 @@ def _make_StatePreparationAliasSampling():
     coeffs = np.array([1.0, 1, 3, 2])
     mu = 3
 
-    return StatePreparationAliasSampling(coeffs, probability_epsilon=2**-mu / len(coeffs))
+    return StatePreparationAliasSampling.from_lcu_probs(
+        coeffs, probability_epsilon=2**-mu / len(coeffs)
+    )
 
 
 def _make_QubitizationWalkOperator():

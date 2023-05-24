@@ -214,9 +214,8 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     def _num_qubits_(self) -> int:
         return self.registers.bitsize
 
-    @abc.abstractmethod
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        ...
+        return NotImplemented
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         qubit_regs = self.registers.split_qubits(qubits)

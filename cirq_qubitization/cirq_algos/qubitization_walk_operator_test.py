@@ -17,7 +17,7 @@ def walk_operator_for_pauli_hamiltonian(
     q = sorted(ham.qubits)
     ham_dps = [ps.dense(q) for ps in ham]
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-    prepare = cq.StatePreparationAliasSampling(ham_coeff, probability_epsilon=eps)
+    prepare = cq.StatePreparationAliasSampling.from_lcu_probs(ham_coeff, probability_epsilon=eps)
     select = cq.GenericSelect(
         prepare.selection_registers.bitsize, select_unitaries=ham_dps, target_bitsize=len(q)
     )
