@@ -64,5 +64,25 @@ def test_classical_sim():
     assert ret == {'y': 4}
 
 
+def test_classical_sim_dtypes():
+    s = Split(n=8)
+    (xx,) = s.call_classically(split=255)
+    assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
+
+    with pytest.raises(ValueError):
+        _ = s.call_classically(split=256)
+
+    # with numpy types
+    (xx,) = s.call_classically(split=np.uint8(255))
+    assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
+
+    # Warning: numpy will wrap too-large values
+    (xx,) = s.call_classically(split=np.uint8(256))
+    assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
+
+    with pytest.raises(ValueError):
+        _ = s.call_classically(split=np.uint16(256))
+
+
 def test_notebook():
     execute_notebook('util_bloqs')
