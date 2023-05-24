@@ -4,7 +4,6 @@ from cirq_qubitization.cirq_algos import (
     And,
     ApplyGateToLthQubit,
     ContiguousRegisterGate,
-    HeisenbergLimitedPhaseEstimation,
     LessThanEqualGate,
     LessThanGate,
     MultiControlPauli,
