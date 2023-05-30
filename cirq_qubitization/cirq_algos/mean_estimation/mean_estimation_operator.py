@@ -12,11 +12,17 @@ from cirq_qubitization.cirq_algos.mean_estimation import complex_phase_oracle
 
 @frozen
 class CodeForRandomVariable:
-    r"""We say we have the "code" for a random variable y iff we have unitaries P and Y s.t.
+    r"""A collection of `encoder` and `synthesizer` for a random variable y.
+
+    We say we have "the code" for a random variable $y$ defined on a probability space
+    $(W, p)$ if we have both, a synthesizer and an encoder defined as follows:
+
     $$
     synthesizer|0> = \sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>
     $$
+
     and
+
     $$
     encoder|w>|0^b> = |w>|y(w)>
     $$
@@ -76,6 +82,9 @@ class MeanEstimationOperator(cirq_infra.GateWithRegisters):
         reflect_op = self.reflect.on_registers(**reflect_reg)
         for _ in range(self.power):
             yield select_op
+            # Add a -1 global phase since `ReflectUsingPrepare` applies $R_{s} = I - 2|s><s|$
+            # but we want to apply $R_{s} = 2|s><s| - I$ and this algorithm is sensitive to global
+            # phase.
             yield [reflect_op, cirq.global_phase_operation(-1)]
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
@@ -97,17 +106,21 @@ class MeanEstimationOperator(cirq_infra.GateWithRegisters):
         if len(control_values) == 1 and self._control_val is None:
             return MeanEstimationOperator(
                 CodeForRandomVariable(
-                    Y=self.code.encoder.controlled(control_values=control_values),
+                    encoder=self.code.encoder.controlled(control_values=control_values),
                     synthesizer=self.code.synthesizer,
                 ),
                 cv=control_values,
                 power=self.power,
                 arctan_bitsize=self.arctan_bitsize,
             )
-        raise NotImplementedError(f'Cannot create a controlled version of {self}')
+        raise NotImplementedError(
+            f'Cannot create a controlled MeanEstimationOperator for {control_values=}'
+        )
 
     def with_power(self, new_power: int) -> 'MeanEstimationOperator':
-        return MeanEstimationOperator(self.code, cv=self.cv, power=new_power)
+        return MeanEstimationOperator(
+            self.code, cv=self.cv, power=new_power, arctan_bitsize=self.arctan_bitsize
+        )
 
     def __pow__(self, power: int):
         return self.with_power(self.power * power)

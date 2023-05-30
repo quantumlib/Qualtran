@@ -157,7 +157,7 @@ def satisfies_theorem_321(
         overlap_prob = abs(np.dot(prep_state, eig_vect))
         if expected_hav_low <= hav_theta <= expected_hav_high:
             if debug_print:
-                print(f'{hav_theta=}, {overlap_prob=}, {1-2/c**2}')
+                print(f'{hav_theta=}, {overlap_prob=}, {1-2/c**2=}')
             return overlap_prob >= 1 - 2 / (c**2)
         return False
 
@@ -254,16 +254,16 @@ class GroverEncoder(SelectOracle):
         return (self.marked_val**2) / 2**self.n
 
 
-@pytest.mark.parametrize('n, marked_val, c', [(5, 20, 1.5), (4, 1, 1.5), (2, 1, np.sqrt(2))])
+@pytest.mark.parametrize('n, marked_val, c', [(5, 1, 1.5), (4, 1, 1.5), (2, 1, np.sqrt(2))])
 def test_mean_estimation_grover(
     n: int, marked_val: int, c: float, marked_item: int = 1, arctan_bitsize: int = 5
 ):
     synthesizer = GroverSynthesizer(n)
     encoder = GroverEncoder(n, marked_item=marked_item, marked_val=marked_val)
     s = np.sqrt(encoder.s_square)
-    # TODO: This test currently passes only for small `c` since the overlap prob for these cases
-    # is ~15-30%. When we increase `c`, the expected overlap is much higher, which doesn't seem to
-    # be the case here.
+    # TODO(#229): This test currently passes only for small `c` since the overlap prob for these
+    # cases is ~15-30%. When we increase `c`, the expected overlap is much higher (c=1.5 implies an
+    # expected overlap of 0.11 whereas c=2 implies 0.5), which doesn't seem to be the case here.
     assert c * s < 1 and c >= 1 >= s
 
     assert satisfies_theorem_321(
