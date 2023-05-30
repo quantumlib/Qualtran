@@ -30,7 +30,7 @@ def test_sandia_synthesizer():
         kmean=projectile_velocity,
     )
 
-    sandia_synthesizer = sandia_block_encoding.Synthesizer(
+    sandia_synthesizer = sandia_block_encoding.SandiaSynthesizer(
         stopping_system=sts, evolution_precision=1.0e-3, evolution_time=2
     )
 
