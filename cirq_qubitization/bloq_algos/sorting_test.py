@@ -1,6 +1,7 @@
 import pytest
 
 from cirq_qubitization.bloq_algos.sorting import BitonicSort, Comparator
+from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def _make_comparator():
@@ -29,3 +30,7 @@ def test_bitonic_sort():
     assert bloq.t_complexity().t == 8 * 9 * 88
     with pytest.raises(NotImplementedError):
         bloq.decompose_bloq()
+
+
+def test_notebook():
+    execute_notebook('sorting')

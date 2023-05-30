@@ -1,4 +1,5 @@
 from cirq_qubitization.bloq_algos.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister
 
@@ -80,3 +81,7 @@ def test_greater_than():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, result=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
+
+
+def test_notebook():
+    execute_notebook('arithmetic')
