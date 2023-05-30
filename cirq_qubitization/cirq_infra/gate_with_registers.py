@@ -112,6 +112,9 @@ class Registers:
     def __eq__(self, other) -> bool:
         return self._registers == other._registers
 
+    def __hash__(self):
+        return hash(self._registers)
+
 
 @attrs.frozen
 class SelectionRegister(Register):
@@ -140,7 +143,6 @@ class SelectionRegisters(Registers):
 
     def __init__(self, registers: Iterable[SelectionRegister]):
         super().__init__(registers)
-        self._registers = registers
         self.iteration_lengths = tuple([reg.iteration_length for reg in registers])
         self._suffix_prod = np.multiply.accumulate(self.iteration_lengths[::-1])[::-1]
         self._suffix_prod = np.append(self._suffix_prod, [1])
@@ -179,6 +181,28 @@ class SelectionRegisters(Registers):
                 for k, v in registers.items()
             ]
         )
+
+    @overload
+    def __getitem__(self, key: int) -> SelectionRegister:
+        pass
+
+    @overload
+    def __getitem__(self, key: str) -> SelectionRegister:
+        pass
+
+    @overload
+    def __getitem__(self, key: slice) -> SelectionRegister:
+        pass
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return SelectionRegisters(self._registers[key])
+        elif isinstance(key, int):
+            return self._registers[key]
+        elif isinstance(key, str):
+            return self._register_dict[key]
+        else:
+            raise IndexError(f"key {key} must be of the type str/int/slice.")
 
 
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):

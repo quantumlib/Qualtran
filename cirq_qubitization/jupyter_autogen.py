@@ -42,8 +42,11 @@ import cirq_qubitization.bloq_algos.and_bloq_test
 import cirq_qubitization.bloq_algos.arithmetic_test
 import cirq_qubitization.bloq_algos.basic_gates.cnot_test
 import cirq_qubitization.bloq_algos.basic_gates.rotation_test
+import cirq_qubitization.bloq_algos.basic_gates.swap_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.bloq_algos.sorting_test
+import cirq_qubitization.bloq_algos.swap_network
+import cirq_qubitization.bloq_algos.swap_network_test
 import cirq_qubitization.jupyter_autogen_factories as jaf
 import cirq_qubitization.quantum_graph
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
@@ -113,47 +116,62 @@ class NotebookSpec:
     gate_specs: List[Union[GateNbSpec, BloqNbSpec]]
     directory: str = '.'
 
+    @property
+    def basename(self):
+        return self.module.__name__.split('.')[-1]
 
-NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
-    'apply_gate_to_lth_target': NotebookSpec(
+
+NOTEBOOK_SPECS: List[NotebookSpec] = [
+    NotebookSpec(
         title='Apply to L-th Target',
         module=cirq_qubitization.cirq_algos.apply_gate_to_lth_target,
         directory='./cirq_algos',
         gate_specs=[GateNbSpec(jaf._make_ApplyGateToLthQubit)],
     ),
-    'qrom': NotebookSpec(
+    NotebookSpec(
         title='QROM',
         module=cirq_qubitization.cirq_algos.qrom,
         gate_specs=[GateNbSpec(jaf._make_QROM)],
         directory='./cirq_algos',
     ),
-    'swap_network': NotebookSpec(
+    NotebookSpec(
         title='Swap Network',
         module=cirq_qubitization.cirq_algos.swap_network,
         gate_specs=[
             GateNbSpec(jaf._make_MultiTargetCSwap),
             GateNbSpec(jaf._make_MultiTargetCSwapApprox),
+            GateNbSpec(jaf._make_SwapWithZeroGate),
         ],
         directory='./cirq_algos',
     ),
-    'generic_select': NotebookSpec(
+    NotebookSpec(
+        title='Swap Network',
+        module=cirq_qubitization.bloq_algos.swap_network,
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.swap_test._make_CSwap),
+            BloqNbSpec(cirq_qubitization.bloq_algos.swap_network_test._make_CSwapApprox),
+            BloqNbSpec(cirq_qubitization.bloq_algos.swap_network_test._make_SwapWithZero),
+        ],
+        directory='./bloq_algos',
+    ),
+    NotebookSpec(
         title='Generic Select',
         module=cirq_qubitization.generic_select,
         gate_specs=[GateNbSpec(jaf._make_GenericSelect, draw_vertical=True)],
     ),
-    'state_preparation': NotebookSpec(
+    NotebookSpec(
         title='State Preparation using Coherent Alias Sampling',
         module=cirq_qubitization.cirq_algos.state_preparation,
         gate_specs=[GateNbSpec(jaf._make_StatePreparationAliasSampling)],
         directory='./cirq_algos',
     ),
-    'qubitization_walk_operator': NotebookSpec(
+    NotebookSpec(
         title='Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE',
         module=cirq_qubitization.cirq_algos.qubitization_walk_operator,
         gate_specs=[GateNbSpec(jaf._make_QubitizationWalkOperator)],
         directory='./cirq_algos',
     ),
-    'basic_gates': NotebookSpec(
+    NotebookSpec(
         title='Basic Gates',
         module=cirq_qubitization.bloq_algos.basic_gates,
         gate_specs=[
@@ -163,7 +181,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         ],
         directory='./bloq_algos',
     ),
-    'and_bloq': NotebookSpec(
+    NotebookSpec(
         title='And',
         module=cirq_qubitization.bloq_algos.and_bloq,
         gate_specs=[
@@ -172,7 +190,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         ],
         directory='./bloq_algos',
     ),
-    'arithmetic': NotebookSpec(
+    NotebookSpec(
         title='Arithmetic',
         module=cirq_qubitization.bloq_algos.arithmetic,
         gate_specs=[
@@ -184,7 +202,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         ],
         directory='./bloq_algos',
     ),
-    'sorting': NotebookSpec(
+    NotebookSpec(
         title='Sorting',
         module=cirq_qubitization.bloq_algos.sorting,
         gate_specs=[
@@ -193,7 +211,7 @@ NOTEBOOK_SPECS: Dict[str, NotebookSpec] = {
         ],
         directory='./bloq_algos',
     ),
-}
+]
 
 
 class _GoogleDocstringToMarkdown(GoogleDocstring):
@@ -419,18 +437,19 @@ def render_notebook_cells(nbspec: NotebookSpec) -> NbCells:
 
 
 def _init_notebook(
-    modname: str, overwrite=False, directory: str = '.'
+    basename: str, overwrite=False, directory: str = '.'
 ) -> Tuple[nbformat.NotebookNode, Path]:
     """Initialize a jupyter notebook.
 
     If one already exists: load it in. Otherwise, create a new one.
 
     Args:
-        modname: The name used to find the notebook if it exists.
+        basename: The extensionless filename to find the notebook if it exists.
         overwrite: If set, remove any existing notebook and start from scratch.
+        directory: The directory in which we look for the filename.
     """
 
-    nb_path = Path(f'{directory}/{modname}.ipynb')
+    nb_path = Path(f'{directory}/{basename}.ipynb')
 
     if overwrite:
         nb_path.unlink(missing_ok=True)
@@ -450,9 +469,9 @@ def _init_notebook(
 
 
 def render_notebooks():
-    for modname, nbspec in NOTEBOOK_SPECS.items():
+    for nbspec in NOTEBOOK_SPECS:
         # 1. get a notebook (existing or empty)
-        nb, nb_path = _init_notebook(modname=modname, directory=nbspec.directory)
+        nb, nb_path = _init_notebook(basename=nbspec.basename, directory=nbspec.directory)
 
         # 2. Render all the cells we can render
         cells = render_notebook_cells(nbspec)
@@ -464,7 +483,7 @@ def render_notebooks():
             cell = nb.cells[i]
             if _K_CQ_AUTOGEN in cell.metadata:
                 cqid: str = cell.metadata[_K_CQ_AUTOGEN]
-                print(f"[{modname}] Replacing {cqid} cell.")
+                print(f"[{nbspec.basename}] Replacing {cqid} cell.")
                 new_cell = cells.get_cell_from_cqid(cqid)
                 new_cell.id = cell.id  # keep id from existing cell
                 nb.cells[i] = new_cell
@@ -472,7 +491,7 @@ def render_notebooks():
 
         # 4. Any rendered cells that weren't already there, append.
         for cqid in cqids_to_render:
-            print(f"[{modname}] Adding {cqid}")
+            print(f"[{nbspec.basename}] Adding {cqid}")
             new_cell = cells.get_cell_from_cqid(cqid)
             nb.cells.append(new_cell)
 

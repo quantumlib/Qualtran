@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Sequence
 
 import cirq
 from attrs import frozen
@@ -53,18 +53,13 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         return Registers.build(target=self.selection_regs.total_iteration_size)
 
     @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return self.selection_registers.iteration_lengths
-
-    @cached_property
     def extra_registers(self) -> Registers:
         return Registers.build(accumulator=1)
 
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         qubit_regs['accumulator'] = cirq_infra.qalloc(1)
-        yield cirq.X(*qubit_regs['accumulator']).controlled_by(
-            *qubit_regs[self.control_regs[0].name]
-        )
+        control = qubit_regs[self.control_regs[0].name] if self.control_registers.bitsize else []
+        yield cirq.X(*qubit_regs['accumulator']).controlled_by(*control)
         yield super().decompose_from_registers(**qubit_regs)
         cirq_infra.qfree(qubit_regs['accumulator'])
 

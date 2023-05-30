@@ -1,6 +1,7 @@
 from cirq_qubitization.cirq_algos.and_gate import And
 from cirq_qubitization.cirq_algos.apply_gate_to_lth_target import ApplyGateToLthQubit
 from cirq_qubitization.cirq_algos.arithmetic_gates import (
+    AddMod,
     ContiguousRegisterGate,
     LessThanEqualGate,
     LessThanGate,
@@ -17,6 +18,7 @@ from cirq_qubitization.cirq_algos.programmable_rotation_gate_array import (
 from cirq_qubitization.cirq_algos.qrom import QROM
 from cirq_qubitization.cirq_algos.qubitization_walk_operator import QubitizationWalkOperator
 from cirq_qubitization.cirq_algos.reflection_using_prepare import ReflectionUsingPrepare
+from cirq_qubitization.cirq_algos.select_and_prepare import PrepareOracle, SelectOracle
 from cirq_qubitization.cirq_algos.select_swap_qroam import SelectSwapQROM
 from cirq_qubitization.cirq_algos.selected_majorana_fermion import SelectedMajoranaFermionGate
 from cirq_qubitization.cirq_algos.state_preparation import StatePreparationAliasSampling

@@ -80,7 +80,7 @@ def test_programmable_rotation_gate_array(angles, kappa, gate_type):
                         rotation_gate.on(*g.quregs['rotations_target']), (1 / 2 ** (1 + i))
                     )
 
-        for selection_integer in range(programmable_rotation_gate.iteration_length):
+        for selection_integer in range(len(angles[0])):
             # Set bits in initial_state s.t. selection register stores `selection_integer`.
             qubit_vals = {x: 0 for x in g.all_qubits}
             qubit_vals |= zip(

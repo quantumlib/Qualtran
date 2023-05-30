@@ -6,7 +6,7 @@ import cirq
 import pytest
 
 import cirq_qubitization as cq
-from cirq_qubitization import Registers, UnaryIterationGate
+from cirq_qubitization import Registers, SelectionRegisters, UnaryIterationGate
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
 from cirq_qubitization.jupyter_tools import execute_notebook
@@ -23,16 +23,12 @@ class ApplyXToLthQubit(UnaryIterationGate):
         return Registers.build(control=self._control_bitsize)
 
     @cached_property
-    def selection_registers(self) -> Registers:
-        return Registers.build(selection=self._selection_bitsize)
+    def selection_registers(self) -> SelectionRegisters:
+        return SelectionRegisters.build(selection=(self._selection_bitsize, self._target_bitsize))
 
     @cached_property
     def target_registers(self) -> Registers:
         return Registers.build(target=self._target_bitsize)
-
-    @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return (self._target_bitsize,)
 
     def nth_operation(
         self, control: cirq.Qid, selection: int, target: Sequence[cirq.Qid]
@@ -76,11 +72,11 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         return Registers([])
 
     @cached_property
-    def selection_registers(self) -> Registers:
-        return Registers.build(
-            i=(self._target_shape[0] - 1).bit_length(),
-            j=(self._target_shape[1] - 1).bit_length(),
-            k=(self._target_shape[2] - 1).bit_length(),
+    def selection_registers(self) -> SelectionRegisters:
+        return SelectionRegisters.build(
+            i=((self._target_shape[0] - 1).bit_length(), self._target_shape[0]),
+            j=((self._target_shape[1] - 1).bit_length(), self._target_shape[1]),
+            k=((self._target_shape[2] - 1).bit_length(), self._target_shape[2]),
         )
 
     @cached_property
@@ -88,10 +84,6 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         return Registers.build(
             t1=self._target_shape[0], t2=self._target_shape[1], t3=self._target_shape[2]
         )
-
-    @cached_property
-    def iteration_lengths(self) -> Tuple[int, ...]:
-        return self._target_shape[0], self._target_shape[1], self._target_shape[2]
 
     def nth_operation(
         self,

@@ -3,8 +3,8 @@ from typing import Collection, Optional, Sequence, Tuple, Union
 
 import cirq
 
-from cirq_qubitization import cirq_infra, generic_select
-from cirq_qubitization.cirq_algos import reflection_using_prepare, state_preparation
+from cirq_qubitization import cirq_infra
+from cirq_qubitization.cirq_algos import reflection_using_prepare, select_and_prepare
 
 
 @cirq.value_equality()
@@ -39,8 +39,8 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
 
     def __init__(
         self,
-        select: generic_select.GenericSelect,
-        prepare: state_preparation.StatePreparationAliasSampling,
+        select: select_and_prepare.SelectOracle,
+        prepare: select_and_prepare.PrepareOracle,
         *,
         control_val: Optional[int] = None,
         power: int = 1,
@@ -53,13 +53,21 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
         assert self._select.control_registers == self._reflect.control_registers
         self.power = power
 
+    @property
+    def select(self) -> select_and_prepare.SelectOracle:
+        return self._select
+
+    @property
+    def prepare(self) -> select_and_prepare.PrepareOracle:
+        return self._reflect.prepare_gate
+
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
         return self._select.control_registers
 
     @cached_property
-    def selection_registers(self) -> cirq_infra.Registers:
-        return self._reflect.target_registers
+    def selection_registers(self) -> cirq_infra.SelectionRegisters:
+        return self._reflect.selection_registers
 
     @cached_property
     def target_registers(self) -> cirq_infra.Registers:
