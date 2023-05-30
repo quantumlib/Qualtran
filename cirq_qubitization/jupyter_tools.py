@@ -11,15 +11,17 @@ import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.graphviz import PrettyGraphDrawer
+from cirq_qubitization.t_complexity_protocol import t_complexity
 
 
-def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False):
+def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False, include_costs=False):
     """Use ipywidgets to display SVG circuits for a `GateHelper` next to each other.
 
     Args:
         g: The `GateHelper` to draw
         vertical: If true, lay-out the original gate and its decomposition vertically
             rather than side-by-side.
+        include_costs: If true, each operation is annotated with it's T-complexity cost.
     """
     out1 = ipywidgets.Output()
     out2 = ipywidgets.Output()
@@ -28,20 +30,37 @@ def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False):
     else:
         box = ipywidgets.HBox([out1, out2])
 
-    out1.append_display_data(svg_circuit(g.circuit, registers=g.r))
+    out1.append_display_data(svg_circuit(g.circuit, registers=g.r, include_costs=include_costs))
     out2.append_display_data(
-        svg_circuit(cirq.Circuit(cirq.decompose_once(g.operation)), registers=g.r)
+        svg_circuit(
+            cirq.Circuit(cirq.decompose_once(g.operation)),
+            registers=g.r,
+            include_costs=include_costs,
+        )
     )
 
     IPython.display.display(box)
 
 
-def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
+def circuit_with_costs(circuit: 'cirq.AbstractCircuit') -> 'cirq.AbstractCircuit':
+    """Annotates each operation in the circuit with its T-complexity cost."""
+
+    def _map_func(op: cirq.Operation, _):
+        t_cost = t_complexity(op)
+        return op.with_tags(f't:{t_cost.t:g},r:{t_cost.rotations:g}')
+
+    return cirq.map_operations(circuit, map_func=_map_func)
+
+
+def svg_circuit(
+    circuit: 'cirq.AbstractCircuit', registers: Registers = None, include_costs: bool = False
+):
     """Return an SVG object representing a circuit.
 
     Args:
         circuit: The circuit to draw.
         registers: Optional `Registers` object to order the qubits.
+        include_costs: If true, each operation is annotated with it's T-complexity cost.
     """
     if len(circuit) == 0:
         raise ValueError("Circuit is empty.")
@@ -52,6 +71,10 @@ def svg_circuit(circuit: 'cirq.AbstractCircuit', registers: Registers = None):
         )
     else:
         qubit_order = cirq.QubitOrder.DEFAULT
+
+    if include_costs:
+        circuit = circuit_with_costs(circuit)
+
     tdd = circuit.to_text_diagram_drawer(transpose=False, qubit_order=qubit_order)
     if len(tdd.horizontal_lines) == 0:
         raise ValueError("No non-empty moments.")

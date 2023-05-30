@@ -9,9 +9,10 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 import cirq_qubitization.cirq_infra.qubit_manager as cqm
-from cirq_qubitization import GateWithRegisters
-from cirq_qubitization.cirq_infra import Register as LegacyRegister
-from cirq_qubitization.cirq_infra import Registers as LegacyRegisters
+import cirq_qubitization.t_complexity_protocol as cq_tcp
+from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
+from cirq_qubitization.cirq_infra.gate_with_registers import Register as LegacyRegister
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers as LegacyRegisters
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _binst_to_cxns,
@@ -78,6 +79,9 @@ class CirqGateAsBloq(Bloq):
     def as_cirq_op(self, qubits: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         assert qubits.shape == (self.n_qubits, 1)
         return self.gate.on(*qubits[:, 0]), {'qubits': qubits}
+
+    def t_complexity(self) -> 'cq_tcp.TComplexity':
+        return cq_tcp.t_complexity(self.gate)
 
 
 def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
@@ -380,6 +384,14 @@ class BloqAsCirqGate(GateWithRegisters):
             wire_symbols.extend(symbs)
 
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __eq__(self, other):
+        if not isinstance(other, BloqAsCirqGate):
+            return False
+        return self.bloq == other.bloq
+
+    def __hash__(self):
+        return hash(self.bloq)
 
     def __str__(self) -> str:
         return f'bloq.{self.bloq}'
