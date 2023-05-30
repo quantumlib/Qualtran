@@ -54,7 +54,7 @@ from cirq_qubitization.cirq_algos import (
 from cirq_qubitization.cirq_infra import Registers, SelectionRegisters
 
 
-@frozen
+@frozen(cache_hash=True)
 class SelectHubbard(SelectOracle):
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
@@ -211,8 +211,15 @@ class SelectHubbard(SelectOracle):
             return SelectHubbard(self.x_dim, self.y_dim, control_val=control_values[0])
         raise NotImplementedError(f'Cannot create a controlled version of {self}')
 
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        info = super()._circuit_diagram_info_(args)
+        if self.control_val is None:
+            return info
+        ctrl = ('@' if self.control_val else '@(0)',)
+        return info.with_wire_symbols(ctrl + info.wire_symbols[0:1] + info.wire_symbols[2:])
 
-@frozen
+
+@frozen(cache_hash=True)
 class PrepareHubbard(PrepareOracle):
     r"""The PREPARE operation optimized for the 2D Hubbard model.
 
