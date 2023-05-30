@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 
 from cirq_qubitization.cirq_algos.mean_estimation import (
     kinetic_energy_code_oracle,
@@ -34,6 +34,6 @@ def test_projectile_ke_encoder_oracle():
         kmean=projectile_velocity,
     )
 
-    encoder = kinetic_energy_code_oracle.KineticEnergyCodeOracle(stopping_system=sts)
-    assert numpy.isclose(encoder.get_encoded_register_size(), 18)
-    assert numpy.isclose(encoder.calculate_toffoli_costs(), 1231)
+    encoder = kinetic_energy_code_oracle.KineticEnergyEncoder(stopping_system=sts)
+    assert np.isclose(encoder.encoded_register_size, 18)
+    assert np.isclose(encoder.calculate_toffoli_costs(), 1231)

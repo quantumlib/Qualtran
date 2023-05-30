@@ -384,8 +384,8 @@ def _pw_qubitization_with_projectile_costs_from_v5(
 
 
 @frozen
-class Synthesizer(PrepareOracle):
-    """Cost to build Sythesizer
+class SandiaSynthesizer(PrepareOracle):
+    """Cost to build Synthesizer
 
     This synthesizer produces
     $$
@@ -426,7 +426,7 @@ class Synthesizer(PrepareOracle):
         lambda_by_time = np.abs(self.evolution_time) * lambdaval
         num_queries_to_block_encoding = (
             2
-            * (lambda_by_time + 1.04 * (lambda_by_time) ** (1 / 3))
+            * (lambda_by_time + 1.04 * lambda_by_time ** (1 / 3))
             * np.log2(1 / self.evolution_precision) ** (2 / 3)
         )
         return cq.TComplexity(t=4 * num_queries_to_block_encoding * block_encoding_toff)
