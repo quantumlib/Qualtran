@@ -30,15 +30,18 @@ class CodeForRandomVariable:
     synthesizer: sp.PrepareOracle
     encoder: sp.SelectOracle
 
+    def __attrs_post_init__(self):
+        assert self.synthesizer.selection_registers == self.encoder.selection_registers
+
 
 @frozen
 class MeanEstimationOperator(cirq_infra.GateWithRegisters):
     r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544."""
 
     code: CodeForRandomVariable
-    arctan_bitsize: int
     cv: Tuple[int, ...] = field(default=())
     power: int = 1
+    arctan_bitsize: int = 32
 
     @cv.validator
     def _validate_cv(self, attribute, value):
@@ -63,24 +66,17 @@ class MeanEstimationOperator(cirq_infra.GateWithRegisters):
         return self.code.encoder.selection_registers
 
     @cached_property
-    def target_registers(self) -> cirq_infra.Registers:
-        return self.code.encoder.target_registers
-
-    @cached_property
     def registers(self) -> cirq_infra.Registers:
-        return cirq_infra.Registers(
-            [*self.control_registers, *self.selection_registers, *self.target_registers]
-        )
+        return cirq_infra.Registers([*self.control_registers, *self.selection_registers])
 
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        print(qubit_regs)
         select_reg = {reg.name: qubit_regs[reg.name] for reg in self.select.registers}
         reflect_reg = {reg.name: qubit_regs[reg.name] for reg in self.reflect.registers}
         select_op = self.select.on_registers(**select_reg)
         reflect_op = self.reflect.on_registers(**reflect_reg)
         for _ in range(self.power):
             yield select_op
-            yield reflect_op
+            yield [reflect_op, cirq.global_phase_operation(-1)]
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = [] if self.cv == () else [["@(0)", "@"][self.cv[0]]]
@@ -104,9 +100,9 @@ class MeanEstimationOperator(cirq_infra.GateWithRegisters):
                     Y=self.code.encoder.controlled(control_values=control_values),
                     synthesizer=self.code.synthesizer,
                 ),
-                self.arctan_bitsize,
                 cv=control_values,
                 power=self.power,
+                arctan_bitsize=self.arctan_bitsize,
             )
         raise NotImplementedError(f'Cannot create a controlled version of {self}')
 
