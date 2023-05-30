@@ -17,6 +17,7 @@ from cirq_qubitization.cirq_algos.select_and_prepare import PrepareOracle, Selec
 
 def compute_unitary(op: cirq.Operation):
     """Computes the reduced unitary, when the decomposition of op can allocate new ancillas."""
+
     qubit_order = cirq.QubitOrder.explicit(op.qubits, fallback=cirq.QubitOrder.DEFAULT)
     circuit = cirq.Circuit(
         cirq.decompose(op, keep=lambda val: cirq.has_unitary(val, allow_decompose=False))
@@ -63,6 +64,7 @@ def test_compute_unitary(decompose_func, expected):
 @frozen
 class BernoulliSynthesizer(PrepareOracle):
     r"""Synthesizes the state $sqrt(1 - p)|00..00> + sqrt(p)|11..11>$"""
+
     p: float
     num_qubits: int
 
@@ -79,6 +81,7 @@ class BernoulliSynthesizer(PrepareOracle):
 @frozen
 class BernoulliEncoder(SelectOracle):
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
+
     p: float
     y: Tuple[int, int]
     selection_bitsize: int
@@ -126,7 +129,7 @@ def satisfies_theorem_321(
     arctan_bitsize: int,
     debug_print: bool = False,
 ):
-    """Verifies Theorem 3.21 of https://arxiv.org/abs/2208.07544
+    r"""Verifies Theorem 3.21 of https://arxiv.org/abs/2208.07544
 
     Pr[∣sin(θ/2)∣ ∈ ∣µ∣ / √(1 + s ** 2) . [1 / (1 + cs), 1 / (1 - cs)]] >= (1 - 2 / c**2)
     """
