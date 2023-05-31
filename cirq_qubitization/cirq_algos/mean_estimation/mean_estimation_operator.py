@@ -17,12 +17,18 @@ class CodeForRandomVariable:
     We say we have "the code" for a random variable $y$ defined on a probability space
     $(W, p)$ if we have both, a synthesizer and an encoder defined as follows:
 
+    The synthesizer is responsible to "prepare" the state
+    $\sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>$ on the "selection register" $w$ and potentially
+    using a "junk register" corresponding to $|garbage_{w}>$. Thus, for convenience, the synthesizer
+    follows the LCU PREPARE Oracle API.
     $$
     synthesizer|0> = \sum_{w \in W} \sqrt{p(w)} |w> |garbage_{w}>
     $$
 
-    and
 
+    The encoder is responsible to encode the value of random variable $y(w)$ in a "target register"
+    when the corresponding "selection register" stores integer $w$. Thus, for convenience, the encoder
+    follows the LCU SELECT Oracle API.
     $$
     encoder|w>|0^b> = |w>|y(w)>
     $$
@@ -42,7 +48,22 @@ class CodeForRandomVariable:
 
 @frozen
 class MeanEstimationOperator(cirq_infra.GateWithRegisters):
-    r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544."""
+    r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544.
+
+    The MeanEstimationOperator (aka KO Operator) expects `CodeForRandomVariable` to specify the
+    synthesizer and encoder, that follows LCU SELECT/PREPARE API for convenience. It is composed
+    of two unitaries:
+
+        - REFL_{p}: Reflection around the state prepared by synthesizer $P$. It applies the unitary
+            $P^{\dagger}(2|0><0| - I)P$.
+        - ROT_{y}: Applies a complex phase $\exp(i * -2\arctan{y_{w}})$ when the selection register
+            stores $w$. This is achieved by using the encoder to encode $y(w)$ in a temporary target
+            register.
+
+    Note that both $REFL_{p}$ and $ROT_{y}$ only act upon a selection register, thus mean estimation
+    operator expects only a selection register (and a control register, for a controlled version for
+    phase estimation).
+    """
 
     code: CodeForRandomVariable
     cv: Tuple[int, ...] = field(default=())
@@ -89,8 +110,9 @@ class MeanEstimationOperator(cirq_infra.GateWithRegisters):
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = [] if self.cv == () else [["@(0)", "@"][self.cv[0]]]
-        wire_symbols += ['W'] * (self.registers.bitsize - self.control_registers.bitsize)
-        wire_symbols[-1] = f'MW^{self.power}' if self.power != 1 else 'MW'
+        wire_symbols += ['U_ko'] * (self.registers.bitsize - self.control_registers.bitsize)
+        if self.power != 1:
+            wire_symbols[-1] = f'U_ko^{self.power}'
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def controlled(

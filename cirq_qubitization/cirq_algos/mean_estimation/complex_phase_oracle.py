@@ -11,7 +11,7 @@ from cirq_qubitization.cirq_algos.mean_estimation import arctan
 
 @frozen
 class ComplexPhaseOracle(cirq_infra.GateWithRegisters):
-    r"""Applies ROT_{y}|l>|garbage_{l}> = exp(i -2arctan{y_{l}})|l>|garbage_{l}>.
+    r"""Applies $ROT_{y}|l>|garbage_{l}> = exp(i * -2arctan{y_{l}})|l>|garbage_{l}>$.
 
     TODO: This currently assumes that the random variable `y_{l}` only takes integer
     values. This constraint can be removed by using a standardized floating point to
@@ -57,3 +57,8 @@ class ComplexPhaseOracle(cirq_infra.GateWithRegisters):
         yield cirq.inverse(encoder_op)
 
         cirq_infra.qfree([*arctan_sign, *arctan_target, *target_qubits])
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ['@'] * self.control_registers.bitsize
+        wire_symbols += ['ROTy'] * self.selection_registers.bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
