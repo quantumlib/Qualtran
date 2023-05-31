@@ -6,11 +6,11 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
-
 from functools import cached_property
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 import cirq
+from attrs import frozen
 from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 from cirq_qubitization.cirq_algos.arithmetic_gates import LessThanEqualGate
@@ -21,7 +21,7 @@ from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
-@cirq.value_equality()
+@frozen(cache_hash=True)
 class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
 
@@ -71,33 +71,37 @@ class StatePreparationAliasSampling(PrepareOracle):
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.D. and Figure 11.
     """
+    selection_registers: SelectionRegisters
+    alt: Tuple[int, ...]
+    keep: Tuple[int, ...]
+    mu: int
 
-    def __init__(
-        self, lcu_probabilities: List[float], *, probability_epsilon: float = 1.0e-5
-    ) -> None:
-        self._lcu_probs = lcu_probabilities
-        self._probability_epsilon = probability_epsilon
-        self._selection_bitsize = (len(self._lcu_probs) - 1).bit_length()
-        (self._alt, self._keep, self._mu) = preprocess_lcu_coefficients_for_reversible_sampling(
+    @classmethod
+    def from_lcu_probs(
+        cls, lcu_probabilities: List[float], *, probability_epsilon: float = 1.0e-5
+    ) -> 'StatePreparationAliasSampling':
+        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
             lcu_coefficients=lcu_probabilities, epsilon=probability_epsilon
         )
-        (self._alt, self._keep) = tuple(self._alt), tuple(self._keep)
-
-    @cached_property
-    def selection_registers(self) -> SelectionRegisters:
-        return SelectionRegisters.build(selection=(self._selection_bitsize, len(self._lcu_probs)))
+        N = len(lcu_probabilities)
+        return StatePreparationAliasSampling(
+            selection_registers=SelectionRegisters.build(selection=((N - 1).bit_length(), N)),
+            alt=tuple(alt),
+            keep=tuple(keep),
+            mu=mu,
+        )
 
     @cached_property
     def sigma_mu_bitsize(self) -> int:
-        return self._mu
+        return self.mu
 
     @cached_property
     def alternates_bitsize(self) -> int:
-        return self._selection_bitsize
+        return self.selection_registers.bitsize
 
     @cached_property
     def keep_bitsize(self) -> int:
-        return self._mu
+        return self.mu
 
     @cached_property
     def junk_registers(self) -> Registers:
@@ -116,19 +120,10 @@ class StatePreparationAliasSampling(PrepareOracle):
         keep: Sequence[cirq.Qid],
         less_than_equal: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
-        yield PrepareUniformSuperposition(len(self._lcu_probs)).on(*selection)
+        N = self.selection_registers[0].iteration_length
+        yield PrepareUniformSuperposition(N).on(*selection)
         yield cirq.H.on_each(*sigma_mu)
-        qrom = QROM(self._alt, self._keep, target_bitsizes=[len(alt), len(keep)])
+        qrom = QROM(self.alt, self.keep, target_bitsizes=[len(alt), len(keep)])
         yield qrom.on_registers(selection=selection, target0=alt, target1=keep)
-        yield LessThanEqualGate([2] * self._mu, [2] * self._mu).on(
-            *keep, *sigma_mu, *less_than_equal
-        )
+        yield LessThanEqualGate([2] * self.mu, [2] * self.mu).on(*keep, *sigma_mu, *less_than_equal)
         yield MultiTargetCSwap.make_on(control=less_than_equal, target_x=alt, target_y=selection)
-
-    def _value_equality_values_(self):
-        return self._selection_bitsize, self._alt, self._keep, self._mu
-
-
-StatePreparationAliasSampling.__hash__ = cirq._compat.cached_method(
-    StatePreparationAliasSampling.__hash__
-)
