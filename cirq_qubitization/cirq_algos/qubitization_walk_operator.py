@@ -2,12 +2,13 @@ from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
 import cirq
+from attrs import frozen
 
-from cirq_qubitization import cirq_infra
+from cirq_qubitization import cirq_infra, t_complexity_protocol
 from cirq_qubitization.cirq_algos import reflection_using_prepare, select_and_prepare
 
 
-@cirq.value_equality()
+@frozen(cache_hash=True)
 class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
     r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
@@ -36,42 +37,25 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Figure 1.
     """
+    select: select_and_prepare.SelectOracle
+    prepare: select_and_prepare.PrepareOracle
+    control_val: Optional[int] = None
+    power: int = 1
 
-    def __init__(
-        self,
-        select: select_and_prepare.SelectOracle,
-        prepare: select_and_prepare.PrepareOracle,
-        *,
-        control_val: Optional[int] = None,
-        power: int = 1,
-    ):
-        self._select = select
-        self._reflect = reflection_using_prepare.ReflectionUsingPrepare(
-            prepare, control_val=control_val
-        )
-        self._control_val = control_val
-        assert self._select.control_registers == self._reflect.control_registers
-        self.power = power
-
-    @property
-    def select(self) -> select_and_prepare.SelectOracle:
-        return self._select
-
-    @property
-    def prepare(self) -> select_and_prepare.PrepareOracle:
-        return self._reflect.prepare_gate
+    def __attrs_post_init__(self):
+        assert self.select.control_registers == self.reflect.control_registers
 
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
-        return self._select.control_registers
+        return self.select.control_registers
 
     @cached_property
     def selection_registers(self) -> cirq_infra.SelectionRegisters:
-        return self._reflect.selection_registers
+        return self.prepare.selection_registers
 
     @cached_property
     def target_registers(self) -> cirq_infra.Registers:
-        return self._select.target_registers
+        return self.select.target_registers
 
     @cached_property
     def registers(self) -> cirq_infra.Registers:
@@ -79,17 +63,24 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
+    @cached_property
+    def reflect(self) -> reflection_using_prepare.ReflectionUsingPrepare:
+        return reflection_using_prepare.ReflectionUsingPrepare(
+            self.prepare, control_val=self.control_val
+        )
+
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        select_reg = {reg.name: qubit_regs[reg.name] for reg in self._select.registers}
-        reflect_reg = {reg.name: qubit_regs[reg.name] for reg in self._reflect.registers}
-        select_op = self._select.on_registers(**select_reg)
-        reflect_op = self._reflect.on_registers(**reflect_reg)
+        select_reg = {reg.name: qubit_regs[reg.name] for reg in self.select.registers}
+        select_op = self.select.on_registers(**select_reg)
+
+        reflect_reg = {reg.name: qubit_regs[reg.name] for reg in self.reflect.registers}
+        reflect_op = self.reflect.on_registers(**reflect_reg)
         for _ in range(self.power):
             yield select_op
             yield reflect_op
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@' if self._control_val else '@(0)'] * self.control_registers.bitsize
+        wire_symbols = ['@' if self.control_val else '@(0)'] * self.control_registers.bitsize
         wire_symbols += ['W'] * (self.registers.bitsize - self.control_registers.bitsize)
         wire_symbols[-1] = f'W^{self.power}' if self.power != 1 else 'W'
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
@@ -104,21 +95,24 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
             num_controls = 1
         if control_values is None:
             control_values = [1] * num_controls
-        if len(control_values) == 1 and self._control_val is None:
+        if len(control_values) == 1 and self.control_val is None:
             return QubitizationWalkOperator(
-                self._select.controlled(control_values=control_values),
-                self._reflect.prepare_gate,
+                self.select.controlled(control_values=control_values),
+                self.prepare,
                 control_val=control_values[-1],
+                power=self.power,
             )
         raise NotImplementedError(f'Cannot create a controlled version of {self}')
 
     def with_power(self, new_power: int) -> 'QubitizationWalkOperator':
         return QubitizationWalkOperator(
-            self._select, self._reflect.prepare_gate, control_val=self._control_val, power=new_power
+            self.select, self.prepare, control_val=self.control_val, power=new_power
         )
-
-    def _value_equality_values_(self):
-        return self._select, self._reflect, self._control_val, self.power
 
     def __pow__(self, power: int):
         return self.with_power(self.power * power)
+
+    def _t_complexity_(self):
+        if self.power > 1:
+            return self.power * t_complexity_protocol.t_complexity(self.with_power(1))
+        return NotImplemented
