@@ -1,9 +1,12 @@
+import enum
 from functools import cached_property
-from typing import Iterator, Sequence
+from typing import Sequence, Tuple
 
 import cirq
 import numpy as np
+from attrs import field, frozen
 
+from cirq_qubitization.cirq_algos import and_gate
 from cirq_qubitization.cirq_infra import qubit_manager
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
@@ -41,6 +44,7 @@ class MultiTargetCNOT(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self._num_targets)
 
 
+@frozen
 class MultiControlPauli(GateWithRegisters):
     """Implements multi-control, single-target C^{n}P gate.
 
@@ -55,46 +59,82 @@ class MultiControlPauli(GateWithRegisters):
         (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
     """
 
-    def __init__(self, cv: Iterator[int], *, target_gate: cirq.Pauli = cirq.X):
-        self._cv = tuple(cv)
-        self._target_gate = target_gate
+    class DecomposeMode(enum.Enum):
+        CLEAN_ANCILLA = 1
+        DIRTY_ANCILLA = 2
+
+    cvs: Tuple[int, ...] = field(converter=tuple)
+    target_gate: cirq.Pauli = cirq.X
+    mode: DecomposeMode = DecomposeMode.CLEAN_ANCILLA
 
     @cached_property
     def registers(self) -> Registers:
-        return Registers.build(controls=len(self._cv), target=1)
+        return Registers.build(controls=len(self.cvs), target=1)
 
-    def decompose_from_registers(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
-        pre_post_x = [cirq.X(controls[i]) for i, b in enumerate(self._cv) if not b]
+    def _decompose_dirty(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
+        pre_post_x = [cirq.X(controls[i]) for i, b in enumerate(self.cvs) if not b]
         if len(controls) == 2:
-            return [pre_post_x, self._target_gate(*target).controlled_by(*controls), pre_post_x]
+            return [pre_post_x, self.target_gate(*target).controlled_by(*controls), pre_post_x]
         anc = qubit_manager.qborrow(len(controls) - 2)
         ops = [cirq.CCNOT(anc[-i], controls[-i], anc[-i + 1]) for i in range(2, len(anc) + 1)]
         inverted_v_ladder = ops + [cirq.CCNOT(*controls[:2], anc[0])] + ops[::-1]
 
         yield pre_post_x
-        yield self._target_gate(*target).controlled_by(anc[-1], controls[-1])
+        yield self.target_gate(*target).controlled_by(anc[-1], controls[-1])
         yield inverted_v_ladder
-        yield self._target_gate(*target).controlled_by(anc[-1], controls[-1])
+        yield self.target_gate(*target).controlled_by(anc[-1], controls[-1])
         yield inverted_v_ladder
         yield pre_post_x
 
+    def _decompose_clean(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
+        and_ancilla, and_target = qubit_manager.qalloc(len(self.cvs) - 2), qubit_manager.qalloc(1)
+        yield and_gate.And(self.cvs).on_registers(
+            control=controls, ancilla=and_ancilla, target=and_target
+        )
+        yield self.target_gate.on(*target).controlled_by(*and_target)
+        yield and_gate.And(self.cvs, adjoint=True).on_registers(
+            control=controls, ancilla=and_ancilla, target=and_target
+        )
+
+    def decompose_from_registers(self, **kwargs):
+        if self.mode == self.DecomposeMode.CLEAN_ANCILLA:
+            yield from self._decompose_clean(**kwargs)
+        elif self.mode == self.DecomposeMode.DIRTY_ANCILLA:
+            yield from self._decompose_dirty(**kwargs)
+        else:
+            raise ValueError(f"Unsupported mode: {self.mode}")
+
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@" if b else "@(0)" for b in self._cv]
-        wire_symbols += [str(self._target_gate)]
+        wire_symbols = ["@" if b else "@(0)" for b in self.cvs]
+        wire_symbols += [str(self.target_gate)]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def _t_complexity_(self) -> TComplexity:
+    def _t_complexity_dirty(self) -> TComplexity:
         toffoli_complexity = t_complexity(cirq.CCNOT)
-        controlled_pauli_complexity = t_complexity(self._target_gate.controlled(2))
-        pre_post_x_complexity = (len(self._cv) - sum(self._cv)) * t_complexity(cirq.X)
+        controlled_pauli_complexity = t_complexity(self.target_gate.controlled(2))
+        pre_post_x_complexity = (len(self.cvs) - sum(self.cvs)) * t_complexity(cirq.X)
         return (
-            (4 * len(self._cv) - 10) * toffoli_complexity
+            (4 * len(self.cvs) - 10) * toffoli_complexity
             + 2 * controlled_pauli_complexity
             + 2 * pre_post_x_complexity
         )
 
+    def _t_complexity_clean(self) -> TComplexity:
+        and_cost = t_complexity(and_gate.And(self.cvs))
+        controlled_pauli_cost = t_complexity(self.target_gate.controlled(1))
+        and_inv_cost = t_complexity(and_gate.And(self.cvs, adjoint=True))
+        return and_cost + controlled_pauli_cost + and_inv_cost
+
+    def _t_complexity_(self) -> TComplexity:
+        if self.mode == self.DecomposeMode.CLEAN_ANCILLA:
+            return self._t_complexity_clean()
+        elif self.mode == self.DecomposeMode.DIRTY_ANCILLA:
+            return self._t_complexity_dirty()
+        else:
+            raise ValueError(f"Unsupported mode: {self.mode}")
+
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
-        return cirq.apply_unitary(self._target_gate.controlled(control_values=self._cv), args)
+        return cirq.apply_unitary(self.target_gate.controlled(control_values=self.cvs), args)
 
     def _has_unitary_(self) -> bool:
         return True

@@ -9,7 +9,9 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def construct_gate_helper_and_qubit_order(data, eps):
-    gate = cq.StatePreparationAliasSampling(lcu_probabilities=data, probability_epsilon=eps)
+    gate = cq.StatePreparationAliasSampling.from_lcu_probs(
+        lcu_probabilities=data, probability_epsilon=eps
+    )
     g = cq_testing.GateHelper(gate)
 
     def map_func(op: cirq.Operation, _):
