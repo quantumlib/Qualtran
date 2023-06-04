@@ -92,3 +92,35 @@ def _make_QubitizationWalkOperator():
     )
 
     return get_walk_operator_for_1d_ising_model(4, 2e-1)
+
+
+def _make_SelectChem():
+    from cirq_qubitization.cirq_algos.chemistry import SelectChem
+
+    return SelectChem(4, 1)
+
+
+def _make_SubPrepareChem():
+    from cirq_qubitization.cirq_algos.chemistry import SubPrepareChem
+
+    num_orb = 4
+    Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_orb).reshape((4, num_orb))
+    # not meant to be meaningful.
+    lambda_H = np.sum(np.abs([Us, Ts, Vs]))
+    sp = SubPrepareChem.build_from_coefficients(
+        num_spin_orb=2 * num_orb, T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H
+    )
+    return sp
+
+
+# def _make_PrepareChem():
+#     from cirq_qubitization.cirq_algos.chemistry import PrepareChem
+
+#     num_orb = 4
+#     Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_orb).reshape((4, num_orb))
+#     # not meant to be meaningful.
+#     lambda_H = np.sum(np.abs([Us, Ts, Vs]))
+#     sp = PrepareChem.build_from_coefficients(
+#         num_spin_orb=2 * num_orb, T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H
+#     )
+#     return sp

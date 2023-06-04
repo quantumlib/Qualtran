@@ -163,6 +163,16 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         directory='./cirq_algos',
     ),
     NotebookSpec(
+        title='Select and Prepare for second quantized chemistry in the plane wave dual basis',
+        module=cirq_qubitization.cirq_algos.chemistry,
+        gate_specs=[
+            GateNbSpec(jaf._make_SelectChem),
+            GateNbSpec(jaf._make_SubPrepareChem),
+            # GateNbSpec(jaf._make_PrepareChem),
+        ],
+        directory='./cirq_algos',
+    ),
+    NotebookSpec(
         title='Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE',
         module=cirq_qubitization.cirq_algos.qubitization_walk_operator,
         gate_specs=[GateNbSpec(jaf._make_QubitizationWalkOperator)],

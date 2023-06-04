@@ -6,6 +6,7 @@ from cirq_qubitization.cirq_algos.arithmetic_gates import (
     LessThanEqualGate,
     LessThanGate,
 )
+from cirq_qubitization.cirq_algos.chemistry import PrepareChem, SelectChem, SubPrepareChem
 from cirq_qubitization.cirq_algos.multi_control_multi_target_pauli import (
     MultiControlPauli,
     MultiTargetCNOT,

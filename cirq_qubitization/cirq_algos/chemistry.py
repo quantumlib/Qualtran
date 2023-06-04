@@ -29,8 +29,8 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
-from functools import cache, cached_property
-from typing import Collection, List, Optional, Sequence, Tuple, Union
+from functools import cached_property
+from typing import Collection, Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -39,17 +39,14 @@ from numpy.typing import NDArray
 from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 from cirq_qubitization import cirq_infra
-from cirq_qubitization.cirq_algos import (
-    ApplyGateToLthQubit,
-    LessThanEqualGate,
-    MultiIndexedQROM,
-    MultiTargetCSwap,
-    PrepareOracle,
-    SelectedMajoranaFermionGate,
-    SelectOracle,
-)
+from cirq_qubitization.cirq_algos.arithmetic_gates import LessThanEqualGate
+from cirq_qubitization.cirq_algos.prepare_uniform_superposition import PrepareUniformSuperposition
+from cirq_qubitization.cirq_algos.qrom import QROM
+from cirq_qubitization.cirq_algos.select_and_prepare import PrepareOracle, SelectOracle
 from cirq_qubitization.cirq_algos.state_preparation import PrepareUniformSuperposition
+from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 from cirq_qubitization.cirq_infra import Registers, SelectionRegisters
+from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
 class SelectChem(SelectOracle):
@@ -225,7 +222,7 @@ class SubPrepareChem(PrepareOracle):
     mu: int
 
     @classmethod
-    def build(
+    def build_from_coefficients(
         cls,
         num_spin_orb: int,
         T: NDArray[np.float64],
@@ -288,6 +285,12 @@ class SubPrepareChem(PrepareOracle):
             keep=np.array(keep, dtype=np.int_).reshape((2, 2, num_spatial)),
             mu=mu,
         )
+
+    @classmethod
+    def build_from_plane_wave_dual(
+        cls, num_spin_orb: int, *, probability_epsilon: float = 1.0e-5
+    ) -> 'SubPrepareChem':
+        pass
 
     def _attrs_post_init__(self):
         if self.num_spin_orb % 2 != 0:
@@ -357,7 +360,7 @@ class SubPrepareChem(PrepareOracle):
         yield PrepareUniformSuperposition(n=3).on_registers(controls=[], target=selU + selV)
         yield PrepareUniformSuperposition(n=num_spat_orb).on_registers(controls=[], target=selp)
         yield cirq.H.on_each(*sigma_mu)
-        qrom = MultiIndexedQROM.build([self.altU, self.altV, self.altp, self.keep, self.theta])
+        qrom = QROM.build([self.altU, self.altV, self.altp, self.keep, self.theta])
         yield qrom.on_registers(
             selection0=selU,
             selection1=selV,
@@ -375,80 +378,104 @@ class SubPrepareChem(PrepareOracle):
         yield LessThanEqualGate([2] * self.mu, [2] * self.mu).on(*keep, *sigma_mu, *less_than_equal)
 
 
-# class PrepareChem(PrepareOracle):
-#     r"""The PREPARE operation optimized for the 2D Hubbard model.
+class PrepareChem(PrepareOracle):
+    r"""The PREPARE operation optimized for the 2D Hubbard model.
 
-#     In contrast to the arbitrary chemistry Hamiltonian, we:
-#      - explicitly consider the two dimensions of indices to permit optimization of the circuits.
-#      - dispense with the `theta` parameter.
+    In contrast to the arbitrary chemistry Hamiltonian, we:
+     - explicitly consider the two dimensions of indices to permit optimization of the circuits.
+     - dispense with the `theta` parameter.
 
-#     The circuit for implementing $\textit{PREPARE}_{Hubbard}$ has a T-cost of $O(log(N)$
-#     and uses $O(1)$ single qubit rotations.
+    The circuit for implementing $\textit{PREPARE}_{Hubbard}$ has a T-cost of $O(log(N)$
+    and uses $O(1)$ single qubit rotations.
 
-#     Args:
-#         x_dim: the number of sites along the x axis.
-#         y_dim: the number of sites along the y axis.
-#         t: coefficient for hopping terms in the Hubbard model hamiltonian.
-#         mu: coefficient for single body Z term and two-body ZZ terms in the Hubbard model
-#             hamiltonian.
+    Args:
+        x_dim: the number of sites along the x axis.
+        y_dim: the number of sites along the y axis.
+        t: coefficient for hopping terms in the Hubbard model hamiltonian.
+        mu: coefficient for single body Z term and two-body ZZ terms in the Hubbard model
+            hamiltonian.
 
-#     Registers:
-#         control: A control bit for the entire gate.
-#         U: Whether we're applying the single-site part of the potential.
-#         V: Whether we're applying the pairwise part of the potential.
-#         p_x: First set of site indices, x component.
-#         p_y: First set of site indices, y component.
-#         alpha: First set of sites' spin indicator.
-#         q_x: Second set of site indices, x component.
-#         q_y: Second set of site indices, y component.
-#         beta: Second set of sites' spin indicator.
-#         target: The system register to apply the select operation.
-#         junk: Temporary Work space.
+    Registers:
+        control: A control bit for the entire gate.
+        U: Whether we're applying the single-site part of the potential.
+        V: Whether we're applying the pairwise part of the potential.
+        p_x: First set of site indices, x component.
+        p_y: First set of site indices, y component.
+        alpha: First set of sites' spin indicator.
+        q_x: Second set of site indices, x component.
+        q_y: Second set of site indices, y component.
+        beta: Second set of sites' spin indicator.
+        target: The system register to apply the select operation.
+        junk: Temporary Work space.
 
-#     References:
-#         Section V. and Fig. 20 of https://arxiv.org/abs/1805.03662.
-#     """
+    References:
+        Section V. and Fig. 20 of https://arxiv.org/abs/1805.03662.
+    """
 
-#     def __init__(self, num_spin_orb: int, control_val: Optional[int] = None):
-#         self.num_spin_orb = num_spin_orb
-#         self.control_val = control_val
-#         if self.num_spin_orb % 2 != 0:
-#             raise NotImplementedError(f"num_spin_orb must be even: {self.num_spin_orb}.")
-#         self._num_spat_orb = self.num_spin_orb // 2
+    def __init__(self, num_spin_orb: int, control_val: Optional[int] = None):
+        self.num_spin_orb = num_spin_orb
+        self.control_val = control_val
+        if self.num_spin_orb % 2 != 0:
+            raise NotImplementedError(f"num_spin_orb must be even: {self.num_spin_orb}.")
+        self._num_spat_orb = self.num_spin_orb // 2
 
-#     @cached_property
-#     def junk_registers(self) -> Registers:
-#         return Registers.build(temp=2)
+    # @cached_property
+    # def junk_registers(self) -> Registers:
+    #     return Registers.build(temp=2)
 
-#     @cached_property
-#     def registers(self) -> Registers:
-#         return Registers([*self.selection_registers, *self.junk_registers])
+    # @cached_property
+    # def registers(self) -> Registers:
+    #     return Registers([*self.selection_registers, *self.junk_registers])
 
-#     @cached_property
-#     def selection_registers(self) -> SelectionRegisters:
-#         return SelectionRegisters.build(
-#             theta=(1, 2),
-#             U=(1, 2),
-#             V=(1, 2),
-#             p=(self._num_spat_orb.bit_length(), self._num_spat_orb),
-#             alpha=(1, 2),
-#             q=(self._num_spat_orb.bit_length(), self._num_spat_orb),
-#             beta=(1, 2),
-#         )
+    # @cached_property
+    # def selection_registers(self) -> SelectionRegisters:
+    #     return SelectionRegisters.build(
+    #         theta=(1, 2),
+    #         U=(1, 2),
+    #         V=(1, 2),
+    #         p=(self._num_spat_orb.bit_length(), self._num_spat_orb),
+    #         alpha=(1, 2),
+    #         q=(self._num_spat_orb.bit_length(), self._num_spat_orb),
+    #         beta=(1, 2),
+    #     )
 
-#     def decompose_from_registers(
-#         self,
-#         theta: Sequence[cirq.Qid],
-#         U: Sequence[cirq.Qid],
-#         V: Sequence[cirq.Qid],
-#         p: Sequence[cirq.Qid],
-#         alpha: Sequence[cirq.Qid],
-#         q: Sequence[cirq.Qid],
-#         beta: Sequence[cirq.Qid],
-#         target: Sequence[cirq.Qid],
-#         control: Sequence[cirq.Qid] = (),
-#     ) -> cirq.OP_TREE:
-#         raise NotImplementedError
+    # def decompose_from_registers(
+    #     self,
+    #     theta: Sequence[cirq.Qid],
+    #     U: Sequence[cirq.Qid],
+    #     V: Sequence[cirq.Qid],
+    #     p: Sequence[cirq.Qid],
+    #     alpha: Sequence[cirq.Qid],
+    #     q: Sequence[cirq.Qid],
+    #     beta: Sequence[cirq.Qid],
+    #     target: Sequence[cirq.Qid],
+    #     control: Sequence[cirq.Qid] = (),
+    # ) -> cirq.OP_TREE:
+    # yield cirq.Ry(rads=2 * np.arccos(np.sqrt(self.t * N / qlambda))).on(*V)
+    # yield cirq.Ry(rads=2 * np.arccos(np.sqrt(1 / 5))).on(*U).controlled_by(*V)
+    # yield PrepareUniformSuperposition(self.x_dim).on_registers(controls=[], target=p_x)
+    # yield PrepareUniformSuperposition(self.y_dim).on_registers(controls=[], target=p_y)
+    # yield cirq.H.on_each(*temp)
+    # yield cirq.CNOT(*U, *V)
+    # yield cirq.X(*beta)
+    # yield from [cirq.X(*V), cirq.H(*alpha).controlled_by(*V), cirq.CX(*V, *beta), cirq.X(*V)]
+    # yield cirq.Circuit(cirq.CNOT.on_each([*zip([*p_x, *p_y, *alpha], [*q_x, *q_y, *beta])]))
+    # yield MultiTargetCSwap.make_on(control=temp[:1], target_x=q_x, target_y=q_y)
+    # yield AddMod(len(q_x), self.x_dim, add_val=1, cv=[0, 0]).on(*U, *V, *q_x)
+    # yield MultiTargetCSwap.make_on(control=temp[:1], target_x=q_x, target_y=q_y)
 
-#     def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
-#         return t_complexity_protocol.TComplexity(clifford=6 * self.num_spin_orb)
+    # and_target = cirq_infra.qalloc(1)
+    # and_anc = cirq_infra.qalloc(1)
+    # yield And(cv=(0, 0, 1)).on_registers(
+    #     control=[*U, *V, temp[-1]], ancilla=and_anc, target=and_target
+    # )
+    # yield MultiTargetCSwap.make_on(
+    #     control=and_target, target_x=[*p_x, *p_y, *alpha], target_y=[*q_x, *q_y, *beta]
+    # )
+    # yield And(cv=(0, 0, 1), adjoint=True).on_registers(
+    #     control=[*U, *V, temp[-1]], ancilla=and_anc, target=and_target
+    # )
+    # cirq_infra.qfree([*and_anc, *and_target])
+
+    # def _t_complexity_(self) -> t_complexity_protocol.TComplexity:
+    #     return t_complexity_protocol.TComplexity(clifford=6 * self.num_spin_orb)

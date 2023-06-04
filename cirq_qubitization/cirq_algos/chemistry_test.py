@@ -9,16 +9,12 @@ from cirq_qubitization.cirq_infra.gate_with_registers import SelectionRegisters
 from cirq_qubitization.jupyter_tools import execute_notebook
 
 
-# @pytest.mark.parametrize('dim', [*range(2, 10)])
 def test_select_t_complexity():
-    num_orb = 4
-    select = SelectChem(num_spin_orb=num_orb)
-    print(select.selection_registers['q'])
-    q_selection_regs = SelectionRegisters.build(
-        beta=(1, 2), q=(select.selection_registers['q'].bitsize, select.num_spin_orb)
-    )
-    target = select.target_registers
-    select = cq_testing.GateHelper(SelectChem(num_spin_orb=num_orb, control_val=1))
+    N = 10
+    select = SelectChem(num_spin_orb=N, control_val=1)
+    cost = cq.t_complexity(select)
+    assert cost.t == 168
+    assert cost.rotations == 0
 
 
 def test_sub_prepare():
@@ -26,9 +22,14 @@ def test_sub_prepare():
     Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_orb).reshape((4, num_orb))
     # not meant to be meaningful.
     lambda_H = np.sum(np.abs([Us, Ts, Vs]))
-    sp = SubPrepareChem.build(num_spin_orb=2 * num_orb, T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H)
+    sp = SubPrepareChem.build_from_coefficients(
+        num_spin_orb=2 * num_orb, T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H
+    )
     g = cq_testing.GateHelper(sp)
     circuit = cirq.Circuit(cirq.decompose_once(g.operation))
     data_size = 4 * num_orb
-    qrom = cq.MultiIndexedQROM.build([sp.altU])
+    # Because we iterate over U and V completely we have an increase T
+    # complexity of 8N-4 for QROM as opposed to 3N - 4, if we only could pick
+    # 00, 01, and 10 selection combinations.
+    qrom = cq.QROM.build([sp.altU])
     assert cq_testing.t_complexity(qrom).t == 4 * data_size - 8
