@@ -44,10 +44,7 @@ def _make_ApplyGateToLthQubit():
 def _make_QROM():
     from cirq_qubitization.cirq_algos import QROM
 
-    data = np.array([1, 2, 3, 4, 5])
-    selection_bitsizes = [(s - 1).bit_length() for s in data.shape]
-    target_bitsizes = [int(np.max(d)).bit_length() for d in data]
-    return QROM([data], selection_bitsizes=selection_bitsizes, target_bitsizes=target_bitsizes)
+    return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=[3], target_bitsizes=[3])
 
 
 def _make_MultiTargetCSwap():
