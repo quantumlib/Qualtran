@@ -138,3 +138,18 @@ def test_qrom_multi_dim(data, num_controls):
             cq_testing.assert_circuit_inp_out_cirqsim(
                 g.decomposed_circuit, g.all_qubits, initial_state, final_state
             )
+
+
+@pytest.mark.parametrize(
+    "data",
+    [[np.arange(6).reshape(2, 3), 4 * np.arange(6).reshape(2, 3)], [np.arange(8).reshape(2, 2, 2)]],
+)
+@pytest.mark.parametrize("num_controls", [0, 1, 2])
+def test_ndim_t_complexity(data, num_controls):
+    selection_bitsizes = [(s - 1).bit_length() for s in data[0].shape]
+    target_bitsizes = [int(np.max(d)).bit_length() for d in data]
+    qrom = cq.QROM(data, selection_bitsizes, target_bitsizes, num_controls=num_controls)
+    g = cq_testing.GateHelper(qrom)
+    n = data[0].size
+    assert cq.t_complexity(g.gate) == cq.t_complexity(g.operation)
+    assert cq.t_complexity(g.gate).t == max(0, 4 * n - 8 + 4 * num_controls)
