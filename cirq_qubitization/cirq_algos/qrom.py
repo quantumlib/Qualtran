@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Callable, Optional, Sequence, Tuple
+from typing import Callable, Sequence, Tuple
 
 import cirq
 import numpy as np
