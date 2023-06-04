@@ -4,6 +4,8 @@ This module is used as a mock NotebookSpec module, so this docstring shows up in
 """
 import inspect
 
+import numpy as np
+
 import cirq_qubitization
 from cirq_qubitization.jupyter_autogen import (
     _get_code_for_demoing_a_gate,
@@ -18,7 +20,10 @@ from cirq_qubitization.jupyter_autogen import (
 def _make_QROM():
     from cirq_qubitization import QROM
 
-    return QROM([1, 2, 3, 4, 5])
+    data = [np.array([1, 2, 3, 4, 5])]
+    selection_bitsizes = [(s - 1).bit_length() for s in data[0].shape]
+    target_bitsizes = [int(np.max(d)).bit_length() for d in data]
+    return QROM(data, selection_bitsizes=selection_bitsizes, target_bitsizes=target_bitsizes)
 
 
 def test_gate_nb_spec():
