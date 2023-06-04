@@ -175,12 +175,14 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
                 if len(data_for_current_block) < self.num_blocks:
                     zero_pad = (0,) * (self.num_blocks - len(data_for_current_block))
                     data_for_current_block = data_for_current_block + zero_pad
-                qrom_data.append(data_for_current_block)
+                qrom_data.append(np.array(data_for_current_block))
                 qrom_target_bitsizes.append(target_bitsize)
         # Construct QROM, SwapWithZero and CX operations using the batched data and qubits.
         k = (self.block_size - 1).bit_length()
         q, r = selection[: self.selection_q], selection[self.selection_q :]
-        qrom_gate = QROM(*qrom_data, target_bitsizes=qrom_target_bitsizes)
+        qrom_gate = QROM(
+            qrom_data, selection_bitsizes=[self.selection_q], target_bitsizes=qrom_target_bitsizes
+        )
         qrom_op = qrom_gate.on_registers(
             selection=q, **qrom_gate.target_registers.split_qubits(ordered_target_qubits)
         )

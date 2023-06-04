@@ -7,10 +7,12 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
 from functools import cached_property
-from typing import List, Sequence, Tuple
+from typing import List, Sequence
 
 import cirq
+import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 from openfermion.circuits.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 from cirq_qubitization.cirq_algos.arithmetic_gates import LessThanEqualGate
@@ -21,7 +23,7 @@ from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
-@frozen(cache_hash=True)
+@frozen
 class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
 
@@ -72,8 +74,8 @@ class StatePreparationAliasSampling(PrepareOracle):
         Babbush et. al. (2018). Section III.D. and Figure 11.
     """
     selection_registers: SelectionRegisters
-    alt: Tuple[int, ...]
-    keep: Tuple[int, ...]
+    alt: NDArray[np.int_]
+    keep: NDArray[np.int_]
     mu: int
 
     @classmethod
@@ -86,8 +88,8 @@ class StatePreparationAliasSampling(PrepareOracle):
         N = len(lcu_probabilities)
         return StatePreparationAliasSampling(
             selection_registers=SelectionRegisters.build(selection=((N - 1).bit_length(), N)),
-            alt=tuple(alt),
-            keep=tuple(keep),
+            alt=np.array(alt),
+            keep=np.array(keep),
             mu=mu,
         )
 
@@ -104,12 +106,24 @@ class StatePreparationAliasSampling(PrepareOracle):
         return self.mu
 
     @cached_property
+    def selection_bitsize(self) -> int:
+        return self.selection_registers.bitsize
+
+    @cached_property
     def junk_registers(self) -> Registers:
         return Registers.build(
             sigma_mu=self.sigma_mu_bitsize,
             alt=self.alternates_bitsize,
             keep=self.keep_bitsize,
             less_than_equal=1,
+        )
+
+    def __hash__(self):
+        return hash(
+            (self.selection_registers,)
+            + tuple(self.alt.ravel())
+            + tuple(self.keep.ravel())
+            + (self.mu,)
         )
 
     def decompose_from_registers(
@@ -123,7 +137,11 @@ class StatePreparationAliasSampling(PrepareOracle):
         N = self.selection_registers[0].iteration_length
         yield PrepareUniformSuperposition(N).on(*selection)
         yield cirq.H.on_each(*sigma_mu)
-        qrom = QROM(self.alt, self.keep, target_bitsizes=[len(alt), len(keep)])
+        qrom = QROM(
+            [self.alt, self.keep],
+            [self.selection_bitsize],
+            [self.alternates_bitsize, self.keep_bitsize],
+        )
         yield qrom.on_registers(selection=selection, target0=alt, target1=keep)
         yield LessThanEqualGate([2] * self.mu, [2] * self.mu).on(*keep, *sigma_mu, *less_than_equal)
         yield MultiTargetCSwap.make_on(control=less_than_equal, target_x=alt, target_y=selection)
