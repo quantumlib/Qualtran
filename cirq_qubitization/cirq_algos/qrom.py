@@ -10,11 +10,12 @@ from cirq_qubitization import cirq_infra
 from cirq_qubitization.cirq_algos import and_gate, unary_iteration
 
 
+@cirq.value_equality()
 @frozen
 class QROM(unary_iteration.UnaryIterationGate):
     """Gate to load data[l] in the target register when the selection stores an index l.
 
-    In the case of multi-dimensional data[p,q,r,...] we use of multple name
+    In the case of multi-dimensional data[p,q,r,...] we use multiple named
     selection registers [p, q, r, ...] to index and load the data.
 
     Args:
@@ -54,13 +55,14 @@ class QROM(unary_iteration.UnaryIterationGate):
         assert all([isinstance(s, int) for s in self.selection_bitsizes])
         assert all([isinstance(t, int) for t in self.target_bitsizes])
         assert len(set(shapes)) == 1, f"Data must all have the same size: {shapes}"
-        assert len(self.target_bitsizes) == len(self.data)
+        assert len(self.target_bitsizes) == len(
+            self.data
+        ), f"Target bitsize length differs from data length: {len(self.target_bitsizes)} vs {len(self.data)}"
         assert all(
             t >= int(np.max(d)).bit_length() for t, d in zip(self.target_bitsizes, self.data)
         )
-
-    def __hash__(self):
-        return hash(tuple(tuple(d.ravel()) for d in self.data))
+        assert isinstance(self.selection_bitsizes, tuple)
+        assert isinstance(self.target_bitsizes, tuple)
 
     @cached_property
     def control_registers(self) -> cirq_infra.Registers:
@@ -152,13 +154,5 @@ class QROM(unary_iteration.UnaryIterationGate):
             return self
         return NotImplemented
 
-    def __eq__(self, other):
-        if other.__class__ is not self.__class__:
-            return NotImplemented
-        else:
-            return (
-                np.array_equal(self.data, other.data)
-                and np.array_equal(self.selection_bitsizes, other.selection_bitsizes)
-                and np.array_equal(self.target_bitsizes, other.target_bitsizes)
-                and np.array_equal(self.num_controls, other.num_controls)
-            )
+    def _value_equality_values_(self):
+        return (self.selection_bitsizes, self.target_bitsizes, self.num_controls)

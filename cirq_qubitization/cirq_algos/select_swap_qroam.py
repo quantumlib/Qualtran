@@ -3,6 +3,7 @@ from typing import List, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
+from numpy.typing import NDArray
 
 from cirq_qubitization import cirq_infra
 from cirq_qubitization.cirq_algos.qrom import QROM
@@ -163,7 +164,7 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
     ) -> cirq.OP_TREE:
         # Divide each data sequence and corresponding target registers into
         # `self.num_blocks` batches of size `self.block_size`.
-        qrom_data: List[Tuple[int, ...]] = []
+        qrom_data: List[NDArray] = []
         qrom_target_bitsizes: List[int] = []
         ordered_target_qubits: List[cirq.Qid] = []
         for block_id in range(self.block_size):
@@ -181,7 +182,9 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
         k = (self.block_size - 1).bit_length()
         q, r = selection[: self.selection_q], selection[self.selection_q :]
         qrom_gate = QROM(
-            qrom_data, selection_bitsizes=[self.selection_q], target_bitsizes=qrom_target_bitsizes
+            qrom_data,
+            selection_bitsizes=(self.selection_q,),
+            target_bitsizes=tuple(qrom_target_bitsizes),
         )
         qrom_op = qrom_gate.on_registers(
             selection=q, **qrom_gate.target_registers.split_qubits(ordered_target_qubits)

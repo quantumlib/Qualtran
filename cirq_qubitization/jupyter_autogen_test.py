@@ -20,7 +20,7 @@ from cirq_qubitization.jupyter_autogen import (
 def _make_QROM():
     from cirq_qubitization import QROM
 
-    return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=[3], target_bitsizes=[3])
+    return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
 
 
 def test_gate_nb_spec():
@@ -72,7 +72,7 @@ def test_get_lines_for_constructing_an_object():
     lines, obj_expr = _get_lines_for_constructing_an_object(_make_QROM)
     assert lines == ['from cirq_qubitization import QROM', '']
     assert (
-        obj_expr == 'QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=[3], target_bitsizes=[3])'
+        obj_expr == 'QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))'
     )
 
 
