@@ -15,52 +15,6 @@ from cirq_qubitization.cirq_algos.mean_estimation import (
 from cirq_qubitization.cirq_algos.select_and_prepare import PrepareOracle, SelectOracle
 
 
-def compute_unitary(op: cirq.Operation):
-    """Computes the reduced unitary, when the decomposition of op can allocate new ancillas."""
-
-    qubit_order = cirq.QubitOrder.explicit(op.qubits, fallback=cirq.QubitOrder.DEFAULT)
-    circuit = cirq.Circuit(
-        cirq.decompose(op, keep=lambda val: cirq.has_unitary(val, allow_decompose=False))
-    )
-    nq, nall = len(op.qubits), len(circuit.all_qubits())
-    assert nall <= 16, "Too many qubits to compute the reduced unitary for."
-    u = circuit.unitary(qubit_order=qubit_order).reshape((2,) * 2 * nall)
-    new_order = [*range(nq, nall), *range(nall + nq, 2 * nall), *range(nq), *range(nall, nall + nq)]
-    u = np.transpose(u, axes=new_order)
-    u = u[(0, 0) * (nall - nq)]
-    return u.reshape(2**nq, 2**nq)
-
-
-def _phase_kickback_via_cx(q: cirq.Qid, anc: cirq.Qid) -> cirq.OP_TREE:
-    yield [cirq.X(anc), cirq.H(anc)]
-    yield cirq.CX(q, anc)
-    yield [cirq.H(anc), cirq.X(anc)]
-
-
-def _phase_kickback_via_z(q: cirq.Qid, anc: cirq.Qid) -> cirq.OP_TREE:
-    yield cirq.CX(q, anc)
-    yield cirq.Z(anc)
-    yield cirq.CX(q, anc)
-
-
-@pytest.mark.parametrize(
-    'decompose_func, expected', [(_phase_kickback_via_z, cirq.Z), (_phase_kickback_via_cx, cirq.Z)]
-)
-def test_compute_unitary(decompose_func, expected):
-    class GateWithDecompose(cirq.Gate):
-        def _num_qubits_(self):
-            return 1
-
-        def _decompose_(self, q):
-            anc = cirq.NamedQubit("anc")
-            yield from decompose_func(*q, anc)
-
-    op = GateWithDecompose().on(*cirq.LineQubit.range(1))
-    u = compute_unitary(op)
-    assert cirq.is_unitary(u)
-    assert np.allclose(u, cirq.unitary(expected))
-
-
 @frozen
 class BernoulliSynthesizer(PrepareOracle):
     r"""Synthesizes the state $sqrt(1 - p)|00..00> + sqrt(p)|11..11>$"""
@@ -72,7 +26,7 @@ class BernoulliSynthesizer(PrepareOracle):
     def selection_registers(self) -> cq.SelectionRegisters:
         return cq.SelectionRegisters.build(q=(self.num_qubits, 2))
 
-    def decompose_from_registers(self, q: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(self, context, q: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         theta = np.arccos(np.sqrt(1 - self.p))
         yield cirq.ry(2 * theta).on(q[0])
         yield [cirq.CNOT(q[0], q[i]) for i in range(1, len(q))]
@@ -100,7 +54,7 @@ class BernoulliEncoder(SelectOracle):
         return cq.Registers.build(t=self.target_bitsize)
 
     def decompose_from_registers(
-        self, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
+        self, context, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         y0_bin = cq.bit_tools.iter_bits(self.y[0], self.target_bitsize)
         y1_bin = cq.bit_tools.iter_bits(self.y[1], self.target_bitsize)
@@ -141,7 +95,7 @@ def satisfies_theorem_321(
     mean_gate_helper = cq_testing.GateHelper(mean_gate)
 
     # Compute a reduced unitary for mean_op.
-    u = compute_unitary(mean_gate_helper.operation)
+    u = cirq.unitary(mean_gate)
     assert cirq.is_unitary(u)
 
     # Compute the final state vector obtained using the synthesizer `Prep |0>`
@@ -203,7 +157,7 @@ class GroverSynthesizer(PrepareOracle):
     def selection_registers(self) -> cq.SelectionRegisters:
         return cq.SelectionRegisters.build(selection=(self.n, 2**self.n))
 
-    def decompose_from_registers(self, selection: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(self, context, selection: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         yield cirq.H.on_each(*selection)
 
     def __pow__(self, power):
@@ -233,7 +187,7 @@ class GroverEncoder(SelectOracle):
         return cq.Registers.build(target=self.marked_val.bit_length())
 
     def decompose_from_registers(
-        self, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
+        self, context, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         selection_cv = [*cq.bit_tools.iter_bits(self.marked_item, self.selection_registers.bitsize)]
         yval_bin = [*cq.bit_tools.iter_bits(self.marked_val, self.target_registers.bitsize)]

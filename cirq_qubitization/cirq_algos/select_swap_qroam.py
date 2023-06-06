@@ -160,7 +160,10 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, selection: Sequence[cirq.Qid], **targets: Sequence[cirq.Qid]
+        self,
+        context: cirq.DecompositionContext,
+        selection: Sequence[cirq.Qid],
+        **targets: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         # Divide each data sequence and corresponding target registers into
         # `self.num_blocks` batches of size `self.block_size`.
@@ -171,7 +174,7 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
             for sequence_id in range(self._num_sequences):
                 data = self.data[sequence_id]
                 target_bitsize = self._target_bitsizes[sequence_id]
-                ordered_target_qubits.extend(cirq_infra.qborrow(target_bitsize))
+                ordered_target_qubits.extend(context.qubit_manager.qborrow(target_bitsize))
                 data_for_current_block = data[block_id :: self.block_size]
                 if len(data_for_current_block) < self.num_blocks:
                     zero_pad = (0,) * (self.num_blocks - len(data_for_current_block))
@@ -204,6 +207,8 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
         yield swap_with_zero_op
         yield cnot_op
         yield swap_with_zero_op**-1
+
+        context.qubit_manager.qfree(ordered_target_qubits)
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In_q"] * self.selection_q

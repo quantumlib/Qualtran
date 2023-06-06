@@ -37,6 +37,7 @@ class MultiTargetCSwap(GateWithRegisters):
 
     def decompose_from_registers(
         self,
+        context: cirq.DecompositionContext,
         control: Sequence[cirq.Qid],
         target_x: Sequence[cirq.Qid],
         target_y: Sequence[cirq.Qid],
@@ -78,6 +79,7 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
 
     def decompose_from_registers(
         self,
+        context: cirq.DecompositionContext,
         control: Sequence[cirq.Qid],
         target_x: Sequence[cirq.Qid],
         target_y: Sequence[cirq.Qid],
@@ -155,7 +157,10 @@ class SwapWithZeroGate(GateWithRegisters):
         return Registers([*self.selection_registers, *self.target_registers])
 
     def decompose_from_registers(
-        self, selection: Sequence[cirq.Qid], **target_regs: Sequence[cirq.Qid]
+        self,
+        context: cirq.DecompositionContext,
+        selection: Sequence[cirq.Qid],
+        **target_regs: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         assert len(target_regs) == self.n_target_registers
         cswap_n = MultiTargetCSwapApprox(self.target_bitsize)

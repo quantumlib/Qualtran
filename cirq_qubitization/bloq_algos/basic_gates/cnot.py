@@ -70,7 +70,7 @@ class CNOT(Bloq):
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
     def as_cirq_op(
-        self, ctrl: 'CirqQuregT', target: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 

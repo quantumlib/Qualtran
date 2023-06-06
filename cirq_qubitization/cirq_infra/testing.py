@@ -22,6 +22,7 @@ class GateHelper:
     """
 
     gate: GateWithRegisters
+    context: cirq.DecompositionContext = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
 
     @cached_property
     def r(self) -> Registers:
@@ -53,7 +54,7 @@ class GateHelper:
     @cached_property
     def decomposed_circuit(self) -> cirq.Circuit:
         """The `gate` applied to example qubits, decomposed and wrapped in a `cirq.Circuit`."""
-        return cirq.Circuit(cirq.decompose(self.operation))
+        return cirq.Circuit(cirq.decompose(self.operation, context=self.context))
 
 
 def assert_circuit_inp_out_cirqsim(

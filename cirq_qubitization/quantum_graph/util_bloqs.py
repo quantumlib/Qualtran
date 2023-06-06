@@ -38,7 +38,9 @@ class Split(Bloq):
             ]
         )
 
-    def as_cirq_op(self, split: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(
+        self, qubit_manager, split: 'CirqQuregT'
+    ) -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'split': split.reshape((self.n, 1))}
 
     def t_complexity(self) -> 'TComplexity':
@@ -83,7 +85,7 @@ class Join(Bloq):
             ]
         )
 
-    def as_cirq_op(self, join: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, join: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'join': join.reshape(self.n)}
 
     def t_complexity(self) -> 'TComplexity':

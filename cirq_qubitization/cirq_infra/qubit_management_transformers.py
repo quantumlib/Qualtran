@@ -2,7 +2,7 @@ from typing import Dict, Optional, Set, Tuple
 
 import cirq
 
-from cirq_qubitization.cirq_infra import qid_types, qubit_manager
+from cirq_qubitization.cirq_infra import qubit_manager
 
 
 def _get_qubit_mapping_first_and_last_moment(
@@ -27,11 +27,11 @@ def _get_qubit_mapping_first_and_last_moment(
 
 
 def _is_temp(q: cirq.Qid) -> bool:
-    return isinstance(q, (qid_types.CleanQubit, qid_types.BorrowableQubit))
+    return isinstance(q, (cirq.ops.CleanQubit, cirq.ops.BorrowableQubit))
 
 
 def map_clean_and_borrowable_qubits(
-    circuit: cirq.AbstractCircuit, *, qm: Optional[qubit_manager.QubitManager] = None
+    circuit: cirq.AbstractCircuit, *, qm: Optional[cirq.QubitManager] = None
 ) -> cirq.Circuit:
     """Uses `qm: QubitManager` to map all `CleanQubit`/`BorrowableQubit`s to system qubits.
 
@@ -74,6 +74,7 @@ def map_clean_and_borrowable_qubits(
     """
     if qm is None:
         qm = qubit_manager.GreedyQubitManager(prefix="ancilla")
+    assert isinstance(qm, cirq.QubitManager)
 
     allocated_qubits = {q for q in circuit.all_qubits() if _is_temp(q)}
     qubits_lifespan = _get_qubit_mapping_first_and_last_moment(circuit)
@@ -126,10 +127,10 @@ def map_clean_and_borrowable_qubits(
                 continue
 
             # This is the first time we are seeing this temporary qubit and need to find a mapping.
-            if isinstance(q, qid_types.CleanQubit):
+            if isinstance(q, cirq.ops.CleanQubit):
                 # Allocate a new clean qubit if `q` using the qubit manager.
                 allocated_map[q] = qm.qalloc(1)[0]
-            elif isinstance(q, qid_types.BorrowableQubit):
+            elif isinstance(q, cirq.ops.BorrowableQubit):
                 # For each of the system qubits that can be borrowed, check whether they have a
                 # conflicting operation in the range [st, en]; which is the scope for which the
                 # borrower needs the borrowed qubit for.

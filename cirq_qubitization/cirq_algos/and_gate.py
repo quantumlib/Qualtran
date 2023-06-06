@@ -109,7 +109,11 @@ class And(GateWithRegisters):
             )
 
     def decompose_from_registers(
-        self, control: Sequence[cirq.Qid], ancilla: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
+        self,
+        context: cirq.DecompositionContext,
+        control: Sequence[cirq.Qid],
+        ancilla: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         (target,) = target
         if len(control) == 2:

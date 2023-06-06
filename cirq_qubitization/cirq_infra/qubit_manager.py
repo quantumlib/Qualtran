@@ -1,81 +1,9 @@
-import abc
-import contextlib
-from typing import Iterable, List, Set, TypeVar, Union
+from typing import Iterable, List, Set
 
 import cirq
 
-from cirq_qubitization.cirq_infra import qid_types
 
-
-class QubitManager(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def qalloc(self, n: int) -> List[cirq.Qid]:
-        """Allocate `n` clean qubits, i.e. qubits guaranteed to be in state |0>."""
-
-    @abc.abstractmethod
-    def qborrow(self, n: int) -> List[cirq.Qid]:
-        """Allocate `n` dirty qubits, i.e. the returned qubits can be in any state."""
-
-    @abc.abstractmethod
-    def qfree(self, qubits: Iterable[cirq.Qid]) -> None:
-        """Free pre-allocated clean or dirty qubits managed by this qubit manager."""
-
-
-QubitManagerT = TypeVar('QubitManagerT', bound=QubitManager)
-
-
-class SimpleQubitManager:
-    """Always allocates a new `CleanQubit`/`BorrowableQubit` for `qalloc`/`qborrow` requests."""
-
-    def __init__(self):
-        self._clean_id = 0
-        self._borrow_id = 0
-
-    def qalloc(self, n: int) -> List[cirq.Qid]:
-        self._clean_id += n
-        return [qid_types.CleanQubit(i) for i in range(self._clean_id - n, self._clean_id)]
-
-    def qborrow(self, n: int) -> List[cirq.Qid]:
-        self._borrow_id = self._borrow_id + n
-        return [qid_types.BorrowableQubit(i) for i in range(self._borrow_id - n, self._borrow_id)]
-
-    def qfree(self, qubits: Iterable[cirq.Qid]) -> None:
-        for q in qubits:
-            good = isinstance(q, qid_types.CleanQubit) and q.id < self._clean_id
-            good |= isinstance(q, qid_types.BorrowableQubit) and q.id < self._borrow_id
-            if not good:
-                raise ValueError(f"{q} was not allocated by {self}")
-
-
-_global_qubit_manager = SimpleQubitManager()
-
-
-def qalloc(n: int) -> List[cirq.Qid]:
-    return _global_qubit_manager.qalloc(n)
-
-
-def qborrow(n: int) -> List[cirq.Qid]:
-    return _global_qubit_manager.qborrow(n)
-
-
-def qfree(qubits: Union[cirq.Qid, Iterable[cirq.Qid]]) -> None:
-    qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
-    return _global_qubit_manager.qfree(qubits)
-
-
-@contextlib.contextmanager
-def memory_management_context(qubit_manager: QubitManagerT = None) -> None:
-    if qubit_manager is None:
-        qubit_manager = SimpleQubitManager()
-    global _global_qubit_manager
-    _global_qubit_manager = qubit_manager
-    try:
-        yield
-    finally:
-        _global_qubit_manager = SimpleQubitManager()
-
-
-class GreedyQubitManager(QubitManager):
+class GreedyQubitManager(cirq.QubitManager):
     """Greedy allocator that maximizes/minimizes qubit reuse based on a configurable parameter.
 
     GreedyQubitManager can be configured, using `maximize_reuse` flag, to work in one of two modes:
@@ -110,17 +38,22 @@ class GreedyQubitManager(QubitManager):
         self.maximize_reuse = maximize_reuse
         self.resize(size)
 
-    def resize(self, new_size: int) -> None:
+    def _allocate_qid(self, name: str, dim: int) -> cirq.Qid:
+        return cirq.q(name) if dim == 2 else cirq.NamedQid(name, dimension=dim)
+
+    def resize(self, new_size: int, dim: int = 2) -> None:
         if new_size <= self._size:
             return
         new_qubits: List[cirq.Qid] = [
-            cirq.q(f'{self._prefix}_{s}') for s in range(self._size, new_size)
+            self._allocate_qid(f'{self._prefix}_{s}', dim) for s in range(self._size, new_size)
         ]
         self._free_qubits = new_qubits + self._free_qubits
         self._size = new_size
 
-    def qalloc(self, n: int) -> List[cirq.Qid]:
-        self.resize(self._size + n - len(self._free_qubits))
+    def qalloc(self, n: int, dim: int = 2) -> List[cirq.Qid]:
+        if not n:
+            return []
+        self.resize(self._size + n - len(self._free_qubits), dim=dim)
         ret_qubits = self._free_qubits[-n:] if self.maximize_reuse else self._free_qubits[:n]
         self._free_qubits = self._free_qubits[:-n] if self.maximize_reuse else self._free_qubits[n:]
         self._used_qubits.update(ret_qubits)
@@ -132,8 +65,8 @@ class GreedyQubitManager(QubitManager):
         self._used_qubits -= qs
         self._free_qubits.extend(qs)
 
-    def qborrow(self, n: int) -> List[cirq.Qid]:
-        return self.qalloc(n)
+    def qborrow(self, n: int, dim: int = 2) -> List[cirq.Qid]:
+        return self.qalloc(n, dim)
 
     def is_used(self, qubit: cirq.Qid) -> bool:
         return qubit in self._used_qubits

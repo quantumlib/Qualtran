@@ -46,7 +46,7 @@ class TwoBitSwap(Bloq):
         return FancyRegisters.build(x=1, y=1)
 
     def as_cirq_op(
-        self, x: 'CirqQuregT', y: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         (x,) = x
         (y,) = y
@@ -91,7 +91,11 @@ class TwoBitCSwap(Bloq):
         return FancyRegisters.build(ctrl=1, x=1, y=1)
 
     def as_cirq_op(
-        self, ctrl: 'CirqQuregT', x: 'CirqQuregT', y: 'CirqQuregT'
+        self,
+        qubit_manager: 'cirq.QubitManager',
+        ctrl: 'CirqQuregT',
+        x: 'CirqQuregT',
+        y: 'CirqQuregT',
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         (ctrl,) = ctrl
         (x,) = x
