@@ -22,4 +22,4 @@ def construct_alt_keep_qrom(lcu_coefficients: List[float], probability_epsilon: 
     alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
         lcu_coefficients=lcu_coefficients, epsilon=probability_epsilon
     )
-    return QROM.build([np.array(alternates), np.array(keep_numers)])
+    return QROM.build(np.array(alternates), np.array(keep_numers))
