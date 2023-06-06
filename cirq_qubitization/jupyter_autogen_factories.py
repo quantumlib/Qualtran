@@ -103,24 +103,25 @@ def _make_SelectChem():
 def _make_SubPrepareChem():
     from cirq_qubitization.cirq_algos.chemistry import SubPrepareChem
 
+    M = 2
+    N = M**3
+    size = 4 * M
+    mu = 8
+    theta_l = np.random.randint(0, 2, size=size).reshape((2, 2, M, M, M))
+    altp = [np.random.randint(0, M, size=size).reshape((2, 2, M, M, M)) for _ in range(3)]
+    altU = np.random.randint(0, 2, size=size).reshape((2, 2, M, M, M))
+    altV = np.random.randint(0, 2, size=size).reshape((2, 2, M, M, M))
+    keep = np.random.random((2, 2, M, M, M))
+    sp = SubPrepareChem(theta_l=theta_l, altU=altU, altV=altV, altp=altp, keep=keep, mu=mu)
+    return sp
+
+
+def _make_PrepareChem():
+    from cirq_qubitization.cirq_algos.chemistry import PrepareChem
+
     num_orb = 4
     Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_orb).reshape((4, num_orb))
     # not meant to be meaningful.
     lambda_H = np.sum(np.abs([Us, Ts, Vs]))
-    sp = SubPrepareChem.build_from_coefficients(
-        num_spin_orb=2 * num_orb, T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H
-    )
+    sp = PrepareChem.build_from_coefficients(T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H)
     return sp
-
-
-# def _make_PrepareChem():
-#     from cirq_qubitization.cirq_algos.chemistry import PrepareChem
-
-#     num_orb = 4
-#     Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_orb).reshape((4, num_orb))
-#     # not meant to be meaningful.
-#     lambda_H = np.sum(np.abs([Us, Ts, Vs]))
-#     sp = PrepareChem.build_from_coefficients(
-#         num_spin_orb=2 * num_orb, T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H
-#     )
-#     return sp
