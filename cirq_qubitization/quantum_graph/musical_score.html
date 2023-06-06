@@ -1,0 +1,42 @@
+<!-- Simple HTML file that shows how to invoke d3.js based musical score drawing.
+
+    1. Set `xDomain` and `yDomain` global variables manually
+    2. Load `musical_score.js` in a script tag
+    3. Call the function `make_from_data(fn)` where fn is the json data dumped
+       from the Python library.
+
+Important note: `make_from_data` will fail (due to CORS policy) if this file
+is opened from disk. You must run a simple web server -- either via the built-in
+pycharm helper, or with
+
+    >>> cd [this directory]
+    >>> python -m http.server
+
+and navigating to http://localhost:8000/musical_score.html
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>musical score</title>
+</head>
+<style>
+    div#content{margin: 10px;}
+
+</style>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<body>
+<div id="content">
+
+</div>
+<script>
+    let xDomain = [-2, 5];
+    let yDomain = [0, 7];
+</script>
+<script src="musical_score.js"></script>
+<script>
+    make_from_data("musical_score_example.json");
+</script>
+</body>
+</html>

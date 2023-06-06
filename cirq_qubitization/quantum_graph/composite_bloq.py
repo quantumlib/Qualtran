@@ -273,17 +273,27 @@ class CompositeBloq(Bloq):
 
         """
         bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+
+        # We take particular care during flattening to preserve the `binst.i` of bloq instances
+        # that are not flattened. We do this by initializing the bloq builder's `i` counter
+        # to one greater than the existing maximum value, so all calls to `add_from` will result
+        # in new, higher `binst.i` values.
+        bb._i = max(binst.i for binst in self.bloq_instances) + 1
+
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         did_work = False
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
 
-            bloq = binst.bloq
             if pred(binst):
-                new_out_soqs = bb.add_from(bloq.decompose_bloq(), **in_soqs)
+                new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
                 did_work = True
             else:
-                new_out_soqs = bb.add(bloq, **in_soqs)
+                # Since we took care to not re-use existing `binst.i` values for flattened
+                # bloqs, it is safe to call `bb._add_binst` with the old `binst` (and in
+                # particular with the old `binst.i`) to preserve the `binst.i` of unflattened
+                # bloqs.
+                new_out_soqs = bb._add_binst(binst, in_soqs=in_soqs)
 
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
@@ -695,10 +705,10 @@ class CompositeBloqBuilder:
 
         return bb, initial_soqs
 
-    def _new_binst(self, bloq: Bloq) -> BloqInstance:
-        inst = BloqInstance(bloq, self._i)
+    def _new_binst_i(self) -> int:
+        i = self._i
         self._i += 1
-        return inst
+        return i
 
     def _add_cxn(
         self, binst: BloqInstance, idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]
@@ -734,7 +744,16 @@ class CompositeBloqBuilder:
                 the ordering is irrespective of the order of `in_soqs` that have been passed in
                 and depends only on the convention of the bloq's registers.
         """
-        binst = self._new_binst(bloq)
+        binst = BloqInstance(bloq, i=self._new_binst_i())
+        return self._add_binst(binst, in_soqs=in_soqs)
+
+    def _add_binst(self, binst: BloqInstance, in_soqs: Dict[str, SoquetT]) -> Tuple[SoquetT, ...]:
+        """Add a bloq instance.
+
+        Warning! Do not use this function externally! Untold bad things will happen if
+        the provided `binst.i` is not unique.
+        """
+        bloq = binst.bloq
 
         def _add(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
             # close over `binst`
