@@ -97,22 +97,16 @@ def _make_QubitizationWalkOperator():
 def _make_SelectChem():
     from cirq_qubitization.cirq_algos.chemistry import SelectChem
 
-    return SelectChem(4, 1)
+    return SelectChem(2, 1)
 
 
 def _make_SubPrepareChem():
     from cirq_qubitization.cirq_algos.chemistry import SubPrepareChem
 
     M = 2
-    N = M**3
-    size = 4 * N
-    mu = 8
-    theta_l = np.random.randint(0, 2, size=size).reshape((2, 2, M, M, M))
-    altp = [np.random.randint(0, M, size=size).reshape((2, 2, M, M, M)) for _ in range(3)]
-    altU = np.random.randint(0, 2, size=size).reshape((2, 2, M, M, M))
-    altV = np.random.randint(0, 2, size=size).reshape((2, 2, M, M, M))
-    keep = np.random.random((2, 2, M, M, M))
-    sp = SubPrepareChem(theta_l=theta_l, altU=altU, altV=altV, altp=altp, keep=keep, mu=mu)
+    num_spatial = M**3
+    Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_spatial).reshape((4, num_spatial))
+    sp = SubPrepareChem.build_from_coefficients(Ts, Us, Vs, Vxs)
     return sp
 
 
@@ -122,5 +116,5 @@ def _make_PrepareChem():
     M = 2
     num_spatial = M**3
     Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_spatial).reshape((4, num_spatial))
-    sp = PrepareChem.build_from_coefficients(T=Ts, U=Us, V=Vs, Vx=Vxs)
+    sp = PrepareChem(M=M, T=Ts, U=Us, V=Vs, Vx=Vxs)
     return sp
