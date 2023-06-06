@@ -211,6 +211,7 @@ class SelectChem(SelectOracle):
         raise NotImplementedError(f'Cannot create a controlled version of {self}')
 
 
+@cirq.value_equality()
 @frozen
 class SubPrepareChem(PrepareOracle):
     r"""Sub-prepare circuit for the plane wave dual Hamiltonian.
@@ -362,15 +363,6 @@ class SubPrepareChem(PrepareOracle):
             mu=mu,
         )
 
-    def __hash__(self):
-        return hash(
-            +tuple(self.altp.ravel())
-            + tuple(self.altU.ravel())
-            + tuple(self.altV.ravel())
-            + tuple(self.keep.ravel())
-            + (self.mu,)
-        )
-
     @cached_property
     def selection_registers(self) -> SelectionRegisters:
         M = self.altU.shape[-1]
@@ -460,6 +452,9 @@ class SubPrepareChem(PrepareOracle):
         )
         yield LessThanEqualGate([2] * self.mu, [2] * self.mu).on(*keep, *sigma_mu, *less_than_equal)
 
+    def _value_equality_values_(self):
+        return self.M
+
 
 @frozen
 class IndexedAddMod(UnaryIterationGate):
@@ -483,21 +478,21 @@ class IndexedAddMod(UnaryIterationGate):
     def target_registers(self) -> Registers:
         return Registers.build(**{f'target{i}': sb for i, sb in enumerate(self.selection_bitsizes)})
 
-    def nth_operation(
-        self,
-        control: cirq.Qid,
-        i: int,
-        j: int,
-        k: int,
-        t1: Sequence[cirq.Qid],
-        t2: Sequence[cirq.Qid],
-        t3: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
-        yield AddMod(self.target_shape[0], self.mod, add_val=i).on(*t1)
-        yield AddMod(self.target_shape[1], self.mod, add_val=j).on(*t2)
-        yield AddMod(self.target_shape[2], self.mod, add_val=k).on(*t3)
+    def nth_operation(self, control: cirq.Qid, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        selection_idx = tuple(qubit_regs[reg.name] for reg in self.selection_registers)
+        target_regs = tuple(v for k, v in qubit_regs.items() if k in self.target_registers)
+        yield AddMod(self.selection_bitsizes[0], self.mod, add_val=selection_idx[0]).on(
+            *target_regs[0]
+        )
+        yield AddMod(self.selection_bitsizes[1], self.mod, add_val=selection_idx[1]).on(
+            *target_regs[1]
+        )
+        yield AddMod(self.selection_bitsizes[2], self.mod, add_val=selection_idx[2]).on(
+            *target_regs[2]
+        )
 
 
+@cirq.value_equality()
 @frozen
 class PrepareChem(PrepareOracle):
     r"""Prepare circuit for the plane wave dual Hamiltonian.
@@ -610,3 +605,6 @@ class PrepareChem(PrepareOracle):
             ),
             mod=self.M,
         ).on(*selqx, *selqy, *selqz, *selpx, *selpy, *selpz)
+
+    def _value_equality_values_(self):
+        return (self.M, self.ndim)

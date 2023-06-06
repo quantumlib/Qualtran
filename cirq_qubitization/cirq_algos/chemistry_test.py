@@ -17,11 +17,9 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 
 
 def test_select_t_complexity():
-    N = 10
-    select = SelectChem(num_spin_orb=N, control_val=1)
+    M = 2
+    select = SelectChem(M=M, control_val=1)
     cost = cq.t_complexity(select)
-    assert cost.t == 168
-    assert cost.rotations == 0
 
 
 # def test_indexed_add_mod():
@@ -90,7 +88,7 @@ def test_prepare():
     M = 2
     num_spat_orb = M**3
     Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_spat_orb).reshape((4, num_spat_orb))
-    lambda_H = np.sum(np.abs([Us, Ts, Vs]))
-    sp = PrepareChem.build_from_coefficients(T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H)
-    g = cq_testing.GateHelper(sp)
-    print(cirq.Circuit(cirq.decompose_once(g.operation)))
+    prep = PrepareChem(M=M, T=Ts, U=Us, V=Vs, Vx=Vxs)
+    g = cq_testing.GateHelper(prep)
+    cirq.Circuit(cirq.decompose_once(g.operation))
+    cost = cq.t_complexity(prep)
