@@ -65,7 +65,7 @@ def get_3q_uniform_dirac_notation(signs):
 @pytest.mark.parametrize('eps', [0.01])
 def test_reflection_using_prepare(num_ones, eps):
     data = [1] * num_ones
-    prepare_gate = cq.StatePreparationAliasSampling(data, probability_epsilon=eps)
+    prepare_gate = cq.StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
     gate = cq.ReflectionUsingPrepare(prepare_gate)
     g, qubit_order, decomposed_circuit = construct_gate_helper_and_qubit_order(gate)
     decomposed_circuit = greedily_allocate_ancilla(decomposed_circuit)
@@ -85,7 +85,7 @@ def test_reflection_using_prepare(num_ones, eps):
 def test_reflection_using_prepare_diagram():
     data = [1, 2, 3, 4, 5, 6]
     eps = 0.1
-    prepare_gate = cq.StatePreparationAliasSampling(data, probability_epsilon=eps)
+    prepare_gate = cq.StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
     # No control
     gate = cq.ReflectionUsingPrepare(prepare_gate, control_val=None)
     op = gate.on_registers(**gate.registers.get_named_qubits())

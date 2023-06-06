@@ -59,6 +59,12 @@ def _make_MultiTargetCSwapApprox():
     return MultiTargetCSwapApprox(2)
 
 
+def _make_SwapWithZeroGate():
+    from cirq_qubitization.cirq_algos.swap_network import SwapWithZeroGate
+
+    return SwapWithZeroGate(selection_bitsize=2, target_bitsize=3, n_target_registers=4)
+
+
 def _make_GenericSelect():
     from cirq_qubitization.generic_select import GenericSelect
 
@@ -75,7 +81,9 @@ def _make_StatePreparationAliasSampling():
     coeffs = np.array([1.0, 1, 3, 2])
     mu = 3
 
-    return StatePreparationAliasSampling(coeffs, probability_epsilon=2**-mu / len(coeffs))
+    return StatePreparationAliasSampling.from_lcu_probs(
+        coeffs, probability_epsilon=2**-mu / len(coeffs)
+    )
 
 
 def _make_QubitizationWalkOperator():

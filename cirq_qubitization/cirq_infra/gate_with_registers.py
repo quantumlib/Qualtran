@@ -143,7 +143,6 @@ class SelectionRegisters(Registers):
 
     def __init__(self, registers: Iterable[SelectionRegister]):
         super().__init__(registers)
-        self._registers = registers
         self.iteration_lengths = tuple([reg.iteration_length for reg in registers])
         self._suffix_prod = np.multiply.accumulate(self.iteration_lengths[::-1])[::-1]
         self._suffix_prod = np.append(self._suffix_prod, [1])
@@ -215,9 +214,8 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     def _num_qubits_(self) -> int:
         return self.registers.bitsize
 
-    @abc.abstractmethod
     def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        ...
+        return NotImplemented
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         qubit_regs = self.registers.split_qubits(qubits)

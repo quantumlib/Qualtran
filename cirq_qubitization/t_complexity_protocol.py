@@ -1,7 +1,7 @@
-from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Optional
 
 import cirq
+from attrs import frozen
 from typing_extensions import Protocol
 
 from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
@@ -9,7 +9,7 @@ from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
 
-@dataclass(frozen=True)
+@frozen
 class TComplexity:
     t: int = 0
     clifford: int = 0
