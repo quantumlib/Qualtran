@@ -15,7 +15,7 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 )
 @pytest.mark.parametrize("num_controls", [0, 1, 2])
 def test_qrom_1d(data, num_controls):
-    qrom = cq.QROM.build([np.array(d) for d in data], num_controls=num_controls)
+    qrom = cq.QROM.build(*data, num_controls=num_controls)
     g = cq_testing.GateHelper(qrom)
     with cq.memory_management_context(cq.GreedyQubitManager('a', maximize_reuse=True)):
         _ = g.all_qubits
@@ -53,8 +53,9 @@ def test_qrom_1d(data, num_controls):
 
 
 def test_qrom_diagram():
-    data = [np.array([1, 2, 3]), np.array([4, 5, 6])]
-    qrom = cq.QROM.build(data)
+    d0 = np.array([1, 2, 3])
+    d1 = np.array([4, 5, 6])
+    qrom = cq.QROM.build(d0, d1)
     q = cirq.LineQubit.range(cirq.num_qubits(qrom))
     circuit = cirq.Circuit(qrom.on_registers(**qrom.registers.split_qubits(q)))
     cirq.testing.assert_has_diagram(
@@ -82,7 +83,7 @@ def test_qrom_repr():
     target_bitsizes = [int(np.max(d)).bit_length() for d in data]
     qrom = cq.QROM(data, selection_bitsizes, target_bitsizes)
     cirq.testing.assert_equivalent_repr(
-        qrom, setup_code="import cirq_qubitization\nimport numpy as np"
+        qrom, setup_code="import cirq_qubitization\nfrom numpy import array"
     )
 
 
@@ -94,10 +95,11 @@ def test_notebook():
     "data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]], [[1], [2], [3], [4], [5], [6]]]
 )
 def test_t_complexity(data):
-    g = cq_testing.GateHelper(cq.QROM.build([np.array(d) for d in data]))
-    n = len(data[0])
+    qrom = cq.QROM.build(*data)
+    g = cq_testing.GateHelper(qrom)
+    n = np.prod(qrom.data[0].shape)
     assert cq.t_complexity(g.gate) == cq.t_complexity(g.operation)
-    assert cq.t_complexity(g.gate).t == max(0, 4 * n - 8)
+    assert cq.t_complexity(g.gate).t == max(0, 4 * n - 8), n
 
 
 @pytest.mark.parametrize(
@@ -108,7 +110,12 @@ def test_t_complexity(data):
 def test_qrom_multi_dim(data, num_controls):
     selection_bitsizes = [(s - 1).bit_length() for s in data[0].shape]
     target_bitsizes = [int(np.max(d)).bit_length() for d in data]
-    qrom = cq.QROM(data, selection_bitsizes, target_bitsizes, num_controls=num_controls)
+    qrom = cq.QROM(
+        data,
+        selection_bitsizes=selection_bitsizes,
+        target_bitsizes=target_bitsizes,
+        num_controls=num_controls,
+    )
     g = cq_testing.GateHelper(qrom)
     with cq.memory_management_context(cq.GreedyQubitManager('a', maximize_reuse=True)):
         _ = g.all_qubits
@@ -142,7 +149,10 @@ def test_qrom_multi_dim(data, num_controls):
 
 @pytest.mark.parametrize(
     "data",
-    [[np.arange(6).reshape(2, 3), 4 * np.arange(6).reshape(2, 3)], [np.arange(8).reshape(2, 2, 2)]],
+    [
+        [np.arange(6, dtype=int).reshape(2, 3), 4 * np.arange(6, dtype=int).reshape(2, 3)],
+        [np.arange(8, dtype=int).reshape(2, 2, 2)],
+    ],
 )
 @pytest.mark.parametrize("num_controls", [0, 1, 2])
 def test_ndim_t_complexity(data, num_controls):
