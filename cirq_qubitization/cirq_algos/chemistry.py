@@ -443,7 +443,6 @@ class PrepareChem(PrepareOracle):
         U: NDArray[np.float64],
         V: NDArray[np.float64],
         Vx: NDArray[np.float64],
-        lambda_H: float,
         *,
         ndim: int = 3,
         probability_epsilon: float = 1.0e-5,
@@ -471,6 +470,8 @@ class PrepareChem(PrepareOracle):
         # Number of orbitals in each direction assuming a cubic box
         M = math.ceil(math.log(num_spatial_orbs, 3))
         assert M**3 == num_spatial_orbs, f"{M} vs {num_spatial_orbs}"
+        # Eq. 52 in linear T paper
+        lambda_H = np.sum(np.abs(T)) + np.sum(np.abs(U)) + np.sum(np.sum(Vx))
         # Stores the Tilde versions of T, U, and V defined in class docstring.
         coeffs = np.zeros((3, num_spatial_orbs), dtype=np.float64)
         # |00>_{UV}
