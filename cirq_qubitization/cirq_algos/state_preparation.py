@@ -139,8 +139,8 @@ class StatePreparationAliasSampling(PrepareOracle):
         yield cirq.H.on_each(*sigma_mu)
         qrom = QROM(
             [self.alt, self.keep],
-            [self.selection_bitsize],
-            [self.alternates_bitsize, self.keep_bitsize],
+            (self.selection_bitsize,),
+            (self.alternates_bitsize, self.keep_bitsize),
         )
         yield qrom.on_registers(selection=selection, target0=alt, target1=keep)
         yield LessThanEqualGate([2] * self.mu, [2] * self.mu).on(*keep, *sigma_mu, *less_than_equal)
