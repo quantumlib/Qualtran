@@ -1,4 +1,4 @@
-r"""Gates for Qubitizing the Chemistry Model.
+r"""Gates for qubitizing the second quantized Ab-initio chemistry Hamiltonian in the plane-wave dual basis.
 
 This follows section V. of the [Linear T Paper](https://arxiv.org/abs/1805.03662).
 
@@ -11,7 +11,7 @@ Under the Jordan-Wigner transformation the Hamiltonian is given by
 $$
 \def\Zvec{\overrightarrow{Z}}
 \def\hop#1{#1_{p,\sigma} \Zvec #1_{q,\sigma}}
-H = \sum_{p\ne q} \frac{T(p-q)}{2}\hop{X}+\hop{Y}
+H = \sum_{p\ne q} \frac{T(p-q)}{2}(\hop{X}+\hop{Y})
 + \sum_{(p\alpha)\ne (q\beta)} \frac{V(p-q)}{4} Z_{p\alpha}Z_{q\beta}
 - \sum_{p\sigma} \frac{T(0) + U(p) + \sum_q V(p-q)}{2} Z_{p\sigma}
 + \sum_{p}(T(0) + U(p) + \sum_q \frac{V(p-q)}{2})\mathbb{1}

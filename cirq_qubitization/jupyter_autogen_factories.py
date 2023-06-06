@@ -105,7 +105,7 @@ def _make_SubPrepareChem():
 
     M = 2
     N = M**3
-    size = 4 * M
+    size = 4 * N
     mu = 8
     theta_l = np.random.randint(0, 2, size=size).reshape((2, 2, M, M, M))
     altp = [np.random.randint(0, M, size=size).reshape((2, 2, M, M, M)) for _ in range(3)]
@@ -119,9 +119,8 @@ def _make_SubPrepareChem():
 def _make_PrepareChem():
     from cirq_qubitization.cirq_algos.chemistry import PrepareChem
 
-    num_orb = 4
-    Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_orb).reshape((4, num_orb))
-    # not meant to be meaningful.
-    lambda_H = np.sum(np.abs([Us, Ts, Vs]))
-    sp = PrepareChem.build_from_coefficients(T=Ts, U=Us, V=Vs, Vx=Vxs, lambda_H=lambda_H)
+    M = 2
+    num_spatial = M**3
+    Us, Ts, Vs, Vxs = np.random.normal(size=4 * num_spatial).reshape((4, num_spatial))
+    sp = PrepareChem.build_from_coefficients(T=Ts, U=Us, V=Vs, Vx=Vxs)
     return sp
