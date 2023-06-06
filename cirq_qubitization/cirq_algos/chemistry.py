@@ -378,41 +378,6 @@ class IndexedAddMod(UnaryIterationGate):
         yield AddMod(self.target_shape[2], self.mod, add_val=k).on(*t3)
 
 
-# @frozen
-# class IndexedAddMod(UnaryIterationGate):
-#     target_shape: Tuple[int, ...]
-#     ndim: int
-#     mod: int
-#     cv: Tuple[int, ...] = field(converter=tuple, default=())
-
-#     @cached_property
-#     def control_registers(self) -> Registers:
-#         return Registers([])
-
-#     @cached_property
-#     def selection_registers(self) -> SelectionRegisters:
-#         return cirq_infra.SelectionRegisters.build(
-#             **{
-#                 f'selection{i}': ((len-1).bit_length(), len)
-#                 for i, len in enumerate(self.target_shape)
-#             }
-#         )
-
-#     @cached_property
-#     def target_registers(self) -> Registers:
-#         return Registers.build(
-#             **{
-#                 f'target{i}':  ts for i, ts in enumerate(self.target_shape)
-#             }
-#         )
-
-#     def nth_operation(
-#         self,
-#         control: cirq.Qid,
-#         **qubit_regs: Sequence[cirq.Qid],
-#     ) -> cirq.OP_TREE:
-
-
 @frozen
 class PrepareChem(PrepareOracle):
     r"""Prepare circuit for the plane wave dual Hamiltonian.
