@@ -76,7 +76,7 @@ class CirqGateAsBloq(Bloq):
         )
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, qubits: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', qubits: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         assert qubits.shape == (self.n_qubits, 1)
         return self.gate.on(*qubits[:, 0]), {'qubits': qubits}
@@ -213,7 +213,6 @@ def _cbloq_to_cirq_circuit(
     """
     soq_assign: Dict[Soquet, CirqQuregT] = {}
     _update_assign_from_cirq_quregs(registers.lefts(), LeftDangle, cirq_quregs, soq_assign)
-    # qubit_manager = cirq.ops.SimpleQubitManager()
     moments: List[cirq.Moment] = []
     for binsts in nx.topological_generations(binst_graph):
         moment: List[cirq.Operation] = []
@@ -370,7 +369,7 @@ class BloqAsCirqGate(GateWithRegisters):
             else:
                 cirq_quregs[reg.name][idx] = np.asarray(qubits)
 
-        circuit, _ = cbloq.to_cirq_circuit(**cirq_quregs, qubit_manager=context.qubit_manager)
+        circuit, _ = cbloq.to_cirq_circuit(qubit_manager=context.qubit_manager, **cirq_quregs)
         return circuit
 
     def _t_complexity_(self):

@@ -153,7 +153,9 @@ class ZGate(Bloq):
             )
         )
 
-    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q

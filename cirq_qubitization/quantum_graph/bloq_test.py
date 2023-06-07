@@ -20,7 +20,7 @@ class TestCNOT(Bloq):
         return FancyRegisters.build(control=1, target=1)
 
     def as_cirq_op(
-        self, **cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         (control,) = cirq_quregs['control']
         (target,) = cirq_quregs['target']
