@@ -38,7 +38,7 @@ def test_bloq():
     assert tb.pretty_name() == 'TestCNOT'
 
     quregs = tb.registers.get_cirq_quregs()
-    op, _ = tb.as_cirq_op(**quregs)
+    op, _ = tb.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
 
