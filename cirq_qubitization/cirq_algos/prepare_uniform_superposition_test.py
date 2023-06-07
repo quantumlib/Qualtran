@@ -15,7 +15,7 @@ def test_prepare_uniform_superposition(n, num_controls):
     prepare_uniform_op = gate.on(*control, *target)
     circuit = cirq.Circuit(turn_on_controls, cirq.decompose_once(prepare_uniform_op))
     qubit_order = cirq.QubitOrder.explicit(all_qubits, fallback=cirq.QubitOrder.DEFAULT)
-    result = cirq.Simulator().simulate(circuit, qubit_order=qubit_order)
+    result = cirq.Simulator(dtype=np.complex128).simulate(circuit, qubit_order=qubit_order)
     final_target_state = cirq.sub_state_vector(
         result.final_state_vector,
         keep_indices=list(range(num_controls, num_controls + len(target))),

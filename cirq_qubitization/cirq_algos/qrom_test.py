@@ -16,14 +16,14 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 @pytest.mark.parametrize("num_controls", [0, 1, 2])
 def test_qrom_1d(data, num_controls):
     qrom = cq.QROM.build(*data, num_controls=num_controls)
-    g = cq_testing.GateHelper(qrom)
-    with cq.memory_management_context(cq.GreedyQubitManager('a', maximize_reuse=True)):
-        _ = g.all_qubits
+    greedy_mm = cq.GreedyQubitManager('a', maximize_reuse=True)
+    g = cq_testing.GateHelper(qrom, greedy_mm)
+    context = cirq.DecompositionContext(greedy_mm)
+    decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=context))
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=context))
 
-    with cq.memory_management_context(cq.GreedyQubitManager('a', maximize_reuse=True)):
-        inverse = cirq.Circuit(cirq.decompose(g.operation**-1))
-
-    assert inverse.all_qubits() == g.decomposed_circuit.all_qubits()
+    assert len(inverse.all_qubits()) <= g.r.bitsize + g.r['selection'].bitsize + num_controls
+    assert inverse.all_qubits() == decomposed_circuit.all_qubits()
 
     for selection_integer in range(len(data[0])):
         for cval in range(2):
@@ -42,13 +42,13 @@ def test_qrom_1d(data, num_controls):
             final_state = [qubit_vals[x] for x in g.all_qubits]
 
             cq_testing.assert_circuit_inp_out_cirqsim(
-                g.decomposed_circuit, g.all_qubits, initial_state, final_state
+                decomposed_circuit, g.all_qubits, initial_state, final_state
             )
             cq_testing.assert_circuit_inp_out_cirqsim(
-                g.decomposed_circuit + inverse, g.all_qubits, initial_state, initial_state
+                decomposed_circuit + inverse, g.all_qubits, initial_state, initial_state
             )
             cq_testing.assert_circuit_inp_out_cirqsim(
-                g.decomposed_circuit + inverse, g.all_qubits, final_state, final_state
+                decomposed_circuit + inverse, g.all_qubits, final_state, final_state
             )
 
 
@@ -116,14 +116,16 @@ def test_qrom_multi_dim(data, num_controls):
         target_bitsizes=target_bitsizes,
         num_controls=num_controls,
     )
-    g = cq_testing.GateHelper(qrom)
-    with cq.memory_management_context(cq.GreedyQubitManager('a', maximize_reuse=True)):
-        _ = g.all_qubits
+    greedy_mm = cq.GreedyQubitManager('a', maximize_reuse=True)
+    g = cq_testing.GateHelper(qrom, greedy_mm)
+    context = cirq.DecompositionContext(greedy_mm)
+    decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=context))
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=context))
 
-    with cq.memory_management_context(cq.GreedyQubitManager('a', maximize_reuse=True)):
-        inverse = cirq.Circuit(cirq.decompose(g.operation**-1))
-
-    assert inverse.all_qubits() == g.decomposed_circuit.all_qubits()
+    assert (
+        len(inverse.all_qubits()) <= g.r.bitsize + qrom.selection_registers.bitsize + num_controls
+    )
+    assert inverse.all_qubits() == decomposed_circuit.all_qubits()
 
     lens = tuple(reg.bitsize for reg in qrom.selection_registers)
     for idxs in itertools.product(*[range(dim) for dim in data[0].shape]):
@@ -143,7 +145,13 @@ def test_qrom_multi_dim(data, num_controls):
             final_state = [qubit_vals[x] for x in g.all_qubits]
             qubit_vals = {x: 0 for x in g.all_qubits}
             cq_testing.assert_circuit_inp_out_cirqsim(
-                g.decomposed_circuit, g.all_qubits, initial_state, final_state
+                decomposed_circuit, g.all_qubits, initial_state, final_state
+            )
+            cq_testing.assert_circuit_inp_out_cirqsim(
+                decomposed_circuit + inverse, g.all_qubits, initial_state, initial_state
+            )
+            cq_testing.assert_circuit_inp_out_cirqsim(
+                decomposed_circuit + inverse, g.all_qubits, final_state, final_state
             )
 
 

@@ -69,7 +69,9 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
             self.prepare, control_val=self.control_val
         )
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         select_reg = {reg.name: qubit_regs[reg.name] for reg in self.select.registers}
         select_op = self.select.on_registers(**select_reg)
 

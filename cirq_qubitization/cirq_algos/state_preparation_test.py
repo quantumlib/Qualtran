@@ -13,18 +13,20 @@ def construct_gate_helper_and_qubit_order(data, eps):
         lcu_probabilities=data, probability_epsilon=eps
     )
     g = cq_testing.GateHelper(gate)
+    context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
 
     def map_func(op: cirq.Operation, _):
         gateset = cirq.Gateset(cq.And)
-        return cirq.Circuit(cirq.decompose(op, on_stuck_raise=None, keep=gateset.validate))
-
-    with cq.cirq_infra.memory_management_context():
-        # TODO: Do not decompose `cq.And` because the `cq.map_clean_and_borrowable_qubits` currently
-        # gets confused and is not able to re-map qubits optimally; which results in a higher number
-        # of ancillas and thus the tests fails due to OOO.
-        decomposed_circuit = cirq.map_operations_and_unroll(
-            g.circuit, map_func, raise_if_add_qubits=False
+        return cirq.Circuit(
+            cirq.decompose(op, on_stuck_raise=None, keep=gateset.validate, context=context)
         )
+
+    # TODO: Do not decompose `cq.And` because the `cq.map_clean_and_borrowable_qubits` currently
+    # gets confused and is not able to re-map qubits optimally; which results in a higher number
+    # of ancillas and thus the tests fails due to OOO.
+    decomposed_circuit = cirq.map_operations_and_unroll(
+        g.circuit, map_func, raise_if_add_qubits=False
+    )
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", size=25, maximize_reuse=True)
     decomposed_circuit = cq.map_clean_and_borrowable_qubits(decomposed_circuit, qm=greedy_mm)
     # We are fine decomposing the `cq.And` gates once the qubit re-mapping is complete. Ideally,

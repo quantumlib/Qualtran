@@ -312,6 +312,7 @@ class BloqAsCirqGate(GateWithRegisters):
         """
         flat_qubits: List[cirq.Qid] = []
         out_quregs: Dict[str, 'CirqQuregT'] = {}
+        qm = cirq.ops.SimpleQubitManager()
         for reg in bloq.registers:
             if reg.side is Side.THRU:
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
@@ -320,16 +321,16 @@ class BloqAsCirqGate(GateWithRegisters):
             elif reg.side is Side.LEFT:
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
                     flat_qubits.append(q)
-                    cqm.qfree(q)
+                    qm.qfree(q)
                 del out_quregs[reg.name]
             elif reg.side is Side.RIGHT:
-                new_qubits = cqm.qalloc(reg.total_bits())
+                new_qubits = qm.qalloc(reg.total_bits())
                 flat_qubits.extend(new_qubits)
                 out_quregs[reg.name] = np.array(new_qubits).reshape(reg.wireshape + (reg.bitsize,))
 
         return BloqAsCirqGate(bloq=bloq).on(*flat_qubits), out_quregs
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(self, context, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         """Implementation of the GatesWithRegisters decompose method.
 
         This delegates to `self.bloq.decompose_bloq()` and converts the result to a cirq circuit.

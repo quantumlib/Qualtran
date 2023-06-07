@@ -10,17 +10,15 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 @pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
 def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        gate = cq.ApplyGateToLthQubit(
-            cq.SelectionRegisters.build(selection=(selection_bitsize, target_bitsize)),
-            lambda _: cirq.X,
-        )
-        g = cq_testing.GateHelper(gate)
-        # Upper bounded because not all ancillas may be used as part of unary iteration.
-        assert (
-            len(g.all_qubits)
-            <= target_bitsize + 2 * (selection_bitsize + gate.control_registers.bitsize) - 1
-        )
+    gate = cq.ApplyGateToLthQubit(
+        cq.SelectionRegisters.build(selection=(selection_bitsize, target_bitsize)), lambda _: cirq.X
+    )
+    g = cq_testing.GateHelper(gate, greedy_mm)
+    # Upper bounded because not all ancillas may be used as part of unary iteration.
+    assert (
+        len(g.all_qubits)
+        <= target_bitsize + 2 * (selection_bitsize + gate.control_registers.bitsize) - 1
+    )
 
     for n in range(target_bitsize):
         # Initial qubit values

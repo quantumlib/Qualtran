@@ -65,15 +65,19 @@ class GenericSelect(UnaryIterationGate):
     def target_registers(self) -> Registers:
         return Registers.build(target=self._target_bitsize)
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(self, context, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         if self._control_val == 0:
             yield cirq.X(*qubit_regs['control'])
-        yield from super().decompose_from_registers(**qubit_regs)
+        yield from super().decompose_from_registers(context, **qubit_regs)
         if self._control_val == 0:
             yield cirq.X(*qubit_regs['control'])
 
     def nth_operation(
-        self, selection: int, control: cirq.Qid, target: Sequence[cirq.Qid]
+        self,
+        context: cirq.DecompositionContext,
+        selection: int,
+        control: cirq.Qid,
+        target: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         """Applies `self.select_unitaries[selection]`.
 

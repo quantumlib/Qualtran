@@ -145,7 +145,7 @@ def _t_complexity(
     if ret is None and not fail_quietly:
         raise TypeError("couldn't compute TComplexity of:\n" f"type: {type(stc)}\n" f"value: {stc}")
     if h is not None:
-        cache[h] = ret
+        cache[h] = ret if ret is not None else TComplexity()
     return ret
 
 
@@ -162,5 +162,5 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     Raises:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    cache = {}
+    cache: Dict[Any, TComplexity] = {}
     return _t_complexity(stc, cache=cache, fail_quietly=fail_quietly)

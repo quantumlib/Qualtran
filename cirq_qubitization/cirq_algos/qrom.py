@@ -111,7 +111,7 @@ class QROM(unary_iteration.UnaryIterationGate):
                     yield gate(q)
 
     def decompose_zero_selection(
-        self, **qubit_regs: Union[int, Sequence[cirq.Qid]]
+        self, context: cirq.DecompositionContext, **qubit_regs: Union[int, Sequence[cirq.Qid]]
     ) -> cirq.OP_TREE:
         controls = self.control_registers.merge_qubits(**qubit_regs)
         target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
@@ -123,8 +123,8 @@ class QROM(unary_iteration.UnaryIterationGate):
                 zero_indx, lambda q: cirq.CNOT(controls[0], q), **target_regs
             )
         else:
-            and_ancilla = cirq_infra.qalloc(len(controls) - 2)
-            and_target = cirq_infra.qalloc(1)[0]
+            and_ancilla = context.qubit_manager.qalloc(len(controls) - 2)
+            and_target = context.qubit_manager.qalloc(1)[0]
             multi_controlled_and = and_gate.And((1,) * len(controls)).on_registers(
                 control=controls, ancilla=and_ancilla, target=and_target
             )
@@ -133,9 +133,14 @@ class QROM(unary_iteration.UnaryIterationGate):
                 zero_indx, lambda q: cirq.CNOT(and_target, q), **target_regs
             )
             yield multi_controlled_and**-1
-            cirq_infra.qfree(and_ancilla + [and_target])
+            context.qubit_manager.qfree(and_ancilla + [and_target])
 
-    def nth_operation(self, control: cirq.Qid, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def nth_operation(
+        self,
+        context: cirq.DecompositionContext,
+        control: cirq.Qid,
+        **qubit_regs: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
         selection_idx = tuple(qubit_regs[reg.name] for reg in self.selection_registers)
         target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
         yield from self._load_nth_data(

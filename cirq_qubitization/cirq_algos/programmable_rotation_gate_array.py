@@ -119,6 +119,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
     def decompose_from_registers(
         self,
+        context: cirq.DecompositionContext,
         selection: Sequence[cirq.Qid],
         kappa_load_target: Sequence[cirq.Qid],
         rotations_target: Sequence[cirq.Qid],

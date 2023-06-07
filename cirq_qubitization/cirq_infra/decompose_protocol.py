@@ -1,15 +1,16 @@
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Optional, Sequence
 
 import cirq
-from cirq.protocols.decompose_protocol import _try_decompose_into_operations_and_qubits
-
-DecomposeResult = Optional[Tuple[cirq.Operation, ...]]
-OpDecomposer = Callable[[Any], DecomposeResult]
+from cirq.protocols.decompose_protocol import (
+    _try_decompose_into_operations_and_qubits,
+    DecomposeResult,
+    OpDecomposer,
+)
 
 _FREDKIN_GATESET = cirq.Gateset(cirq.FREDKIN, unroll_circuit_op=False)
 
 
-def _fredkin(qubits: cirq.Qid) -> cirq.OP_TREE:
+def _fredkin(qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
     """Decomposition with 7 T and 10 clifford operations from https://arxiv.org/abs/1308.4134"""
     c, t1, t2 = qubits
     yield [cirq.CNOT(t2, t1)]
@@ -42,14 +43,13 @@ def _try_decompose_from_known_decompositions(val: Any) -> DecomposeResult:
         classical_controls = val.classical_controls
         val = val.without_classical_controls()
 
-    if isinstance(val, cirq.Operation):
-        qubits = val.qubits
-    else:
-        qubits = cirq.LineQid.for_gate(val)
+    qubits: Sequence[cirq.Qid] = (
+        val.qubits if isinstance(val, cirq.Operation) else cirq.LineQid.for_gate(val)
+    )
 
     for gateset, decomposer in known_decompositions:
         if val in gateset:
-            decomposition = cirq.flatten_op_tree(decomposer(qubits))
+            decomposition = cirq.flatten_to_ops(decomposer(qubits))
             if classical_controls is not None:
                 return tuple(op.with_classical_controls(classical_controls) for op in decomposition)
             else:
