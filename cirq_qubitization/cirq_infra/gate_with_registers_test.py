@@ -95,7 +95,7 @@ class _TestGate(GateWithRegisters):
         return regs
 
     def decompose_from_registers(
-        self, r1: Sequence[cirq.Qid], r2: Sequence[cirq.Qid], r3: Sequence[cirq.Qid]
+        self, context, r1: Sequence[cirq.Qid], r2: Sequence[cirq.Qid], r3: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         yield cirq.H.on_each(r1)
         yield cirq.X.on_each(r2)

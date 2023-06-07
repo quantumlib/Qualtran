@@ -137,6 +137,7 @@ class SelectHubbard(SelectOracle):
 
     def decompose_from_registers(
         self,
+        context: cirq.DecompositionContext,
         U: Sequence[cirq.Qid],
         V: Sequence[cirq.Qid],
         p_x: Sequence[cirq.Qid],
@@ -286,6 +287,7 @@ class PrepareHubbard(PrepareOracle):
 
     def decompose_from_registers(
         self,
+        context: cirq.DecompositionContext,
         U: Sequence[cirq.Qid],
         V: Sequence[cirq.Qid],
         p_x: Sequence[cirq.Qid],
@@ -311,8 +313,8 @@ class PrepareHubbard(PrepareOracle):
         yield AddMod(len(q_x), self.x_dim, add_val=1, cv=[0, 0]).on(*U, *V, *q_x)
         yield MultiTargetCSwap.make_on(control=temp[:1], target_x=q_x, target_y=q_y)
 
-        and_target = cirq_infra.qalloc(1)
-        and_anc = cirq_infra.qalloc(1)
+        and_target = context.qubit_manager.qalloc(1)
+        and_anc = context.qubit_manager.qalloc(1)
         yield And(cv=(0, 0, 1)).on_registers(
             control=[*U, *V, temp[-1]], ancilla=and_anc, target=and_target
         )
@@ -322,7 +324,7 @@ class PrepareHubbard(PrepareOracle):
         yield And(cv=(0, 0, 1), adjoint=True).on_registers(
             control=[*U, *V, temp[-1]], ancilla=and_anc, target=and_target
         )
-        cirq_infra.qfree([*and_anc, *and_target])
+        context.qubit_manager.qfree([*and_anc, *and_target])
 
 
 def get_walk_operator_for_hubbard_model(

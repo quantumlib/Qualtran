@@ -7,7 +7,6 @@ import numpy as np
 from attrs import field, frozen
 
 from cirq_qubitization.cirq_algos import and_gate
-from cirq_qubitization.cirq_infra import qubit_manager
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
@@ -27,7 +26,12 @@ class MultiTargetCNOT(GateWithRegisters):
     def registers(self) -> Registers:
         return Registers.build(control=1, targets=self._num_targets)
 
-    def decompose_from_registers(self, control: Sequence[cirq.Qid], targets: Sequence[cirq.Qid]):
+    def decompose_from_registers(
+        self,
+        context: cirq.DecompositionContext,
+        control: Sequence[cirq.Qid],
+        targets: Sequence[cirq.Qid],
+    ):
         def cnots_for_depth_i(i: int, q: Sequence[cirq.Qid]) -> cirq.OP_TREE:
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)
@@ -71,11 +75,16 @@ class MultiControlPauli(GateWithRegisters):
     def registers(self) -> Registers:
         return Registers.build(controls=len(self.cvs), target=1)
 
-    def _decompose_dirty(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
+    def _decompose_dirty(
+        self,
+        context: cirq.DecompositionContext,
+        controls: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
+    ):
         pre_post_x = [cirq.X(controls[i]) for i, b in enumerate(self.cvs) if not b]
         if len(controls) == 2:
             return [pre_post_x, self.target_gate(*target).controlled_by(*controls), pre_post_x]
-        anc = qubit_manager.qborrow(len(controls) - 2)
+        anc = context.qubit_manager.qborrow(len(controls) - 2)
         ops = [cirq.CCNOT(anc[-i], controls[-i], anc[-i + 1]) for i in range(2, len(anc) + 1)]
         inverted_v_ladder = ops + [cirq.CCNOT(*controls[:2], anc[0])] + ops[::-1]
 
@@ -85,9 +94,16 @@ class MultiControlPauli(GateWithRegisters):
         yield self.target_gate(*target).controlled_by(anc[-1], controls[-1])
         yield inverted_v_ladder
         yield pre_post_x
+        context.qubit_manager.qfree(anc)
 
-    def _decompose_clean(self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]):
-        and_ancilla, and_target = qubit_manager.qalloc(len(self.cvs) - 2), qubit_manager.qalloc(1)
+    def _decompose_clean(
+        self,
+        context: cirq.DecompositionContext,
+        controls: Sequence[cirq.Qid],
+        target: Sequence[cirq.Qid],
+    ):
+        qm = context.qubit_manager
+        and_ancilla, and_target = qm.qalloc(len(self.cvs) - 2), qm.qalloc(1)
         yield and_gate.And(self.cvs).on_registers(
             control=controls, ancilla=and_ancilla, target=and_target
         )
@@ -95,6 +111,7 @@ class MultiControlPauli(GateWithRegisters):
         yield and_gate.And(self.cvs, adjoint=True).on_registers(
             control=controls, ancilla=and_ancilla, target=and_target
         )
+        qm.qfree(and_ancilla + and_target)
 
     def decompose_from_registers(self, **kwargs):
         if self.mode == self.DecomposeMode.CLEAN_ANCILLA:

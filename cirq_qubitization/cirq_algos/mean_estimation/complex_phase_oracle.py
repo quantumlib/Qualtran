@@ -35,14 +35,15 @@ class ComplexPhaseOracle(cirq_infra.GateWithRegisters):
     def registers(self) -> cirq_infra.Registers:
         return cirq_infra.Registers([*self.control_registers, *self.selection_registers])
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        target_reg = {
-            reg.name: cirq_infra.qalloc(reg.bitsize) for reg in self.encoder.target_registers
-        }
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        qm = context.qubit_manager
+        target_reg = {reg.name: qm.qalloc(reg.bitsize) for reg in self.encoder.target_registers}
         target_qubits = self.encoder.target_registers.merge_qubits(**target_reg)
         encoder_op = self.encoder.on_registers(**qubit_regs, **target_reg)
 
-        arctan_sign, arctan_target = cirq_infra.qalloc(1), cirq_infra.qalloc(self.arctan_bitsize)
+        arctan_sign, arctan_target = qm.qalloc(1), qm.qalloc(self.arctan_bitsize)
         arctan_op = arctan.ArcTan(len(target_qubits), self.arctan_bitsize).on(
             *target_qubits, *arctan_sign, *arctan_target
         )
@@ -56,7 +57,7 @@ class ComplexPhaseOracle(cirq_infra.GateWithRegisters):
         yield cirq.inverse(arctan_op)
         yield cirq.inverse(encoder_op)
 
-        cirq_infra.qfree([*arctan_sign, *arctan_target, *target_qubits])
+        qm.qfree([*arctan_sign, *arctan_target, *target_qubits])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@'] * self.control_registers.bitsize

@@ -128,6 +128,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     def decompose_from_registers(
         self,
+        context: cirq.DecompositionContext,
         selection: Sequence[cirq.Qid],
         sigma_mu: Sequence[cirq.Qid],
         alt: Sequence[cirq.Qid],

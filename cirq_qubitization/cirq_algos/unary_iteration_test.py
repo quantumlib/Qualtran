@@ -31,7 +31,11 @@ class ApplyXToLthQubit(UnaryIterationGate):
         return Registers.build(target=self._target_bitsize)
 
     def nth_operation(
-        self, control: cirq.Qid, selection: int, target: Sequence[cirq.Qid]
+        self,
+        context: cirq.DecompositionContext,
+        control: cirq.Qid,
+        selection: int,
+        target: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         return cirq.CNOT(control, target[-(selection + 1)])
 
@@ -41,10 +45,9 @@ class ApplyXToLthQubit(UnaryIterationGate):
 )
 def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
-        g = cq_testing.GateHelper(gate)
-        assert len(g.all_qubits) <= 2 * (selection_bitsize + control_bitsize) + target_bitsize - 1
+    gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
+    g = cq_testing.GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
+    assert len(g.all_qubits) <= 2 * (selection_bitsize + control_bitsize) + target_bitsize - 1
 
     for n in range(target_bitsize):
 
@@ -87,6 +90,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
 
     def nth_operation(
         self,
+        context: cirq.DecompositionContext,
         control: cirq.Qid,
         i: int,
         j: int,
@@ -101,10 +105,9 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
 def test_multi_dimensional_unary_iteration(target_shape: Tuple[int, int, int]):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        gate = ApplyXToIJKthQubit(target_shape)
-        g = cq_testing.GateHelper(gate)
-        assert len(g.all_qubits) <= gate.registers.bitsize + gate.selection_registers.bitsize - 1
+    gate = ApplyXToIJKthQubit(target_shape)
+    g = cq_testing.GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
+    assert len(g.all_qubits) <= gate.registers.bitsize + gate.selection_registers.bitsize - 1
 
     max_i, max_j, max_k = target_shape
     i_len, j_len, k_len = tuple(reg.bitsize for reg in gate.selection_registers)

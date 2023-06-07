@@ -63,7 +63,11 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def nth_operation(
-        self, control: cirq.Qid, target: Sequence[cirq.Qid], **selection_indices: int
+        self,
+        context: cirq.DecompositionContext,
+        control: cirq.Qid,
+        target: Sequence[cirq.Qid],
+        **selection_indices: int,
     ) -> cirq.OP_TREE:
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = self.selection_registers.to_flat_idx(*selection_idx)

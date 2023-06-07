@@ -11,13 +11,12 @@ from cirq_qubitization.cirq_infra import testing as cq_testing
 @pytest.mark.parametrize("target_gate", [cirq.X, cirq.Y])
 def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, target_gate):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        gate = cq.SelectedMajoranaFermionGate(
-            cq.SelectionRegisters.build(selection=(selection_bitsize, target_bitsize)),
-            target_gate=target_gate,
-        )
-        g = cq_testing.GateHelper(gate)
-        assert len(g.all_qubits) <= gate.registers.bitsize + selection_bitsize + 1
+    gate = cq.SelectedMajoranaFermionGate(
+        cq.SelectionRegisters.build(selection=(selection_bitsize, target_bitsize)),
+        target_gate=target_gate,
+    )
+    g = cq_testing.GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
+    assert len(g.all_qubits) <= gate.registers.bitsize + selection_bitsize + 1
 
     sim = cirq.Simulator(dtype=np.complex128)
     for n in range(target_bitsize):
@@ -90,9 +89,9 @@ def test_selected_majorana_fermion_gate_decomposed_diagram():
         target_gate=cirq.X,
     )
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        g = cq_testing.GateHelper(gate)
-        circuit = cirq.Circuit(cirq.decompose_once(g.operation))
+    g = cq_testing.GateHelper(gate)
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(g.operation, context=context))
     ancillas = sorted(set(circuit.all_qubits()) - set(g.operation.qubits))
     qubits = (
         g.quregs['control']

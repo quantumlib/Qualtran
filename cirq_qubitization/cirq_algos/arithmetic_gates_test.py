@@ -115,11 +115,11 @@ def test_contiguous_register_gate_t_complexity(n):
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add(a, b, num_bits):
     num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cirq_infra.memory_management_context(greedy_mm):
-        gate = AdditionGate(num_bits)
-        qubits = cirq.LineQubit.range(2 * num_bits)
-        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits), context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
     initial_state[:num_bits] = list(bit_tools.iter_bits(a, num_bits))[::-1]
@@ -176,11 +176,11 @@ def test_add_mod_n_protocols():
 def test_add_truncated():
     num_bits = 3
     num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cirq_infra.memory_management_context(greedy_mm):
-        gate = AdditionGate(num_bits)
-        qubits = cirq.LineQubit.range(2 * num_bits)
-        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits), context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     all_qubits = qubits + ancillas
     # Corresponds to 2^2 + 2^2 (4 + 4 = 8 = 2^3 (needs num_bits = 4 to work properly))
@@ -190,11 +190,11 @@ def test_add_truncated():
     # increasing number of bits yields correct value
     num_bits = 4
     num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cirq_infra.memory_management_context(greedy_mm):
-        gate = AdditionGate(num_bits)
-        qubits = cirq.LineQubit.range(2 * num_bits)
-        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits), context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     all_qubits = qubits + ancillas
     initial_state = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
@@ -203,11 +203,11 @@ def test_add_truncated():
     cq_testing.assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
     num_bits = 3
     num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cirq_infra.memory_management_context(greedy_mm):
-        gate = AdditionGate(num_bits)
-        qubits = cirq.LineQubit.range(2 * num_bits)
-        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits), context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     all_qubits = qubits + ancillas
     # Corresponds to 2^2 + (2^2 + 2^1 + 2^0)  (4 + 7 = 11 = 1011 (needs num_bits = 4 to work properly))
@@ -220,11 +220,11 @@ def test_add_truncated():
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_subtract(a, b, num_bits):
     num_anc = num_bits - 1
+    gate = AdditionGate(num_bits)
+    qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cirq_infra.memory_management_context(greedy_mm):
-        gate = AdditionGate(num_bits)
-        qubits = cirq.LineQubit.range(2 * num_bits)
-        circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits), context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
     initial_state[:num_bits] = list(bit_tools.iter_bits_twos_complement(a, num_bits))[::-1]
