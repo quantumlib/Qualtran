@@ -3,7 +3,7 @@ from typing import Iterable, Optional, Sequence, Tuple, Union
 import cirq
 from attrs import field, frozen
 
-from cirq_qubitization import bit_tools, cirq_infra, t_complexity_protocol
+from cirq_qubitization import bit_tools, t_complexity_protocol
 from cirq_qubitization.cirq_algos.and_gate import And
 
 

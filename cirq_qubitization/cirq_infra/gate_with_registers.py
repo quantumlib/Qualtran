@@ -1,6 +1,6 @@
 import abc
 import sys
-from typing import Dict, Iterable, Iterator, List, Optional, overload, Sequence, Tuple, Union
+from typing import Dict, Iterable, List, Optional, overload, Sequence, Tuple, Union
 
 import attrs
 import cirq

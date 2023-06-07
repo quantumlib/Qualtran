@@ -8,7 +8,6 @@ import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
-import cirq_qubitization.cirq_infra.qubit_manager as cqm
 import cirq_qubitization.t_complexity_protocol as cq_tcp
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 from cirq_qubitization.cirq_infra.gate_with_registers import Register as LegacyRegister
@@ -76,7 +75,9 @@ class CirqGateAsBloq(Bloq):
             )
         )
 
-    def as_cirq_op(self, qubits: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(
+        self, qubit_manager: cirq.QubitManager, qubits: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         assert qubits.shape == (self.n_qubits, 1)
         return self.gate.on(*qubits[:, 0]), {'qubits': qubits}
 
@@ -161,6 +162,7 @@ def _binst_as_cirq_op(
     binst: BloqInstance,
     pred_cxns: Iterable[Connection],
     soq_assign: Dict[Soquet, NDArray[cirq.Qid]],
+    qubit_manager: cirq.QubitManager,
 ) -> Union[cirq.Operation, None]:
     """Helper function used in `_cbloq_to_cirq_circuit`.
 
@@ -169,6 +171,7 @@ def _binst_as_cirq_op(
         pred_cxns: Predecessor connections for the bloq instance.
         soq_assign: The current assignment from soquets to cirq qubit arrays. This mapping
             is mutated by this function.
+        qubit_manager: A `cirq.QubitManager` for allocating `cirq.Qid`s.
 
     Returns:
         The operation resulting from `binst.bloq.as_cirq_op(...)`.
@@ -185,13 +188,16 @@ def _binst_as_cirq_op(
     bloq = binst.bloq
     cirq_quregs = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
 
-    op, out_quregs = bloq.as_cirq_op(**cirq_quregs)
+    op, out_quregs = bloq.as_cirq_op(qubit_manager=qubit_manager, **cirq_quregs)
     _update_assign_from_cirq_quregs(bloq.registers.rights(), binst, out_quregs, soq_assign)
     return op
 
 
 def _cbloq_to_cirq_circuit(
-    registers: FancyRegisters, cirq_quregs: Dict[str, 'CirqQuregT'], binst_graph: nx.DiGraph
+    registers: FancyRegisters,
+    cirq_quregs: Dict[str, 'CirqQuregT'],
+    binst_graph: nx.DiGraph,
+    qubit_manager: cirq.QubitManager,
 ) -> Tuple[cirq.FrozenCircuit, Dict[str, 'CirqQuregT']]:
     """Propagate `as_cirq_op` calls through a composite bloq's contents to export a `cirq.Circuit`.
 
@@ -199,6 +205,7 @@ def _cbloq_to_cirq_circuit(
         registers: The cbloq's registers for validating inputs.
         cirq_quregs: Mapping from left register name to Cirq qubit arrays.
         binst_graph: The cbloq's binst graph. This is read only.
+        qubit_manager: A `cirq.QubitManager` to allocate new qubits.
 
     Returns:
         circuit: The cirq.FrozenCircuit version of this composite bloq.
@@ -206,7 +213,7 @@ def _cbloq_to_cirq_circuit(
     """
     soq_assign: Dict[Soquet, CirqQuregT] = {}
     _update_assign_from_cirq_quregs(registers.lefts(), LeftDangle, cirq_quregs, soq_assign)
-
+    # qubit_manager = cirq.ops.SimpleQubitManager()
     moments: List[cirq.Moment] = []
     for binsts in nx.topological_generations(binst_graph):
         moment: List[cirq.Operation] = []
@@ -216,7 +223,7 @@ def _cbloq_to_cirq_circuit(
                 continue
 
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-            op = _binst_as_cirq_op(binst, pred_cxns, soq_assign)
+            op = _binst_as_cirq_op(binst, pred_cxns, soq_assign, qubit_manager=qubit_manager)
             if op is not None:
                 moment.append(op)
         if moment:
@@ -295,7 +302,7 @@ class BloqAsCirqGate(GateWithRegisters):
 
     @classmethod
     def bloq_on(
-        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT']
+        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
@@ -305,6 +312,7 @@ class BloqAsCirqGate(GateWithRegisters):
         Args:
             bloq: The bloq to be wrapped with `BloqAsCirqGate`
             cirq_quregs: The cirq qubit registers on which we call the gate.
+            qubit_manager: A `cirq.QubitManager` to allocate new qubits.
 
         Returns:
             op: A cirq operation whose gate is the `BloqAsCirqGate`-wrapped version of `bloq`.
@@ -312,7 +320,6 @@ class BloqAsCirqGate(GateWithRegisters):
         """
         flat_qubits: List[cirq.Qid] = []
         out_quregs: Dict[str, 'CirqQuregT'] = {}
-        qm = cirq.ops.SimpleQubitManager()
         for reg in bloq.registers:
             if reg.side is Side.THRU:
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
@@ -321,21 +328,25 @@ class BloqAsCirqGate(GateWithRegisters):
             elif reg.side is Side.LEFT:
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
                     flat_qubits.append(q)
-                    qm.qfree(q)
+                    qubit_manager.qfree(q)
                 del out_quregs[reg.name]
             elif reg.side is Side.RIGHT:
-                new_qubits = qm.qalloc(reg.total_bits())
+                new_qubits = qubit_manager.qalloc(reg.total_bits())
                 flat_qubits.extend(new_qubits)
                 out_quregs[reg.name] = np.array(new_qubits).reshape(reg.wireshape + (reg.bitsize,))
 
         return BloqAsCirqGate(bloq=bloq).on(*flat_qubits), out_quregs
 
-    def decompose_from_registers(self, context, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         """Implementation of the GatesWithRegisters decompose method.
 
         This delegates to `self.bloq.decompose_bloq()` and converts the result to a cirq circuit.
 
         Args:
+            context: `cirq.DecompositionContext` stores options for decomposing gates (eg:
+                cirq.QubitManager).
             **qubit_regs: Sequences of cirq qubits as expected for the legacy register shims
             of the bloq's registers.
 
@@ -359,7 +370,7 @@ class BloqAsCirqGate(GateWithRegisters):
             else:
                 cirq_quregs[reg.name][idx] = np.asarray(qubits)
 
-        circuit, _ = cbloq.to_cirq_circuit(**cirq_quregs)
+        circuit, _ = cbloq.to_cirq_circuit(**cirq_quregs, qubit_manager=context.qubit_manager)
         return circuit
 
     def _t_complexity_(self):

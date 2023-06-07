@@ -93,29 +93,37 @@ class CompositeBloq(Bloq):
         return _create_binst_graph(self.connections)
 
     def as_cirq_op(
-        self, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
         import cirq
 
-        circuit, out_quregs = self.to_cirq_circuit(**cirq_quregs)
+        circuit, out_quregs = self.to_cirq_circuit(qubit_manager=qubit_manager, **cirq_quregs)
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit(
-        self, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
+            qubit_manager: A `cirq.QubitManager` to allocate new qubits.
             **cirq_quregs: Mapping from left register names to Cirq qubit arrays.
 
         Returns:
             circuit: The cirq.FrozenCircuit version of this composite bloq.
             cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
         """
+        import cirq
+
         from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
 
-        return _cbloq_to_cirq_circuit(self.registers, cirq_quregs, self._binst_graph)
+        if qubit_manager is None:
+            qubit_manager = cirq.ops.SimpleQubitManager()
+
+        return _cbloq_to_cirq_circuit(
+            self.registers, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
+        )
 
     @classmethod
     def from_cirq_circuit(cls, circuit: 'cirq.Circuit') -> 'CompositeBloq':

@@ -107,7 +107,7 @@ def unary_iteration(
     flanking_ops: List[cirq.Operation],
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
-    qm: cirq.QubitManager,
+    qubit_manager: cirq.QubitManager,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     """The method performs unary iteration on `selection` integer in `range(l_iter, r_iter)`.
 
@@ -142,6 +142,7 @@ def unary_iteration(
             to the function, list represents operations to be inserted at the end of last iteration.
         controls: Control register of qubits.
         selection: Selection register of qubits.
+        qubit_manager: A `cirq.QubitManager` to allocate new qubits.
 
     Yields:
         (r_iter - l_iter) different tuples, each corresponding to an integer in range
@@ -156,14 +157,16 @@ def unary_iteration(
     assert 2 ** len(selection) >= r_iter - l_iter
     assert len(selection) > 0
     if len(controls) == 0:
-        yield from _unary_iteration_zero_control(flanking_ops, selection, l_iter, r_iter, qm)
+        yield from _unary_iteration_zero_control(
+            flanking_ops, selection, l_iter, r_iter, qubit_manager
+        )
     elif len(controls) == 1:
         yield from _unary_iteration_single_control(
-            flanking_ops, controls[0], selection, l_iter, r_iter, qm
+            flanking_ops, controls[0], selection, l_iter, r_iter, qubit_manager
         )
     else:
         yield from _unary_iteration_multi_controls(
-            flanking_ops, controls, selection, l_iter, r_iter, qm
+            flanking_ops, controls, selection, l_iter, r_iter, qubit_manager
         )
 
 
@@ -288,7 +291,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
                 flanking_ops=ops,
                 controls=controls,
                 selection=qubit_regs[self.selection_registers[nested_depth].name],
-                qm=context.qubit_manager,
+                qubit_manager=context.qubit_manager,
             )
             for op_tree, control_qid, n in ith_for_loop:
                 yield op_tree
