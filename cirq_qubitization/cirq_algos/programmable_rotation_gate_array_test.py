@@ -53,7 +53,9 @@ def test_programmable_rotation_gate_array(angles, kappa, gate_type):
         gate_type, angles, kappa, rotation_gate
     )
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a")
-    g = cq_testing.GateHelper(programmable_rotation_gate, greedy_mm)
+    g = cq_testing.GateHelper(
+        programmable_rotation_gate, context=cirq.DecompositionContext(greedy_mm)
+    )
     decomposed_circuit = cirq.Circuit(cirq.I.on_each(*g.all_qubits)) + g.decomposed_circuit
     # Get interleaved unitaries.
     interleaved_unitaries = [

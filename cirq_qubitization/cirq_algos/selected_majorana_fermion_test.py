@@ -15,7 +15,7 @@ def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, targe
         cq.SelectionRegisters.build(selection=(selection_bitsize, target_bitsize)),
         target_gate=target_gate,
     )
-    g = cq_testing.GateHelper(gate, greedy_mm)
+    g = cq_testing.GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
     assert len(g.all_qubits) <= gate.registers.bitsize + selection_bitsize + 1
 
     sim = cirq.Simulator(dtype=np.complex128)

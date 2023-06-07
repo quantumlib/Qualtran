@@ -13,7 +13,7 @@ def test_apply_gate_to_lth_qubit(selection_bitsize, target_bitsize):
     gate = cq.ApplyGateToLthQubit(
         cq.SelectionRegisters.build(selection=(selection_bitsize, target_bitsize)), lambda _: cirq.X
     )
-    g = cq_testing.GateHelper(gate, greedy_mm)
+    g = cq_testing.GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
     # Upper bounded because not all ancillas may be used as part of unary iteration.
     assert (
         len(g.all_qubits)

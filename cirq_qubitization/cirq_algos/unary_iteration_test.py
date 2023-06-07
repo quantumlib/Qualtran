@@ -46,7 +46,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
 def test_unary_iteration(selection_bitsize, target_bitsize, control_bitsize):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     gate = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
-    g = cq_testing.GateHelper(gate, qm=greedy_mm)
+    g = cq_testing.GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
     assert len(g.all_qubits) <= 2 * (selection_bitsize + control_bitsize) + target_bitsize - 1
 
     for n in range(target_bitsize):
@@ -106,7 +106,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
 def test_multi_dimensional_unary_iteration(target_shape: Tuple[int, int, int]):
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     gate = ApplyXToIJKthQubit(target_shape)
-    g = cq_testing.GateHelper(gate, greedy_mm)
+    g = cq_testing.GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
     assert len(g.all_qubits) <= gate.registers.bitsize + gate.selection_registers.bitsize - 1
 
     max_i, max_j, max_k = target_shape

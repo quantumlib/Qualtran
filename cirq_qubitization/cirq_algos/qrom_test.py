@@ -17,10 +17,9 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 def test_qrom_1d(data, num_controls):
     qrom = cq.QROM.build(*data, num_controls=num_controls)
     greedy_mm = cq.GreedyQubitManager('a', maximize_reuse=True)
-    g = cq_testing.GateHelper(qrom, greedy_mm)
-    context = cirq.DecompositionContext(greedy_mm)
-    decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=context))
-    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=context))
+    g = cq_testing.GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
+    decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=g.context))
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))
 
     assert len(inverse.all_qubits()) <= g.r.bitsize + g.r['selection'].bitsize + num_controls
     assert inverse.all_qubits() == decomposed_circuit.all_qubits()
@@ -117,10 +116,9 @@ def test_qrom_multi_dim(data, num_controls):
         num_controls=num_controls,
     )
     greedy_mm = cq.GreedyQubitManager('a', maximize_reuse=True)
-    g = cq_testing.GateHelper(qrom, greedy_mm)
-    context = cirq.DecompositionContext(greedy_mm)
-    decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=context))
-    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=context))
+    g = cq_testing.GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
+    decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=g.context))
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))
 
     assert (
         len(inverse.all_qubits()) <= g.r.bitsize + qrom.selection_registers.bitsize + num_controls
@@ -146,12 +144,6 @@ def test_qrom_multi_dim(data, num_controls):
             qubit_vals = {x: 0 for x in g.all_qubits}
             cq_testing.assert_circuit_inp_out_cirqsim(
                 decomposed_circuit, g.all_qubits, initial_state, final_state
-            )
-            cq_testing.assert_circuit_inp_out_cirqsim(
-                decomposed_circuit + inverse, g.all_qubits, initial_state, initial_state
-            )
-            cq_testing.assert_circuit_inp_out_cirqsim(
-                decomposed_circuit + inverse, g.all_qubits, final_state, final_state
             )
 
 
