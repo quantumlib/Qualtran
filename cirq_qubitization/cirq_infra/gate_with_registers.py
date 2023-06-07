@@ -95,7 +95,9 @@ class Registers:
             assert reg.name in qubit_regs, "All qubit registers must pe present"
             qubits = qubit_regs[reg.name]
             qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
-            assert len(qubits) == reg.bitsize, f"{reg.name} register must of length {reg.bitsize}."
+            assert (
+                len(qubits) == reg.bitsize
+            ), f"{reg.name} register must of length {reg.bitsize} but is of length {len(qubits)}"
             ret += qubits
         return ret
 
