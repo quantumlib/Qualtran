@@ -1,18 +1,9 @@
-import itertools
-
 import cirq
 import numpy as np
 
 import cirq_qubitization as cq
 import cirq_qubitization.cirq_infra.testing as cq_testing
-from cirq_qubitization.bit_tools import iter_bits
-from cirq_qubitization.cirq_algos.chemistry import (
-    IndexedAddMod,
-    PrepareChem,
-    SelectChem,
-    SubPrepareChem,
-)
-from cirq_qubitization.cirq_infra.gate_with_registers import SelectionRegisters
+from cirq_qubitization.cirq_algos.chemistry import PrepareChem, SelectChem
 from cirq_qubitization.jupyter_tools import execute_notebook
 
 
@@ -92,3 +83,7 @@ def test_prepare():
     g = cq_testing.GateHelper(prep)
     cirq.Circuit(cirq.decompose_once(g.operation))
     cost = cq.t_complexity(prep)
+
+
+def test_notebook():
+    execute_notebook('chemistry')

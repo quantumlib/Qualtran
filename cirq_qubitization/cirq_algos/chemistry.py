@@ -296,6 +296,7 @@ class SubPrepareChem(PrepareOracle):
             Vx: "Exchage potential" matrix $\sum_q V(p-q)$.
             probability_epsilon: The epsilon that we use to set the precision of of the
                 subprepare approximation. This parameter is called mu in the linear T paper.
+            ndim: Dimensionality of the model. Only 3 is allowed.
 
         Returns:
             prepare: SUBPREPARE circuit with alt and keep values built from
