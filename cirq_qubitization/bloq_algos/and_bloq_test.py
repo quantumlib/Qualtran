@@ -12,6 +12,7 @@ from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.musical_score import Circle, get_musical_score_data
 
 
 def _make_and():
@@ -175,3 +176,20 @@ def test_and_identity_bloq():
     bloq = AndIdentity()
     np.testing.assert_allclose(np.eye(4), bloq.tensor_contract())
     np.testing.assert_allclose(np.eye(4), bloq.decompose_bloq().tensor_contract())
+
+
+def test_and_musical_score():
+    msd = get_musical_score_data(And(cv1=1, cv2=1))
+    # soq[0] and [1] are the dangling symbols
+    assert msd.soqs[2].symb == Circle(filled=True)
+    assert msd.soqs[3].symb == Circle(filled=True)
+
+    msd = get_musical_score_data(And(cv1=1, cv2=0))
+    # soq[0] and [1] are the dangling symbols
+    assert msd.soqs[2].symb == Circle(filled=True)
+    assert msd.soqs[3].symb == Circle(filled=False)
+
+    msd = get_musical_score_data(And(cv1=0, cv2=0))
+    # soq[0] and [1] are the dangling symbols
+    assert msd.soqs[2].symb == Circle(filled=False)
+    assert msd.soqs[3].symb == Circle(filled=False)

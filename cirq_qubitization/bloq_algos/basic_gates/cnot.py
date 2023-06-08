@@ -9,6 +9,8 @@ from attrs import frozen
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.musical_score import Circle, ModPlus, WireSymbol
+from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 if TYPE_CHECKING:
     import cirq
@@ -77,3 +79,10 @@ class CNOT(Bloq):
         (ctrl,) = ctrl
         (target,) = target
         return cirq.CNOT(ctrl, target), {'ctrl': [ctrl], 'target': [target]}
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'ctrl':
+            return Circle(filled=True)
+        elif soq.reg.name == 'target':
+            return ModPlus()
+        raise ValueError(f'Bad wire symbol soquet: {soq}')
