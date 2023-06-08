@@ -1,4 +1,3 @@
-from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
 from cirq_qubitization.cirq_infra.gate_with_registers import (
     GateWithRegisters,
     Register,
