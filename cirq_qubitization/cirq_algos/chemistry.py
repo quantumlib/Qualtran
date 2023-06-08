@@ -124,6 +124,7 @@ class SelectChem(SelectOracle):
 
     def decompose_from_registers(
         self,
+        context: cirq.DecompositionContext,
         theta: Sequence[cirq.Qid],
         U: Sequence[cirq.Qid],
         V: Sequence[cirq.Qid],
@@ -410,7 +411,9 @@ class SubPrepareChem(PrepareOracle):
     def registers(self) -> Registers:
         return Registers([*self.theta_register, *self.selection_registers, *self.junk_registers])
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         selU = qubit_regs["U"]
         selV = qubit_regs["V"]
         selpx = qubit_regs["px"]
@@ -479,7 +482,12 @@ class IndexedAddMod(UnaryIterationGate):
     def target_registers(self) -> Registers:
         return Registers.build(**{f'target{i}': sb for i, sb in enumerate(self.selection_bitsizes)})
 
-    def nth_operation(self, control: cirq.Qid, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def nth_operation(
+        self,
+        context: cirq.DecompositionContext,
+        control: cirq.Qid,
+        **qubit_regs: Sequence[cirq.Qid],
+    ) -> cirq.OP_TREE:
         selection_idx = tuple(qubit_regs[reg.name] for reg in self.selection_registers)
         target_regs = tuple(v for k, v in qubit_regs.items() if k in self.target_registers)
         yield AddMod(self.selection_bitsizes[0], self.mod, add_val=selection_idx[0]).on(
@@ -566,7 +574,9 @@ class PrepareChem(PrepareOracle):
             beta=(1, 2),
         )
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         selU = qubit_regs["U"]
         selV = qubit_regs["V"]
         selpx = qubit_regs["px"]
@@ -579,7 +589,9 @@ class PrepareChem(PrepareOracle):
         alpha = qubit_regs["alpha"]
         beta = qubit_regs["beta"]
         spc = SubPrepareChem.build_from_coefficients(T=self.T, U=self.U, V=self.V, Vx=self.Vx)
-        sub_prep_ancilla = {reg.name: cirq_infra.qalloc(reg.bitsize) for reg in spc.junk_registers}
+        sub_prep_ancilla = {
+            reg.name: context.qubit_manager.qalloc(reg.bitsize) for reg in spc.junk_registers
+        }
         yield spc.on_registers(**qubit_regs, **sub_prep_ancilla)
         yield cirq.H(*alpha)
         num_spat_orb = self.M**self.ndim
@@ -606,6 +618,8 @@ class PrepareChem(PrepareOracle):
             ),
             mod=self.M,
         ).on(*selqx, *selqy, *selqz, *selpx, *selpy, *selpz)
+        for k, v in sub_prep_ancilla.items():
+            context.qubit_manager.qfree(v)
 
     def _value_equality_values_(self):
         return (self.M, self.ndim)
