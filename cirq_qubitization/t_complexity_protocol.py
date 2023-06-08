@@ -1,4 +1,4 @@
-from typing import Any, Callable, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union, Hashable
 
 import cachetools
 import cirq
@@ -116,13 +116,7 @@ def _get_hash(val: Any, fail_quietly: bool = False) -> Optional[int]:
     """
     if isinstance(val, cirq.Operation) and val.gate is not None:
         val = val.gate
-    try:
-        return cachetools.keys.hashkey(val)
-    except:
-        if fail_quietly:
-            return cachetools.keys.hashkey(id(val))
-        else:
-            raise TypeError(f"{val} is not Hashable.")
+    return val
 
 
 def _t_complexity_from_strategies(
@@ -157,10 +151,10 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     Raises:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    if isinstance(stc, (cirq.Gate, cirq.Operation)):
+    if isinstance(stc, (cirq.Gate, cirq.Operation)) and isinstance(stc, Hashable):
         ret = _t_complexity_for_gate_or_op(stc, fail_quietly)
     else:
-        strategies = [_has_t_complexity, _from_decomposition, _is_iterable]
+        strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition, _is_iterable]
         ret = _t_complexity_from_strategies(stc, fail_quietly, strategies)
 
     if ret is None and not fail_quietly:
