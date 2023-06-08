@@ -1,3 +1,4 @@
+cachetools
 fqe
 pyscf
 openfermion
@@ -7,6 +8,7 @@ cirq-google==1.2.0.dev20230607180358
 cirq-core==1.2.0.dev20230607180358
 sphinx
 pydot
+
 
 # quimb and its tensor dependencies
 quimb
