@@ -1,7 +1,7 @@
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 import cirq
-from cirq.protocols.decompose_protocol import DecomposeResult, OpDecomposer
+from cirq.protocols.decompose_protocol import DecomposeResult
 
 from cirq_qubitization.cirq_infra.qubit_manager import GreedyQubitManager
 
