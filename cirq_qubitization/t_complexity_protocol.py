@@ -1,4 +1,4 @@
-from typing import Any, Callable, Iterable, Optional, Union, Hashable
+from typing import Any, Callable, Hashable, Iterable, Optional, Union
 
 import cachetools
 import cirq

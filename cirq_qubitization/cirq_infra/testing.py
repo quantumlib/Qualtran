@@ -117,6 +117,5 @@ def assert_decompose_is_consistent_with_t_complexity(val: Any):
     decomposition = decompose_once_into_operations(val)
     if decomposition is None:
         return
-    # t_complexity.cache_clear()
     from_decomposition = t_complexity(decomposition, fail_quietly=False)
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'
