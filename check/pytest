@@ -20,7 +20,7 @@ cd "${topdir}" || exit $?
 # (the last `-n` option wins)
 PYTEST_ARGS=( "-n=auto" "$@" )
 
-pytest "${PYTEST_ARGS[@]}"
+pytest "${PYTEST_ARGS[@]}" cirq_qubitization/cirq_algos/and_gate_test.py
 RESULT=$?
 
 if [ "$RESULT" = 5 ]; then
