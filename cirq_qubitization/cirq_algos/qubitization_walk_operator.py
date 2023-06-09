@@ -89,20 +89,26 @@ class QubitizationWalkOperator(cirq_infra.GateWithRegisters):
 
     def controlled(
         self,
-        num_controls: int = None,
-        control_values: Sequence[Union[int, Collection[int]]] = None,
+        num_controls: Optional[int] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
     ) -> 'QubitizationWalkOperator':
         if num_controls is None:
             num_controls = 1
         if control_values is None:
             control_values = [1] * num_controls
-        if len(control_values) == 1 and self.control_val is None:
+        if (
+            isinstance(control_values, Sequence)
+            and isinstance(control_values[0], int)
+            and len(control_values) == 1
+            and self.control_val is None
+        ):
+            c_select = self.select.controlled(control_values=control_values)
+            assert isinstance(c_select, select_and_prepare.SelectOracle)
             return QubitizationWalkOperator(
-                self.select.controlled(control_values=control_values),
-                self.prepare,
-                control_val=control_values[-1],
-                power=self.power,
+                c_select, self.prepare, control_val=control_values[0], power=self.power
             )
         raise NotImplementedError(f'Cannot create a controlled version of {self}')
 

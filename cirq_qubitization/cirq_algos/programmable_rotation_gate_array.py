@@ -118,13 +118,12 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        selection: Sequence[cirq.Qid],
-        kappa_load_target: Sequence[cirq.Qid],
-        rotations_target: Sequence[cirq.Qid],
-        **interleaved_unitary_target: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
+        selection, kappa_load_target = quregs.pop('selection'), quregs.pop('kappa_load_target')
+        rotations_target = quregs.pop('rotations_target')
+        interleaved_unitary_target = quregs
+
         # 1. Find a convenient way to process batches of size kappa.
         num_bits = sum(max(thetas).bit_length() for thetas in self.angles)
         iteration_length = self.selection_registers[0].iteration_length

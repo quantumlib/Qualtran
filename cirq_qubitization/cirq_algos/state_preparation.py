@@ -23,6 +23,7 @@ from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
+@cirq.value_equality()
 @frozen
 class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
@@ -118,23 +119,19 @@ class StatePreparationAliasSampling(PrepareOracle):
             less_than_equal=1,
         )
 
-    def __hash__(self):
-        return hash(
-            (self.selection_registers,)
-            + tuple(self.alt.ravel())
-            + tuple(self.keep.ravel())
-            + (self.mu,)
+    def _value_equality_values_(self):
+        return (
+            self.selection_registers,
+            tuple(self.alt.ravel()),
+            tuple(self.keep.ravel()),
+            self.mu,
         )
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        selection: Sequence[cirq.Qid],
-        sigma_mu: Sequence[cirq.Qid],
-        alt: Sequence[cirq.Qid],
-        keep: Sequence[cirq.Qid],
-        less_than_equal: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
+        selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
+        sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
         N = self.selection_registers[0].iteration_length
         yield PrepareUniformSuperposition(N).on(*selection)
         yield cirq.H.on_each(*sigma_mu)

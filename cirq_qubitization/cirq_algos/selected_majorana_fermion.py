@@ -70,7 +70,7 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         wire_symbols += [f"Z{self.target_gate}"] * self.target_registers.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation(
+    def nth_operation(  # type: ignore[override]
         self,
         context: cirq.DecompositionContext,
         control: cirq.Qid,

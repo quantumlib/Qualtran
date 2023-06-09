@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Callable, Sequence, Tuple, Union
+from typing import Callable, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -111,17 +111,15 @@ class QROM(unary_iteration.UnaryIterationGate):
                     yield gate(q)
 
     def decompose_zero_selection(
-        self, context: cirq.DecompositionContext, **qubit_regs: Union[int, Sequence[cirq.Qid]]
+        self, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
-        controls = self.control_registers.merge_qubits(**qubit_regs)
-        target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
+        controls = self.control_registers.merge_qubits(**quregs)
+        target_regs = {k: v for k, v in quregs.items() if k in self.target_registers}
         zero_indx = (0,) * len(self.data[0].shape)
         if self.num_controls == 0:
-            yield from self._load_nth_data(zero_indx, cirq.X, **target_regs)
+            yield self._load_nth_data(zero_indx, cirq.X, **target_regs)
         elif self.num_controls == 1:
-            yield from self._load_nth_data(
-                zero_indx, lambda q: cirq.CNOT(controls[0], q), **target_regs
-            )
+            yield self._load_nth_data(zero_indx, lambda q: cirq.CNOT(controls[0], q), **target_regs)
         else:
             and_ancilla = context.qubit_manager.qalloc(len(controls) - 2)
             and_target = context.qubit_manager.qalloc(1)[0]
@@ -129,23 +127,16 @@ class QROM(unary_iteration.UnaryIterationGate):
                 control=controls, ancilla=and_ancilla, target=and_target
             )
             yield multi_controlled_and
-            yield from self._load_nth_data(
-                zero_indx, lambda q: cirq.CNOT(and_target, q), **target_regs
-            )
-            yield multi_controlled_and**-1
+            yield self._load_nth_data(zero_indx, lambda q: cirq.CNOT(and_target, q), **target_regs)
+            yield cirq.inverse(multi_controlled_and)
             context.qubit_manager.qfree(and_ancilla + [and_target])
 
     def nth_operation(
-        self,
-        context: cirq.DecompositionContext,
-        control: cirq.Qid,
-        **qubit_regs: Sequence[cirq.Qid],
+        self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
     ) -> cirq.OP_TREE:
-        selection_idx = tuple(qubit_regs[reg.name] for reg in self.selection_registers)
-        target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
-        yield from self._load_nth_data(
-            selection_idx, lambda q: cirq.CNOT(control, q), **target_regs
-        )
+        selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
+        target_regs = {k: v for k, v in kwargs.items() if k in self.target_registers}
+        yield self._load_nth_data(selection_idx, lambda q: cirq.CNOT(control, q), **target_regs)
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.num_controls

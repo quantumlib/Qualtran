@@ -1,11 +1,13 @@
-from typing import Any, Callable, Hashable, Iterable, Optional, Union
+from typing import Any, Callable, Hashable, Iterable, Literal, Optional, overload, Union
 
 import cachetools
 import cirq
 from attrs import frozen
 from typing_extensions import Protocol
 
-from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
+from cirq_qubitization.cirq_infra.decompose_protocol import (
+    _decompose_once_considering_known_decomposition,
+)
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -94,7 +96,7 @@ def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
 
 def _from_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
-    decomposition = decompose_once_into_operations(stc)
+    decomposition = _decompose_once_considering_known_decomposition(stc)
     if decomposition is None:
         return None
     return _is_iterable(decomposition, fail_quietly=fail_quietly)
@@ -136,6 +138,16 @@ def _t_complexity_for_gate_or_op(
 ) -> Optional[TComplexity]:
     strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition]
     return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
+
+
+@overload
+def t_complexity(stc: Any, fail_quietly: Literal[False] = False) -> TComplexity:
+    ...
+
+
+@overload
+def t_complexity(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    ...
 
 
 def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:

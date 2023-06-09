@@ -27,25 +27,27 @@ class MultiTargetCNOT(GateWithRegisters):
         return Registers.build(control=1, targets=self._num_targets)
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        control: Sequence[cirq.Qid],
-        targets: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ):
+        control, targets = quregs['control'], quregs['targets']
+
         def cnots_for_depth_i(i: int, q: Sequence[cirq.Qid]) -> cirq.OP_TREE:
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)
 
-        (control,) = control
         depth = len(targets).bit_length()
         for i in range(depth):
             yield cirq.Moment(cnots_for_depth_i(depth - i - 1, targets))
-        yield cirq.CNOT(control, targets[0])
+        yield cirq.CNOT(*control, targets[0])
         for i in range(depth):
             yield cirq.Moment(cnots_for_depth_i(i, targets))
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self._num_targets)
+
+
+def _to_tuple(x: Sequence[int]) -> Tuple[int, ...]:
+    return tuple(x)
 
 
 @frozen
@@ -67,7 +69,7 @@ class MultiControlPauli(GateWithRegisters):
         CLEAN_ANCILLA = 1
         DIRTY_ANCILLA = 2
 
-    cvs: Tuple[int, ...] = field(converter=tuple)
+    cvs: Tuple[int, ...] = field(converter=_to_tuple)
     target_gate: cirq.Pauli = cirq.X
     mode: DecomposeMode = DecomposeMode.CLEAN_ANCILLA
 
@@ -80,7 +82,7 @@ class MultiControlPauli(GateWithRegisters):
         context: cirq.DecompositionContext,
         controls: Sequence[cirq.Qid],
         target: Sequence[cirq.Qid],
-    ):
+    ) -> cirq.ops.op_tree.OpTree:
         pre_post_x = [cirq.X(controls[i]) for i, b in enumerate(self.cvs) if not b]
         if len(controls) == 2:
             return [pre_post_x, self.target_gate(*target).controlled_by(*controls), pre_post_x]
@@ -101,7 +103,7 @@ class MultiControlPauli(GateWithRegisters):
         context: cirq.DecompositionContext,
         controls: Sequence[cirq.Qid],
         target: Sequence[cirq.Qid],
-    ):
+    ) -> cirq.ops.op_tree.OpTree:
         qm = context.qubit_manager
         and_ancilla, and_target = qm.qalloc(len(self.cvs) - 2), qm.qalloc(1)
         yield and_gate.And(self.cvs).on_registers(
@@ -113,11 +115,14 @@ class MultiControlPauli(GateWithRegisters):
         )
         qm.qfree(and_ancilla + and_target)
 
-    def decompose_from_registers(self, **kwargs):
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence['cirq.Qid']
+    ) -> cirq.OP_TREE:
+        controls, target = quregs['controls'], quregs['target']
         if self.mode == self.DecomposeMode.CLEAN_ANCILLA:
-            yield from self._decompose_clean(**kwargs)
+            yield from self._decompose_clean(context=context, controls=controls, target=target)
         elif self.mode == self.DecomposeMode.DIRTY_ANCILLA:
-            yield from self._decompose_dirty(**kwargs)
+            yield from self._decompose_dirty(context=context, controls=controls, target=target)
         else:
             raise ValueError(f"Unsupported mode: {self.mode}")
 

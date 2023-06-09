@@ -160,13 +160,11 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        selection: Sequence[cirq.Qid],
-        **targets: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         # Divide each data sequence and corresponding target registers into
         # `self.num_blocks` batches of size `self.block_size`.
+        selection, targets = quregs.pop('selection'), quregs
         qrom_data: List[NDArray] = []
         qrom_target_bitsizes: List[int] = []
         ordered_target_qubits: List[cirq.Qid] = []
@@ -202,11 +200,11 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
         yield qrom_op
         yield swap_with_zero_op
         yield cnot_op
-        yield swap_with_zero_op**-1
-        yield qrom_op**-1
+        yield cirq.inverse(swap_with_zero_op)
+        yield cirq.inverse(qrom_op)
         yield swap_with_zero_op
         yield cnot_op
-        yield swap_with_zero_op**-1
+        yield cirq.inverse(swap_with_zero_op)
 
         context.qubit_manager.qfree(ordered_target_qubits)
 
@@ -217,7 +215,9 @@ class SelectSwapQROM(cirq_infra.GateWithRegisters):
             wire_symbols += [f"QROAM_{i}"] * target.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def __eq__(self, other: 'SelectSwapQROM') -> bool:
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, SelectSwapQROM):
+            return NotImplemented
         return (
             self.data == other.data
             and self._target_bitsizes == other._target_bitsizes

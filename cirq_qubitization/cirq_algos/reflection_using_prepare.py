@@ -68,7 +68,7 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
             **state_prep_selection_regs, **state_prep_ancilla
         )
         # 1. PREPARE†
-        yield prepare_op**-1
+        yield cirq.inverse(prepare_op)
         # 2. MultiControlled Z, controlled on |000..00> state.
         phase_control = self.selection_registers.merge_qubits(**state_prep_selection_regs)
         yield cirq.X(phase_target) if not self.control_val else []
@@ -91,14 +91,23 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
 
     def controlled(
         self,
-        num_controls: int = None,
-        control_values: Sequence[Union[int, Collection[int]]] = None,
+        num_controls: Optional[int] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
     ) -> 'ReflectionUsingPrepare':
         if num_controls is None:
             num_controls = 1
         if control_values is None:
             control_values = [1] * num_controls
-        if len(control_values) == 1 and self.control_val is None:
-            return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[-1])
-        raise NotImplementedError(f'Cannot create a controlled version of {self}')
+        if (
+            isinstance(control_values, Sequence)
+            and isinstance(control_values[0], int)
+            and len(control_values) == 1
+            and self.control_val is None
+        ):
+            return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[0])
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with {control_values=}.'
+        )
