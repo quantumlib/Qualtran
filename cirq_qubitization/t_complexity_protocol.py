@@ -4,7 +4,9 @@ import cirq
 from attrs import frozen
 from typing_extensions import Protocol
 
-from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
+from cirq_qubitization.cirq_infra.decompose_protocol import (
+    _decompose_once_considering_known_decomposition,
+)
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -101,7 +103,7 @@ def _from_decomposition(
     stc: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
 ) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
-    decomposition = decompose_once_into_operations(stc)
+    decomposition = _decompose_once_considering_known_decomposition(stc)
     if decomposition is None:
         return None
     return _is_iterable(decomposition, cache=cache, fail_quietly=fail_quietly)

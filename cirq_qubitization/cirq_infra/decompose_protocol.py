@@ -1,16 +1,14 @@
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 import cirq
-from cirq.protocols.decompose_protocol import (
-    _try_decompose_into_operations_and_qubits,
-    DecomposeResult,
-    OpDecomposer,
-)
+from cirq.protocols.decompose_protocol import DecomposeResult
+
+from cirq_qubitization.cirq_infra.qubit_manager import GreedyQubitManager
 
 _FREDKIN_GATESET = cirq.Gateset(cirq.FREDKIN, unroll_circuit_op=False)
 
 
-def _fredkin(qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+def _fredkin(qubits: Sequence[cirq.Qid], context: cirq.DecompositionContext) -> cirq.OP_TREE:
     """Decomposition with 7 T and 10 clifford operations from https://arxiv.org/abs/1308.4134"""
     c, t1, t2 = qubits
     yield [cirq.CNOT(t2, t1)]
@@ -25,67 +23,64 @@ def _fredkin(qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
     yield [cirq.CNOT(t2, t1)]
 
 
-def _try_decompose_from_known_decompositions(val: Any) -> DecomposeResult:
+def _try_decompose_from_known_decompositions(
+    val: Any, context: cirq.DecompositionContext
+) -> DecomposeResult:
     """Returns a flattened decomposition of the object into operations, if possible.
 
     Args:
         val: The object to decompose.
+        context: Decomposition context storing common configurable options for `cirq.decompose`.
 
     Returns:
         A flattened decomposition of `val` if it's a gate or operation with a known decomposition.
     """
-    known_decompositions = [(_FREDKIN_GATESET, _fredkin)]
     if not isinstance(val, (cirq.Gate, cirq.Operation)):
         return None
+    qubits = cirq.LineQid.for_gate(val) if isinstance(val, cirq.Gate) else val.qubits
+    known_decompositions = [(_FREDKIN_GATESET, _fredkin)]
 
-    classical_controls = None
+    classical_controls = ()
     if isinstance(val, cirq.ClassicallyControlledOperation):
         classical_controls = val.classical_controls
         val = val.without_classical_controls()
 
-    qubits: Sequence[cirq.Qid] = (
-        val.qubits if isinstance(val, cirq.Operation) else cirq.LineQid.for_gate(val)
-    )
-
+    decomposition = None
     for gateset, decomposer in known_decompositions:
         if val in gateset:
-            decomposition = cirq.flatten_to_ops(decomposer(qubits))
-            if classical_controls is not None:
-                return tuple(op.with_classical_controls(classical_controls) for op in decomposition)
-            else:
-                return tuple(decomposition)
-    return None
+            decomposition = cirq.flatten_to_ops(decomposer(qubits, context))
+            break
+    return (
+        tuple(op.with_classical_controls(*classical_controls) for op in decomposition)
+        if decomposition
+        else None
+    )
 
 
-def decompose_once_into_operations(
-    val: Any,
-    intercepting_decomposer: Optional[OpDecomposer] = _try_decompose_from_known_decompositions,
-    fallback_decomposer: Optional[OpDecomposer] = None,
-) -> DecomposeResult:
+def _decompose_once_considering_known_decomposition(val: Any) -> DecomposeResult:
     """Decomposes a value into operations, if possible.
 
     Args:
         val: The value to decompose into operations.
-        intercepting_decomposer: An optional method that is called before the
-            default decomposer (the value's `_decompose_` method). If
-            `intercepting_decomposer` is specified and returns a result that
-            isn't `NotImplemented` or `None`, that result is used. Otherwise the
-            decomposition falls back to the default decomposer.
-        fallback_decomposer: An optional decomposition that used after the
-            `intercepting_decomposer` and the default decomposer (the value's
-            `_decompose_` method) both fail.
+
     Returns:
         A tuple of operations if decomposition succeeds.
     """
-    decomposers = (
-        intercepting_decomposer,
-        lambda x: _try_decompose_into_operations_and_qubits(x)[0],
-        fallback_decomposer,
+    import uuid
+
+    context = cirq.DecompositionContext(
+        qubit_manager=GreedyQubitManager(prefix=f'_{uuid.uuid4()}', maximize_reuse=True)
     )
-    for decomposer in decomposers:
-        if decomposer is None:
-            continue
-        res = decomposer(val)
-        if res is not None:
-            return tuple(cirq.flatten_to_ops(res))
-    return None
+
+    decomposed = _try_decompose_from_known_decompositions(val, context)
+    if decomposed is not None:
+        return decomposed
+
+    if isinstance(val, cirq.Gate):
+        decomposed = cirq.decompose_once_with_qubits(
+            val, cirq.LineQid.for_gate(val), context=context, flatten=False, default=None
+        )
+    else:
+        decomposed = cirq.decompose_once(val, context=context, flatten=False, default=None)
+
+    return [*cirq.flatten_to_ops(decomposed)] if decomposed else None

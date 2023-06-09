@@ -5,7 +5,9 @@ from typing import Any, Dict, List, Sequence, Tuple
 import cirq
 import numpy as np
 
-from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
+from cirq_qubitization.cirq_infra.decompose_protocol import (
+    _decompose_once_considering_known_decomposition,
+)
 from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters, Registers
 from cirq_qubitization.t_complexity_protocol import t_complexity
 
@@ -114,7 +116,7 @@ def assert_decompose_is_consistent_with_t_complexity(val: Any):
     expected = NotImplemented if t_complexity_method is None else t_complexity_method()
     if expected is NotImplemented or expected is None:
         return
-    decomposition = decompose_once_into_operations(val)
+    decomposition = _decompose_once_considering_known_decomposition(val)
     if decomposition is None:
         return
     from_decomposition = t_complexity(decomposition, fail_quietly=False)

@@ -23,6 +23,7 @@ from cirq_qubitization.cirq_algos.swap_network import MultiTargetCSwap
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
 
+@cirq.value_equality()
 @frozen
 class StatePreparationAliasSampling(PrepareOracle):
     r"""Initialize a state with $L$ unique coefficients using coherent alias sampling.
@@ -118,12 +119,12 @@ class StatePreparationAliasSampling(PrepareOracle):
             less_than_equal=1,
         )
 
-    def __hash__(self):
-        return hash(
-            (self.selection_registers,)
-            + tuple(self.alt.ravel())
-            + tuple(self.keep.ravel())
-            + (self.mu,)
+    def _value_equality_values_(self):
+        return (
+            self.selection_registers,
+            tuple(self.alt.ravel()),
+            tuple(self.keep.ravel()),
+            self.mu,
         )
 
     def decompose_from_registers(

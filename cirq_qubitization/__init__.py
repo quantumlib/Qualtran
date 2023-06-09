@@ -24,7 +24,6 @@ from cirq_qubitization.cirq_algos import (
     UnaryIterationGate,
 )
 from cirq_qubitization.cirq_infra import (
-    decompose_once_into_operations,
     GateWithRegisters,
     GreedyQubitManager,
     map_clean_and_borrowable_qubits,
