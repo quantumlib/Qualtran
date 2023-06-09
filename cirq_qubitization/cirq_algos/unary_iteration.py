@@ -97,7 +97,7 @@ def _unary_iteration_multi_controls(
     )
     ops.append(multi_controlled_and)
     yield from _unary_iteration_single_control(ops, and_target, selection, l_iter, r_iter, qm)
-    ops.append(multi_controlled_and**-1)
+    ops.append(cirq.inverse(multi_controlled_and))
     qm.qfree(and_ancilla + [and_target])
 
 
@@ -197,7 +197,9 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
         return cirq_infra.Registers([])
 
     @abc.abstractmethod
-    def nth_operation(self, context: cirq.DecompositionContext, **kwargs) -> cirq.OP_TREE:
+    def nth_operation(
+        self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
+    ) -> cirq.OP_TREE:
         """Apply nth operation on the target registers when selection registers store `n`.
 
         The `UnaryIterationGate` class is a mixin that represents a coherent for-loop over
@@ -219,7 +221,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
         """
 
     def decompose_zero_selection(
-        self, context: cirq.DecompositionContext, **kwargs
+        self, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         """Specify decomposition of the gate when selection register is empty
 
@@ -239,21 +241,20 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
         raise NotImplementedError("Selection register must not be empty.")
 
     def decompose_from_registers(
-        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
         if self.selection_registers.bitsize == 0:
-            yield from self.decompose_zero_selection(context=context, **qubit_regs)
-            return
+            return self.decompose_zero_selection(context=context, **quregs)
 
         num_loops = len(self.selection_registers)
-        target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
-        extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
+        target_regs = {k: v for k, v in quregs.items() if k in self.target_registers}
+        extra_regs = {k: v for k, v in quregs.items() if k in self.extra_registers}
 
         def unary_iteration_loops(
             nested_depth: int,
             selection_reg_name_to_val: Dict[str, int],
             controls: Sequence[cirq.Qid],
-        ) -> cirq.OP_TREE:
+        ) -> Iterator[cirq.OP_TREE]:
             """Recursively write any number of nested coherent for-loops using unary iteration.
 
             This helper method is useful to write `num_loops` number of nested coherent for-loops by
@@ -284,13 +285,13 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
                 )
                 return
             # Use recursion to write `num_loops` nested loops using unary_iteration().
-            ops = []
+            ops: List[cirq.Operation] = []
             ith_for_loop = unary_iteration(
                 l_iter=0,
                 r_iter=self.selection_registers[nested_depth].iteration_length,
                 flanking_ops=ops,
                 controls=controls,
-                selection=qubit_regs[self.selection_registers[nested_depth].name],
+                selection=quregs[self.selection_registers[nested_depth].name],
                 qubit_manager=context.qubit_manager,
             )
             for op_tree, control_qid, n in ith_for_loop:
@@ -301,7 +302,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
                 )
             yield ops
 
-        yield from unary_iteration_loops(0, {}, self.control_registers.merge_qubits(**qubit_regs))
+        return unary_iteration_loops(0, {}, self.control_registers.merge_qubits(**quregs))
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Basic circuit diagram.

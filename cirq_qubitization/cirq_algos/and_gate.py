@@ -60,7 +60,7 @@ class And(GateWithRegisters):
 
     def _decompose_single_and(
         self, cv1: int, cv2: int, c1: cirq.Qid, c2: cirq.Qid, target: cirq.Qid
-    ) -> cirq.OP_TREE:
+    ) -> cirq.ops.op_tree.OpTree:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 
         * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
@@ -89,7 +89,7 @@ class And(GateWithRegisters):
         control_values: Sequence[int],
         ancillas: Sequence[cirq.Qid],
         target: cirq.Qid,
-    ) -> cirq.OP_TREE:
+    ) -> cirq.ops.op_tree.OpTree:
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
         if len(controls) == 2:
             yield And(control_values, adjoint=self.adjoint).on(*controls, target)
@@ -109,20 +109,15 @@ class And(GateWithRegisters):
             )
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        control: Sequence[cirq.Qid],
-        ancilla: Sequence[cirq.Qid],
-        target: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
-        (target,) = target
-        if len(control) == 2:
-            yield from self._decompose_single_and(*self.cv, *control, target)
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
+    ) -> cirq.ops.op_tree.OpTree:
+        control, ancilla, target = quregs['control'], quregs['ancilla'], quregs['target']
+        if len(self.cv) == 2:
+            yield self._decompose_single_and(
+                self.cv[0], self.cv[1], control[0], control[1], *target
+            )
         else:
-            yield from self._decompose_via_tree(control, self.cv, ancilla, target)
-
-    def __eq__(self, other: 'And'):
-        return self.cv == other.cv and self.adjoint == other.adjoint
+            yield self._decompose_via_tree(control, self.cv, ancilla, *target)
 
     def _value_equality_values_(self) -> Any:
         return (self.cv, self.adjoint)

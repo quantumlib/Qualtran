@@ -49,11 +49,9 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=control_symbols + target_symbols)
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        controls: Sequence[cirq.Qid],
-        target: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
+        controls, target = quregs['controls'], quregs['target']
         # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         n, k = self.n, 0
         while n > 1 and n % 2 == 0:

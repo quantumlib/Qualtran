@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Literal, Optional, overload
 
 import cirq
 from attrs import frozen
@@ -149,6 +149,16 @@ def _t_complexity(
     if h is not None:
         cache[h] = ret if ret is not None else TComplexity()
     return ret
+
+
+@overload
+def t_complexity(stc: Any, fail_quietly: Literal[False] = False) -> TComplexity:
+    ...
+
+
+@overload
+def t_complexity(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    ...
 
 
 def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:

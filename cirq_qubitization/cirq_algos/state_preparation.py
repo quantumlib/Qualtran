@@ -128,14 +128,10 @@ class StatePreparationAliasSampling(PrepareOracle):
         )
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        selection: Sequence[cirq.Qid],
-        sigma_mu: Sequence[cirq.Qid],
-        alt: Sequence[cirq.Qid],
-        keep: Sequence[cirq.Qid],
-        less_than_equal: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
+        selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
+        sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
         N = self.selection_registers[0].iteration_length
         yield PrepareUniformSuperposition(N).on(*selection)
         yield cirq.H.on_each(*sigma_mu)
