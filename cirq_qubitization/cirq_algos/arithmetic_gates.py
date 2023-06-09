@@ -1,7 +1,7 @@
 from typing import Iterable, Optional, Sequence, Tuple, Union
 
+import attr
 import cirq
-from attrs import field, frozen
 
 from cirq_qubitization import bit_tools, t_complexity_protocol
 from cirq_qubitization.cirq_algos.and_gate import And
@@ -18,10 +18,11 @@ class LessThanGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return self._input_register, self._val, self._target_register
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "LessThanGate":
-        return LessThanGate(new_registers[0], new_registers[1])
+    def with_registers(self, *new_registers) -> "LessThanGate":
+        return LessThanGate(*new_registers)
 
-    def apply(self, input_val, max_val, target_register_val) -> Union[int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> Union[int, Iterable[int]]:
+        input_val, max_val, target_register_val = register_vals
         return input_val, max_val, target_register_val ^ (input_val < max_val)
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -113,7 +114,11 @@ class LessThanGate(cirq.ArithmeticGate):
         )
 
 
-@frozen
+def _to_tuple(x: Sequence[int]) -> Tuple[int, ...]:
+    return tuple(x)
+
+
+@attr.frozen(auto_attribs=True)
 class AddMod(cirq.ArithmeticGate):
     """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.
 
@@ -130,9 +135,9 @@ class AddMod(cirq.ArithmeticGate):
     """
 
     bitsize: int
-    mod: int = field()
+    mod: int = attr.field()
     add_val: int = 1
-    cv: Tuple[int, ...] = field(converter=tuple, default=())
+    cv: Tuple[int, ...] = attr.field(converter=_to_tuple, default=())
 
     @mod.validator
     def _validate_mod(self, attribute, value):
@@ -184,12 +189,11 @@ class LessThanEqualGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return (self._first_input_register, self._second_input_register, self._target_register)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "LessThanEqualGate":
-        return LessThanEqualGate(new_registers[0], new_registers[1])
+    def with_registers(self, *new_registers) -> "LessThanEqualGate":
+        return LessThanEqualGate(*new_registers)
 
-    def apply(
-        self, first_input_val, second_input_val, target_register_val
-    ) -> Union[int, int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> Union[int, int, Iterable[int]]:
+        first_input_val, second_input_val, target_register_val = register_vals
         return (
             first_input_val,
             second_input_val,
@@ -252,10 +256,11 @@ class ContiguousRegisterGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return (self._p_register, self._q_register, self._target_register)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> 'ContiguousRegisterGate':
+    def with_registers(self, *new_registers) -> 'ContiguousRegisterGate':
         return ContiguousRegisterGate(len(new_registers[0]), len(new_registers[-1]))
 
-    def apply(self, p: int, q: int, target: int) -> Union[int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> Union[int, Iterable[int]]:
+        p, q, target = register_vals
         return p, q, target ^ ((p * (p - 1)) // 2 + q)
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -291,10 +296,11 @@ class AdditionGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return (self._input_register, self._output_register)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> 'AdditionGate':
+    def with_registers(self, *new_registers) -> 'AdditionGate':
         return AdditionGate(len(new_registers[0]))
 
-    def apply(self, p: int, q: int) -> Union[int, Iterable[int]]:
+    def apply(self, *register_values: int) -> Union[int, Iterable[int]]:
+        p, q = register_values
         return p, p + q
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:

@@ -1,4 +1,4 @@
-from typing import Any, Sequence
+from typing import Any, FrozenSet, Sequence
 
 import cirq
 from cirq.protocols.decompose_protocol import DecomposeResult
@@ -40,7 +40,7 @@ def _try_decompose_from_known_decompositions(
     qubits = cirq.LineQid.for_gate(val) if isinstance(val, cirq.Gate) else val.qubits
     known_decompositions = [(_FREDKIN_GATESET, _fredkin)]
 
-    classical_controls = ()
+    classical_controls: FrozenSet[cirq.Condition] = frozenset()
     if isinstance(val, cirq.ClassicallyControlledOperation):
         classical_controls = val.classical_controls
         val = val.without_classical_controls()

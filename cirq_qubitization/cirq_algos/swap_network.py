@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Sequence
+from typing import Sequence
 
 import cirq
 from attrs import frozen
@@ -36,14 +36,10 @@ class MultiTargetCSwap(GateWithRegisters):
         return Registers.build(control=1, target_x=self.bitsize, target_y=self.bitsize)
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        control: Sequence[cirq.Qid],
-        target_x: Sequence[cirq.Qid],
-        target_y: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
-        (control,) = control
-        yield [cirq.CSWAP(control, t_x, t_y) for t_x, t_y in zip(target_x, target_y)]
+        control, target_x, target_y = quregs['control'], quregs['target_x'], quregs['target_y']
+        yield [cirq.CSWAP(*control, t_x, t_y) for t_x, t_y in zip(target_x, target_y)]
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if not args.use_unicode_characters:
@@ -54,9 +50,6 @@ class MultiTargetCSwap(GateWithRegisters):
 
     def __repr__(self) -> str:
         return f"cirq_qubitization.MultiTargetCSwap({self.bitsize})"
-
-    def _value_equality_values_(self) -> Any:
-        return self.bitsize
 
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
@@ -78,15 +71,11 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
     """
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        control: Sequence[cirq.Qid],
-        target_x: Sequence[cirq.Qid],
-        target_y: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
-        (control,) = control
+        control, target_x, target_y = quregs['control'], quregs['target_x'], quregs['target_y']
 
-        def g(q: cirq.Qid, adjoint=False) -> cirq.OP_TREE:
+        def g(q: cirq.Qid, adjoint=False) -> cirq.ops.op_tree.OpTree:
             yield [cirq.S(q), cirq.H(q)]
             yield cirq.T(q) ** (1 - 2 * adjoint)
             yield [cirq.H(q), cirq.S(q) ** -1]
@@ -97,7 +86,9 @@ class MultiTargetCSwapApprox(MultiTargetCSwap):
         g_on_y = [list(g(q)) for q in target_y]  # Uses len(target_y) T-gates
 
         yield [cnot_y_to_x, g_inv_on_y, cnot_x_to_y, g_inv_on_y]
-        yield multi_control_multi_target_pauli.MultiTargetCNOT(len(target_y)).on(control, *target_y)
+        yield multi_control_multi_target_pauli.MultiTargetCNOT(len(target_y)).on(
+            *control, *target_y
+        )
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
@@ -157,11 +148,9 @@ class SwapWithZeroGate(GateWithRegisters):
         return Registers([*self.selection_registers, *self.target_registers])
 
     def decompose_from_registers(
-        self,
-        context: cirq.DecompositionContext,
-        selection: Sequence[cirq.Qid],
-        **target_regs: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
+        selection, target_regs = quregs.pop('selection'), quregs
         assert len(target_regs) == self.n_target_registers
         cswap_n = MultiTargetCSwapApprox(self.target_bitsize)
         # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target

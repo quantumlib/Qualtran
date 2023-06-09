@@ -177,11 +177,13 @@ class SelectionRegisters(Registers):
 
     @classmethod
     def build(cls, **registers: Union[int, Tuple[int, int]]) -> 'SelectionRegisters':
-        registers = {k: v if isinstance(v, tuple) else (v, 2**v) for k, v in registers.items()}
+        reg_dict: Dict[str, Tuple[int, int]] = {
+            k: v if isinstance(v, tuple) else (v, 2**v) for k, v in registers.items()
+        }
         return SelectionRegisters(
             [
                 SelectionRegister(name=k, bitsize=v[0], iteration_length=v[1])
-                for k, v in registers.items()
+                for k, v in reg_dict.items()
             ]
         )
 
@@ -208,6 +210,7 @@ class SelectionRegisters(Registers):
             raise IndexError(f"key {key} must be of the type str/int/slice.")
 
 
+# type: ignore[override]
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
@@ -218,23 +221,19 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
         return self.registers.bitsize
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **qubit_regs
-    ) -> cirq.ops.op_tree.OpTree:
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         return NotImplemented
 
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
-    ) -> 'cirq.OP_TREE':
+    ) -> cirq.OP_TREE:
         qubit_regs = self.registers.split_qubits(qubits)
         if context is None:
             context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
-        it = self.decompose_from_registers(context=context, **qubit_regs)
-        if it is NotImplemented:
-            yield NotImplemented
-        else:
-            yield from it
+        return self.decompose_from_registers(context=context, **qubit_regs)
 
-    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> 'cirq.OP_TREE':
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
 
     def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.Operation:

@@ -74,7 +74,6 @@ def map_clean_and_borrowable_qubits(
     """
     if qm is None:
         qm = qubit_manager.GreedyQubitManager(prefix="ancilla")
-    assert isinstance(qm, cirq.QubitManager)
 
     allocated_qubits = {q for q in circuit.all_qubits() if _is_temp(q)}
     qubits_lifespan = _get_qubit_mapping_first_and_last_moment(circuit)
@@ -88,6 +87,7 @@ def map_clean_and_borrowable_qubits(
 
     def map_func(op: cirq.Operation, idx: int) -> cirq.OP_TREE:
         nonlocal last_op_idx, to_free
+        assert isinstance(qm, cirq.QubitManager)
 
         for q in sorted(to_free):
             is_managed_qubit = allocated_map[q] not in all_qubits
