@@ -174,6 +174,6 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     return ret
 
 
-t_complexity.cache_clear = _t_complexity_for_gate_or_op.cache_clear
-t_complexity.cache_info = _t_complexity_for_gate_or_op.cache_info
-t_complexity.cache = _t_complexity_for_gate_or_op.cache
+t_complexity.cache_clear = _t_complexity_for_gate_or_op.cache_clear  # type: ignore[attr-defined]
+t_complexity.cache_info = _t_complexity_for_gate_or_op.cache_info  # type: ignore[attr-defined]
+t_complexity.cache = _t_complexity_for_gate_or_op.cache  # type: ignore[attr-defined]
