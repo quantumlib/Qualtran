@@ -1,6 +1,6 @@
 import cirq
-import pytest
 import numpy as np
+import pytest
 
 from cirq_qubitization.cirq_infra.decompose_protocol import (
     _fredkin,
