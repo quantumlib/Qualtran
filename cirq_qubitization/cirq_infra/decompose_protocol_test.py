@@ -1,4 +1,5 @@
 import cirq
+import pytest
 import numpy as np
 
 from cirq_qubitization.cirq_infra.decompose_protocol import (
@@ -17,7 +18,8 @@ def test_fredkin_unitary():
     )
 
 
-def test_decompose_fredkin():
+@pytest.mark.parametrize('gate', [cirq.FREDKIN, cirq.FREDKIN**-1])
+def test_decompose_fredkin(gate):
     c, t1, t2 = cirq.LineQid.for_gate(cirq.FREDKIN)
     op = cirq.FREDKIN(c, t1, t2)
     context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())

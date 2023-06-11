@@ -1,6 +1,8 @@
 import cirq
 import pytest
 
+import cirq_qubitization as cq
+import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.cirq_algos.and_gate import And
 from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
@@ -14,6 +16,15 @@ class SupportTComplexity(cirq.Operation):
 
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=1)
+
+
+class SupportsTComplexityGateWithRegisters(cq.GateWithRegisters):
+    @property
+    def registers(self) -> cq.Registers:
+        return cq.Registers.build(s=1, t=2)
+
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(t=1, clifford=2)
 
 
 class SupportTComplexityGate(cirq.Gate):
@@ -42,6 +53,10 @@ def test_t_complexity():
 
     assert t_complexity(SupportTComplexity()) == TComplexity(t=1)
     assert t_complexity(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)
+
+    g = cq_testing.GateHelper(SupportsTComplexityGateWithRegisters())
+    assert t_complexity(g.gate) == TComplexity(t=1, clifford=2)
+    assert t_complexity(g.operation) == TComplexity(t=1, clifford=2)
 
     assert t_complexity([cirq.T, cirq.X]) == TComplexity(t=1, clifford=1)
 
@@ -168,3 +183,4 @@ def test_cache_clear():
     op = IsCachable()
     assert t_complexity([op, op]) == TComplexity()
     assert op.num_calls == 1
+    t_complexity.cache_clear()

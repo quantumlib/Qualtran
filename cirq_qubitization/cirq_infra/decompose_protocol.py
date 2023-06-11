@@ -5,7 +5,7 @@ from cirq.protocols.decompose_protocol import DecomposeResult
 
 from cirq_qubitization.cirq_infra.qubit_manager import GreedyQubitManager
 
-_FREDKIN_GATESET = cirq.Gateset(cirq.FREDKIN, unroll_circuit_op=False)
+_FREDKIN_GATESET = cirq.Gateset(cirq.FREDKIN, cirq.FREDKIN**-1, unroll_circuit_op=False)
 
 
 def _fredkin(qubits: Sequence[cirq.Qid], context: cirq.DecompositionContext) -> cirq.OP_TREE:

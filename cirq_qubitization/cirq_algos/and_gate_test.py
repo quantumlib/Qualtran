@@ -195,5 +195,3 @@ def test_notebook():
 @pytest.mark.parametrize("adjoint", [*range(2)])
 def test_t_complexity(adjoint, C):
     cq_testing.assert_decompose_is_consistent_with_t_complexity(And(C, adjoint=adjoint))
-    print(cirq_qubitization.t_complexity.cache_info())
-    print(cirq_qubitization.t_complexity.cache)
