@@ -101,3 +101,46 @@ def execute_notebook(name: str):
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
     ep.preprocess(nb)
+
+
+def format_dirac(s: str, n: int) -> str:
+    """Reformats a dirac vector on as |work qubits|ancilla qubits|result qubit>"""
+    return s[: n + 1] + '|' + s[n + 1 : -2] + '|' + s[-2:]
+
+
+def check_oracle(n_qubits: int, oracle_func, oracle_name: str, oracle_desc: str):
+    """Displays the result of running the oracle given by `oracle_func` on all 2^n inputs individually and in superposition."""
+    A = cirq.NamedQubit.range(n_qubits, prefix='A')
+    z = cirq.NamedQubit('z')
+    c = cirq.Circuit(oracle_func(A, z))
+    print(oracle_name)
+    print(c)
+    print()
+    print('-' * 50)
+    print()
+    print(f'simulation result for "{oracle_name}" oracle')
+    print('state vector form is |qubit registers | ancillas |z⟩')
+    sim = cirq.Simulator()
+    qubit_order = [q for q in A]
+    qubit_order += [q for q in c.all_qubits() if q not in A + [z]]
+    qubit_order += [z]
+    for v in range(1 << n_qubits):
+        bits = [(v >> i) & 1 for i in range(n_qubits - 1, -1, -1)]
+        bits += (len(qubit_order) - n_qubits) * [0]
+        result = sim.simulate(c, qubit_order=qubit_order, initial_state=bits)
+        IPython.display.display(IPython.display.Latex(rf'z = $\mathbb{1}({v} {oracle_desc})$ = {result.dirac_notation()[-2]}'))
+        print('\tfinal state vector', format_dirac(result.dirac_notation(), n_qubits))
+
+    c = cirq.Circuit([cirq.H(q) for q in A] + [c])
+    result = sim.simulate(c, qubit_order=qubit_order)
+    result = result.dirac_notation()
+    final = []
+    for s in result.split('|'):
+        if '⟩' not in s:
+            final.append(s)
+            continue
+        parts = s.split('⟩')
+        parts[0] = format_dirac('|' + parts[0] + '⟩', n_qubits)
+        final.append(''.join(parts))
+    print('Acting on the uniform superposition of all states we get:')
+    print('\t', ''.join(final))
