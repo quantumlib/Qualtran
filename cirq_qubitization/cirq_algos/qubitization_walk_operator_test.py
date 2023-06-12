@@ -38,8 +38,10 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
     walk = walk_operator_for_pauli_hamiltonian(ham, eps)
 
     g = cq_testing.GateHelper(walk)
-    with cq.memory_management_context():
-        walk_circuit = cirq.Circuit(cirq.decompose(g.operation, keep=keep, on_stuck_raise=None))
+    context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
+    walk_circuit = cirq.Circuit(
+        cirq.decompose(g.operation, keep=keep, on_stuck_raise=None, context=context)
+    )
 
     L_state = np.zeros(2 ** len(g.quregs['selection']))
     L_state[: len(ham_coeff)] = np.sqrt(ham_coeff / qubitization_lambda)

@@ -225,7 +225,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return not self.t_complexity.__qualname__.startswith('Bloq.')
 
     def as_cirq_op(
-        self, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         """Override this method to support conversion to a Cirq operation.
 
@@ -233,6 +233,7 @@ class Bloq(metaclass=abc.ABCMeta):
         in a `BloqAsCirqGate` shim.
 
         Args:
+            qubit_manager: A `cirq.QubitManager` for allocating `cirq.Qid`s.
             **cirq_quregs: kwargs mapping from this bloq's left register names to an ndarray of
                 `cirq.Qid`. The final dimension of this array corresponds to the registers
                 `bitsize` size. Any additional dimensions come first and correspond to the
@@ -248,4 +249,6 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.cirq_conversion import BloqAsCirqGate
 
-        return BloqAsCirqGate.bloq_on(bloq=self, cirq_quregs=cirq_quregs)
+        return BloqAsCirqGate.bloq_on(
+            bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
+        )

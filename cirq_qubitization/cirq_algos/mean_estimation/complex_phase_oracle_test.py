@@ -27,7 +27,7 @@ class DummySelect(cq.cirq_algos.SelectOracle):
     def target_registers(self) -> cq.Registers:
         return cq.Registers.build(target=self.bitsize)
 
-    def decompose_from_registers(self, selection, target):
+    def decompose_from_registers(self, context, selection, target):
         yield [cirq.CNOT(s, t) for s, t in zip(selection, target)]
 
 

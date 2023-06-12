@@ -37,8 +37,10 @@ def greedily_allocate_ancilla(circuit: cirq.AbstractCircuit) -> cirq.Circuit:
 
 def construct_gate_helper_and_qubit_order(gate):
     g = cq_testing.GateHelper(gate)
-    with cq.cirq_infra.memory_management_context():
-        circuit = cirq.Circuit(cirq.decompose(g.operation, keep=keep, on_stuck_raise=None))
+    context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
+    circuit = cirq.Circuit(
+        cirq.decompose(g.operation, keep=keep, on_stuck_raise=None, context=context)
+    )
     ordered_input = sum(g.quregs.values(), start=[])
     qubit_order = cirq.QubitOrder.explicit(ordered_input, fallback=cirq.QubitOrder.DEFAULT)
     return g, qubit_order, circuit

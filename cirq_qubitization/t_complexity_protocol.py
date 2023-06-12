@@ -1,10 +1,12 @@
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Literal, Optional, overload
 
 import cirq
 from attrs import frozen
 from typing_extensions import Protocol
 
-from cirq_qubitization.cirq_infra.decompose_protocol import decompose_once_into_operations
+from cirq_qubitization.cirq_infra.decompose_protocol import (
+    _decompose_once_considering_known_decomposition,
+)
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -101,7 +103,7 @@ def _from_decomposition(
     stc: Any, cache: Dict[Any, TComplexity], fail_quietly: bool = False
 ) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
-    decomposition = decompose_once_into_operations(stc)
+    decomposition = _decompose_once_considering_known_decomposition(stc)
     if decomposition is None:
         return None
     return _is_iterable(decomposition, cache=cache, fail_quietly=fail_quietly)
@@ -145,8 +147,18 @@ def _t_complexity(
     if ret is None and not fail_quietly:
         raise TypeError("couldn't compute TComplexity of:\n" f"type: {type(stc)}\n" f"value: {stc}")
     if h is not None:
-        cache[h] = ret
+        cache[h] = ret if ret is not None else TComplexity()
     return ret
+
+
+@overload
+def t_complexity(stc: Any, fail_quietly: Literal[False] = False) -> TComplexity:
+    ...
+
+
+@overload
+def t_complexity(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    ...
 
 
 def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
@@ -162,5 +174,5 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     Raises:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    cache = {}
+    cache: Dict[Any, TComplexity] = {}
     return _t_complexity(stc, cache=cache, fail_quietly=fail_quietly)

@@ -49,8 +49,9 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=control_symbols + target_symbols)
 
     def decompose_from_registers(
-        self, controls: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
+        controls, target = quregs['controls'], quregs['target']
         # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         n, k = self.n, 0
         while n > 1 and n % 2 == 0:
@@ -65,7 +66,7 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
         if not logL_qubits:
             return
 
-        ancilla = cirq_infra.qalloc(1)
+        ancilla = context.qubit_manager.qalloc(1)
         theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
         yield LessThanGate([2] * logL, l).on(*logL_qubits, *ancilla)
         yield cirq.Rz(rads=theta)(*ancilla)
@@ -74,7 +75,7 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
         yield cirq.H.on_each(*logL_qubits)
 
         and_gate = And((0,) * logL + self.cvs)
-        and_ancilla = cirq_infra.qalloc(and_gate.registers['ancilla'].bitsize)
+        and_ancilla = context.qubit_manager.qalloc(and_gate.registers['ancilla'].bitsize)
         yield and_gate.on_registers(
             control=[*logL_qubits, *controls], ancilla=and_ancilla, target=ancilla
         )
@@ -84,4 +85,4 @@ class PrepareUniformSuperposition(cirq_infra.GateWithRegisters):
         )
 
         yield cirq.H.on_each(*logL_qubits)
-        cirq_infra.qfree([*ancilla, *and_ancilla])
+        context.qubit_manager.qfree([*ancilla, *and_ancilla])

@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 
 import cirq_qubitization as cq
-from cirq_qubitization import cirq_infra
 from cirq_qubitization.bit_tools import iter_bits
 from cirq_qubitization.cirq_infra import testing as cq_testing
 
@@ -18,11 +17,11 @@ def test_select_swap_qrom(data, block_size):
     targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
 
     greedy_mm = cq.cirq_infra.GreedyQubitManager(prefix="_a", maximize_reuse=True)
-    with cq.cirq_infra.memory_management_context(greedy_mm):
-        qrom_circuit = cirq.Circuit(cirq.decompose(qrom.on_registers(**qubit_regs)))
+    context = cirq.DecompositionContext(greedy_mm)
+    qrom_circuit = cirq.Circuit(cirq.decompose(qrom.on_registers(**qubit_regs), context=context))
 
     dirty_target_ancilla = [
-        q for q in qrom_circuit.all_qubits() if isinstance(q, cirq_infra.BorrowableQubit)
+        q for q in qrom_circuit.all_qubits() if isinstance(q, cirq.ops.BorrowableQubit)
     ]
 
     circuit = cirq.Circuit(

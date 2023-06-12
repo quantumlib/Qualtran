@@ -96,7 +96,9 @@ class MeanEstimationOperator(cirq_infra.GateWithRegisters):
     def registers(self) -> cirq_infra.Registers:
         return cirq_infra.Registers([*self.control_registers, *self.selection_registers])
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         select_reg = {reg.name: qubit_regs[reg.name] for reg in self.select.registers}
         reflect_reg = {reg.name: qubit_regs[reg.name] for reg in self.reflect.registers}
         select_op = self.select.on_registers(**select_reg)

@@ -1,6 +1,6 @@
 import abc
 import sys
-from typing import Dict, Iterable, List, overload, Sequence, Tuple, Union
+from typing import Dict, Iterable, List, Optional, overload, Sequence, Tuple, Union
 
 import attrs
 import cirq
@@ -95,7 +95,9 @@ class Registers:
             assert reg.name in qubit_regs, "All qubit registers must pe present"
             qubits = qubit_regs[reg.name]
             qubits = [qubits] if isinstance(qubits, cirq.Qid) else qubits
-            assert len(qubits) == reg.bitsize, f"{reg.name} register must of length {reg.bitsize}."
+            assert (
+                len(qubits) == reg.bitsize
+            ), f"{reg.name} register must of length {reg.bitsize} but is of length {len(qubits)}"
             ret += qubits
         return ret
 
@@ -171,14 +173,17 @@ class SelectionRegisters(Registers):
 
     @property
     def total_iteration_size(self) -> int:
-        return np.product(self.iteration_lengths)
+        return int(np.product(self.iteration_lengths))
 
     @classmethod
-    def build(cls, **registers: Tuple[int, int]) -> 'SelectionRegisters':
-        return cls(
+    def build(cls, **registers: Union[int, Tuple[int, int]]) -> 'SelectionRegisters':
+        reg_dict: Dict[str, Tuple[int, int]] = {
+            k: v if isinstance(v, tuple) else (v, 2**v) for k, v in registers.items()
+        }
+        return SelectionRegisters(
             [
                 SelectionRegister(name=k, bitsize=v[0], iteration_length=v[1])
-                for k, v in registers.items()
+                for k, v in reg_dict.items()
             ]
         )
 
@@ -191,7 +196,7 @@ class SelectionRegisters(Registers):
         pass
 
     @overload
-    def __getitem__(self, key: slice) -> SelectionRegister:
+    def __getitem__(self, key: slice) -> 'SelectionRegisters':
         pass
 
     def __getitem__(self, key):
@@ -205,6 +210,7 @@ class SelectionRegisters(Registers):
             raise IndexError(f"key {key} must be of the type str/int/slice.")
 
 
+# type: ignore[override]
 class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
@@ -214,12 +220,21 @@ class GateWithRegisters(cirq.Gate, metaclass=abc.ABCMeta):
     def _num_qubits_(self) -> int:
         return self.registers.bitsize
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         return NotImplemented
 
-    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def _decompose_with_context_(
+        self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
+    ) -> cirq.OP_TREE:
         qubit_regs = self.registers.split_qubits(qubits)
-        yield from self.decompose_from_registers(**qubit_regs)
+        if context is None:
+            context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
+        return self.decompose_from_registers(context=context, **qubit_regs)
+
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        return self._decompose_with_context_(qubits)
 
     def on_registers(self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid]]) -> cirq.Operation:
         return self.on(*self.registers.merge_qubits(**qubit_regs))

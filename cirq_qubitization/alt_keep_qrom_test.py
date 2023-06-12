@@ -12,8 +12,8 @@ def test_alt_keep_qrom():
     epsilon = 1.0e-2  # precision value is kept low so we can simulate the output
     qrom = construct_alt_keep_qrom(lcu_coefficients=lcu_coeffs, probability_epsilon=epsilon)
 
-    alternates, keep_numers = qrom._data
-    mu = max([xx.bit_length() for xx in keep_numers])
+    alternates, keep_numers = qrom.data
+    mu = max([int(xx).bit_length() for xx in keep_numers])
 
     # for this test mu should be equal to 4
     assert mu == 4
@@ -42,9 +42,9 @@ def test_alt_keep_qrom():
             g.quregs['selection'], iter_bits(selection_integer, g.r['selection'].bitsize)
         )
         initial_state = [qubit_vals[x] for x in g.all_qubits]
-        for ti, d in enumerate(qrom._data):
+        for ti, d in enumerate(qrom.data):
             target = g.quregs[f"target{ti}"]
-            qubit_vals |= zip(target, iter_bits(d[selection_integer], len(target)))
+            qubit_vals |= zip(target, iter_bits(int(d[selection_integer]), len(target)))
         final_state = [qubit_vals[x] for x in g.all_qubits]
 
         cq_testing.assert_circuit_inp_out_cirqsim(

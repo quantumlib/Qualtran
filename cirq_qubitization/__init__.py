@@ -24,20 +24,12 @@ from cirq_qubitization.cirq_algos import (
     UnaryIterationGate,
 )
 from cirq_qubitization.cirq_infra import (
-    BorrowableQubit,
-    CleanQubit,
-    decompose_once_into_operations,
     GateWithRegisters,
     GreedyQubitManager,
     map_clean_and_borrowable_qubits,
-    memory_management_context,
-    qalloc,
-    qborrow,
-    qfree,
     Register,
     Registers,
     SelectionRegisters,
-    SimpleQubitManager,
 )
 from cirq_qubitization.generic_select import GenericSelect
 from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity

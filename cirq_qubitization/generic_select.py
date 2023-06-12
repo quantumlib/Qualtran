@@ -1,16 +1,17 @@
 """Gates for applying generic selected unitaries."""
 from functools import cached_property
-from typing import Collection, List, Optional, Sequence, Tuple, Union
+from typing import Collection, Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
 
+from cirq_qubitization.cirq_algos.select_and_prepare import SelectOracle
 from cirq_qubitization.cirq_algos.unary_iteration import UnaryIterationGate
 from cirq_qubitization.cirq_infra.gate_with_registers import Register, Registers, SelectionRegisters
 
 
 @cirq.value_equality()
-class GenericSelect(UnaryIterationGate):
+class GenericSelect(SelectOracle, UnaryIterationGate):
     r"""A SELECT gate for selecting and applying operators from an array of `PauliString`s.
 
     $$
@@ -34,7 +35,7 @@ class GenericSelect(UnaryIterationGate):
         self,
         selection_bitsize: int,
         target_bitsize: int,
-        select_unitaries: List[cirq.DensePauliString],
+        select_unitaries: Sequence[cirq.DensePauliString],
         *,
         control_val: Optional[int] = None,
     ):
@@ -56,7 +57,7 @@ class GenericSelect(UnaryIterationGate):
         return Registers(registers)
 
     @cached_property
-    def selection_registers(self) -> Registers:
+    def selection_registers(self) -> SelectionRegisters:
         return SelectionRegisters.build(
             selection=(self._selection_bitsize, len(self.select_unitaries))
         )
@@ -65,19 +66,25 @@ class GenericSelect(UnaryIterationGate):
     def target_registers(self) -> Registers:
         return Registers.build(target=self._target_bitsize)
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(self, context, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         if self._control_val == 0:
             yield cirq.X(*qubit_regs['control'])
-        yield from super().decompose_from_registers(**qubit_regs)
+        yield super().decompose_from_registers(context=context, **qubit_regs)
         if self._control_val == 0:
             yield cirq.X(*qubit_regs['control'])
 
-    def nth_operation(
-        self, selection: int, control: cirq.Qid, target: Sequence[cirq.Qid]
+    def nth_operation(  # type: ignore[override]
+        self,
+        context: cirq.DecompositionContext,
+        selection: int,
+        control: cirq.Qid,
+        target: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         """Applies `self.select_unitaries[selection]`.
 
         Args:
+             context: `cirq.DecompositionContext` stores options for decomposing gates (eg:
+                cirq.QubitManager).
              selection: takes on values [0, self.iteration_lengths[0])
              control: Qid that is the control qubit or qubits
              target: Target register qubits
@@ -85,26 +92,35 @@ class GenericSelect(UnaryIterationGate):
         if selection < 0 or selection >= 2**self._selection_bitsize:
             raise ValueError("n is outside selection length range")
         ps = self.select_unitaries[selection].on(*target)
-        return ps.with_coefficient(np.sign(ps.coefficient.real)).controlled_by(control)
+        return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
 
     def controlled(
         self,
-        num_controls: int = None,
-        control_values: Sequence[Union[int, Collection[int]]] = None,
+        num_controls: Optional[int] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
     ) -> 'GenericSelect':
         if num_controls is None:
             num_controls = 1
         if control_values is None:
             control_values = [1] * num_controls
-        if len(control_values) == 1 and self._control_val is None:
+        if (
+            isinstance(control_values, Sequence)
+            and isinstance(control_values[0], int)
+            and len(control_values) == 1
+            and self._control_val is None
+        ):
             return GenericSelect(
                 self._selection_bitsize,
                 self._target_bitsize,
                 self.select_unitaries,
                 control_val=control_values[0],
             )
-        raise NotImplementedError(f'Cannot create a controlled version of {self}')
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with {control_values=}.'
+        )
 
     def _value_equality_values_(self):
         return (
@@ -113,6 +129,3 @@ class GenericSelect(UnaryIterationGate):
             self._target_bitsize,
             self._control_val,
         )
-
-
-GenericSelect.__hash__ = cirq._compat.cached_method(GenericSelect.__hash__)

@@ -29,12 +29,12 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         control_regs: Control registers for constructing a controlled version of the gate.
     """
     selection_regs: SelectionRegisters
-    nth_gate: Callable[[int, ...], cirq.Gate]
+    nth_gate: Callable[..., cirq.Gate]
     control_regs: Registers = Registers.build(control=1)
 
     @classmethod
     def make_on(
-        cls, *, nth_gate: Callable[[int, ...], cirq.Gate], **quregs: Sequence[cirq.Qid]
+        cls, *, nth_gate: Callable[..., cirq.Gate], **quregs: Sequence[cirq.Qid]
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce bitsize attributes."""
         return cls(
@@ -62,8 +62,12 @@ class ApplyGateToLthQubit(UnaryIterationGate):
             wire_symbols += [str(self.nth_gate(*it))]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation(
-        self, control: cirq.Qid, target: Sequence[cirq.Qid], **selection_indices: int
+    def nth_operation(  # type: ignore[override]
+        self,
+        context: cirq.DecompositionContext,
+        control: cirq.Qid,
+        target: Sequence[cirq.Qid],
+        **selection_indices: int,
     ) -> cirq.OP_TREE:
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = self.selection_registers.to_flat_idx(*selection_idx)

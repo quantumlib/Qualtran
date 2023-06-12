@@ -118,15 +118,16 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self,
-        selection: Sequence[cirq.Qid],
-        kappa_load_target: Sequence[cirq.Qid],
-        rotations_target: Sequence[cirq.Qid],
-        **interleaved_unitary_target: Sequence[cirq.Qid],
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
+        selection, kappa_load_target = quregs.pop('selection'), quregs.pop('kappa_load_target')
+        rotations_target = quregs.pop('rotations_target')
+        interleaved_unitary_target = quregs
+
         # 1. Find a convenient way to process batches of size kappa.
         num_bits = sum(max(thetas).bit_length() for thetas in self.angles)
         iteration_length = self.selection_registers[0].iteration_length
+        selection_bitsizes = [s.bitsize for s in self.selection_registers]
         angles_bits = np.zeros(shape=(iteration_length, num_bits), dtype=int)
         angles_bit_pow = np.zeros(shape=(num_bits,), dtype=int)
         angles_idx = np.zeros(shape=(num_bits,), dtype=int)
@@ -145,9 +146,9 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         for st in range(0, num_bits, self.kappa):
             en = min(st + self.kappa, num_bits)
             data ^= angles_bits[:, st:en].dot(power_of_2s[: en - st])
-            yield QROM(data.tolist(), target_bitsizes=[self.kappa]).on_registers(
-                selection=selection, target0=kappa_load_target
-            )
+            yield QROM(
+                [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
+            ).on_registers(selection=selection, target0=kappa_load_target)
             data = angles_bits[:, st:en].dot(power_of_2s[: en - st])
             for cqid, bpow, idx in zip(kappa_load_target, angles_bit_pow[st:en], angles_idx[st:en]):
                 if idx != last_id:
@@ -156,9 +157,9 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
                     )
                     last_id = idx
                 yield self.rotation_gate(bpow).on(*rotations_target).controlled_by(cqid)
-        yield QROM(data.tolist(), target_bitsizes=[self.kappa]).on_registers(
-            selection=selection, target0=kappa_load_target
-        )
+        yield QROM(
+            [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
+        ).on_registers(selection=selection, target0=kappa_load_target)
 
 
 class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):

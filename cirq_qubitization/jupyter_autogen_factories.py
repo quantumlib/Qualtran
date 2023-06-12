@@ -44,7 +44,7 @@ def _make_ApplyGateToLthQubit():
 def _make_QROM():
     from cirq_qubitization.cirq_algos import QROM
 
-    return QROM([1, 2, 3, 4, 5])
+    return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
 
 
 def _make_MultiTargetCSwap():
@@ -81,9 +81,10 @@ def _make_StatePreparationAliasSampling():
     coeffs = np.array([1.0, 1, 3, 2])
     mu = 3
 
-    return StatePreparationAliasSampling.from_lcu_probs(
+    state_prep = StatePreparationAliasSampling.from_lcu_probs(
         coeffs, probability_epsilon=2**-mu / len(coeffs)
     )
+    return state_prep
 
 
 def _make_QubitizationWalkOperator():

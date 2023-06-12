@@ -93,29 +93,37 @@ class CompositeBloq(Bloq):
         return _create_binst_graph(self.connections)
 
     def as_cirq_op(
-        self, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         """Return a cirq.CircuitOperation containing a cirq-exported version of this cbloq."""
         import cirq
 
-        circuit, out_quregs = self.to_cirq_circuit(**cirq_quregs)
+        circuit, out_quregs = self.to_cirq_circuit(qubit_manager=qubit_manager, **cirq_quregs)
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit(
-        self, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
         Args:
+            qubit_manager: A `cirq.QubitManager` to allocate new qubits.
             **cirq_quregs: Mapping from left register names to Cirq qubit arrays.
 
         Returns:
             circuit: The cirq.FrozenCircuit version of this composite bloq.
             cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
         """
+        import cirq
+
         from cirq_qubitization.quantum_graph.cirq_conversion import _cbloq_to_cirq_circuit
 
-        return _cbloq_to_cirq_circuit(self.registers, cirq_quregs, self._binst_graph)
+        if qubit_manager is None:
+            qubit_manager = cirq.ops.SimpleQubitManager()
+
+        return _cbloq_to_cirq_circuit(
+            self.registers, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
+        )
 
     @classmethod
     def from_cirq_circuit(cls, circuit: 'cirq.Circuit') -> 'CompositeBloq':
@@ -273,17 +281,27 @@ class CompositeBloq(Bloq):
 
         """
         bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+
+        # We take particular care during flattening to preserve the `binst.i` of bloq instances
+        # that are not flattened. We do this by initializing the bloq builder's `i` counter
+        # to one greater than the existing maximum value, so all calls to `add_from` will result
+        # in new, higher `binst.i` values.
+        bb._i = max(binst.i for binst in self.bloq_instances) + 1
+
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         did_work = False
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
 
-            bloq = binst.bloq
             if pred(binst):
-                new_out_soqs = bb.add_from(bloq.decompose_bloq(), **in_soqs)
+                new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
                 did_work = True
             else:
-                new_out_soqs = bb.add(bloq, **in_soqs)
+                # Since we took care to not re-use existing `binst.i` values for flattened
+                # bloqs, it is safe to call `bb._add_binst` with the old `binst` (and in
+                # particular with the old `binst.i`) to preserve the `binst.i` of unflattened
+                # bloqs.
+                new_out_soqs = bb._add_binst(binst, in_soqs=in_soqs)
 
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
@@ -695,10 +713,10 @@ class CompositeBloqBuilder:
 
         return bb, initial_soqs
 
-    def _new_binst(self, bloq: Bloq) -> BloqInstance:
-        inst = BloqInstance(bloq, self._i)
+    def _new_binst_i(self) -> int:
+        i = self._i
         self._i += 1
-        return inst
+        return i
 
     def _add_cxn(
         self, binst: BloqInstance, idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]
@@ -734,7 +752,16 @@ class CompositeBloqBuilder:
                 the ordering is irrespective of the order of `in_soqs` that have been passed in
                 and depends only on the convention of the bloq's registers.
         """
-        binst = self._new_binst(bloq)
+        binst = BloqInstance(bloq, i=self._new_binst_i())
+        return self._add_binst(binst, in_soqs=in_soqs)
+
+    def _add_binst(self, binst: BloqInstance, in_soqs: Dict[str, SoquetT]) -> Tuple[SoquetT, ...]:
+        """Add a bloq instance.
+
+        Warning! Do not use this function externally! Untold bad things will happen if
+        the provided `binst.i` is not unique.
+        """
+        bloq = binst.bloq
 
         def _add(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
             # close over `binst`

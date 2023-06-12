@@ -17,6 +17,7 @@ def _unary_iteration_segtree(
     r: int,
     l_iter: int,
     r_iter: int,
+    qm: cirq.QubitManager,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     if l >= r_iter or l_iter >= r:
         # Range corresponding to this node is completely outside of iteration range.
@@ -30,30 +31,42 @@ def _unary_iteration_segtree(
     m = (l + r) >> 1
     if r_iter <= m:
         # Yield only left sub-tree.
-        yield from _unary_iteration_segtree(ops, control, selection, sl + 1, l, m, l_iter, r_iter)
+        yield from _unary_iteration_segtree(
+            ops, control, selection, sl + 1, l, m, l_iter, r_iter, qm
+        )
         return
     if l_iter >= m:
         # Yield only right sub-tree
-        yield from _unary_iteration_segtree(ops, control, selection, sl + 1, m, r, l_iter, r_iter)
+        yield from _unary_iteration_segtree(
+            ops, control, selection, sl + 1, m, r, l_iter, r_iter, qm
+        )
         return
-    anc, sq = cirq_infra.qalloc(1)[0], selection[sl]
+    anc, sq = qm.qalloc(1)[0], selection[sl]
     ops.append(and_gate.And((1, 0)).on(control, sq, anc))
-    yield from _unary_iteration_segtree(ops, anc, selection, sl + 1, l, m, l_iter, r_iter)
+    yield from _unary_iteration_segtree(ops, anc, selection, sl + 1, l, m, l_iter, r_iter, qm)
     ops.append(cirq.CNOT(control, anc))
-    yield from _unary_iteration_segtree(ops, anc, selection, sl + 1, m, r, l_iter, r_iter)
+    yield from _unary_iteration_segtree(ops, anc, selection, sl + 1, m, r, l_iter, r_iter, qm)
     ops.append(and_gate.And(adjoint=True).on(control, sq, anc))
-    cirq_infra.qfree(anc)
+    qm.qfree([anc])
 
 
 def _unary_iteration_zero_control(
-    ops: List[cirq.Operation], selection: Sequence[cirq.Qid], l_iter: int, r_iter: int
+    ops: List[cirq.Operation],
+    selection: Sequence[cirq.Qid],
+    l_iter: int,
+    r_iter: int,
+    qm: cirq.QubitManager,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
     m = (l + r) >> 1
     ops.append(cirq.X(selection[0]))
-    yield from _unary_iteration_segtree(ops, selection[0], selection[1:], sl, l, m, l_iter, r_iter)
+    yield from _unary_iteration_segtree(
+        ops, selection[0], selection[1:], sl, l, m, l_iter, r_iter, qm
+    )
     ops.append(cirq.X(selection[0]))
-    yield from _unary_iteration_segtree(ops, selection[0], selection[1:], sl, m, r, l_iter, r_iter)
+    yield from _unary_iteration_segtree(
+        ops, selection[0], selection[1:], sl, m, r, l_iter, r_iter, qm
+    )
 
 
 def _unary_iteration_single_control(
@@ -62,9 +75,10 @@ def _unary_iteration_single_control(
     selection: Sequence[cirq.Qid],
     l_iter: int,
     r_iter: int,
+    qm: cirq.QubitManager,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
-    yield from _unary_iteration_segtree(ops, control, selection, sl, l, r, l_iter, r_iter)
+    yield from _unary_iteration_segtree(ops, control, selection, sl, l, r, l_iter, r_iter, qm)
 
 
 def _unary_iteration_multi_controls(
@@ -73,17 +87,18 @@ def _unary_iteration_multi_controls(
     selection: Sequence[cirq.Qid],
     l_iter: int,
     r_iter: int,
+    qm: cirq.QubitManager,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     num_controls = len(controls)
-    and_ancilla = cirq_infra.qalloc(num_controls - 2)
-    and_target = cirq_infra.qalloc(1)[0]
+    and_ancilla = qm.qalloc(num_controls - 2)
+    and_target = qm.qalloc(1)[0]
     multi_controlled_and = and_gate.And((1,) * len(controls)).on_registers(
         control=controls, ancilla=and_ancilla, target=and_target
     )
     ops.append(multi_controlled_and)
-    yield from _unary_iteration_single_control(ops, and_target, selection, l_iter, r_iter)
-    ops.append(multi_controlled_and**-1)
-    cirq_infra.qfree(and_ancilla)
+    yield from _unary_iteration_single_control(ops, and_target, selection, l_iter, r_iter, qm)
+    ops.append(cirq.inverse(multi_controlled_and))
+    qm.qfree(and_ancilla + [and_target])
 
 
 def unary_iteration(
@@ -92,6 +107,7 @@ def unary_iteration(
     flanking_ops: List[cirq.Operation],
     controls: Sequence[cirq.Qid],
     selection: Sequence[cirq.Qid],
+    qubit_manager: cirq.QubitManager,
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     """The method performs unary iteration on `selection` integer in `range(l_iter, r_iter)`.
 
@@ -126,6 +142,7 @@ def unary_iteration(
             to the function, list represents operations to be inserted at the end of last iteration.
         controls: Control register of qubits.
         selection: Selection register of qubits.
+        qubit_manager: A `cirq.QubitManager` to allocate new qubits.
 
     Yields:
         (r_iter - l_iter) different tuples, each corresponding to an integer in range
@@ -140,14 +157,16 @@ def unary_iteration(
     assert 2 ** len(selection) >= r_iter - l_iter
     assert len(selection) > 0
     if len(controls) == 0:
-        yield from _unary_iteration_zero_control(flanking_ops, selection, l_iter, r_iter)
+        yield from _unary_iteration_zero_control(
+            flanking_ops, selection, l_iter, r_iter, qubit_manager
+        )
     elif len(controls) == 1:
         yield from _unary_iteration_single_control(
-            flanking_ops, controls[0], selection, l_iter, r_iter
+            flanking_ops, controls[0], selection, l_iter, r_iter, qubit_manager
         )
     else:
         yield from _unary_iteration_multi_controls(
-            flanking_ops, controls, selection, l_iter, r_iter
+            flanking_ops, controls, selection, l_iter, r_iter, qubit_manager
         )
 
 
@@ -178,7 +197,9 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
         return cirq_infra.Registers([])
 
     @abc.abstractmethod
-    def nth_operation(self, **kwargs) -> cirq.OP_TREE:
+    def nth_operation(
+        self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
+    ) -> cirq.OP_TREE:
         """Apply nth operation on the target registers when selection registers store `n`.
 
         The `UnaryIterationGate` class is a mixin that represents a coherent for-loop over
@@ -199,7 +220,9 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
             register and represents the sequence of qubits that represent the extra register.
         """
 
-    def decompose_zero_selection(self, **kwargs) -> cirq.OP_TREE:
+    def decompose_zero_selection(
+        self, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         """Specify decomposition of the gate when selection register is empty
 
         By default, if the selection register is empty, the decomposition will raise a
@@ -217,20 +240,21 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
         """
         raise NotImplementedError("Selection register must not be empty.")
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
         if self.selection_registers.bitsize == 0:
-            yield from self.decompose_zero_selection(**qubit_regs)
-            return
+            return self.decompose_zero_selection(context=context, **quregs)
 
         num_loops = len(self.selection_registers)
-        target_regs = {k: v for k, v in qubit_regs.items() if k in self.target_registers}
-        extra_regs = {k: v for k, v in qubit_regs.items() if k in self.extra_registers}
+        target_regs = {k: v for k, v in quregs.items() if k in self.target_registers}
+        extra_regs = {k: v for k, v in quregs.items() if k in self.extra_registers}
 
         def unary_iteration_loops(
             nested_depth: int,
             selection_reg_name_to_val: Dict[str, int],
             controls: Sequence[cirq.Qid],
-        ) -> cirq.OP_TREE:
+        ) -> Iterator[cirq.OP_TREE]:
             """Recursively write any number of nested coherent for-loops using unary iteration.
 
             This helper method is useful to write `num_loops` number of nested coherent for-loops by
@@ -253,17 +277,22 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
             """
             if nested_depth == num_loops:
                 yield self.nth_operation(
-                    control=controls[0], **selection_reg_name_to_val, **target_regs, **extra_regs
+                    context=context,
+                    control=controls[0],
+                    **selection_reg_name_to_val,
+                    **target_regs,
+                    **extra_regs,
                 )
                 return
             # Use recursion to write `num_loops` nested loops using unary_iteration().
-            ops = []
+            ops: List[cirq.Operation] = []
             ith_for_loop = unary_iteration(
                 l_iter=0,
                 r_iter=self.selection_registers[nested_depth].iteration_length,
                 flanking_ops=ops,
                 controls=controls,
-                selection=qubit_regs[self.selection_registers[nested_depth].name],
+                selection=quregs[self.selection_registers[nested_depth].name],
+                qubit_manager=context.qubit_manager,
             )
             for op_tree, control_qid, n in ith_for_loop:
                 yield op_tree
@@ -273,7 +302,7 @@ class UnaryIterationGate(cirq_infra.GateWithRegisters):
                 )
             yield ops
 
-        yield from unary_iteration_loops(0, {}, self.control_registers.merge_qubits(**qubit_regs))
+        return unary_iteration_loops(0, {}, self.control_registers.merge_qubits(**quregs))
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Basic circuit diagram.

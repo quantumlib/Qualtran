@@ -4,7 +4,6 @@ from typing import Sequence
 import cirq
 from attrs import frozen
 
-from cirq_qubitization import cirq_infra
 from cirq_qubitization.cirq_algos import unary_iteration
 from cirq_qubitization.cirq_infra.gate_with_registers import Registers, SelectionRegisters
 
@@ -56,12 +55,14 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
     def extra_registers(self) -> Registers:
         return Registers.build(accumulator=1)
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
-        qubit_regs['accumulator'] = cirq_infra.qalloc(1)
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        qubit_regs['accumulator'] = context.qubit_manager.qalloc(1)
         control = qubit_regs[self.control_regs[0].name] if self.control_registers.bitsize else []
         yield cirq.X(*qubit_regs['accumulator']).controlled_by(*control)
-        yield super().decompose_from_registers(**qubit_regs)
-        cirq_infra.qfree(qubit_regs['accumulator'])
+        yield super().decompose_from_registers(context=context, **qubit_regs)
+        context.qubit_manager.qfree(qubit_regs['accumulator'])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.control_registers.bitsize
@@ -69,8 +70,9 @@ class SelectedMajoranaFermionGate(unary_iteration.UnaryIterationGate):
         wire_symbols += [f"Z{self.target_gate}"] * self.target_registers.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def nth_operation(
+    def nth_operation(  # type: ignore[override]
         self,
+        context: cirq.DecompositionContext,
         control: cirq.Qid,
         target: Sequence[cirq.Qid],
         accumulator: Sequence[cirq.Qid],

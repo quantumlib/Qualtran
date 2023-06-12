@@ -54,20 +54,21 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
     def registers(self) -> cirq_infra.Registers:
         return cirq_infra.Registers([*self.control_registers, *self.selection_registers])
 
-    def decompose_from_registers(self, **qubit_regs: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def decompose_from_registers(
+        self, context: cirq.DecompositionContext, **qubit_regs: Sequence[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        qm = context.qubit_manager
         # 0. Allocate new ancillas, if needed.
-        phase_target = (
-            cirq_infra.qalloc(1)[0] if self.control_val is None else qubit_regs.pop('control')[0]
-        )
+        phase_target = qm.qalloc(1)[0] if self.control_val is None else qubit_regs.pop('control')[0]
         state_prep_ancilla = {
-            reg.name: cirq_infra.qalloc(reg.bitsize) for reg in self.prepare_gate.junk_registers
+            reg.name: qm.qalloc(reg.bitsize) for reg in self.prepare_gate.junk_registers
         }
         state_prep_selection_regs = qubit_regs
         prepare_op = self.prepare_gate.on_registers(
             **state_prep_selection_regs, **state_prep_ancilla
         )
         # 1. PREPARE†
-        yield prepare_op**-1
+        yield cirq.inverse(prepare_op)
         # 2. MultiControlled Z, controlled on |000..00> state.
         phase_control = self.selection_registers.merge_qubits(**state_prep_selection_regs)
         yield cirq.X(phase_target) if not self.control_val else []
@@ -79,9 +80,9 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
         yield prepare_op
 
         # 4. Deallocate ancilla.
-        cirq_infra.qfree([q for anc in state_prep_ancilla.values() for q in anc])
+        qm.qfree([q for anc in state_prep_ancilla.values() for q in anc])
         if self.control_val is None:
-            cirq_infra.qfree(phase_target)
+            qm.qfree([phase_target])
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if self.control_val else '@(0)'] * self.control_registers.bitsize
@@ -90,14 +91,23 @@ class ReflectionUsingPrepare(cirq_infra.GateWithRegisters):
 
     def controlled(
         self,
-        num_controls: int = None,
-        control_values: Sequence[Union[int, Collection[int]]] = None,
+        num_controls: Optional[int] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
     ) -> 'ReflectionUsingPrepare':
         if num_controls is None:
             num_controls = 1
         if control_values is None:
             control_values = [1] * num_controls
-        if len(control_values) == 1 and self.control_val is None:
-            return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[-1])
-        raise NotImplementedError(f'Cannot create a controlled version of {self}')
+        if (
+            isinstance(control_values, Sequence)
+            and isinstance(control_values[0], int)
+            and len(control_values) == 1
+            and self.control_val is None
+        ):
+            return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[0])
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with {control_values=}.'
+        )

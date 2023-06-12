@@ -1,9 +1,9 @@
-from typing import Iterable, Sequence, Tuple, Union
+from typing import Iterable, Optional, Sequence, Tuple, Union
 
+import attr
 import cirq
-from attrs import field, frozen
 
-from cirq_qubitization import bit_tools, cirq_infra, t_complexity_protocol
+from cirq_qubitization import bit_tools, t_complexity_protocol
 from cirq_qubitization.cirq_algos.and_gate import And
 
 
@@ -18,10 +18,11 @@ class LessThanGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return self._input_register, self._val, self._target_register
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "LessThanGate":
-        return LessThanGate(new_registers[0], new_registers[1])
+    def with_registers(self, *new_registers) -> "LessThanGate":
+        return LessThanGate(*new_registers)
 
-    def apply(self, input_val, max_val, target_register_val) -> Union[int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> Union[int, Iterable[int]]:
+        input_val, max_val, target_register_val = register_vals
         return input_val, max_val, target_register_val ^ (input_val < max_val)
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -34,7 +35,9 @@ class LessThanGate(cirq.ArithmeticGate):
             return self
         return NotImplemented
 
-    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def _decompose_with_context_(
+        self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
+    ) -> cirq.OP_TREE:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
         The decomposition proceeds from the most significant qubit -bit 0- to the least significant qubit
@@ -49,6 +52,8 @@ class LessThanGate(cirq.ArithmeticGate):
             - one ancilla `are_equal` contains the equality informaiton
             - ancilla[i] contain whether the qubits[:i+1] != (i+1)th prefix of `_val`
         """
+        if context is None:
+            context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
 
         qubits, target = qubits[:-1], qubits[-1]
         # Trivial case, self._val is larger than any value the registers could represent
@@ -57,7 +62,7 @@ class LessThanGate(cirq.ArithmeticGate):
             return
         adjoint = []
 
-        [are_equal] = cirq_infra.qalloc(1)
+        [are_equal] = context.qubit_manager.qalloc(1)
 
         # Initially our belief is that the numbers are equal.
         yield cirq.X(are_equal)
@@ -65,7 +70,7 @@ class LessThanGate(cirq.ArithmeticGate):
 
         # Scan from left to right.
         # `are_equal` contains whether the numbers are equal so far.
-        ancilla = cirq_infra.qalloc(len(self._input_register))
+        ancilla = context.qubit_manager.qalloc(len(self._input_register))
         for b, q, a in zip(
             bit_tools.iter_bits(self._val, len(self._input_register)), qubits, ancilla
         ):
@@ -109,7 +114,11 @@ class LessThanGate(cirq.ArithmeticGate):
         )
 
 
-@frozen
+def _to_tuple(x: Sequence[int]) -> Tuple[int, ...]:
+    return tuple(x)
+
+
+@attr.frozen(auto_attribs=True)
 class AddMod(cirq.ArithmeticGate):
     """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.
 
@@ -126,9 +135,9 @@ class AddMod(cirq.ArithmeticGate):
     """
 
     bitsize: int
-    mod: int = field()
+    mod: int = attr.field()
     add_val: int = 1
-    cv: Tuple[int, ...] = field(converter=tuple, default=())
+    cv: Tuple[int, ...] = attr.field(converter=_to_tuple, default=())
 
     @mod.validator
     def _validate_mod(self, attribute, value):
@@ -180,12 +189,11 @@ class LessThanEqualGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return (self._first_input_register, self._second_input_register, self._target_register)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "LessThanEqualGate":
-        return LessThanEqualGate(new_registers[0], new_registers[1])
+    def with_registers(self, *new_registers) -> "LessThanEqualGate":
+        return LessThanEqualGate(*new_registers)
 
-    def apply(
-        self, first_input_val, second_input_val, target_register_val
-    ) -> Union[int, int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> Union[int, int, Iterable[int]]:
+        first_input_val, second_input_val, target_register_val = register_vals
         return (
             first_input_val,
             second_input_val,
@@ -248,10 +256,11 @@ class ContiguousRegisterGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return (self._p_register, self._q_register, self._target_register)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> 'ContiguousRegisterGate':
+    def with_registers(self, *new_registers) -> 'ContiguousRegisterGate':
         return ContiguousRegisterGate(len(new_registers[0]), len(new_registers[-1]))
 
-    def apply(self, p: int, q: int, target: int) -> Union[int, Iterable[int]]:
+    def apply(self, *register_vals: int) -> Union[int, Iterable[int]]:
+        p, q, target = register_vals
         return p, q, target ^ ((p * (p - 1)) // 2 + q)
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -287,10 +296,11 @@ class AdditionGate(cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return (self._input_register, self._output_register)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> 'AdditionGate':
+    def with_registers(self, *new_registers) -> 'AdditionGate':
         return AdditionGate(len(new_registers[0]))
 
-    def apply(self, p: int, q: int) -> Union[int, Iterable[int]]:
+    def apply(self, *register_values: int) -> Union[int, Iterable[int]]:
+        p, q = register_values
         return p, p + q
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
@@ -321,10 +331,14 @@ class AdditionGate(cirq.ArithmeticGate):
             yield cirq.CX(inp[depth], out[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
 
-    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+    def _decompose_with_context_(
+        self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
+    ) -> cirq.OP_TREE:
+        if context is None:
+            context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
         input_bits = qubits[: self._nbits]
         output_bits = qubits[self._nbits :]
-        ancillas = cirq_infra.qalloc(self._nbits - 1)
+        ancillas = context.qubit_manager.qalloc(self._nbits - 1)
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
         # Left part of Fig.2
@@ -335,7 +349,7 @@ class AdditionGate(cirq.ArithmeticGate):
         yield from self._right_building_block(input_bits, output_bits, ancillas, self._nbits - 2)
         yield And(adjoint=True).on(input_bits[0], output_bits[0], ancillas[0])
         yield cirq.CX(input_bits[0], output_bits[0])
-        cirq_infra.qfree(ancillas)
+        context.qubit_manager.qfree(ancillas)
 
     def _t_complexity_(self) -> 't_complexity_protocol.TComplexity':
         # There are N - 2 building blocks each with one And/And^dag contributing 13 cliffords and 6 CXs.
