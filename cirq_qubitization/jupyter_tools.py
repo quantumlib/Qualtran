@@ -128,7 +128,11 @@ def check_oracle(n_qubits: int, oracle_func, oracle_name: str, oracle_desc: str)
         bits = [(v >> i) & 1 for i in range(n_qubits - 1, -1, -1)]
         bits += (len(qubit_order) - n_qubits) * [0]
         result = sim.simulate(c, qubit_order=qubit_order, initial_state=bits)
-        IPython.display.display(IPython.display.Latex(rf'z = $\mathbb{1}({v} {oracle_desc})$ = {result.dirac_notation()[-2]}'))
+        IPython.display.display(
+            IPython.display.Latex(
+                rf'z = $\mathbb{1}({v} {oracle_desc})$ = {result.dirac_notation()[-2]}'
+            )
+        )
         print('\tfinal state vector', format_dirac(result.dirac_notation(), n_qubits))
 
     c = cirq.Circuit([cirq.H(q) for q in A] + [c])
