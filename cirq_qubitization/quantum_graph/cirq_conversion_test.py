@@ -5,6 +5,7 @@ import numpy as np
 from attrs import frozen
 
 from cirq_qubitization.bloq_algos.and_bloq import MultiAnd
+from cirq_qubitization.bloq_algos.basic_gates import XGate
 from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.cirq_conversion import (
@@ -153,6 +154,16 @@ def test_multi_and_allocates():
         **cirq_quregs, qubit_manager=cirq.ops.SimpleQubitManager()
     )
     assert sorted(out_quregs.keys()) == ['ctrl', 'junk', 'target']
+
+
+def test_bloq_as_cirq_gate_left_register():
+    bb = CompositeBloqBuilder()
+    q = bb.allocate(1)
+    (q,) = bb.add(XGate(), q=q)
+    bb.free(q)
+    cbloq = bb.finalize()
+    circuit, _ = cbloq.to_cirq_circuit()
+    cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
 
 
 def test_notebook():
