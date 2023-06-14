@@ -1,16 +1,15 @@
 import random
 
 import cirq
+import cirq_ft
+import cirq_ft.infra.testing as cq_testing
 import numpy as np
 import pytest
 
-import cirq_qubitization
-import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.bloq_algos.basic_gates.z_basis import IntState
 from cirq_qubitization.bloq_algos.swap_network import CSwapApprox, SwapWithZero
 from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 random.seed(12345)
 
@@ -82,26 +81,26 @@ def test_swap_with_zero_classically():
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
 def test_t_complexity(n):
-    g = cirq_qubitization.MultiTargetCSwap(n)
+    g = cirq_ft.MultiTargetCSwap(n)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
-    g = cirq_qubitization.MultiTargetCSwapApprox(n)
+    g = cirq_ft.MultiTargetCSwapApprox(n)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
 
 @pytest.mark.parametrize(
     "selection_bitsize, target_bitsize, n_target_registers, want",
     [
-        [3, 5, 1, TComplexity(t=0, clifford=0)],
-        [2, 2, 3, TComplexity(t=16, clifford=86)],
-        [2, 3, 4, TComplexity(t=36, clifford=195)],
-        [3, 2, 5, TComplexity(t=32, clifford=172)],
-        [4, 1, 10, TComplexity(t=36, clifford=189)],
+        [3, 5, 1, cirq_ft.TComplexity(t=0, clifford=0)],
+        [2, 2, 3, cirq_ft.TComplexity(t=16, clifford=86)],
+        [2, 3, 4, cirq_ft.TComplexity(t=36, clifford=195)],
+        [3, 2, 5, cirq_ft.TComplexity(t=32, clifford=172)],
+        [4, 1, 10, cirq_ft.TComplexity(t=36, clifford=189)],
     ],
 )
 def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers, want):
-    gate = cirq_qubitization.SwapWithZeroGate(selection_bitsize, target_bitsize, n_target_registers)
-    assert want == t_complexity(gate)
+    gate = cirq_ft.SwapWithZeroGate(selection_bitsize, target_bitsize, n_target_registers)
+    assert want == cirq_ft.t_complexity(gate)
 
 
 def test_notebook():

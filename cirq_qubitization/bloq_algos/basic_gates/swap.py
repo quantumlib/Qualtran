@@ -5,12 +5,12 @@ import cirq
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
-from cirq_qubitization.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
 

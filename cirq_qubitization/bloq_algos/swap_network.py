@@ -4,14 +4,13 @@ from typing import Dict, Sequence, TYPE_CHECKING
 import cirq
 import numpy as np
 from attrs import frozen
+from cirq_ft import MultiTargetCNOT, TComplexity
 from numpy.typing import NDArray
 
-from cirq_qubitization.cirq_algos import multi_control_multi_target_pauli
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
-from cirq_qubitization.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
@@ -67,7 +66,7 @@ class CSwapApprox(Bloq):
         g_on_y = [list(g(q)) for q in y]  # Uses len(target_y) T-gates
 
         yield [cnot_y_to_x, g_inv_on_y, cnot_x_to_y, g_inv_on_y]
-        yield multi_control_multi_target_pauli.MultiTargetCNOT(len(y)).on(ctrl, *y)
+        yield MultiTargetCNOT(len(y)).on(ctrl, *y)
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
     def build_composite_bloq(

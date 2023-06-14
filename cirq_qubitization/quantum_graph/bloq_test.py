@@ -4,9 +4,9 @@ from typing import Dict, Tuple
 import cirq
 import pytest
 from attrs import frozen
+from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
-from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
