@@ -18,6 +18,7 @@ from typing import (
 
 import networkx as nx
 import numpy as np
+from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
@@ -30,7 +31,6 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
-from cirq_qubitization.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq

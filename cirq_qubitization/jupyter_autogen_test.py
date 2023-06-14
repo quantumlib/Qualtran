@@ -4,6 +4,7 @@ This module is used as a mock NotebookSpec module, so this docstring shows up in
 """
 import inspect
 
+import cirq_ft
 import numpy as np
 
 import cirq_qubitization
@@ -18,7 +19,7 @@ from cirq_qubitization.jupyter_autogen import (
 
 
 def _make_QROM():
-    from cirq_qubitization import QROM
+    from cirq_ft import QROM
 
     return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
 
@@ -26,7 +27,7 @@ def _make_QROM():
 def test_gate_nb_spec():
     gspec = GateNbSpec(factory=_make_QROM)
     assert gspec.cqid == '_make_QROM'
-    assert gspec.gate_cls == cirq_qubitization.QROM
+    assert gspec.gate_cls == cirq_ft.QROM
 
 
 def test_notebook_spec():
@@ -70,7 +71,7 @@ def test_get_markdown_docstring_lines():
 
 def test_get_lines_for_constructing_an_object():
     lines, obj_expr = _get_lines_for_constructing_an_object(_make_QROM)
-    assert lines == ['from cirq_qubitization import QROM', '']
+    assert lines == ['from cirq_ft import QROM', '']
     assert (
         obj_expr
         == 'QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))'
@@ -106,4 +107,4 @@ def test_render_notebook_cells():
     assert list(cells.gate_cells.keys()) == ['_make_QROM']
     gcell = cells.gate_cells['_make_QROM']
     assert gcell.md.source.startswith('## `QROM`')
-    assert gcell.py.source.startswith('from cirq_qubitization import QROM')
+    assert gcell.py.source.startswith('from cirq_ft import QROM')

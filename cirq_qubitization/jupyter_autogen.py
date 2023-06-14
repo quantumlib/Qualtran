@@ -36,6 +36,7 @@ from types import ModuleType
 from typing import Callable, Dict, List, Tuple, Type, Union
 
 import nbformat
+from cirq_ft import GateWithRegisters
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
 import cirq_qubitization.bloq_algos.and_bloq_test
@@ -44,9 +45,7 @@ import cirq_qubitization.bloq_algos.basic_gates.swap_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
 import cirq_qubitization.bloq_algos.swap_network
 import cirq_qubitization.bloq_algos.swap_network_test
-import cirq_qubitization.jupyter_autogen_factories as jaf
 import cirq_qubitization.quantum_graph
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
 from cirq_qubitization.quantum_graph.bloq import Bloq
 
 
@@ -120,28 +119,6 @@ class NotebookSpec:
 
 NOTEBOOK_SPECS: List[NotebookSpec] = [
     NotebookSpec(
-        title='Apply to L-th Target',
-        module=cirq_qubitization.cirq_algos.apply_gate_to_lth_target,
-        directory='./cirq_algos',
-        gate_specs=[GateNbSpec(jaf._make_ApplyGateToLthQubit)],
-    ),
-    NotebookSpec(
-        title='QROM',
-        module=cirq_qubitization.cirq_algos.qrom,
-        gate_specs=[GateNbSpec(jaf._make_QROM)],
-        directory='./cirq_algos',
-    ),
-    NotebookSpec(
-        title='Swap Network',
-        module=cirq_qubitization.cirq_algos.swap_network,
-        gate_specs=[
-            GateNbSpec(jaf._make_MultiTargetCSwap),
-            GateNbSpec(jaf._make_MultiTargetCSwapApprox),
-            GateNbSpec(jaf._make_SwapWithZeroGate),
-        ],
-        directory='./cirq_algos',
-    ),
-    NotebookSpec(
         title='Swap Network',
         module=cirq_qubitization.bloq_algos.swap_network,
         gate_specs=[
@@ -150,23 +127,6 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(cirq_qubitization.bloq_algos.swap_network_test._make_SwapWithZero),
         ],
         directory='./bloq_algos',
-    ),
-    NotebookSpec(
-        title='Generic Select',
-        module=cirq_qubitization.generic_select,
-        gate_specs=[GateNbSpec(jaf._make_GenericSelect, draw_vertical=True)],
-    ),
-    NotebookSpec(
-        title='State Preparation using Coherent Alias Sampling',
-        module=cirq_qubitization.cirq_algos.state_preparation,
-        gate_specs=[GateNbSpec(jaf._make_StatePreparationAliasSampling)],
-        directory='./cirq_algos',
-    ),
-    NotebookSpec(
-        title='Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE',
-        module=cirq_qubitization.cirq_algos.qubitization_walk_operator,
-        gate_specs=[GateNbSpec(jaf._make_QubitizationWalkOperator)],
-        directory='./cirq_algos',
     ),
     NotebookSpec(
         title='Basic Gates',
@@ -259,7 +219,8 @@ _IMPORTS = """\
 import cirq
 import numpy as np
 import cirq_qubitization
-import cirq_qubitization.cirq_infra.testing as cq_testing
+import cirq_ft
+import cirq_ft.infra.testing as cq_testing
 from cirq_qubitization.jupyter_tools import display_gate_and_compilation, show_bloq
 from typing import *\
 """

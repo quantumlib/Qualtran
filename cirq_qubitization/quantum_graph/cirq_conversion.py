@@ -2,16 +2,15 @@ from functools import cached_property
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import cirq
+import cirq_ft
 import networkx as nx
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from cirq_ft import Register as LegacyRegister
+from cirq_ft import Registers as LegacyRegisters
 from numpy.typing import NDArray
 
-import cirq_qubitization.t_complexity_protocol as cq_tcp
-from cirq_qubitization.cirq_infra.gate_with_registers import GateWithRegisters
-from cirq_qubitization.cirq_infra.gate_with_registers import Register as LegacyRegister
-from cirq_qubitization.cirq_infra.gate_with_registers import Registers as LegacyRegisters
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _binst_to_cxns,
@@ -81,8 +80,8 @@ class CirqGateAsBloq(Bloq):
         assert qubits.shape == (self.n_qubits, 1)
         return self.gate.on(*qubits[:, 0]), {'qubits': qubits}
 
-    def t_complexity(self) -> 'cq_tcp.TComplexity':
-        return cq_tcp.t_complexity(self.gate)
+    def t_complexity(self) -> 'cirq_ft.TComplexity':
+        return cirq_ft.t_complexity(self.gate)
 
 
 def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
@@ -243,7 +242,7 @@ def _cbloq_to_cirq_circuit(
     return cirq.FrozenCircuit(moments), out_quregs
 
 
-class BloqAsCirqGate(GateWithRegisters):
+class BloqAsCirqGate(cirq_ft.GateWithRegisters):
     """A shim for using bloqs in a Cirq circuit.
 
     Args:
