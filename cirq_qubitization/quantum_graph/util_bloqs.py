@@ -142,3 +142,23 @@ class Free(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters([FancyRegister('free', bitsize=self.n, side=Side.LEFT)])
+
+
+@frozen
+class ArbitraryClifford(Bloq):
+    """A bloq representing an arbitrary `n`-qubit clifford operation.
+
+    In the surface code architecture, clifford operations are generally considered
+    cheaper than non-clifford gates. Each clifford also has roughly the same cost independent
+    of what particular operation it is doing.
+
+    You can use this to bloq to represent an arbitrary clifford operation e.g. in bloq_counts
+    resource estimates where the details are unimportant for the resource estimation task
+    at hand.
+    """
+
+    n: int
+
+    @cached_property
+    def registers(self) -> FancyRegisters:
+        return FancyRegisters([FancyRegister('x', bitsize=self.n)])
