@@ -3,8 +3,6 @@ import re
 
 from setuptools import find_packages, setup
 
-from dev_tools.requirements import explode
-
 
 def version_number(path: str) -> str:
     """Get cirq-qubitization's version number from the src directory"""
@@ -31,9 +29,11 @@ def main() -> None:
     stream.readline()
     long_description += stream.read()
 
-    requirements = explode("dev_tools/requirements/deps/runtime.txt")
-    dev_requirements = explode("dev_tools/requirements/deps/dev-tools.txt")
-    # requirements = [r.strip() for r in requirements_buffer]
+    requirements = [
+        r.strip()
+        for r in open("dev_tools/requirements/deps/runtime.txt").readlines()
+        if not r.startswith('#')
+    ]
 
     setup(
         name="cirq_qubitization",
@@ -43,7 +43,6 @@ def main() -> None:
         description="Learning tools and basics for quantum chemistry",
         long_description=long_description,
         install_requires=requirements,
-        extras_require={"dev_env": dev_requirements},
         license="Apache 2",
         packages=find_packages(),
     )
