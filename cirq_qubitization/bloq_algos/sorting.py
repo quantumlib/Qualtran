@@ -1,7 +1,7 @@
 import numpy as np
 from attrs import frozen
+from cirq_ft import TComplexity
 
-from cirq_qubitization import t_complexity_protocol
 from cirq_qubitization.bloq_algos.arithmetic import GreaterThan
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
@@ -50,7 +50,7 @@ class Comparator(Bloq):
         # Hard code for now until CSwap-Bloq is merged.
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         t_complexity = GreaterThan(self.bitsize).t_complexity()
-        t_complexity += t_complexity_protocol.TComplexity(t=14 * self.bitsize)
+        t_complexity += TComplexity(t=14 * self.bitsize)
         return t_complexity
 
 

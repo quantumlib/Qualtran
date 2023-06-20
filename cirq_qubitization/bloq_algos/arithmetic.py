@@ -1,6 +1,6 @@
 from attrs import frozen
+from cirq_ft import TComplexity
 
-from cirq_qubitization import t_complexity_protocol
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 
@@ -35,7 +35,7 @@ class Add(Bloq):
     def t_complexity(self):
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
-        return t_complexity_protocol.TComplexity(t=num_t_gates, clifford=num_clifford)
+        return TComplexity(t=num_t_gates, clifford=num_clifford)
 
 
 @frozen
@@ -71,7 +71,7 @@ class Square(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = self.bitsize * (self.bitsize - 1)
-        return t_complexity_protocol.TComplexity(t=4 * num_toff)
+        return TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -118,7 +118,7 @@ class SumOfSquares(Bloq):
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
-        return t_complexity_protocol.TComplexity(t=4 * num_toff)
+        return TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -161,7 +161,7 @@ class Product(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return t_complexity_protocol.TComplexity(t=4 * num_toff)
+        return TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -198,4 +198,4 @@ class GreaterThan(Bloq):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        return t_complexity_protocol.TComplexity(t=8 * self.bitsize)
+        return TComplexity(t=8 * self.bitsize)

@@ -3,8 +3,8 @@ from typing import Dict, Tuple
 
 import numpy as np
 from attrs import frozen
+from cirq_ft import TComplexity
 
-from cirq_qubitization import t_complexity_protocol
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
@@ -41,7 +41,7 @@ class Rz(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
-        return t_complexity_protocol.TComplexity(t=num_t)
+        return TComplexity(t=num_t)
 
     def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
