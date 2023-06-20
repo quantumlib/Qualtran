@@ -40,9 +40,12 @@ from cirq_ft import GateWithRegisters
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
 import cirq_qubitization.bloq_algos.and_bloq_test
+import cirq_qubitization.bloq_algos.arithmetic_test
 import cirq_qubitization.bloq_algos.basic_gates.cnot_test
+import cirq_qubitization.bloq_algos.basic_gates.rotation_test
 import cirq_qubitization.bloq_algos.basic_gates.swap_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
+import cirq_qubitization.bloq_algos.sorting_test
 import cirq_qubitization.bloq_algos.swap_network
 import cirq_qubitization.bloq_algos.swap_network_test
 import cirq_qubitization.quantum_graph
@@ -134,6 +137,7 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         gate_specs=[
             BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.cnot_test._make_CNOT),
             BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.x_basis_test._make_plus_state),
+            BloqNbSpec(cirq_qubitization.bloq_algos.basic_gates.rotation_test._make_Rz),
         ],
         directory='./bloq_algos',
     ),
@@ -143,6 +147,27 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         gate_specs=[
             BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_and),
             BloqNbSpec(cirq_qubitization.bloq_algos.and_bloq_test._make_multi_and),
+        ],
+        directory='./bloq_algos',
+    ),
+    NotebookSpec(
+        title='Arithmetic',
+        module=cirq_qubitization.bloq_algos.arithmetic,
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_add),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_product),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_square),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_sum_of_squares),
+            BloqNbSpec(cirq_qubitization.bloq_algos.arithmetic_test._make_greater_than),
+        ],
+        directory='./bloq_algos',
+    ),
+    NotebookSpec(
+        title='Sorting',
+        module=cirq_qubitization.bloq_algos.sorting,
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.sorting_test._make_comparator),
+            BloqNbSpec(cirq_qubitization.bloq_algos.sorting_test._make_bitonic_sort),
         ],
         directory='./bloq_algos',
     ),
