@@ -2,16 +2,15 @@ from pathlib import Path
 
 import cirq
 import cirq.contrib.svg.svg as ccsvg
+import cirq_ft.infra.testing as cq_testing
 import IPython.display
 import ipywidgets
 import nbformat
+from cirq_ft import Registers, t_complexity
 from nbconvert.preprocessors import ExecutePreprocessor
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
-from cirq_qubitization.cirq_infra.gate_with_registers import Registers
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.graphviz import PrettyGraphDrawer
-from cirq_qubitization.t_complexity_protocol import t_complexity
 
 
 def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False, include_costs=False):

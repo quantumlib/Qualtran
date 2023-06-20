@@ -4,8 +4,8 @@ from typing import Dict, Tuple, TYPE_CHECKING
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from cirq_ft import TComplexity
 
-from cirq_qubitization import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
@@ -38,7 +38,9 @@ class Split(Bloq):
             ]
         )
 
-    def as_cirq_op(self, split: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(
+        self, qubit_manager, split: 'CirqQuregT'
+    ) -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'split': split.reshape((self.n, 1))}
 
     def t_complexity(self) -> 'TComplexity':
@@ -83,7 +85,7 @@ class Join(Bloq):
             ]
         )
 
-    def as_cirq_op(self, join: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(self, qubit_manager, join: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'join': join.reshape(self.n)}
 
     def t_complexity(self) -> 'TComplexity':
@@ -140,3 +142,23 @@ class Free(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters([FancyRegister('free', bitsize=self.n, side=Side.LEFT)])
+
+
+@frozen
+class ArbitraryClifford(Bloq):
+    """A bloq representing an arbitrary `n`-qubit clifford operation.
+
+    In the surface code architecture, clifford operations are generally considered
+    cheaper than non-clifford gates. Each clifford also has roughly the same cost independent
+    of what particular operation it is doing.
+
+    You can use this to bloq to represent an arbitrary clifford operation e.g. in bloq_counts
+    resource estimates where the details are unimportant for the resource estimation task
+    at hand.
+    """
+
+    n: int
+
+    @cached_property
+    def registers(self) -> FancyRegisters:
+        return FancyRegisters([FancyRegister('x', bitsize=self.n)])

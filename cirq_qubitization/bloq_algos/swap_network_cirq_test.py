@@ -1,16 +1,16 @@
 import random
 
 import cirq
+import cirq_ft.infra.testing as cq_testing
 import numpy as np
 import pytest
+from cirq_ft import t_complexity, TComplexity
 
-import cirq_qubitization.cirq_infra.testing as cq_testing
 from cirq_qubitization.bloq_algos.swap_network_cirq import (
     MultiTargetCSwap,
     MultiTargetCSwapApprox,
     SwapWithZeroGate,
 )
-from cirq_qubitization.t_complexity_protocol import t_complexity, TComplexity
 
 random.seed(12345)
 

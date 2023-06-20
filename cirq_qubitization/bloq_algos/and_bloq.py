@@ -1,16 +1,20 @@
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import quimb.tensor as qtn
+import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
+from cirq_qubitization.bloq_algos.basic_gates.t_gate import TGate
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.bloq_counts import big_O, SympySymbolAllocator
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
+from cirq_qubitization.quantum_graph.util_bloqs import ArbitraryClifford
 
 
 @frozen
@@ -44,6 +48,16 @@ class And(Bloq):
                 FancyRegister('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
             ]
         )
+
+    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[Tuple[int, Bloq]]:
+        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
+            pre_post_cliffords = big_O(1)
+        else:
+            pre_post_cliffords = 2 - self.cv1 - self.cv2
+        if self.adjoint:
+            return [(4 + 2 * pre_post_cliffords, ArbitraryClifford(n=2))]
+
+        return [(9 + 2 * pre_post_cliffords, ArbitraryClifford(n=2)), (4, TGate())]
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''

@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from cirq_qubitization import TComplexity
+    from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
     from cirq_qubitization.quantum_graph.composite_bloq import (
@@ -207,6 +208,26 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return not self.add_my_tensors.__qualname__.startswith('Bloq.')
 
+    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[Tuple[int, 'Bloq']]:
+        """Return a list of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
+
+        By default, this method will use `self.decompose_bloq()` to count up bloqs.
+        However, you can override this if you don't want to provide a complete decomposition,
+        if you know symbolic expressions for the counts, or if you need to "generalize"
+        the subbloqs by overwriting bloq attributes that do not affect its cost with generic
+        sympy symbols (perhaps with the aid of the provided `SympySymbolAllocator`).
+        """
+        return self.decompose_bloq().bloq_counts(ssa)
+
+    def declares_bloq_counts(self) -> bool:
+        """Whether this bloq declares its bloq counts by overriding `.bloq_counts(...)`.
+
+        By default, we check that the method is overriden. For
+        extraordinary circumstances, you may need to override this method directly to
+        return an accurate value.
+        """
+        return not self.bloq_counts.__qualname__.startswith('Bloq.')
+
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.
 
@@ -225,7 +246,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return not self.t_complexity.__qualname__.startswith('Bloq.')
 
     def as_cirq_op(
-        self, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         """Override this method to support conversion to a Cirq operation.
 
@@ -233,6 +254,7 @@ class Bloq(metaclass=abc.ABCMeta):
         in a `BloqAsCirqGate` shim.
 
         Args:
+            qubit_manager: A `cirq.QubitManager` for allocating `cirq.Qid`s.
             **cirq_quregs: kwargs mapping from this bloq's left register names to an ndarray of
                 `cirq.Qid`. The final dimension of this array corresponds to the registers
                 `bitsize` size. Any additional dimensions come first and correspond to the
@@ -248,4 +270,6 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from cirq_qubitization.quantum_graph.cirq_conversion import BloqAsCirqGate
 
-        return BloqAsCirqGate.bloq_on(bloq=self, cirq_quregs=cirq_quregs)
+        return BloqAsCirqGate.bloq_on(
+            bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
+        )

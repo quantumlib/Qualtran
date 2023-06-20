@@ -4,12 +4,16 @@ from typing import Any, Dict, Tuple, TYPE_CHECKING
 import attrs
 import numpy as np
 import quimb.tensor as qtn
+import sympy
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.bloq_counts import big_O
 from cirq_qubitization.quantum_graph.classical_sim import ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from cirq_qubitization.quantum_graph.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
     import cirq
@@ -153,7 +157,9 @@ class ZGate(Bloq):
             )
         )
 
-    def as_cirq_op(self, q: 'CirqQuregT') -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
         (q,) = q
@@ -179,6 +185,9 @@ class _IntVector(Bloq):
 
     @val.validator
     def check(self, attribute, val):
+        if isinstance(val, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            return
+
         if val < 0:
             raise ValueError("`val` must be positive")
 
@@ -226,6 +235,12 @@ class _IntVector(Bloq):
             return {'val': self.val}
 
         assert vals['val'] == self.val, vals['val']
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity()
+
+    def bloq_counts(self, ss):
+        return [(big_O(1), ArbitraryClifford(self.bitsize))]
 
     def short_name(self) -> str:
         return f'{self.val}'
