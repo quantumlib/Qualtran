@@ -179,9 +179,9 @@ class CompositeBloq(Bloq):
 
     def bloq_counts(self, _) -> List[Tuple[int, Bloq]]:
         """Return the bloq counts by counting up all the subbloqs."""
-        from cirq_qubitization.quantum_graph.bloq_counts import _cbloq_bloq_counts
+        from cirq_qubitization.quantum_graph.bloq_counts import get_cbloq_bloq_counts
 
-        return _cbloq_bloq_counts(self)
+        return get_cbloq_bloq_counts(self)
 
     def iter_bloqnections(
         self,

@@ -389,6 +389,16 @@ class ModPlus(Symb):
         )
 
 
+def directional_text_box(text: str, side: Side) -> Symb:
+    if side is Side.THRU:
+        return TextBox(text)
+    elif side is Side.LEFT:
+        return RarrowTextBox(text)
+    elif side is Side.RIGHT:
+        return LarrowTextBox(text)
+    raise ValueError
+
+
 def _soq_to_symb(soq: Soquet) -> Symb:
     """Return a visual pleasing symbol for the given soquet.
 
@@ -510,6 +520,7 @@ def get_musical_score_data(
     to a register position. Then we iterate again to finalize drawing-relevant
     properties like symbols and the various horizontal and vertical lines.
     """
+    cb = cb.as_composite_bloq()
     _, soq_assign, manager = _cbloq_musical_score(
         cb.registers, binst_graph=cb._binst_graph, manager=manager
     )

@@ -143,6 +143,11 @@ class Free(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters([FancyRegister('free', bitsize=self.n, side=Side.LEFT)])
 
+    def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
+        if free != 0:
+            raise ValueError(f"Tried to free a non-zero register: {free}.")
+        return {}
+
 
 @frozen
 class ArbitraryClifford(Bloq):

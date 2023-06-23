@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import IPython.display
 import networkx as nx
@@ -36,16 +36,31 @@ class SympySymbolAllocator:
         return s
 
 
-def _cbloq_bloq_counts(cbloq: CompositeBloq):
-    """Implementation of `CompositeBloq.bloq_counts`.
+def get_cbloq_bloq_counts(
+    cbloq: CompositeBloq, generalizer: Callable[[Bloq], Optional[Bloq]] = None
+) -> List[Tuple[int, Bloq]]:
+    """Count all the subbloqs in a composite bloq.
 
-    This just counts all the cbloq's subbloqs.
+    `CompositeBloq.bloq_counts` calls this with no generalizer.
+
+    Args:
+        cbloq: The composite bloq.
+        generalizer: A function that replaces bloq attributes that do not affect resource costs
+            with sympy placeholders.
     """
+    if generalizer is None:
+        generalizer = lambda b: b
+
     counts: Dict[Bloq, int] = defaultdict(lambda: 0)
     for binst in cbloq.bloq_instances:
-        counts[binst.bloq] += 1
+        bloq = binst.bloq
+        bloq = generalizer(bloq)
+        if bloq is None:
+            continue
 
-    return {(n, bloq) for bloq, n in counts.items()}
+        counts[bloq] += 1
+
+    return [(n, bloq) for bloq, n in counts.items()]
 
 
 def _descend_counts(

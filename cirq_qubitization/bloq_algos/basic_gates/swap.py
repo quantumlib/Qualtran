@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -9,6 +9,7 @@ from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
@@ -166,6 +167,9 @@ class CSwap(Bloq):
             ctrl, xs[i], ys[i] = bb.add(TwoBitCSwap(), ctrl=ctrl, x=xs[i], y=ys[i])
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
+
+    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[Tuple[int, 'Bloq']]:
+        return [(self.bitsize, TwoBitCSwap())]
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
