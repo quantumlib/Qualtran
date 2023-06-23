@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
+    from cirq_ft import TComplexity
     from numpy.typing import NDArray
 
-    from cirq_qubitization import TComplexity
     from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT

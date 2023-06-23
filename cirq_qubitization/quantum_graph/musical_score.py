@@ -239,7 +239,7 @@ def _cbloq_musical_score(
     Returns:
         final_vals: A mapping from register name to output positions
         soq_assign: An assignment from each soquet to its position
-        manager: The line manager (now containing filled in `hlines` attribute.
+        manager: The line manager (now containing the final `hlines` collection).
     """
     if manager is None:
         manager = LineManager()

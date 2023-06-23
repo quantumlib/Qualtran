@@ -76,4 +76,4 @@ class CNOT(Bloq):
 
         (ctrl,) = ctrl
         (target,) = target
-        return cirq.CNOT(ctrl, target), {'ctrl': [ctrl], 'target': [target]}
+        return cirq.CNOT(ctrl, target), {'ctrl': np.array([ctrl]), 'target': np.array([target])}

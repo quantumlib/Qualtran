@@ -1,6 +1,5 @@
 import cirq
 import numpy as np
-import pytest
 
 from cirq_qubitization.bloq_algos.basic_gates import Rx, Ry, Rz
 
@@ -23,10 +22,12 @@ def _make_Rz():
     return Rz(angle=np.pi / 4.0)
 
 
-@pytest.mark.parametrize("rot_gate,tcount", [(Rx, 52), (Ry, 52), (Rz, 52)])
-def test_rotation_gates(rot_gate, tcount):
-    binst = rot_gate(angle=np.pi / 4.0)
-    assert binst.t_complexity().t == tcount
+def test_rotation_gates():
+    angle = np.pi / 4.0
+    tcount = 52
+    assert Rx(angle).t_complexity().t == tcount
+    assert Ry(angle).t_complexity().t == tcount
+    assert Rz(angle).t_complexity().t == tcount
 
 
 def test_as_cirq_op():

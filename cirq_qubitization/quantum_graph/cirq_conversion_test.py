@@ -79,7 +79,7 @@ class SwapTwoBitsTest(Bloq):
     ) -> Tuple[cirq.Operation, Dict[str, CirqQuregT]]:
         (x,) = x
         (y,) = y
-        return cirq.SWAP(x, y), {'x': [x], 'y': [y]}
+        return cirq.SWAP(x, y), {'x': np.array([x]), 'y': np.array([y])}
 
 
 def test_swap_two_bits_to_cirq():
