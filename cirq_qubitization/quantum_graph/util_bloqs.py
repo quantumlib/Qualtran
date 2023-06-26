@@ -11,13 +11,14 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
-from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance
+from cirq_qubitization.quantum_graph.quantum_graph import BloqInstance, Soquet
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
+    from cirq_qubitization.quantum_graph.musical_score import WireSymbol
 
 
 @frozen
@@ -66,6 +67,14 @@ class Split(Bloq):
             )
         )
 
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from cirq_qubitization.quantum_graph.musical_score import directional_text_box
+
+        if soq.reg.wireshape:
+            text = f'[{", ".join(str(i) for i in soq.idx)}]'
+            return directional_text_box(text, side=soq.reg.side)
+        return directional_text_box(' ', side=soq.reg.side)
+
 
 @frozen
 class Join(Bloq):
@@ -110,6 +119,14 @@ class Join(Bloq):
 
     def on_classical_vals(self, join: 'NDArray[np.uint8]') -> Dict[str, int]:
         return {'join': bits_to_ints(join)[0]}
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from cirq_qubitization.quantum_graph.musical_score import directional_text_box
+
+        if soq.reg.wireshape:
+            text = f'[{", ".join(str(i) for i in soq.idx)}]'
+            return directional_text_box(text, side=soq.reg.side)
+        return directional_text_box(' ', side=soq.reg.side)
 
 
 @frozen

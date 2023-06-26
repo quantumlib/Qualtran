@@ -22,6 +22,16 @@ class BloqInstance:
     def __str__(self):
         return f'{self.bloq}<{self.i}>'
 
+    def bloq_is(self, t) -> bool:
+        """Helper method that does `isinstance(self.bloq, t)`.
+
+        This is also defined on `DanglingT`, so using this method on `binst` is equivalent
+        to:
+
+        >>> not isinstance(binst, DanglingT) and isinstance(binst.bloq, t)
+        """
+        return isinstance(self.bloq, t)
+
 
 class DanglingT:
     """The type of the singleton objects `LeftDangle` and `RightDangle`.
@@ -36,6 +46,14 @@ class DanglingT:
 
     def __repr__(self):
         return self._name
+
+    def bloq_is(self, t) -> bool:
+        """DanglingT.bloq_is(...) is always False.
+
+        This is to support convenient isinstance checking on binst.bloq where
+        binst may be a `DanglingT`.
+        """
+        return False
 
 
 def _to_tuple(x: Union[int, Tuple[int, ...]]):

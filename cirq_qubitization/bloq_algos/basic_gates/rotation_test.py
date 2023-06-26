@@ -1,5 +1,4 @@
 import cirq
-import cirq_ft
 import numpy as np
 from cirq.ops import SimpleQubitManager
 

@@ -13,6 +13,7 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_counts import big_O, SympySymbolAllocator
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from cirq_qubitization.quantum_graph.musical_score import Circle, directional_text_box, WireSymbol
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 from cirq_qubitization.quantum_graph.util_bloqs import ArbitraryClifford
 
@@ -106,6 +107,14 @@ class And(Bloq):
                 tags=['And', tag],
             )
         )
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'target':
+            return directional_text_box('∧', side=soq.reg.side)
+
+        (c_idx,) = soq.idx
+        filled = bool(self.cv1 if c_idx == 0 else self.cv2)
+        return Circle(filled)
 
 
 @frozen
