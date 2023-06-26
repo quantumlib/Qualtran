@@ -4,9 +4,9 @@ from typing import Dict, Tuple, TYPE_CHECKING, Union
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from cirq_ft import TComplexity
 from sympy import Expr
 
-from cirq_ft import TComplexity
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
 from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
