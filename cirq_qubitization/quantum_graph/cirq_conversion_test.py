@@ -15,6 +15,7 @@ from cirq_qubitization.quantum_graph.cirq_conversion import (
 )
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
+from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 def test_cirq_gate():
@@ -110,7 +111,7 @@ class SwapTest(Bloq):
         return FancyRegisters.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', *, x: SoquetT, y: SoquetT
+        self, bb: 'CompositeBloqBuilder', *, x: Soquet, y: Soquet
     ) -> Dict[str, SoquetT]:
         xs = bb.split(x)
         ys = bb.split(y)

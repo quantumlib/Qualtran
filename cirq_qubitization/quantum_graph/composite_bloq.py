@@ -634,7 +634,7 @@ class CompositeBloqBuilder:
         all registers ahead-of-time.
     """
 
-    def __init__(self, add_registers_allowed=True):
+    def __init__(self, add_registers_allowed: bool = True):
         # To be appended to:
         self._cxns: List[Connection] = []
         self._regs: List[FancyRegister] = []
@@ -894,7 +894,7 @@ class CompositeBloqBuilder:
 
         self.add(Free(n=soq.reg.bitsize), free=soq)
 
-    def split(self, soq: Soquet) -> SoquetT:
+    def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""
         from cirq_qubitization.quantum_graph.util_bloqs import Split
 
