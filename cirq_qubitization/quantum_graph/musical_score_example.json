@@ -85,7 +85,7 @@
     {
       "symb_cls": "Circle",
       "symb_attributes": {
-        "filled": true
+        "filled": false
       },
       "y": 2,
       "seq_x": 1,
@@ -244,17 +244,20 @@
     {
       "x": 0,
       "top_y": 4,
-      "bottom_y": 0
+      "bottom_y": 0,
+      "label": "And"
     },
     {
       "x": 1,
       "top_y": 5,
-      "bottom_y": 2
+      "bottom_y": 2,
+      "label": "And"
     },
     {
       "x": 2,
       "top_y": 6,
-      "bottom_y": 3
+      "bottom_y": 3,
+      "label": "And"
     }
   ]
 }

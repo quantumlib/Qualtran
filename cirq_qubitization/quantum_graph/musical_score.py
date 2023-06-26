@@ -6,7 +6,7 @@ represents a qubit or register of qubits.
 import abc
 import heapq
 import json
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import attrs
 import networkx as nx
@@ -15,7 +15,8 @@ from attrs import frozen, mutable
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
-from cirq_qubitization.quantum_graph.composite_bloq import _binst_to_cxns, CompositeBloq
+from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.composite_bloq import _binst_to_cxns
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
@@ -25,7 +26,6 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
-from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 
 
 @frozen
@@ -74,10 +74,48 @@ class LineManager:
         self.available = list(range(max_n_lines))
         heapq.heapify(self.available)
         self.hlines: Set[HLine] = set()
+        self._reserved: List[Tuple[List[int], Callable]] = []
 
     def new_y(self, binst: BloqInstance, reg: FancyRegister, idx=None):
         """Allocate a new y position (i.e. a new qubit or register)."""
         return heapq.heappop(self.available)
+
+    def reserve_n(self, n: int, until):
+        """Reserve `n` lines until further notice.
+
+        To have fine-grained control over the vertical layout of HLines, consider
+        overriding `maybe_reserve` which can call this method to reserve lines
+        depending on the musical score context.
+        """
+        nums = []
+        for _ in range(n):
+            nums.append(heapq.heappop(self.available))
+        self._reserved.append((nums, until))
+
+    def unreserve(self, binst: BloqInstance, reg: FancyRegister):
+        """Go through our reservations and rescind them depending on the `until` predicate."""
+        kept = []
+        for ys, until in self._reserved:
+            if until(binst, reg):
+                for y in ys:
+                    heapq.heappush(self.available, y)
+            else:
+                kept.append((ys, until))
+        self._reserved = kept
+
+    def maybe_reserve(self, binst: BloqInstance, reg: FancyRegister, idx: Tuple[int, ...]):
+        """Override this method to provide custom control over line allocation.
+
+        After a new y position is allocated and after a y position is freed, this method
+        is called  with the current `binst, reg, idx`. You can inspect these elements to
+        determine whether you want to continue allocating lines first-come-first-serve by
+        returning without doing anything;
+        or you can call `self.reserve_n(n, until)` to keep the next `n` lines unavailable
+        until the `until` callback predicate evaluates to True.
+
+        Whenever a new register is encountered, we first go through existing reservations
+        and call the `until` predicate on `binst, reg`.
+        """
 
     def new(
         self, binst: BloqInstance, reg: FancyRegister, seq_x: int, topo_gen: int
@@ -87,9 +125,11 @@ class LineManager:
         `binst` and `reg` can optionally modify the allocation strategy.
         `seq_x` and `topo_gen` are passed through.
         """
+        self.unreserve(binst, reg)
         if not reg.wireshape:
             y = self.new_y(binst, reg)
             self.hlines.add(HLine(y=y, seq_x_start=seq_x))
+            self.maybe_reserve(binst, reg, idx=tuple())
             return RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
 
         arg = np.zeros(reg.wireshape, dtype=object)
@@ -97,6 +137,7 @@ class LineManager:
             y = self.new_y(binst, reg, idx)
             self.hlines.add(HLine(y=y, seq_x_start=seq_x))
             arg[idx] = RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
+            self.maybe_reserve(binst, reg, idx)
         return arg
 
     def finish_hline(self, y: int, seq_x_end: int):
@@ -118,11 +159,14 @@ class LineManager:
             assert isinstance(qline, RegPosition), qline
             heapq.heappush(self.available, qline.y)
             self.finish_hline(qline.y, seq_x_end=qline.seq_x)
+            self.maybe_reserve(binst, reg, idx=tuple())
             return
 
-        for qline in arr.reshape(-1):
+        for idx in reg.wire_idxs():
+            qline = arr[idx]
             heapq.heappush(self.available, qline.y)
             self.finish_hline(qline.y, seq_x_end=qline.seq_x)
+            self.maybe_reserve(binst, reg, idx)
 
 
 def _get_in_vals(
@@ -283,7 +327,7 @@ def _cbloq_musical_score(
 
 
 @frozen
-class Symb(metaclass=abc.ABCMeta):
+class WireSymbol(metaclass=abc.ABCMeta):
     """Base class for a symbol.
 
     A symbol is a particular visual representation of a bloq's register.
@@ -297,7 +341,7 @@ class Symb(metaclass=abc.ABCMeta):
 
 
 @frozen
-class TextBox(Symb):
+class TextBox(WireSymbol):
     text: str
 
     def draw(self, ax, x, y):
@@ -314,7 +358,7 @@ class TextBox(Symb):
 
 
 @frozen
-class Text(Symb):
+class Text(WireSymbol):
     text: str
 
     def draw(self, ax, x, y):
@@ -331,7 +375,7 @@ class Text(Symb):
 
 
 @frozen
-class RarrowTextBox(Symb):
+class RarrowTextBox(WireSymbol):
     text: str
 
     def draw(self, ax, x, y):
@@ -348,7 +392,7 @@ class RarrowTextBox(Symb):
 
 
 @frozen
-class LarrowTextBox(Symb):
+class LarrowTextBox(WireSymbol):
     text: str
 
     def draw(self, ax, x, y):
@@ -365,7 +409,7 @@ class LarrowTextBox(Symb):
 
 
 @frozen
-class Circle(Symb):
+class Circle(WireSymbol):
     filled: bool = True
 
     def draw(self, ax, x, y):
@@ -375,7 +419,7 @@ class Circle(Symb):
 
 
 @frozen
-class ModPlus(Symb):
+class ModPlus(WireSymbol):
     def draw(self, ax, x, y):
         ax.text(
             x,
@@ -389,55 +433,25 @@ class ModPlus(Symb):
         )
 
 
-def _soq_to_symb(soq: Soquet) -> Symb:
-    """Return a visual pleasing symbol for the given soquet.
+def directional_text_box(text: str, side: Side) -> WireSymbol:
+    if side is Side.THRU:
+        return TextBox(text)
+    elif side is Side.LEFT:
+        return RarrowTextBox(text)
+    elif side is Side.RIGHT:
+        return LarrowTextBox(text)
+    raise ValueError(f"Unknown side: {side}")
 
-    We start with special cases for known Bloqs and finish with the defaults.
-    """
-    from cirq_qubitization.bloq_algos.and_bloq import And
-    from cirq_qubitization.bloq_algos.basic_gates import CNOT
-    from cirq_qubitization.quantum_graph.meta_bloq import ControlledBloq
+
+def _soq_to_symb(soq: Soquet) -> WireSymbol:
+    """Return a pleasing symbol for the given soquet."""
 
     # Use text (with no box) for dangling register identifiers.
     if isinstance(soq.binst, DanglingT):
         return Text(soq.pretty())
 
-    # Use circles for control registers. They are filled based on control values.
-    if isinstance(soq.binst.bloq, And) and soq.reg.name == 'ctrl':
-        (c_idx,) = soq.idx
-        filled = bool(soq.binst.bloq.cv1 if c_idx == 0 else soq.binst.bloq.cv2)
-        return Circle(filled)
-
-    # Circles and modplus for CNOT.
-    if isinstance(soq.binst.bloq, CNOT):
-        if soq.reg.name == 'ctrl':
-            return Circle()
-        elif soq.reg.name == 'target':
-            return ModPlus()
-        else:
-            raise AssertionError()
-
-    if isinstance(soq.binst.bloq, (ControlledBloq)) and soq.reg.name == 'ctrl':
-        return Circle()
-
-    text = soq.pretty()
-    if isinstance(soq.binst.bloq, ControlledBloq):
-        bloq = soq.binst.bloq.subbloq
-    else:
-        bloq = soq.binst.bloq
-
-    if isinstance(bloq, (Split, Join)) and soq.reg.wireshape:
-        text = f'[{", ".join(str(i) for i in soq.idx)}]'
-    if isinstance(bloq, And) and soq.reg.name == 'target':
-        text = '∧'
-
-    # Defaults: Text boxes that are pointy depending on their side.
-    if soq.reg.side is Side.THRU:
-        return TextBox(text)
-    elif soq.reg.side is Side.LEFT:
-        return RarrowTextBox(text)
-    elif soq.reg.side is Side.RIGHT:
-        return LarrowTextBox(text)
+    # Otherwise, use `Bloq.wire_symbol`.
+    return soq.binst.bloq.wire_symbol(soq)
 
 
 @mutable
@@ -449,7 +463,7 @@ class SoqData:
     between two musical scores.
     """
 
-    symb: Symb
+    symb: WireSymbol
     rpos: RegPosition
     ident: str
 
@@ -467,6 +481,7 @@ class VLine:
     x: int
     top_y: int
     bottom_y: int
+    label: str
 
     def json_dict(self):
         return attrs.asdict(self)
@@ -501,17 +516,22 @@ def _make_ident(binst: BloqInstance, me: Soquet):
     return f'{binst.i},{soqi}'
 
 
-def get_musical_score_data(
-    cb: CompositeBloq, manager: Optional[LineManager] = None
-) -> MusicalScoreData:
-    """Get the musical score data for a composite bloq.
+def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) -> MusicalScoreData:
+    """Get the musical score data for a (composite) bloq.
 
     This will first walk through the compute graph to assign each soquet
     to a register position. Then we iterate again to finalize drawing-relevant
     properties like symbols and the various horizontal and vertical lines.
+
+    Args:
+        bloq: The bloq or composite bloq to get drawing data for
+        manager: Optionally provide an override of `LineManager` if you want
+            to control the allocation of horizontal (register) lines.
     """
+    cbloq = bloq.as_composite_bloq()
+
     _, soq_assign, manager = _cbloq_musical_score(
-        cb.registers, binst_graph=cb._binst_graph, manager=manager
+        cbloq.registers, binst_graph=cbloq._binst_graph, manager=manager
     )
     msd = MusicalScoreData(
         max_x=max(v.seq_x for v in soq_assign.values()),
@@ -525,8 +545,8 @@ def get_musical_score_data(
         if hline.seq_x_end is None:
             raise ValueError(f"A horizontal line has no end: {hline}")
 
-    for binst in nx.topological_sort(cb._binst_graph):
-        preds, succs = _binst_to_cxns(binst, binst_graph=cb._binst_graph)
+    for binst in nx.topological_sort(cbloq._binst_graph):
+        preds, succs = _binst_to_cxns(binst, binst_graph=cbloq._binst_graph)
 
         # Keep track of the extent of our vlines
         binst_top_y = 0
@@ -574,34 +594,41 @@ def get_musical_score_data(
                 binst_x = rpos.seq_x
 
         if not isinstance(binst, DanglingT):
-            msd.vlines.append(VLine(x=binst_x, top_y=binst_top_y, bottom_y=binst_bot_y))
+            msd.vlines.append(
+                VLine(
+                    x=binst_x,
+                    top_y=binst_top_y,
+                    bottom_y=binst_bot_y,
+                    label=binst.bloq.short_name(),
+                )
+            )
 
     return msd
 
 
 def draw_musical_score(msd: MusicalScoreData):
-    fig, ax = plt.subplots(figsize=(max(7.0, 0.2 + 0.4 * msd.max_x), 5))
+    fig, ax = plt.subplots(figsize=(max(5.0, 0.2 + 0.6 * msd.max_x), 5))
 
     for hline in msd.hlines:
         ax.hlines(-hline.y, hline.seq_x_start, hline.seq_x_end, color='k', zorder=-1)
 
     for vline in msd.vlines:
         ax.vlines(vline.x, -vline.top_y, -vline.bottom_y, color='k', zorder=-1)
+        Text(vline.label).draw(ax, vline.x, vline.bottom_y - 0.5)
 
     for soq in msd.soqs:
         symb = soq.symb
         symb.draw(ax, soq.rpos.seq_x, soq.rpos.y)
 
     ax.set_xlim((-2, msd.max_x + 1))
-    ax.set_ylim((-msd.max_y - 1, 0))
-    ax.axis('equal')
+    ax.set_ylim((-msd.max_y - 0.5, 1))
     fig.tight_layout()
     return fig, ax
 
 
 class MusicalScoreEncoder(json.JSONEncoder):
     def default(self, o: Any) -> Any:
-        if isinstance(o, (SoqData, HLine, VLine, MusicalScoreData, Symb, RegPosition)):
+        if isinstance(o, (SoqData, HLine, VLine, MusicalScoreData, WireSymbol, RegPosition)):
             return o.json_dict()
 
         return super().default(o)

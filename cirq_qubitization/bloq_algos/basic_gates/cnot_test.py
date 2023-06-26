@@ -7,6 +7,7 @@ import pytest
 from cirq_qubitization.bloq_algos.basic_gates import CNOT, PlusState, ZeroState
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.musical_score import get_musical_score_data
 
 
 def _make_CNOT():
@@ -66,3 +67,11 @@ def test_classical_truth_table():
 
     with pytest.raises(ValueError):
         CNOT().call_classically(ctrl=2, target=0)
+
+
+def test_cnot_musical_score():
+    cbloq = CNOT().as_composite_bloq()
+    msd = get_musical_score_data(cbloq)
+    # soq[0] and [1] are the dangling symbols
+    assert msd.soqs[2].json_dict()['symb_cls'] == 'Circle'
+    assert msd.soqs[3].json_dict()['symb_cls'] == 'ModPlus'

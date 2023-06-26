@@ -11,6 +11,8 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     SoquetT,
 )
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from cirq_qubitization.quantum_graph.musical_score import Circle, WireSymbol
+from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 def _no_nesting_ctrls_yet(instance, field, val):
@@ -58,3 +60,8 @@ class ControlledBloq(Bloq):
 
         fsoqs = map_soqs(self.subbloq.final_soqs(), soq_map)
         return bb.finalize(control=ctrl, **fsoqs)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'ctrl':
+            return Circle(filled=True)
+        return self.subbloq.wire_symbol(soq)
