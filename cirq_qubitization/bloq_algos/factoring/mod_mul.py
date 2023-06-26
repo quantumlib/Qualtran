@@ -11,8 +11,7 @@ from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
 from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
-from cirq_qubitization.quantum_graph.musical_score import Circle, directional_text_box
-from cirq_qubitization.quantum_graph.musical_score import Symb as WireSymbol
+from cirq_qubitization.quantum_graph.musical_score import Circle, directional_text_box, WireSymbol
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
