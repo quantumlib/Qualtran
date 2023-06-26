@@ -13,9 +13,11 @@ if TYPE_CHECKING:
     from cirq_qubitization.quantum_graph.composite_bloq import (
         CompositeBloq,
         CompositeBloqBuilder,
+        Soquet,
         SoquetT,
     )
     from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+    from cirq_qubitization.quantum_graph.musical_score import WireSymbol
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -273,3 +275,18 @@ class Bloq(metaclass=abc.ABCMeta):
         return BloqAsCirqGate.bloq_on(
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        """On a musical score visualization, use this `WireSymbol` to represent `soq`.
+
+        By default, we use a "directional text box", which is a text box that is either
+        rectangular for thru-registers or facing to the left or right for non-thru-registers.
+
+        Override this method to provide a more relevant `WireSymbol` for the provided soquet.
+        This method can access bloq attributes. For example: you may want to draw either
+        a filled or empty circle for a control register depending on a control value bloq
+        attribute.
+        """
+        from cirq_qubitization.quantum_graph.musical_score import directional_text_box
+
+        return directional_text_box(text=soq.pretty(), side=soq.reg.side)
