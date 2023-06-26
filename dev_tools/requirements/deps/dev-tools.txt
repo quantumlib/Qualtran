@@ -1,5 +1,4 @@
 pip-tools
-markdown-it-py>=2.2.0 # For dependabot security alert.
 
 -r mypy.txt
 -r pytest.txt
