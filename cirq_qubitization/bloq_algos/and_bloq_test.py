@@ -10,7 +10,11 @@ from cirq_qubitization.bloq_algos.and_bloq import And, MultiAnd
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
+from cirq_qubitization.quantum_graph.composite_bloq import (
+    check_bloq_decomposition,
+    CompositeBloqBuilder,
+    SoquetT,
+)
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 from cirq_qubitization.quantum_graph.musical_score import Circle, get_musical_score_data
 
@@ -25,6 +29,11 @@ def _make_multi_and():
     from cirq_qubitization.bloq_algos.and_bloq import MultiAnd
 
     return MultiAnd(cvs=(1, 1, 1, 1))
+
+
+def test_multiand_decomp():
+    bloq = MultiAnd(cvs=(1, 0, 1, 0))
+    check_bloq_decomposition(bloq)
 
 
 def _iter_and_truth_table(cv1: int, cv2: int):

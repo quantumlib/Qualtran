@@ -1,5 +1,6 @@
 import pytest
 
+from cirq_qubitization.quantum_graph.composite_bloq import check_bloq_decomposition
 from cirq_qubitization.quantum_graph.composite_bloq_test import (
     Atom,
     TestParallelBloq,
@@ -9,9 +10,10 @@ from cirq_qubitization.quantum_graph.meta_bloq import ControlledBloq
 
 
 def test_controlled_serial():
-    bloq = ControlledBloq(subbloq=TestSerialBloq()).decompose_bloq()
+    bloq = ControlledBloq(subbloq=TestSerialBloq())
+    cbloq = check_bloq_decomposition(bloq)
     assert (
-        bloq.debug_text()
+        cbloq.debug_text()
         == """\
 C[Atom()]<0>
   LeftDangle.control -> control
@@ -34,9 +36,10 @@ C[Atom()]<2>
 
 
 def test_controlled_parallel():
-    bloq = ControlledBloq(subbloq=TestParallelBloq()).decompose_bloq()
+    bloq = ControlledBloq(subbloq=TestParallelBloq())
+    cbloq = check_bloq_decomposition(bloq)
     assert (
-        bloq.debug_text()
+        cbloq.debug_text()
         == """\
 C[Split(n=3)]<0>
   LeftDangle.control -> control

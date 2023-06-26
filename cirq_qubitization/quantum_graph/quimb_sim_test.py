@@ -9,29 +9,15 @@ from numpy.typing import NDArray
 
 from cirq_qubitization.bloq_algos.basic_gates import CNOT, XGate, ZGate
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
-from cirq_qubitization.quantum_graph.quantum_graph import DanglingT, RightDangle, Soquet
-from cirq_qubitization.quantum_graph.quimb_sim import (
+from cirq_qubitization.quantum_graph.composite_bloq import (
     _get_dangling_soquets,
-    cbloq_to_quimb,
-    get_right_and_left_inds,
+    check_bloq_decomposition,
+    CompositeBloqBuilder,
+    SoquetT,
 )
-from cirq_qubitization.quantum_graph.util_bloqs import Join
-
-
-def test_get_soquets():
-    soqs = _get_dangling_soquets(Join(10).registers, right=True)
-    assert list(soqs.keys()) == ['join']
-    soq = soqs['join']
-    assert soq.binst == RightDangle
-    assert soq.reg.bitsize == 10
-
-    soqs = _get_dangling_soquets(Join(10).registers, right=False)
-    assert list(soqs.keys()) == ['join']
-    soq = soqs['join']
-    assert soq.shape == (10,)
-    assert soq[0].reg.bitsize == 1
+from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from cirq_qubitization.quantum_graph.quantum_graph import DanglingT, Soquet
+from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_quimb, get_right_and_left_inds
 
 
 @frozen
@@ -196,6 +182,11 @@ class ComplexBloq(Bloq):
         q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
         (q1,) = bb.add(ZGate(), q=q1)
         return {'q0': q0, 'q1': q1}
+
+
+def test_complex_bloq_decomp():
+    bloq = ComplexBloq()
+    check_bloq_decomposition(bloq)
 
 
 def test_complex_bloq():
