@@ -337,7 +337,11 @@ class SingleFactorization(Bloq):
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', **regs: SoquetT
     ) -> Dict[str, 'SoquetT']:
-        """ """
+        """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls-1.
+
+        This method builds the `adjoint=False` composite bloq. `self.decompose_bloq()`
+        will throw if `self.adjoint=True`.
+        """
         # 1. Prepare
         out = {}
         l, two_body, Q, succ = bb.add(
@@ -389,6 +393,7 @@ class SingleFactorization(Bloq):
         (Q, q, term, psia, succ, succ_kpq) = bb.add(
             smf, s_0=Q, s_1=q, s_2=term, t=psia, c_0=succ, c_1=succ_kpq
         )
+        # # Missing Multi control
         succ, succ_kpq, re_im, term = bb.add(
             MultiControlledPauli((1, 1, 1, 1), ZGate()), c_0=succ, c_1=succ_kpq, c_2=re_im, c_3=term
         )
@@ -498,7 +503,7 @@ class SingleFactorization(Bloq):
             cvs=(1, 1),
         )
         (k, p, term, psia, succ, succ_kpq) = bb.add(
-            
+            smf, s_0=k, s_1=p, s_2=term, t=psia, c_0=succ, c_1=succ_kpq
         )
         k, Q = bb.add(AddMod(self.k_bitsize, self.k_bitsize), input=k, output=Q)
         (alpha, psia, psib) = bb.add(CSwapApprox(self.target_bitsize), ctrl=alpha, x=psia, y=psib)

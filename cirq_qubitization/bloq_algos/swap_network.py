@@ -3,17 +3,23 @@ from typing import Dict, Sequence, TYPE_CHECKING
 
 import cirq
 import numpy as np
+import sympy
 from attrs import frozen
 from cirq_ft import MultiTargetCNOT, TComplexity
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.bloq_counts import big_O
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 if TYPE_CHECKING:
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
+
+from cirq_qubitization.bloq_algos.basic_gates.cnot import CNOT
+from cirq_qubitization.bloq_algos.basic_gates.t_gate import TGate
+from cirq_qubitization.quantum_graph.util_bloqs import ArbitraryClifford
 
 
 @frozen
@@ -69,22 +75,22 @@ class CSwapApprox(Bloq):
         yield MultiTargetCNOT(len(y)).on(ctrl, *y)
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
-    def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
-        from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
+    # def build_composite_bloq(
+    #     self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
+    # ) -> Dict[str, 'SoquetT']:
+    #     from cirq_qubitization.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
 
-        cirq_quregs = self.registers.get_cirq_quregs()
-        cbloq = cirq_circuit_to_cbloq(cirq.Circuit(self.cirq_decomposition(**cirq_quregs)))
+    #     cirq_quregs = self.registers.get_cirq_quregs()
+    #     cbloq = cirq_circuit_to_cbloq(cirq.Circuit(self.cirq_decomposition(**cirq_quregs)))
 
-        # Split our registers to "flat" api from cirq circuit; add the circuit; join back up.
-        qvars = np.concatenate(([ctrl], bb.split(x), bb.split(y)))
-        (qvars,) = bb.add_from(cbloq, qubits=qvars)
-        return {
-            'ctrl': qvars[0],
-            'x': bb.join(qvars[1 : self.bitsize + 1]),
-            'y': bb.join(qvars[-self.bitsize :]),
-        }
+    #     # Split our registers to "flat" api from cirq circuit; add the circuit; join back up.
+    #     qvars = np.concatenate(([ctrl], bb.split(x), bb.split(y)))
+    #     (qvars,) = bb.add_from(cbloq, qubits=qvars)
+    #     return {
+    #         'ctrl': qvars[0],
+    #         'x': bb.join(qvars[1 : self.bitsize + 1]),
+    #         'y': bb.join(qvars[-self.bitsize :]),
+    #     }
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -102,6 +108,17 @@ class CSwapApprox(Bloq):
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
         return TComplexity(t=4 * n, clifford=22 * n - 1)
+
+    def rough_decompose(self, mgr):
+        if isinstance(self.bitsize, sympy.Symbol):
+            t_count = big_O(4 * self.bitsize)
+        else:
+            t_count = 4 * self.bitsize
+        return [
+            (t_count, TGate()),
+            (4 * self.bitsize, ArbitraryClifford(1)),
+            (6 * self.bitsize - 1, CNOT()),
+        ]
 
     def short_name(self) -> str:
         return '~swap'
