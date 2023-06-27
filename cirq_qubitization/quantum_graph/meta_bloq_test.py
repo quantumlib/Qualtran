@@ -1,5 +1,6 @@
 import pytest
 
+from cirq_qubitization.quantum_graph.composite_bloq import assert_valid_bloq_decomposition
 from cirq_qubitization.quantum_graph.composite_bloq_test import (
     Atom,
     TestParallelBloq,
@@ -9,9 +10,10 @@ from cirq_qubitization.quantum_graph.meta_bloq import ControlledBloq
 
 
 def test_controlled_serial():
-    bloq = ControlledBloq(subbloq=TestSerialBloq()).decompose_bloq()
+    bloq = ControlledBloq(subbloq=TestSerialBloq())
+    cbloq = assert_valid_bloq_decomposition(bloq)
     assert (
-        bloq.debug_text()
+        cbloq.debug_text()
         == """\
 C[Atom()]<0>
   LeftDangle.control -> control
@@ -28,15 +30,16 @@ C[Atom()]<1>
 C[Atom()]<2>
   C[Atom()]<1>.control -> control
   C[Atom()]<1>.stuff -> stuff
-  stuff -> RightDangle.stuff
-  control -> RightDangle.control"""
+  control -> RightDangle.control
+  stuff -> RightDangle.stuff"""
     )
 
 
 def test_controlled_parallel():
-    bloq = ControlledBloq(subbloq=TestParallelBloq()).decompose_bloq()
+    bloq = ControlledBloq(subbloq=TestParallelBloq())
+    cbloq = assert_valid_bloq_decomposition(bloq)
     assert (
-        bloq.debug_text()
+        cbloq.debug_text()
         == """\
 C[Split(n=3)]<0>
   LeftDangle.control -> control
@@ -69,8 +72,8 @@ C[Join(n=3)]<4>
   C[Atom()]<3>.stuff -> join[2]
   C[Atom()]<1>.stuff -> join[0]
   C[Atom()]<2>.stuff -> join[1]
-  join -> RightDangle.stuff
-  control -> RightDangle.control"""
+  control -> RightDangle.control
+  join -> RightDangle.stuff"""
     )
 
 

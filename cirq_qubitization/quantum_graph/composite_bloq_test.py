@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import Dict, List, Tuple
 
+import attrs
 import cirq
 import networkx as nx
 import numpy as np
@@ -14,7 +15,14 @@ from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _create_binst_graph,
-    BloqBuilderError,
+    _get_dangling_soquets,
+    assert_connections_compatible,
+    assert_registers_match_dangling,
+    assert_registers_match_parent,
+    assert_soquets_belong_to_registers,
+    assert_soquets_used_exactly_once,
+    assert_valid_bloq_decomposition,
+    BloqError,
     CompositeBloq,
     CompositeBloqBuilder,
     map_soqs,
@@ -28,6 +36,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from cirq_qubitization.quantum_graph.util_bloqs import Join
 
 
 def _manually_make_test_cbloq_cxns():
@@ -189,7 +198,7 @@ def _get_bb():
 def test_wrong_soquet():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet for .*target.*'):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*target.*'):
         bad_target_arg = Soquet(BloqInstance(TestCNOT(), i=12), FancyRegister('target', 2))
         bb.add(TestCNOT(), control=x, target=bad_target_arg)
 
@@ -197,9 +206,7 @@ def test_wrong_soquet():
 def test_double_use_1():
     bb, x, y = _get_bb()
 
-    with pytest.raises(
-        BloqBuilderError, match=r'.*is not an available Soquet for `TestCNOT.*target`.*'
-    ):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet for `TestCNOT.*target`.*'):
         bb.add(TestCNOT(), control=x, target=x)
 
 
@@ -209,7 +216,7 @@ def test_double_use_2():
     x2, y2 = bb.add(TestCNOT(), control=x, target=y)
 
     with pytest.raises(
-        BloqBuilderError, match=r'.*is not an available Soquet for `TestCNOT\(\)\.control`\.'
+        BloqError, match=r'.*is not an available Soquet for `TestCNOT\(\)\.control`\.'
     ):
         x3, y3 = bb.add(TestCNOT(), control=x, target=y)
 
@@ -217,14 +224,14 @@ def test_double_use_2():
 def test_missing_args():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqBuilderError, match=r'.*requires a Soquet named `control`.'):
+    with pytest.raises(BloqError, match=r'.*requires a Soquet named `control`.'):
         bb.add(TestCNOT(), target=y)
 
 
 def test_too_many_args():
     bb, x, y = _get_bb()
 
-    with pytest.raises(BloqBuilderError, match=r'.*does not accept Soquets.*another_control.*'):
+    with pytest.raises(BloqError, match=r'.*does not accept Soquets.*another_control.*'):
         bb.add(TestCNOT(), control=x, target=y, another_control=x)
 
 
@@ -234,7 +241,7 @@ def test_finalize_wrong_soquet():
     assert x != x2
     assert y != y2
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet for .*y.*'):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*y.*'):
         bb.finalize(x=x2, y=Soquet(BloqInstance(TestCNOT(), i=12), FancyRegister('target', 2)))
 
 
@@ -242,7 +249,7 @@ def test_finalize_double_use_1():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestCNOT(), control=x, target=y)
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet for .*y.*'):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*y.*'):
         bb.finalize(x=x2, y=x2)
 
 
@@ -250,9 +257,7 @@ def test_finalize_double_use_2():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestCNOT(), control=x, target=y)
 
-    with pytest.raises(
-        BloqBuilderError, match=r'.*is not an available Soquet for `RightDangle\.x`\.'
-    ):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet for `RightDangle\.x`\.'):
         bb.finalize(x=x, y=y2)
 
 
@@ -260,7 +265,7 @@ def test_finalize_missing_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestCNOT(), control=x, target=y)
 
-    with pytest.raises(BloqBuilderError, match=r'Finalizing requires a Soquet named `x`.'):
+    with pytest.raises(BloqError, match=r'Finalizing requires a Soquet named `x`.'):
         bb.finalize(y=y2)
 
 
@@ -269,7 +274,7 @@ def test_finalize_strict_too_many_args():
     x2, y2 = bb.add(TestCNOT(), control=x, target=y)
 
     bb.add_register_allowed = False
-    with pytest.raises(BloqBuilderError, match=r'Finalizing does not accept Soquets.*z.*'):
+    with pytest.raises(BloqError, match=r'Finalizing does not accept Soquets.*z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
 
 
@@ -277,7 +282,7 @@ def test_finalize_bad_args():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestCNOT(), control=x, target=y)
 
-    with pytest.raises(BloqBuilderError, match=r'.*is not an available Soquet.*RightDangle\.z.*'):
+    with pytest.raises(BloqError, match=r'.*is not an available Soquet.*RightDangle\.z.*'):
         bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
 
 
@@ -288,6 +293,84 @@ def test_finalize_alloc():
 
     cbloq = bb.finalize(x=x2, y=y2, z=z)
     assert len(list(cbloq.registers.rights())) == 3
+
+
+def test_get_soquets():
+    soqs = _get_dangling_soquets(Join(10).registers, right=True)
+    assert list(soqs.keys()) == ['join']
+    soq = soqs['join']
+    assert soq.binst == RightDangle
+    assert soq.reg.bitsize == 10
+
+    soqs = _get_dangling_soquets(Join(10).registers, right=False)
+    assert list(soqs.keys()) == ['join']
+    soq = soqs['join']
+    assert soq.shape == (10,)
+    assert soq[0].reg.bitsize == 1
+
+
+def test_assert_registers_match_parent():
+    @frozen
+    class BadRegBloq(Bloq):
+        @cached_property
+        def registers(self) -> 'FancyRegisters':
+            return FancyRegisters.build(x=2, y=3)
+
+        def decompose_bloq(self) -> 'CompositeBloq':
+            # !! order of registers swapped.
+            bb, soqs = CompositeBloqBuilder.from_registers(FancyRegisters.build(y=3, x=2))
+            x, y = bb.add(BadRegBloq(), x=soqs['x'], y=soqs['y'])
+            return bb.finalize(x=x, y=y)
+
+    with pytest.raises(BloqError, match=r'Parent registers do not match.*'):
+        assert_registers_match_parent(BadRegBloq())
+
+
+def test_assert_registers_match_dangling():
+    cxns, _ = _manually_make_test_cbloq_cxns()
+    cbloq = CompositeBloq(cxns, registers=FancyRegisters.build(ctrl=1, target=1))
+    with pytest.raises(BloqError, match=r'.*.*does not match the registers of the bloq.*'):
+        assert_registers_match_dangling(cbloq)
+
+
+def test_assert_connections_compatible():
+    from cirq_qubitization.bloq_algos.basic_gates import CSwap, TwoBitCSwap
+
+    bb = CompositeBloqBuilder()
+    ctrl = bb.add_register('c', 1)
+    x = bb.add_register('x', 10)
+    y = bb.add_register('y', 10)
+    ctrl, x, y = bb.add(CSwap(10), ctrl=ctrl, x=x, y=y)
+    ctrl, x, y = bb.add(TwoBitCSwap(), ctrl=ctrl, x=x, y=y)
+    cbloq = bb.finalize(c=ctrl, x=x, y=y)
+    assert_registers_match_dangling(cbloq)
+    with pytest.raises(BloqError, match=r'.*bitsizes are incompatible.*'):
+        assert_connections_compatible(cbloq)
+
+
+def test_assert_soquets_belong_to_registers():
+    cxns, regs = _manually_make_test_cbloq_cxns()
+    cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=FancyRegister('q3', 1)))
+    cbloq = CompositeBloq(cxns, regs)
+    assert_registers_match_dangling(cbloq)
+    assert_connections_compatible(cbloq)
+    with pytest.raises(BloqError, match=r".*register doesn't exist on its bloq.*"):
+        assert_soquets_belong_to_registers(cbloq)
+
+
+def test_assert_soquets_used_exactly_once():
+    cxns, regs = _manually_make_test_cbloq_cxns()
+    binst1 = BloqInstance(TestCNOT(), 1)
+    binst2 = BloqInstance(TestCNOT(), 2)
+    control, target = TestCNOT().registers
+
+    cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
+    cbloq = CompositeBloq(cxns, regs)
+    assert_registers_match_dangling(cbloq)
+    assert_connections_compatible(cbloq)
+    assert_soquets_belong_to_registers(cbloq)
+    with pytest.raises(BloqError, match=r".*had already been produced by a different bloq.*"):
+        assert_soquets_used_exactly_once(cbloq)
 
 
 class TestMultiCNOT(Bloq):
@@ -310,7 +393,7 @@ class TestMultiCNOT(Bloq):
 
 def test_complicated_target_register():
     bloq = TestMultiCNOT()
-    cbloq = bloq.decompose_bloq()
+    cbloq = assert_valid_bloq_decomposition(bloq)
     assert len(cbloq.bloq_instances) == 2 * 3
 
     binst_graph = _create_binst_graph(cbloq.connections)
@@ -406,6 +489,16 @@ class TestParallelBloq(Bloq):
             stuff[i] = bb.add(Atom(), stuff=stuff[i])[0]
 
         return {'stuff': bb.join(stuff)}
+
+
+def test_test_serial_bloq_decomp():
+    sbloq = TestSerialBloq()
+    assert_valid_bloq_decomposition(sbloq)
+
+
+def test_test_parallel_bloq_decomp():
+    pbloq = TestParallelBloq()
+    assert_valid_bloq_decomposition(pbloq)
 
 
 @pytest.mark.parametrize('cls', [TestSerialBloq, TestParallelBloq])

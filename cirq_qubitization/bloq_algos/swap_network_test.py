@@ -9,7 +9,10 @@ import pytest
 from cirq_qubitization.bloq_algos.basic_gates.z_basis import IntState
 from cirq_qubitization.bloq_algos.swap_network import CSwapApprox, SwapWithZero
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
+from cirq_qubitization.quantum_graph.composite_bloq import (
+    assert_valid_bloq_decomposition,
+    CompositeBloqBuilder,
+)
 
 random.seed(12345)
 
@@ -26,6 +29,11 @@ def _make_SwapWithZero():
     return SwapWithZero(selection_bitsize=3, target_bitsize=64, n_target_registers=5)
 
 
+def test_cswap_approx_decomp():
+    csa = CSwapApprox(10)
+    assert_valid_bloq_decomposition(csa)
+
+
 @pytest.mark.parametrize('n', [5, 32])
 def test_approx_cswap_t_count(n):
     cswap = CSwapApprox(bitsize=n)
@@ -33,6 +41,11 @@ def test_approx_cswap_t_count(n):
     cswap_d = cswap.decompose_bloq()
 
     assert cswap.t_complexity() == cswap_d.t_complexity()
+
+
+def test_swap_with_zero_decomp():
+    swz = SwapWithZero(selection_bitsize=3, target_bitsize=64, n_target_registers=5)
+    assert_valid_bloq_decomposition(swz)
 
 
 @pytest.mark.parametrize(
