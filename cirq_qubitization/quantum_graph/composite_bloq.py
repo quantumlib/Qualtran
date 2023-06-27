@@ -539,7 +539,7 @@ def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
             if reg != dreg:
                 raise BloqError(f'{err}: {reg} != {dreg}')
 
-        raise BloqError(err)
+        raise BloqError(f'{err}: {bloq}')
 
     return cbloq
 
