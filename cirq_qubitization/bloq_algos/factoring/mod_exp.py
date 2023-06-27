@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import sympy
@@ -38,10 +38,10 @@ class ModExp(Bloq):
         [arxiv:1905.09749](https://arxiv.org/abs/1905.09749). Gidney and Ekerå. 2019.
     """
 
-    base: int
-    mod: int
-    exp_bitsize: int
-    x_bitsize: int
+    base: Union[int, sympy.Expr]
+    mod: Union[int, sympy.Expr]
+    exp_bitsize: Union[int, sympy.Expr]
+    x_bitsize: Union[int, sympy.Expr]
 
     @cached_property
     def registers(self) -> 'FancyRegisters':
@@ -69,7 +69,7 @@ class ModExp(Bloq):
             g = np.random.randint(big_n)
         return cls(base=g, mod=big_n, exp_bitsize=2 * little_n, x_bitsize=little_n)
 
-    def CtrlModMul(self, k: int):
+    def _CtrlModMul(self, k: Union[int, sympy.Expr]):
         """Helper method to return a `CtrlModMul` with attributes forwarded."""
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
@@ -82,7 +82,7 @@ class ModExp(Bloq):
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method
         base = self.base
         for j in range(self.exp_bitsize - 1, 0 - 1, -1):
-            exponent[j], x = bb.add(self.CtrlModMul(k=base), ctrl=exponent[j], x=x)
+            exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
             base = base * base % self.mod
 
         return {'exponent': bb.join(exponent), 'x': x}
@@ -91,7 +91,7 @@ class ModExp(Bloq):
         k = ssa.new_symbol('k')
         return [
             (1, IntState(val=1, bitsize=self.x_bitsize)),
-            (self.exp_bitsize, self.CtrlModMul(k=k)),
+            (self.exp_bitsize, self._CtrlModMul(k=k)),
         ]
 
     def on_classical_vals(self, exponent: int):

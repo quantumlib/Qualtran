@@ -1,6 +1,7 @@
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Union
 
+import sympy
 from attrs import frozen
 
 from cirq_qubitization.bloq_algos.basic_gates.t_gate import TGate
@@ -25,9 +26,9 @@ class CtrlScaleModAdd(Bloq):
      - y: The 'destination' quantum register to which the addition will apply.
     """
 
-    k: int
-    mod: int
-    bitsize: int
+    k: Union[int, sympy.Expr]
+    mod: Union[int, sympy.Expr]
+    bitsize: Union[int, sympy.Expr]
 
     @cached_property
     def registers(self) -> 'FancyRegisters':
@@ -71,9 +72,9 @@ class CtrlModAddK(Bloq):
         x: The register to perform the in-place modular addition.
     """
 
-    k: int
-    mod: int
-    bitsize: int
+    k: Union[int, sympy.Expr]
+    mod: Union[int, sympy.Expr]
+    bitsize: Union[int, sympy.Expr]
 
     @cached_property
     def registers(self) -> 'FancyRegisters':
@@ -102,8 +103,8 @@ class CtrlAddK(Bloq):
         x: The register to perform the addition.
     """
 
-    k: int
-    bitsize: int
+    k: Union[int, sympy.Expr]
+    bitsize: Union[int, sympy.Expr]
 
     def short_name(self) -> str:
         return f'x += {self.k}'

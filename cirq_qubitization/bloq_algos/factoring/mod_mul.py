@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import sympy
 from attrs import frozen
@@ -29,9 +29,9 @@ class CtrlModMul(Bloq):
      - x: The integer being multiplied
     """
 
-    k: int
-    mod: int
-    bitsize: int
+    k: Union[int, sympy.Expr]
+    mod: Union[int, sympy.Expr]
+    bitsize: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
         if isinstance(self.k, sympy.Expr):
@@ -45,7 +45,7 @@ class CtrlModMul(Bloq):
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters.build(ctrl=1, x=self.bitsize)
 
-    def Add(self, k: int):
+    def _Add(self, k: Union[int, sympy.Expr]):
         """Helper method to forward attributes to `CtrlScaleModAdd`."""
         return CtrlScaleModAdd(k=k, bitsize=self.bitsize, mod=self.mod)
 
@@ -60,9 +60,9 @@ class CtrlModMul(Bloq):
         y = bb.allocate(self.bitsize)
 
         # y += x*k
-        ctrl, x, y = bb.add(self.Add(k=k), ctrl=ctrl, x=x, y=y)
+        ctrl, x, y = bb.add(self._Add(k=k), ctrl=ctrl, x=x, y=y)
         # x += y * (-k^-1)
-        ctrl, y, x = bb.add(self.Add(k=neg_k_inv), ctrl=ctrl, x=y, y=x)
+        ctrl, y, x = bb.add(self._Add(k=neg_k_inv), ctrl=ctrl, x=y, y=x)
 
         # y contains the answer and x is empty.
         # In [GE2019], it is asserted that the registers can be swapped via bookkeeping.
@@ -74,7 +74,7 @@ class CtrlModMul(Bloq):
 
     def bloq_counts(self, ssa: SympySymbolAllocator) -> List[Tuple[int, 'Bloq']]:
         k = ssa.new_symbol('k')
-        return [(2, self.Add(k=k)), (1, CSwap(self.bitsize))]
+        return [(2, self._Add(k=k)), (1, CSwap(self.bitsize))]
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
         if ctrl == 0:
