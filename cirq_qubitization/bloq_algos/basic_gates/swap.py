@@ -1,16 +1,17 @@
 from functools import cached_property
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
 import quimb.tensor as qtn
+import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
-from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
+from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
 if TYPE_CHECKING:
@@ -151,7 +152,7 @@ class CSwap(Bloq):
         y: the second register
     """
 
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
 
     @cached_property
     def registers(self) -> FancyRegisters:
@@ -160,6 +161,9 @@ class CSwap(Bloq):
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError("`bitsize` must be a real value to support decomposition.")
+
         xs = bb.split(x)
         ys = bb.split(y)
 

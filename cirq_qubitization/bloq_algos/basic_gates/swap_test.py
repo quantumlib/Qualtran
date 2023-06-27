@@ -2,6 +2,8 @@ from typing import Optional
 
 import cirq
 import numpy as np
+import pytest
+import sympy
 
 from cirq_qubitization.bloq_algos.basic_gates import (
     OneEffect,
@@ -140,3 +142,12 @@ def test_cswap_bloq_counts():
     counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
 
     assert set(counts1) == set(counts2)
+
+
+def test_cswap_symbolic():
+    n = sympy.symbols('n')
+    cswap = CSwap(bitsize=n)
+    counts = cswap.bloq_counts(SympySymbolAllocator())
+    assert counts[0] == (n, TwoBitCSwap())
+    with pytest.raises(ValueError):
+        cswap.decompose_bloq()
