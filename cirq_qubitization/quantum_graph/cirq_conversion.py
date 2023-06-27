@@ -29,6 +29,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 )
 
 CirqQuregT = NDArray[cirq.Qid]
+CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
 
 
 @frozen
@@ -128,7 +129,7 @@ def _get_in_cirq_quregs(
 def _update_assign_from_cirq_quregs(
     regs: Iterable[FancyRegister],
     binst: BloqInstance,
-    cirq_quregs: Dict[str, CirqQuregT],
+    cirq_quregs: Dict[str, CirqQuregInT],
     soq_assign: Dict[Soquet, CirqQuregT],
 ) -> None:
     """Update `soq_assign` using `cirq_quregs`.
@@ -194,7 +195,7 @@ def _binst_as_cirq_op(
 
 def _cbloq_to_cirq_circuit(
     registers: FancyRegisters,
-    cirq_quregs: Dict[str, 'CirqQuregT'],
+    cirq_quregs: Dict[str, 'CirqQuregInT'],
     binst_graph: nx.DiGraph,
     qubit_manager: cirq.QubitManager,
 ) -> Tuple[cirq.FrozenCircuit, Dict[str, 'CirqQuregT']]:

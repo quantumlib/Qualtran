@@ -78,7 +78,7 @@ class CNOT(Bloq):
 
         (ctrl,) = ctrl
         (target,) = target
-        return cirq.CNOT(ctrl, target), {'ctrl': [ctrl], 'target': [target]}
+        return cirq.CNOT(ctrl, target), {'ctrl': np.array([ctrl]), 'target': np.array([target])}
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.name == 'ctrl':

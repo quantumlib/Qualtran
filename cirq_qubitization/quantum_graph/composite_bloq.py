@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
+SoquetInT = Union[Soquet, NDArray[Soquet], Sequence[Soquet]]
 
 
 class CompositeBloq(Bloq):
@@ -103,7 +104,7 @@ class CompositeBloq(Bloq):
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit(
-        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregInT'
     ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
@@ -853,7 +854,7 @@ class CompositeBloqBuilder:
         all registers ahead-of-time.
     """
 
-    def __init__(self, add_registers_allowed=True):
+    def __init__(self, add_registers_allowed: bool = True):
         # To be appended to:
         self._cxns: List[Connection] = []
         self._regs: List[FancyRegister] = []
@@ -962,7 +963,7 @@ class CompositeBloqBuilder:
         cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
         self._cxns.append(cxn)
 
-    def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
+    def add(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
 
         Args:
@@ -981,7 +982,7 @@ class CompositeBloqBuilder:
         binst = BloqInstance(bloq, i=self._new_binst_i())
         return self._add_binst(binst, in_soqs=in_soqs)
 
-    def _add_binst(self, binst: BloqInstance, in_soqs: Dict[str, SoquetT]) -> Tuple[SoquetT, ...]:
+    def _add_binst(self, binst: BloqInstance, in_soqs: Dict[str, SoquetInT]) -> Tuple[SoquetT, ...]:
         """Add a bloq instance.
 
         Warning! Do not use this function externally! Untold bad things will happen if
@@ -1001,7 +1002,7 @@ class CompositeBloqBuilder:
         )
         return out_soqs
 
-    def add_from(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
+    def add_from(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add all the sub-bloqs from `bloq` to the composite bloq under construction.
 
         Args:
@@ -1113,7 +1114,7 @@ class CompositeBloqBuilder:
 
         self.add(Free(n=soq.reg.bitsize), free=soq)
 
-    def split(self, soq: Soquet) -> SoquetT:
+    def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""
         from cirq_qubitization.quantum_graph.util_bloqs import Split
 
