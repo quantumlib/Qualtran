@@ -13,11 +13,13 @@ author = 'Google Quantum AI'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = [
-    'myst_nb',
-]
+extensions = ['myst_nb']
 
 nb_execution_mode = 'off'
+
+# The markdown parser myst gets mad when you skip to small headers
+# e.g. <h4> for "parameters" section.
+suppress_warnings = ["myst.header"]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
