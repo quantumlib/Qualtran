@@ -9,9 +9,6 @@ import nbconvert
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
-SOURCE_DIR_NAME = 'cirq_qubitization'
-DOC_OUT_DIR_NAME = 'docs/nbs'
-
 
 def get_git_root() -> Path:
     """Get the root git repository path."""
@@ -37,8 +34,7 @@ def get_nb_rel_paths(rootdir) -> List[Path]:
 
 def get_html_rel_path(nb_rel_path: Path) -> Path:
     """For a given input relative notebook path, get the desired output html path."""
-    fn = Path(DOC_OUT_DIR_NAME) / nb_rel_path.with_name(f'{nb_rel_path.stem}.html')
-    print(fn)
+    fn = nb_rel_path.with_name(f'{nb_rel_path.stem}.html')
     return fn
 
 
@@ -59,10 +55,13 @@ def is_out_of_date(nbpath: Path, htmlpath: Path) -> bool:
     return ood
 
 
-def export_notebook_to_html(nbpath: Path, htmlpath: Path) -> Optional[Exception]:
-    """Export the notebook at `nbpath` to an html file at `htmlpath`.
+def execute_and_export_nb(nbpath: Path, htmlpath: Path, nboutpath: Path) -> Optional[Exception]:
+    """Execute the notebook and export it in various forms.
 
-    This will execute the notebook. We catch any exceptions raised by notebook execution
+    We execute the notebook at `nbpath` and export it as html to `htmlpath` and as
+    a filled-in notebook to `nboutpath`.
+
+    During execution, we catch any exceptions raised by notebook execution
     and return it. Otherwise, we return `None`.
     """
     with nbpath.open() as f:
@@ -75,6 +74,9 @@ def export_notebook_to_html(nbpath: Path, htmlpath: Path) -> Optional[Exception]
         print(f'{nbpath} failed!')
         print(e)
         return e
+
+    with nboutpath.open('w') as f:
+        nbformat.write(nb, f, version=4)
     html, resources = nbconvert.export(nbconvert.HTMLExporter(), nb, resources=resources)
     with htmlpath.open('w') as f:
         f.write(html)
@@ -88,17 +90,22 @@ def main(render_all: bool = False):
     """
     print("render_all:", render_all)
     reporoot = get_git_root()
-    sourceroot = reporoot / SOURCE_DIR_NAME
+    sourceroot = reporoot / 'cirq_qubitization'
     nb_rel_paths = get_nb_rel_paths(rootdir=sourceroot)
     bad_nbs = []
     for nb_rel_path in nb_rel_paths:
-        htmlpath = reporoot / get_html_rel_path(nb_rel_path)
+        print(f"Executing {nb_rel_path}")
+        htmlpath = reporoot / 'docs/nbrun' / get_html_rel_path(nb_rel_path)
         nbpath = sourceroot / nb_rel_path
+        nboutpath = reporoot / 'docs' / nb_rel_path
+
         if not render_all and not is_out_of_date(nbpath, htmlpath):
             continue
 
         htmlpath.parent.mkdir(parents=True, exist_ok=True)
-        err = export_notebook_to_html(nbpath=nbpath, htmlpath=htmlpath)
+        nboutpath.parent.mkdir(parents=True, exist_ok=True)
+
+        err = execute_and_export_nb(nbpath=nbpath, htmlpath=htmlpath, nboutpath=nboutpath)
         if err is not None:
             bad_nbs.append(nbpath)
 
@@ -112,7 +119,7 @@ def main(render_all: bool = False):
 
 def parse_args():
     p = ArgumentParser()
-    p.add_argument('--all', action=argparse.BooleanOptionalAction, default=False)
+    p.add_argument('--all', action=argparse.BooleanOptionalAction, default=True)
     args = p.parse_args()
     main(render_all=args.all)
 
