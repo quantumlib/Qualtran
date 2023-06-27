@@ -21,10 +21,39 @@ if TYPE_CHECKING:
 
 
 class Bloq(metaclass=abc.ABCMeta):
+    """Bloq is the primary abstract base class for all operations.
+
+    Bloqs let you represent high-level quantum programs and subroutines as a hierarchical
+    collection of Python objects. The main interface is this abstract base class.
+
+    There are two important flavors of implementations of the `Bloq` interface. The first flavor
+    consists of bloqs implemented by you, the user-developer to express quantum operations of
+    interest. For example:
+
+    >>> class ShorsAlgorithm(Bloq):
+    >>>     ...
+
+    The other important `Bloq` subclass is `CompositeBloq`, which is a container type for a
+    collection of sub-bloqs.
+
+    There is only one mandatory method you must implement to have a well-formed `Bloq`,
+    namely `Bloq.registers`. There are many other methods you can optionally implement to
+    encode more information about the bloq.
+    """
+
     @property
     @abc.abstractmethod
     def registers(self) -> 'FancyRegisters':
-        ...
+        """The input and output names and types for this bloq.
+
+        This property can be thought of as analogous to the function signature in ordinary
+        programming. For example, it is analogous to function declarations in a
+        C header (`*.h`) file.
+
+        This is the only manditory method (property) you must implement to inherit from
+        `Bloq`. You can optionally implement additional methods to encode more information
+        about this bloq.
+        """
 
     def pretty_name(self) -> str:
         return self.__class__.__name__
