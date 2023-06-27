@@ -1,0 +1,16 @@
+
+/* Args etc tables
+    - increase width so it isn't centered in the middle of the page
+*/
+table.fixed.responsive {
+    width: 100%;
+}
+
+/* "View on GitHub"
+    - increase width so it is the only thing on this line
+    - add some margin beneath it to let things breathe
+*/
+table.tfo-notebook-buttons.tfo-api {
+    width: 100%;
+    margin-bottom: 1.5em;
+}
