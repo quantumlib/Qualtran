@@ -11,7 +11,7 @@ from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEf
 from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import (
-    check_bloq_decomposition,
+    assert_valid_bloq_decomposition,
     CompositeBloqBuilder,
     SoquetT,
 )
@@ -33,7 +33,7 @@ def _make_multi_and():
 
 def test_multiand_decomp():
     bloq = MultiAnd(cvs=(1, 0, 1, 0))
-    check_bloq_decomposition(bloq)
+    assert_valid_bloq_decomposition(bloq)
 
 
 def _iter_and_truth_table(cv1: int, cv2: int):

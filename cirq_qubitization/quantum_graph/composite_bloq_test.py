@@ -16,13 +16,13 @@ from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _create_binst_graph,
     _get_dangling_soquets,
+    assert_connections_compatible,
+    assert_registers_match_dangling,
+    assert_registers_match_parent,
+    assert_soquets_belong_to_registers,
+    assert_soquets_used_exactly_once,
+    assert_valid_bloq_decomposition,
     BloqError,
-    check_bloq_decomposition,
-    check_compatible_connections,
-    check_registers_match_dangling,
-    check_registers_match_parent,
-    check_soquets_belong_to_registers,
-    check_soquets_used_exactly_once,
     CompositeBloq,
     CompositeBloqBuilder,
     map_soqs,
@@ -309,7 +309,7 @@ def test_get_soquets():
     assert soq[0].reg.bitsize == 1
 
 
-def test_check_registers_match_parent():
+def test_assert_registers_match_parent():
     @frozen
     class BadRegBloq(Bloq):
         @cached_property
@@ -323,17 +323,17 @@ def test_check_registers_match_parent():
             return bb.finalize(x=x, y=y)
 
     with pytest.raises(BloqError, match=r'Parent registers do not match.*'):
-        check_registers_match_parent(BadRegBloq())
+        assert_registers_match_parent(BadRegBloq())
 
 
-def test_check_registers_match_dangling():
+def test_assert_registers_match_dangling():
     cxns, _ = _manually_make_test_cbloq_cxns()
     cbloq = CompositeBloq(cxns, registers=FancyRegisters.build(ctrl=1, target=1))
     with pytest.raises(BloqError, match=r'.*.*does not match the registers of the bloq.*'):
-        check_registers_match_dangling(cbloq)
+        assert_registers_match_dangling(cbloq)
 
 
-def test_check_compatible_connections():
+def test_assert_connections_compatible():
     from cirq_qubitization.bloq_algos.basic_gates import CSwap, TwoBitCSwap
 
     bb = CompositeBloqBuilder()
@@ -343,22 +343,22 @@ def test_check_compatible_connections():
     ctrl, x, y = bb.add(CSwap(10), ctrl=ctrl, x=x, y=y)
     ctrl, x, y = bb.add(TwoBitCSwap(), ctrl=ctrl, x=x, y=y)
     cbloq = bb.finalize(c=ctrl, x=x, y=y)
-    check_registers_match_dangling(cbloq)
+    assert_registers_match_dangling(cbloq)
     with pytest.raises(BloqError, match=r'.*bitsizes are incompatible.*'):
-        check_compatible_connections(cbloq)
+        assert_connections_compatible(cbloq)
 
 
-def test_check_soquets_belong_to_registers():
+def test_assert_soquets_belong_to_registers():
     cxns, regs = _manually_make_test_cbloq_cxns()
     cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=FancyRegister('q3', 1)))
     cbloq = CompositeBloq(cxns, regs)
-    check_registers_match_dangling(cbloq)
-    check_compatible_connections(cbloq)
+    assert_registers_match_dangling(cbloq)
+    assert_connections_compatible(cbloq)
     with pytest.raises(BloqError, match=r".*register doesn't exist on its bloq.*"):
-        check_soquets_belong_to_registers(cbloq)
+        assert_soquets_belong_to_registers(cbloq)
 
 
-def test_check_soquets_used_exactly_once():
+def test_assert_soquets_used_exactly_once():
     cxns, regs = _manually_make_test_cbloq_cxns()
     binst1 = BloqInstance(TestCNOT(), 1)
     binst2 = BloqInstance(TestCNOT(), 2)
@@ -366,11 +366,11 @@ def test_check_soquets_used_exactly_once():
 
     cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
     cbloq = CompositeBloq(cxns, regs)
-    check_registers_match_dangling(cbloq)
-    check_compatible_connections(cbloq)
-    check_soquets_belong_to_registers(cbloq)
+    assert_registers_match_dangling(cbloq)
+    assert_connections_compatible(cbloq)
+    assert_soquets_belong_to_registers(cbloq)
     with pytest.raises(BloqError, match=r".*had already been produced by a different bloq.*"):
-        check_soquets_used_exactly_once(cbloq)
+        assert_soquets_used_exactly_once(cbloq)
 
 
 class TestMultiCNOT(Bloq):
@@ -393,7 +393,7 @@ class TestMultiCNOT(Bloq):
 
 def test_complicated_target_register():
     bloq = TestMultiCNOT()
-    cbloq = check_bloq_decomposition(bloq)
+    cbloq = assert_valid_bloq_decomposition(bloq)
     assert len(cbloq.bloq_instances) == 2 * 3
 
     binst_graph = _create_binst_graph(cbloq.connections)
@@ -493,12 +493,12 @@ class TestParallelBloq(Bloq):
 
 def test_test_serial_bloq_decomp():
     sbloq = TestSerialBloq()
-    check_bloq_decomposition(sbloq)
+    assert_valid_bloq_decomposition(sbloq)
 
 
 def test_test_parallel_bloq_decomp():
     pbloq = TestParallelBloq()
-    check_bloq_decomposition(pbloq)
+    assert_valid_bloq_decomposition(pbloq)
 
 
 @pytest.mark.parametrize('cls', [TestSerialBloq, TestParallelBloq])

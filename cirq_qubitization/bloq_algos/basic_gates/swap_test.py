@@ -15,7 +15,7 @@ from cirq_qubitization.bloq_algos.basic_gates.swap import (
     CSwap,
 )
 from cirq_qubitization.quantum_graph.composite_bloq import (
-    check_bloq_decomposition,
+    assert_valid_bloq_decomposition,
     CompositeBloqBuilder,
 )
 
@@ -98,7 +98,7 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
 
 def test_cswap_decomp():
     cswap = CSwap(16)
-    check_bloq_decomposition(cswap)
+    assert_valid_bloq_decomposition(cswap)
 
 
 def test_cswap_unitary():

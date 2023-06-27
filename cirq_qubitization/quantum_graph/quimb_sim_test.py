@@ -11,7 +11,7 @@ from cirq_qubitization.bloq_algos.basic_gates import CNOT, XGate, ZGate
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _get_dangling_soquets,
-    check_bloq_decomposition,
+    assert_valid_bloq_decomposition,
     CompositeBloqBuilder,
     SoquetT,
 )
@@ -186,7 +186,7 @@ class ComplexBloq(Bloq):
 
 def test_complex_bloq_decomp():
     bloq = ComplexBloq()
-    check_bloq_decomposition(bloq)
+    assert_valid_bloq_decomposition(bloq)
 
 
 def test_complex_bloq():

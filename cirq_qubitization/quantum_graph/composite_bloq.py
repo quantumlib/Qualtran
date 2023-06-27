@@ -518,11 +518,11 @@ class BloqError(ValueError):
 
     This error is raised during bloq building using `CompositeBloqBuilder`, which checks
     for the validity of registers and connections during the building process. This error is
-    also raised by the check functions provided in this module.
+    also raised by the validity assertion functions provided in this module.
     """
 
 
-def check_registers_match_parent(bloq: Bloq) -> CompositeBloq:
+def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
     """Check that the registers following decomposition match those of the original bloq.
 
     This is a strict condition of the `decompose_bloq()` protocol. A decomposition is only
@@ -543,7 +543,7 @@ def check_registers_match_parent(bloq: Bloq) -> CompositeBloq:
     return cbloq
 
 
-def check_registers_match_dangling(cbloq: CompositeBloq):
+def assert_registers_match_dangling(cbloq: CompositeBloq):
     """Check that connections to LeftDangle and RightDangle match the declared registers.
 
     All Soquets must be consumed exactly once by a subsequent subbloq or connected explicitly
@@ -587,7 +587,7 @@ def check_registers_match_dangling(cbloq: CompositeBloq):
             seen_rights.add(cxn.right)
 
 
-def check_compatible_connections(cbloq: CompositeBloq):
+def assert_connections_compatible(cbloq: CompositeBloq):
     """Check that all connections are between compatible registers.
 
     We check that register bitsize are equal and that LEFT and RIGHT registers are only
@@ -620,7 +620,7 @@ def check_compatible_connections(cbloq: CompositeBloq):
             raise BloqError(f"{cxn}'s right side is associated with a register with side {rr.side}")
 
 
-def check_soquets_belong_to_registers(cbloq: CompositeBloq):
+def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
     """Check that all soquet's registers make sense.
 
     We check that any indexed soquets fit within the bounds of the register and that the
@@ -643,7 +643,7 @@ def check_soquets_belong_to_registers(cbloq: CompositeBloq):
             raise BloqError(f"{soq}'s register doesn't exist on its bloq {soq.binst.bloq}")
 
 
-def check_soquets_used_exactly_once(cbloq: CompositeBloq):
+def assert_soquets_used_exactly_once(cbloq: CompositeBloq):
     """Check that all soquets are used once and only once.
 
     Each bloq's register produces prod(reg.wireshape) soquets which must be consumed
@@ -668,15 +668,15 @@ def check_soquets_used_exactly_once(cbloq: CompositeBloq):
         raise BloqError(f"Some soquets were not produced: {diff2}")
 
 
-def check_cbloq(cbloq: CompositeBloq):
-    """Perform all composite-bloq validity checks."""
-    check_registers_match_dangling(cbloq)
-    check_compatible_connections(cbloq)
-    check_soquets_belong_to_registers(cbloq)
-    check_soquets_used_exactly_once(cbloq)
+def assert_valid_cbloq(cbloq: CompositeBloq):
+    """Perform all composite-bloq validity assertions."""
+    assert_registers_match_dangling(cbloq)
+    assert_connections_compatible(cbloq)
+    assert_soquets_belong_to_registers(cbloq)
+    assert_soquets_used_exactly_once(cbloq)
 
 
-def check_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
+def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
     """Check the validity of a bloq decomposition.
 
     Importantly, this does not do any correctness checking -- for that you likely
@@ -684,8 +684,8 @@ def check_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
 
     This returns the decomposed, composite bloq on which you can do further testing.
     """
-    cbloq = check_registers_match_parent(bloq)
-    check_cbloq(cbloq)
+    cbloq = assert_registers_match_parent(bloq)
+    assert_valid_cbloq(cbloq)
     return cbloq
 
 
