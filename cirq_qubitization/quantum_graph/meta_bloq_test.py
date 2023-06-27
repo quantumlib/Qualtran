@@ -30,8 +30,8 @@ C[Atom()]<1>
 C[Atom()]<2>
   C[Atom()]<1>.control -> control
   C[Atom()]<1>.stuff -> stuff
-  stuff -> RightDangle.stuff
-  control -> RightDangle.control"""
+  control -> RightDangle.control
+  stuff -> RightDangle.stuff"""
     )
 
 
@@ -72,8 +72,8 @@ C[Join(n=3)]<4>
   C[Atom()]<3>.stuff -> join[2]
   C[Atom()]<1>.stuff -> join[0]
   C[Atom()]<2>.stuff -> join[1]
-  join -> RightDangle.stuff
-  control -> RightDangle.control"""
+  control -> RightDangle.control
+  join -> RightDangle.stuff"""
     )
 
 
