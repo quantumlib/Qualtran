@@ -1,3 +1,4 @@
+import re
 import subprocess
 from collections import defaultdict
 from pathlib import Path
@@ -169,6 +170,71 @@ def write_ref_toc(f, grouped_paths, output_dir):
         f.write('\n')
 
 
+def fixup_suffix(content: str) -> str:
+    """Fix file extensions in `<a href="...">` links.
+
+    If the markdown files contain markdown-style links: `[page title](./page.md)`, sphinx
+    will happily convert the target to `page.html` in the built html output. If the markdown
+    files contain html-style links `<a href="./page.md">page title</a>`, sphinx will not.
+
+    This uses a regex with some custom substitution logic to try to intelligently replace
+    `.md` and `.ipynb` suffixes in `content`'s `<a>` tags.
+    """
+
+    def _replace_internal_suffixes(match):
+        """Replace the ".md" and ".ipynb" suffixes from internal links using heuristics."""
+        match_dict = match.groupdict()
+        before = match_dict["before"]
+        after = match_dict["after"]
+        full_match = match.group(0)
+
+        # If there is nothing else after the suffix it's often a bare local file
+        # reference on github, like: "see README.md", don't change it.
+        if not after:
+            return full_match
+
+        # if the text after the suffix starts with anything other than ")", '"',
+        # or "#" then this doesn't look like a link, don't change it.
+        if after[0] not in '#"':
+            return full_match
+
+        # Don't change anything with a full url
+        if "://" in before:
+            return full_match
+
+        # This is probably a local link
+        return f'{before}.html{after}'
+
+    suffix_re = re.compile(
+        r"""
+      (?<=\s)             # only start a match after a whitespace character
+      (?P<before>[\S]+)   # At least one non-whitespace character.
+      \.(md|ipynb)        # ".md" or ".ipynb" suffix (the last one).
+      (?P<after>[\S]*)    # Trailing non-whitespace""",
+        re.VERBOSE,
+    )
+
+    return suffix_re.sub(_replace_internal_suffixes, content)
+
+
+def apply_fixups():
+    """For each generated markdown file, apply fixups.
+
+    Currently, this is one fixup, namely `fixup_suffix`.
+    """
+    reporoot = get_git_root()
+    output_dir = reporoot / 'docs/reference'
+    page_paths = (output_dir / 'cirq_qubitization').glob('quantum_graph/**/*.md')
+    for path in page_paths:
+        with path.open('r') as f:
+            content = f.read()
+
+        content = fixup_suffix(content)
+
+        with path.open('w') as f:
+            f.write(content)
+
+
 def generate_ref_toc():
     """Generate a sphinx-style table of contents (TOC) from generated markdown files."""
     reporoot = get_git_root()
@@ -186,4 +252,5 @@ def generate_ref_toc():
 
 if __name__ == '__main__':
     generate_ref_docs()
+    apply_fixups()
     generate_ref_toc()
