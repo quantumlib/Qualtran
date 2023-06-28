@@ -2,7 +2,7 @@ import re
 import subprocess
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Type
 
 import jinja2
 from tensorflow_docs.api_generator.generate_lib import DocGenerator
@@ -14,6 +14,7 @@ from tensorflow_docs.api_generator.pretty_docs import (
     FunctionPageInfo,
     ModulePageBuilder,
     ModulePageInfo,
+    TypeAliasPageBuilder,
     TypeAliasPageInfo,
 )
 from tensorflow_docs.api_generator.pretty_docs.base_page import MemberInfo
@@ -39,16 +40,6 @@ def get_git_root() -> Path:
     return path
 
 
-class MyModulePageBuilder(ModulePageBuilder):
-    """Use a custom template for module pages."""
-
-    TEMPLATE = 'templates/module.jinja'
-    TEMPLATE_SEARCH_PATH = tuple([str(Path(__file__).parent)])
-    JINJA_ENV = jinja2.Environment(
-        trim_blocks=True, lstrip_blocks=True, loader=jinja2.FileSystemLoader(TEMPLATE_SEARCH_PATH)
-    )
-
-
 def _filter_and_sort_members(py_object: object, members: Iterable[MemberInfo]) -> List[MemberInfo]:
     """Sort `members` according to their order in the source definition.
 
@@ -63,18 +54,29 @@ def _filter_and_sort_members(py_object: object, members: Iterable[MemberInfo]) -
     return sorted(fmembs, key=lambda m: ordering[m.short_name])
 
 
-class MyClassPageBuilder(ClassPageBuilder):
+def mixin_custom_template(template_name: str) -> Type:
+    class _CustomTemplateMixin:
+        TEMPLATE = f'templates/{template_name}.jinja'
+        TEMPLATE_SEARCH_PATH = tuple([str(Path(__file__).parent)])
+        JINJA_ENV = jinja2.Environment(
+            trim_blocks=True,
+            lstrip_blocks=True,
+            loader=jinja2.FileSystemLoader(TEMPLATE_SEARCH_PATH),
+        )
+
+    return _CustomTemplateMixin
+
+
+class MyModulePageBuilder(mixin_custom_template('module'), ModulePageBuilder):
+    """Use a custom template for module pages."""
+
+
+class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):
     """Use a custom template for class pages.
 
     Additionally, this will re-sort the class members (i.e. methods) to match
     the order in the source code.
     """
-
-    TEMPLATE = 'templates/class.jinja'
-    TEMPLATE_SEARCH_PATH = tuple([str(Path(__file__).parent)])
-    JINJA_ENV = jinja2.Environment(
-        trim_blocks=True, lstrip_blocks=True, loader=jinja2.FileSystemLoader(TEMPLATE_SEARCH_PATH)
-    )
 
     def __init__(self, page_info):
         super().__init__(page_info)
@@ -91,14 +93,12 @@ class MyClassPageBuilder(ClassPageBuilder):
         )
 
 
-class MyFunctionPageBuilder(FunctionPageBuilder):
+class MyFunctionPageBuilder(mixin_custom_template('function'), FunctionPageBuilder):
     """Use a custom template for function pages."""
 
-    TEMPLATE = 'templates/function.jinja'
-    TEMPLATE_SEARCH_PATH = tuple([str(Path(__file__).parent)])
-    JINJA_ENV = jinja2.Environment(
-        trim_blocks=True, lstrip_blocks=True, loader=jinja2.FileSystemLoader(TEMPLATE_SEARCH_PATH)
-    )
+
+class MyTypeAliasPageBuilder(mixin_custom_template('type_alias'), TypeAliasPageBuilder):
+    """Use a custom template for type alias pages."""
 
 
 class MyModulePageInfo(ModulePageInfo):
@@ -132,11 +132,17 @@ class MyFunctionPageInfo(FunctionPageInfo):
     DEFAULT_BUILDER_CLASS = MyFunctionPageBuilder
 
 
+class MyTypeAliasPageInfo(TypeAliasPageInfo):
+    """Use custom builder for type alias pages."""
+
+    DEFAULT_BUILDER_CLASS = MyTypeAliasPageBuilder
+
+
 _MY_PAGE_BUILDERS = {
     ObjType.CLASS: MyClassPageInfo,
     ObjType.CALLABLE: MyFunctionPageInfo,
     ObjType.MODULE: MyModulePageInfo,
-    ObjType.TYPE_ALIAS: TypeAliasPageInfo,
+    ObjType.TYPE_ALIAS: MyTypeAliasPageInfo,
 }
 """Pass in custom logic to DocGenerator."""
 
