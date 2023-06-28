@@ -30,7 +30,7 @@
 
   {% for module in page_info.modules %}
     {%if module.doc.brief%}
-[`{{module.short_name}}`]({{module.url}}) module: {{module.doc.brief}}
+[`{{module.short_name}}`]({{module.url}}): {{module.doc.brief}}
     {%else%}
 [`{{module.short_name}}`]({{module.url}}) module
     {%endif%}

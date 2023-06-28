@@ -1,3 +1,5 @@
+"""Plumbing for bloq-to-bloq `Connection`s."""
+
 from typing import Tuple, Union
 
 from attrs import field, frozen

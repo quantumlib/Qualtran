@@ -1,3 +1,5 @@
+"""Contains the main interface for defining `Bloq`s."""
+
 import abc
 from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
 

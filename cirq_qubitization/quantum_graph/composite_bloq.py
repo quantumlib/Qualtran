@@ -1,4 +1,4 @@
-"""Classes for building and manipulating composite bloqs."""
+"""Classes for building and manipulating `CompositeBloq`."""
 
 from functools import cached_property
 from typing import (

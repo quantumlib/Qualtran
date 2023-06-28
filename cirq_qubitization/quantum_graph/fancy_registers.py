@@ -1,3 +1,5 @@
+"""Classes for specifying `Bloq.registers`."""
+
 import enum
 import itertools
 from collections import defaultdict
