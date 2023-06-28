@@ -230,7 +230,7 @@ def apply_fixups():
     """
     reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
-    page_paths = (output_dir / 'cirq_qubitization').glob('quantum_graph/**/*.md')
+    page_paths = output_dir.glob('cirq_qubitization/**/*.md')
     for path in page_paths:
         with path.open('r') as f:
             content = f.read()
@@ -245,7 +245,7 @@ def generate_ref_toc():
     """Generate a sphinx-style table of contents (TOC) from generated markdown files."""
     reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
-    page_paths = (output_dir / 'cirq_qubitization').glob('quantum_graph/**/*.md')
+    page_paths = output_dir.glob('cirq_qubitization/**/*.md')
 
     # Group according to module
     grouped_paths: Dict[Path, List] = defaultdict(list)
