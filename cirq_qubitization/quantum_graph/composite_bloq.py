@@ -41,7 +41,15 @@ if TYPE_CHECKING:
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
+"""A `Soquet` or array of soquets."""
+
 SoquetInT = Union[Soquet, NDArray[Soquet], Sequence[Soquet]]
+"""A soquet or array-like of soquets.
+
+This type alias is used for input argument to parts of the library that are more
+permissive about the types they accept. Under-the-hood, such functions will
+canonicalize and return `SoquetT`.
+"""
 
 
 class CompositeBloq(Bloq):
