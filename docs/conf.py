@@ -16,6 +16,7 @@ author = 'Google Quantum AI'
 extensions = ['myst_nb']
 
 nb_execution_mode = 'off'
+myst_enable_extensions = ['dollarmath', 'amsmath']
 
 # The markdown parser myst gets mad when you skip to small headers
 # e.g. <h4> for "parameters" section.
