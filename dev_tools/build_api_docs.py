@@ -21,12 +21,32 @@ from tensorflow_docs.api_generator.pretty_docs.base_page import MemberInfo
 from tensorflow_docs.api_generator.pretty_docs.class_page import Methods
 from tensorflow_docs.api_generator.public_api import local_definitions_filter
 
-import cirq_qubitization
-import cirq_qubitization.quantum_graph
-
 
 def filter_type_checking(path, parent, children):
     return [(name, obj) for name, obj in children if name != 'TYPE_CHECKING']
+
+
+_TYPE_ALIAS_LOCATIONS = {
+    'SoquetT': ('cirq_qubitization.quantum_graph', 'composite_bloq'),
+    'SoquetInT': ('cirq_qubitization.quantum_graph', 'composite_bloq'),
+}
+
+
+def filter_type_aliases_in_the_wrong_place(path, parent, children):
+    """`local_definitions_filter` doesn't work for type aliases.
+
+    Since the object is a value rather than a class or a function, we can't
+    ask it where (i.e. in what module) it was defined.
+    """
+    ret = []
+    for name, obj in children:
+        if name in _TYPE_ALIAS_LOCATIONS:
+            if path != _TYPE_ALIAS_LOCATIONS[name]:
+                # Wait for the real location
+                continue
+        ret.append((name, obj))
+
+    return ret
 
 
 def get_git_root() -> Path:
@@ -149,6 +169,30 @@ _MY_PAGE_BUILDERS = {
 
 def generate_ref_docs():
     """Use `tensorflow_docs` to generate markdown reference docs."""
+
+    # Important: we currently do not import submodules in our module's `__init__` methods,
+    # so tensorflow-docs will not find a module that has not been imported. We import
+    # them all here.
+    import cirq_qubitization.quantum_graph
+    from cirq_qubitization.quantum_graph import (
+        bloq,
+        bloq_counts,
+        cirq_conversion,
+        classical_sim,
+        composite_bloq,
+        fancy_registers,
+        graphviz,
+        meta_bloq,
+        musical_score,
+        quantum_graph,
+        quimb_sim,
+        util_bloqs,
+    )
+
+    # prevent unused warnings:
+    assert [bloq, bloq_counts, cirq_conversion, classical_sim, composite_bloq, fancy_registers]
+    assert [graphviz, meta_bloq, musical_score, quantum_graph, quimb_sim, util_bloqs]
+
     reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
     doc_generator = DocGenerator(
@@ -156,7 +200,11 @@ def generate_ref_docs():
         py_modules=[("cirq_qubitization.quantum_graph", cirq_qubitization.quantum_graph)],
         base_dir=[reporoot / 'cirq_qubitization/quantum_graph'],
         code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/cirq_qubitization/quantum_graph",
-        callbacks=[local_definitions_filter, filter_type_checking],
+        callbacks=[
+            local_definitions_filter,
+            filter_type_checking,
+            filter_type_aliases_in_the_wrong_place,
+        ],
         page_builder_classes=_MY_PAGE_BUILDERS,
     )
     doc_generator.build(output_dir=output_dir)
