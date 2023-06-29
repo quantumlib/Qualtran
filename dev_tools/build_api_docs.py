@@ -75,6 +75,8 @@ def _filter_and_sort_members(py_object: object, members: Iterable[MemberInfo]) -
 
 
 def mixin_custom_template(template_name: str) -> Type:
+    """Return a mixin for using a custom jinja template in TemplatePageBuilder classes."""
+
     class _CustomTemplateMixin:
         TEMPLATE = f'templates/{template_name}.jinja'
         TEMPLATE_SEARCH_PATH = tuple([str(Path(__file__).parent)])

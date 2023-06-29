@@ -49,10 +49,8 @@ class ControlledBloq(Bloq):
         if not isinstance(self.subbloq, CompositeBloq):
             return ControlledBloq(self.subbloq.decompose_bloq()).decompose_bloq()
 
-        bb, _ = CompositeBloqBuilder.from_registers(
-            self.subbloq.registers, add_registers_allowed=True
-        )
-        ctrl = bb.add_register('control', 1)
+        bb, initial_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        ctrl = initial_soqs['control']
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.subbloq.iter_bloqsoqs():

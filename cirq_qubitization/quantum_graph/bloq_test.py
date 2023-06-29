@@ -6,6 +6,7 @@ import pytest
 from attrs import frozen
 from cirq_ft import TComplexity
 
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
@@ -60,3 +61,7 @@ def test_as_composite_bloq():
 
 def test_t_complexity():
     assert TestCNOT().t_complexity() == TComplexity(clifford=1)
+
+
+def test_notebook():
+    execute_notebook('Bloqs-Tutorial')
