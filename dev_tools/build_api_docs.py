@@ -218,7 +218,7 @@ def write_ref_toc(f, grouped_paths, output_dir):
 
     for parent in sorted(grouped_paths.keys(), key=lambda p: len(p.parts)):
         f.write(
-            '\n'.join([f'.. toctree::', f'   :maxdepth: 2', f'   :caption: {parent.name}', '', ''])
+            '\n'.join(['.. toctree::', '   :maxdepth: 2', '   :caption: {parent.name}', '', ''])
         )
         children = grouped_paths[parent]
         for child in sorted(children):
