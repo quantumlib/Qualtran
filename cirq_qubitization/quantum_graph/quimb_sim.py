@@ -1,3 +1,5 @@
+"""Functionality for the `Bloq.tensor_contract()` protocol."""
+
 import itertools
 from typing import Dict, Iterable, List, Optional, Tuple
 

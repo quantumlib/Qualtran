@@ -1,3 +1,5 @@
+"""Functionality for the `Bloq.as_cirq_op(...)` protocol"""
+
 from functools import cached_property
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 

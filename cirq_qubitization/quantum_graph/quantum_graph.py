@@ -77,7 +77,7 @@ class Soquet:
     A `Soquet` can also be present in an external connection (i.e. represent an unconnected input
     or output) by setting the `binst` attribute to `LeftDangle` or `RightDangle`.
 
-    Args:
+    Attributes:
         binst: The BloqInstance to which this soquet belongs.
         reg: The register that this soquet is an instance of.
         idx: Registers with non-empty `wireshape` attributes are multi-dimensional. A soquet

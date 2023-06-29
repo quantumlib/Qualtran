@@ -1,3 +1,5 @@
+"""Bloqs that wrap subbloqs."""
+
 from functools import cached_property
 from typing import List, Tuple
 
