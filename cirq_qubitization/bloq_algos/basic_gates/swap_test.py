@@ -1,10 +1,10 @@
 from typing import Optional
 
+import cirq
 import numpy as np
 import pytest
 import sympy
 
-import cirq
 from cirq_qubitization.bloq_algos.basic_gates import (
     OneEffect,
     OneState,
