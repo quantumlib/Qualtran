@@ -4,8 +4,7 @@ from typing import Dict, Tuple, TYPE_CHECKING
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization import Bloq, FancyRegisters
 
 if TYPE_CHECKING:
     import cirq

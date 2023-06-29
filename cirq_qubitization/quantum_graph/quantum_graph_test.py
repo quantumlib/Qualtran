@@ -1,14 +1,15 @@
 import pytest
 
-from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, Side
-from cirq_qubitization.quantum_graph.quantum_graph import (
+from cirq_qubitization import (
     BloqInstance,
     DanglingT,
+    FancyRegister,
     LeftDangle,
     RightDangle,
+    Side,
     Soquet,
 )
+from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 
 
 def test_dangling():

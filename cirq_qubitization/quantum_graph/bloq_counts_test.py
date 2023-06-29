@@ -6,10 +6,9 @@ import networkx as nx
 import sympy
 from attrs import frozen
 
-from cirq_qubitization.bloq_algos.basic_gates.t_gate import TGate
-from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization import Bloq, FancyRegisters
+from cirq_qubitization.bloq_algos.basic_gates import TGate
 from cirq_qubitization.quantum_graph.bloq_counts import get_bloq_counts_graph, SympySymbolAllocator
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 from cirq_qubitization.quantum_graph.util_bloqs import ArbitraryClifford, Join, Split
 
 

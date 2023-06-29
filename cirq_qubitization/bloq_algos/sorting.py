@@ -2,9 +2,8 @@ import numpy as np
 from attrs import frozen
 from cirq_ft import TComplexity
 
+from cirq_qubitization import Bloq, FancyRegister, FancyRegisters, Side
 from cirq_qubitization.bloq_algos.arithmetic import GreaterThan
-from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
 
 @frozen

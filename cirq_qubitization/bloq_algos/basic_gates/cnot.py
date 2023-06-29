@@ -6,11 +6,8 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization import Bloq, FancyRegisters, Soquet, SoquetT
 from cirq_qubitization.quantum_graph.musical_score import Circle, ModPlus, WireSymbol
-from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 if TYPE_CHECKING:
     import cirq

@@ -1,7 +1,7 @@
 import cirq
 import pytest
 
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from cirq_qubitization import FancyRegister, FancyRegisters, Side
 
 
 def test_register():

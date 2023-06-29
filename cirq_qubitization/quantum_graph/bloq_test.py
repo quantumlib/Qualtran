@@ -6,11 +6,9 @@ import pytest
 from attrs import frozen
 from cirq_ft import TComplexity
 
+from cirq_qubitization import Bloq, CompositeBloq, FancyRegisters, Side
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
 
 
 @frozen
