@@ -3,8 +3,11 @@
 Reference
 =========
 
+This section of the docs provides an API reference for all symbols
+in `cirq_qubitization.quantum_graph <./cirq_qubitization/quantum_graph.html>`_
+
 .. toctree::
-    :maxdepth: 2
+    :hidden:
     :caption: Important classes
 
     cirq_qubitization/quantum_graph/bloq/Bloq.md
