@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package qualtran;
+
+message Register {
+  // A quantum register.
+  enum Side {
+    UNKNOWN = 0;
+    LEFT = 1;
+    RIGHT = 2;
+    THRU = 3;
+  }
+  string name = 1;
+  int32 bitsize = 2;
+  repeated int32 shape = 3;
+  Side side = 4;
+}
+
+message Registers {
+  // A collection of Registers.
+  repeated Register registers = 1;
+}

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package qualtran;
+
+message NDArray {
+  // A flattened numpy array. Let `a` be a numpy array. It should be serialized / deserialized as:
+  // >>> shape, dtype, data = a.shape, a.dtype, a.tobytes()
+  // >>> arr = np.ndarray(shape, dtype, data)
+  repeated int32 shape = 1;
+  string dtype = 2;
+  bytes data = 3;
+}
+
+message IntOrSympy {
+  oneof val {
+    int32 int_val = 1;
+    string sympy_expr = 2;
+  }
+}
+
+message BloqArg {
+  string name = 1;
+  oneof val {
+    int64 int_val = 2;
+    double float_val = 3;
+    string string_val = 4;
+    // Sympy expression generated using str(expr).
+    string sympy_expr = 5;
+    // N-dimensional numpy array stored as bytes.
+    NDArray ndarray = 6;
+  }
+}
+
