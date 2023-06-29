@@ -35,7 +35,7 @@ class FancyRegister:
 
     This sets a bloq's "function signature": its input and output types.
 
-    Args:
+    Attributes:
         name: The string name of the register
         bitsize: The number of (qu)bits in the register.
         wireshape: A tuple of integer dimensions to declare a multidimensional register. The

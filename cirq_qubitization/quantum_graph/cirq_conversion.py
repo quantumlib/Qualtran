@@ -263,10 +263,12 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
 
     @property
     def bloq(self) -> Bloq:
+        """The bloq we're wrapping."""
         return self._bloq
 
     @property
     def registers(self) -> LegacyRegisters:
+        """`cirq_ft.GateWithRegisters` registers."""
         return self._legacy_regs
 
     @staticmethod
