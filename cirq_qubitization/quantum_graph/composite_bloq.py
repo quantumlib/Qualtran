@@ -1,3 +1,4 @@
+import itertools
 from functools import cached_property
 from typing import (
     Callable,
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
+SoquetInT = Union[Soquet, NDArray[Soquet], Sequence[Soquet]]
 
 
 class CompositeBloq(Bloq):
@@ -102,7 +104,7 @@ class CompositeBloq(Bloq):
         return cirq.CircuitOperation(circuit), out_quregs
 
     def to_cirq_circuit(
-        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: Optional['cirq.QubitManager'] = None, **cirq_quregs: 'CirqQuregInT'
     ) -> Tuple['cirq.FrozenCircuit', Dict[str, 'CirqQuregT']]:
         """Convert this CompositeBloq to a `cirq.Circuit`.
 
@@ -465,11 +467,230 @@ def _cxn_to_soq_dict(
     return soqdict
 
 
-class BloqBuilderError(ValueError):
-    """A value error raised during composite bloq building."""
+def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT]:
+    """Get instantiated dangling soquets from a `FancyRegisters`.
+
+    Args:
+        regs: The registers
+        right: If True, return soquets corresponding to right registers; otherwise left.
+
+    Returns:
+        all_soqs: A mapping from register name to a Soquet or Soquets. For multi-dimensional
+            registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
+            registers, the value will be a `Soquet` object.
+    """
+
+    if right:
+        regs = regs.rights()
+        dang = RightDangle
+    else:
+        regs = regs.lefts()
+        dang = LeftDangle
+
+    all_soqs: Dict[str, SoquetT] = {}
+    soqs: SoquetT
+    for reg in regs:
+        all_soqs[reg.name] = _reg_to_soq(dang, reg)
+    return all_soqs
 
 
-class DidNotFlattenAnythingError(BloqBuilderError):
+def _flatten_soquet_collection(vals: Iterable[SoquetT]) -> List[Soquet]:
+    """Flatten SoquetT into a flat list of Soquet.
+
+    SoquetT is either a unit Soquet or an ndarray thereof.
+    """
+    soqvals = []
+    for soq_or_arr in vals:
+        if isinstance(soq_or_arr, Soquet):
+            soqvals.append(soq_or_arr)
+        else:
+            soqvals.extend(soq_or_arr.reshape(-1))
+    return soqvals
+
+
+def _get_flat_dangling_soqs(registers: FancyRegisters, right: bool) -> List[Soquet]:
+    """Flatten out the values of the soquet dictionaries from `_get_dangling_soquets`."""
+    soqdict = _get_dangling_soquets(registers, right=right)
+    return _flatten_soquet_collection(soqdict.values())
+
+
+class BloqError(ValueError):
+    """A value error raised when CompositeBloq conditions are violated.
+
+    This error is raised during bloq building using `CompositeBloqBuilder`, which checks
+    for the validity of registers and connections during the building process. This error is
+    also raised by the validity assertion functions provided in this module.
+    """
+
+
+def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
+    """Check that the registers following decomposition match those of the original bloq.
+
+    This is a strict condition of the `decompose_bloq()` protocol. A decomposition is only
+    valid if it takes exactly the same inputs and outputs.
+
+    This returns the decomposed bloq for further checking.
+    """
+    cbloq = bloq.decompose_bloq()
+
+    if bloq.registers != cbloq.registers:
+        err = "Parent registers do not match registers"
+        for reg, dreg in itertools.zip_longest(bloq.registers, cbloq.registers):
+            if reg != dreg:
+                raise BloqError(f'{err}: {reg} != {dreg}')
+
+        raise BloqError(f'{err}: {bloq}')
+
+    return cbloq
+
+
+def assert_registers_match_dangling(cbloq: CompositeBloq):
+    """Check that connections to LeftDangle and RightDangle match the declared registers.
+
+    All Soquets must be consumed exactly once by a subsequent subbloq or connected explicitly
+    to either `LeftDangle` or `RightDangle` to indicate the soquet's status as an input
+    or output, respectively.
+    """
+    lefts = frozenset(_get_flat_dangling_soqs(cbloq.registers, right=False))
+    seen_lefts = set()
+    rights = frozenset(_get_flat_dangling_soqs(cbloq.registers, right=True))
+    seen_rights = set()
+
+    for cxn in cbloq.connections:
+        if isinstance(cxn.left.binst, DanglingT):
+            if cxn.left.binst is not LeftDangle:
+                raise BloqError(
+                    f"The left side of a connection is connected to a "
+                    f"dangling type other than LeftDangle: {cxn}"
+                )
+
+            # cxn.left is LeftDangle
+            if cxn.left not in lefts:
+                raise BloqError(f"{cxn}'s LeftDangle does not match the registers of the bloq.")
+            if cxn.left in seen_lefts:
+                raise BloqError(f"{cxn}'s LeftDangle was already connected to something else!")
+
+            seen_lefts.add(cxn.left)
+
+        if isinstance(cxn.right.binst, DanglingT):
+            if cxn.right.binst is not RightDangle:
+                raise BloqError(
+                    f"The right side of a connection is connected to a "
+                    f"dangling type other than RightDangle: {cxn}"
+                )
+
+            # cxn.right is RightDangle
+            if cxn.right not in rights:
+                raise BloqError(f"{cxn}'s RightDangle does not match the registers of the bloq.")
+            if cxn.right in seen_rights:
+                raise BloqError(f"{cxn}'s RightDangle was already connected to something else!")
+
+            seen_rights.add(cxn.right)
+
+
+def assert_connections_compatible(cbloq: CompositeBloq):
+    """Check that all connections are between compatible registers.
+
+    We check that register bitsize are equal and that LEFT and RIGHT registers are only
+    used as such.
+    """
+    for cxn in cbloq.connections:
+        lr = cxn.left.reg
+        rr = cxn.right.reg
+
+        if lr.bitsize != rr.bitsize:
+            raise BloqError(f"{cxn}'s bitsizes are incompatible: {lr} -> {rr}")
+
+        # Check the left side of the connection relative to the `Register.side`.
+        if cxn.left.binst is LeftDangle:
+            lr_side_should_be = Side.LEFT
+        else:
+            # internal connection -- left side should be output from a RIGHT register
+            lr_side_should_be = Side.RIGHT
+
+        if not (lr.side & lr_side_should_be):
+            raise BloqError(f"{cxn}'s left side is associated with a register with side {lr.side}")
+
+        # And the right side
+        if cxn.right.binst is RightDangle:
+            rr_side_should_be = Side.RIGHT
+        else:
+            # internal connection -- right side should input into a LEFT register
+            rr_side_should_be = Side.LEFT
+        if not (rr.side & rr_side_should_be):
+            raise BloqError(f"{cxn}'s right side is associated with a register with side {rr.side}")
+
+
+def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
+    """Check that all soquet's registers make sense.
+
+    We check that any indexed soquets fit within the bounds of the register and that the
+    register actually exists on the bloq.
+    """
+    for soq in cbloq.all_soquets:
+        reg = soq.reg
+
+        if len(soq.idx) != len(reg.wireshape):
+            raise BloqError(f"{soq} has an idx of the wrong shape for {reg}")
+
+        for soq_i, reg_max in zip(soq.idx, reg.wireshape):
+            if soq_i >= reg_max:
+                raise BloqError(f"{soq}'s index exceeds the bounds provided by {reg}'s wireshape.")
+
+        if isinstance(soq.binst, DanglingT):
+            continue
+
+        if soq.reg not in soq.binst.bloq.registers:
+            raise BloqError(f"{soq}'s register doesn't exist on its bloq {soq.binst.bloq}")
+
+
+def assert_soquets_used_exactly_once(cbloq: CompositeBloq):
+    """Check that all soquets are used once and only once.
+
+    Each bloq's register produces prod(reg.wireshape) soquets which must be consumed
+    once and only once.
+    """
+    produced = set()
+    consumed = set()
+    for cxn in cbloq.connections:
+        if cxn.left in produced:
+            raise BloqError(f"{cxn}'s left side had already been produced by a different bloq.")
+        produced.add(cxn.left)
+
+        if cxn.right in consumed:
+            raise BloqError(f"{cxn}'s right side had already been consumed by a different bloq")
+        consumed.add(cxn.right)
+
+    diff1 = produced - cbloq.all_soquets
+    if diff1:
+        raise BloqError(f"Some soquets were not consumed: {diff1}")
+    diff2 = consumed - cbloq.all_soquets
+    if diff2:
+        raise BloqError(f"Some soquets were not produced: {diff2}")
+
+
+def assert_valid_cbloq(cbloq: CompositeBloq):
+    """Perform all composite-bloq validity assertions."""
+    assert_registers_match_dangling(cbloq)
+    assert_connections_compatible(cbloq)
+    assert_soquets_belong_to_registers(cbloq)
+    assert_soquets_used_exactly_once(cbloq)
+
+
+def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
+    """Check the validity of a bloq decomposition.
+
+    Importantly, this does not do any correctness checking -- for that you likely
+    need to use the simulation utilities provided by the library.
+
+    This returns the decomposed, composite bloq on which you can do further testing.
+    """
+    cbloq = assert_registers_match_parent(bloq)
+    assert_valid_cbloq(cbloq)
+    return cbloq
+
+
+class DidNotFlattenAnythingError(ValueError):
     """An exception raised if `flatten_once()` did not find anything to flatten."""
 
 
@@ -549,7 +770,7 @@ def _process_soquets(
             # this also supports length-zero indexing natively, which is good too.
             in_soq = np.asarray(in_soqs[reg.name])
         except KeyError:
-            raise BloqBuilderError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
+            raise BloqError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
 
         del in_soqs[reg.name]  # so we can check for surplus arguments.
 
@@ -559,7 +780,7 @@ def _process_soquets(
             func(idxed_soq, reg, li)
 
     if in_soqs:
-        raise BloqBuilderError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
+        raise BloqError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
 
 
 def map_soqs(
@@ -633,7 +854,7 @@ class CompositeBloqBuilder:
         all registers ahead-of-time.
     """
 
-    def __init__(self, add_registers_allowed=True):
+    def __init__(self, add_registers_allowed: bool = True):
         # To be appended to:
         self._cxns: List[Connection] = []
         self._regs: List[FancyRegister] = []
@@ -736,13 +957,13 @@ class CompositeBloqBuilder:
             self._available.remove(idxed_soq)
         except KeyError:
             bloq = binst if isinstance(binst, DanglingT) else binst.bloq
-            raise BloqBuilderError(
+            raise BloqError(
                 f"{idxed_soq} is not an available Soquet for `{bloq}.{reg.name}`."
             ) from None
         cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
         self._cxns.append(cxn)
 
-    def add(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
+    def add(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
 
         Args:
@@ -761,7 +982,7 @@ class CompositeBloqBuilder:
         binst = BloqInstance(bloq, i=self._new_binst_i())
         return self._add_binst(binst, in_soqs=in_soqs)
 
-    def _add_binst(self, binst: BloqInstance, in_soqs: Dict[str, SoquetT]) -> Tuple[SoquetT, ...]:
+    def _add_binst(self, binst: BloqInstance, in_soqs: Dict[str, SoquetInT]) -> Tuple[SoquetT, ...]:
         """Add a bloq instance.
 
         Warning! Do not use this function externally! Untold bad things will happen if
@@ -781,7 +1002,7 @@ class CompositeBloqBuilder:
         )
         return out_soqs
 
-    def add_from(self, bloq: Bloq, **in_soqs: SoquetT) -> Tuple[SoquetT, ...]:
+    def add_from(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add all the sub-bloqs from `bloq` to the composite bloq under construction.
 
         Args:
@@ -873,7 +1094,7 @@ class CompositeBloqBuilder:
             registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
         )
         if self._available:
-            raise BloqBuilderError(
+            raise BloqError(
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
@@ -893,7 +1114,7 @@ class CompositeBloqBuilder:
 
         self.add(Free(n=soq.reg.bitsize), free=soq)
 
-    def split(self, soq: Soquet) -> SoquetT:
+    def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""
         from cirq_qubitization.quantum_graph.util_bloqs import Split
 

@@ -1,5 +1,5 @@
 import itertools
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import quimb.tensor as qtn
 from numpy.typing import NDArray
@@ -7,7 +7,8 @@ from numpy.typing import NDArray
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _cxn_to_soq_dict,
-    _reg_to_soq,
+    _flatten_soquet_collection,
+    _get_flat_dangling_soqs,
     CompositeBloq,
     SoquetT,
 )
@@ -16,39 +17,8 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
     DanglingT,
-    LeftDangle,
-    RightDangle,
     Soquet,
 )
-
-
-def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT]:
-    """Get instantiated dangling soquets from a `FancyRegisters`.
-
-    These are the external indices in a tensor network representation.
-
-    Args:
-        regs: The registers
-        right: If True, return soquets corresponding to right registers; otherwise left.
-
-    Returns:
-        all_soqs: A mapping from register name to a Soquet or Soquets. For multi-dimensional
-            registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
-            registers, the value will be a `Soquet` object.
-    """
-
-    if right:
-        regs = regs.rights()
-        dang = RightDangle
-    else:
-        regs = regs.lefts()
-        dang = LeftDangle
-
-    all_soqs: Dict[str, SoquetT] = {}
-    soqs: SoquetT
-    for reg in regs:
-        all_soqs[reg.name] = _reg_to_soq(dang, reg)
-    return all_soqs
 
 
 def cbloq_to_quimb(
@@ -115,26 +85,6 @@ def cbloq_to_quimb(
             fix[tuple([binst])] = pos[binst]
 
     return tn, fix
-
-
-def _flatten_soquet_collection(vals: Iterable[SoquetT]) -> List[Soquet]:
-    """Flatten SoquetT into a flat list of Soquet.
-
-    SoquetT is either a unit Soquet or an ndarray thereof.
-    """
-    soqvals = []
-    for soq_or_arr in vals:
-        if isinstance(soq_or_arr, Soquet):
-            soqvals.append(soq_or_arr)
-        else:
-            soqvals.extend(soq_or_arr.reshape(-1))
-    return soqvals
-
-
-def _get_flat_dangling_soqs(registers: FancyRegisters, right: bool) -> List[Soquet]:
-    """Flatten out the values of the soquet dictionaries from `_get_dangling_soquets`."""
-    soqdict = _get_dangling_soquets(registers, right=right)
-    return _flatten_soquet_collection(soqdict.values())
 
 
 def get_right_and_left_inds(registers: FancyRegisters) -> List[List[Soquet]]:

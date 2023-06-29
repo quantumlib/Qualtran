@@ -11,13 +11,12 @@ from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
 if TYPE_CHECKING:
-
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
+    from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
 
 
 def _swap_matrix() -> NDArray[np.complex128]:

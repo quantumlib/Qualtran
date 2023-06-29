@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, Tuple, Union
+from typing import Dict, Iterable, Sequence, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -19,7 +19,7 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 ClassicalValT = Union[int, NDArray[int]]
 
 
-def bits_to_ints(bitstrings: NDArray[np.uint]) -> NDArray[np.uint]:
+def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
     """Returns the integer specified by the given big-endian bitstrings.
 
     Args:
@@ -34,7 +34,7 @@ def bits_to_ints(bitstrings: NDArray[np.uint]) -> NDArray[np.uint]:
     return np.sum(basis * bitstrings, axis=1)
 
 
-def ints_to_bits(x: NDArray[np.uint], w: int) -> NDArray[np.uint8]:
+def ints_to_bits(x: Union[int, Sequence[int], NDArray[np.uint]], w: int) -> NDArray[np.uint8]:
     """Returns the big-endian bitstrings specified by the given integers.
 
     Args:

@@ -5,8 +5,8 @@ import cirq
 import pytest
 from attrs import frozen
 from cirq_ft import TComplexity
-from numpy.typing import NDArray
 
+from cirq_qubitization.jupyter_tools import execute_notebook
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
@@ -20,7 +20,7 @@ class TestCNOT(Bloq):
         return FancyRegisters.build(control=1, target=1)
 
     def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: Dict[str, 'NDArray[cirq.Qid]']
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         (control,) = cirq_quregs['control']
         (target,) = cirq_quregs['target']
@@ -61,3 +61,7 @@ def test_as_composite_bloq():
 
 def test_t_complexity():
     assert TestCNOT().t_complexity() == TComplexity(clifford=1)
+
+
+def test_notebook():
+    execute_notebook('Bloqs-Tutorial')
