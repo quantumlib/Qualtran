@@ -1,0 +1,4 @@
+sphinx~=5.3
+pydata-sphinx-theme
+myst-nb
+tensorflow-docs

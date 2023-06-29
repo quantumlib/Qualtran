@@ -1,3 +1,5 @@
+"""Functionality for the `Bloq.call_classically(...)` protocol."""
+
 from typing import Dict, Iterable, Sequence, Tuple, Union
 
 import networkx as nx
