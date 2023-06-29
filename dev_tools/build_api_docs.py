@@ -271,15 +271,33 @@ def fixup_suffix(content: str) -> str:
     return suffix_re.sub(_replace_internal_suffixes, content)
 
 
+def fixup_all_symbols_page(path: Path) -> bool:
+    """Remove the 'all symbols' page.
+
+    The relative links are all relative to the wrong location, and this information
+    is redundant with our table-of-contents.
+
+    Returns `True` if we found the all symbols page and no further fixups should be applied.
+    """
+    if path.name == 'all_symbols.md':
+        path.unlink()
+        return True
+    return False
+
+
 def apply_fixups():
     """For each generated markdown file, apply fixups.
 
-    Currently, this is one fixup, namely `fixup_suffix`.
+    - `fixup_all_symbols_page`
+    - `fixup_suffix`
     """
     reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
     page_paths = output_dir.glob('cirq_qubitization/**/*.md')
     for path in page_paths:
+        if fixup_all_symbols_page(path):
+            continue
+
         with path.open('r') as f:
             content = f.read()
 
