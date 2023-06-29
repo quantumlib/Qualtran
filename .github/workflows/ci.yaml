@@ -36,7 +36,7 @@ jobs:
           pip install -r dev_tools/requirements/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          python dev_tools/render_notebook_html.py --all
+          python dev_tools/execute_notebooks.py
 
   format:
     runs-on: ubuntu-latest
