@@ -1,3 +1,5 @@
+"""Bloqs for virtual operations and register reshaping."""
+
 from functools import cached_property
 from typing import Dict, Tuple, TYPE_CHECKING, Union
 
@@ -25,7 +27,7 @@ if TYPE_CHECKING:
 class Split(Bloq):
     """Split a bitsize `n` register into a length-`n` array-register.
 
-    Args:
+    Attributes:
         n: The bitsize of the left register.
     """
 
@@ -80,7 +82,7 @@ class Split(Bloq):
 class Join(Bloq):
     """Join a length-`n` array-register into one register of bitsize `n`.
 
-    Args:
+    Attributes:
         n: The bitsize of the right register.
     """
 
@@ -133,7 +135,7 @@ class Join(Bloq):
 class Allocate(Bloq):
     """Allocate an `n` bit register.
 
-    Args:
+    Attributes:
           n: the bitsize of the allocated register.
     """
 
@@ -151,7 +153,7 @@ class Allocate(Bloq):
 class Free(Bloq):
     """Free (i.e. de-allocate) an `n` bit register.
 
-    Args:
+    Attributes:
         n: the bitsize of the register to be freed.
     """
 

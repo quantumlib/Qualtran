@@ -36,7 +36,7 @@ class RegPosition:
     where each bloq is in its own column and a topological one where bloqs that are
     topologically independent can share a time slice.
 
-    Args:
+    Attributes:
         y: The y (vertical) position as an integer.
         seq_x: The x (horizontal) position where each bloq is enumerated in sequence.
         topo_gen: The index of the topological generation to which the bloq belongs.
@@ -627,6 +627,8 @@ def draw_musical_score(msd: MusicalScoreData):
 
 
 class MusicalScoreEncoder(json.JSONEncoder):
+    """An encoder that handles `MusicalScoreData` classes and those of its contents."""
+
     def default(self, o: Any) -> Any:
         if isinstance(o, (SoqData, HLine, VLine, MusicalScoreData, WireSymbol, RegPosition)):
             return o.json_dict()
