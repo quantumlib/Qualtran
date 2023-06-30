@@ -9,8 +9,10 @@ import sympy
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
 
+BloqCountT = Tuple[Union[int, sympy.Expr], Bloq]
 
-def big_O(expr):
+
+def big_O(expr) -> sympy.Order:
     """Helper to deal with CS-style big-O notation that takes the infinite limit by default."""
     if isinstance(expr, (int, float)):
         return sympy.Order(expr)
@@ -38,7 +40,7 @@ class SympySymbolAllocator:
 
 def get_cbloq_bloq_counts(
     cbloq: CompositeBloq, generalizer: Callable[[Bloq], Optional[Bloq]] = None
-) -> List[Tuple[int, Bloq]]:
+) -> List[BloqCountT]:
     """Count all the subbloqs in a composite bloq.
 
     `CompositeBloq.bloq_counts` calls this with no generalizer.
@@ -97,7 +99,7 @@ def _descend_counts(
         #              leaf node.
         return {parent: 1}
 
-    sigma: Dict[Bloq, int] = defaultdict(lambda: 0)
+    sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
     for n, child in count_decomp:
         child = generalizer(child)
         if child is None:

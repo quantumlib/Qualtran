@@ -36,8 +36,10 @@ from cirq_qubitization.quantum_graph.quantum_graph import (
 if TYPE_CHECKING:
     import cirq
 
+    from cirq_qubitization.quantum_graph.bloq_counts import BloqCountT
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
+
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
 SoquetInT = Union[Soquet, NDArray[Soquet], Sequence[Soquet]]
@@ -179,7 +181,7 @@ class CompositeBloq(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 
-    def bloq_counts(self, _) -> List[Tuple[int, Bloq]]:
+    def bloq_counts(self, _) -> List['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""
         from cirq_qubitization.quantum_graph.bloq_counts import get_cbloq_bloq_counts
 

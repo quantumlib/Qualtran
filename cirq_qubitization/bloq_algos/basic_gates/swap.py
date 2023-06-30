@@ -10,7 +10,7 @@ from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
+from cirq_qubitization.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
 from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 
 if TYPE_CHECKING:
@@ -171,7 +171,7 @@ class CSwap(Bloq):
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[Tuple[int, 'Bloq']]:
+    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[BloqCountT]:
         return [(self.bitsize, TwoBitCSwap())]
 
     def on_classical_vals(
