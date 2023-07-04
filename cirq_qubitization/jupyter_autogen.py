@@ -28,14 +28,14 @@ Usage as a script:
     cd cirq_qubitization/ && python jupyter_autogen.py
 """
 
-import dataclasses
 import inspect
 import re
 from pathlib import Path
 from types import ModuleType
-from typing import Callable, Dict, List, Tuple, Type, Union
+from typing import Callable, Dict, List, Optional, Tuple, Type, Union
 
 import nbformat
+from attrs import frozen, mutable
 from cirq_ft import GateWithRegisters
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
@@ -45,6 +45,9 @@ import cirq_qubitization.bloq_algos.basic_gates.cnot_test
 import cirq_qubitization.bloq_algos.basic_gates.rotation_test
 import cirq_qubitization.bloq_algos.basic_gates.swap_test
 import cirq_qubitization.bloq_algos.basic_gates.x_basis_test
+import cirq_qubitization.bloq_algos.factoring.mod_exp
+import cirq_qubitization.bloq_algos.factoring.mod_exp_test
+import cirq_qubitization.bloq_algos.factoring.mod_mul_test
 import cirq_qubitization.bloq_algos.sorting_test
 import cirq_qubitization.bloq_algos.swap_network
 import cirq_qubitization.bloq_algos.swap_network_test
@@ -52,7 +55,7 @@ import cirq_qubitization.quantum_graph
 from cirq_qubitization.quantum_graph.bloq import Bloq
 
 
-@dataclasses.dataclass
+@frozen
 class GateNbSpec:
     """Notebook specification for a particular Gate.
 
@@ -77,7 +80,7 @@ class GateNbSpec:
         return gate_obj.__class__
 
 
-@dataclasses.dataclass
+@frozen
 class BloqNbSpec:
     """Notebook specification for a particular Bloq.
 
@@ -99,7 +102,7 @@ class BloqNbSpec:
         return gate_obj.__class__
 
 
-@dataclasses.dataclass
+@frozen(kw_only=True)
 class NotebookSpec:
     """Specification for rendering a jupyter notebook for a given module.
 
@@ -114,10 +117,13 @@ class NotebookSpec:
     module: ModuleType
     gate_specs: List[Union[GateNbSpec, BloqNbSpec]]
     directory: str = '.'
+    _path_stem: Optional[str] = None
 
     @property
-    def basename(self):
-        return self.module.__name__.split('.')[-1]
+    def path_stem(self):
+        if self._path_stem is None:
+            return self.module.__name__.split('.')[-1]
+        return self._path_stem
 
 
 NOTEBOOK_SPECS: List[NotebookSpec] = [
@@ -170,6 +176,16 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(cirq_qubitization.bloq_algos.sorting_test._make_bitonic_sort),
         ],
         directory='./bloq_algos',
+    ),
+    NotebookSpec(
+        title='Modular arithmetic',
+        module=cirq_qubitization.bloq_algos.factoring,
+        path_stem='ref-factoring',
+        gate_specs=[
+            BloqNbSpec(cirq_qubitization.bloq_algos.factoring.mod_exp_test._make_modexp),
+            BloqNbSpec(cirq_qubitization.bloq_algos.factoring.mod_mul_test._make_modmul),
+        ],
+        directory='./bloq_algos/factoring',
     ),
 ]
 
@@ -327,7 +343,7 @@ def _code_cell(source: str, cqid: str) -> nbformat.NotebookNode:
     return nbformat.v4.new_code_cell(source, metadata={_K_CQ_AUTOGEN: cqid})
 
 
-@dataclasses.dataclass
+@frozen(kw_only=True)
 class _GateCells:
     """Rendered cells for a gate."""
 
@@ -335,7 +351,7 @@ class _GateCells:
     py: nbformat.NotebookNode
 
 
-@dataclasses.dataclass
+@mutable
 class NbCells:
     """Rendered notebook cells.
 
@@ -398,19 +414,19 @@ def render_notebook_cells(nbspec: NotebookSpec) -> NbCells:
 
 
 def _init_notebook(
-    basename: str, overwrite=False, directory: str = '.'
+    path_stem: str, overwrite=False, directory: str = '.'
 ) -> Tuple[nbformat.NotebookNode, Path]:
     """Initialize a jupyter notebook.
 
     If one already exists: load it in. Otherwise, create a new one.
 
     Args:
-        basename: The extensionless filename to find the notebook if it exists.
+        path_stem: The extensionless filename to find the notebook if it exists.
         overwrite: If set, remove any existing notebook and start from scratch.
         directory: The directory in which we look for the filename.
     """
 
-    nb_path = Path(f'{directory}/{basename}.ipynb')
+    nb_path = Path(f'{directory}') / f'{path_stem}.ipynb'
 
     if overwrite:
         nb_path.unlink(missing_ok=True)
@@ -432,7 +448,7 @@ def _init_notebook(
 def render_notebooks():
     for nbspec in NOTEBOOK_SPECS:
         # 1. get a notebook (existing or empty)
-        nb, nb_path = _init_notebook(basename=nbspec.basename, directory=nbspec.directory)
+        nb, nb_path = _init_notebook(path_stem=nbspec.path_stem, directory=nbspec.directory)
 
         # 2. Render all the cells we can render
         cells = render_notebook_cells(nbspec)
@@ -444,7 +460,7 @@ def render_notebooks():
             cell = nb.cells[i]
             if _K_CQ_AUTOGEN in cell.metadata:
                 cqid: str = cell.metadata[_K_CQ_AUTOGEN]
-                print(f"[{nbspec.basename}] Replacing {cqid} cell.")
+                print(f"[{nbspec.path_stem}] Replacing {cqid} cell.")
                 new_cell = cells.get_cell_from_cqid(cqid)
                 new_cell.id = cell.id  # keep id from existing cell
                 nb.cells[i] = new_cell
@@ -452,7 +468,7 @@ def render_notebooks():
 
         # 4. Any rendered cells that weren't already there, append.
         for cqid in cqids_to_render:
-            print(f"[{nbspec.basename}] Adding {cqid}")
+            print(f"[{nbspec.path_stem}] Adding {cqid}")
             new_cell = cells.get_cell_from_cqid(cqid)
             nb.cells.append(new_cell)
 

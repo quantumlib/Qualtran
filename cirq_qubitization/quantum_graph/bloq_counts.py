@@ -1,7 +1,7 @@
 """Functionality for the `Bloq.bloq_counts()` protocol."""
 
 from collections import defaultdict
-from typing import Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import IPython.display
 import networkx as nx
@@ -11,8 +11,10 @@ import sympy
 from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq
 
+BloqCountT = Tuple[Union[int, sympy.Expr], Bloq]
 
-def big_O(expr):
+
+def big_O(expr) -> sympy.Order:
     """Helper to deal with CS-style big-O notation that takes the infinite limit by default."""
     if isinstance(expr, (int, float)):
         return sympy.Order(expr)
@@ -38,16 +40,31 @@ class SympySymbolAllocator:
         return s
 
 
-def _cbloq_bloq_counts(cbloq: CompositeBloq):
-    """Implementation of `CompositeBloq.bloq_counts`.
+def get_cbloq_bloq_counts(
+    cbloq: CompositeBloq, generalizer: Callable[[Bloq], Optional[Bloq]] = None
+) -> List[BloqCountT]:
+    """Count all the subbloqs in a composite bloq.
 
-    This just counts all the cbloq's subbloqs.
+    `CompositeBloq.bloq_counts` calls this with no generalizer.
+
+    Args:
+        cbloq: The composite bloq.
+        generalizer: A function that replaces bloq attributes that do not affect resource costs
+            with sympy placeholders.
     """
+    if generalizer is None:
+        generalizer = lambda b: b
+
     counts: Dict[Bloq, int] = defaultdict(lambda: 0)
     for binst in cbloq.bloq_instances:
-        counts[binst.bloq] += 1
+        bloq = binst.bloq
+        bloq = generalizer(bloq)
+        if bloq is None:
+            continue
 
-    return {(n, bloq) for bloq, n in counts.items()}
+        counts[bloq] += 1
+
+    return [(n, bloq) for bloq, n in counts.items()]
 
 
 def _descend_counts(
@@ -84,7 +101,7 @@ def _descend_counts(
         #              leaf node.
         return {parent: 1}
 
-    sigma: Dict[Bloq, int] = defaultdict(lambda: 0)
+    sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
     for n, child in count_decomp:
         child = generalizer(child)
         if child is None:
