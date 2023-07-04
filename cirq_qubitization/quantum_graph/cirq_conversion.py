@@ -1,3 +1,5 @@
+"""Functionality for the `Bloq.as_cirq_op(...)` protocol"""
+
 from functools import cached_property
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -261,10 +263,12 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
 
     @property
     def bloq(self) -> Bloq:
+        """The bloq we're wrapping."""
         return self._bloq
 
     @property
     def registers(self) -> LegacyRegisters:
+        """`cirq_ft.GateWithRegisters` registers."""
         return self._legacy_regs
 
     @staticmethod

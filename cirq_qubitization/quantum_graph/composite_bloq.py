@@ -1,3 +1,5 @@
+"""Classes for building and manipulating `CompositeBloq`."""
+
 import itertools
 from functools import cached_property
 from typing import (
@@ -42,11 +44,30 @@ if TYPE_CHECKING:
 
 
 SoquetT = Union[Soquet, NDArray[Soquet]]
+"""A `Soquet` or array of soquets."""
+
 SoquetInT = Union[Soquet, NDArray[Soquet], Sequence[Soquet]]
+"""A soquet or array-like of soquets.
+
+This type alias is used for input argument to parts of the library that are more
+permissive about the types they accept. Under-the-hood, such functions will
+canonicalize and return `SoquetT`.
+"""
 
 
 class CompositeBloq(Bloq):
-    """A container type implementing the `Bloq` interface.
+    """A bloq defined by a collection of sub-bloqs and dataflows between them
+
+    CompositeBloq represents a quantum subroutine as a dataflow compute graph. The
+    specific native representation is a list of `Connection` objects (i.e. a list of
+    graph edges). This container should be considered immutable. Additional views
+    of the graph are provided by methods and properties.
+
+    Users should generally use `CompositeBloqBuilder` to construct a composite bloq either
+    directly or by overriding `Bloq.build_composite_bloq`.
+
+    Throughout this library we will often use the variable name `cbloq` to refer to a
+    composite bloq.
 
     Args:
         cxns: A sequence of `Connection` encoding the quantum compute graph.
@@ -60,15 +81,17 @@ class CompositeBloq(Bloq):
 
     @property
     def registers(self) -> FancyRegisters:
+        """The registers defining the inputs and outputs of this Bloq."""
         return self._registers
 
     @property
     def connections(self) -> Tuple[Connection, ...]:
+        """A sequence of `Connection` encoding the quantum computer graph."""
         return self._cxns
 
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
-        """The set of BloqInstances making up the nodes of the graph."""
+        """The set of `BloqInstance`s making up the nodes of the graph."""
         return {
             soq.binst
             for cxn in self._cxns
@@ -78,6 +101,7 @@ class CompositeBloq(Bloq):
 
     @cached_property
     def all_soquets(self) -> FrozenSet[Soquet]:
+        """A set of all `Soquet`s present in the compute graph."""
         soquets = {cxn.left for cxn in self._cxns}
         soquets |= {cxn.right for cxn in self._cxns}
         return frozenset(soquets)

@@ -1,3 +1,5 @@
+"""Functionality for the `Bloq.bloq_counts()` protocol."""
+
 from collections import defaultdict
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
