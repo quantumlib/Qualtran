@@ -1,11 +1,7 @@
 import pytest
 
 from qualtran.quantum_graph.composite_bloq import assert_valid_bloq_decomposition
-from qualtran.quantum_graph.composite_bloq_test import (
-    Atom,
-    TestParallelBloq,
-    TestSerialBloq,
-)
+from qualtran.quantum_graph.composite_bloq_test import Atom, TestParallelBloq, TestSerialBloq
 from qualtran.quantum_graph.meta_bloq import ControlledBloq
 
 

@@ -14,11 +14,7 @@ from qualtran.bloq_algos.basic_gates import (
     ZeroEffect,
     ZeroState,
 )
-from qualtran.bloq_algos.basic_gates.swap import (
-    _controlled_swap_matrix,
-    _swap_matrix,
-    CSwap,
-)
+from qualtran.bloq_algos.basic_gates.swap import _controlled_swap_matrix, _swap_matrix, CSwap
 from qualtran.quantum_graph.bloq_counts import get_cbloq_bloq_counts, SympySymbolAllocator
 from qualtran.quantum_graph.composite_bloq import assert_valid_bloq_decomposition
 from qualtran.quantum_graph.util_bloqs import Join, Split

@@ -15,12 +15,7 @@ from qualtran.quantum_graph.composite_bloq import (
     SoquetT,
 )
 from qualtran.quantum_graph.fancy_registers import FancyRegisters
-from qualtran.quantum_graph.quantum_graph import (
-    BloqInstance,
-    Connection,
-    DanglingT,
-    Soquet,
-)
+from qualtran.quantum_graph.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
 
 
 def cbloq_to_quimb(

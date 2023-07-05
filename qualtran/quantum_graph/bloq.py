@@ -9,13 +9,7 @@ if TYPE_CHECKING:
     from cirq_ft import TComplexity
     from numpy.typing import NDArray
 
-    from qualtran import (
-        CompositeBloq,
-        CompositeBloqBuilder,
-        FancyRegisters,
-        Soquet,
-        SoquetT,
-    )
+    from qualtran import CompositeBloq, CompositeBloqBuilder, FancyRegisters, Soquet, SoquetT
     from qualtran.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
     from qualtran.quantum_graph.cirq_conversion import CirqQuregT
     from qualtran.quantum_graph.classical_sim import ClassicalValT
@@ -222,9 +216,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         import quimb.tensor as qtn
 
-        from qualtran.quantum_graph.quimb_sim import (
-            _cbloq_as_contracted_tensor_data_and_inds,
-        )
+        from qualtran.quantum_graph.quimb_sim import _cbloq_as_contracted_tensor_data_and_inds
 
         cbloq = self.decompose_bloq()
         data, inds = _cbloq_as_contracted_tensor_data_and_inds(

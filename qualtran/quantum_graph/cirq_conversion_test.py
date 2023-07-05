@@ -8,11 +8,7 @@ from qualtran import Bloq, CompositeBloqBuilder, FancyRegisters, Side, Soquet, S
 from qualtran.bloq_algos.and_bloq import MultiAnd
 from qualtran.bloq_algos.basic_gates import XGate
 from qualtran.jupyter_tools import execute_notebook
-from qualtran.quantum_graph.cirq_conversion import (
-    cirq_circuit_to_cbloq,
-    CirqGateAsBloq,
-    CirqQuregT,
-)
+from qualtran.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq, CirqGateAsBloq, CirqQuregT
 
 
 def test_cirq_gate():

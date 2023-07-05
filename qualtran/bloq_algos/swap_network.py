@@ -7,14 +7,7 @@ from attrs import frozen
 from cirq_ft import MultiTargetCNOT, TComplexity
 from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    CompositeBloqBuilder,
-    FancyRegister,
-    FancyRegisters,
-    Soquet,
-    SoquetT,
-)
+from qualtran import Bloq, CompositeBloqBuilder, FancyRegister, FancyRegisters, Soquet, SoquetT
 
 if TYPE_CHECKING:
     from qualtran.quantum_graph.classical_sim import ClassicalValT
