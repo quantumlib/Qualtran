@@ -3,7 +3,7 @@ from typing import Type
 import numpy as np
 import pytest
 
-from qualtran import Bloq, CompositeBloqBuilder, Side, Soquet
+from qualtran import Bloq, BloqBuilder, Side, Soquet
 from qualtran.bloq_algos.basic_gates import XGate
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.classical_sim import _cbloq_call_classically
@@ -30,7 +30,7 @@ def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
 
 
 def test_util_bloqs():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     (qs1,) = bb.add(Allocate(10))
     assert isinstance(qs1, Soquet)
     (qs2,) = bb.add(Split(10), split=qs1)
@@ -42,7 +42,7 @@ def test_util_bloqs():
 
 
 def test_classical_sim():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     x = bb.allocate(4)
     xs = bb.split(x)
     xs_1_orig = xs[1]  # keep a copy for later

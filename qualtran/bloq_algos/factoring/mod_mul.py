@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Union
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegisters, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, FancyRegisters, Soquet, SoquetT
 from qualtran.bloq_algos.basic_gates import CSwap
 from qualtran.bloq_algos.factoring.mod_add import CtrlScaleModAdd
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
@@ -47,7 +47,7 @@ class CtrlModMul(Bloq):
         return CtrlScaleModAdd(k=k, bitsize=self.bitsize, mod=self.mod)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT'
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         k = self.k
         neg_k_inv = -pow(k, -1, mod=self.mod)

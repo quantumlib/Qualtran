@@ -7,7 +7,7 @@ from attrs import frozen
 from cirq_ft import MultiTargetCNOT, TComplexity
 from numpy.typing import NDArray
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegister, FancyRegisters, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Soquet, SoquetT
 
 if TYPE_CHECKING:
     from qualtran.quantum_graph.classical_sim import ClassicalValT
@@ -67,7 +67,7 @@ class CSwapApprox(Bloq):
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         from qualtran.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
 
@@ -120,7 +120,7 @@ class SwapWithZero(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', selection: Soquet, targets: NDArray[Soquet]
+        self, bb: 'BloqBuilder', selection: Soquet, targets: NDArray[Soquet]
     ) -> Dict[str, 'SoquetT']:
         cswap_n = CSwapApprox(self.target_bitsize)
         # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target

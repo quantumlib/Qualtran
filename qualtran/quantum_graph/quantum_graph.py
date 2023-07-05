@@ -69,7 +69,7 @@ class Soquet:
     """One half of a connection.
 
     Users should not construct these directly. They should be marshalled
-    by a `CompositeBloqBuilder`.
+    by a `BloqBuilder`.
 
     A `Soquet` acts as the node type in our quantum compute graph. It is a particular
     register (by name and optional index) on a particular `Bloq` instance.

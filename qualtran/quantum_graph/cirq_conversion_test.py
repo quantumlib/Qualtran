@@ -4,7 +4,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegisters, Side, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, FancyRegisters, Side, Soquet, SoquetT
 from qualtran.bloq_algos.and_bloq import MultiAnd
 from qualtran.bloq_algos.basic_gates import XGate
 from qualtran.jupyter_tools import execute_notebook
@@ -104,7 +104,7 @@ class SwapTest(Bloq):
         return FancyRegisters.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', *, x: Soquet, y: Soquet
+        self, bb: 'BloqBuilder', *, x: Soquet, y: Soquet
     ) -> Dict[str, SoquetT]:
         xs = bb.split(x)
         ys = bb.split(y)
@@ -151,7 +151,7 @@ def test_multi_and_allocates():
 
 
 def test_bloq_as_cirq_gate_left_register():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     q = bb.allocate(1)
     (q,) = bb.add(XGate(), q=q)
     bb.free(q)

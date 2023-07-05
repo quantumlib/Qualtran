@@ -63,7 +63,7 @@ class CompositeBloq(Bloq):
     graph edges). This container should be considered immutable. Additional views
     of the graph are provided by methods and properties.
 
-    Users should generally use `CompositeBloqBuilder` to construct a composite bloq either
+    Users should generally use `BloqBuilder` to construct a composite bloq either
     directly or by overriding `Bloq.build_composite_bloq`.
 
     Throughout this library we will often use the variable name `cbloq` to refer to a
@@ -241,7 +241,7 @@ class CompositeBloq(Bloq):
         use `map_soqs` to map this cbloq's soquets to the correct ones for the
         new bloq.
 
-        >>> bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+        >>> bb, _ = BloqBuilder.from_registers(self.registers)
         >>> soq_map: List[Tuple[SoquetT, SoquetT]] = []
         >>> for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
         >>>    in_soqs = map_soqs(in_soqs, soq_map)
@@ -282,7 +282,7 @@ class CompositeBloq(Bloq):
 
     def copy(self) -> 'CompositeBloq':
         """Create a copy of this composite bloq by re-building it."""
-        bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+        bb, _ = BloqBuilder.from_registers(self.registers)
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = map_soqs(in_soqs, soq_map)
@@ -314,7 +314,7 @@ class CompositeBloq(Bloq):
             DidNotFlattenAnythingError: If none of the bloq instances satisfied `pred`.
 
         """
-        bb, _ = CompositeBloqBuilder.from_registers(self.registers)
+        bb, _ = BloqBuilder.from_registers(self.registers)
 
         # We take particular care during flattening to preserve the `binst.i` of bloq instances
         # that are not flattened. We do this by initializing the bloq builder's `i` counter
@@ -543,7 +543,7 @@ def _get_flat_dangling_soqs(registers: FancyRegisters, right: bool) -> List[Soqu
 class BloqError(ValueError):
     """A value error raised when CompositeBloq conditions are violated.
 
-    This error is raised during bloq building using `CompositeBloqBuilder`, which checks
+    This error is raised during bloq building using `BloqBuilder`, which checks
     for the validity of registers and connections during the building process. This error is
     also raised by the validity assertion functions provided in this module.
     """
@@ -739,7 +739,7 @@ def _reg_to_soq(
         reg: The register
         available: By default, don't track the soquets. If a set is provided, we will add
             each individual, indexed soquet to it. This is used for bookkeeping
-            in `CompositeBloqBuilder`.
+            in `BloqBuilder`.
 
     Returns:
         A Soquet or Soquets. For multi-dimensional
@@ -857,7 +857,7 @@ def map_soqs(
     return {name: _map_soqs(soqs) for name, soqs in soqs.items()}
 
 
-class CompositeBloqBuilder:
+class BloqBuilder:
     """A builder class for constructing a `CompositeBloq`.
 
     Users may instantiate this class directly or use its methods by
@@ -946,7 +946,7 @@ class CompositeBloqBuilder:
 
     @classmethod
     def from_registers(cls, parent_regs: FancyRegisters, add_registers_allowed=False):
-        """Construct a CompositeBloqBuilder with pre-specified registers.
+        """Construct a BloqBuilder with pre-specified registers.
 
         This is safer if e.g. you're decomposing an existing Bloq and need the registers
         to match. This constructor is used by `Bloq.decompose_bloq()`.

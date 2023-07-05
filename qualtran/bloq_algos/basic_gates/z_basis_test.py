@@ -9,7 +9,7 @@ from qualtran.bloq_algos.basic_gates import (
     ZeroEffect,
     ZeroState,
 )
-from qualtran.quantum_graph.composite_bloq import CompositeBloqBuilder
+from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
 
 def test_zero_state():
@@ -80,7 +80,7 @@ def test_one_effect():
 
 @pytest.mark.parametrize('bit', [False, True])
 def test_zero_state_effect(bit):
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
 
     if bit:
         state = OneState()

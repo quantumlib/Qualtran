@@ -1,7 +1,7 @@
 import numpy as np
 
 from qualtran.bloq_algos.basic_gates import PlusEffect, PlusState
-from qualtran.quantum_graph.composite_bloq import CompositeBloqBuilder
+from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
 
 def _make_plus_state():
@@ -34,7 +34,7 @@ def test_plus_effect():
 
 
 def test_plus_state_effect():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
 
     (q0,) = bb.add(PlusState())
     bb.add(PlusEffect(), q=q0)

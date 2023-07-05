@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegisters, SoquetT
+from qualtran import Bloq, BloqBuilder, FancyRegisters, SoquetT
 from qualtran.bloq_algos.and_bloq import And, MultiAnd
 from qualtran.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.jupyter_tools import execute_notebook
@@ -37,7 +37,7 @@ def _iter_and_truth_table(cv1: int, cv2: int):
     eff = [ZeroEffect(), OneEffect()]
 
     for a, b in itertools.product([0, 1], repeat=2):
-        bb = CompositeBloqBuilder()
+        bb = BloqBuilder()
         (q_a,) = bb.add(state[a])
         (q_b,) = bb.add(state[b])
         (q_a, q_b), res = bb.add(And(cv1, cv2), ctrl=[q_a, q_b])
@@ -77,7 +77,7 @@ def test_bad_adjoint(cv1, cv2):
     and_ = And(cv1, cv2, adjoint=True)
 
     for a, b in itertools.product([0, 1], repeat=2):
-        bb = CompositeBloqBuilder()
+        bb = BloqBuilder()
         (q_a,) = bb.add(state[a])
         (q_b,) = bb.add(state[b])
         if (a == cv1) and (b == cv2):
@@ -95,7 +95,7 @@ def test_bad_adjoint(cv1, cv2):
 
 
 def test_inverse():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
     qs, trg = bb.add(And(), ctrl=[q0, q1])
@@ -118,7 +118,7 @@ def test_multi_truth_table():
 
     for cvs in all_cvs:
         for ctrl_string in ctrl_strings:
-            bb = CompositeBloqBuilder()
+            bb = BloqBuilder()
             ctrl_qs = [bb.add(state[c])[0] for c in ctrl_string]
 
             ctrl_qs, junk, res = bb.add_from(MultiAnd(cvs), ctrl=ctrl_qs)
@@ -169,7 +169,7 @@ class AndIdentity(Bloq):
         return FancyRegisters.build(q0=1, q1=1)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
+        self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         qs, trg = bb.add(And(), ctrl=[q0, q1])
         ((q0, q1),) = bb.add(And(adjoint=True), ctrl=qs, target=trg)

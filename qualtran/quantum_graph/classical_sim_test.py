@@ -6,7 +6,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegister, FancyRegisters, Side
+from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Side
 from qualtran.bloq_algos.basic_gates import CNOT
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.classical_sim import (
@@ -134,7 +134,7 @@ def test_cnot_assign_dict():
 
 
 def test_apply_classical_cbloq():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     x = bb.add_register(FancyRegister('x', 1, wireshape=(5,)))
     x, y = bb.add(ApplyClassicalTest(), x=x)
     y, z = bb.add(ApplyClassicalTest(), x=y)

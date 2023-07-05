@@ -9,7 +9,7 @@ from attrs import frozen
 from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegisters, SoquetT
+from qualtran import Bloq, BloqBuilder, FancyRegisters, SoquetT
 
 if TYPE_CHECKING:
     from qualtran.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
@@ -156,7 +156,7 @@ class CSwap(Bloq):
         return FancyRegisters.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError("`bitsize` must be a real value to support decomposition.")
