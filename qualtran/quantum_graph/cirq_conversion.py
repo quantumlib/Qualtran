@@ -17,7 +17,7 @@ from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import (
     _binst_to_cxns,
     CompositeBloq,
-    CompositeBloqBuilder,
+    BloqBuilder,
     SoquetT,
 )
 from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
@@ -94,7 +94,7 @@ def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
     resultant composite bloq will represent a unitary with one thru-register
     named "qubits" of wireshape `(n_qubits,)`.
     """
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
 
     # "qubits" means cirq qubits | "qvars" means bloq Soquets
     all_qubits = sorted(circuit.all_qubits())

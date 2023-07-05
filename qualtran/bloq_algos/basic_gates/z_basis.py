@@ -197,7 +197,7 @@ class _IntVector(Bloq):
         side = Side.RIGHT if self.state else Side.LEFT
         return FancyRegisters([FancyRegister('val', bitsize=self.bitsize, side=side)])
 
-    def build_composite_bloq(self, bb: 'CompositeBloqBuilder') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
         states = [ZeroState(), OneState()]
         xs = []
         for bit in ints_to_bits(np.array([self.val]), w=self.bitsize)[0]:

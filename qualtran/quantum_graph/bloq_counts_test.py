@@ -33,7 +33,7 @@ class DecompBloq(Bloq):
         return FancyRegisters.build(x=self.bitsize)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', x: 'SoquetT'
+        self, bb: 'BloqBuilder', x: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         qs = bb.split(x)
         for i in range(self.bitsize):

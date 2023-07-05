@@ -153,7 +153,7 @@ class MultiAnd(Bloq):
         return cbloq
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', *, ctrl: NDArray[Soquet]
+        self, bb: 'BloqBuilder', *, ctrl: NDArray[Soquet]
     ) -> Dict[str, 'SoquetT']:
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls-1.
 

@@ -11,7 +11,7 @@ from qualtran.bloq_algos.swap_network import CSwapApprox, SwapWithZero
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.composite_bloq import (
     assert_valid_bloq_decomposition,
-    CompositeBloqBuilder,
+    BloqBuilder,
 )
 
 random.seed(12345)
@@ -60,7 +60,7 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
     # Iterate on every selection integer.
     for selection_integer in range(len(data)):
 
-        bb = CompositeBloqBuilder()
+        bb = BloqBuilder()
         (sel,) = bb.add(IntState(val=selection_integer, bitsize=selection_bitsize))
         trgs = []
         for i in range(n_target_registers):

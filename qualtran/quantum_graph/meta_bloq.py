@@ -8,7 +8,7 @@ from attrs import field, frozen
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import (
     CompositeBloq,
-    CompositeBloqBuilder,
+    BloqBuilder,
     map_soqs,
     SoquetT,
 )
@@ -49,7 +49,7 @@ class ControlledBloq(Bloq):
         if not isinstance(self.subbloq, CompositeBloq):
             return ControlledBloq(self.subbloq.decompose_bloq()).decompose_bloq()
 
-        bb, initial_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        bb, initial_soqs = BloqBuilder.from_registers(self.registers)
         ctrl = initial_soqs['control']
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []

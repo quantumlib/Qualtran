@@ -23,7 +23,7 @@ from .quantum_graph.bloq import Bloq
 from .quantum_graph.composite_bloq import (
     BloqError,
     CompositeBloq,
-    CompositeBloqBuilder,
+    BloqBuilder,
     DidNotFlattenAnythingError,
     SoquetT,
 )

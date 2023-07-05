@@ -15,7 +15,7 @@ from qualtran import (
     BloqError,
     BloqInstance,
     CompositeBloq,
-    CompositeBloqBuilder,
+    BloqBuilder,
     Connection,
     FancyRegister,
     FancyRegisters,
@@ -64,7 +64,7 @@ class TestTwoCNOT(Bloq):
         return FancyRegisters.build(q1=1, q2=1)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', q1: 'Soquet', q2: 'Soquet'
+        self, bb: 'BloqBuilder', q1: 'Soquet', q2: 'Soquet'
     ) -> Dict[str, SoquetT]:
         q1, q2 = bb.add(TestCNOT(), control=q1, target=q2)
         q1, q2 = bb.add(TestCNOT(), control=q2, target=q1)
@@ -133,7 +133,7 @@ def test_iter_bloqsoqs():
 
 def test_map_soqs():
     cbloq = TestTwoCNOT().decompose_bloq()
-    bb, _ = CompositeBloqBuilder.from_registers(cbloq.registers)
+    bb, _ = BloqBuilder.from_registers(cbloq.registers)
     bb._i = 100
 
     soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -173,7 +173,7 @@ def test_bb_composite_bloq():
 def test_bloq_builder():
     registers = FancyRegisters.build(x=1, y=1)
     x, y = registers
-    bb, initial_soqs = CompositeBloqBuilder.from_registers(registers)
+    bb, initial_soqs = BloqBuilder.from_registers(registers)
     assert initial_soqs == {'x': Soquet(LeftDangle, x), 'y': Soquet(LeftDangle, y)}
 
     x = initial_soqs['x']
@@ -190,7 +190,7 @@ def test_bloq_builder():
 
 
 def _get_bb():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     x = bb.add_register('x', 1)
     y = bb.add_register('y', 1)
     return bb, x, y
@@ -319,7 +319,7 @@ def test_assert_registers_match_parent():
 
         def decompose_bloq(self) -> 'CompositeBloq':
             # !! order of registers swapped.
-            bb, soqs = CompositeBloqBuilder.from_registers(FancyRegisters.build(y=3, x=2))
+            bb, soqs = BloqBuilder.from_registers(FancyRegisters.build(y=3, x=2))
             x, y = bb.add(BadRegBloq(), x=soqs['x'], y=soqs['y'])
             return bb.finalize(x=x, y=y)
 
@@ -337,7 +337,7 @@ def test_assert_registers_match_dangling():
 def test_assert_connections_compatible():
     from qualtran.bloq_algos.basic_gates import CSwap, TwoBitCSwap
 
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     ctrl = bb.add_register('c', 1)
     x = bb.add_register('x', 10)
     y = bb.add_register('y', 10)
@@ -383,7 +383,7 @@ class TestMultiCNOT(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', control: 'Soquet', target: NDArray['Soquet']
+        self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']
     ) -> Dict[str, SoquetT]:
         for i in range(2):
             for j in range(3):
@@ -422,7 +422,7 @@ target[1, 2, 0]: ─────────────────────
 
 
 def test_util_convenience_methods():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
 
     qs = bb.allocate(10)
     qs = bb.split(qs)
@@ -433,7 +433,7 @@ def test_util_convenience_methods():
 
 
 def test_util_convenience_methods_errors():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
 
     qs = np.asarray([bb.allocate(5), bb.allocate(5)])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
@@ -468,7 +468,7 @@ class TestSerialBloq(Bloq):
         return FancyRegisters.build(stuff=1)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', stuff: 'SoquetT'
+        self, bb: 'BloqBuilder', stuff: 'SoquetT'
     ) -> Dict[str, 'Soquet']:
 
         for i in range(3):
@@ -483,7 +483,7 @@ class TestParallelBloq(Bloq):
         return FancyRegisters.build(stuff=3)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', stuff: 'SoquetT'
+        self, bb: 'BloqBuilder', stuff: 'SoquetT'
     ) -> Dict[str, 'Soquet']:
         stuff = bb.split(stuff)
         for i in range(len(stuff)):
@@ -514,7 +514,7 @@ def test_copy(cls):
 
 @pytest.mark.parametrize('call_decompose', [False, True])
 def test_add_from(call_decompose):
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     stuff = bb.add_register('stuff', 3)
     (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
     if call_decompose:
@@ -554,7 +554,7 @@ Join(n=3)<5>
 
 
 def test_add_duplicate_register():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     _ = bb.add_register('control', 1)
     y = bb.add_register('control', 2)
     with pytest.raises(ValueError):
@@ -562,7 +562,7 @@ def test_add_duplicate_register():
 
 
 def test_flatten():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     stuff = bb.add_register('stuff', 3)
     (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
     (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)

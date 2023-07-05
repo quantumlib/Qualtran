@@ -1,4 +1,4 @@
-from qualtran import CompositeBloqBuilder, FancyRegister
+from qualtran import BloqBuilder, FancyRegister
 from qualtran.bloq_algos.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
 from qualtran.jupyter_tools import execute_notebook
 
@@ -34,7 +34,7 @@ def _make_greater_than():
 
 
 def test_add():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     bitsize = 4
     q0 = bb.add_register('a', bitsize)
     q1 = bb.add_register('b', bitsize)
@@ -43,7 +43,7 @@ def test_add():
 
 
 def test_square():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     bitsize = 4
     q0 = bb.add_register('a', bitsize)
     q1 = bb.add_register('result', 2 * bitsize)
@@ -52,7 +52,7 @@ def test_square():
 
 
 def test_sum_of_squares():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     bitsize = 4
     k = 3
     inp = bb.add_register(FancyRegister("input", bitsize=bitsize, wireshape=(k,)))
@@ -62,7 +62,7 @@ def test_sum_of_squares():
 
 
 def test_product():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     bitsize = 5
     mbits = 3
     q0 = bb.add_register('a', bitsize)
@@ -73,7 +73,7 @@ def test_product():
 
 
 def test_greater_than():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     bitsize = 5
     q0 = bb.add_register('a', bitsize)
     q1 = bb.add_register('b', bitsize)

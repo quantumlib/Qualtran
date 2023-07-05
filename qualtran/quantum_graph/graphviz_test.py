@@ -6,7 +6,7 @@ import IPython.display
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegisters, Soquet
+from qualtran import Bloq, BloqBuilder, FancyRegisters, Soquet
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.graphviz import (
     _assign_ids_to_bloqs_and_soqs,
@@ -28,7 +28,7 @@ class TestParallelBloq(Bloq):
         return FancyRegisters.build(stuff=3)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', stuff: 'SoquetT'
+        self, bb: 'BloqBuilder', stuff: 'SoquetT'
     ) -> Dict[str, 'Soquet']:
 
         qs = bb.split(stuff)

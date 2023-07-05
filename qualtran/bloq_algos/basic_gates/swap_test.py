@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import Bloq, CompositeBloqBuilder
+from qualtran import Bloq, BloqBuilder
 from qualtran.bloq_algos.basic_gates import (
     OneEffect,
     OneState,
@@ -49,7 +49,7 @@ def _set_ctrl_two_bit_swap(ctrl_bit):
     states = [ZeroState(), OneState()]
     effs = [ZeroEffect(), OneEffect()]
 
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     (q0,) = bb.add(states[ctrl_bit])
     q1 = bb.add_register('q1', 1)
     q2 = bb.add_register('q2', 1)
@@ -87,7 +87,7 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
     states = [ZeroState(), OneState()]
     effs = [ZeroEffect(), OneEffect()]
 
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     (q0,) = bb.add(states[ctrl_bit])
     q1 = bb.add_register('q1', bloq.bitsize)
     q2 = bb.add_register('q2', bloq.bitsize)

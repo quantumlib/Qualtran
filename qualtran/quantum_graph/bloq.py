@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from cirq_ft import TComplexity
     from numpy.typing import NDArray
 
-    from qualtran import CompositeBloq, CompositeBloqBuilder, FancyRegisters, Soquet, SoquetT
+    from qualtran import CompositeBloq, BloqBuilder, FancyRegisters, Soquet, SoquetT
     from qualtran.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
     from qualtran.quantum_graph.cirq_conversion import CirqQuregT
     from qualtran.quantum_graph.classical_sim import ClassicalValT
@@ -62,7 +62,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return name[:6] + '..'
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', **soqs: 'SoquetT'
+        self, bb: 'BloqBuilder', **soqs: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
@@ -71,7 +71,7 @@ class Bloq(metaclass=abc.ABCMeta):
         calling this function.
 
         Args:
-            bb: A `CompositeBloqBuilder` to append sub-Bloq to.
+            bb: A `BloqBuilder` to append sub-Bloq to.
             **soqs: The initial soquets corresponding to the inputs to the Bloq.
 
         Returns:
@@ -94,9 +94,9 @@ class Bloq(metaclass=abc.ABCMeta):
             NotImplementedError: If there is no decomposition defined; namely: if
                 `build_composite_bloq` returns `NotImplemented`.
         """
-        from qualtran.quantum_graph.composite_bloq import CompositeBloqBuilder
+        from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
-        bb, initial_soqs = CompositeBloqBuilder.from_registers(
+        bb, initial_soqs = BloqBuilder.from_registers(
             self.registers, add_registers_allowed=False
         )
         out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
@@ -120,9 +120,9 @@ class Bloq(metaclass=abc.ABCMeta):
         This method is overriden so if this Bloq is already a CompositeBloq, it will
         be returned.
         """
-        from qualtran.quantum_graph.composite_bloq import CompositeBloqBuilder
+        from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
-        bb, initial_soqs = CompositeBloqBuilder.from_registers(
+        bb, initial_soqs = BloqBuilder.from_registers(
             self.registers, add_registers_allowed=False
         )
         ret_soqs_tuple = bb.add(self, **initial_soqs)
