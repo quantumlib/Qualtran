@@ -159,7 +159,7 @@ class CompositeBloq(Bloq):
 
         Each `cirq.Operation` will be wrapped into a `CirqGate` wrapper bloq. The
         resultant composite bloq will represent a unitary with one thru-register
-        named "qubits" of wireshape `(n_qubits,)`.
+        named "qubits" of shape `(n_qubits,)`.
         """
         from qualtran.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
 
@@ -476,8 +476,8 @@ def _cxn_to_soq_dict(
 
     # Initialize multi-dimensional dictionary values.
     for reg in regs:
-        if reg.wireshape:
-            soqdict[reg.name] = np.empty(reg.wireshape, dtype=object)
+        if reg.shape:
+            soqdict[reg.name] = np.empty(reg.shape, dtype=object)
 
     # In the abstract: set `soqdict[me] = assign`. Specifically: use the register name as
     # keys and handle multi-dimensional registers.
@@ -485,7 +485,7 @@ def _cxn_to_soq_dict(
         me = get_me(cxn)
         assign = get_assign(cxn)
 
-        if me.reg.wireshape:
+        if me.reg.shape:
             soqdict[me.reg.name][me.idx] = assign
         else:
             soqdict[me.reg.name] = assign
@@ -656,12 +656,12 @@ def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
     for soq in cbloq.all_soquets:
         reg = soq.reg
 
-        if len(soq.idx) != len(reg.wireshape):
+        if len(soq.idx) != len(reg.shape):
             raise BloqError(f"{soq} has an idx of the wrong shape for {reg}")
 
-        for soq_i, reg_max in zip(soq.idx, reg.wireshape):
+        for soq_i, reg_max in zip(soq.idx, reg.shape):
             if soq_i >= reg_max:
-                raise BloqError(f"{soq}'s index exceeds the bounds provided by {reg}'s wireshape.")
+                raise BloqError(f"{soq}'s index exceeds the bounds provided by {reg}'s shape.")
 
         if isinstance(soq.binst, DanglingT):
             continue
@@ -673,7 +673,7 @@ def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
 def assert_soquets_used_exactly_once(cbloq: CompositeBloq):
     """Check that all soquets are used once and only once.
 
-    Each bloq's register produces prod(reg.wireshape) soquets which must be consumed
+    Each bloq's register produces prod(reg.shape) soquets which must be consumed
     once and only once.
     """
     produced = set()
@@ -746,8 +746,8 @@ def _reg_to_soq(
         registers, the value will be an array of indexed Soquets. For 0-dimensional (normal)
         registers, the value will be a `Soquet` object.
     """
-    if reg.wireshape:
-        soqs = np.empty(reg.wireshape, dtype=object)
+    if reg.shape:
+        soqs = np.empty(reg.shape, dtype=object)
         for ri in reg.wire_idxs():
             soq = Soquet(binst, reg, idx=ri)
             soqs[ri] = soq
@@ -1092,7 +1092,7 @@ class BloqBuilder:
             return FancyRegister(
                 name=name,
                 bitsize=soq.reshape(-1)[0].reg.bitsize,
-                wireshape=soq.shape,
+                shape=soq.shape,
                 side=Side.RIGHT,
             )
 

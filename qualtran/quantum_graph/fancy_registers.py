@@ -38,7 +38,7 @@ class FancyRegister:
     Attributes:
         name: The string name of the register
         bitsize: The number of (qu)bits in the register.
-        wireshape: A tuple of integer dimensions to declare a multidimensional register. The
+        shape: A tuple of integer dimensions to declare a multidimensional register. The
             total number of bits is the product of entries in this tuple times `bitsize`.
         side: Whether this is a left, right, or thru register. See the documentation for `Side`
             for more information.
@@ -46,19 +46,19 @@ class FancyRegister:
 
     name: str
     bitsize: int
-    wireshape: Tuple[int, ...] = tuple()
+    shape: Tuple[int, ...] = tuple()
     side: Side = Side.THRU
 
     def wire_idxs(self) -> Iterable[Tuple[int, ...]]:
         """Iterate over all possible indices of a multidimensional register."""
-        yield from itertools.product(*[range(sh) for sh in self.wireshape])
+        yield from itertools.product(*[range(sh) for sh in self.shape])
 
     def total_bits(self) -> int:
         """The total number of bits in this register.
 
         This is the product of bitsize and all wireshapes.
         """
-        return self.bitsize * int(np.product(self.wireshape))
+        return self.bitsize * int(np.product(self.shape))
 
 
 def _dedupe(kv_iter: Iterable[Tuple[str, FancyRegister]]) -> Dict[str, FancyRegister]:
@@ -163,7 +163,7 @@ class FancyRegisters:
         import cirq
 
         def _qubit_array(reg: FancyRegister):
-            qubits = np.empty(reg.wireshape + (reg.bitsize,), dtype=object)
+            qubits = np.empty(reg.shape + (reg.bitsize,), dtype=object)
             for ii in reg.wire_idxs():
                 for j in range(reg.bitsize):
                     qubits[ii + (j,)] = cirq.NamedQubit(
@@ -172,7 +172,7 @@ class FancyRegisters:
             return qubits
 
         def _qubits_for_reg(reg: FancyRegister):
-            if reg.wireshape:
+            if reg.shape:
                 return _qubit_array(reg)
 
             return (

@@ -102,7 +102,7 @@ class SumOfSquares(Bloq):
     def registers(self):
         return FancyRegisters(
             [
-                FancyRegister("input", bitsize=self.bitsize, wireshape=(self.k,)),
+                FancyRegister("input", bitsize=self.bitsize, shape=(self.k,)),
                 FancyRegister("result", bitsize=2 * self.bitsize + 1),
             ]
         )

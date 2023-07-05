@@ -61,8 +61,8 @@ def test_dtype_validation():
     regs = [
         FancyRegister('one_bit_int', 1),
         FancyRegister('int', 5),
-        FancyRegister('bit_arr', 1, wireshape=(5,)),
-        FancyRegister('int_arr', 32, wireshape=(5,)),
+        FancyRegister('bit_arr', 1, shape=(5,)),
+        FancyRegister('int_arr', 32, shape=(5,)),
     ]
 
     # base case: vals are as-expected.
@@ -95,8 +95,8 @@ class ApplyClassicalTest(Bloq):
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters(
             [
-                FancyRegister('x', 1, wireshape=(5,)),
-                FancyRegister('z', 1, wireshape=(5,), side=Side.RIGHT),
+                FancyRegister('x', 1, shape=(5,)),
+                FancyRegister('z', 1, shape=(5,), side=Side.RIGHT),
             ]
         )
 
@@ -135,7 +135,7 @@ def test_cnot_assign_dict():
 
 def test_apply_classical_cbloq():
     bb = BloqBuilder()
-    x = bb.add_register(FancyRegister('x', 1, wireshape=(5,)))
+    x = bb.add_register(FancyRegister('x', 1, shape=(5,)))
     x, y = bb.add(ApplyClassicalTest(), x=x)
     y, z = bb.add(ApplyClassicalTest(), x=y)
     cbloq = bb.finalize(x=x, y=y, z=z)

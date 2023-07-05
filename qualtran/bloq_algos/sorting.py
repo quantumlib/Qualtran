@@ -35,8 +35,8 @@ class Comparator(Bloq):
     def registers(self):
         return FancyRegisters(
             [
-                FancyRegister('a', 1, wireshape=(self.bitsize,)),
-                FancyRegister('b', 1, wireshape=(self.bitsize,)),
+                FancyRegister('a', 1, shape=(self.bitsize,)),
+                FancyRegister('b', 1, shape=(self.bitsize,)),
                 FancyRegister('out', 1, side=Side.RIGHT),
             ]
         )
@@ -80,7 +80,7 @@ class BitonicSort(Bloq):
     @property
     def registers(self):
         return FancyRegisters(
-            [FancyRegister("input", bitsize=self.bitsize, wireshape=(self.bitsize,))]
+            [FancyRegister("input", bitsize=self.bitsize, shape=(self.bitsize,))]
         )
 
     def short_name(self) -> str:

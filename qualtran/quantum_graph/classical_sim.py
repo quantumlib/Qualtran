@@ -57,7 +57,7 @@ def _get_in_vals(
     binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, ClassicalValT]
 ) -> ClassicalValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
-    if not reg.wireshape:
+    if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
 
     if reg.bitsize <= 8:
@@ -74,7 +74,7 @@ def _get_in_vals(
             "multi-dimensional registers in classical simulation."
         )
 
-    arg = np.empty(reg.wireshape, dtype=dtype)
+    arg = np.empty(reg.shape, dtype=dtype)
     for idx in reg.wire_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
@@ -100,12 +100,12 @@ def _update_assign_from_vals(
         except KeyError:
             raise ValueError(f"{binst} requires an input register named {reg.name}")
 
-        if reg.wireshape:
+        if reg.shape:
             arr = np.asarray(arr)
-            if arr.shape != reg.wireshape:
+            if arr.shape != reg.shape:
                 raise ValueError(
                     f"Incorrect shape {arr.shape} received for {binst}.{reg.name}. "
-                    f"Want {reg.wireshape}."
+                    f"Want {reg.shape}."
                 )
             if np.any(arr < 0):
                 raise ValueError(f"Negative classical values encountered in {binst}.{reg.name}")

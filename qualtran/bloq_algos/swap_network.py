@@ -115,7 +115,7 @@ class SwapWithZero(Bloq):
         return FancyRegisters(
             [
                 FancyRegister('selection', self.selection_bitsize),
-                FancyRegister('targets', self.target_bitsize, wireshape=(self.n_target_registers,)),
+                FancyRegister('targets', self.target_bitsize, shape=(self.n_target_registers,)),
             ]
         )
 

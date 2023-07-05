@@ -53,7 +53,7 @@ class CirqGateAsBloq(Bloq):
 
     @cached_property
     def registers(self) -> 'FancyRegisters':
-        return FancyRegisters([FancyRegister('qubits', 1, wireshape=(self.n_qubits,))])
+        return FancyRegisters([FancyRegister('qubits', 1, shape=(self.n_qubits,))])
 
     @cached_property
     def n_qubits(self):
@@ -92,13 +92,13 @@ def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
 
     Each `cirq.Operation` will be wrapped into a `CirqGateAsBloq` wrapper. The
     resultant composite bloq will represent a unitary with one thru-register
-    named "qubits" of wireshape `(n_qubits,)`.
+    named "qubits" of shape `(n_qubits,)`.
     """
     bb = BloqBuilder()
 
     # "qubits" means cirq qubits | "qvars" means bloq Soquets
     all_qubits = sorted(circuit.all_qubits())
-    all_qvars = bb.add_register(FancyRegister('qubits', 1, wireshape=(len(all_qubits),)))
+    all_qvars = bb.add_register(FancyRegister('qubits', 1, shape=(len(all_qubits),)))
     qubit_to_qvar = dict(zip(all_qubits, all_qvars))
 
     for op in circuit.all_operations():
@@ -118,7 +118,7 @@ def _get_in_cirq_quregs(
     binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, 'NDArray[cirq.Qid]']
 ) -> 'NDArray[cirq.Qid]':
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
-    full_shape = reg.wireshape + (reg.bitsize,)
+    full_shape = reg.shape + (reg.bitsize,)
     arg = np.empty(full_shape, dtype=object)
 
     for idx in reg.wire_idxs():
@@ -148,7 +148,7 @@ def _update_assign_from_cirq_quregs(
         unprocessed_reg_names.remove(reg.name)
 
         arr = np.asarray(arr)
-        full_shape = reg.wireshape + (reg.bitsize,)
+        full_shape = reg.shape + (reg.bitsize,)
         if arr.shape != full_shape:
             raise ValueError(f"Incorrect shape {arr.shape} received for {binst}.{reg.name}")
 
@@ -289,7 +289,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
         side_suffixes = {Side.LEFT: '_l', Side.RIGHT: '_r', Side.THRU: ''}
         compat_name_map = {}
         for reg in bloq.registers:
-            if not reg.wireshape:
+            if not reg.shape:
                 compat_name = f'{reg.name}{side_suffixes[reg.side]}'
                 compat_name_map[compat_name] = (reg, ())
                 legacy_regs.append(LegacyRegister(name=compat_name, bitsize=reg.bitsize))
@@ -336,7 +336,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
             elif reg.side is Side.RIGHT:
                 new_qubits = qubit_manager.qalloc(reg.total_bits())
                 flat_qubits.extend(new_qubits)
-                out_quregs[reg.name] = np.array(new_qubits).reshape(reg.wireshape + (reg.bitsize,))
+                out_quregs[reg.name] = np.array(new_qubits).reshape(reg.shape + (reg.bitsize,))
 
         return BloqAsCirqGate(bloq=bloq).on(*flat_qubits), out_quregs
 
@@ -361,8 +361,8 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
         # Initialize shapely qubit registers to pass to bloqs infrastructure
         cirq_quregs: Dict[str, CirqQuregT] = {}
         for reg in self._bloq.registers:
-            if reg.wireshape:
-                shape = reg.wireshape + (reg.bitsize,)
+            if reg.shape:
+                shape = reg.shape + (reg.bitsize,)
                 cirq_quregs[reg.name] = np.empty(shape, dtype=object)
 
         # Shapefy the provided cirq qubits

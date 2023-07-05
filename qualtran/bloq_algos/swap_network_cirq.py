@@ -74,7 +74,7 @@ def swz_reg_to_wires(reg: 'FancyRegister'):
 
     if reg.name == 'targets':
         symbs = []
-        (n_target,) = reg.wireshape
+        (n_target,) = reg.shape
         for i in range(n_target):
             symbs += [f"swap_{i}"] * reg.bitsize
         return symbs
