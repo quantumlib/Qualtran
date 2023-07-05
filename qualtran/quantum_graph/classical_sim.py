@@ -159,7 +159,7 @@ def _binst_on_classical_vals(
 
 
 def _cbloq_call_classically(
-    registers: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
+    signature: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
@@ -167,7 +167,7 @@ def _cbloq_call_classically(
     `_update_assign_from_vals`.
 
     Args:
-        registers: The cbloq's registers for validating inputs
+        signature: The cbloq's signature for validating inputs
         vals: Mapping from register name to classical values
         binst_graph: The cbloq's binst graph.
 
@@ -179,7 +179,7 @@ def _cbloq_call_classically(
     """
     # Keep track of each soquet's bit array. Initialize with LeftDangle
     soq_assign: Dict[Soquet, ClassicalValT] = {}
-    _update_assign_from_vals(registers.lefts(), LeftDangle, vals, soq_assign)
+    _update_assign_from_vals(signature.lefts(), LeftDangle, vals, soq_assign)
 
     # Bloq-by-bloq application
     for binst in nx.topological_sort(binst_graph):
@@ -189,7 +189,7 @@ def _cbloq_call_classically(
         _binst_on_classical_vals(binst, pred_cxns, soq_assign)
 
     # Track bloq-to-dangle name changes
-    if len(list(registers.rights())) > 0:
+    if len(list(signature.rights())) > 0:
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
         for cxn in final_preds:
             soq_assign[cxn.right] = soq_assign[cxn.left]
@@ -198,5 +198,5 @@ def _cbloq_call_classically(
     def _f_vals(reg: Register):
         return _get_in_vals(RightDangle, reg, soq_assign)
 
-    final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}
+    final_vals = {reg.name: _f_vals(reg) for reg in signature.rights()}
     return final_vals, soq_assign
