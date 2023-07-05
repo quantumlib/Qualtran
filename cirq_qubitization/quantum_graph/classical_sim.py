@@ -4,6 +4,7 @@ from typing import Dict, Iterable, Sequence, Tuple, Union
 
 import networkx as nx
 import numpy as np
+import sympy
 from numpy.typing import NDArray
 
 from cirq_qubitization.quantum_graph.composite_bloq import _binst_to_cxns
@@ -115,6 +116,11 @@ def _update_assign_from_vals(
                 soq = Soquet(binst, reg, idx=idx)
                 soq_assign[soq] = arr[idx]
         else:
+            if isinstance(arr, sympy.Expr):
+                soq = Soquet(binst, reg)
+                soq_assign[soq] = arr
+                continue
+
             if not isinstance(arr, (int, np.integer)):
                 raise ValueError(f"{binst}.{reg.name} should be an integer, not {arr!r}")
             if arr < 0:

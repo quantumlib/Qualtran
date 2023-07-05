@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         Soquet,
         SoquetT,
     )
-    from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
+    from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator, BloqCountT
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
     from cirq_qubitization.quantum_graph.musical_score import WireSymbol
@@ -241,7 +241,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return not self.add_my_tensors.__qualname__.startswith('Bloq.')
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[Tuple[int, 'Bloq']]:
+    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List['BloqCountT']:
         """Return a list of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
 
         By default, this method will use `self.decompose_bloq()` to count up bloqs.

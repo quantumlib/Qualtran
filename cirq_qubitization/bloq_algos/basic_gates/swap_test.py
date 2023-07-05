@@ -1,5 +1,9 @@
+from typing import Optional
+
 import cirq
 import numpy as np
+import pytest
+import sympy
 
 from cirq_qubitization import CompositeBloqBuilder
 from cirq_qubitization.bloq_algos.basic_gates import (
@@ -15,7 +19,12 @@ from cirq_qubitization.bloq_algos.basic_gates.swap import (
     _swap_matrix,
     CSwap,
 )
-from cirq_qubitization.quantum_graph.composite_bloq import assert_valid_bloq_decomposition
+from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization.quantum_graph.bloq_counts import get_cbloq_bloq_counts, SympySymbolAllocator
+from cirq_qubitization.quantum_graph.composite_bloq import (
+    assert_valid_bloq_decomposition,
+)
+from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 
 
 def _make_CSwap():
@@ -125,3 +134,28 @@ def test_cswap_classical():
     assert (ctrl, x, y) == (1, 128, 255)
     ctrl, x, y = cswap_d.call_classically(ctrl=1, x=255, y=128)
     assert (ctrl, x, y) == (1, 128, 255)
+
+
+def test_cswap_bloq_counts():
+
+    bloq = CSwap(bitsize=8)
+    counts1 = bloq.bloq_counts(SympySymbolAllocator())
+
+    def generalize(b: Bloq) -> Optional[Bloq]:
+        if isinstance(b, (Split, Join)):
+            # Ignore these
+            return
+        return b
+
+    counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
+
+    assert set(counts1) == set(counts2)
+
+
+def test_cswap_symbolic():
+    n = sympy.symbols('n')
+    cswap = CSwap(bitsize=n)
+    counts = cswap.bloq_counts(SympySymbolAllocator())
+    assert counts[0] == (n, TwoBitCSwap())
+    with pytest.raises(ValueError):
+        cswap.decompose_bloq()

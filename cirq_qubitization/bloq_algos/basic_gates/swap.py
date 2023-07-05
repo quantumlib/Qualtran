@@ -1,9 +1,10 @@
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
 import quimb.tensor as qtn
+import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 from numpy.typing import NDArray
@@ -13,6 +14,7 @@ from cirq_qubitization import Bloq, CompositeBloqBuilder, FancyRegisters, Soquet
 if TYPE_CHECKING:
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
+    from cirq_qubitization.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
 
 
 def _swap_matrix() -> NDArray[np.complex128]:
@@ -147,7 +149,7 @@ class CSwap(Bloq):
         y: the second register
     """
 
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
 
     @cached_property
     def registers(self) -> FancyRegisters:
@@ -156,6 +158,9 @@ class CSwap(Bloq):
     def build_composite_bloq(
         self, bb: 'CompositeBloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError("`bitsize` must be a real value to support decomposition.")
+
         xs = bb.split(x)
         ys = bb.split(y)
 
@@ -163,6 +168,9 @@ class CSwap(Bloq):
             ctrl, xs[i], ys[i] = bb.add(TwoBitCSwap(), ctrl=ctrl, x=xs[i], y=ys[i])
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
+
+    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[BloqCountT]:
+        return [(self.bitsize, TwoBitCSwap())]
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
