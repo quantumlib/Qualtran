@@ -13,4 +13,4 @@ topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
 cd "${topdir}" || exit $?
 
 # Add dev_tools to $PYTHONPATH so that pylint can find custom checkers
-env PYTHONPATH=dev_tools pylint --jobs=0 --rcfile=dev_tools/conf/.pylintrc "$@" cirq_qubitization/ dev_tools/
+env PYTHONPATH=dev_tools pylint --jobs=0 --rcfile=dev_tools/conf/.pylintrc "$@" qualtran/ dev_tools/
