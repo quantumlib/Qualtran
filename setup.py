@@ -17,7 +17,7 @@ def version_number(path: str) -> str:
 
 def main() -> None:
     """ """
-    version_path = "cirq_qubitization/_version.py"
+    version_path = "qualtran/_version.py"
 
     __version__ = version_number(version_path)
 
@@ -36,7 +36,7 @@ def main() -> None:
     ]
 
     setup(
-        name="cirq_qubitization",
+        name="qualtran",
         version=__version__,
         author="Nicholas C. Rubin and Tanuj Khattar",
         author_email="rubinnc0@gmail.com",

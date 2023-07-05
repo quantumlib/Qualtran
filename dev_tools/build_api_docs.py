@@ -27,8 +27,8 @@ def filter_type_checking(path, parent, children):
 
 
 _TYPE_ALIAS_LOCATIONS = {
-    'SoquetT': ('cirq_qubitization.quantum_graph', 'composite_bloq'),
-    'SoquetInT': ('cirq_qubitization.quantum_graph', 'composite_bloq'),
+    'SoquetT': ('qualtran.quantum_graph', 'composite_bloq'),
+    'SoquetInT': ('qualtran.quantum_graph', 'composite_bloq'),
 }
 
 
@@ -175,8 +175,8 @@ def generate_ref_docs():
     # Important: we currently do not import submodules in our module's `__init__` methods,
     # so tensorflow-docs will not find a module that has not been imported. We import
     # them all here.
-    import cirq_qubitization.quantum_graph
-    from cirq_qubitization.quantum_graph import (
+    import qualtran.quantum_graph
+    from qualtran.quantum_graph import (
         bloq,
         bloq_counts,
         cirq_conversion,
@@ -199,8 +199,8 @@ def generate_ref_docs():
     output_dir = reporoot / 'docs/reference'
     doc_generator = DocGenerator(
         root_title="Qualtran",
-        py_modules=[("cirq_qubitization.quantum_graph", cirq_qubitization.quantum_graph)],
-        base_dir=[reporoot / 'cirq_qubitization/quantum_graph'],
+        py_modules=[("qualtran.quantum_graph", qualtran.quantum_graph)],
+        base_dir=[reporoot / 'qualtran/quantum_graph'],
         code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/cirq_qubitization/quantum_graph",
         callbacks=[
             local_definitions_filter,
@@ -293,7 +293,7 @@ def apply_fixups():
     """
     reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
-    page_paths = output_dir.glob('cirq_qubitization/**/*.md')
+    page_paths = output_dir.glob('qualtran/**/*.md')
     for path in page_paths:
         if fixup_all_symbols_page(path):
             continue
@@ -311,7 +311,7 @@ def generate_ref_toc():
     """Generate a sphinx-style table of contents (TOC) from generated markdown files."""
     reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
-    page_paths = output_dir.glob('cirq_qubitization/**/*.md')
+    page_paths = output_dir.glob('qualtran/**/*.md')
 
     # Group according to module
     grouped_paths: Dict[Path, List] = defaultdict(list)

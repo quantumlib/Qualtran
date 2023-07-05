@@ -96,7 +96,7 @@ def main(output_nbs: bool, output_html: bool):
         output_html: Whether to save the executed notebooks as html
     """
     reporoot = get_git_root()
-    sourceroot = reporoot / 'cirq_qubitization'
+    sourceroot = reporoot / 'qualtran'
     nb_rel_paths = get_nb_rel_paths(rootdir=sourceroot)
     bad_nbs = []
     for nb_rel_path in nb_rel_paths:
