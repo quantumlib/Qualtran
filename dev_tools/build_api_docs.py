@@ -201,7 +201,7 @@ def generate_ref_docs():
         root_title="Qualtran",
         py_modules=[("qualtran.quantum_graph", qualtran.quantum_graph)],
         base_dir=[reporoot / 'qualtran/quantum_graph'],
-        code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/cirq_qubitization/quantum_graph",
+        code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/quantum_graph",
         callbacks=[
             local_definitions_filter,
             filter_type_checking,
