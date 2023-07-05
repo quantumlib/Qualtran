@@ -196,7 +196,7 @@ def _binst_as_cirq_op(
 
 
 def _cbloq_to_cirq_circuit(
-    registers: Signature,
+    signature: Signature,
     cirq_quregs: Dict[str, 'CirqQuregInT'],
     binst_graph: nx.DiGraph,
     qubit_manager: cirq.QubitManager,
@@ -204,7 +204,7 @@ def _cbloq_to_cirq_circuit(
     """Propagate `as_cirq_op` calls through a composite bloq's contents to export a `cirq.Circuit`.
 
     Args:
-        registers: The cbloq's registers for validating inputs.
+        signature: The cbloq's signature for validating inputs and outputs.
         cirq_quregs: Mapping from left register name to Cirq qubit arrays.
         binst_graph: The cbloq's binst graph. This is read only.
         qubit_manager: A `cirq.QubitManager` to allocate new qubits.
@@ -214,7 +214,7 @@ def _cbloq_to_cirq_circuit(
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
     soq_assign: Dict[Soquet, CirqQuregT] = {}
-    _update_assign_from_cirq_quregs(registers.lefts(), LeftDangle, cirq_quregs, soq_assign)
+    _update_assign_from_cirq_quregs(signature.lefts(), LeftDangle, cirq_quregs, soq_assign)
     moments: List[cirq.Moment] = []
     for binsts in nx.topological_generations(binst_graph):
         moment: List[cirq.Operation] = []
@@ -231,7 +231,7 @@ def _cbloq_to_cirq_circuit(
             moments.append(cirq.Moment(moment))
 
     # Track bloq-to-dangle name changes
-    if len(list(registers.rights())) > 0:
+    if len(list(signature.rights())) > 0:
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
         for cxn in final_preds:
             soq_assign[cxn.right] = soq_assign[cxn.left]
@@ -240,7 +240,7 @@ def _cbloq_to_cirq_circuit(
     def _f_quregs(reg: Register):
         return _get_in_cirq_quregs(RightDangle, reg, soq_assign)
 
-    out_quregs = {reg.name: _f_quregs(reg) for reg in registers.rights()}
+    out_quregs = {reg.name: _f_quregs(reg) for reg in signature.rights()}
 
     return cirq.FrozenCircuit(moments), out_quregs
 
