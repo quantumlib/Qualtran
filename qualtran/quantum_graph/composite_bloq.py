@@ -1090,10 +1090,7 @@ class BloqBuilder:
 
             # Get info from 0th soquet in an ndarray.
             return FancyRegister(
-                name=name,
-                bitsize=soq.reshape(-1)[0].reg.bitsize,
-                shape=soq.shape,
-                side=Side.RIGHT,
+                name=name, bitsize=soq.reshape(-1)[0].reg.bitsize, shape=soq.shape, side=Side.RIGHT
             )
 
         right_reg_names = [reg.name for reg in self._regs if reg.side & Side.RIGHT]

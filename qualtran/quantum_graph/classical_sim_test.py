@@ -94,10 +94,7 @@ class ApplyClassicalTest(Bloq):
     @property
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters(
-            [
-                FancyRegister('x', 1, shape=(5,)),
-                FancyRegister('z', 1, shape=(5,), side=Side.RIGHT),
-            ]
+            [FancyRegister('x', 1, shape=(5,)), FancyRegister('z', 1, shape=(5,), side=Side.RIGHT)]
         )
 
     def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
