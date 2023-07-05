@@ -56,7 +56,7 @@ class FancyRegister:
     def total_bits(self) -> int:
         """The total number of bits in this register.
 
-        This is the product of bitsize and all wireshapes.
+        This is the product of bitsize and each of the dimensions in `shape`.
         """
         return self.bitsize * int(np.product(self.shape))
 
