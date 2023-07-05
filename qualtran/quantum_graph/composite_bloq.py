@@ -77,12 +77,12 @@ class CompositeBloq(Bloq):
 
     def __init__(self, cxns: Sequence[Connection], signature: Signature):
         self._cxns = tuple(cxns)
-        self._registers = signature
+        self._signature = signature
 
     @property
     def signature(self) -> Signature:
-        """The registers defining the inputs and outputs of this Bloq."""
-        return self._registers
+        """The input and output names and types for this composite bloq."""
+        return self._signature
 
     @property
     def connections(self) -> Tuple[Connection, ...]:
