@@ -17,10 +17,10 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
-    Register,
-    Signature,
     LeftDangle,
+    Register,
     RightDangle,
+    Signature,
     Soquet,
     SoquetT,
 )
@@ -378,9 +378,7 @@ class TestMultiCNOT(Bloq):
     # A minimal test-bloq with a complicated `target` register.
     @cached_property
     def registers(self) -> Signature:
-        return Signature(
-            [Register('control', 1), Register('target', 1, shape=(2, 3))]
-        )
+        return Signature([Register('control', 1), Register('target', 1, shape=(2, 3))])
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']

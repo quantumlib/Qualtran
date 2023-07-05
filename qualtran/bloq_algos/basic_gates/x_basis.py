@@ -5,7 +5,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature, Side, SoquetT
+from qualtran import Bloq, Register, Side, Signature, SoquetT
 
 if TYPE_CHECKING:
     import cirq
@@ -49,9 +49,7 @@ class _XVector(Bloq):
 
     @cached_property
     def registers(self) -> 'Signature':
-        return Signature(
-            [Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)]
-        )
+        return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
 
     def add_my_tensors(
         self,

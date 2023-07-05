@@ -6,7 +6,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, Side
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature
 from qualtran.bloq_algos.basic_gates import CNOT
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.classical_sim import (

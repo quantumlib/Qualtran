@@ -8,7 +8,6 @@ import pydot
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.cirq_conversion import CirqGateAsBloq
-from qualtran.quantum_graph.registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -17,6 +16,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Side, Signature
 from qualtran.quantum_graph.util_bloqs import Join, Split
 
 if TYPE_CHECKING:
@@ -138,9 +138,7 @@ class GraphDrawer:
         """Overridable method to create a Node representing dangling Soquets."""
         return pydot.Node(self.ids[soq], label=soq.pretty(), shape='plaintext')
 
-    def add_dangles(
-        self, graph: pydot.Graph, soquets: Signature, dangle: DanglingT
-    ) -> pydot.Graph:
+    def add_dangles(self, graph: pydot.Graph, soquets: Signature, dangle: DanglingT) -> pydot.Graph:
         """Add nodes representing dangling indices to the graph.
 
         We wrap this in a subgraph to align (rank=same) the 'nodes'

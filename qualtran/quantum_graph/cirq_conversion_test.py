@@ -4,7 +4,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, Side, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Side, Signature, Soquet, SoquetT
 from qualtran.bloq_algos.and_bloq import MultiAnd
 from qualtran.bloq_algos.basic_gates import XGate
 from qualtran.jupyter_tools import execute_notebook

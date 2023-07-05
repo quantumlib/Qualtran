@@ -77,9 +77,7 @@ class CtrlModAddK(Bloq):
 
     @cached_property
     def registers(self) -> 'Signature':
-        return Signature(
-            [Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)]
-        )
+        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
     def bloq_counts(self, ss):
         k = ss.new_symbol('k')
@@ -110,9 +108,7 @@ class CtrlAddK(Bloq):
 
     @cached_property
     def registers(self) -> 'Signature':
-        return Signature(
-            [Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)]
-        )
+        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
     def bloq_counts(self, mgr):
         return [(2 * self.bitsize, TGate())]

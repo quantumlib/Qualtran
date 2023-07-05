@@ -17,7 +17,6 @@ from numpy.typing import NDArray
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import _binst_to_cxns
-from qualtran.quantum_graph.registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -26,6 +25,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Side, Signature
 
 
 @frozen

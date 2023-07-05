@@ -8,7 +8,7 @@ import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, Register, Signature, Side, SoquetT
+from qualtran import Bloq, Register, Side, Signature, SoquetT
 from qualtran.quantum_graph.bloq_counts import big_O
 from qualtran.quantum_graph.classical_sim import ints_to_bits
 from qualtran.quantum_graph.util_bloqs import ArbitraryClifford
@@ -55,9 +55,7 @@ class _ZVector(Bloq):
 
     @cached_property
     def registers(self) -> 'Signature':
-        return Signature(
-            [Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)]
-        )
+        return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
 
     def add_my_tensors(
         self,

@@ -8,7 +8,6 @@ import sympy
 from numpy.typing import NDArray
 
 from qualtran.quantum_graph.composite_bloq import _binst_to_cxns
-from qualtran.quantum_graph.registers import Register, Signature
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -17,6 +16,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Signature
 
 ClassicalValT = Union[int, NDArray[int]]
 

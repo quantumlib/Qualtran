@@ -8,7 +8,7 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Register, Signature, Side, Soquet, SoquetT
+from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
 from qualtran.bloq_algos.basic_gates import TGate
 from qualtran.quantum_graph.bloq_counts import big_O, SympySymbolAllocator
 from qualtran.quantum_graph.musical_score import Circle, directional_text_box, WireSymbol

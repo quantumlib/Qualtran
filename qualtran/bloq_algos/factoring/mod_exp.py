@@ -5,7 +5,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, Side, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloq_algos.basic_gates import IntState
 from qualtran.bloq_algos.factoring.mod_mul import CtrlModMul
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator

@@ -1,7 +1,7 @@
 import cirq
 import pytest
 
-from qualtran import Register, Signature, Side
+from qualtran import Register, Side, Signature
 
 
 def test_register():
@@ -53,9 +53,7 @@ def test_registers():
     # Python dictionaries preserve insertion order, which should be same as insertion order of
     # initial registers.
     for reg_order in [[r1, r2, r3], [r2, r3, r1]]:
-        flat_named_qubits = [
-            q for v in Signature(reg_order).get_cirq_quregs().values() for q in v
-        ]
+        flat_named_qubits = [q for v in Signature(reg_order).get_cirq_quregs().values() for q in v]
         expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
         assert flat_named_qubits == expected_qubits
 
@@ -73,14 +71,9 @@ def test_registers_build():
 
 
 def test_and_regs():
-    regs = Signature(
-        [Register('control', 2), Register('target', 1, side=Side.RIGHT)]
-    )
+    regs = Signature([Register('control', 2), Register('target', 1, side=Side.RIGHT)])
     assert list(regs.lefts()) == [Register('control', 2)]
-    assert list(regs.rights()) == [
-        Register('control', 2),
-        Register('target', 1, side=Side.RIGHT),
-    ]
+    assert list(regs.rights()) == [Register('control', 2), Register('target', 1, side=Side.RIGHT)]
 
     assert regs['control'] == Register('control', 2)
     with pytest.raises(KeyError):

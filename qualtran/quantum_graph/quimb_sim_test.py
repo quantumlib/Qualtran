@@ -7,16 +7,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    BloqBuilder,
-    DanglingT,
-    Register,
-    Signature,
-    Side,
-    Soquet,
-    SoquetT,
-)
+from qualtran import Bloq, BloqBuilder, DanglingT, Register, Side, Signature, Soquet, SoquetT
 from qualtran.bloq_algos.basic_gates import CNOT, XGate, ZGate
 from qualtran.quantum_graph.composite_bloq import (
     _get_dangling_soquets,

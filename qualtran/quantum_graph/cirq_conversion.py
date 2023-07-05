@@ -20,7 +20,6 @@ from qualtran.quantum_graph.composite_bloq import (
     CompositeBloq,
     SoquetT,
 )
-from qualtran.quantum_graph.registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -29,6 +28,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Side, Signature
 
 CirqQuregT = NDArray[cirq.Qid]
 CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
@@ -254,9 +254,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
             to match Cirq diagrams.
     """
 
-    def __init__(
-        self, bloq: Bloq, reg_to_wires: Optional[Callable[[Register], List[str]]] = None
-    ):
+    def __init__(self, bloq: Bloq, reg_to_wires: Optional[Callable[[Register], List[str]]] = None):
         self._bloq = bloq
         self._legacy_regs, self._compat_name_map = self._init_legacy_regs(bloq)
         self._reg_to_wires = reg_to_wires

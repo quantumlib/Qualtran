@@ -7,9 +7,9 @@ from attrs import field, frozen
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import BloqBuilder, CompositeBloq, map_soqs, SoquetT
-from qualtran.quantum_graph.registers import Register, Signature
 from qualtran.quantum_graph.musical_score import Circle, WireSymbol
 from qualtran.quantum_graph.quantum_graph import Soquet
+from qualtran.quantum_graph.registers import Register, Signature
 
 
 def _no_nesting_ctrls_yet(instance, field, val):
@@ -36,9 +36,7 @@ class ControlledBloq(Bloq):
 
     @cached_property
     def registers(self) -> Signature:
-        return Signature(
-            [Register(name="control", bitsize=1)] + list(self.subbloq.registers)
-        )
+        return Signature([Register(name="control", bitsize=1)] + list(self.subbloq.registers))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         if not isinstance(self.subbloq, CompositeBloq):

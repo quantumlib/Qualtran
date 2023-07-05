@@ -3,6 +3,7 @@
 from typing import Sequence
 
 import cirq
+
 from qualtran import Register
 from qualtran.bloq_algos.basic_gates import CSwap
 from qualtran.bloq_algos.swap_network import CSwapApprox, SwapWithZero

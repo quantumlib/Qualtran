@@ -12,8 +12,8 @@ from sympy import Expr
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
 from qualtran.quantum_graph.composite_bloq import SoquetT
-from qualtran.quantum_graph.registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import BloqInstance, Soquet
+from qualtran.quantum_graph.registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

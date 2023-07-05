@@ -233,12 +233,12 @@ def generate_ref_docs():
         cirq_conversion,
         classical_sim,
         composite_bloq,
-        registers,
         graphviz,
         meta_bloq,
         musical_score,
         quantum_graph,
         quimb_sim,
+        registers,
         util_bloqs,
     )
 

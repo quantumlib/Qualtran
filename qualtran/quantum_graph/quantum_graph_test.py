@@ -1,6 +1,6 @@
 import pytest
 
-from qualtran import BloqInstance, DanglingT, Register, LeftDangle, RightDangle, Side, Soquet
+from qualtran import BloqInstance, DanglingT, LeftDangle, Register, RightDangle, Side, Soquet
 from qualtran.quantum_graph.bloq_test import TestCNOT
 
 

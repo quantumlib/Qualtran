@@ -14,8 +14,8 @@ from qualtran.quantum_graph.composite_bloq import (
     CompositeBloq,
     SoquetT,
 )
-from qualtran.quantum_graph.registers import Signature
 from qualtran.quantum_graph.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
+from qualtran.quantum_graph.registers import Signature
 
 
 def cbloq_to_quimb(

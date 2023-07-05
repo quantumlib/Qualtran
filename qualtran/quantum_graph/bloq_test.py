@@ -6,7 +6,7 @@ import pytest
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, CompositeBloq, Signature, Side
+from qualtran import Bloq, CompositeBloq, Side, Signature
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.cirq_conversion import CirqQuregT
 

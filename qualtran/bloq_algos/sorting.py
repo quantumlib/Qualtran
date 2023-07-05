@@ -2,7 +2,7 @@ import numpy as np
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, Register, Signature, Side
+from qualtran import Bloq, Register, Side, Signature
 from qualtran.bloq_algos.arithmetic import GreaterThan
 
 
