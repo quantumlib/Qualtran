@@ -61,7 +61,7 @@ def _assign_ids_to_bloqs_and_soqs(
     for binst in bloq_instances:
         add(binst, f'{binst.bloq.__class__.__name__}')
 
-        for groupname, groupregs in binst.bloq.registers.groups():
+        for groupname, groupregs in binst.bloq.signature.groups():
             add((binst, groupname), groupname)
 
     for soq in all_soquets:
@@ -239,7 +239,7 @@ class GraphDrawer:
 
         label += f'  <TR><TD colspan="2">{self.get_binst_header_text(binst)}</TD></TR>\n'
 
-        for groupname, groupregs in binst.bloq.registers.groups():
+        for groupname, groupregs in binst.bloq.signature.groups():
             lefts, rights, thrus = _parition_registers_in_a_group(groupregs, binst)
 
             # Special case: all registers are THRU and we don't need different left and right
@@ -328,12 +328,12 @@ class GraphDrawer:
         This is the main entry-point to this class.
         """
         graph = pydot.Dot('my_graph', graph_type='digraph', rankdir='LR')
-        graph = self.add_dangles(graph, self._cbloq.registers, LeftDangle)
+        graph = self.add_dangles(graph, self._cbloq.signature, LeftDangle)
 
         for binst in self._binsts:
             graph = self.add_binst(graph, binst)
 
-        graph = self.add_dangles(graph, self._cbloq.registers, RightDangle)
+        graph = self.add_dangles(graph, self._cbloq.signature, RightDangle)
 
         for cxn in self._cbloq.connections:
             graph = self.add_cxn(graph, cxn)
@@ -403,7 +403,7 @@ class ClassicalSimGraphDrawer(PrettyGraphDrawer):
         from qualtran.quantum_graph.classical_sim import _cbloq_call_classically
 
         _, soq_assign = _cbloq_call_classically(
-            self._cbloq.registers, vals, self._cbloq._binst_graph
+            self._cbloq.signature, vals, self._cbloq._binst_graph
         )
         self.soq_assign = soq_assign
 

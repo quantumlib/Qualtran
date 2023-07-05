@@ -15,7 +15,7 @@ from qualtran.quantum_graph.registers import Register, Signature
 def _no_nesting_ctrls_yet(instance, field, val):
     # https://github.com/quantumlib/cirq-qubitization/issues/149
     assert isinstance(val, Bloq)
-    if 'control' in [reg.name for reg in val.registers]:
+    if 'control' in [reg.name for reg in val.signature]:
         raise NotImplementedError("`ControlledBloq` doesn't support nesting yet.") from None
 
 
@@ -35,14 +35,14 @@ class ControlledBloq(Bloq):
         return f'C[{self.subbloq}]'
 
     @cached_property
-    def registers(self) -> Signature:
-        return Signature([Register(name="control", bitsize=1)] + list(self.subbloq.registers))
+    def signature(self) -> Signature:
+        return Signature([Register(name="control", bitsize=1)] + list(self.subbloq.signature))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         if not isinstance(self.subbloq, CompositeBloq):
             return ControlledBloq(self.subbloq.decompose_bloq()).decompose_bloq()
 
-        bb, initial_soqs = BloqBuilder.from_registers(self.registers)
+        bb, initial_soqs = BloqBuilder.from_registers(self.signature)
         ctrl = initial_soqs['control']
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []

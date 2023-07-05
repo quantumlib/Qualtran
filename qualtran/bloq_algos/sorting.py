@@ -32,7 +32,7 @@ class Comparator(Bloq):
     bitsize: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature(
             [
                 Register('a', 1, shape=(self.bitsize,)),
@@ -78,7 +78,7 @@ class BitonicSort(Bloq):
     k: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature([Register("input", bitsize=self.bitsize, shape=(self.bitsize,))])
 
     def short_name(self) -> str:

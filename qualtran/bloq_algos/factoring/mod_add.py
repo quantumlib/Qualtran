@@ -30,7 +30,7 @@ class CtrlScaleModAdd(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature(
             [
                 Register('ctrl', bitsize=1),
@@ -76,7 +76,7 @@ class CtrlModAddK(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
     def bloq_counts(self, ss):
@@ -107,7 +107,7 @@ class CtrlAddK(Bloq):
         return f'x += {self.k}'
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
     def bloq_counts(self, mgr):

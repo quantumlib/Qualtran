@@ -20,7 +20,7 @@ class RotationBloq(Bloq, metaclass=abc.ABCMeta):
     eps: float = 1e-11
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
     def t_complexity(self):

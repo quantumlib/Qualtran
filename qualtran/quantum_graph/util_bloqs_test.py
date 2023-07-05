@@ -14,7 +14,7 @@ from qualtran.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 @pytest.mark.parametrize('bloq_cls', [Split, Join])
 def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
     bloq = bloq_cls(n)
-    for name, group_regs in bloq.registers.groups():
+    for name, group_regs in bloq.signature.groups():
 
         if any(reg.side is Side.THRU for reg in group_regs):
             assert not any(reg.side != Side.THRU for reg in group_regs)
@@ -50,7 +50,7 @@ def test_classical_sim():
     y = bb.join(xs)
     cbloq = bb.finalize(y=y)
 
-    ret, assign = _cbloq_call_classically(cbloq.registers, vals={}, binst_graph=cbloq._binst_graph)
+    ret, assign = _cbloq_call_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
     assert assign[x] == 0
 
     assert assign[xs[0]] == 0

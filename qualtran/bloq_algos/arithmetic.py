@@ -25,7 +25,7 @@ class Add(Bloq):
     bitsize: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature.build(a=self.bitsize, b=self.bitsize)
 
     def pretty_name(self) -> str:
@@ -59,7 +59,7 @@ class Square(Bloq):
     bitsize: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature.build(a=self.bitsize, result=2 * self.bitsize)
 
     def pretty_name(self) -> str:
@@ -99,7 +99,7 @@ class SumOfSquares(Bloq):
     k: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature(
             [
                 Register("input", bitsize=self.bitsize, shape=(self.k,)),
@@ -147,7 +147,7 @@ class Product(Bloq):
     b_bitsize: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature.build(
             a=self.a_bitsize, b=self.b_bitsize, result=2 * max(self.a_bitsize, self.b_bitsize)
         )
@@ -187,7 +187,7 @@ class GreaterThan(Bloq):
     bitsize: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature.build(a=self.bitsize, b=self.bitsize, result=1)
 
     def pretty_name(self) -> str:

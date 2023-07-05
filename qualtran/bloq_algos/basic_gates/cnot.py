@@ -34,7 +34,7 @@ class CNOT(Bloq):
     """
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, target=1)
 
     def add_my_tensors(

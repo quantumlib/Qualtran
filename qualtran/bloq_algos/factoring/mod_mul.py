@@ -39,7 +39,7 @@ class CtrlModMul(Bloq):
         assert self.k < self.mod
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize)
 
     def _Add(self, k: Union[int, sympy.Expr]):

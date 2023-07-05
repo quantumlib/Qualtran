@@ -80,7 +80,7 @@ class CompositeBloq(Bloq):
         self._registers = registers
 
     @property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         """The registers defining the inputs and outputs of this Bloq."""
         return self._registers
 
@@ -150,7 +150,7 @@ class CompositeBloq(Bloq):
             qubit_manager = cirq.ops.SimpleQubitManager()
 
         return _cbloq_to_cirq_circuit(
-            self.registers, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
+            self.signature, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
         )
 
     @classmethod
@@ -181,15 +181,15 @@ class CompositeBloq(Bloq):
         """Support classical data by recursing into the composite bloq."""
         from qualtran.quantum_graph.classical_sim import _cbloq_call_classically
 
-        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
+        out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
         return out_vals
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Support classical data by recursing into the composite bloq."""
         from qualtran.quantum_graph.classical_sim import _cbloq_call_classically
 
-        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
-        return tuple(out_vals[reg.name] for reg in self.registers.rights())
+        out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
+        return tuple(out_vals[reg.name] for reg in self.signature.rights())
 
     def t_complexity(self) -> TComplexity:
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""
@@ -241,7 +241,7 @@ class CompositeBloq(Bloq):
         use `map_soqs` to map this cbloq's soquets to the correct ones for the
         new bloq.
 
-        >>> bb, _ = BloqBuilder.from_registers(self.registers)
+        >>> bb, _ = BloqBuilder.from_registers(self.signature)
         >>> soq_map: List[Tuple[SoquetT, SoquetT]] = []
         >>> for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
         >>>    in_soqs = map_soqs(in_soqs, soq_map)
@@ -259,12 +259,12 @@ class CompositeBloq(Bloq):
 
         for binst, preds, succs in self.iter_bloqnections():
             in_soqs = _cxn_to_soq_dict(
-                binst.bloq.registers.lefts(),
+                binst.bloq.signature.lefts(),
                 preds,
                 get_me=lambda x: x.right,
                 get_assign=lambda x: x.left,
             )
-            out_soqs = tuple(_reg_to_soq(binst, reg) for reg in binst.bloq.registers.rights())
+            out_soqs = tuple(_reg_to_soq(binst, reg) for reg in binst.bloq.signature.rights())
             yield binst, in_soqs, out_soqs
 
     def final_soqs(self) -> Dict[str, SoquetT]:
@@ -274,7 +274,7 @@ class CompositeBloq(Bloq):
         """
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
         return _cxn_to_soq_dict(
-            self.registers.rights(),
+            self.signature.rights(),
             final_preds,
             get_me=lambda x: x.right,
             get_assign=lambda x: x.left,
@@ -282,7 +282,7 @@ class CompositeBloq(Bloq):
 
     def copy(self) -> 'CompositeBloq':
         """Create a copy of this composite bloq by re-building it."""
-        bb, _ = BloqBuilder.from_registers(self.registers)
+        bb, _ = BloqBuilder.from_registers(self.signature)
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = map_soqs(in_soqs, soq_map)
@@ -314,7 +314,7 @@ class CompositeBloq(Bloq):
             DidNotFlattenAnythingError: If none of the bloq instances satisfied `pred`.
 
         """
-        bb, _ = BloqBuilder.from_registers(self.registers)
+        bb, _ = BloqBuilder.from_registers(self.signature)
 
         # We take particular care during flattening to preserve the `binst.i` of bloq instances
         # that are not flattened. We do this by initializing the bloq builder's `i` counter
@@ -559,9 +559,9 @@ def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
     """
     cbloq = bloq.decompose_bloq()
 
-    if bloq.registers != cbloq.registers:
+    if bloq.signature != cbloq.signature:
         err = "Parent registers do not match registers"
-        for reg, dreg in itertools.zip_longest(bloq.registers, cbloq.registers):
+        for reg, dreg in itertools.zip_longest(bloq.signature, cbloq.signature):
             if reg != dreg:
                 raise BloqError(f'{err}: {reg} != {dreg}')
 
@@ -577,9 +577,9 @@ def assert_registers_match_dangling(cbloq: CompositeBloq):
     to either `LeftDangle` or `RightDangle` to indicate the soquet's status as an input
     or output, respectively.
     """
-    lefts = frozenset(_get_flat_dangling_soqs(cbloq.registers, right=False))
+    lefts = frozenset(_get_flat_dangling_soqs(cbloq.signature, right=False))
     seen_lefts = set()
-    rights = frozenset(_get_flat_dangling_soqs(cbloq.registers, right=True))
+    rights = frozenset(_get_flat_dangling_soqs(cbloq.signature, right=True))
     seen_rights = set()
 
     for cxn in cbloq.connections:
@@ -666,7 +666,7 @@ def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
         if isinstance(soq.binst, DanglingT):
             continue
 
-        if soq.reg not in soq.binst.bloq.registers:
+        if soq.reg not in soq.binst.bloq.signature:
             raise BloqError(f"{soq}'s register doesn't exist on its bloq {soq.binst.bloq}")
 
 
@@ -1021,10 +1021,10 @@ class BloqBuilder:
             return self._add_cxn(binst, idxed_soq, reg, idx)
 
         _process_soquets(
-            registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
+            registers=bloq.signature.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
         )
         out_soqs = tuple(
-            _reg_to_soq(binst, reg, available=self._available) for reg in bloq.registers.rights()
+            _reg_to_soq(binst, reg, available=self._available) for reg in bloq.signature.rights()
         )
         return out_soqs
 
@@ -1050,7 +1050,7 @@ class BloqBuilder:
 
         # Initial mapping of LeftDangle according to user-provided in_soqs.
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
-            (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.registers.lefts()
+            (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.signature.lefts()
         ]
 
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
@@ -1059,7 +1059,7 @@ class BloqBuilder:
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
         fsoqs = map_soqs(cbloq.final_soqs(), soq_map)
-        return tuple(fsoqs[reg.name] for reg in cbloq.registers.rights())
+        return tuple(fsoqs[reg.name] for reg in cbloq.signature.rights())
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.

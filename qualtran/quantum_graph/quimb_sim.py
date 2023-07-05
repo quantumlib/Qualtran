@@ -65,13 +65,13 @@ def cbloq_to_quimb(
         assert isinstance(bloq, Bloq)
 
         inc_d = _cxn_to_soq_dict(
-            bloq.registers.lefts(),
+            bloq.signature.lefts(),
             incoming,
             get_me=lambda cxn: cxn.right,
             get_assign=lambda cxn: cxn.left,
         )
         out_d = _cxn_to_soq_dict(
-            bloq.registers.rights(),
+            bloq.signature.rights(),
             outgoing,
             get_me=lambda cxn: cxn.left,
             get_assign=_assign_outgoing,
@@ -119,7 +119,7 @@ def _cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
     `cbloq_to_quimb` and `TensorNetwork.to_dense` directly.
     """
     tn, _ = cbloq_to_quimb(cbloq)
-    inds = get_right_and_left_inds(cbloq.registers)
+    inds = get_right_and_left_inds(cbloq.signature)
 
     if inds:
         return tn.to_dense(*inds)

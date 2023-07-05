@@ -54,7 +54,7 @@ class _ZVector(Bloq):
         return '1' if self.bit else '0'
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
 
     def add_my_tensors(
@@ -136,7 +136,7 @@ class ZGate(Bloq):
     """
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
     def add_my_tensors(
@@ -191,7 +191,7 @@ class _IntVector(Bloq):
             raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         side = Side.RIGHT if self.state else Side.LEFT
         return Signature([Register('val', bitsize=self.bitsize, side=side)])
 

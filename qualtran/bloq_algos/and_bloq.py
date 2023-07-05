@@ -39,7 +39,7 @@ class And(Bloq):
     adjoint: bool = False
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('ctrl', 1, shape=(2,)),
@@ -132,7 +132,7 @@ class MultiAnd(Bloq):
     adjoint: bool = False
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         one_side = Side.RIGHT if not self.adjoint else Side.LEFT
         return Signature(
             [

@@ -92,7 +92,7 @@ def test_dtype_validation():
 @frozen
 class ApplyClassicalTest(Bloq):
     @property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature(
             [Register('x', 1, shape=(5,)), Register('z', 1, shape=(5,), side=Side.RIGHT)]
         )
@@ -122,7 +122,7 @@ def test_cnot_assign_dict():
     cbloq = CNOT().as_composite_bloq()
     binst_graph = cbloq._binst_graph
     vals = dict(ctrl=1, target=0)
-    out_vals, soq_assign = _cbloq_call_classically(cbloq.registers, vals, binst_graph)
+    out_vals, soq_assign = _cbloq_call_classically(cbloq.signature, vals, binst_graph)
     assert out_vals == {'ctrl': 1, 'target': 1}
     # left-dangle, regs, right-dangle
     assert len(soq_assign) == 2 + 2 + 2

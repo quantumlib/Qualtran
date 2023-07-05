@@ -248,15 +248,15 @@ def _binst_assign_line(
         return _get_in_vals(binst, reg, soq_assign=soq_assign)
 
     bloq = binst.bloq
-    in_vals = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
+    in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
     partial_out_vals = {
-        reg.name: in_vals[reg.name] for reg in bloq.registers if reg.side is Side.THRU
+        reg.name: in_vals[reg.name] for reg in bloq.signature if reg.side is Side.THRU
     }
 
     # The following will use `partial_out_vals` to re-use existing THRU lines; otherwise
     # the following will allocate new lines.
     _update_assign_from_vals(
-        bloq.registers.rights(),
+        bloq.signature.rights(),
         binst,
         partial_out_vals,
         soq_assign,
@@ -266,7 +266,7 @@ def _binst_assign_line(
     )
 
     # Free any purely-left registers.
-    for reg in bloq.registers:
+    for reg in bloq.signature:
         if reg.side is Side.LEFT:
             manager.free(binst, reg, in_vals[reg.name])
 
@@ -531,7 +531,7 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
     cbloq = bloq.as_composite_bloq()
 
     _, soq_assign, manager = _cbloq_musical_score(
-        cbloq.registers, binst_graph=cbloq._binst_graph, manager=manager
+        cbloq.signature, binst_graph=cbloq._binst_graph, manager=manager
     )
     msd = MusicalScoreData(
         max_x=max(v.seq_x for v in soq_assign.values()),

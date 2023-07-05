@@ -44,7 +44,7 @@ def _manually_make_test_cbloq_cxns():
     regs = Signature.build(q1=1, q2=1)
     q1, q2 = regs
     tcn = TestCNOT()
-    control, target = tcn.registers
+    control, target = tcn.signature
     binst1 = BloqInstance(tcn, 1)
     binst2 = BloqInstance(tcn, 2)
     assert binst1 != binst2
@@ -60,7 +60,7 @@ def _manually_make_test_cbloq_cxns():
 
 class TestTwoCNOT(Bloq):
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(q1=1, q2=1)
 
     def build_composite_bloq(
@@ -133,7 +133,7 @@ def test_iter_bloqsoqs():
 
 def test_map_soqs():
     cbloq = TestTwoCNOT().decompose_bloq()
-    bb, _ = BloqBuilder.from_registers(cbloq.registers)
+    bb, _ = BloqBuilder.from_registers(cbloq.signature)
     bb._i = 100
 
     soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -293,17 +293,17 @@ def test_finalize_alloc():
     z = bb.allocate(1)
 
     cbloq = bb.finalize(x=x2, y=y2, z=z)
-    assert len(list(cbloq.registers.rights())) == 3
+    assert len(list(cbloq.signature.rights())) == 3
 
 
 def test_get_soquets():
-    soqs = _get_dangling_soquets(Join(10).registers, right=True)
+    soqs = _get_dangling_soquets(Join(10).signature, right=True)
     assert list(soqs.keys()) == ['join']
     soq = soqs['join']
     assert soq.binst == RightDangle
     assert soq.reg.bitsize == 10
 
-    soqs = _get_dangling_soquets(Join(10).registers, right=False)
+    soqs = _get_dangling_soquets(Join(10).signature, right=False)
     assert list(soqs.keys()) == ['join']
     soq = soqs['join']
     assert soq.shape == (10,)
@@ -314,7 +314,7 @@ def test_assert_registers_match_parent():
     @frozen
     class BadRegBloq(Bloq):
         @cached_property
-        def registers(self) -> 'Signature':
+        def signature(self) -> 'Signature':
             return Signature.build(x=2, y=3)
 
         def decompose_bloq(self) -> 'CompositeBloq':
@@ -363,7 +363,7 @@ def test_assert_soquets_used_exactly_once():
     cxns, regs = _manually_make_test_cbloq_cxns()
     binst1 = BloqInstance(TestCNOT(), 1)
     binst2 = BloqInstance(TestCNOT(), 2)
-    control, target = TestCNOT().registers
+    control, target = TestCNOT().signature
 
     cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
     cbloq = CompositeBloq(cxns, regs)
@@ -377,7 +377,7 @@ def test_assert_soquets_used_exactly_once():
 class TestMultiCNOT(Bloq):
     # A minimal test-bloq with a complicated `target` register.
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature([Register('control', 1), Register('target', 1, shape=(2, 3))])
 
     def build_composite_bloq(
@@ -399,7 +399,7 @@ def test_complicated_target_register():
     # note: this includes the two `Dangling` generations.
     assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
 
-    circuit, _ = cbloq.to_cirq_circuit(**bloq.registers.get_cirq_quregs())
+    circuit, _ = cbloq.to_cirq_circuit(**bloq.signature.get_cirq_quregs())
     cirq.testing.assert_has_diagram(
         circuit,
         """\
@@ -453,7 +453,7 @@ def test_util_convenience_methods_errors():
 @frozen
 class Atom(Bloq):
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(stuff=1)
 
     def t_complexity(self) -> 'TComplexity':
@@ -462,7 +462,7 @@ class Atom(Bloq):
 
 class TestSerialBloq(Bloq):
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(stuff=1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
@@ -475,7 +475,7 @@ class TestSerialBloq(Bloq):
 @frozen
 class TestParallelBloq(Bloq):
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(stuff=3)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:

@@ -151,11 +151,11 @@ def _binst_on_classical_vals(
         return _get_in_vals(binst, reg, soq_assign=soq_assign)
 
     bloq = binst.bloq
-    in_vals = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
+    in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
 
     # Apply function
     out_vals = bloq.on_classical_vals(**in_vals)
-    _update_assign_from_vals(bloq.registers.rights(), binst, out_vals, soq_assign)
+    _update_assign_from_vals(bloq.signature.rights(), binst, out_vals, soq_assign)
 
 
 def _cbloq_call_classically(

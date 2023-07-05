@@ -42,7 +42,7 @@ class ModExp(Bloq):
     x_bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature(
             [
                 Register('exponent', bitsize=self.exp_bitsize),

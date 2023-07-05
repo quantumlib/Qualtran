@@ -39,7 +39,7 @@ class CSwapApprox(Bloq):
     bitsize: int
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def cirq_decomposition(
@@ -71,7 +71,7 @@ class CSwapApprox(Bloq):
     ) -> Dict[str, 'SoquetT']:
         from qualtran.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
 
-        cirq_quregs = self.registers.get_cirq_quregs()
+        cirq_quregs = self.signature.get_cirq_quregs()
         cbloq = cirq_circuit_to_cbloq(cirq.Circuit(self.cirq_decomposition(**cirq_quregs)))
 
         # Split our registers to "flat" api from cirq circuit; add the circuit; join back up.
@@ -111,7 +111,7 @@ class SwapWithZero(Bloq):
     n_target_registers: int
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('selection', self.selection_bitsize),

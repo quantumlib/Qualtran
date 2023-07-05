@@ -39,7 +39,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         """The input and output names and types for this bloq.
 
         This property can be thought of as analogous to the function signature in ordinary
@@ -94,7 +94,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
-        bb, initial_soqs = BloqBuilder.from_registers(self.registers, add_registers_allowed=False)
+        bb, initial_soqs = BloqBuilder.from_registers(self.signature, add_registers_allowed=False)
         out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
         if out_soqs is NotImplemented:
             raise NotImplementedError(f"Cannot decompose {self}.")
@@ -118,10 +118,10 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
-        bb, initial_soqs = BloqBuilder.from_registers(self.registers, add_registers_allowed=False)
+        bb, initial_soqs = BloqBuilder.from_registers(self.signature, add_registers_allowed=False)
         ret_soqs_tuple = bb.add(self, **initial_soqs)
-        assert len(list(self.registers.rights())) == len(ret_soqs_tuple)
-        ret_soqs = {reg.name: v for reg, v in zip(self.registers.rights(), ret_soqs_tuple)}
+        assert len(list(self.signature.rights())) == len(ret_soqs_tuple)
+        ret_soqs = {reg.name: v for reg, v in zip(self.signature.rights(), ret_soqs_tuple)}
         return bb.finalize(**ret_soqs)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
@@ -170,7 +170,7 @@ class Bloq(metaclass=abc.ABCMeta):
             registers.
         """
         res = self.as_composite_bloq().on_classical_vals(**vals)
-        return tuple(res[reg.name] for reg in self.registers.rights())
+        return tuple(res[reg.name] for reg in self.signature.rights())
 
     def tensor_contract(self) -> 'NDArray':
         """Return a contracted, dense ndarray representing this bloq.
@@ -214,7 +214,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         cbloq = self.decompose_bloq()
         data, inds = _cbloq_as_contracted_tensor_data_and_inds(
-            cbloq=cbloq, registers=self.registers, incoming=incoming, outgoing=outgoing
+            cbloq=cbloq, registers=self.signature, incoming=incoming, outgoing=outgoing
         )
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 

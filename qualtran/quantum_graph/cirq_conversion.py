@@ -52,7 +52,7 @@ class CirqGateAsBloq(Bloq):
         return f'cirq.{g}'
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature([Register('qubits', 1, shape=(self.n_qubits,))])
 
     @cached_property
@@ -188,10 +188,10 @@ def _binst_as_cirq_op(
         return _get_in_cirq_quregs(binst, reg, soq_assign=soq_assign)
 
     bloq = binst.bloq
-    cirq_quregs = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
+    cirq_quregs = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
 
     op, out_quregs = bloq.as_cirq_op(qubit_manager=qubit_manager, **cirq_quregs)
-    _update_assign_from_cirq_quregs(bloq.registers.rights(), binst, out_quregs, soq_assign)
+    _update_assign_from_cirq_quregs(bloq.signature.rights(), binst, out_quregs, soq_assign)
     return op
 
 
@@ -286,7 +286,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
         legacy_regs: List[LegacyRegister] = []
         side_suffixes = {Side.LEFT: '_l', Side.RIGHT: '_r', Side.THRU: ''}
         compat_name_map = {}
-        for reg in bloq.registers:
+        for reg in bloq.signature:
             if not reg.shape:
                 compat_name = f'{reg.name}{side_suffixes[reg.side]}'
                 compat_name_map[compat_name] = (reg, ())
@@ -321,7 +321,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
         """
         flat_qubits: List[cirq.Qid] = []
         out_quregs: Dict[str, 'CirqQuregT'] = {}
-        for reg in bloq.registers:
+        for reg in bloq.signature:
             if reg.side is Side.THRU:
                 for i, q in enumerate(cirq_quregs[reg.name].reshape(-1)):
                     flat_qubits.append(q)
@@ -358,7 +358,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
 
         # Initialize shapely qubit registers to pass to bloqs infrastructure
         cirq_quregs: Dict[str, CirqQuregT] = {}
-        for reg in self._bloq.registers:
+        for reg in self._bloq.signature:
             if reg.shape:
                 shape = reg.shape + (reg.bitsize,)
                 cirq_quregs[reg.name] = np.empty(shape, dtype=object)
@@ -391,7 +391,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
             reg_to_wires = lambda reg: [reg.name] * reg.total_bits()
 
         wire_symbols = []
-        for reg in self._bloq.registers:
+        for reg in self._bloq.signature:
             symbs = reg_to_wires(reg)
             assert len(symbs) == reg.total_bits()
             wire_symbols.extend(symbs)

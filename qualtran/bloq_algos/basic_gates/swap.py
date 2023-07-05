@@ -41,7 +41,7 @@ class TwoBitSwap(Bloq):
         return 'swap'
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(x=1, y=1)
 
     def as_cirq_op(
@@ -86,7 +86,7 @@ class TwoBitCSwap(Bloq):
         return 'swap'
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=1, y=1)
 
     def as_cirq_op(
@@ -152,7 +152,7 @@ class CSwap(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(

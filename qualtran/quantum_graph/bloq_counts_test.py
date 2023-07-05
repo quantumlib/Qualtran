@@ -17,7 +17,7 @@ class BigBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
     def bloq_counts(self, ssa: SympySymbolAllocator):
@@ -29,7 +29,7 @@ class DecompBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -45,7 +45,7 @@ class SubBloq(Bloq):
     unrelated_param: float
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
     def bloq_counts(self, ssa: SympySymbolAllocator):

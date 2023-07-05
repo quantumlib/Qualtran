@@ -34,7 +34,7 @@ class Split(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register(name='split', bitsize=self.n, shape=tuple(), side=Side.LEFT),
@@ -89,7 +89,7 @@ class Join(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature(
             [
                 Register('join', bitsize=1, shape=(self.n,), side=Side.LEFT),
@@ -142,7 +142,7 @@ class Allocate(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature([Register('alloc', bitsize=self.n, side=Side.RIGHT)])
 
     def on_classical_vals(self) -> Dict[str, int]:
@@ -160,7 +160,7 @@ class Free(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature([Register('free', bitsize=self.n, side=Side.LEFT)])
 
     def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
@@ -185,5 +185,5 @@ class ArbitraryClifford(Bloq):
     n: Union[int, Expr]
 
     @cached_property
-    def registers(self) -> Signature:
+    def signature(self) -> Signature:
         return Signature([Register('x', bitsize=self.n)])

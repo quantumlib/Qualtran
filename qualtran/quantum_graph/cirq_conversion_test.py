@@ -17,11 +17,11 @@ def test_cirq_gate():
     toffoli = CirqGateAsBloq(cirq.TOFFOLI)
 
     for b in [x, rx, toffoli]:
-        assert len(b.registers) == 1
-        assert b.registers[0].side == Side.THRU
+        assert len(b.signature) == 1
+        assert b.signature[0].side == Side.THRU
 
-    assert x.registers[0].shape == (1,)
-    assert toffoli.registers[0].shape == (3,)
+    assert x.signature[0].shape == (1,)
+    assert toffoli.signature[0].shape == (3,)
 
     assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
     assert x.pretty_name() == 'cirq.X'
@@ -65,7 +65,7 @@ def test_cbloq_to_cirq_circuit():
 @frozen
 class SwapTwoBitsTest(Bloq):
     @property
-    def registers(self):
+    def signature(self):
         return Signature.build(x=1, y=1)
 
     def as_cirq_op(
@@ -100,7 +100,7 @@ class SwapTest(Bloq):
     n: int
 
     @property
-    def registers(self):
+    def signature(self):
         return Signature.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
@@ -142,7 +142,7 @@ def test_swap():
 
 def test_multi_and_allocates():
     multi_and = MultiAnd(cvs=(1, 1, 1, 1))
-    cirq_quregs = multi_and.registers.get_cirq_quregs()
+    cirq_quregs = multi_and.signature.get_cirq_quregs()
     assert sorted(cirq_quregs.keys()) == ['ctrl']
     multi_and_circuit, out_quregs = multi_and.decompose_bloq().to_cirq_circuit(
         **cirq_quregs, qubit_manager=cirq.ops.SimpleQubitManager()

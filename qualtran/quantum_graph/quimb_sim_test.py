@@ -19,7 +19,7 @@ from qualtran.quantum_graph.quimb_sim import cbloq_to_quimb, get_right_and_left_
 @frozen
 class TensorAdderTester(Bloq):
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature(
             [
                 Register('x', bitsize=2, side=Side.LEFT),
@@ -67,11 +67,11 @@ class TensorAdderTester(Bloq):
 def _old_bloq_to_dense(bloq: Bloq) -> NDArray:
     """Old code for tensor-contracting a bloq without wrapping it in length-1 composite bloq."""
     tn = qtn.TensorNetwork([])
-    lsoqs = _get_dangling_soquets(bloq.registers, right=False)
-    rsoqs = _get_dangling_soquets(bloq.registers, right=True)
+    lsoqs = _get_dangling_soquets(bloq.signature, right=False)
+    rsoqs = _get_dangling_soquets(bloq.signature, right=True)
     bloq.add_my_tensors(tn, None, incoming=lsoqs, outgoing=rsoqs)
 
-    inds = get_right_and_left_inds(bloq.registers)
+    inds = get_right_and_left_inds(bloq.signature)
     matrix = tn.to_dense(*inds)
     return matrix
 
@@ -93,7 +93,7 @@ def test_bloq_to_dense():
 @frozen
 class TensorAdderSimple(Bloq):
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(x=1)
 
     def add_my_tensors(
@@ -128,7 +128,7 @@ def test_cbloq_to_quimb():
 @frozen
 class XNest(Bloq):
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(r=1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', r: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -139,7 +139,7 @@ class XNest(Bloq):
 @frozen
 class XDoubleNest(Bloq):
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(s=1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', s: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -164,7 +164,7 @@ def test_double_nest():
 @frozen
 class ComplexBloq(Bloq):
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature([Register('q0', 1), Register('q1', 1)])
 
     def build_composite_bloq(

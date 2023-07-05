@@ -48,7 +48,7 @@ class _XVector(Bloq):
         return '-' if self.bit else '+'
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
 
     def add_my_tensors(
@@ -116,7 +116,7 @@ class XGate(Bloq):
     """
 
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
     def add_my_tensors(

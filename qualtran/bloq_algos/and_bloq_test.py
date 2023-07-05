@@ -165,7 +165,7 @@ def test_notebook():
 @frozen
 class AndIdentity(Bloq):
     @cached_property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(q0=1, q1=1)
 
     def build_composite_bloq(
