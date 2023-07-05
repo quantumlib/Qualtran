@@ -493,11 +493,11 @@ def _cxn_to_soq_dict(
     return soqdict
 
 
-def _get_dangling_soquets(regs: Signature, right=True) -> Dict[str, SoquetT]:
+def _get_dangling_soquets(signature: Signature, right=True) -> Dict[str, SoquetT]:
     """Get instantiated dangling soquets from a `Signature`.
 
     Args:
-        regs: The registers
+        signature: The registers
         right: If True, return soquets corresponding to right registers; otherwise left.
 
     Returns:
@@ -507,10 +507,10 @@ def _get_dangling_soquets(regs: Signature, right=True) -> Dict[str, SoquetT]:
     """
 
     if right:
-        regs = regs.rights()
+        regs = signature.rights()
         dang = RightDangle
     else:
-        regs = regs.lefts()
+        regs = signature.lefts()
         dang = LeftDangle
 
     all_soqs: Dict[str, SoquetT] = {}
