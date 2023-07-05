@@ -8,11 +8,9 @@ import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization import Bloq, FancyRegister, FancyRegisters, Side, SoquetT
 from cirq_qubitization.quantum_graph.bloq_counts import big_O
 from cirq_qubitization.quantum_graph.classical_sim import ints_to_bits
-from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:

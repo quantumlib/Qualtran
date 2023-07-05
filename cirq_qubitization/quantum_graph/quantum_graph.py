@@ -1,11 +1,11 @@
 """Plumbing for bloq-to-bloq `Connection`s."""
 
-from typing import Tuple, Union
+from typing import Tuple, TYPE_CHECKING, Union
 
 from attrs import field, frozen
 
-from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister
+if TYPE_CHECKING:
+    from cirq_qubitization import Bloq, FancyRegister
 
 
 @frozen
@@ -18,7 +18,7 @@ class BloqInstance:
             within a `CompositeBloq`.
     """
 
-    bloq: Bloq
+    bloq: 'Bloq'
     i: int
 
     def __str__(self):
@@ -86,7 +86,7 @@ class Soquet:
     """
 
     binst: Union[BloqInstance, DanglingT]
-    reg: FancyRegister
+    reg: 'FancyRegister'
     idx: Tuple[int, ...] = field(converter=_to_tuple, default=tuple())
 
     @idx.validator

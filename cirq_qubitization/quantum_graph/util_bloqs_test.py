@@ -3,13 +3,10 @@ from typing import Type
 import numpy as np
 import pytest
 
+from cirq_qubitization import Bloq, CompositeBloqBuilder, Side, Soquet
 from cirq_qubitization.bloq_algos.basic_gates import XGate
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.classical_sim import _cbloq_call_classically
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import Side
-from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 from cirq_qubitization.quantum_graph.util_bloqs import Allocate, Free, Join, Split
 
 

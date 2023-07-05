@@ -10,8 +10,21 @@ from attrs import frozen
 from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
+from cirq_qubitization import (
+    Bloq,
+    BloqError,
+    BloqInstance,
+    CompositeBloq,
+    CompositeBloqBuilder,
+    Connection,
+    FancyRegister,
+    FancyRegisters,
+    LeftDangle,
+    RightDangle,
+    Soquet,
+    SoquetT,
+)
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_test import TestCNOT
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _create_binst_graph,
@@ -22,19 +35,7 @@ from cirq_qubitization.quantum_graph.composite_bloq import (
     assert_soquets_belong_to_registers,
     assert_soquets_used_exactly_once,
     assert_valid_bloq_decomposition,
-    BloqError,
-    CompositeBloq,
-    CompositeBloqBuilder,
     map_soqs,
-    SoquetT,
-)
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
-from cirq_qubitization.quantum_graph.quantum_graph import (
-    BloqInstance,
-    Connection,
-    LeftDangle,
-    RightDangle,
-    Soquet,
 )
 from cirq_qubitization.quantum_graph.util_bloqs import Join
 

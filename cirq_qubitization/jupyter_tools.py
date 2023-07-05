@@ -9,7 +9,7 @@ import nbformat
 from cirq_ft import Registers, t_complexity
 from nbconvert.preprocessors import ExecutePreprocessor
 
-from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization import Bloq
 from cirq_qubitization.quantum_graph.graphviz import PrettyGraphDrawer
 
 

@@ -6,17 +6,15 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
+from cirq_qubitization import Bloq, CompositeBloqBuilder, FancyRegister, FancyRegisters, Side
 from cirq_qubitization.bloq_algos.basic_gates import CNOT
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.classical_sim import (
     _cbloq_call_classically,
     _update_assign_from_vals,
     bits_to_ints,
     ints_to_bits,
 )
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
 
 def test_bits_to_int():

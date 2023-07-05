@@ -5,9 +5,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from cirq_qubitization import Bloq, FancyRegister, FancyRegisters, Side, SoquetT
 
 if TYPE_CHECKING:
     import cirq

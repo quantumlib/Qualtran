@@ -8,13 +8,10 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from cirq_qubitization.bloq_algos.basic_gates.t_gate import TGate
-from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization import Bloq, FancyRegister, FancyRegisters, Side, Soquet, SoquetT
+from cirq_qubitization.bloq_algos.basic_gates import TGate
 from cirq_qubitization.quantum_graph.bloq_counts import big_O, SympySymbolAllocator
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloq, SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from cirq_qubitization.quantum_graph.musical_score import Circle, directional_text_box, WireSymbol
-from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 from cirq_qubitization.quantum_graph.util_bloqs import ArbitraryClifford
 
 

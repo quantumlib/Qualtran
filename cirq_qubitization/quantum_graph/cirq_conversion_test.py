@@ -4,18 +4,15 @@ import cirq
 import numpy as np
 from attrs import frozen
 
+from cirq_qubitization import Bloq, CompositeBloqBuilder, FancyRegisters, Side, Soquet, SoquetT
 from cirq_qubitization.bloq_algos.and_bloq import MultiAnd
 from cirq_qubitization.bloq_algos.basic_gates import XGate
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.cirq_conversion import (
     cirq_circuit_to_cbloq,
     CirqGateAsBloq,
     CirqQuregT,
 )
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters, Side
-from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 def test_cirq_gate():

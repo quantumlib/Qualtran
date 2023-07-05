@@ -6,16 +6,11 @@ import numpy as np
 import pytest
 from attrs import frozen
 
+from cirq_qubitization import Bloq, CompositeBloqBuilder, FancyRegisters, SoquetT
 from cirq_qubitization.bloq_algos.and_bloq import And, MultiAnd
 from cirq_qubitization.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import (
-    assert_valid_bloq_decomposition,
-    CompositeBloqBuilder,
-    SoquetT,
-)
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
+from cirq_qubitization.quantum_graph.composite_bloq import assert_valid_bloq_decomposition
 from cirq_qubitization.quantum_graph.musical_score import Circle, get_musical_score_data
 
 

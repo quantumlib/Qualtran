@@ -7,16 +7,21 @@ import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
+from cirq_qubitization import (
+    Bloq,
+    CompositeBloqBuilder,
+    DanglingT,
+    FancyRegister,
+    FancyRegisters,
+    Side,
+    Soquet,
+    SoquetT,
+)
 from cirq_qubitization.bloq_algos.basic_gates import CNOT, XGate, ZGate
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.composite_bloq import (
     _get_dangling_soquets,
     assert_valid_bloq_decomposition,
-    CompositeBloqBuilder,
-    SoquetT,
 )
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
-from cirq_qubitization.quantum_graph.quantum_graph import DanglingT, Soquet
 from cirq_qubitization.quantum_graph.quimb_sim import cbloq_to_quimb, get_right_and_left_inds
 
 

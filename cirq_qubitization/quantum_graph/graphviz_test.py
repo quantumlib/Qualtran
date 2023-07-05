@@ -6,16 +6,13 @@ import IPython.display
 import pytest
 from attrs import frozen
 
+from cirq_qubitization import Bloq, CompositeBloqBuilder, FancyRegisters, Soquet
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegisters
 from cirq_qubitization.quantum_graph.graphviz import (
     _assign_ids_to_bloqs_and_soqs,
     GraphDrawer,
     PrettyGraphDrawer,
 )
-from cirq_qubitization.quantum_graph.quantum_graph import Soquet
 
 
 @frozen

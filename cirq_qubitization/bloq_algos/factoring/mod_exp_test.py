@@ -4,10 +4,10 @@ import attrs
 import numpy as np
 import sympy
 
+from cirq_qubitization import Bloq
 from cirq_qubitization.bloq_algos.factoring.mod_exp import ModExp
 from cirq_qubitization.bloq_algos.factoring.mod_mul import CtrlModMul
 from cirq_qubitization.jupyter_tools import execute_notebook
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_counts import get_cbloq_bloq_counts, SympySymbolAllocator
 from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 

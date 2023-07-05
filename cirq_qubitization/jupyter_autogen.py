@@ -52,7 +52,7 @@ import cirq_qubitization.bloq_algos.sorting_test
 import cirq_qubitization.bloq_algos.swap_network
 import cirq_qubitization.bloq_algos.swap_network_test
 import cirq_qubitization.quantum_graph
-from cirq_qubitization.quantum_graph.bloq import Bloq
+from cirq_qubitization import Bloq
 
 
 @frozen

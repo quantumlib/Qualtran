@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import sympy
 
+from cirq_qubitization import Bloq, CompositeBloqBuilder
 from cirq_qubitization.bloq_algos.basic_gates import (
     OneEffect,
     OneState,
@@ -18,12 +19,8 @@ from cirq_qubitization.bloq_algos.basic_gates.swap import (
     _swap_matrix,
     CSwap,
 )
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_counts import get_cbloq_bloq_counts, SympySymbolAllocator
-from cirq_qubitization.quantum_graph.composite_bloq import (
-    assert_valid_bloq_decomposition,
-    CompositeBloqBuilder,
-)
+from cirq_qubitization.quantum_graph.composite_bloq import assert_valid_bloq_decomposition
 from cirq_qubitization.quantum_graph.util_bloqs import Join, Split
 
 
