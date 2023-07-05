@@ -241,7 +241,7 @@ class CompositeBloq(Bloq):
         use `map_soqs` to map this cbloq's soquets to the correct ones for the
         new bloq.
 
-        >>> bb, _ = BloqBuilder.from_registers(self.signature)
+        >>> bb, _ = BloqBuilder.from_signature(self.signature)
         >>> soq_map: List[Tuple[SoquetT, SoquetT]] = []
         >>> for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
         >>>    in_soqs = map_soqs(in_soqs, soq_map)
@@ -282,7 +282,7 @@ class CompositeBloq(Bloq):
 
     def copy(self) -> 'CompositeBloq':
         """Create a copy of this composite bloq by re-building it."""
-        bb, _ = BloqBuilder.from_registers(self.signature)
+        bb, _ = BloqBuilder.from_signature(self.signature)
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = map_soqs(in_soqs, soq_map)
@@ -314,7 +314,7 @@ class CompositeBloq(Bloq):
             DidNotFlattenAnythingError: If none of the bloq instances satisfied `pred`.
 
         """
-        bb, _ = BloqBuilder.from_registers(self.signature)
+        bb, _ = BloqBuilder.from_signature(self.signature)
 
         # We take particular care during flattening to preserve the `binst.i` of bloq instances
         # that are not flattened. We do this by initializing the bloq builder's `i` counter
@@ -867,7 +867,6 @@ class BloqBuilder:
     construction has the correct registers: namely, those of the decomposed bloq and parent
     bloq are the same. This affords some additional error checking.
     Initial soquets are passed as **kwargs (by register name) to the `build_composite_bloq` method.
-    See `from_registers` for more details.
 
     When using this class directly, you must call `add_register` to set up the composite bloq's
     registers. When adding a LEFT or THRU register, the method will return soquets to be
@@ -907,7 +906,8 @@ class BloqBuilder:
     ) -> Union[None, SoquetT]:
         """Add a new register to the composite bloq being built.
 
-        If this bloq builder was constructed with `from_registers`, this operation is not allowed.
+        If this bloq builder was constructed with `add_registers_allowed=False`,
+        this operation is not allowed.
 
         Args:
             reg: Either the register or a register name. If this is a register, then `bitsize`
@@ -945,7 +945,7 @@ class BloqBuilder:
         return None
 
     @classmethod
-    def from_registers(cls, parent_regs: Signature, add_registers_allowed=False):
+    def from_signature(cls, parent_regs: Signature, add_registers_allowed=False):
         """Construct a BloqBuilder with pre-specified registers.
 
         This is safer if e.g. you're decomposing an existing Bloq and need the registers

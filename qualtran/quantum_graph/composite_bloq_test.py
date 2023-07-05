@@ -133,7 +133,7 @@ def test_iter_bloqsoqs():
 
 def test_map_soqs():
     cbloq = TestTwoCNOT().decompose_bloq()
-    bb, _ = BloqBuilder.from_registers(cbloq.signature)
+    bb, _ = BloqBuilder.from_signature(cbloq.signature)
     bb._i = 100
 
     soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -173,7 +173,7 @@ def test_bb_composite_bloq():
 def test_bloq_builder():
     registers = Signature.build(x=1, y=1)
     x, y = registers
-    bb, initial_soqs = BloqBuilder.from_registers(registers)
+    bb, initial_soqs = BloqBuilder.from_signature(registers)
     assert initial_soqs == {'x': Soquet(LeftDangle, x), 'y': Soquet(LeftDangle, y)}
 
     x = initial_soqs['x']
@@ -319,7 +319,7 @@ def test_assert_registers_match_parent():
 
         def decompose_bloq(self) -> 'CompositeBloq':
             # !! order of registers swapped.
-            bb, soqs = BloqBuilder.from_registers(Signature.build(y=3, x=2))
+            bb, soqs = BloqBuilder.from_signature(Signature.build(y=3, x=2))
             x, y = bb.add(BadRegBloq(), x=soqs['x'], y=soqs['y'])
             return bb.finalize(x=x, y=y)
 

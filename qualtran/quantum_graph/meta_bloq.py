@@ -42,7 +42,7 @@ class ControlledBloq(Bloq):
         if not isinstance(self.subbloq, CompositeBloq):
             return ControlledBloq(self.subbloq.decompose_bloq()).decompose_bloq()
 
-        bb, initial_soqs = BloqBuilder.from_registers(self.signature)
+        bb, initial_soqs = BloqBuilder.from_signature(self.signature)
         ctrl = initial_soqs['control']
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []

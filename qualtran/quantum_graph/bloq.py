@@ -94,7 +94,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
-        bb, initial_soqs = BloqBuilder.from_registers(self.signature, add_registers_allowed=False)
+        bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
         if out_soqs is NotImplemented:
             raise NotImplementedError(f"Cannot decompose {self}.")
@@ -118,7 +118,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from qualtran.quantum_graph.composite_bloq import BloqBuilder
 
-        bb, initial_soqs = BloqBuilder.from_registers(self.signature, add_registers_allowed=False)
+        bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         ret_soqs_tuple = bb.add(self, **initial_soqs)
         assert len(list(self.signature.rights())) == len(ret_soqs_tuple)
         ret_soqs = {reg.name: v for reg, v in zip(self.signature.rights(), ret_soqs_tuple)}

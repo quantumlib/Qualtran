@@ -30,7 +30,7 @@ def test_cnot():
 
 
 def test_cnot_cbloq():
-    bb, soqs = BloqBuilder.from_registers(Signature.build(c=1, t=1))
+    bb, soqs = BloqBuilder.from_signature(Signature.build(c=1, t=1))
     c, t = bb.add(CNOT(), ctrl=soqs['c'], target=soqs['t'])
     cbloq = bb.finalize(c=c, t=t)
     matrix = cbloq.tensor_contract()
