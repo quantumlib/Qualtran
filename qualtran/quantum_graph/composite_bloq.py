@@ -25,7 +25,7 @@ from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from qualtran.quantum_graph.bloq import Bloq
-from qualtran.quantum_graph.fancy_registers import Register, Signature, Side
+from qualtran.quantum_graph.registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,

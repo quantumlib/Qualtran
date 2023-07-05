@@ -14,7 +14,7 @@ from qualtran.quantum_graph.composite_bloq import (
     CompositeBloq,
     SoquetT,
 )
-from qualtran.quantum_graph.fancy_registers import Signature
+from qualtran.quantum_graph.registers import Signature
 from qualtran.quantum_graph.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
 
 

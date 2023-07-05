@@ -1,12 +1,12 @@
 import itertools
 
-import cirq
 import numpy as np
 import pytest
 
+import cirq
+from qualtran import Signature
 from qualtran.bloq_algos.basic_gates import CNOT, PlusState, ZeroState
 from qualtran.quantum_graph.composite_bloq import BloqBuilder
-from qualtran.quantum_graph.fancy_registers import Signature
 from qualtran.quantum_graph.musical_score import get_musical_score_data
 
 

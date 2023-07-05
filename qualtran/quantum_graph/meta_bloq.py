@@ -7,7 +7,7 @@ from attrs import field, frozen
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import BloqBuilder, CompositeBloq, map_soqs, SoquetT
-from qualtran.quantum_graph.fancy_registers import Register, Signature
+from qualtran.quantum_graph.registers import Register, Signature
 from qualtran.quantum_graph.musical_score import Circle, WireSymbol
 from qualtran.quantum_graph.quantum_graph import Soquet
 

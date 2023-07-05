@@ -31,7 +31,7 @@ from .quantum_graph.composite_bloq import (
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from .quantum_graph.fancy_registers import Register, Signature, Side
+from .quantum_graph.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none
