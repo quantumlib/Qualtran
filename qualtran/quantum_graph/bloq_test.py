@@ -31,8 +31,9 @@ class TestCNOT(Bloq):
 def test_bloq():
     tb = TestCNOT()
     assert len(tb.signature) == 2
-    assert tb.signature['control'].bitsize == 1
-    assert tb.signature['control'].side == Side.THRU
+    ctrl, trg = tb.signature.registers
+    assert ctrl.bitsize == 1
+    assert ctrl.side == Side.THRU
     assert tb.pretty_name() == 'TestCNOT'
 
     quregs = tb.signature.get_cirq_quregs()
