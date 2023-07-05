@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.quantum_graph.bloq_counts import BloqCountT
-    from qualtran.quantum_graph.cirq_conversion import CirqQuregT
+    from qualtran.quantum_graph.cirq_conversion import CirqQuregInT, CirqQuregT
     from qualtran.quantum_graph.classical_sim import ClassicalValT
 
 
