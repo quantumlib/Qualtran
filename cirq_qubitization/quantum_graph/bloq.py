@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         Soquet,
         SoquetT,
     )
-    from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator, BloqCountT
+    from cirq_qubitization.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
     from cirq_qubitization.quantum_graph.cirq_conversion import CirqQuregT
     from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
     from cirq_qubitization.quantum_graph.musical_score import WireSymbol
