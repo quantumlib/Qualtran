@@ -3,7 +3,7 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Iterator, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attr import frozen
@@ -103,6 +103,10 @@ class Signature:
         """
         return cls(Register(name=k, bitsize=v) for k, v in registers.items())
 
+    @property
+    def registers(self) -> Tuple[Register, ...]:
+        return self._registers
+
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
         yield from self._lefts.values()
@@ -119,7 +123,7 @@ class Signature:
         """Get a right register by name."""
         return self._rights[name]
 
-    def groups(self) -> Iterable[Tuple[str, 'Signature']]:
+    def groups(self) -> Iterable[Tuple[str, List[Register]]]:
         """Iterate over register groups by name.
 
         Registers with shared names (but differing `side` attributes) can be implicitly grouped.
@@ -128,7 +132,7 @@ class Signature:
         for reg in self._registers:
             groups[reg.name].append(reg)
 
-        yield from ((name, Signature(grp)) for name, grp in groups.items())
+        yield from groups.items()
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'

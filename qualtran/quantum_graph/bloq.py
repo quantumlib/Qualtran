@@ -214,7 +214,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         cbloq = self.decompose_bloq()
         data, inds = _cbloq_as_contracted_tensor_data_and_inds(
-            cbloq=cbloq, registers=self.signature, incoming=incoming, outgoing=outgoing
+            cbloq=cbloq, signature=self.signature, incoming=incoming, outgoing=outgoing
         )
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 

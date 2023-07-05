@@ -84,7 +84,7 @@ def cbloq_to_quimb(
     return tn, fix
 
 
-def get_right_and_left_inds(registers: Signature) -> List[List[Soquet]]:
+def get_right_and_left_inds(signature: Signature) -> List[List[Soquet]]:
     """Return right and left indices.
 
     In general, this will be returned as a list of length-2 corresponding
@@ -95,10 +95,10 @@ def get_right_and_left_inds(registers: Signature) -> List[List[Soquet]]:
     convention where U_tot = U_n ... U_2 U_1.
     """
     inds = []
-    rsoqs = _get_flat_dangling_soqs(registers, right=True)
+    rsoqs = _get_flat_dangling_soqs(signature, right=True)
     if rsoqs:
         inds.append(rsoqs)
-    lsoqs = _get_flat_dangling_soqs(registers, right=False)
+    lsoqs = _get_flat_dangling_soqs(signature, right=False)
     if lsoqs:
         inds.append(lsoqs)
     return inds
@@ -129,7 +129,7 @@ def _cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
 
 def _cbloq_as_contracted_tensor_data_and_inds(
     cbloq: CompositeBloq,
-    registers: Signature,
+    signature: Signature,
     incoming: Dict[str, SoquetT],
     outgoing: Dict[str, SoquetT],
 ) -> Tuple[NDArray, List[Soquet]]:
@@ -143,8 +143,8 @@ def _cbloq_as_contracted_tensor_data_and_inds(
     # Turn into a dense ndarray, but instead of folding into a 1- or 2-
     # dimensional state/effect or unitary; we keep all the indices as
     # distinct dimensions.
-    rsoqs = _get_flat_dangling_soqs(registers, right=True)
-    lsoqs = _get_flat_dangling_soqs(registers, right=False)
+    rsoqs = _get_flat_dangling_soqs(signature, right=True)
+    lsoqs = _get_flat_dangling_soqs(signature, right=False)
     inds_for_contract = rsoqs + lsoqs
     assert len(inds_for_contract) > 0
     tn, _ = cbloq_to_quimb(cbloq)
@@ -153,8 +153,8 @@ def _cbloq_as_contracted_tensor_data_and_inds(
 
     # Now we just need to make sure the Soquets provided to us are in the correct
     # order: namely the same order as how we got the indices to contract the composite bloq.
-    osoqs = (outgoing[reg.name] for reg in registers.rights())
-    isoqs = (incoming[reg.name] for reg in registers.lefts())
+    osoqs = (outgoing[reg.name] for reg in signature.rights())
+    isoqs = (incoming[reg.name] for reg in signature.lefts())
     inds_for_adding = _flatten_soquet_collection(itertools.chain(osoqs, isoqs))
     assert len(inds_for_adding) == len(inds_for_contract)
 

@@ -272,12 +272,12 @@ def _binst_assign_line(
 
 
 def _cbloq_musical_score(
-    registers: Signature, binst_graph: nx.DiGraph, manager: LineManager = None
+    signature: Signature, binst_graph: nx.DiGraph, manager: LineManager = None
 ) -> Tuple[Dict[str, RegPosition], Dict[Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
     Args:
-        registers: The cbloq's registers.
+        signature: The cbloq's signature.
         binst_graph: The cbloq's binst graph.
 
     Returns:
@@ -293,7 +293,7 @@ def _cbloq_musical_score(
     soq_assign: Dict[Soquet, RegPosition] = {}
     topo_gen = 0
     _update_assign_from_vals(
-        registers.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
+        signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
     )
 
     # Bloq-by-bloq application
@@ -309,7 +309,7 @@ def _cbloq_musical_score(
             seq_x += 1
 
     # Track bloq-to-dangle name changes
-    if len(list(registers.rights())) > 0:
+    if len(list(signature.rights())) > 0:
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
         for cxn in final_preds:
             soq_assign[cxn.right] = attrs.evolve(
@@ -320,8 +320,8 @@ def _cbloq_musical_score(
     def _f_vals(reg: Register):
         return _get_in_vals(RightDangle, reg, soq_assign)
 
-    final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}
-    for reg in registers.rights():
+    final_vals = {reg.name: _f_vals(reg) for reg in signature.rights()}
+    for reg in signature.rights():
         manager.free(RightDangle, reg, final_vals[reg.name])
     return final_vals, soq_assign, manager
 

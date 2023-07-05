@@ -36,7 +36,7 @@ class ControlledBloq(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register(name="control", bitsize=1)] + list(self.subbloq.signature))
+        return Signature((Register(name="control", bitsize=1),) + self.subbloq.signature.registers)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         if not isinstance(self.subbloq, CompositeBloq):

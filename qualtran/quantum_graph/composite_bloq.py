@@ -534,9 +534,9 @@ def _flatten_soquet_collection(vals: Iterable[SoquetT]) -> List[Soquet]:
     return soqvals
 
 
-def _get_flat_dangling_soqs(registers: Signature, right: bool) -> List[Soquet]:
+def _get_flat_dangling_soqs(signature: Signature, right: bool) -> List[Soquet]:
     """Flatten out the values of the soquet dictionaries from `_get_dangling_soquets`."""
-    soqdict = _get_dangling_soquets(registers, right=right)
+    soqdict = _get_dangling_soquets(signature, right=right)
     return _flatten_soquet_collection(soqdict.values())
 
 
@@ -945,7 +945,7 @@ class BloqBuilder:
         return None
 
     @classmethod
-    def from_signature(cls, parent_regs: Signature, add_registers_allowed=False):
+    def from_signature(cls, signature: Signature, add_registers_allowed=False):
         """Construct a BloqBuilder with a pre-specified signature.
 
         This is safer if e.g. you're decomposing an existing Bloq and need the signatures
@@ -955,7 +955,7 @@ class BloqBuilder:
         bb = cls(add_registers_allowed=True)
 
         initial_soqs: Dict[str, SoquetT] = {}
-        for reg in parent_regs:
+        for reg in signature:
             if reg.side & Side.LEFT:
                 initial_soqs[reg.name] = bb.add_register(reg)
             else:
@@ -1107,21 +1107,21 @@ class BloqBuilder:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
-        registers = Signature(self._regs)
+        signature = Signature(self._regs)
 
         def _fin(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
             # close over `RightDangle`
             return self._add_cxn(RightDangle, idxed_soq, reg, idx)
 
         _process_soquets(
-            registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
+            registers=signature.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
         )
         if self._available:
             raise BloqError(
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(cxns=self._cxns, signature=registers)
+        return CompositeBloq(cxns=self._cxns, signature=signature)
 
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.quantum_graph.util_bloqs import Allocate

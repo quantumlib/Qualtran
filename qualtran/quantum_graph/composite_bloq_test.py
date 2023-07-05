@@ -41,8 +41,8 @@ from qualtran.quantum_graph.util_bloqs import Join
 
 
 def _manually_make_test_cbloq_cxns():
-    regs = Signature.build(q1=1, q2=1)
-    q1, q2 = regs
+    signature = Signature.build(q1=1, q2=1)
+    q1, q2 = signature
     tcn = TestCNOT()
     control, target = tcn.signature
     binst1 = BloqInstance(tcn, 1)
@@ -55,7 +55,7 @@ def _manually_make_test_cbloq_cxns():
         Connection(Soquet(binst1, target), Soquet(binst2, control)),
         Connection(Soquet(binst2, control), Soquet(RightDangle, q1)),
         Connection(Soquet(binst2, target), Soquet(RightDangle, q2)),
-    ], regs
+    ], signature
 
 
 class TestTwoCNOT(Bloq):
@@ -72,19 +72,19 @@ class TestTwoCNOT(Bloq):
 
 
 def test_create_binst_graph():
-    cxns, regs = _manually_make_test_cbloq_cxns()
+    cxns, signature = _manually_make_test_cbloq_cxns()
     binst1 = cxns[2].left.binst
     binst2 = cxns[2].right.binst
     binst_graph = _create_binst_graph(cxns)
-    assert nx.is_isomorphic(binst_graph, CompositeBloq(cxns, regs)._binst_graph)
+    assert nx.is_isomorphic(binst_graph, CompositeBloq(cxns, signature)._binst_graph)
 
     binst_generations = list(nx.topological_generations(binst_graph))
     assert binst_generations == [[LeftDangle], [binst1], [binst2], [RightDangle]]
 
 
 def test_composite_bloq():
-    cxns, regs = _manually_make_test_cbloq_cxns()
-    cbloq = CompositeBloq(cxns=cxns, signature=regs)
+    cxns, signature = _manually_make_test_cbloq_cxns()
+    cbloq = CompositeBloq(cxns=cxns, signature=signature)
     circuit, _ = cbloq.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
     cirq.testing.assert_has_diagram(
         circuit,
@@ -350,9 +350,9 @@ def test_assert_connections_compatible():
 
 
 def test_assert_soquets_belong_to_registers():
-    cxns, regs = _manually_make_test_cbloq_cxns()
+    cxns, signature = _manually_make_test_cbloq_cxns()
     cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=Register('q3', 1)))
-    cbloq = CompositeBloq(cxns, regs)
+    cbloq = CompositeBloq(cxns, signature)
     assert_registers_match_dangling(cbloq)
     assert_connections_compatible(cbloq)
     with pytest.raises(BloqError, match=r".*register doesn't exist on its bloq.*"):
@@ -360,13 +360,13 @@ def test_assert_soquets_belong_to_registers():
 
 
 def test_assert_soquets_used_exactly_once():
-    cxns, regs = _manually_make_test_cbloq_cxns()
+    cxns, signature = _manually_make_test_cbloq_cxns()
     binst1 = BloqInstance(TestCNOT(), 1)
     binst2 = BloqInstance(TestCNOT(), 2)
     control, target = TestCNOT().signature
 
     cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
-    cbloq = CompositeBloq(cxns, regs)
+    cbloq = CompositeBloq(cxns, signature)
     assert_registers_match_dangling(cbloq)
     assert_connections_compatible(cbloq)
     assert_soquets_belong_to_registers(cbloq)

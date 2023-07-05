@@ -61,7 +61,7 @@ def _assign_ids_to_bloqs_and_soqs(
     for binst in bloq_instances:
         add(binst, f'{binst.bloq.__class__.__name__}')
 
-        for groupname, groupregs in binst.bloq.signature.groups():
+        for groupname, _ in binst.bloq.signature.groups():
             add((binst, groupname), groupname)
 
     for soq in all_soquets:
@@ -138,15 +138,17 @@ class GraphDrawer:
         """Overridable method to create a Node representing dangling Soquets."""
         return pydot.Node(self.ids[soq], label=soq.pretty(), shape='plaintext')
 
-    def add_dangles(self, graph: pydot.Graph, soquets: Signature, dangle: DanglingT) -> pydot.Graph:
+    def add_dangles(
+        self, graph: pydot.Graph, signature: Signature, dangle: DanglingT
+    ) -> pydot.Graph:
         """Add nodes representing dangling indices to the graph.
 
         We wrap this in a subgraph to align (rank=same) the 'nodes'
         """
         if dangle is LeftDangle:
-            regs = soquets.lefts()
+            regs = signature.lefts()
         elif dangle is RightDangle:
-            regs = soquets.rights()
+            regs = signature.rights()
         else:
             raise ValueError()
 
