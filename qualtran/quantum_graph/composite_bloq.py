@@ -71,13 +71,13 @@ class CompositeBloq(Bloq):
 
     Args:
         cxns: A sequence of `Connection` encoding the quantum compute graph.
-        registers: The registers defining the inputs and outputs of this Bloq. This
+        signature: The registers defining the inputs and outputs of this Bloq. This
             should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    def __init__(self, cxns: Sequence[Connection], registers: Signature):
+    def __init__(self, cxns: Sequence[Connection], signature: Signature):
         self._cxns = tuple(cxns)
-        self._registers = registers
+        self._registers = signature
 
     @property
     def signature(self) -> Signature:
@@ -946,9 +946,9 @@ class BloqBuilder:
 
     @classmethod
     def from_signature(cls, parent_regs: Signature, add_registers_allowed=False):
-        """Construct a BloqBuilder with pre-specified registers.
+        """Construct a BloqBuilder with a pre-specified signature.
 
-        This is safer if e.g. you're decomposing an existing Bloq and need the registers
+        This is safer if e.g. you're decomposing an existing Bloq and need the signatures
         to match. This constructor is used by `Bloq.decompose_bloq()`.
         """
         # Initial construction: allow register addition for the following loop.
@@ -1000,10 +1000,10 @@ class BloqBuilder:
 
         Returns:
             A `Soquet` or an array thereof for each output register ordered according to
-                `bloq.registers`.
+                `bloq.signature`.
                 Note: Analogous to a Python function call using kwargs and multiple return values,
                 the ordering is irrespective of the order of `in_soqs` that have been passed in
-                and depends only on the convention of the bloq's registers.
+                and depends only on the convention of the bloq's signature.
         """
         binst = BloqInstance(bloq, i=self._new_binst_i())
         return self._add_binst(binst, in_soqs=in_soqs)
@@ -1121,7 +1121,7 @@ class BloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(cxns=self._cxns, registers=registers)
+        return CompositeBloq(cxns=self._cxns, signature=registers)
 
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.quantum_graph.util_bloqs import Allocate

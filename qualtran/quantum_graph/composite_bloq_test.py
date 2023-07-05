@@ -84,7 +84,7 @@ def test_create_binst_graph():
 
 def test_composite_bloq():
     cxns, regs = _manually_make_test_cbloq_cxns()
-    cbloq = CompositeBloq(cxns=cxns, registers=regs)
+    cbloq = CompositeBloq(cxns=cxns, signature=regs)
     circuit, _ = cbloq.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
     cirq.testing.assert_has_diagram(
         circuit,
@@ -329,7 +329,7 @@ def test_assert_registers_match_parent():
 
 def test_assert_registers_match_dangling():
     cxns, _ = _manually_make_test_cbloq_cxns()
-    cbloq = CompositeBloq(cxns, registers=Signature.build(ctrl=1, target=1))
+    cbloq = CompositeBloq(cxns, signature=Signature.build(ctrl=1, target=1))
     with pytest.raises(BloqError, match=r'.*.*does not match the registers of the bloq.*'):
         assert_registers_match_dangling(cbloq)
 
