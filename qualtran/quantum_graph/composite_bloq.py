@@ -748,7 +748,7 @@ def _reg_to_soq(
     """
     if reg.shape:
         soqs = np.empty(reg.shape, dtype=object)
-        for ri in reg.wire_idxs():
+        for ri in reg.all_idxs():
             soq = Soquet(binst, reg, idx=ri)
             soqs[ri] = soq
             available.add(soq)
@@ -775,7 +775,7 @@ def _process_soquets(
     corresponding soquets (from `in_soqs`) in the input.
 
     >>> for reg in registers:
-    >>>     for idx in reg.wire_idxs():
+    >>>     for idx in reg.all_idxs():
     >>>        func(in_soqs[reg.name][idx], reg, idx)
 
     We also perform input validation to make sure that the set of register names
@@ -800,7 +800,7 @@ def _process_soquets(
 
         del in_soqs[reg.name]  # so we can check for surplus arguments.
 
-        for li in reg.wire_idxs():
+        for li in reg.all_idxs():
             idxed_soq = in_soq[li]
             assert isinstance(idxed_soq, Soquet), idxed_soq
             func(idxed_soq, reg, li)

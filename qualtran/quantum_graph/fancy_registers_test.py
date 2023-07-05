@@ -15,7 +15,7 @@ def test_register():
 
 def test_multidim_register():
     r = FancyRegister("my_reg", bitsize=1, shape=(2, 3), side=Side.RIGHT)
-    idxs = list(r.wire_idxs())
+    idxs = list(r.all_idxs())
     assert len(idxs) == 2 * 3
 
     assert not r.side & Side.LEFT

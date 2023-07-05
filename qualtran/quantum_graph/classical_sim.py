@@ -75,7 +75,7 @@ def _get_in_vals(
         )
 
     arg = np.empty(reg.shape, dtype=dtype)
-    for idx in reg.wire_idxs():
+    for idx in reg.all_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
 
@@ -112,7 +112,7 @@ def _update_assign_from_vals(
             if np.any(arr >= 2**reg.bitsize):
                 raise ValueError(f"Too-large classical values encountered in {binst}.{reg.name}")
 
-            for idx in reg.wire_idxs():
+            for idx in reg.all_idxs():
                 soq = Soquet(binst, reg, idx=idx)
                 soq_assign[soq] = arr[idx]
         else:

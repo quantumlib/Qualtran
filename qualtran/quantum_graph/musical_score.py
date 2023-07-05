@@ -133,7 +133,7 @@ class LineManager:
             return RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
 
         arg = np.zeros(reg.shape, dtype=object)
-        for idx in reg.wire_idxs():
+        for idx in reg.all_idxs():
             y = self.new_y(binst, reg, idx)
             self.hlines.add(HLine(y=y, seq_x_start=seq_x))
             arg[idx] = RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
@@ -162,7 +162,7 @@ class LineManager:
             self.maybe_reserve(binst, reg, idx=tuple())
             return
 
-        for idx in reg.wire_idxs():
+        for idx in reg.all_idxs():
             qline = arr[idx]
             heapq.heappush(self.available, qline.y)
             self.finish_hline(qline.y, seq_x_end=qline.seq_x)
@@ -177,7 +177,7 @@ def _get_in_vals(
         return soq_assign[Soquet(binst, reg)]
 
     arg = np.empty(reg.shape, dtype=object)
-    for idx in reg.wire_idxs():
+    for idx in reg.all_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
 
@@ -212,7 +212,7 @@ def _update_assign_from_vals(
                     f"Want {reg.shape}."
                 )
 
-            for idx in reg.wire_idxs():
+            for idx in reg.all_idxs():
                 soq = Soquet(binst, reg, idx=idx)
                 soq_assign[soq] = attrs.evolve(arr[idx], seq_x=seq_x, topo_gen=topo_gen)
         else:

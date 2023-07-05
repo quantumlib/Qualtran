@@ -121,7 +121,7 @@ def _get_in_cirq_quregs(
     full_shape = reg.shape + (reg.bitsize,)
     arg = np.empty(full_shape, dtype=object)
 
-    for idx in reg.wire_idxs():
+    for idx in reg.all_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
 
@@ -152,7 +152,7 @@ def _update_assign_from_cirq_quregs(
         if arr.shape != full_shape:
             raise ValueError(f"Incorrect shape {arr.shape} received for {binst}.{reg.name}")
 
-        for idx in reg.wire_idxs():
+        for idx in reg.all_idxs():
             soq = Soquet(binst, reg, idx=idx)
             soq_assign[soq] = arr[idx]
 
@@ -295,7 +295,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
                 legacy_regs.append(LegacyRegister(name=compat_name, bitsize=reg.bitsize))
                 continue
 
-            for idx in reg.wire_idxs():
+            for idx in reg.all_idxs():
                 idx_str = '_'.join(str(i) for i in idx)
                 compat_name = f'{reg.name}{side_suffixes[reg.side]}_{idx_str}'
                 compat_name_map[compat_name] = (reg, idx)

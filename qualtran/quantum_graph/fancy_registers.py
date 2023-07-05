@@ -49,7 +49,7 @@ class FancyRegister:
     shape: Tuple[int, ...] = tuple()
     side: Side = Side.THRU
 
-    def wire_idxs(self) -> Iterable[Tuple[int, ...]]:
+    def all_idxs(self) -> Iterable[Tuple[int, ...]]:
         """Iterate over all possible indices of a multidimensional register."""
         yield from itertools.product(*[range(sh) for sh in self.shape])
 
@@ -164,7 +164,7 @@ class FancyRegisters:
 
         def _qubit_array(reg: FancyRegister):
             qubits = np.empty(reg.shape + (reg.bitsize,), dtype=object)
-            for ii in reg.wire_idxs():
+            for ii in reg.all_idxs():
                 for j in range(reg.bitsize):
                     qubits[ii + (j,)] = cirq.NamedQubit(
                         f'{reg.name}[{", ".join(str(i) for i in ii + (j,))}]'
