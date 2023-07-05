@@ -33,7 +33,7 @@ def main() -> None:
     ]
 
     setup(
-        name="Qualtran",
+        name="qualtran",
         version=__version__,
         author="Google Quantum AI",
         author_email="mpharrigan@google.com",
