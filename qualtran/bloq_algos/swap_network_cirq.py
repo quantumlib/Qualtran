@@ -7,7 +7,7 @@ import cirq
 from qualtran.bloq_algos.basic_gates import CSwap
 from qualtran.bloq_algos.swap_network import CSwapApprox, SwapWithZero
 from qualtran.quantum_graph.cirq_conversion import BloqAsCirqGate
-from qualtran.quantum_graph.fancy_registers import FancyRegister
+from qualtran.quantum_graph.fancy_registers import Register
 
 # for reprs
 _MY_NAMESPACE = 'qualtran.bloq_algos.swap_network_cirq'
@@ -68,7 +68,7 @@ class MultiTargetCSwapApprox(BloqAsCirqGate):
 MultiTargetCSwapApprox.__doc__ = CSwapApprox.__doc__
 
 
-def swz_reg_to_wires(reg: 'FancyRegister'):
+def swz_reg_to_wires(reg: 'Register'):
     if reg.name == 'selection':
         return ["@(r⇋0)"] * reg.bitsize
 

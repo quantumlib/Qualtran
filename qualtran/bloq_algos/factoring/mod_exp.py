@@ -5,7 +5,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Side, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Signature, Side, SoquetT
 from qualtran.bloq_algos.basic_gates import IntState
 from qualtran.bloq_algos.factoring.mod_mul import CtrlModMul
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
@@ -42,11 +42,11 @@ class ModExp(Bloq):
     x_bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
+    def registers(self) -> 'Signature':
+        return Signature(
             [
-                FancyRegister('exponent', bitsize=self.exp_bitsize),
-                FancyRegister('x', bitsize=self.x_bitsize, side=Side.RIGHT),
+                Register('exponent', bitsize=self.exp_bitsize),
+                Register('x', bitsize=self.x_bitsize, side=Side.RIGHT),
             ]
         )
 

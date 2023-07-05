@@ -17,8 +17,8 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
-    FancyRegister,
-    FancyRegisters,
+    Register,
+    Signature,
     LeftDangle,
     RightDangle,
     Soquet,
@@ -41,7 +41,7 @@ from qualtran.quantum_graph.util_bloqs import Join
 
 
 def _manually_make_test_cbloq_cxns():
-    regs = FancyRegisters.build(q1=1, q2=1)
+    regs = Signature.build(q1=1, q2=1)
     q1, q2 = regs
     tcn = TestCNOT()
     control, target = tcn.registers
@@ -60,8 +60,8 @@ def _manually_make_test_cbloq_cxns():
 
 class TestTwoCNOT(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(q1=1, q2=1)
+    def registers(self) -> Signature:
+        return Signature.build(q1=1, q2=1)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q1: 'Soquet', q2: 'Soquet'
@@ -171,7 +171,7 @@ def test_bb_composite_bloq():
 
 
 def test_bloq_builder():
-    registers = FancyRegisters.build(x=1, y=1)
+    registers = Signature.build(x=1, y=1)
     x, y = registers
     bb, initial_soqs = BloqBuilder.from_registers(registers)
     assert initial_soqs == {'x': Soquet(LeftDangle, x), 'y': Soquet(LeftDangle, y)}
@@ -200,7 +200,7 @@ def test_wrong_soquet():
     bb, x, y = _get_bb()
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*target.*'):
-        bad_target_arg = Soquet(BloqInstance(TestCNOT(), i=12), FancyRegister('target', 2))
+        bad_target_arg = Soquet(BloqInstance(TestCNOT(), i=12), Register('target', 2))
         bb.add(TestCNOT(), control=x, target=bad_target_arg)
 
 
@@ -243,7 +243,7 @@ def test_finalize_wrong_soquet():
     assert y != y2
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestCNOT(), i=12), FancyRegister('target', 2)))
+        bb.finalize(x=x2, y=Soquet(BloqInstance(TestCNOT(), i=12), Register('target', 2)))
 
 
 def test_finalize_double_use_1():
@@ -276,7 +276,7 @@ def test_finalize_strict_too_many_args():
 
     bb.add_register_allowed = False
     with pytest.raises(BloqError, match=r'Finalizing does not accept Soquets.*z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', 1)))
 
 
 def test_finalize_bad_args():
@@ -284,7 +284,7 @@ def test_finalize_bad_args():
     x2, y2 = bb.add(TestCNOT(), control=x, target=y)
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet.*RightDangle\.z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, FancyRegister('asdf', 1)))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', 1)))
 
 
 def test_finalize_alloc():
@@ -314,12 +314,12 @@ def test_assert_registers_match_parent():
     @frozen
     class BadRegBloq(Bloq):
         @cached_property
-        def registers(self) -> 'FancyRegisters':
-            return FancyRegisters.build(x=2, y=3)
+        def registers(self) -> 'Signature':
+            return Signature.build(x=2, y=3)
 
         def decompose_bloq(self) -> 'CompositeBloq':
             # !! order of registers swapped.
-            bb, soqs = BloqBuilder.from_registers(FancyRegisters.build(y=3, x=2))
+            bb, soqs = BloqBuilder.from_registers(Signature.build(y=3, x=2))
             x, y = bb.add(BadRegBloq(), x=soqs['x'], y=soqs['y'])
             return bb.finalize(x=x, y=y)
 
@@ -329,7 +329,7 @@ def test_assert_registers_match_parent():
 
 def test_assert_registers_match_dangling():
     cxns, _ = _manually_make_test_cbloq_cxns()
-    cbloq = CompositeBloq(cxns, registers=FancyRegisters.build(ctrl=1, target=1))
+    cbloq = CompositeBloq(cxns, registers=Signature.build(ctrl=1, target=1))
     with pytest.raises(BloqError, match=r'.*.*does not match the registers of the bloq.*'):
         assert_registers_match_dangling(cbloq)
 
@@ -351,7 +351,7 @@ def test_assert_connections_compatible():
 
 def test_assert_soquets_belong_to_registers():
     cxns, regs = _manually_make_test_cbloq_cxns()
-    cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=FancyRegister('q3', 1)))
+    cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=Register('q3', 1)))
     cbloq = CompositeBloq(cxns, regs)
     assert_registers_match_dangling(cbloq)
     assert_connections_compatible(cbloq)
@@ -377,9 +377,9 @@ def test_assert_soquets_used_exactly_once():
 class TestMultiCNOT(Bloq):
     # A minimal test-bloq with a complicated `target` register.
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters(
-            [FancyRegister('control', 1), FancyRegister('target', 1, shape=(2, 3))]
+    def registers(self) -> Signature:
+        return Signature(
+            [Register('control', 1), Register('target', 1, shape=(2, 3))]
         )
 
     def build_composite_bloq(
@@ -455,8 +455,8 @@ def test_util_convenience_methods_errors():
 @frozen
 class Atom(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(stuff=1)
+    def registers(self) -> Signature:
+        return Signature.build(stuff=1)
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=100)
@@ -464,8 +464,8 @@ class Atom(Bloq):
 
 class TestSerialBloq(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(stuff=1)
+    def registers(self) -> Signature:
+        return Signature.build(stuff=1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
 
@@ -477,8 +477,8 @@ class TestSerialBloq(Bloq):
 @frozen
 class TestParallelBloq(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(stuff=3)
+    def registers(self) -> Signature:
+        return Signature.build(stuff=3)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
         stuff = bb.split(stuff)

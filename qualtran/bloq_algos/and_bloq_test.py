@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, FancyRegisters, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloq_algos.and_bloq import And, MultiAnd
 from qualtran.bloq_algos.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.jupyter_tools import execute_notebook
@@ -165,8 +165,8 @@ def test_notebook():
 @frozen
 class AndIdentity(Bloq):
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(q0=1, q1=1)
+    def registers(self) -> 'Signature':
+        return Signature.build(q0=1, q1=1)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'

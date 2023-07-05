@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Union
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, FancyRegisters, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloq_algos.basic_gates import CSwap
 from qualtran.bloq_algos.factoring.mod_add import CtrlScaleModAdd
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
@@ -39,8 +39,8 @@ class CtrlModMul(Bloq):
         assert self.k < self.mod
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(ctrl=1, x=self.bitsize)
+    def registers(self) -> 'Signature':
+        return Signature.build(ctrl=1, x=self.bitsize)
 
     def _Add(self, k: Union[int, sympy.Expr]):
         """Helper method to forward attributes to `CtrlScaleModAdd`."""

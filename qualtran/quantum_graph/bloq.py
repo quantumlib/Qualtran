@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from cirq_ft import TComplexity
     from numpy.typing import NDArray
 
-    from qualtran import BloqBuilder, CompositeBloq, FancyRegisters, Soquet, SoquetT
+    from qualtran import BloqBuilder, CompositeBloq, Signature, Soquet, SoquetT
     from qualtran.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
     from qualtran.quantum_graph.cirq_conversion import CirqQuregT
     from qualtran.quantum_graph.classical_sim import ClassicalValT
@@ -39,7 +39,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def registers(self) -> 'FancyRegisters':
+    def registers(self) -> 'Signature':
         """The input and output names and types for this bloq.
 
         This property can be thought of as analogous to the function signature in ordinary

@@ -8,7 +8,7 @@ import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, FancyRegister, FancyRegisters, Side, SoquetT
+from qualtran import Bloq, Register, Signature, Side, SoquetT
 from qualtran.quantum_graph.bloq_counts import big_O
 from qualtran.quantum_graph.classical_sim import ints_to_bits
 from qualtran.quantum_graph.util_bloqs import ArbitraryClifford
@@ -54,9 +54,9 @@ class _ZVector(Bloq):
         return '1' if self.bit else '0'
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
-            [FancyRegister('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)]
+    def registers(self) -> 'Signature':
+        return Signature(
+            [Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)]
         )
 
     def add_my_tensors(
@@ -138,8 +138,8 @@ class ZGate(Bloq):
     """
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(q=1)
+    def registers(self) -> 'Signature':
+        return Signature.build(q=1)
 
     def add_my_tensors(
         self,
@@ -193,9 +193,9 @@ class _IntVector(Bloq):
             raise ValueError(f"`val` is too big for bitsize {self.bitsize}")
 
     @cached_property
-    def registers(self) -> FancyRegisters:
+    def registers(self) -> Signature:
         side = Side.RIGHT if self.state else Side.LEFT
-        return FancyRegisters([FancyRegister('val', bitsize=self.bitsize, side=side)])
+        return Signature([Register('val', bitsize=self.bitsize, side=side)])
 
     def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
         states = [ZeroState(), OneState()]

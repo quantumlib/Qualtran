@@ -6,7 +6,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, FancyRegisters, Soquet, SoquetT
+from qualtran import Bloq, Signature, Soquet, SoquetT
 from qualtran.quantum_graph.musical_score import Circle, ModPlus, WireSymbol
 
 if TYPE_CHECKING:
@@ -34,8 +34,8 @@ class CNOT(Bloq):
     """
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(ctrl=1, target=1)
+    def registers(self) -> 'Signature':
+        return Signature.build(ctrl=1, target=1)
 
     def add_my_tensors(
         self,

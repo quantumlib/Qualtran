@@ -30,7 +30,7 @@ class Side(enum.Flag):
 
 
 @frozen
-class FancyRegister:
+class Register:
     """A quantum register.
 
     This sets a bloq's "function signature": its input and output types.
@@ -61,7 +61,7 @@ class FancyRegister:
         return self.bitsize * int(np.product(self.shape))
 
 
-def _dedupe(kv_iter: Iterable[Tuple[str, FancyRegister]]) -> Dict[str, FancyRegister]:
+def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
     # throw ValueError if duplicate keys are provided.
     d = {}
     for k, v in kv_iter:
@@ -71,45 +71,45 @@ def _dedupe(kv_iter: Iterable[Tuple[str, FancyRegister]]) -> Dict[str, FancyRegi
     return d
 
 
-class FancyRegisters:
-    """An ordered collection of `FancyRegister`.
+class Signature:
+    """An ordered collection of `Register`.
 
     Args:
-        registers: an iterable of the contained `FancyRegister`.
+        registers: an iterable of the contained `Register`.
     """
 
-    def __init__(self, registers: Iterable[FancyRegister]):
+    def __init__(self, registers: Iterable[Register]):
         self._registers = tuple(registers)
         self._lefts = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.LEFT)
         self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
-    def build(cls, **registers: int) -> 'FancyRegisters':
+    def build(cls, **registers: int) -> 'Signature':
         """Convenience method for building a collection of simple registers.
 
         Args:
             registers: keyword arguments mapping register name to bitsize. All registers
                 will be 0-dimensional and THRU.
         """
-        return cls(FancyRegister(name=k, bitsize=v) for k, v in registers.items())
+        return cls(Register(name=k, bitsize=v) for k, v in registers.items())
 
-    def lefts(self) -> Iterable[FancyRegister]:
+    def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
         yield from self._lefts.values()
 
-    def rights(self) -> Iterable[FancyRegister]:
+    def rights(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the RIGHT as output."""
         yield from self._rights.values()
 
-    def get_left(self, name: str) -> FancyRegister:
+    def get_left(self, name: str) -> Register:
         """Get a left register by name."""
         return self._lefts[name]
 
-    def get_right(self, name: str) -> FancyRegister:
+    def get_right(self, name: str) -> Register:
         """Get a right register by name."""
         return self._rights[name]
 
-    def groups(self) -> Iterable[Tuple[str, 'FancyRegisters']]:
+    def groups(self) -> Iterable[Tuple[str, 'Signature']]:
         """Iterate over register groups by name.
 
         Registers with shared names (but differing `side` attributes) can be implicitly grouped.
@@ -118,26 +118,26 @@ class FancyRegisters:
         for reg in self._registers:
             groups[reg.name].append(reg)
 
-        yield from ((name, FancyRegisters(grp)) for name, grp in groups.items())
+        yield from ((name, Signature(grp)) for name, grp in groups.items())
 
     def __repr__(self):
-        return f'FancyRegisters({repr(self._registers)})'
+        return f'Signature({repr(self._registers)})'
 
     @overload
-    def __getitem__(self, key: int) -> FancyRegister:
+    def __getitem__(self, key: int) -> Register:
         pass
 
     @overload
-    def __getitem__(self, key: str) -> FancyRegister:
+    def __getitem__(self, key: str) -> Register:
         pass
 
     @overload
-    def __getitem__(self, key: slice) -> 'FancyRegisters':
+    def __getitem__(self, key: slice) -> 'Signature':
         pass
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            return FancyRegisters(self._registers[key])
+            return Signature(self._registers[key])
         elif isinstance(key, int):
             return self._registers[key]
         elif isinstance(key, str):
@@ -149,10 +149,10 @@ class FancyRegisters:
         else:
             raise IndexError(f"key {key} must be of the type str/int/slice.")
 
-    def __contains__(self, item: FancyRegister) -> bool:
+    def __contains__(self, item: Register) -> bool:
         return item in self._registers
 
-    def __iter__(self) -> Iterator[FancyRegister]:
+    def __iter__(self) -> Iterator[Register]:
         yield from self._registers
 
     def __len__(self) -> int:
@@ -162,7 +162,7 @@ class FancyRegisters:
         """Get arrays of cirq qubits for these registers."""
         import cirq
 
-        def _qubit_array(reg: FancyRegister):
+        def _qubit_array(reg: Register):
             qubits = np.empty(reg.shape + (reg.bitsize,), dtype=object)
             for ii in reg.all_idxs():
                 for j in range(reg.bitsize):
@@ -171,7 +171,7 @@ class FancyRegisters:
                     )
             return qubits
 
-        def _qubits_for_reg(reg: FancyRegister):
+        def _qubits_for_reg(reg: Register):
             if reg.shape:
                 return _qubit_array(reg)
 

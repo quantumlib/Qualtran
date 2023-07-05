@@ -6,7 +6,7 @@ import pytest
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, CompositeBloq, FancyRegisters, Side
+from qualtran import Bloq, CompositeBloq, Signature, Side
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.cirq_conversion import CirqQuregT
 
@@ -14,8 +14,8 @@ from qualtran.quantum_graph.cirq_conversion import CirqQuregT
 @frozen
 class TestCNOT(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(control=1, target=1)
+    def registers(self) -> Signature:
+        return Signature.build(control=1, target=1)
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'

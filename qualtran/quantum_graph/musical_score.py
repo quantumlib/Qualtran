@@ -17,7 +17,7 @@ from numpy.typing import NDArray
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import _binst_to_cxns
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.fancy_registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -76,7 +76,7 @@ class LineManager:
         self.hlines: Set[HLine] = set()
         self._reserved: List[Tuple[List[int], Callable]] = []
 
-    def new_y(self, binst: BloqInstance, reg: FancyRegister, idx=None):
+    def new_y(self, binst: BloqInstance, reg: Register, idx=None):
         """Allocate a new y position (i.e. a new qubit or register)."""
         return heapq.heappop(self.available)
 
@@ -92,7 +92,7 @@ class LineManager:
             nums.append(heapq.heappop(self.available))
         self._reserved.append((nums, until))
 
-    def unreserve(self, binst: BloqInstance, reg: FancyRegister):
+    def unreserve(self, binst: BloqInstance, reg: Register):
         """Go through our reservations and rescind them depending on the `until` predicate."""
         kept = []
         for ys, until in self._reserved:
@@ -103,7 +103,7 @@ class LineManager:
                 kept.append((ys, until))
         self._reserved = kept
 
-    def maybe_reserve(self, binst: BloqInstance, reg: FancyRegister, idx: Tuple[int, ...]):
+    def maybe_reserve(self, binst: BloqInstance, reg: Register, idx: Tuple[int, ...]):
         """Override this method to provide custom control over line allocation.
 
         After a new y position is allocated and after a y position is freed, this method
@@ -118,7 +118,7 @@ class LineManager:
         """
 
     def new(
-        self, binst: BloqInstance, reg: FancyRegister, seq_x: int, topo_gen: int
+        self, binst: BloqInstance, reg: Register, seq_x: int, topo_gen: int
     ) -> Union[RegPosition, NDArray[RegPosition]]:
         """Allocate a position or positions for `reg`.
 
@@ -147,7 +147,7 @@ class LineManager:
         self.hlines.add(attrs.evolve(partial_h_line, seq_x_end=seq_x_end))
 
     def free(
-        self, binst: BloqInstance, reg: FancyRegister, arr: Union[RegPosition, NDArray[RegPosition]]
+        self, binst: BloqInstance, reg: Register, arr: Union[RegPosition, NDArray[RegPosition]]
     ):
         """De-allocate a position or positions for `reg`.
 
@@ -170,7 +170,7 @@ class LineManager:
 
 
 def _get_in_vals(
-    binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, RegPosition]
+    binst: BloqInstance, reg: Register, soq_assign: Dict[Soquet, RegPosition]
 ) -> Union[RegPosition, NDArray[RegPosition]]:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
@@ -185,7 +185,7 @@ def _get_in_vals(
 
 
 def _update_assign_from_vals(
-    regs: Iterable[FancyRegister],
+    regs: Iterable[Register],
     binst: BloqInstance,
     vals: Dict[str, RegPosition],
     soq_assign: Dict[Soquet, RegPosition],
@@ -243,7 +243,7 @@ def _binst_assign_line(
     for cxn in pred_cxns:
         soq_assign[cxn.right] = attrs.evolve(soq_assign[cxn.left], seq_x=seq_x, topo_gen=topo_gen)
 
-    def _in_vals(reg: FancyRegister):
+    def _in_vals(reg: Register):
         # close over binst and `soq_assign`
         return _get_in_vals(binst, reg, soq_assign=soq_assign)
 
@@ -272,7 +272,7 @@ def _binst_assign_line(
 
 
 def _cbloq_musical_score(
-    registers: FancyRegisters, binst_graph: nx.DiGraph, manager: LineManager = None
+    registers: Signature, binst_graph: nx.DiGraph, manager: LineManager = None
 ) -> Tuple[Dict[str, RegPosition], Dict[Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
@@ -317,7 +317,7 @@ def _cbloq_musical_score(
             )
 
     # Formulate output with expected API
-    def _f_vals(reg: FancyRegister):
+    def _f_vals(reg: Register):
         return _get_in_vals(RightDangle, reg, soq_assign)
 
     final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}

@@ -6,7 +6,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Side
+from qualtran import Bloq, BloqBuilder, Register, Signature, Side
 from qualtran.bloq_algos.basic_gates import CNOT
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.classical_sim import (
@@ -59,10 +59,10 @@ def test_dtype_validation():
 
     # set up different register dtypes
     regs = [
-        FancyRegister('one_bit_int', 1),
-        FancyRegister('int', 5),
-        FancyRegister('bit_arr', 1, shape=(5,)),
-        FancyRegister('int_arr', 32, shape=(5,)),
+        Register('one_bit_int', 1),
+        Register('int', 5),
+        Register('bit_arr', 1, shape=(5,)),
+        Register('int_arr', 32, shape=(5,)),
     ]
 
     # base case: vals are as-expected.
@@ -92,9 +92,9 @@ def test_dtype_validation():
 @frozen
 class ApplyClassicalTest(Bloq):
     @property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
-            [FancyRegister('x', 1, shape=(5,)), FancyRegister('z', 1, shape=(5,), side=Side.RIGHT)]
+    def registers(self) -> 'Signature':
+        return Signature(
+            [Register('x', 1, shape=(5,)), Register('z', 1, shape=(5,), side=Side.RIGHT)]
         )
 
     def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
@@ -132,7 +132,7 @@ def test_cnot_assign_dict():
 
 def test_apply_classical_cbloq():
     bb = BloqBuilder()
-    x = bb.add_register(FancyRegister('x', 1, shape=(5,)))
+    x = bb.add_register(Register('x', 1, shape=(5,)))
     x, y = bb.add(ApplyClassicalTest(), x=x)
     y, z = bb.add(ApplyClassicalTest(), x=y)
     cbloq = bb.finalize(x=x, y=y, z=z)

@@ -6,7 +6,7 @@ import numpy as np
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, FancyRegisters
+from qualtran import Bloq, Signature
 
 if TYPE_CHECKING:
     import cirq
@@ -20,8 +20,8 @@ class RotationBloq(Bloq, metaclass=abc.ABCMeta):
     eps: float = 1e-11
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(q=1)
+    def registers(self) -> 'Signature':
+        return Signature.build(q=1)
 
     def t_complexity(self):
         # TODO Determine precise clifford count and/or ignore.

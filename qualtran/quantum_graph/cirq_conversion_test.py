@@ -4,7 +4,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, FancyRegisters, Side, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, Side, Soquet, SoquetT
 from qualtran.bloq_algos.and_bloq import MultiAnd
 from qualtran.bloq_algos.basic_gates import XGate
 from qualtran.jupyter_tools import execute_notebook
@@ -66,7 +66,7 @@ def test_cbloq_to_cirq_circuit():
 class SwapTwoBitsTest(Bloq):
     @property
     def registers(self):
-        return FancyRegisters.build(x=1, y=1)
+        return Signature.build(x=1, y=1)
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, x: CirqQuregT, y: CirqQuregT
@@ -101,7 +101,7 @@ class SwapTest(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters.build(x=self.n, y=self.n)
+        return Signature.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, x: Soquet, y: Soquet

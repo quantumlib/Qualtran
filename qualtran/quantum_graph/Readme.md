@@ -30,12 +30,12 @@ is which.
 >>> binst2, (q,) = bb.add_2(H, q=q)
 >>> binst1 != binst2  # one `H` comes before the other.
 
-`FancyRegisters` are analogous to function (and return type) signatures and are a 
+`Signature` are analogous to function (and return type) signatures and are a 
 property of a `Bloq`. 
 
 `Soquet`s are the "quantum variables" that follow linear typing rules (each must be used exactly
 once) and are instantiations of registers. There is generally a 1-to-many relationship between
-`FancyRegister` and `Soquet` because we support multidimensional quantum arrays.
+`Register` and `Soquet` because we support multidimensional quantum arrays.
 
 `SoquetT` is a union type between `Soquet` and ndarray of `Soquet`. It means all the soquets
 for a given register. When you see variable names like `soqdict`, `in_soqs`, or `final_soqs`
@@ -54,6 +54,6 @@ Bloqs support multi-dimensional, arbitrary-bitwidth, potentially asymmetric regi
 bloqs can represent high-level computations like "ModularExponentiation" or 
 "Quantum Phase Estimation".
 
-Low-level `Bloq`s where all `FancyRegister`s have `bitsize=1`, `shape=(n,)`,
+Low-level `Bloq`s where all `Register`s have `bitsize=1`, `shape=(n,)`,
 and `side=Side.THRU` we generally name "gates". Bloqs that satisfy these conditions
 are similar to gates found in other quantum computing libraries.

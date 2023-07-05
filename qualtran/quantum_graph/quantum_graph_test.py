@@ -1,6 +1,6 @@
 import pytest
 
-from qualtran import BloqInstance, DanglingT, FancyRegister, LeftDangle, RightDangle, Side, Soquet
+from qualtran import BloqInstance, DanglingT, Register, LeftDangle, RightDangle, Side, Soquet
 from qualtran.quantum_graph.bloq_test import TestCNOT
 
 
@@ -29,7 +29,7 @@ def test_dangling_hash():
 
 
 def test_soquet():
-    soq = Soquet(BloqInstance(TestCNOT(), i=0), FancyRegister('x', 10))
+    soq = Soquet(BloqInstance(TestCNOT(), i=0), Register('x', 10))
     assert soq.reg.side is Side.THRU
     assert soq.idx == ()
     assert soq.pretty() == 'x'
@@ -37,7 +37,7 @@ def test_soquet():
 
 def test_soquet_idxed():
     binst = BloqInstance(TestCNOT(), i=0)
-    reg = FancyRegister('y', 10, shape=(10, 2))
+    reg = Register('y', 10, shape=(10, 2))
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
         _ = Soquet(binst, reg)

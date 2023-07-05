@@ -7,7 +7,7 @@ from attrs import frozen
 from cirq_ft import MultiTargetCNOT, TComplexity
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
 
 if TYPE_CHECKING:
     from qualtran.quantum_graph.classical_sim import ClassicalValT
@@ -39,8 +39,8 @@ class CSwapApprox(Bloq):
     bitsize: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+    def registers(self) -> Signature:
+        return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def cirq_decomposition(
         self, ctrl: Sequence[cirq.Qid], x: Sequence[cirq.Qid], y: Sequence[cirq.Qid]
@@ -111,11 +111,11 @@ class SwapWithZero(Bloq):
     n_target_registers: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters(
+    def registers(self) -> Signature:
+        return Signature(
             [
-                FancyRegister('selection', self.selection_bitsize),
-                FancyRegister('targets', self.target_bitsize, shape=(self.n_target_registers,)),
+                Register('selection', self.selection_bitsize),
+                Register('targets', self.target_bitsize, shape=(self.n_target_registers,)),
             ]
         )
 

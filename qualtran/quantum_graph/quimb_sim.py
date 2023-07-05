@@ -14,7 +14,7 @@ from qualtran.quantum_graph.composite_bloq import (
     CompositeBloq,
     SoquetT,
 )
-from qualtran.quantum_graph.fancy_registers import FancyRegisters
+from qualtran.quantum_graph.fancy_registers import Signature
 from qualtran.quantum_graph.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
 
 
@@ -84,7 +84,7 @@ def cbloq_to_quimb(
     return tn, fix
 
 
-def get_right_and_left_inds(registers: FancyRegisters) -> List[List[Soquet]]:
+def get_right_and_left_inds(registers: Signature) -> List[List[Soquet]]:
     """Return right and left indices.
 
     In general, this will be returned as a list of length-2 corresponding
@@ -129,7 +129,7 @@ def _cbloq_to_dense(cbloq: CompositeBloq) -> NDArray:
 
 def _cbloq_as_contracted_tensor_data_and_inds(
     cbloq: CompositeBloq,
-    registers: FancyRegisters,
+    registers: Signature,
     incoming: Dict[str, SoquetT],
     outgoing: Dict[str, SoquetT],
 ) -> Tuple[NDArray, List[Soquet]]:

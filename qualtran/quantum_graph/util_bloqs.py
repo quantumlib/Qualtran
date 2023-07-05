@@ -12,7 +12,7 @@ from sympy import Expr
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.classical_sim import bits_to_ints, ints_to_bits
 from qualtran.quantum_graph.composite_bloq import SoquetT
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.fancy_registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import BloqInstance, Soquet
 
 if TYPE_CHECKING:
@@ -34,11 +34,11 @@ class Split(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters(
+    def registers(self) -> Signature:
+        return Signature(
             [
-                FancyRegister(name='split', bitsize=self.n, shape=tuple(), side=Side.LEFT),
-                FancyRegister(name='split', bitsize=1, shape=(self.n,), side=Side.RIGHT),
+                Register(name='split', bitsize=self.n, shape=tuple(), side=Side.LEFT),
+                Register(name='split', bitsize=1, shape=(self.n,), side=Side.RIGHT),
             ]
         )
 
@@ -89,11 +89,11 @@ class Join(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters(
+    def registers(self) -> Signature:
+        return Signature(
             [
-                FancyRegister('join', bitsize=1, shape=(self.n,), side=Side.LEFT),
-                FancyRegister('join', bitsize=self.n, shape=tuple(), side=Side.RIGHT),
+                Register('join', bitsize=1, shape=(self.n,), side=Side.LEFT),
+                Register('join', bitsize=self.n, shape=tuple(), side=Side.RIGHT),
             ]
         )
 
@@ -142,8 +142,8 @@ class Allocate(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters([FancyRegister('alloc', bitsize=self.n, side=Side.RIGHT)])
+    def registers(self) -> Signature:
+        return Signature([Register('alloc', bitsize=self.n, side=Side.RIGHT)])
 
     def on_classical_vals(self) -> Dict[str, int]:
         return {'alloc': 0}
@@ -160,8 +160,8 @@ class Free(Bloq):
     n: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters([FancyRegister('free', bitsize=self.n, side=Side.LEFT)])
+    def registers(self) -> Signature:
+        return Signature([Register('free', bitsize=self.n, side=Side.LEFT)])
 
     def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
         if free != 0:
@@ -185,5 +185,5 @@ class ArbitraryClifford(Bloq):
     n: Union[int, Expr]
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters([FancyRegister('x', bitsize=self.n)])
+    def registers(self) -> Signature:
+        return Signature([Register('x', bitsize=self.n)])

@@ -8,7 +8,7 @@ import sympy
 from numpy.typing import NDArray
 
 from qualtran.quantum_graph.composite_bloq import _binst_to_cxns
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
+from qualtran.quantum_graph.fancy_registers import Register, Signature
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -54,7 +54,7 @@ def ints_to_bits(x: Union[int, Sequence[int], NDArray[np.uint]], w: int) -> NDAr
 
 
 def _get_in_vals(
-    binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, ClassicalValT]
+    binst: BloqInstance, reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
 ) -> ClassicalValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
@@ -83,7 +83,7 @@ def _get_in_vals(
 
 
 def _update_assign_from_vals(
-    regs: Iterable[FancyRegister],
+    regs: Iterable[Register],
     binst: BloqInstance,
     vals: Dict[str, ClassicalValT],
     soq_assign: Dict[Soquet, ClassicalValT],
@@ -146,7 +146,7 @@ def _binst_on_classical_vals(
     for cxn in pred_cxns:
         soq_assign[cxn.right] = soq_assign[cxn.left]
 
-    def _in_vals(reg: FancyRegister):
+    def _in_vals(reg: Register):
         # close over binst and `soq_assign`
         return _get_in_vals(binst, reg, soq_assign=soq_assign)
 
@@ -159,7 +159,7 @@ def _binst_on_classical_vals(
 
 
 def _cbloq_call_classically(
-    registers: FancyRegisters, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
+    registers: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
@@ -195,7 +195,7 @@ def _cbloq_call_classically(
             soq_assign[cxn.right] = soq_assign[cxn.left]
 
     # Formulate output with expected API
-    def _f_vals(reg: FancyRegister):
+    def _f_vals(reg: Register):
         return _get_in_vals(RightDangle, reg, soq_assign)
 
     final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}

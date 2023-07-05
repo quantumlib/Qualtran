@@ -5,7 +5,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, FancyRegister, FancyRegisters, Side, SoquetT
+from qualtran import Bloq, Register, Signature, Side, SoquetT
 
 if TYPE_CHECKING:
     import cirq
@@ -48,9 +48,9 @@ class _XVector(Bloq):
         return '-' if self.bit else '+'
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
-            [FancyRegister('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)]
+    def registers(self) -> 'Signature':
+        return Signature(
+            [Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)]
         )
 
     def add_my_tensors(
@@ -118,8 +118,8 @@ class XGate(Bloq):
     """
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(q=1)
+    def registers(self) -> 'Signature':
+        return Signature.build(q=1)
 
     def add_my_tensors(
         self,

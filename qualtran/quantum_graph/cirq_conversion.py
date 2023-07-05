@@ -20,7 +20,7 @@ from qualtran.quantum_graph.composite_bloq import (
     CompositeBloq,
     SoquetT,
 )
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.fancy_registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -52,8 +52,8 @@ class CirqGateAsBloq(Bloq):
         return f'cirq.{g}'
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters([FancyRegister('qubits', 1, shape=(self.n_qubits,))])
+    def registers(self) -> 'Signature':
+        return Signature([Register('qubits', 1, shape=(self.n_qubits,))])
 
     @cached_property
     def n_qubits(self):
@@ -98,7 +98,7 @@ def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
 
     # "qubits" means cirq qubits | "qvars" means bloq Soquets
     all_qubits = sorted(circuit.all_qubits())
-    all_qvars = bb.add_register(FancyRegister('qubits', 1, shape=(len(all_qubits),)))
+    all_qvars = bb.add_register(Register('qubits', 1, shape=(len(all_qubits),)))
     qubit_to_qvar = dict(zip(all_qubits, all_qvars))
 
     for op in circuit.all_operations():
@@ -115,7 +115,7 @@ def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
 
 
 def _get_in_cirq_quregs(
-    binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, 'NDArray[cirq.Qid]']
+    binst: BloqInstance, reg: Register, soq_assign: Dict[Soquet, 'NDArray[cirq.Qid]']
 ) -> 'NDArray[cirq.Qid]':
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     full_shape = reg.shape + (reg.bitsize,)
@@ -129,7 +129,7 @@ def _get_in_cirq_quregs(
 
 
 def _update_assign_from_cirq_quregs(
-    regs: Iterable[FancyRegister],
+    regs: Iterable[Register],
     binst: BloqInstance,
     cirq_quregs: Dict[str, CirqQuregInT],
     soq_assign: Dict[Soquet, CirqQuregT],
@@ -183,7 +183,7 @@ def _binst_as_cirq_op(
         soq_assign[cxn.right] = soq_assign[cxn.left]
         del soq_assign[cxn.left]
 
-    def _in_vals(reg: FancyRegister) -> CirqQuregT:
+    def _in_vals(reg: Register) -> CirqQuregT:
         # close over `binst` and `soq_assign`.
         return _get_in_cirq_quregs(binst, reg, soq_assign=soq_assign)
 
@@ -196,7 +196,7 @@ def _binst_as_cirq_op(
 
 
 def _cbloq_to_cirq_circuit(
-    registers: FancyRegisters,
+    registers: Signature,
     cirq_quregs: Dict[str, 'CirqQuregInT'],
     binst_graph: nx.DiGraph,
     qubit_manager: cirq.QubitManager,
@@ -237,7 +237,7 @@ def _cbloq_to_cirq_circuit(
             soq_assign[cxn.right] = soq_assign[cxn.left]
 
     # Formulate output with expected API
-    def _f_quregs(reg: FancyRegister):
+    def _f_quregs(reg: Register):
         return _get_in_cirq_quregs(RightDangle, reg, soq_assign)
 
     out_quregs = {reg.name: _f_quregs(reg) for reg in registers.rights()}
@@ -255,7 +255,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
     """
 
     def __init__(
-        self, bloq: Bloq, reg_to_wires: Optional[Callable[[FancyRegister], List[str]]] = None
+        self, bloq: Bloq, reg_to_wires: Optional[Callable[[Register], List[str]]] = None
     ):
         self._bloq = bloq
         self._legacy_regs, self._compat_name_map = self._init_legacy_regs(bloq)
@@ -274,7 +274,7 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
     @staticmethod
     def _init_legacy_regs(
         bloq: Bloq,
-    ) -> Tuple[LegacyRegisters, Mapping[str, Tuple[FancyRegister, Tuple[int, ...]]]]:
+    ) -> Tuple[LegacyRegisters, Mapping[str, Tuple[Register, Tuple[int, ...]]]]:
         """Initialize legacy registers.
 
         We flatten multidimensional registers and annotate non-thru registers with

@@ -2,7 +2,7 @@ import numpy as np
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, FancyRegister, FancyRegisters, Side
+from qualtran import Bloq, Register, Signature, Side
 from qualtran.bloq_algos.arithmetic import GreaterThan
 
 
@@ -33,11 +33,11 @@ class Comparator(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters(
+        return Signature(
             [
-                FancyRegister('a', 1, shape=(self.bitsize,)),
-                FancyRegister('b', 1, shape=(self.bitsize,)),
-                FancyRegister('out', 1, side=Side.RIGHT),
+                Register('a', 1, shape=(self.bitsize,)),
+                Register('b', 1, shape=(self.bitsize,)),
+                Register('out', 1, side=Side.RIGHT),
             ]
         )
 
@@ -79,7 +79,7 @@ class BitonicSort(Bloq):
 
     @property
     def registers(self):
-        return FancyRegisters([FancyRegister("input", bitsize=self.bitsize, shape=(self.bitsize,))])
+        return Signature([Register("input", bitsize=self.bitsize, shape=(self.bitsize,))])
 
     def short_name(self) -> str:
         return "BSort"

@@ -6,7 +6,7 @@ import pytest
 
 from qualtran.bloq_algos.basic_gates import CNOT, PlusState, ZeroState
 from qualtran.quantum_graph.composite_bloq import BloqBuilder
-from qualtran.quantum_graph.fancy_registers import FancyRegisters
+from qualtran.quantum_graph.fancy_registers import Signature
 from qualtran.quantum_graph.musical_score import get_musical_score_data
 
 
@@ -30,7 +30,7 @@ def test_cnot():
 
 
 def test_cnot_cbloq():
-    bb, soqs = BloqBuilder.from_registers(FancyRegisters.build(c=1, t=1))
+    bb, soqs = BloqBuilder.from_registers(Signature.build(c=1, t=1))
     c, t = bb.add(CNOT(), ctrl=soqs['c'], target=soqs['t'])
     cbloq = bb.finalize(c=c, t=t)
     matrix = cbloq.tensor_contract()

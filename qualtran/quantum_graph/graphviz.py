@@ -8,7 +8,7 @@ import pydot
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.cirq_conversion import CirqGateAsBloq
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.fancy_registers import Register, Signature, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -71,7 +71,7 @@ def _assign_ids_to_bloqs_and_soqs(
 
 
 def _parition_registers_in_a_group(
-    regs: Iterable[FancyRegister], binst: BloqInstance
+    regs: Iterable[Register], binst: BloqInstance
 ) -> Tuple[List[Soquet], List[Soquet], List[Soquet]]:
     """Construct and sort the expected Soquets for a given register group.
 
@@ -139,7 +139,7 @@ class GraphDrawer:
         return pydot.Node(self.ids[soq], label=soq.pretty(), shape='plaintext')
 
     def add_dangles(
-        self, graph: pydot.Graph, soquets: FancyRegisters, dangle: DanglingT
+        self, graph: pydot.Graph, soquets: Signature, dangle: DanglingT
     ) -> pydot.Graph:
         """Add nodes representing dangling indices to the graph.
 
@@ -372,7 +372,7 @@ class PrettyGraphDrawer(GraphDrawer):
             return f'q{ii}'
         return soq.pretty()
 
-    def get_default_text(self, reg: FancyRegister) -> str:
+    def get_default_text(self, reg: Register) -> str:
         if reg.name == 'control':
             return '\u2b24'
 
