@@ -71,9 +71,7 @@ class ModExp(Bloq):
         """Helper method to return a `CtrlModMul` with attributes forwarded."""
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', exponent: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
         (x,) = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 

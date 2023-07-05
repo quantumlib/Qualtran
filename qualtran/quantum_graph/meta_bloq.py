@@ -6,12 +6,7 @@ from typing import List, Tuple
 from attrs import field, frozen
 
 from qualtran.quantum_graph.bloq import Bloq
-from qualtran.quantum_graph.composite_bloq import (
-    CompositeBloq,
-    BloqBuilder,
-    map_soqs,
-    SoquetT,
-)
+from qualtran.quantum_graph.composite_bloq import BloqBuilder, CompositeBloq, map_soqs, SoquetT
 from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from qualtran.quantum_graph.musical_score import Circle, WireSymbol
 from qualtran.quantum_graph.quantum_graph import Soquet

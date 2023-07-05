@@ -140,9 +140,7 @@ class XNest(Bloq):
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters.build(r=1)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', r: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', r: 'SoquetT') -> Dict[str, 'SoquetT']:
         (r,) = bb.add(XGate(), q=r)
         return {'r': r}
 
@@ -153,9 +151,7 @@ class XDoubleNest(Bloq):
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters.build(s=1)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', s: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', s: 'SoquetT') -> Dict[str, 'SoquetT']:
         (s,) = bb.add(XNest(), r=s)
         return {'s': s}
 

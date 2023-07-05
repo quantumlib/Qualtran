@@ -9,10 +9,7 @@ import pytest
 from qualtran.bloq_algos.basic_gates.z_basis import IntState
 from qualtran.bloq_algos.swap_network import CSwapApprox, SwapWithZero
 from qualtran.jupyter_tools import execute_notebook
-from qualtran.quantum_graph.composite_bloq import (
-    assert_valid_bloq_decomposition,
-    BloqBuilder,
-)
+from qualtran.quantum_graph.composite_bloq import assert_valid_bloq_decomposition, BloqBuilder
 
 random.seed(12345)
 

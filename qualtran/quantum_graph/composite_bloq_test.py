@@ -12,10 +12,10 @@ from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
+    BloqBuilder,
     BloqError,
     BloqInstance,
     CompositeBloq,
-    BloqBuilder,
     Connection,
     FancyRegister,
     FancyRegisters,
@@ -467,9 +467,7 @@ class TestSerialBloq(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters.build(stuff=1)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', stuff: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
 
         for i in range(3):
             (stuff,) = bb.add(Atom(), stuff=stuff)
@@ -482,9 +480,7 @@ class TestParallelBloq(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters.build(stuff=3)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', stuff: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
         stuff = bb.split(stuff)
         for i in range(len(stuff)):
             stuff[i] = bb.add(Atom(), stuff=stuff[i])[0]

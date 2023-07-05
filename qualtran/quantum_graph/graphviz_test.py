@@ -27,9 +27,7 @@ class TestParallelBloq(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters.build(stuff=3)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', stuff: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
 
         qs = bb.split(stuff)
         for i in range(3):

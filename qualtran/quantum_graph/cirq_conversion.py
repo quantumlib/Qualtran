@@ -16,8 +16,8 @@ from numpy.typing import NDArray
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import (
     _binst_to_cxns,
-    CompositeBloq,
     BloqBuilder,
+    CompositeBloq,
     SoquetT,
 )
 from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
