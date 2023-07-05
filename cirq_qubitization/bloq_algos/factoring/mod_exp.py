@@ -5,12 +5,17 @@ import numpy as np
 import sympy
 from attrs import frozen
 
+from cirq_qubitization import (
+    Bloq,
+    CompositeBloqBuilder,
+    FancyRegister,
+    FancyRegisters,
+    Side,
+    SoquetT,
+)
 from cirq_qubitization.bloq_algos.basic_gates import IntState
 from cirq_qubitization.bloq_algos.factoring.mod_mul import CtrlModMul
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
-from cirq_qubitization.quantum_graph.composite_bloq import CompositeBloqBuilder, SoquetT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 
 
 @frozen

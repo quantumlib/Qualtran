@@ -4,11 +4,10 @@ from typing import Dict, Union
 import sympy
 from attrs import frozen
 
+from cirq_qubitization import Bloq, FancyRegister, FancyRegisters
 from cirq_qubitization.bloq_algos.basic_gates.t_gate import TGate
-from cirq_qubitization.quantum_graph.bloq import Bloq
 from cirq_qubitization.quantum_graph.bloq_counts import SympySymbolAllocator
 from cirq_qubitization.quantum_graph.classical_sim import ClassicalValT
-from cirq_qubitization.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 
 
 @frozen
