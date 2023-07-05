@@ -3,7 +3,7 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, overload, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Iterator, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attr import frozen
@@ -19,7 +19,7 @@ class Side(enum.Flag):
     LEFT registers serve as input lines (only) to the Bloq. RIGHT registers are output
     lines (only) from the Bloq. THRU registers are both input and output.
 
-    Traditional unitary operations will have THRU registers that operate on a colleciton of
+    Traditional unitary operations will have THRU registers that operate on a collection of
     qubits which are then made available to following operations. RIGHT and LEFT registers
     imply allocation, deallocation, or reshaping of the registers.
     """
@@ -31,9 +31,11 @@ class Side(enum.Flag):
 
 @frozen
 class Register:
-    """A quantum register.
+    """A data type describing a register of qubits.
 
-    This sets a bloq's "function signature": its input and output types.
+    Each register has a name as well as attributes describing the quantum data expected
+    to be passed to the register. A collection of `Register` objects can be used to define
+    a bloq's signature, see the `Signature` class.
 
     Attributes:
         name: The string name of the register
@@ -62,6 +64,7 @@ class Register:
 
 
 def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
+    """Construct a dictionary, but check that there are no duplicate keys."""
     # throw ValueError if duplicate keys are provided.
     d = {}
     for k, v in kv_iter:
@@ -72,10 +75,17 @@ def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
 
 
 class Signature:
-    """An ordered collection of `Register`.
+    """An ordered sequence of `Register`s that follow the rules for a bloq signature.
+
+    `Bloq.signature` is a property of all bloqs, and should be an object of this type.
+    It is analogous to a function signature in traditional computing where we specify the
+    names and types of the expected inputs an doutputs.
+
+    Each LEFT (including thru) register must have a unique name. Each RIGHT (including)
+    register must have a unique name.
 
     Args:
-        registers: an iterable of the contained `Register`.
+        registers: The registers comprising the signature.
     """
 
     def __init__(self, registers: Iterable[Register]):
@@ -85,7 +95,7 @@ class Signature:
 
     @classmethod
     def build(cls, **registers: int) -> 'Signature':
-        """Convenience method for building a collection of simple registers.
+        """Construct a Signature comprised of simple registers.
 
         Args:
             registers: keyword arguments mapping register name to bitsize. All registers
@@ -122,32 +132,6 @@ class Signature:
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'
-
-    @overload
-    def __getitem__(self, key: int) -> Register:
-        pass
-
-    @overload
-    def __getitem__(self, key: str) -> Register:
-        pass
-
-    @overload
-    def __getitem__(self, key: slice) -> 'Signature':
-        pass
-
-    def __getitem__(self, key):
-        if isinstance(key, slice):
-            return Signature(self._registers[key])
-        elif isinstance(key, int):
-            return self._registers[key]
-        elif isinstance(key, str):
-            left = self._lefts[key]
-            right = self._rights[key]
-            if left != right:
-                raise KeyError(f"`{key}` is not a thru register and cannot be indexed by name")
-            return left
-        else:
-            raise IndexError(f"key {key} must be of the type str/int/slice.")
 
     def __contains__(self, item: Register) -> bool:
         return item in self._registers
