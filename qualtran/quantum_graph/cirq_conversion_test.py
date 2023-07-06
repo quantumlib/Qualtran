@@ -20,8 +20,8 @@ def test_cirq_gate():
         assert len(b.registers) == 1
         assert b.registers[0].side == Side.THRU
 
-    assert x.registers[0].wireshape == (1,)
-    assert toffoli.registers[0].wireshape == (3,)
+    assert x.registers[0].shape == (1,)
+    assert toffoli.registers[0].shape == (3,)
 
     assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
     assert x.pretty_name() == 'cirq.X'
@@ -52,9 +52,9 @@ def test_cbloq_to_cirq_circuit():
     # important! we lose moment structure
     circuit = cirq.Circuit(circuit.all_operations())
 
-    # Note: a 1d `wireshape` bloq register is actually two-dimensional in cirq-world
+    # Note: a 1d `shape` bloq register is actually two-dimensional in cirq-world
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
-    # CirqGate has registers of bitsize=1 and wireshape=(n,); hence the list transpose below.
+    # CirqGate has registers of bitsize=1 and shape=(n,); hence the list transpose below.
     circuit2, _ = cbloq.to_cirq_circuit(
         **{'qubits': [[q] for q in qubits]}, qubit_manager=cirq.ops.SimpleQubitManager()
     )

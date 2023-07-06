@@ -379,7 +379,7 @@ class TestMultiCNOT(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters(
-            [FancyRegister('control', 1), FancyRegister('target', 1, wireshape=(2, 3))]
+            [FancyRegister('control', 1), FancyRegister('target', 1, shape=(2, 3))]
         )
 
     def build_composite_bloq(

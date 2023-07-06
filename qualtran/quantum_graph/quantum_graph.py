@@ -80,7 +80,7 @@ class Soquet:
     Attributes:
         binst: The BloqInstance to which this soquet belongs.
         reg: The register that this soquet is an instance of.
-        idx: Registers with non-empty `wireshape` attributes are multi-dimensional. A soquet
+        idx: Registers with non-empty `shape` attributes are multi-dimensional. A soquet
             is an explicitly indexed instantiation of one element of the multi-dimensional
             register.
     """
@@ -91,9 +91,9 @@ class Soquet:
 
     @idx.validator
     def _check_idx(self, attribute, value):
-        if len(value) != len(self.reg.wireshape):
+        if len(value) != len(self.reg.shape):
             raise ValueError(f"Bad index shape {value} for {self.reg}.")
-        for i, shape in zip(value, self.reg.wireshape):
+        for i, shape in zip(value, self.reg.shape):
             if i >= shape:
                 raise ValueError(f"Bad index {i} for {self.reg}.")
 

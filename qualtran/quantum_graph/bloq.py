@@ -138,7 +138,7 @@ class Bloq(metaclass=abc.ABCMeta):
             **vals: The input classical values for each left (or thru) register. The data
                 types are guaranteed to match `self.registers`. Values for registers
                 with bitsize `n` will be integers of that bitsize. Values for registers with
-                `wireshape` will be an ndarray of integers of the given bitsize. Note: integers
+                `shape` will be an ndarray of integers of the given bitsize. Note: integers
                 can be either Numpy or Python integers. If they are Python integers, they
                 are unsigned.
 
@@ -161,7 +161,7 @@ class Bloq(metaclass=abc.ABCMeta):
             **vals: The input classical values for each left (or thru) register. The data
                 types must match `self.registers`. Values for registers
                 with bitsize `n` should be integers of that bitsize or less. Values for registers
-                with `wireshape` should be an ndarray of integers of the given bitsize.
+                with `shape` should be an ndarray of integers of the given bitsize.
                 Note: integers can be either Numpy or Python integers, but should be positive
                 and unsigned.
 
@@ -277,7 +277,7 @@ class Bloq(metaclass=abc.ABCMeta):
             **cirq_quregs: kwargs mapping from this bloq's left register names to an ndarray of
                 `cirq.Qid`. The final dimension of this array corresponds to the registers
                 `bitsize` size. Any additional dimensions come first and correspond to the
-                register `wireshape` sizes.
+                register `shape` sizes.
 
         Returns:
             op: A cirq operation corresponding to this bloq acting on the provided cirq qubits or

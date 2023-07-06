@@ -37,7 +37,7 @@ def test_soquet():
 
 def test_soquet_idxed():
     binst = BloqInstance(TestCNOT(), i=0)
-    reg = FancyRegister('y', 10, wireshape=(10, 2))
+    reg = FancyRegister('y', 10, shape=(10, 2))
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
         _ = Soquet(binst, reg)

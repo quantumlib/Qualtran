@@ -8,14 +8,14 @@ def test_register():
     r = FancyRegister("my_reg", 5)
     assert r.name == 'my_reg'
     assert r.bitsize == 5
-    assert r.wireshape == tuple()
+    assert r.shape == tuple()
     assert r.side == Side.THRU
     assert r.total_bits() == 5
 
 
 def test_multidim_register():
-    r = FancyRegister("my_reg", bitsize=1, wireshape=(2, 3), side=Side.RIGHT)
-    idxs = list(r.wire_idxs())
+    r = FancyRegister("my_reg", bitsize=1, shape=(2, 3), side=Side.RIGHT)
+    idxs = list(r.all_idxs())
     assert len(idxs) == 2 * 3
 
     assert not r.side & Side.LEFT
@@ -92,8 +92,8 @@ def test_agg_split():
     regs = FancyRegisters(
         [
             FancyRegister('control', 1),
-            FancyRegister('target', bitsize=n_targets, wireshape=tuple(), side=Side.LEFT),
-            FancyRegister('target', bitsize=1, wireshape=(n_targets,), side=Side.RIGHT),
+            FancyRegister('target', bitsize=n_targets, shape=tuple(), side=Side.LEFT),
+            FancyRegister('target', bitsize=1, shape=(n_targets,), side=Side.RIGHT),
         ]
     )
     assert len(list(regs.groups())) == 2
@@ -103,7 +103,7 @@ def test_agg_split():
 
 
 def test_get_named_qubits_multidim():
-    regs = FancyRegisters([FancyRegister('matt', wireshape=(2, 3), bitsize=4)])
+    regs = FancyRegisters([FancyRegister('matt', shape=(2, 3), bitsize=4)])
     quregs = regs.get_cirq_quregs()
     assert quregs['matt'].shape == (2, 3, 4)
     assert quregs['matt'][1, 2, 3] == cirq.NamedQubit('matt[1, 2, 3]')

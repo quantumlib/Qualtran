@@ -32,7 +32,7 @@ class TensorAdderTester(Bloq):
         return FancyRegisters(
             [
                 FancyRegister('x', bitsize=2, side=Side.LEFT),
-                FancyRegister('qubits', bitsize=1, wireshape=(2,)),
+                FancyRegister('qubits', bitsize=1, shape=(2,)),
                 FancyRegister('y', bitsize=1, side=Side.RIGHT),
             ]
         )

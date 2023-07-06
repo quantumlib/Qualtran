@@ -42,7 +42,7 @@ class And(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters(
             [
-                FancyRegister('ctrl', 1, wireshape=(2,)),
+                FancyRegister('ctrl', 1, shape=(2,)),
                 FancyRegister('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
             ]
         )
@@ -136,8 +136,8 @@ class MultiAnd(Bloq):
         one_side = Side.RIGHT if not self.adjoint else Side.LEFT
         return FancyRegisters(
             [
-                FancyRegister('ctrl', 1, wireshape=(len(self.cvs),)),
-                FancyRegister('junk', 1, wireshape=(len(self.cvs) - 2,), side=one_side),
+                FancyRegister('ctrl', 1, shape=(len(self.cvs),)),
+                FancyRegister('junk', 1, shape=(len(self.cvs) - 2,), side=one_side),
                 FancyRegister('target', 1, side=one_side),
             ]
         )
