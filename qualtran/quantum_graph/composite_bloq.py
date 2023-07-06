@@ -198,6 +198,10 @@ class CompositeBloq(Bloq):
             rc += binst.bloq.t_complexity()
         return rc
 
+    def declares_t_complexity(self) -> bool:
+        """`TComplexity` is declared if all subbloqs declare their counts."""
+        return all(binst.bloq.declares_t_complexity() for binst in self.bloq_instances)
+
     def as_composite_bloq(self) -> 'CompositeBloq':
         """This override just returns the present composite bloq."""
         return self
