@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Type
 
 import jinja2
+import tensorflow_docs.api_generator.parser
 from tensorflow_docs.api_generator.generate_lib import DocGenerator
 from tensorflow_docs.api_generator.obj_type import ObjType
 from tensorflow_docs.api_generator.pretty_docs import (
@@ -167,6 +168,56 @@ _MY_PAGE_BUILDERS = {
     ObjType.TYPE_ALIAS: MyTypeAliasPageInfo,
 }
 """Pass in custom logic to DocGenerator."""
+
+# Github-flavored markdown will switch to raw-html mode if a given line starts with an html tag.
+# If the given line starts with a non-whitespace character other than an html tag, it will
+# continue processing markdown inside the html elements.
+#
+# tensorflow_docs puts one space before the first e.g. `<table>` element and that is sufficient.
+# It was proposed to modify the table output to emit a zero-width space on each new line before
+# an html element. Unfortunately, sphinx will schlorp out all these characters and put them
+# each in their own paragraph before the table (!) and there's a huge amount of extra vertical
+# whitespace.
+#
+# So instead, we change all the tables to markdown description lists which are easy to emit,
+# and they look really nice as argument/attribute lists.
+
+MY_TABLE_TEMPLATE = """\n{title}\n\n{items}"""
+
+
+class MyItemTemplate:
+    """Sneak in some logic for rendering "tables" as markdown description lists.
+
+        Description list
+        : This is an example of a description list. It is one term
+          followed by a definition. The definition is indented but
+          starts with a colon.
+
+    `tensorflow_docs` calls ITEMS_TEMPLATE.format(). They expect ITEMS_TEMPLATE to be a
+    string but there's no reason why it can't be any python object with a "format" method.
+    """
+
+    @staticmethod
+    def format(*, name: str, anchor: str, description: str) -> str:
+        lines = [f'{name}{anchor}']
+
+        desc_lines = description.splitlines()
+        if len(desc_lines) == 0:
+            # Empty description provided. Use a non-breaking space as the
+            # description to preserve the markdown structure.
+            desc_lines = ['&nbsp;']
+
+        # Indent each description by two spaces. The first one starts with `:`
+        lines.append(f': {desc_lines[0]}')
+        lines.extend([f'  {dl}' for dl in desc_lines[1:]])
+        lines.append('\n')
+
+        return '\n'.join(lines)
+
+
+# Monkey patch the table and items template
+tensorflow_docs.api_generator.parser.TABLE_TEMPLATE = MY_TABLE_TEMPLATE
+tensorflow_docs.api_generator.parser.ITEMS_TEMPLATE = MyItemTemplate
 
 
 def generate_ref_docs():
