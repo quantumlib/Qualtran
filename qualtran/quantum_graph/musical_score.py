@@ -126,14 +126,14 @@ class LineManager:
         `seq_x` and `topo_gen` are passed through.
         """
         self.unreserve(binst, reg)
-        if not reg.wireshape:
+        if not reg.shape:
             y = self.new_y(binst, reg)
             self.hlines.add(HLine(y=y, seq_x_start=seq_x))
             self.maybe_reserve(binst, reg, idx=tuple())
             return RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
 
-        arg = np.zeros(reg.wireshape, dtype=object)
-        for idx in reg.wire_idxs():
+        arg = np.zeros(reg.shape, dtype=object)
+        for idx in reg.all_idxs():
             y = self.new_y(binst, reg, idx)
             self.hlines.add(HLine(y=y, seq_x_start=seq_x))
             arg[idx] = RegPosition(y=y, seq_x=seq_x, topo_gen=topo_gen)
@@ -154,7 +154,7 @@ class LineManager:
         This will free the position for future allocation. This will find the in-progress
         HLine associate with `reg` and update it to indicate the end point.
         """
-        if not reg.wireshape:
+        if not reg.shape:
             qline = arr
             assert isinstance(qline, RegPosition), qline
             heapq.heappush(self.available, qline.y)
@@ -162,7 +162,7 @@ class LineManager:
             self.maybe_reserve(binst, reg, idx=tuple())
             return
 
-        for idx in reg.wire_idxs():
+        for idx in reg.all_idxs():
             qline = arr[idx]
             heapq.heappush(self.available, qline.y)
             self.finish_hline(qline.y, seq_x_end=qline.seq_x)
@@ -173,11 +173,11 @@ def _get_in_vals(
     binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, RegPosition]
 ) -> Union[RegPosition, NDArray[RegPosition]]:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
-    if not reg.wireshape:
+    if not reg.shape:
         return soq_assign[Soquet(binst, reg)]
 
-    arg = np.empty(reg.wireshape, dtype=object)
-    for idx in reg.wire_idxs():
+    arg = np.empty(reg.shape, dtype=object)
+    for idx in reg.all_idxs():
         soq = Soquet(binst, reg, idx=idx)
         arg[idx] = soq_assign[soq]
 
@@ -204,15 +204,15 @@ def _update_assign_from_vals(
         except KeyError:
             arr = manager.new(binst=binst, reg=reg, seq_x=seq_x, topo_gen=topo_gen)
 
-        if reg.wireshape:
+        if reg.shape:
             arr = np.asarray(arr)
-            if arr.shape != reg.wireshape:
+            if arr.shape != reg.shape:
                 raise ValueError(
                     f"Incorrect shape {arr.shape} received for {binst}.{reg.name}. "
-                    f"Want {reg.wireshape}."
+                    f"Want {reg.shape}."
                 )
 
-            for idx in reg.wire_idxs():
+            for idx in reg.all_idxs():
                 soq = Soquet(binst, reg, idx=idx)
                 soq_assign[soq] = attrs.evolve(arr[idx], seq_x=seq_x, topo_gen=topo_gen)
         else:

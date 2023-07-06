@@ -37,8 +37,8 @@ class Split(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters(
             [
-                FancyRegister(name='split', bitsize=self.n, wireshape=tuple(), side=Side.LEFT),
-                FancyRegister(name='split', bitsize=1, wireshape=(self.n,), side=Side.RIGHT),
+                FancyRegister(name='split', bitsize=self.n, shape=tuple(), side=Side.LEFT),
+                FancyRegister(name='split', bitsize=1, shape=(self.n,), side=Side.RIGHT),
             ]
         )
 
@@ -72,7 +72,7 @@ class Split(Bloq):
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.quantum_graph.musical_score import directional_text_box
 
-        if soq.reg.wireshape:
+        if soq.reg.shape:
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
         return directional_text_box(' ', side=soq.reg.side)
@@ -92,8 +92,8 @@ class Join(Bloq):
     def registers(self) -> FancyRegisters:
         return FancyRegisters(
             [
-                FancyRegister('join', bitsize=1, wireshape=(self.n,), side=Side.LEFT),
-                FancyRegister('join', bitsize=self.n, wireshape=tuple(), side=Side.RIGHT),
+                FancyRegister('join', bitsize=1, shape=(self.n,), side=Side.LEFT),
+                FancyRegister('join', bitsize=self.n, shape=tuple(), side=Side.RIGHT),
             ]
         )
 
@@ -125,7 +125,7 @@ class Join(Bloq):
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.quantum_graph.musical_score import directional_text_box
 
-        if soq.reg.wireshape:
+        if soq.reg.shape:
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
         return directional_text_box(' ', side=soq.reg.side)
