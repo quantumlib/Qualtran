@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-import "api/annotations.proto";
-import "api/args.proto";
-import "api/registers.proto";
+import "qualtran/api/annotations.proto";
+import "qualtran/api/args.proto";
+import "qualtran/api/registers.proto";
 
 package qualtran;
 
@@ -14,7 +14,7 @@ message Bloq {
   TComplexity t_complexity = 4;
 }
 
-// A composite bloq is a heirarchical definition in terms of other simpler bloqs.
+// A composite bloq is a hierarchical definition in terms of other simpler bloqs.
 message CompositeBloq {
   BloqTable table = 1;
   CompositeBloqLite cbloq = 2;
@@ -47,12 +47,14 @@ message CompositeBloqLite {
   Registers registers = 2;
   repeated Connection connections = 3;
 }
+
 message BloqOrCbloq {
   oneof bloq_or_cbloq {
     Bloq bloq = 1;
     CompositeBloqLite cbloq = 2;
   }
 }
+
 message BloqTable{
   // A lookup table for all unique Bloqs.
   repeated BloqOrCbloq bloqs = 1;

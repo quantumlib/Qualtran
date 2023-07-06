@@ -58,6 +58,7 @@ def _manually_make_test_cbloq_cxns():
     ], regs
 
 
+@attrs.frozen
 class TestTwoCNOT(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:

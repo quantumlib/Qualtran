@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-import "api/args.proto";
+import "qualtran/api/args.proto";
 
 package qualtran;
 
 message TComplexity {
-  int64 cliffords = 1;
+  int64 clifford = 1;
   int64 rotations = 2;
   int64 t = 3;
 }

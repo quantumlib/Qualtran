@@ -41,7 +41,7 @@ done
 # change to the src directory
 thisdir="$(dirname "${BASH_SOURCE[0]}")" || exit $?
 topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
-cd "${topdir}/cirq_qubitization" || exit $?
+cd "${topdir}/" || exit $?
 
 # determine the output directory
 outdir=.
@@ -51,8 +51,9 @@ if (( opt_check )); then
 fi
 
 # compile protos or bail out in case of error
+
 python -m grpc_tools.protoc \
-    -I=. --python_out="${outdir}" --mypy_out="${outdir}" api/*.proto ||
+    -I=. --python_out="${outdir}" --mypy_out="${outdir}" qualtran/api/*.proto ||
     exit $?
 
 # handle the check mode if we get here
