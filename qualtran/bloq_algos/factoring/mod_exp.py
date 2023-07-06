@@ -5,7 +5,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegister, FancyRegisters, Side, SoquetT
+from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Side, SoquetT
 from qualtran.bloq_algos.basic_gates import IntState
 from qualtran.bloq_algos.factoring.mod_mul import CtrlModMul
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
@@ -71,9 +71,7 @@ class ModExp(Bloq):
         """Helper method to return a `CtrlModMul` with attributes forwarded."""
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
-    def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', exponent: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
         (x,) = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 

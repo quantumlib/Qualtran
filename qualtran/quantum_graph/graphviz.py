@@ -84,7 +84,7 @@ def _parition_registers_in_a_group(
     rights = []
     thrus = []
     for reg in regs:
-        for idx in reg.wire_idxs():
+        for idx in reg.all_idxs():
             soq = Soquet(binst, reg, idx)
             if reg.side is Side.LEFT:
                 lefts.append(soq)
@@ -154,7 +154,7 @@ class GraphDrawer:
 
         subg = pydot.Subgraph(rank='same')
         for reg in regs:
-            for idx in reg.wire_idxs():
+            for idx in reg.all_idxs():
                 subg.add_node(self.get_dangle_node(Soquet(dangle, reg, idx=idx)))
         graph.add_subgraph(subg)
         return graph

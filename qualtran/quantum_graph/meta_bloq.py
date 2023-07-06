@@ -6,12 +6,7 @@ from typing import List, Tuple
 from attrs import field, frozen
 
 from qualtran.quantum_graph.bloq import Bloq
-from qualtran.quantum_graph.composite_bloq import (
-    CompositeBloq,
-    CompositeBloqBuilder,
-    map_soqs,
-    SoquetT,
-)
+from qualtran.quantum_graph.composite_bloq import BloqBuilder, CompositeBloq, map_soqs, SoquetT
 from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from qualtran.quantum_graph.musical_score import Circle, WireSymbol
 from qualtran.quantum_graph.quantum_graph import Soquet
@@ -49,7 +44,7 @@ class ControlledBloq(Bloq):
         if not isinstance(self.subbloq, CompositeBloq):
             return ControlledBloq(self.subbloq.decompose_bloq()).decompose_bloq()
 
-        bb, initial_soqs = CompositeBloqBuilder.from_registers(self.registers)
+        bb, initial_soqs = BloqBuilder.from_registers(self.registers)
         ctrl = initial_soqs['control']
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []

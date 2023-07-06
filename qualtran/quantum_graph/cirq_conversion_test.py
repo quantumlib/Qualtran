@@ -4,7 +4,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloqBuilder, FancyRegisters, Side, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, FancyRegisters, Side, Soquet, SoquetT
 from qualtran.bloq_algos.and_bloq import MultiAnd
 from qualtran.bloq_algos.basic_gates import XGate
 from qualtran.jupyter_tools import execute_notebook
@@ -20,8 +20,8 @@ def test_cirq_gate():
         assert len(b.registers) == 1
         assert b.registers[0].side == Side.THRU
 
-    assert x.registers[0].wireshape == (1,)
-    assert toffoli.registers[0].wireshape == (3,)
+    assert x.registers[0].shape == (1,)
+    assert toffoli.registers[0].shape == (3,)
 
     assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
     assert x.pretty_name() == 'cirq.X'
@@ -52,9 +52,9 @@ def test_cbloq_to_cirq_circuit():
     # important! we lose moment structure
     circuit = cirq.Circuit(circuit.all_operations())
 
-    # Note: a 1d `wireshape` bloq register is actually two-dimensional in cirq-world
+    # Note: a 1d `shape` bloq register is actually two-dimensional in cirq-world
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
-    # CirqGate has registers of bitsize=1 and wireshape=(n,); hence the list transpose below.
+    # CirqGate has registers of bitsize=1 and shape=(n,); hence the list transpose below.
     circuit2, _ = cbloq.to_cirq_circuit(
         **{'qubits': [[q] for q in qubits]}, qubit_manager=cirq.ops.SimpleQubitManager()
     )
@@ -104,7 +104,7 @@ class SwapTest(Bloq):
         return FancyRegisters.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', *, x: Soquet, y: Soquet
+        self, bb: 'BloqBuilder', *, x: Soquet, y: Soquet
     ) -> Dict[str, SoquetT]:
         xs = bb.split(x)
         ys = bb.split(y)
@@ -151,7 +151,7 @@ def test_multi_and_allocates():
 
 
 def test_bloq_as_cirq_gate_left_register():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     q = bb.allocate(1)
     (q,) = bb.add(XGate(), q=q)
     bb.free(q)

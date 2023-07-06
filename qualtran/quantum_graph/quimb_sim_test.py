@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
-    CompositeBloqBuilder,
+    BloqBuilder,
     DanglingT,
     FancyRegister,
     FancyRegisters,
@@ -32,7 +32,7 @@ class TensorAdderTester(Bloq):
         return FancyRegisters(
             [
                 FancyRegister('x', bitsize=2, side=Side.LEFT),
-                FancyRegister('qubits', bitsize=1, wireshape=(2,)),
+                FancyRegister('qubits', bitsize=1, shape=(2,)),
                 FancyRegister('y', bitsize=1, side=Side.RIGHT),
             ]
         )
@@ -119,7 +119,7 @@ class TensorAdderSimple(Bloq):
 
 
 def test_cbloq_to_quimb():
-    bb = CompositeBloqBuilder()
+    bb = BloqBuilder()
     x = bb.add_register('x', 1)
     (x,) = bb.add(TensorAdderSimple(), x=x)
     (x,) = bb.add(TensorAdderSimple(), x=x)
@@ -140,9 +140,7 @@ class XNest(Bloq):
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters.build(r=1)
 
-    def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', r: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', r: 'SoquetT') -> Dict[str, 'SoquetT']:
         (r,) = bb.add(XGate(), q=r)
         return {'r': r}
 
@@ -153,9 +151,7 @@ class XDoubleNest(Bloq):
     def registers(self) -> 'FancyRegisters':
         return FancyRegisters.build(s=1)
 
-    def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', s: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', s: 'SoquetT') -> Dict[str, 'SoquetT']:
         (s,) = bb.add(XNest(), r=s)
         return {'s': s}
 
@@ -181,7 +177,7 @@ class ComplexBloq(Bloq):
         return FancyRegisters([FancyRegister('q0', 1), FancyRegister('q1', 1)])
 
     def build_composite_bloq(
-        self, bb: 'CompositeBloqBuilder', q0: Soquet, q1: Soquet
+        self, bb: 'BloqBuilder', q0: Soquet, q1: Soquet
     ) -> Dict[str, 'SoquetT']:
         (q0,) = bb.add(XGate(), q=q0)
         q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
