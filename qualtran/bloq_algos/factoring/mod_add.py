@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 import sympy
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, FancyRegister, FancyRegisters
 from qualtran.bloq_algos.basic_gates.t_gate import TGate
@@ -42,6 +43,10 @@ class CtrlScaleModAdd(Bloq):
     def bloq_counts(self, ssa: SympySymbolAllocator):
         k = ssa.new_symbol('k')
         return [(self.bitsize, CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod))]
+
+    def t_complexity(self) -> 'TComplexity':
+        ((n, bloq),) = self.bloq_counts(SympySymbolAllocator())
+        return n * bloq.t_complexity()
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -85,6 +90,10 @@ class CtrlModAddK(Bloq):
         k = ss.new_symbol('k')
         return [(5, CtrlAddK(k=k, bitsize=self.bitsize))]
 
+    def t_complexity(self) -> 'TComplexity':
+        ((n, bloq),) = self.bloq_counts(SympySymbolAllocator())
+        return n * bloq.t_complexity()
+
     def short_name(self) -> str:
         return f'x += {self.k} % {self.mod}'
 
@@ -116,3 +125,6 @@ class CtrlAddK(Bloq):
 
     def bloq_counts(self, mgr):
         return [(2 * self.bitsize, TGate())]
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(t=2 * self.bitsize)
