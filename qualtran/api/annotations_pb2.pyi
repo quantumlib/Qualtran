@@ -3,11 +3,8 @@
 isort:skip_file
 """
 import builtins
-import collections.abc
 import google.protobuf.descriptor
-import google.protobuf.internal.containers
 import google.protobuf.message
-import qualtran.api.args_pb2
 import sys
 
 if sys.version_info >= (3, 8):
@@ -37,37 +34,3 @@ class TComplexity(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["clifford", b"clifford", "rotations", b"rotations", "t", b"t"]) -> None: ...
 
 global___TComplexity = TComplexity
-
-@typing_extensions.final
-class BloqCounts(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    @typing_extensions.final
-    class BloqCountsEntry(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        KEY_FIELD_NUMBER: builtins.int
-        VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.int
-        @property
-        def value(self) -> qualtran.api.args_pb2.IntOrSympy: ...
-        def __init__(
-            self,
-            *,
-            key: builtins.int = ...,
-            value: qualtran.api.args_pb2.IntOrSympy | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
-
-    BLOQ_COUNTS_FIELD_NUMBER: builtins.int
-    @property
-    def bloq_counts(self) -> google.protobuf.internal.containers.MessageMap[builtins.int, qualtran.api.args_pb2.IntOrSympy]: ...
-    def __init__(
-        self,
-        *,
-        bloq_counts: collections.abc.Mapping[builtins.int, qualtran.api.args_pb2.IntOrSympy] | None = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bloq_counts", b"bloq_counts"]) -> None: ...
-
-global___BloqCounts = BloqCounts

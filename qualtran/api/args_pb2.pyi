@@ -17,6 +17,26 @@ else:
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 @typing_extensions.final
+class IntOrSympy(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    INT_VAL_FIELD_NUMBER: builtins.int
+    SYMPY_EXPR_FIELD_NUMBER: builtins.int
+    int_val: builtins.int
+    sympy_expr: builtins.str
+    def __init__(
+        self,
+        *,
+        int_val: builtins.int = ...,
+        sympy_expr: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "sympy_expr"] | None: ...
+
+global___IntOrSympy = IntOrSympy
+
+@typing_extensions.final
 class NDArray(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -43,26 +63,6 @@ class NDArray(google.protobuf.message.Message):
 global___NDArray = NDArray
 
 @typing_extensions.final
-class IntOrSympy(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    INT_VAL_FIELD_NUMBER: builtins.int
-    SYMPY_EXPR_FIELD_NUMBER: builtins.int
-    int_val: builtins.int
-    sympy_expr: builtins.str
-    def __init__(
-        self,
-        *,
-        int_val: builtins.int = ...,
-        sympy_expr: builtins.str = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["int_val", b"int_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "sympy_expr"] | None: ...
-
-global___IntOrSympy = IntOrSympy
-
-@typing_extensions.final
 class BloqArg(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -72,6 +72,8 @@ class BloqArg(google.protobuf.message.Message):
     STRING_VAL_FIELD_NUMBER: builtins.int
     SYMPY_EXPR_FIELD_NUMBER: builtins.int
     NDARRAY_FIELD_NUMBER: builtins.int
+    SUBBLOQ_FIELD_NUMBER: builtins.int
+    CIRQ_JSON_GZIP_FIELD_NUMBER: builtins.int
     name: builtins.str
     int_val: builtins.int
     float_val: builtins.float
@@ -81,6 +83,10 @@ class BloqArg(google.protobuf.message.Message):
     @property
     def ndarray(self) -> global___NDArray:
         """N-dimensional numpy array stored as bytes."""
+    subbloq: builtins.int
+    """Integer reference of a subbloq. Assumes access to a BloqLibrary."""
+    cirq_json_gzip: builtins.bytes
+    """Gzipped JSON corresponding to a Cirq object."""
     def __init__(
         self,
         *,
@@ -90,9 +96,11 @@ class BloqArg(google.protobuf.message.Message):
         string_val: builtins.str = ...,
         sympy_expr: builtins.str = ...,
         ndarray: global___NDArray | None = ...,
+        subbloq: builtins.int = ...,
+        cirq_json_gzip: builtins.bytes = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "string_val", b"string_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "string_val", b"string_val", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip"] | None: ...
 
 global___BloqArg = BloqArg

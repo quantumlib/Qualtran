@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "qualtran/api/args.proto";
+
 package qualtran;
 
 message Register {
@@ -11,8 +13,8 @@ message Register {
     THRU = 3;
   }
   string name = 1;
-  int32 bitsize = 2;
-  repeated int32 shape = 3;
+  IntOrSympy bitsize = 2;
+  repeated IntOrSympy shape = 3;
   Side side = 4;
 }
 

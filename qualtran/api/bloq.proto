@@ -8,23 +8,35 @@ package qualtran;
 
 
 message Bloq {
+  // `name` identifies the Bloq.
   string name = 1;
+  // `Args` are used to construct the Bloq.
   repeated BloqArg args = 2;
+  // `Registers` specify the signature of the Bloq and are often derived using `args`.
   Registers registers = 3;
+  // Other useful annotations.
   TComplexity t_complexity = 4;
 }
 
-// A composite bloq is a hierarchical definition in terms of other simpler bloqs.
-message CompositeBloq {
-  BloqTable table = 1;
-  CompositeBloqLite cbloq = 2;
-  TComplexity t_complexity = 3;
-  BloqCounts bloq_counts = 4;
+message BloqLibrary {
+  // A library of Bloqs. Can be used to represent composite gates consisting other subbloqs, like
+  // `CompositeBloq`, `ControlledBloq` etc.
+
+  string name = 1; // A name for the library.
+
+  // Decompositions are specified using integer IDs referencing other Bloqs within this library.
+  message BloqWithDecomposition {
+    int32 bloq_id = 1; // Unique identifier for this Bloq within the library.
+    repeated Connection decomposition = 2; // Decomposition of the Bloq as an edge-list.
+    map<int32, IntOrSympy> bloq_counts = 3; // Rough decomposition of the Bloq as bloq-counts.
+    Bloq bloq = 4; // The Bloq itself.
+  }
+  repeated BloqWithDecomposition table = 2;
 }
 
-// Messages to enable efficient description of CompositeBloq in terms of other simpler bloqs.
+// Messages to enable efficient description of Bloq decompositions in terms of other simpler bloqs.
 message BloqInstance {
-  int32 id = 1;
+  int32 instance_id = 1;
   int32 bloq_id = 2;
 }
 
@@ -40,22 +52,4 @@ message Soquet {
 message Connection {
   Soquet left = 1;
   Soquet right = 2;
-}
-
-message CompositeBloqLite {
-  string name = 1;
-  Registers registers = 2;
-  repeated Connection connections = 3;
-}
-
-message BloqOrCbloq {
-  oneof bloq_or_cbloq {
-    Bloq bloq = 1;
-    CompositeBloqLite cbloq = 2;
-  }
-}
-
-message BloqTable{
-  // A lookup table for all unique Bloqs.
-  repeated BloqOrCbloq bloqs = 1;
 }

@@ -28,12 +28,16 @@ class Bloq(google.protobuf.message.Message):
     REGISTERS_FIELD_NUMBER: builtins.int
     T_COMPLEXITY_FIELD_NUMBER: builtins.int
     name: builtins.str
+    """`name` identifies the Bloq."""
     @property
-    def args(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.api.args_pb2.BloqArg]: ...
+    def args(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.api.args_pb2.BloqArg]:
+        """`Args` are used to construct the Bloq."""
     @property
-    def registers(self) -> qualtran.api.registers_pb2.Registers: ...
+    def registers(self) -> qualtran.api.registers_pb2.Registers:
+        """`Registers` specify the signature of the Bloq and are often derived using `args`."""
     @property
-    def t_complexity(self) -> qualtran.api.annotations_pb2.TComplexity: ...
+    def t_complexity(self) -> qualtran.api.annotations_pb2.TComplexity:
+        """Other useful annotations."""
     def __init__(
         self,
         *,
@@ -48,53 +52,96 @@ class Bloq(google.protobuf.message.Message):
 global___Bloq = Bloq
 
 @typing_extensions.final
-class CompositeBloq(google.protobuf.message.Message):
-    """A composite bloq is a heirarchical definition in terms of other simpler bloqs."""
+class BloqLibrary(google.protobuf.message.Message):
+    """A library of Bloqs. Can be used to represent composite gates consisting other subbloqs, like
+    `CompositeBloq`, `ControlledBloq` etc.
+    """
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    @typing_extensions.final
+    class BloqWithDecomposition(google.protobuf.message.Message):
+        """Decompositions are specified using integer IDs referencing other Bloqs within this library."""
+
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        @typing_extensions.final
+        class BloqCountsEntry(google.protobuf.message.Message):
+            DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+            KEY_FIELD_NUMBER: builtins.int
+            VALUE_FIELD_NUMBER: builtins.int
+            key: builtins.int
+            @property
+            def value(self) -> qualtran.api.args_pb2.IntOrSympy: ...
+            def __init__(
+                self,
+                *,
+                key: builtins.int = ...,
+                value: qualtran.api.args_pb2.IntOrSympy | None = ...,
+            ) -> None: ...
+            def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+            def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
+        BLOQ_ID_FIELD_NUMBER: builtins.int
+        DECOMPOSITION_FIELD_NUMBER: builtins.int
+        BLOQ_COUNTS_FIELD_NUMBER: builtins.int
+        BLOQ_FIELD_NUMBER: builtins.int
+        bloq_id: builtins.int
+        """Unique identifier for this Bloq within the library."""
+        @property
+        def decomposition(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Connection]:
+            """Decomposition of the Bloq as an edge-list."""
+        @property
+        def bloq_counts(self) -> google.protobuf.internal.containers.MessageMap[builtins.int, qualtran.api.args_pb2.IntOrSympy]:
+            """Rough decomposition of the Bloq as bloq-counts."""
+        @property
+        def bloq(self) -> global___Bloq:
+            """The Bloq itself."""
+        def __init__(
+            self,
+            *,
+            bloq_id: builtins.int = ...,
+            decomposition: collections.abc.Iterable[global___Connection] | None = ...,
+            bloq_counts: collections.abc.Mapping[builtins.int, qualtran.api.args_pb2.IntOrSympy] | None = ...,
+            bloq: global___Bloq | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["bloq", b"bloq"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["bloq", b"bloq", "bloq_counts", b"bloq_counts", "bloq_id", b"bloq_id", "decomposition", b"decomposition"]) -> None: ...
+
+    NAME_FIELD_NUMBER: builtins.int
     TABLE_FIELD_NUMBER: builtins.int
-    CBLOQ_FIELD_NUMBER: builtins.int
-    T_COMPLEXITY_FIELD_NUMBER: builtins.int
-    BLOQ_COUNTS_FIELD_NUMBER: builtins.int
+    name: builtins.str
+    """A name for the library."""
     @property
-    def table(self) -> global___BloqTable: ...
-    @property
-    def cbloq(self) -> global___CompositeBloqLite: ...
-    @property
-    def t_complexity(self) -> qualtran.api.annotations_pb2.TComplexity: ...
-    @property
-    def bloq_counts(self) -> qualtran.api.annotations_pb2.BloqCounts: ...
+    def table(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BloqLibrary.BloqWithDecomposition]: ...
     def __init__(
         self,
         *,
-        table: global___BloqTable | None = ...,
-        cbloq: global___CompositeBloqLite | None = ...,
-        t_complexity: qualtran.api.annotations_pb2.TComplexity | None = ...,
-        bloq_counts: qualtran.api.annotations_pb2.BloqCounts | None = ...,
+        name: builtins.str = ...,
+        table: collections.abc.Iterable[global___BloqLibrary.BloqWithDecomposition] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bloq_counts", b"bloq_counts", "cbloq", b"cbloq", "t_complexity", b"t_complexity", "table", b"table"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bloq_counts", b"bloq_counts", "cbloq", b"cbloq", "t_complexity", b"t_complexity", "table", b"table"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "table", b"table"]) -> None: ...
 
-global___CompositeBloq = CompositeBloq
+global___BloqLibrary = BloqLibrary
 
 @typing_extensions.final
 class BloqInstance(google.protobuf.message.Message):
-    """Messages to enable efficient description of CompositeBloq in terms of other simpler bloqs."""
+    """Messages to enable efficient description of Bloq decompositions in terms of other simpler bloqs."""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    ID_FIELD_NUMBER: builtins.int
+    INSTANCE_ID_FIELD_NUMBER: builtins.int
     BLOQ_ID_FIELD_NUMBER: builtins.int
-    id: builtins.int
+    instance_id: builtins.int
     bloq_id: builtins.int
     def __init__(
         self,
         *,
-        id: builtins.int = ...,
+        instance_id: builtins.int = ...,
         bloq_id: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bloq_id", b"bloq_id", "id", b"id"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bloq_id", b"bloq_id", "instance_id", b"instance_id"]) -> None: ...
 
 global___BloqInstance = BloqInstance
 
@@ -147,66 +194,3 @@ class Connection(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["left", b"left", "right", b"right"]) -> None: ...
 
 global___Connection = Connection
-
-@typing_extensions.final
-class CompositeBloqLite(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    NAME_FIELD_NUMBER: builtins.int
-    REGISTERS_FIELD_NUMBER: builtins.int
-    CONNECTIONS_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    @property
-    def registers(self) -> qualtran.api.registers_pb2.Registers: ...
-    @property
-    def connections(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___Connection]: ...
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-        registers: qualtran.api.registers_pb2.Registers | None = ...,
-        connections: collections.abc.Iterable[global___Connection] | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["registers", b"registers"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["connections", b"connections", "name", b"name", "registers", b"registers"]) -> None: ...
-
-global___CompositeBloqLite = CompositeBloqLite
-
-@typing_extensions.final
-class BloqOrCbloq(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    BLOQ_FIELD_NUMBER: builtins.int
-    CBLOQ_FIELD_NUMBER: builtins.int
-    @property
-    def bloq(self) -> global___Bloq: ...
-    @property
-    def cbloq(self) -> global___CompositeBloqLite: ...
-    def __init__(
-        self,
-        *,
-        bloq: global___Bloq | None = ...,
-        cbloq: global___CompositeBloqLite | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bloq", b"bloq", "bloq_or_cbloq", b"bloq_or_cbloq", "cbloq", b"cbloq"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bloq", b"bloq", "bloq_or_cbloq", b"bloq_or_cbloq", "cbloq", b"cbloq"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["bloq_or_cbloq", b"bloq_or_cbloq"]) -> typing_extensions.Literal["bloq", "cbloq"] | None: ...
-
-global___BloqOrCbloq = BloqOrCbloq
-
-@typing_extensions.final
-class BloqTable(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    BLOQS_FIELD_NUMBER: builtins.int
-    @property
-    def bloqs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BloqOrCbloq]:
-        """A lookup table for all unique Bloqs."""
-    def __init__(
-        self,
-        *,
-        bloqs: collections.abc.Iterable[global___BloqOrCbloq] | None = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bloqs", b"bloqs"]) -> None: ...
-
-global___BloqTable = BloqTable

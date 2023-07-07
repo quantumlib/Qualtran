@@ -8,6 +8,7 @@ import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
+import qualtran.api.args_pb2
 import sys
 import typing
 
@@ -46,18 +47,20 @@ class Register(google.protobuf.message.Message):
     SHAPE_FIELD_NUMBER: builtins.int
     SIDE_FIELD_NUMBER: builtins.int
     name: builtins.str
-    bitsize: builtins.int
     @property
-    def shape(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]: ...
+    def bitsize(self) -> qualtran.api.args_pb2.IntOrSympy: ...
+    @property
+    def shape(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.api.args_pb2.IntOrSympy]: ...
     side: global___Register.Side.ValueType
     def __init__(
         self,
         *,
         name: builtins.str = ...,
-        bitsize: builtins.int = ...,
-        shape: collections.abc.Iterable[builtins.int] | None = ...,
+        bitsize: qualtran.api.args_pb2.IntOrSympy | None = ...,
+        shape: collections.abc.Iterable[qualtran.api.args_pb2.IntOrSympy] | None = ...,
         side: global___Register.Side.ValueType = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bitsize", b"bitsize"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["bitsize", b"bitsize", "name", b"name", "shape", b"shape", "side", b"side"]) -> None: ...
 
 global___Register = Register

@@ -1,10 +1,18 @@
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy as np
 import sympy
 from sympy.parsing.sympy_parser import parse_expr
 
 from qualtran.api import args_pb2
+
+
+def int_or_sympy_to_proto(val: Union[int, sympy.Expr]) -> args_pb2.IntOrSympy:
+    return (
+        args_pb2.IntOrSympy(sympy_expr=str(val))
+        if isinstance(val, sympy.Expr)
+        else args_pb2.IntOrSympy(int_val=val)
+    )
 
 
 def arg_to_proto(*, name: str, val: Any) -> args_pb2.BloqArg:
