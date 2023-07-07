@@ -87,7 +87,7 @@ def test_cbloq_to_proto_test_two_cswap():
 
 
 def test_cbloq_to_proto_test_mod_exp():
-    mod_exp = ModExp.make_for_shor(17 * 19)
+    mod_exp = ModExp.make_for_shor(17 * 19, g=8)
     cbloq = mod_exp.decompose_bloq()
     proto_lib = bloq_to_proto.bloqs_to_proto(cbloq, max_depth=1)
     num_binst = len(set(binst.bloq for binst in cbloq.bloq_instances))

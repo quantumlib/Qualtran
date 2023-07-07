@@ -95,6 +95,14 @@ if (( ${#format_files[@]} == 0 )); then
     exit 0
 fi
 
+flynt_args=("--quiet" "-f")
+if (( only_print == 1 )); then
+    flynt_args+=("--dry-run")
+fi
+
+flynt "${format_files[@]}" "${flynt_args[@]}"
+FLYNTSTATUS=$?
+
 isort_args=()
 if (( only_print == 1 )); then
     isort_args+=("--check" "--diff")
