@@ -54,7 +54,7 @@ class TestTwoCSwap(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(self, bb, ctrl, x, y):
@@ -109,7 +109,7 @@ class TestMetaBloq(Bloq):
         assert self.sub_bloq_one.signature == self.sub_bloq_two.signature
 
     @property
-    def registers(self) -> 'Signature':
+    def signature(self) -> 'Signature':
         return self.sub_bloq_one.signature
 
     def build_composite_bloq(self, bb, **soqs):
