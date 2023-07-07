@@ -7,8 +7,8 @@ import pytest
 import sympy
 
 import qualtran
-from qualtran.api import registers_pb2
 from qualtran.bloq_algos.factoring.mod_exp import ModExp
+from qualtran.protos import registers_pb2
 from qualtran.quantum_graph.bloq_test import TestCNOT
 from qualtran.quantum_graph.composite_bloq_test import TestTwoCNOT
 from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side

@@ -4,7 +4,7 @@ import numpy as np
 import sympy
 from sympy.parsing.sympy_parser import parse_expr
 
-from qualtran.api import args_pb2
+from qualtran.protos import args_pb2
 
 
 def int_or_sympy_to_proto(val: Union[int, sympy.Expr]) -> args_pb2.IntOrSympy:

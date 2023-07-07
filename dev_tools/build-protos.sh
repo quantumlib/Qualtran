@@ -53,7 +53,7 @@ fi
 # compile protos or bail out in case of error
 
 python -m grpc_tools.protoc \
-    -I=. --python_out="${outdir}" --mypy_out="${outdir}" qualtran/api/*.proto ||
+    -I=. --python_out="${outdir}" --mypy_out="${outdir}" qualtran/protos/*.proto ||
     exit $?
 
 # handle the check mode if we get here

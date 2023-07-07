@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List
 import attrs
 import cirq_ft
 
-from qualtran.api import annotations_pb2, args_pb2, bloq_pb2, registers_pb2
+from qualtran.protos import annotations_pb2, args_pb2, bloq_pb2, registers_pb2
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
 from qualtran.quantum_graph.composite_bloq import CompositeBloq

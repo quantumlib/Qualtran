@@ -8,7 +8,7 @@ import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
-import qualtran.api.args_pb2
+import qualtran.protos.args_pb2
 import sys
 import typing
 
@@ -48,16 +48,16 @@ class Register(google.protobuf.message.Message):
     SIDE_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
-    def bitsize(self) -> qualtran.api.args_pb2.IntOrSympy: ...
+    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
     @property
-    def shape(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.api.args_pb2.IntOrSympy]: ...
+    def shape(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.IntOrSympy]: ...
     side: global___Register.Side.ValueType
     def __init__(
         self,
         *,
         name: builtins.str = ...,
-        bitsize: qualtran.api.args_pb2.IntOrSympy | None = ...,
-        shape: collections.abc.Iterable[qualtran.api.args_pb2.IntOrSympy] | None = ...,
+        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        shape: collections.abc.Iterable[qualtran.protos.args_pb2.IntOrSympy] | None = ...,
         side: global___Register.Side.ValueType = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["bitsize", b"bitsize"]) -> builtins.bool: ...

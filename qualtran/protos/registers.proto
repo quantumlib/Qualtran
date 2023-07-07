@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "qualtran/api/args.proto";
+import "qualtran/protos/args.proto";
 
 package qualtran;
 
