@@ -172,10 +172,10 @@ def test_bb_composite_bloq():
 
 
 def test_bloq_builder():
-    registers = Signature.build(x=1, y=1)
-    x, y = registers
-    bb, initial_soqs = BloqBuilder.from_signature(registers)
-    assert initial_soqs == {'x': Soquet(LeftDangle, x), 'y': Soquet(LeftDangle, y)}
+    signature = Signature.build(x=1, y=1)
+    x_reg, y_reg = signature
+    bb, initial_soqs = BloqBuilder.from_signature(signature)
+    assert initial_soqs == {'x': Soquet(LeftDangle, x_reg), 'y': Soquet(LeftDangle, y_reg)}
 
     x = initial_soqs['x']
     y = initial_soqs['y']
