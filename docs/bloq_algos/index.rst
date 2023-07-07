@@ -12,3 +12,5 @@ Algos
    swap_network.ipynb
    arithmetic.ipynb
    sorting.ipynb
+   factoring/factoring-via-modexp.ipynb
+   factoring/ref-factoring.ipynb

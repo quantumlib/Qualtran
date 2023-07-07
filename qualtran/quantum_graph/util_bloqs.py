@@ -148,6 +148,9 @@ class Allocate(Bloq):
     def on_classical_vals(self) -> Dict[str, int]:
         return {'alloc': 0}
 
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity()
+
 
 @frozen
 class Free(Bloq):
@@ -168,6 +171,9 @@ class Free(Bloq):
             raise ValueError(f"Tried to free a non-zero register: {free}.")
         return {}
 
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity()
+
 
 @frozen
 class ArbitraryClifford(Bloq):
@@ -187,3 +193,6 @@ class ArbitraryClifford(Bloq):
     @cached_property
     def registers(self) -> FancyRegisters:
         return FancyRegisters([FancyRegister('x', bitsize=self.n)])
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
