@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+import "qualtran/protos/args.proto";
+
+package qualtran;
+
+message Register {
+  // A quantum register.
+  enum Side {
+    UNKNOWN = 0;
+    LEFT = 1;
+    RIGHT = 2;
+    THRU = 3;
+  }
+  string name = 1;
+  IntOrSympy bitsize = 2;
+  repeated IntOrSympy shape = 3;
+  Side side = 4;
+}
+
+message Registers {
+  // A collection of Registers.
+  repeated Register registers = 1;
+}
