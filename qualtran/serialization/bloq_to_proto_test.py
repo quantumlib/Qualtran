@@ -17,7 +17,11 @@ from qualtran.serialization import bloq_to_proto
 
 def test_bloq_to_proto_cnot():
     cnot = TestCNOT()
-    proto = bloq_to_proto.bloq_to_proto(cnot)
+    proto = bloq_to_proto.bloqs_to_proto(cnot)
+    assert len(proto.table) == 1
+    proto = proto.table[0]
+    assert len(proto.decomposition) == 0
+    proto = proto.bloq
     assert proto.name == "TestCNOT"
     assert len(proto.registers.registers) == 2
     assert proto.registers.registers[0].name == 'control'
@@ -27,7 +31,7 @@ def test_bloq_to_proto_cnot():
 
 def test_cbloq_to_proto_two_cnot():
     cbloq = TestTwoCNOT().decompose_bloq()
-    proto_lib = bloq_to_proto.bloq_to_proto(cbloq)
+    proto_lib = bloq_to_proto.bloqs_to_proto(cbloq)
     assert len(proto_lib.table) == 2  # TestTwoCNOT and TestCNOT
     # First one is always the CompositeBloq.
     assert len(proto_lib.table[0].decomposition) == 6
@@ -62,16 +66,20 @@ class TestTwoCSwap(qualtran.Bloq):
 
 def test_cbloq_to_proto_test_two_cswap():
     bitsize = sympy.Symbol("a") * sympy.Symbol("b")
-    cswap_proto = bloq_to_proto.bloq_to_proto(TestCSwap(bitsize))
+    cswap_proto = bloq_to_proto.bloqs_to_proto(TestCSwap(bitsize))
+    assert len(cswap_proto.table) == 1
+    assert len(cswap_proto.table[0].decomposition) == 0
+    cswap_proto = cswap_proto.table[0].bloq
     assert cswap_proto.name == "TestCSwap"
     assert len(cswap_proto.args) == 1
     assert cswap_proto.args[0].name == "bitsize"
     assert sympy.parse_expr(cswap_proto.args[0].sympy_expr) == bitsize
     assert len(cswap_proto.registers.registers) == 3
 
-    cswap_proto = bloq_to_proto.bloq_to_proto(TestCSwap(100))
+    cswap_proto = bloq_to_proto.bloqs_to_proto(TestCSwap(100)).table[0].bloq
     cbloq = TestTwoCSwap(100).decompose_bloq()
-    proto_lib = bloq_to_proto.bloq_to_proto(cbloq)
+    proto_lib = bloq_to_proto.bloqs_to_proto(cbloq)
+    assert len(proto_lib.table) == 2
     assert proto_lib.table[1].bloq == cswap_proto
     assert proto_lib.table[0].bloq.t_complexity.t == 7 * 100 * 2
     assert proto_lib.table[0].bloq.t_complexity.clifford == 10 * 100 * 2
@@ -80,7 +88,7 @@ def test_cbloq_to_proto_test_two_cswap():
 
 def test_cbloq_to_proto_test_mod_exp():
     cbloq = ModExp.make_for_shor(17 * 19).decompose_bloq()
-    proto_lib = bloq_to_proto.bloq_to_proto(cbloq, max_depth=1)
+    proto_lib = bloq_to_proto.bloqs_to_proto(cbloq, max_depth=1)
     assert len(proto_lib.table) == 1 + len(set(binst.bloq for binst in cbloq.bloq_instances))
 
 
