@@ -1,13 +1,15 @@
+from typing import Iterable
+
 from qualtran.protos import registers_pb2
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.registers import Register, Side
 from qualtran.serialization import args_to_proto
 
 
-def registers_to_proto(registers: FancyRegisters) -> registers_pb2.Registers:
+def registers_to_proto(registers: Iterable[Register]) -> registers_pb2.Registers:
     return registers_pb2.Registers(registers=[register_to_proto(reg) for reg in registers])
 
 
-def register_to_proto(register: FancyRegister) -> registers_pb2.Register:
+def register_to_proto(register: Register) -> registers_pb2.Register:
     return registers_pb2.Register(
         name=register.name,
         bitsize=args_to_proto.int_or_sympy_to_proto(register.bitsize),

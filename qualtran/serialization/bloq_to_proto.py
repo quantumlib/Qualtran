@@ -157,7 +157,7 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
 
     return bloq_pb2.Bloq(
         name=bloq.pretty_name(),
-        registers=registers_to_proto.registers_to_proto(bloq.registers),
+        registers=registers_to_proto.registers_to_proto(bloq.signature.registers),
         t_complexity=t_complexity,
         args=_bloq_args_to_proto(bloq, bloq_to_idx=bloq_to_idx),
     )
