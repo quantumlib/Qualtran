@@ -6,7 +6,8 @@ import cirq_ft.infra.testing as cq_testing
 import IPython.display
 import ipywidgets
 import nbformat
-from cirq_ft import Registers, t_complexity
+from cirq_ft import Registers as CirqFtRegisters
+from cirq_ft import t_complexity
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from qualtran import Bloq
@@ -52,7 +53,7 @@ def circuit_with_costs(circuit: 'cirq.AbstractCircuit') -> 'cirq.AbstractCircuit
 
 
 def svg_circuit(
-    circuit: 'cirq.AbstractCircuit', registers: Registers = None, include_costs: bool = False
+    circuit: 'cirq.AbstractCircuit', registers: CirqFtRegisters = None, include_costs: bool = False
 ):
     """Return an SVG object representing a circuit.
 
