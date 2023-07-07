@@ -4,7 +4,7 @@ package qualtran;
 
 message IntOrSympy {
   oneof val {
-    int32 int_val = 1;
+    int64 int_val = 1;
     string sympy_expr = 2;
   }
 }

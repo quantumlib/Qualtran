@@ -3,7 +3,6 @@ from typing import Union
 
 import attrs
 import cirq_ft
-import pytest
 import sympy
 
 import qualtran
@@ -11,7 +10,7 @@ from qualtran.bloq_algos.factoring.mod_exp import ModExp
 from qualtran.protos import registers_pb2
 from qualtran.quantum_graph.bloq_test import TestCNOT
 from qualtran.quantum_graph.composite_bloq_test import TestTwoCNOT
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.fancy_registers import FancyRegisters
 from qualtran.quantum_graph.meta_bloq import ControlledBloq
 from qualtran.serialization import bloq_to_proto
 
@@ -138,45 +137,3 @@ def test_meta_bloq_to_proto():
     assert len(proto_lib.table[1].decomposition) == 9
 
     assert proto_lib == bloq_to_proto.bloqs_to_proto(bloq, bloq, TestTwoCSwap(20), max_depth=2)
-
-
-@pytest.mark.parametrize(
-    'bitsize, shape, side',
-    [
-        (1, (2, 3), Side.RIGHT),
-        (10, (), Side.LEFT),
-        (1000, (10, 1, 20), Side.THRU),
-        (
-            sympy.Symbol("a") * sympy.Symbol("b"),
-            (sympy.Symbol("c") + sympy.Symbol("d"),),
-            Side.THRU,
-        ),
-    ],
-)
-def test_registers_to_proto(bitsize, shape, side):
-    reg = FancyRegister('my_reg', bitsize=bitsize, shape=shape, side=side)
-    reg_proto = bloq_to_proto.register_to_proto(reg)
-    assert reg_proto.name == 'my_reg'
-    if shape and isinstance(shape[0], sympy.Expr):
-        assert tuple(sympy.parse_expr(s.sympy_expr) for s in reg_proto.shape) == shape
-    else:
-        assert tuple(s.int_val for s in reg_proto.shape) == shape
-    if isinstance(bitsize, int):
-        assert reg_proto.bitsize.int_val == bitsize
-    else:
-        assert sympy.parse_expr(reg_proto.bitsize.sympy_expr) == bitsize
-    assert reg_proto.side == side.value
-
-    reg2 = attrs.evolve(reg, name='my_reg2')
-    reg3 = attrs.evolve(reg, name='my_reg3')
-    registers = FancyRegisters([reg, reg2, reg3])
-    registers_proto = bloq_to_proto.registers_to_proto(registers)
-    assert list(registers_proto.registers) == [
-        bloq_to_proto.register_to_proto(r) for r in registers
-    ]
-
-
-def test_t_complexity_to_proto():
-    t_complexity = cirq_ft.TComplexity(t=10, clifford=100, rotations=1000)
-    proto = bloq_to_proto.t_complexity_to_proto(t_complexity)
-    assert (proto.t, proto.clifford, proto.rotations) == (10, 100, 1000)

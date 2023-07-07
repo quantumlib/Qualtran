@@ -2,24 +2,13 @@ import dataclasses
 from typing import Any, Callable, Dict, List
 
 import attrs
-import cirq_ft
 
-from qualtran.protos import annotations_pb2, args_pb2, bloq_pb2, registers_pb2
+from qualtran.protos import args_pb2, bloq_pb2
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
 from qualtran.quantum_graph.composite_bloq import CompositeBloq
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from qualtran.quantum_graph.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
-from qualtran.serialization import bloq_args_to_proto
-
-
-def _iter_fields(bloq: Bloq):
-    if dataclasses.is_dataclass(type(bloq)):
-        for field in dataclasses.fields(bloq):
-            yield field
-    elif attrs.has(type(bloq)):
-        for field in attrs.fields(type(bloq)):
-            yield field
+from qualtran.serialization import annotations_to_proto, args_to_proto, registers_to_proto
 
 
 def bloqs_to_proto(
@@ -28,6 +17,8 @@ def bloqs_to_proto(
     pred: Callable[[BloqInstance], bool] = lambda _: True,
     max_depth: int = 1,
 ) -> bloq_pb2.BloqLibrary:
+    """Serializes one or more Bloqs as a `BloqLibrary`."""
+
     bloq_to_idx: Dict[Bloq, int] = {}
     for bloq in bloqs:
         _add_bloq_to_dict(bloq, bloq_to_idx)
@@ -40,14 +31,20 @@ def bloqs_to_proto(
             cbloq = bloq if isinstance(bloq, CompositeBloq) else bloq.decompose_bloq()
             decomposition = [_connection_to_proto(cxn, bloq_to_idx) for cxn in cbloq.connections]
         except (NotImplementedError, KeyError):
+            # NotImplementedError is raised if `bloq` does not have a decomposition.
+            # KeyError is raises if `bloq` has a decomposition but we do not wish to serialize it
+            # because of conditions checked by `pred` and `max_depth`.
             decomposition = None
 
         try:
             bloq_counts = {
-                bloq_to_idx[b]: bloq_args_to_proto.int_or_sympy_to_proto(c)
+                bloq_to_idx[b]: args_to_proto.int_or_sympy_to_proto(c)
                 for c, b in bloq.bloq_counts(SympySymbolAllocator())
             }
         except (NotImplementedError, KeyError):
+            # NotImplementedError is raised if `bloq` does not implement bloq_counts.
+            # KeyError is raises if `bloq` has `bloq_counts` but we do not wish to serialize it
+            # because of conditions checked by `pred` and `max_depth`.
             bloq_counts = None
 
         library.table.add(
@@ -59,6 +56,16 @@ def bloqs_to_proto(
     return library
 
 
+def _iter_fields(bloq: Bloq):
+    """Yields fields of `bloq` iff `type(bloq)` is implemented using `dataclasses` or `attr`."""
+    if dataclasses.is_dataclass(type(bloq)):
+        for field in dataclasses.fields(bloq):
+            yield field
+    elif attrs.has(type(bloq)):
+        for field in attrs.fields(type(bloq)):
+            yield field
+
+
 def _connection_to_proto(cxn: Connection, bloq_to_idx: Dict[Bloq, int]):
     return bloq_pb2.Connection(
         left=_soquet_to_proto(cxn.left, bloq_to_idx), right=_soquet_to_proto(cxn.right, bloq_to_idx)
@@ -68,12 +75,14 @@ def _connection_to_proto(cxn: Connection, bloq_to_idx: Dict[Bloq, int]):
 def _soquet_to_proto(soq: Soquet, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Soquet:
     if isinstance(soq.binst, DanglingT):
         return bloq_pb2.Soquet(
-            dangling_t=repr(soq.binst), register=register_to_proto(soq.reg), index=soq.idx
+            dangling_t=repr(soq.binst),
+            register=registers_to_proto.register_to_proto(soq.reg),
+            index=soq.idx,
         )
     else:
         return bloq_pb2.Soquet(
             bloq_instance=_bloq_instance_to_proto(soq.binst, bloq_to_idx),
-            register=register_to_proto(soq.reg),
+            register=registers_to_proto.register_to_proto(soq.reg),
             index=soq.idx,
         )
 
@@ -85,6 +94,7 @@ def _bloq_instance_to_proto(
 
 
 def _add_bloq_to_dict(bloq: Bloq, bloq_to_idx: Dict[Bloq, int]):
+    """Adds `{bloq: len(bloq_to_idx)}` to `bloq_to_idx` dictionary if it doesn't exist already."""
     if bloq not in bloq_to_idx:
         next_idx = len(bloq_to_idx)
         bloq_to_idx[bloq] = next_idx
@@ -116,7 +126,8 @@ def _populate_bloq_to_idx(
                     _populate_bloq_to_idx(binst.bloq, bloq_to_idx, pred, max_depth - 1)
                 else:
                     _populate_bloq_to_idx(binst.bloq, bloq_to_idx, pred, 0)
-        except (NotImplementedError, KeyError):
+        except NotImplementedError:
+            # NotImplementedError is raised if `bloq` does not have a decomposition.
             ...
 
         # Approximately decompose the current Bloq and it's decomposed Bloqs.
@@ -125,7 +136,8 @@ def _populate_bloq_to_idx(
                 _add_bloq_to_dict(subbloq, bloq_to_idx)
                 _populate_bloq_to_idx(subbloq, bloq_to_idx, pred, 0)
 
-        except (NotImplementedError, KeyError):
+        except NotImplementedError:
+            # NotImplementedError is raised if `bloq` does not implement bloq_counts.
             ...
 
     # If the current Bloq contains other Bloqs as sub-bloqs, add them to the `bloq_to_idx` dict.
@@ -139,13 +151,13 @@ def _populate_bloq_to_idx(
 
 def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq:
     try:
-        t_complexity = t_complexity_to_proto(bloq.t_complexity())
+        t_complexity = annotations_to_proto.t_complexity_to_proto(bloq.t_complexity())
     except:
         t_complexity = None
 
     return bloq_pb2.Bloq(
         name=bloq.pretty_name(),
-        registers=registers_to_proto(bloq.registers),
+        registers=registers_to_proto.registers_to_proto(bloq.registers),
         t_complexity=t_complexity,
         args=_bloq_args_to_proto(bloq, bloq_to_idx=bloq_to_idx),
     )
@@ -162,33 +174,4 @@ def _bloq_args_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> List[arg
 def _bloq_arg_to_proto(name: str, val: Any, bloq_to_idx: Dict[Bloq, int]) -> args_pb2.BloqArg:
     if isinstance(val, Bloq):
         return args_pb2.BloqArg(name=name, subbloq=bloq_to_idx[val])
-    return bloq_args_to_proto.arg_to_proto(name=name, val=val)
-
-
-def registers_to_proto(registers: FancyRegisters) -> registers_pb2.Registers:
-    return registers_pb2.Registers(registers=[register_to_proto(reg) for reg in registers])
-
-
-def register_to_proto(register: FancyRegister) -> registers_pb2.Register:
-    return registers_pb2.Register(
-        name=register.name,
-        bitsize=bloq_args_to_proto.int_or_sympy_to_proto(register.bitsize),
-        shape=(bloq_args_to_proto.int_or_sympy_to_proto(s) for s in register.shape),
-        side=_side_to_proto(register.side),
-    )
-
-
-def _side_to_proto(side: Side) -> registers_pb2.Register.Side:
-    if side == Side.LEFT:
-        return registers_pb2.Register.Side.LEFT
-    if side == Side.RIGHT:
-        return registers_pb2.Register.Side.RIGHT
-    if side == Side.THRU:
-        return registers_pb2.Register.Side.THRU
-    return registers_pb2.Register.Side.UNKNOWN
-
-
-def t_complexity_to_proto(t_complexity: cirq_ft.TComplexity) -> annotations_pb2.TComplexity:
-    return annotations_pb2.TComplexity(
-        clifford=t_complexity.clifford, rotations=t_complexity.rotations, t=t_complexity.t
-    )
+    return args_to_proto.arg_to_proto(name=name, val=val)
