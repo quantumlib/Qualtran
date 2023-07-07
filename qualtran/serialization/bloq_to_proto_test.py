@@ -12,6 +12,7 @@ from qualtran.protos import registers_pb2
 from qualtran.quantum_graph.bloq_test import TestCNOT
 from qualtran.quantum_graph.composite_bloq_test import TestTwoCNOT
 from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.meta_bloq import ControlledBloq
 from qualtran.serialization import bloq_to_proto
 
 
@@ -50,7 +51,7 @@ class TestCSwap(qualtran.Bloq):
         return cirq_ft.TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class TestTwoCSwap(qualtran.Bloq):
     bitsize: Union[int, sympy.Expr]
 
@@ -87,9 +88,56 @@ def test_cbloq_to_proto_test_two_cswap():
 
 
 def test_cbloq_to_proto_test_mod_exp():
-    cbloq = ModExp.make_for_shor(17 * 19).decompose_bloq()
+    mod_exp = ModExp.make_for_shor(17 * 19)
+    cbloq = mod_exp.decompose_bloq()
     proto_lib = bloq_to_proto.bloqs_to_proto(cbloq, max_depth=1)
-    assert len(proto_lib.table) == 1 + len(set(binst.bloq for binst in cbloq.bloq_instances))
+    num_binst = len(set(binst.bloq for binst in cbloq.bloq_instances))
+    assert len(proto_lib.table) == 1 + num_binst
+
+    cbloq = ControlledBloq(mod_exp)
+    proto_lib = bloq_to_proto.bloqs_to_proto(cbloq, max_depth=1)
+    # 2x that of ModExp.make_for_shor(17 * 19).decompose_bloq() because each bloq in the
+    # decomposition is now controlled and each Controlled(subbloq) requires 2 entries in the
+    # table - one for ControlledBloq and second for subbloq.
+    assert len(proto_lib.table) == 2 * (1 + num_binst)
+
+
+@attrs.frozen
+class TestMetaBloq(qualtran.Bloq):
+    sub_bloq_one: qualtran.Bloq
+    sub_bloq_two: qualtran.Bloq
+
+    def __post_attrs_init__(self):
+        assert self.sub_bloq_one.registers == self.sub_bloq_two.registers
+
+    @property
+    def registers(self) -> 'FancyRegisters':
+        return self.sub_bloq_one.registers
+
+    def build_composite_bloq(self, bb, **soqs):
+        soqs |= zip(soqs.keys(), bb.add(self.sub_bloq_one, **soqs))
+        soqs |= zip(soqs.keys(), bb.add(self.sub_bloq_two, **soqs))
+        return soqs
+
+
+def test_meta_bloq_to_proto():
+    sub_bloq_one = TestTwoCSwap(20)
+    sub_bloq_two = TestTwoCSwap(20).decompose_bloq()
+    bloq = TestMetaBloq(sub_bloq_one, sub_bloq_two)
+    proto_lib = bloq_to_proto.bloqs_to_proto(bloq, name="Meta Bloq Test")
+    assert proto_lib.name == "Meta Bloq Test"
+    assert len(proto_lib.table) == 3  # TestMetaBloq, TestTwoCSwap, CompositeBloq
+
+    proto_lib = bloq_to_proto.bloqs_to_proto(bloq, max_depth=2)
+    assert len(proto_lib.table) == 4  # TestMetaBloq, TestTwoCSwap, CompositeBloq, TestCSwap
+
+    assert proto_lib.table[0].bloq.name == 'TestMetaBloq'
+    assert len(proto_lib.table[0].decomposition) == 9
+
+    assert proto_lib.table[1].bloq.name == 'TestTwoCSwap'
+    assert len(proto_lib.table[1].decomposition) == 9
+
+    assert proto_lib == bloq_to_proto.bloqs_to_proto(bloq, bloq, TestTwoCSwap(20), max_depth=2)
 
 
 @pytest.mark.parametrize(

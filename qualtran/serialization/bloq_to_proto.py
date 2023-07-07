@@ -28,8 +28,9 @@ def bloqs_to_proto(
     pred: Callable[[BloqInstance], bool] = lambda _: True,
     max_depth: int = 1,
 ) -> bloq_pb2.BloqLibrary:
-    bloq_to_idx = {b: i for i, b in enumerate(bloqs)}
+    bloq_to_idx: Dict[Bloq, int] = {}
     for bloq in bloqs:
+        _add_bloq_to_dict(bloq, bloq_to_idx)
         _populate_bloq_to_idx(bloq, bloq_to_idx, pred, max_depth)
 
     # `bloq_to_idx` would now contain a list of all bloqs that should be serialized.
@@ -89,6 +90,16 @@ def _add_bloq_to_dict(bloq: Bloq, bloq_to_idx: Dict[Bloq, int]):
         bloq_to_idx[bloq] = next_idx
 
 
+def _cbloq_dot_bloq_instances(cbloq: CompositeBloq) -> List[BloqInstance]:
+    """Equivalent to `cbloq.bloq_instances`, but preserves insertion order among Bloq instances."""
+    ret = {}
+    for cxn in cbloq._cxns:
+        for soq in [cxn.left, cxn.right]:
+            if not isinstance(soq.binst, DanglingT):
+                ret[soq.binst] = 0
+    return list(ret.keys())
+
+
 def _populate_bloq_to_idx(
     bloq: Bloq, bloq_to_idx: Dict[Bloq, int], pred: Callable[[BloqInstance], bool], max_depth: int
 ):
@@ -99,14 +110,14 @@ def _populate_bloq_to_idx(
         # Decompose the current Bloq and track it's decomposed Bloqs.
         try:
             cbloq = bloq if isinstance(bloq, CompositeBloq) else bloq.decompose_bloq()
-            for binst in cbloq.bloq_instances:
-                _add_bloq_to_dict(bloq, bloq_to_idx)
+            for binst in _cbloq_dot_bloq_instances(cbloq):
+                _add_bloq_to_dict(binst.bloq, bloq_to_idx)
                 if pred(binst):
                     _populate_bloq_to_idx(binst.bloq, bloq_to_idx, pred, max_depth - 1)
                 else:
                     _populate_bloq_to_idx(binst.bloq, bloq_to_idx, pred, 0)
-        except Exception as e:
-            print(e)
+        except (NotImplementedError, KeyError):
+            ...
 
         # Approximately decompose the current Bloq and it's decomposed Bloqs.
         try:
@@ -114,15 +125,15 @@ def _populate_bloq_to_idx(
                 _add_bloq_to_dict(subbloq, bloq_to_idx)
                 _populate_bloq_to_idx(subbloq, bloq_to_idx, pred, 0)
 
-        except Exception as e:
-            print(e)
+        except (NotImplementedError, KeyError):
+            ...
 
     # If the current Bloq contains other Bloqs as sub-bloqs, add them to the `bloq_to_idx` dict.
     # This is only supported for Bloqs implemented as dataclasses / attrs.
     for field in _iter_fields(bloq):
         subbloq = getattr(bloq, field.name)
         if isinstance(subbloq, Bloq):
-            _add_bloq_to_dict(field.val, bloq_to_idx)
+            _add_bloq_to_dict(subbloq, bloq_to_idx)
             _populate_bloq_to_idx(subbloq, bloq_to_idx, pred, 0)
 
 
