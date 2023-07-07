@@ -83,7 +83,7 @@ if (( only_changed == 1 )); then
 
     # Get the modified, added and moved python files.
     IFS=$'\n' read -r -d '' -a format_files < \
-        <(git diff --name-only --diff-filter=MAR "${rev}" -- '*.py')
+        <(git diff --name-only --diff-filter=MAR "${rev}" -- '*.py' ':(exclude)*/protos/*.py')
 else
     echo -e "Formatting all python files." >&2
     IFS=$'\n' read -r -d '' -a format_files < \
@@ -94,14 +94,6 @@ if (( ${#format_files[@]} == 0 )); then
     echo -e "\033[32mNo files to format\033[0m."
     exit 0
 fi
-
-flynt_args=("--quiet" "-f")
-if (( only_print == 1 )); then
-    flynt_args+=("--dry-run")
-fi
-
-flynt "${format_files[@]}" "${flynt_args[@]}"
-FLYNTSTATUS=$?
 
 isort_args=()
 if (( only_print == 1 )); then

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package qualtran;
+
+message TComplexity {
+  int64 clifford = 1;
+  int64 rotations = 2;
+  int64 t = 3;
+}

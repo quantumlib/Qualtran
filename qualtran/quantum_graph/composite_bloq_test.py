@@ -58,6 +58,7 @@ def _manually_make_test_cbloq_cxns():
     ], signature
 
 
+@attrs.frozen
 class TestTwoCNOT(Bloq):
     @cached_property
     def signature(self) -> Signature:
