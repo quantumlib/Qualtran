@@ -37,7 +37,7 @@ def bloq_to_proto(
     elif type(bloq) == ControlledBloq:
         return bloq_library_to_proto([bloq])
     else:
-        return _bloq_to_proto(bloq)
+        return _bloq_to_proto(bloq, bloqs_to_idx={})
 
 
 def bloq_library_to_proto(bloqs: Sequence[Bloq], *, name: str = ''):
@@ -79,7 +79,6 @@ def bloq_library_to_proto(bloqs: Sequence[Bloq], *, name: str = ''):
                 ]
             except Exception as e:
                 print(e)
-                pass
 
             try:
                 bloq_counts = {
@@ -150,7 +149,7 @@ def _populate_bloq_to_idx(
                 pass
 
 
-def _bloq_to_proto(bloq: Bloq, *, bloqs_to_idx: Dict[Bloq, int] = {}) -> bloq_pb2.Bloq:
+def _bloq_to_proto(bloq: Bloq, *, bloqs_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq:
     try:
         t_complexity = t_complexity_to_proto(bloq.t_complexity())
     except:
