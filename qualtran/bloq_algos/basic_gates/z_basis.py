@@ -92,7 +92,7 @@ class _ZVector(Bloq):
 
 
 def _hide_base_fields(cls, fields):
-    # for use in attrs `field_trasnformer`.
+    # for use in attrs `field_transformer`.
     return [
         field.evolve(repr=False) if field.name in ['bit', 'state'] else field for field in fields
     ]

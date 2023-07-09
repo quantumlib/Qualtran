@@ -15,6 +15,10 @@ def int_or_sympy_to_proto(val: Union[int, sympy.Expr]) -> args_pb2.IntOrSympy:
     )
 
 
+def int_or_sympy_from_proto(val: args_pb2.IntOrSympy) -> Union[int, sympy.Expr]:
+    return val.int_val if val.HasField('int_val') else parse_expr(val.sympy_expr)
+
+
 def arg_to_proto(*, name: str, val: Any) -> args_pb2.BloqArg:
     if isinstance(val, int):
         return args_pb2.BloqArg(name=name, int_val=val)
@@ -29,7 +33,7 @@ def arg_to_proto(*, name: str, val: Any) -> args_pb2.BloqArg:
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
-def proto_to_arg(arg: args_pb2.BloqArg) -> Dict[str, Any]:
+def arg_from_proto(arg: args_pb2.BloqArg) -> Dict[str, Any]:
     if arg.HasField("int_val"):
         return {arg.name: arg.int_val}
     if arg.HasField("float_val"):
@@ -39,12 +43,12 @@ def proto_to_arg(arg: args_pb2.BloqArg) -> Dict[str, Any]:
     if arg.HasField("sympy_expr"):
         return {arg.name: parse_expr(arg.sympy_expr)}
     if arg.HasField("ndarray"):
-        return {arg.name: _proto_to_ndarray(arg.ndarray)}
+        return {arg.name: _ndarray_from_proto(arg.ndarray)}
 
 
 def _ndarray_to_proto(arr: np.ndarray) -> args_pb2.NDArray:
     return args_pb2.NDArray(shape=arr.shape, dtype=f'np.{arr.dtype!r}', data=arr.tobytes())
 
 
-def _proto_to_ndarray(arr: args_pb2.NDArray) -> np.ndarray:
+def _ndarray_from_proto(arr: args_pb2.NDArray) -> np.ndarray:
     return np.ndarray(arr.shape, eval(arr.dtype), arr.data)

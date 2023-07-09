@@ -1,5 +1,5 @@
 """Classes for building and manipulating `CompositeBloq`."""
-
+import attrs
 import itertools
 from functools import cached_property
 from typing import (
@@ -55,6 +55,7 @@ canonicalize and return `SoquetT`.
 """
 
 
+@attrs.frozen
 class CompositeBloq(Bloq):
     """A bloq defined by a collection of sub-bloqs and dataflows between them
 
@@ -75,9 +76,8 @@ class CompositeBloq(Bloq):
             should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    def __init__(self, cxns: Sequence[Connection], registers: FancyRegisters):
-        self._cxns = tuple(cxns)
-        self._registers = registers
+    _cxns: Tuple[Connection, ...] = attrs.field(converter=tuple)
+    _registers: FancyRegisters
 
     @property
     def registers(self) -> FancyRegisters:

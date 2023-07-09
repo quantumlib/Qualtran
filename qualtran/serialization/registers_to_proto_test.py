@@ -33,6 +33,8 @@ def test_registers_to_proto(bitsize, shape, side):
         assert sympy.parse_expr(reg_proto.bitsize.sympy_expr) == bitsize
     assert reg_proto.side == side.value
 
+    assert registers_to_proto.register_from_proto(reg_proto) == reg
+
     reg2 = attrs.evolve(reg, name='my_reg2')
     reg3 = attrs.evolve(reg, name='my_reg3')
     registers = FancyRegisters([reg, reg2, reg3])
@@ -40,3 +42,5 @@ def test_registers_to_proto(bitsize, shape, side):
     assert list(registers_proto.registers) == [
         registers_to_proto.register_to_proto(r) for r in registers
     ]
+
+    assert registers_to_proto.registers_from_proto(registers_proto) == registers

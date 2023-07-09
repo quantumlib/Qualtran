@@ -16,10 +16,12 @@ from qualtran.serialization import bloq_to_proto
 
 
 def test_bloq_to_proto_cnot():
+    bloq_to_proto.RESOLVER_DICT.update({'TestCNOT': TestCNOT})
+
     cnot = TestCNOT()
-    proto = bloq_to_proto.bloqs_to_proto(cnot)
-    assert len(proto.table) == 1
-    proto = proto.table[0]
+    proto_lib = bloq_to_proto.bloqs_to_proto(cnot)
+    assert len(proto_lib.table) == 1
+    proto = proto_lib.table[0]
     assert len(proto.decomposition) == 0
     proto = proto.bloq
     assert proto.name == "TestCNOT"
@@ -28,14 +30,21 @@ def test_bloq_to_proto_cnot():
     assert proto.registers.registers[0].bitsize.int_val == 1
     assert proto.registers.registers[0].side == registers_pb2.Register.Side.THRU
 
+    assert bloq_to_proto.bloqs_from_proto(proto_lib) == [cnot]
+
 
 def test_cbloq_to_proto_two_cnot():
+    bloq_to_proto.RESOLVER_DICT.update({'TestCNOT': TestCNOT})
+    bloq_to_proto.RESOLVER_DICT.update({'TestTwoCNOT': TestTwoCNOT})
+
     cbloq = TestTwoCNOT().decompose_bloq()
     proto_lib = bloq_to_proto.bloqs_to_proto(cbloq)
     assert len(proto_lib.table) == 2  # TestTwoCNOT and TestCNOT
     # First one is always the CompositeBloq.
     assert len(proto_lib.table[0].decomposition) == 6
     assert proto_lib.table[0].bloq.t_complexity.clifford == 2
+    # Test round trip.
+    assert cbloq == bloq_to_proto.bloqs_from_proto(proto_lib)[-1]
 
 
 @attrs.frozen
@@ -65,16 +74,21 @@ class TestTwoCSwap(qualtran.Bloq):
 
 
 def test_cbloq_to_proto_test_two_cswap():
+    bloq_to_proto.RESOLVER_DICT.update({'TestCSwap': TestCSwap})
+    bloq_to_proto.RESOLVER_DICT.update({'TestTwoCSwap': TestTwoCSwap})
+
     bitsize = sympy.Symbol("a") * sympy.Symbol("b")
-    cswap_proto = bloq_to_proto.bloqs_to_proto(TestCSwap(bitsize))
-    assert len(cswap_proto.table) == 1
-    assert len(cswap_proto.table[0].decomposition) == 0
-    cswap_proto = cswap_proto.table[0].bloq
+    cswap_proto_lib = bloq_to_proto.bloqs_to_proto(TestCSwap(bitsize))
+    assert len(cswap_proto_lib.table) == 1
+    assert len(cswap_proto_lib.table[0].decomposition) == 0
+    cswap_proto = cswap_proto_lib.table[0].bloq
     assert cswap_proto.name == "TestCSwap"
     assert len(cswap_proto.args) == 1
     assert cswap_proto.args[0].name == "bitsize"
     assert sympy.parse_expr(cswap_proto.args[0].sympy_expr) == bitsize
     assert len(cswap_proto.registers.registers) == 3
+
+    assert TestCSwap(bitsize) in bloq_to_proto.bloqs_from_proto(cswap_proto_lib)
 
     cswap_proto = bloq_to_proto.bloqs_to_proto(TestCSwap(100)).table[0].bloq
     cbloq = TestTwoCSwap(100).decompose_bloq()
@@ -84,6 +98,8 @@ def test_cbloq_to_proto_test_two_cswap():
     assert proto_lib.table[0].bloq.t_complexity.t == 7 * 100 * 2
     assert proto_lib.table[0].bloq.t_complexity.clifford == 10 * 100 * 2
     assert len(proto_lib.table[0].decomposition) == 9
+
+    assert cbloq in bloq_to_proto.bloqs_from_proto(proto_lib)
 
 
 def test_cbloq_to_proto_test_mod_exp():
@@ -99,6 +115,8 @@ def test_cbloq_to_proto_test_mod_exp():
     # decomposition is now controlled and each Controlled(subbloq) requires 2 entries in the
     # table - one for ControlledBloq and second for subbloq.
     assert len(proto_lib.table) == 2 * (1 + num_binst)
+
+    assert cbloq in bloq_to_proto.bloqs_from_proto(proto_lib)
 
 
 @attrs.frozen
@@ -120,6 +138,10 @@ class TestMetaBloq(qualtran.Bloq):
 
 
 def test_meta_bloq_to_proto():
+    bloq_to_proto.RESOLVER_DICT.update({'TestCSwap': TestCSwap})
+    bloq_to_proto.RESOLVER_DICT.update({'TestTwoCSwap': TestTwoCSwap})
+    bloq_to_proto.RESOLVER_DICT.update({'TestMetaBloq': TestMetaBloq})
+
     sub_bloq_one = TestTwoCSwap(20)
     sub_bloq_two = TestTwoCSwap(20).decompose_bloq()
     bloq = TestMetaBloq(sub_bloq_one, sub_bloq_two)
@@ -137,3 +159,4 @@ def test_meta_bloq_to_proto():
     assert len(proto_lib.table[1].decomposition) == 9
 
     assert proto_lib == bloq_to_proto.bloqs_to_proto(bloq, bloq, TestTwoCSwap(20), max_depth=2)
+    assert bloq in bloq_to_proto.bloqs_from_proto(proto_lib)
