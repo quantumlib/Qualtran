@@ -1,27 +1,26 @@
 import dataclasses
+import inspect
 from typing import Any, Callable, Dict, List, Optional
 
 import attrs
-import inspect
 
+from qualtran import bloq_algos
+from qualtran.bloq_algos import basic_gates, factoring
 from qualtran.protos import args_pb2, bloq_pb2
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
 from qualtran.quantum_graph.composite_bloq import CompositeBloq
 from qualtran.quantum_graph.meta_bloq import ControlledBloq
-from qualtran.quantum_graph.util_bloqs import Split, Join, Allocate, Free, ArbitraryClifford
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
     DanglingT,
-    Soquet,
     LeftDangle,
     RightDangle,
+    Soquet,
 )
+from qualtran.quantum_graph.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.serialization import annotations_to_proto, args_to_proto, registers_to_proto
-
-from qualtran import bloq_algos
-from qualtran.bloq_algos import basic_gates, factoring
 
 RESOLVER_DICT = {
     'CNOT': basic_gates.CNOT,
@@ -172,8 +171,9 @@ def _soquet_from_proto(
     idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition],
     idx_to_bloq: Dict[int, Bloq],
 ) -> Soquet:
+    dangling_to_singleton = {"LeftDangle": LeftDangle, "RightDangle": RightDangle}
     binst = (
-        eval(soq.dangling_t)
+        dangling_to_singleton[soq.dangling_t]
         if soq.HasField('dangling_t')
         else BloqInstance(
             i=soq.bloq_instance.instance_id,

@@ -1,5 +1,4 @@
 """Classes for building and manipulating `CompositeBloq`."""
-import attrs
 import itertools
 from functools import cached_property
 from typing import (
@@ -19,6 +18,7 @@ from typing import (
     Union,
 )
 
+import attrs
 import networkx as nx
 import numpy as np
 from cirq_ft import TComplexity
