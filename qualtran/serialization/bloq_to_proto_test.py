@@ -44,7 +44,7 @@ def test_cbloq_to_proto_two_cnot():
     assert len(proto_lib.table[0].decomposition) == 6
     assert proto_lib.table[0].bloq.t_complexity.clifford == 2
     # Test round trip.
-    assert cbloq == bloq_to_proto.bloqs_from_proto(proto_lib)[-1]
+    assert cbloq in bloq_to_proto.bloqs_from_proto(proto_lib)
 
 
 @attrs.frozen

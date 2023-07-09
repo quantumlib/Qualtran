@@ -114,45 +114,44 @@ def bloqs_to_proto(
 
 
 def bloqs_from_proto(lib: bloq_pb2.BloqLibrary) -> List[Bloq]:
+    """Deserializes a BloqLibrary as a list of Bloqs."""
+
     idx_to_proto = {b.bloq_id: b for b in lib.table}
     idx_to_bloq: Dict[int, Bloq] = {}
-    for bloq in lib.table:
-        _populate_idx_to_bloq(bloq, idx_to_proto, idx_to_bloq)
-    return list(idx_to_bloq.values())
+    return [_bloq_id_to_bloq(bloq.bloq_id, idx_to_proto, idx_to_bloq) for bloq in lib.table]
 
 
-def _populate_idx_to_bloq(
-    bloq: bloq_pb2.BloqLibrary.BloqWithDecomposition,
+def _bloq_id_to_bloq(
+    bloq_id: int,
     idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition],
     idx_to_bloq: Dict[int, Bloq],
 ):
-    if bloq.bloq_id in idx_to_bloq:
-        return
-    idx_to_bloq[bloq.bloq_id] = _construct_bloq(bloq, idx_to_proto, idx_to_bloq)
+    """Constructs a Bloq corresponding to a `bloq_id` given an `idx_to_proto` mapping.
 
-
-def _construct_bloq(
-    bloq: bloq_pb2.BloqLibrary.BloqWithDecomposition,
-    idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition],
-    idx_to_bloq: Dict[int, Bloq],
-) -> Bloq:
+    The `idx_to_proto` mappping is constructed using a `BloqLibrary`.
+    The `idx_to_bloq` mapping acts as a cache to avoid redundant deserialization of Bloqs.
+    """
+    if bloq_id in idx_to_bloq:
+        return idx_to_bloq[bloq_id]
+    bloq = idx_to_proto[bloq_id]
     if bloq.bloq.name == 'CompositeBloq':
-        return CompositeBloq(
+        idx_to_bloq[bloq_id] = CompositeBloq(
             cxns=[
                 _connection_from_proto(cxn, idx_to_proto, idx_to_bloq) for cxn in bloq.decomposition
             ],
             registers=registers_to_proto.registers_from_proto(bloq.bloq.registers),
         )
     elif bloq.bloq.name in RESOLVER_DICT:
-        print("DEBUG:", bloq.bloq.args)
         kwargs = {}
         for arg in bloq.bloq.args:
             if arg.HasField('subbloq'):
-                kwargs[arg.name] = _idx_to_bloq(arg.subbloq, idx_to_proto, idx_to_bloq)
+                kwargs[arg.name] = _bloq_id_to_bloq(arg.subbloq, idx_to_proto, idx_to_bloq)
             else:
                 kwargs.update(args_to_proto.arg_from_proto(arg))
-        return RESOLVER_DICT[bloq.bloq.name](**kwargs)
-    raise ValueError(f"Unable to deserialize {bloq=}")
+        idx_to_bloq[bloq_id] = RESOLVER_DICT[bloq.bloq.name](**kwargs)
+    else:
+        raise ValueError(f"Unable to deserialize {bloq=}")
+    return idx_to_bloq[bloq_id]
 
 
 def _connection_from_proto(
@@ -177,22 +176,12 @@ def _soquet_from_proto(
         if soq.HasField('dangling_t')
         else BloqInstance(
             i=soq.bloq_instance.instance_id,
-            bloq=_idx_to_bloq(soq.bloq_instance.bloq_id, idx_to_proto, idx_to_bloq),
+            bloq=_bloq_id_to_bloq(soq.bloq_instance.bloq_id, idx_to_proto, idx_to_bloq),
         )
     )
     return Soquet(
         binst=binst, reg=registers_to_proto.register_from_proto(soq.register), idx=tuple(soq.index)
     )
-
-
-def _idx_to_bloq(
-    bloq_id: int,
-    idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition],
-    idx_to_bloq: Dict[int, Bloq],
-):
-    if bloq_id not in idx_to_bloq:
-        _populate_idx_to_bloq(idx_to_proto[bloq_id], idx_to_proto, idx_to_bloq)
-    return idx_to_bloq[bloq_id]
 
 
 def _iter_fields(bloq: Bloq):
