@@ -103,10 +103,6 @@ class Signature:
         """
         return cls(Register(name=k, bitsize=v) for k, v in registers.items())
 
-    @property
-    def registers(self) -> Tuple[Register, ...]:
-        return self._registers
-
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
         yield from self._lefts.values()
