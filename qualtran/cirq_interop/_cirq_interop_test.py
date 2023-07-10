@@ -161,4 +161,4 @@ def test_bloq_as_cirq_gate_left_register():
 
 
 def test_notebook():
-    execute_notebook('cirq_conversion')
+    execute_notebook('cirq_interop')
