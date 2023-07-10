@@ -79,7 +79,7 @@ class Signature:
 
     `Bloq.signature` is a property of all bloqs, and should be an object of this type.
     It is analogous to a function signature in traditional computing where we specify the
-    names and types of the expected inputs an doutputs.
+    names and types of the expected inputs and outputs.
 
     Each LEFT (including thru) register must have a unique name. Each RIGHT (including)
     register must have a unique name.
