@@ -4,14 +4,12 @@ Reference
 =========
 
 This section of the docs provides an API reference for all symbols
-in `qualtran.quantum_graph <./qualtran/quantum_graph.html>`_
+in ``qualtran``.
 
 .. toctree::
-    :hidden:
-    :caption: Important classes
+   :hidden:
 
-    qualtran/quantum_graph/bloq/Bloq.md
-    qualtran/quantum_graph/composite_bloq/CompositeBloq.md
-    qualtran/quantum_graph/composite_bloq/BloqBuilder.md
+   qualtran.md
+
 
 .. include:: autotoc.rst

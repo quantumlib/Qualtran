@@ -1,7 +1,7 @@
 from typing import Iterable
 
+from qualtran.components.registers import Register, Side
 from qualtran.protos import registers_pb2
-from qualtran.quantum_graph.registers import Register, Side
 from qualtran.serialization import args_to_proto
 
 

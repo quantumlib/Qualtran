@@ -11,7 +11,7 @@ from cirq_ft import t_complexity
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from qualtran import Bloq
-from qualtran.quantum_graph.graphviz import PrettyGraphDrawer
+from qualtran.drawing import PrettyGraphDrawer
 
 
 def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False, include_costs=False):

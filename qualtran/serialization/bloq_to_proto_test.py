@@ -6,11 +6,11 @@ import cirq_ft
 import sympy
 
 from qualtran import Bloq, Signature
-from qualtran.bloq_algos.factoring.mod_exp import ModExp
+from qualtran.bloqs.controlled_bloq import ControlledBloq
+from qualtran.bloqs.factoring.mod_exp import ModExp
+from qualtran.components.bloq_test import TestCNOT
+from qualtran.components.composite_bloq_test import TestTwoCNOT
 from qualtran.protos import registers_pb2
-from qualtran.quantum_graph.bloq_test import TestCNOT
-from qualtran.quantum_graph.composite_bloq_test import TestTwoCNOT
-from qualtran.quantum_graph.meta_bloq import ControlledBloq
 from qualtran.serialization import bloq_to_proto
 
 

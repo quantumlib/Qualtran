@@ -3,11 +3,11 @@ from typing import Any, Callable, Dict, List
 
 import attrs
 
+from qualtran.components.bloq import Bloq
+from qualtran.components.composite_bloq import CompositeBloq
+from qualtran.components.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
 from qualtran.protos import args_pb2, bloq_pb2
-from qualtran.quantum_graph.bloq import Bloq
-from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
-from qualtran.quantum_graph.composite_bloq import CompositeBloq
-from qualtran.quantum_graph.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
+from qualtran.resource_counting.bloq_counts import SympySymbolAllocator
 from qualtran.serialization import annotations_to_proto, args_to_proto, registers_to_proto
 
 
