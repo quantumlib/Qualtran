@@ -1,9 +1,9 @@
-from typing import Dict, Tuple, List, cast, Set, Optional
-
 import os.path
 import re
+from typing import cast, Dict, List, Optional, Set, Tuple
 
-from dev_tools import env_tools, shell_tools
+from . import shell_tools
+from .prepared_env import PreparedEnv
 
 IGNORED_FILE_PATTERNS = [
     r"^dev_tools/.+",  # Environment-heavy code.
@@ -269,7 +269,7 @@ def is_applicable_python_file(rel_path: str) -> bool:
     )
 
 
-def check_for_uncovered_lines(env: env_tools.PreparedEnv) -> int:
+def check_for_uncovered_lines(env: PreparedEnv) -> int:
     # Build context from environment.
     changed_files = env.get_changed_files()
 

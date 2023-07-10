@@ -1,11 +1,16 @@
 import contextlib
 import io
+import os
 import subprocess
 
 import pytest
 
-from dev_tools import shell_tools
-from dev_tools.test_utils import only_on_posix
+from . import shell_tools
+
+
+def only_on_posix(func):
+    """Only run test on posix."""
+    return pytest.mark.skipif(os.name != "posix", reason=f"os {os.name} is not posix")(func)
 
 
 def run(*args, **kwargs):

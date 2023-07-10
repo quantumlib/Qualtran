@@ -1,4 +1,4 @@
-from dev_tools import incremental_coverage
+from . import incremental_coverage
 
 
 def test_determine_ignored_lines():

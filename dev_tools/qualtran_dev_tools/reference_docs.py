@@ -1,5 +1,4 @@
 import re
-import subprocess
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, List, Type
@@ -21,6 +20,8 @@ from tensorflow_docs.api_generator.pretty_docs import (
 from tensorflow_docs.api_generator.pretty_docs.base_page import MemberInfo
 from tensorflow_docs.api_generator.pretty_docs.class_page import Methods
 from tensorflow_docs.api_generator.public_api import local_definitions_filter
+
+from .git_tools import get_git_root
 
 
 def filter_type_checking(path, parent, children):
@@ -50,17 +51,6 @@ def filter_type_aliases_in_the_wrong_place(path, parent, children):
     return ret
 
 
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, universal_newlines=True
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    print('git root', path)
-    return path
-
-
 def _filter_and_sort_members(py_object: object, members: Iterable[MemberInfo]) -> List[MemberInfo]:
     """Sort `members` according to their order in the source definition.
 
@@ -80,7 +70,7 @@ def mixin_custom_template(template_name: str) -> Type:
 
     class _CustomTemplateMixin:
         TEMPLATE = f'templates/{template_name}.jinja'
-        TEMPLATE_SEARCH_PATH = tuple([str(Path(__file__).parent)])
+        TEMPLATE_SEARCH_PATH = tuple([str(Path(__file__).parent.parent)])
         JINJA_ENV = jinja2.Environment(
             trim_blocks=True,
             lstrip_blocks=True,
@@ -373,7 +363,7 @@ def generate_ref_toc():
         write_ref_toc(f, grouped_paths, output_dir)
 
 
-if __name__ == '__main__':
+def build_reference_docs():
     generate_ref_docs()
     apply_fixups()
     generate_ref_toc()

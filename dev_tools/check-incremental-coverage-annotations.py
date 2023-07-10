@@ -1,9 +1,9 @@
 import os
 import sys
 
-from dev_tools import prepared_env, shell_tools
-
-from dev_tools.incremental_coverage import check_for_uncovered_lines
+from qualtran_dev_tools import shell_tools
+from qualtran_dev_tools.incremental_coverage import check_for_uncovered_lines
+from qualtran_dev_tools.prepared_env import PreparedEnv
 
 
 def main():
@@ -17,12 +17,10 @@ def main():
         sys.exit(1)
     comparison_branch = sys.argv[1]
 
-    env = prepared_env.PreparedEnv(
-        github_repo=None,
+    env = PreparedEnv(
         actual_commit_id=None,  # local uncommitted files
         compare_commit_id=comparison_branch,
         destination_directory=os.getcwd(),
-        virtual_env_path=None,
     )
 
     uncovered_count = check_for_uncovered_lines(env)
