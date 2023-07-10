@@ -7,7 +7,6 @@ cirq-google==1.2.0.dev20230613162638
 fqe
 pyscf
 openfermion
-sphinx
 pydot
 
 # quimb and its tensor dependencies
