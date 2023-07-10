@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran.serialization import args_to_proto
+from qualtran.serialization import args
 
 
 @pytest.mark.parametrize(
@@ -16,8 +16,8 @@ from qualtran.serialization import args_to_proto
     ],
 )
 def test_arg_to_proto_round_trip(arg):
-    proto = args_to_proto.arg_to_proto(name='custom_name', val=arg)
-    arg_dict = args_to_proto.arg_from_proto(proto)
+    proto = args.arg_to_proto(name='custom_name', val=arg)
+    arg_dict = args.arg_from_proto(proto)
     if isinstance(arg, np.ndarray):
         arr = arg_dict['custom_name']
         assert arr.shape == arg.shape

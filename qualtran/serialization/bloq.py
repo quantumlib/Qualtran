@@ -20,7 +20,7 @@ from qualtran.quantum_graph.quantum_graph import (
     Soquet,
 )
 from qualtran.quantum_graph.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
-from qualtran.serialization import annotations_to_proto, args_to_proto, registers_to_proto
+from qualtran.serialization import annotations, args, registers
 
 RESOLVER_DICT = {
     'CNOT': basic_gates.CNOT,
@@ -95,7 +95,7 @@ def bloqs_to_proto(
 
         try:
             bloq_counts = {
-                bloq_to_idx[b]: args_to_proto.int_or_sympy_to_proto(c)
+                bloq_to_idx[b]: args.int_or_sympy_to_proto(c)
                 for c, b in bloq.bloq_counts(SympySymbolAllocator())
             }
         except (NotImplementedError, KeyError):
@@ -139,7 +139,7 @@ def _bloq_id_to_bloq(
             cxns=[
                 _connection_from_proto(cxn, idx_to_proto, idx_to_bloq) for cxn in bloq.decomposition
             ],
-            registers=registers_to_proto.registers_from_proto(bloq.bloq.registers),
+            registers=registers.registers_from_proto(bloq.bloq.registers),
         )
     elif bloq.bloq.name in RESOLVER_DICT:
         kwargs = {}
@@ -147,7 +147,7 @@ def _bloq_id_to_bloq(
             if arg.HasField('subbloq'):
                 kwargs[arg.name] = _bloq_id_to_bloq(arg.subbloq, idx_to_proto, idx_to_bloq)
             else:
-                kwargs.update(args_to_proto.arg_from_proto(arg))
+                kwargs.update(args.arg_from_proto(arg))
         idx_to_bloq[bloq_id] = RESOLVER_DICT[bloq.bloq.name](**kwargs)
     else:
         raise ValueError(f"Unable to deserialize {bloq=}")
@@ -180,7 +180,7 @@ def _soquet_from_proto(
         )
     )
     return Soquet(
-        binst=binst, reg=registers_to_proto.register_from_proto(soq.register), idx=tuple(soq.index)
+        binst=binst, reg=registers.register_from_proto(soq.register), idx=tuple(soq.index)
     )
 
 
@@ -205,14 +205,12 @@ def _connection_to_proto(cxn: Connection, bloq_to_idx: Dict[Bloq, int]):
 def _soquet_to_proto(soq: Soquet, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Soquet:
     if isinstance(soq.binst, DanglingT):
         return bloq_pb2.Soquet(
-            dangling_t=repr(soq.binst),
-            register=registers_to_proto.register_to_proto(soq.reg),
-            index=soq.idx,
+            dangling_t=repr(soq.binst), register=registers.register_to_proto(soq.reg), index=soq.idx
         )
     else:
         return bloq_pb2.Soquet(
             bloq_instance=_bloq_instance_to_proto(soq.binst, bloq_to_idx),
-            register=registers_to_proto.register_to_proto(soq.reg),
+            register=registers.register_to_proto(soq.reg),
             index=soq.idx,
         )
 
@@ -281,13 +279,13 @@ def _populate_bloq_to_idx(
 
 def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq:
     try:
-        t_complexity = annotations_to_proto.t_complexity_to_proto(bloq.t_complexity())
+        t_complexity = annotations.t_complexity_to_proto(bloq.t_complexity())
     except:
         t_complexity = None
 
     return bloq_pb2.Bloq(
         name=bloq.__class__.__name__,
-        registers=registers_to_proto.registers_to_proto(bloq.registers),
+        registers=registers.registers_to_proto(bloq.registers),
         t_complexity=t_complexity,
         args=_bloq_args_to_proto(bloq, bloq_to_idx=bloq_to_idx),
     )
@@ -309,4 +307,4 @@ def _bloq_args_to_proto(
 def _bloq_arg_to_proto(name: str, val: Any, bloq_to_idx: Dict[Bloq, int]) -> args_pb2.BloqArg:
     if isinstance(val, Bloq):
         return args_pb2.BloqArg(name=name, subbloq=bloq_to_idx[val])
-    return args_to_proto.arg_to_proto(name=name, val=val)
+    return args.arg_to_proto(name=name, val=val)
