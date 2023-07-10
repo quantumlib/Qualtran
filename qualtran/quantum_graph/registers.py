@@ -3,7 +3,7 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Iterator, List, overload, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attr import frozen
@@ -136,6 +136,17 @@ class Signature:
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'
+
+    @overload
+    def __getitem__(self, key: int) -> Register:
+        pass
+
+    @overload
+    def __getitem__(self, key: slice) -> Tuple[Register]:
+        pass
+
+    def __getitem__(self, key):
+        return self._registers[key]
 
     def __contains__(self, item: Register) -> bool:
         return item in self._registers

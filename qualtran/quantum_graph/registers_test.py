@@ -30,14 +30,13 @@ def test_signature():
     signature = Signature([r1, r2, r3])
     assert len(signature) == 3
 
-    regs = signature.registers
-    assert regs[0] == r1
-    assert regs[1] == r2
-    assert regs[2] == r3
+    assert signature[0] == r1
+    assert signature[1] == r2
+    assert signature[2] == r3
 
-    assert regs[0:1] == (r1,)
-    assert regs[0:2] == (r1, r2)
-    assert regs[1:3] == (r2, r3)
+    assert signature[0:1] == (r1,)
+    assert signature[0:2] == (r1, r2)
+    assert signature[1:3] == (r2, r3)
 
     assert list(signature) == [r1, r2, r3]
 

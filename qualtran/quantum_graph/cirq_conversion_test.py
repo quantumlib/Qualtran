@@ -18,10 +18,10 @@ def test_cirq_gate():
 
     for b in [x, rx, toffoli]:
         assert len(b.signature) == 1
-        assert b.signature.registers[0].side == Side.THRU
+        assert b.signature[0].side == Side.THRU
 
-    assert x.signature.registers[0].shape == (1,)
-    assert toffoli.signature.registers[0].shape == (3,)
+    assert x.signature[0].shape == (1,)
+    assert toffoli.signature[0].shape == (3,)
 
     assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
     assert x.pretty_name() == 'cirq.X'

@@ -31,7 +31,7 @@ class TestCNOT(Bloq):
 def test_bloq():
     tb = TestCNOT()
     assert len(tb.signature) == 2
-    ctrl, trg = tb.signature.registers
+    ctrl, trg = tb.signature
     assert ctrl.bitsize == 1
     assert ctrl.side == Side.THRU
     assert tb.pretty_name() == 'TestCNOT'
