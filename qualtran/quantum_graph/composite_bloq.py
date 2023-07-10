@@ -875,7 +875,7 @@ class BloqBuilder:
 
     def __init__(self, add_registers_allowed: bool = True):
         # To be appended to:
-        self.connections: List[Connection] = []
+        self._cxns: List[Connection] = []
         self._regs: List[Register] = []
 
         # Initialize our BloqInstance counter
@@ -981,7 +981,7 @@ class BloqBuilder:
                 f"{idxed_soq} is not an available Soquet for `{bloq}.{reg.name}`."
             ) from None
         cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
-        self.connections.append(cxn)
+        self._cxns.append(cxn)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
@@ -1115,7 +1115,7 @@ class BloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(connections=self.connections, signature=signature)
+        return CompositeBloq(connections=self._cxns, signature=signature)
 
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.quantum_graph.util_bloqs import Allocate
