@@ -95,7 +95,7 @@ class Signature:
 
     @classmethod
     def build(cls, **registers: int) -> 'Signature':
-        """Construct a Signature comprised of simple registers.
+        """Construct a Signature comprised of simple thru registers.
 
         Args:
             registers: keyword arguments mapping register name to bitsize. All registers
