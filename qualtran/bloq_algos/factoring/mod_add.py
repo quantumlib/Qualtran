@@ -5,7 +5,7 @@ import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, FancyRegister, FancyRegisters
+from qualtran import Bloq, Register, Signature
 from qualtran.bloq_algos.basic_gates.t_gate import TGate
 from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
 from qualtran.quantum_graph.classical_sim import ClassicalValT
@@ -31,12 +31,12 @@ class CtrlScaleModAdd(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
+    def signature(self) -> 'Signature':
+        return Signature(
             [
-                FancyRegister('ctrl', bitsize=1),
-                FancyRegister('x', bitsize=self.bitsize),
-                FancyRegister('y', bitsize=self.bitsize),
+                Register('ctrl', bitsize=1),
+                Register('x', bitsize=self.bitsize),
+                Register('y', bitsize=self.bitsize),
             ]
         )
 
@@ -81,10 +81,8 @@ class CtrlModAddK(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
-            [FancyRegister('ctrl', bitsize=1), FancyRegister('x', bitsize=self.bitsize)]
-        )
+    def signature(self) -> 'Signature':
+        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
     def bloq_counts(self, ss):
         k = ss.new_symbol('k')
@@ -118,10 +116,8 @@ class CtrlAddK(Bloq):
         return f'x += {self.k}'
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
-            [FancyRegister('ctrl', bitsize=1), FancyRegister('x', bitsize=self.bitsize)]
-        )
+    def signature(self) -> 'Signature':
+        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
     def bloq_counts(self, mgr):
         return [(2 * self.bitsize, TGate())]

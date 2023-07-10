@@ -5,7 +5,7 @@ from typing import Tuple, TYPE_CHECKING, Union
 from attrs import field, frozen
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, FancyRegister
+    from qualtran import Bloq, Register
 
 
 @frozen
@@ -86,7 +86,7 @@ class Soquet:
     """
 
     binst: Union[BloqInstance, DanglingT]
-    reg: 'FancyRegister'
+    reg: 'Register'
     idx: Tuple[int, ...] = field(converter=_to_tuple, default=tuple())
 
     @idx.validator

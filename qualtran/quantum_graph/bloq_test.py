@@ -6,7 +6,7 @@ import pytest
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, CompositeBloq, FancyRegisters, Side
+from qualtran import Bloq, CompositeBloq, Side, Signature
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.cirq_conversion import CirqQuregT
 
@@ -14,8 +14,8 @@ from qualtran.quantum_graph.cirq_conversion import CirqQuregT
 @frozen
 class TestCNOT(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(control=1, target=1)
+    def signature(self) -> Signature:
+        return Signature.build(control=1, target=1)
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
@@ -30,12 +30,13 @@ class TestCNOT(Bloq):
 
 def test_bloq():
     tb = TestCNOT()
-    assert len(tb.registers) == 2
-    assert tb.registers['control'].bitsize == 1
-    assert tb.registers['control'].side == Side.THRU
+    assert len(tb.signature) == 2
+    ctrl, trg = tb.signature
+    assert ctrl.bitsize == 1
+    assert ctrl.side == Side.THRU
     assert tb.pretty_name() == 'TestCNOT'
 
-    quregs = tb.registers.get_cirq_quregs()
+    quregs = tb.signature.get_cirq_quregs()
     op, _ = tb.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))

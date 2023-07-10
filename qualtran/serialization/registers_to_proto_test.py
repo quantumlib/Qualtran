@@ -2,7 +2,7 @@ import attrs
 import pytest
 import sympy
 
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran import Register, Side
 from qualtran.serialization import registers_to_proto
 
 
@@ -20,7 +20,7 @@ from qualtran.serialization import registers_to_proto
     ],
 )
 def test_registers_to_proto(bitsize, shape, side):
-    reg = FancyRegister('my_reg', bitsize=bitsize, shape=shape, side=side)
+    reg = Register('my_reg', bitsize=bitsize, shape=shape, side=side)
     reg_proto = registers_to_proto.register_to_proto(reg)
     assert reg_proto.name == 'my_reg'
     if shape and isinstance(shape[0], sympy.Expr):
@@ -35,7 +35,7 @@ def test_registers_to_proto(bitsize, shape, side):
 
     reg2 = attrs.evolve(reg, name='my_reg2')
     reg3 = attrs.evolve(reg, name='my_reg3')
-    registers = FancyRegisters([reg, reg2, reg3])
+    registers = [reg, reg2, reg3]
     registers_proto = registers_to_proto.registers_to_proto(registers)
     assert list(registers_proto.registers) == [
         registers_to_proto.register_to_proto(r) for r in registers

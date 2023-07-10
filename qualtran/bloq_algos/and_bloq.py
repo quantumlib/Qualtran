@@ -8,7 +8,7 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, FancyRegister, FancyRegisters, Side, Soquet, SoquetT
+from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
 from qualtran.bloq_algos.basic_gates import TGate
 from qualtran.quantum_graph.bloq_counts import big_O, SympySymbolAllocator
 from qualtran.quantum_graph.musical_score import Circle, directional_text_box, WireSymbol
@@ -39,11 +39,11 @@ class And(Bloq):
     adjoint: bool = False
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters(
+    def signature(self) -> Signature:
+        return Signature(
             [
-                FancyRegister('ctrl', 1, shape=(2,)),
-                FancyRegister('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
+                Register('ctrl', 1, shape=(2,)),
+                Register('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
             ]
         )
 
@@ -132,13 +132,13 @@ class MultiAnd(Bloq):
     adjoint: bool = False
 
     @cached_property
-    def registers(self) -> FancyRegisters:
+    def signature(self) -> Signature:
         one_side = Side.RIGHT if not self.adjoint else Side.LEFT
-        return FancyRegisters(
+        return Signature(
             [
-                FancyRegister('ctrl', 1, shape=(len(self.cvs),)),
-                FancyRegister('junk', 1, shape=(len(self.cvs) - 2,), side=one_side),
-                FancyRegister('target', 1, side=one_side),
+                Register('ctrl', 1, shape=(len(self.cvs),)),
+                Register('junk', 1, shape=(len(self.cvs) - 2,), side=one_side),
+                Register('target', 1, side=one_side),
             ]
         )
 

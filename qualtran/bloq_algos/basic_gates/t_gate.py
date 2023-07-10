@@ -4,7 +4,7 @@ from typing import Dict, Tuple, TYPE_CHECKING
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, FancyRegisters
+from qualtran import Bloq, Signature
 
 if TYPE_CHECKING:
     import cirq
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 @frozen
 class TGate(Bloq):
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(q=1)
+    def signature(self) -> 'Signature':
+        return Signature.build(q=1)
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=1)

@@ -19,7 +19,7 @@ from .quantum_graph.bloq import Bloq
 #     networkx - create binst graph, topological sorting
 #     numpy - managing soquets in builder and map_soqs
 #     cirq_ft - tcomplexity is sum of children
-# Internal imports: bloq, fancy_registers, quantum_graph
+# Internal imports: bloq, registers, quantum_graph
 from .quantum_graph.composite_bloq import (
     BloqError,
     CompositeBloq,
@@ -31,7 +31,7 @@ from .quantum_graph.composite_bloq import (
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from .quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from .quantum_graph.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none

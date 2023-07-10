@@ -6,7 +6,7 @@ import networkx as nx
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, FancyRegisters
+from qualtran import Bloq, Signature
 from qualtran.bloq_algos.basic_gates import TGate
 from qualtran.quantum_graph.bloq_counts import get_bloq_counts_graph, SympySymbolAllocator
 from qualtran.quantum_graph.util_bloqs import ArbitraryClifford, Join, Split
@@ -17,8 +17,8 @@ class BigBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(x=self.bitsize)
+    def signature(self) -> 'Signature':
+        return Signature.build(x=self.bitsize)
 
     def bloq_counts(self, ssa: SympySymbolAllocator):
         return [(sympy.log(self.bitsize), SubBloq(unrelated_param=0.5))]
@@ -29,8 +29,8 @@ class DecompBloq(Bloq):
     bitsize: int
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(x=self.bitsize)
+    def signature(self) -> 'Signature':
+        return Signature.build(x=self.bitsize)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> Dict[str, 'SoquetT']:
         qs = bb.split(x)
@@ -45,8 +45,8 @@ class SubBloq(Bloq):
     unrelated_param: float
 
     @cached_property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(q=1)
+    def signature(self) -> 'Signature':
+        return Signature.build(q=1)
 
     def bloq_counts(self, ssa: SympySymbolAllocator):
         return [(3, TGate())]

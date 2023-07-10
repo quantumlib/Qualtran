@@ -17,7 +17,6 @@ from numpy.typing import NDArray
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.composite_bloq import _binst_to_cxns
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -26,6 +25,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Side, Signature
 
 
 @frozen
@@ -76,7 +76,7 @@ class LineManager:
         self.hlines: Set[HLine] = set()
         self._reserved: List[Tuple[List[int], Callable]] = []
 
-    def new_y(self, binst: BloqInstance, reg: FancyRegister, idx=None):
+    def new_y(self, binst: BloqInstance, reg: Register, idx=None):
         """Allocate a new y position (i.e. a new qubit or register)."""
         return heapq.heappop(self.available)
 
@@ -92,7 +92,7 @@ class LineManager:
             nums.append(heapq.heappop(self.available))
         self._reserved.append((nums, until))
 
-    def unreserve(self, binst: BloqInstance, reg: FancyRegister):
+    def unreserve(self, binst: BloqInstance, reg: Register):
         """Go through our reservations and rescind them depending on the `until` predicate."""
         kept = []
         for ys, until in self._reserved:
@@ -103,7 +103,7 @@ class LineManager:
                 kept.append((ys, until))
         self._reserved = kept
 
-    def maybe_reserve(self, binst: BloqInstance, reg: FancyRegister, idx: Tuple[int, ...]):
+    def maybe_reserve(self, binst: BloqInstance, reg: Register, idx: Tuple[int, ...]):
         """Override this method to provide custom control over line allocation.
 
         After a new y position is allocated and after a y position is freed, this method
@@ -118,7 +118,7 @@ class LineManager:
         """
 
     def new(
-        self, binst: BloqInstance, reg: FancyRegister, seq_x: int, topo_gen: int
+        self, binst: BloqInstance, reg: Register, seq_x: int, topo_gen: int
     ) -> Union[RegPosition, NDArray[RegPosition]]:
         """Allocate a position or positions for `reg`.
 
@@ -147,7 +147,7 @@ class LineManager:
         self.hlines.add(attrs.evolve(partial_h_line, seq_x_end=seq_x_end))
 
     def free(
-        self, binst: BloqInstance, reg: FancyRegister, arr: Union[RegPosition, NDArray[RegPosition]]
+        self, binst: BloqInstance, reg: Register, arr: Union[RegPosition, NDArray[RegPosition]]
     ):
         """De-allocate a position or positions for `reg`.
 
@@ -170,7 +170,7 @@ class LineManager:
 
 
 def _get_in_vals(
-    binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, RegPosition]
+    binst: BloqInstance, reg: Register, soq_assign: Dict[Soquet, RegPosition]
 ) -> Union[RegPosition, NDArray[RegPosition]]:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
@@ -185,7 +185,7 @@ def _get_in_vals(
 
 
 def _update_assign_from_vals(
-    regs: Iterable[FancyRegister],
+    regs: Iterable[Register],
     binst: BloqInstance,
     vals: Dict[str, RegPosition],
     soq_assign: Dict[Soquet, RegPosition],
@@ -243,20 +243,20 @@ def _binst_assign_line(
     for cxn in pred_cxns:
         soq_assign[cxn.right] = attrs.evolve(soq_assign[cxn.left], seq_x=seq_x, topo_gen=topo_gen)
 
-    def _in_vals(reg: FancyRegister):
+    def _in_vals(reg: Register):
         # close over binst and `soq_assign`
         return _get_in_vals(binst, reg, soq_assign=soq_assign)
 
     bloq = binst.bloq
-    in_vals = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
+    in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
     partial_out_vals = {
-        reg.name: in_vals[reg.name] for reg in bloq.registers if reg.side is Side.THRU
+        reg.name: in_vals[reg.name] for reg in bloq.signature if reg.side is Side.THRU
     }
 
     # The following will use `partial_out_vals` to re-use existing THRU lines; otherwise
     # the following will allocate new lines.
     _update_assign_from_vals(
-        bloq.registers.rights(),
+        bloq.signature.rights(),
         binst,
         partial_out_vals,
         soq_assign,
@@ -266,18 +266,18 @@ def _binst_assign_line(
     )
 
     # Free any purely-left registers.
-    for reg in bloq.registers:
+    for reg in bloq.signature:
         if reg.side is Side.LEFT:
             manager.free(binst, reg, in_vals[reg.name])
 
 
 def _cbloq_musical_score(
-    registers: FancyRegisters, binst_graph: nx.DiGraph, manager: LineManager = None
+    signature: Signature, binst_graph: nx.DiGraph, manager: LineManager = None
 ) -> Tuple[Dict[str, RegPosition], Dict[Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
     Args:
-        registers: The cbloq's registers.
+        signature: The cbloq's signature.
         binst_graph: The cbloq's binst graph.
 
     Returns:
@@ -293,7 +293,7 @@ def _cbloq_musical_score(
     soq_assign: Dict[Soquet, RegPosition] = {}
     topo_gen = 0
     _update_assign_from_vals(
-        registers.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
+        signature.lefts(), LeftDangle, {}, soq_assign, seq_x=-1, topo_gen=topo_gen, manager=manager
     )
 
     # Bloq-by-bloq application
@@ -309,7 +309,7 @@ def _cbloq_musical_score(
             seq_x += 1
 
     # Track bloq-to-dangle name changes
-    if len(list(registers.rights())) > 0:
+    if len(list(signature.rights())) > 0:
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
         for cxn in final_preds:
             soq_assign[cxn.right] = attrs.evolve(
@@ -317,11 +317,11 @@ def _cbloq_musical_score(
             )
 
     # Formulate output with expected API
-    def _f_vals(reg: FancyRegister):
+    def _f_vals(reg: Register):
         return _get_in_vals(RightDangle, reg, soq_assign)
 
-    final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}
-    for reg in registers.rights():
+    final_vals = {reg.name: _f_vals(reg) for reg in signature.rights()}
+    for reg in signature.rights():
         manager.free(RightDangle, reg, final_vals[reg.name])
     return final_vals, soq_assign, manager
 
@@ -531,7 +531,7 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
     cbloq = bloq.as_composite_bloq()
 
     _, soq_assign, manager = _cbloq_musical_score(
-        cbloq.registers, binst_graph=cbloq._binst_graph, manager=manager
+        cbloq.signature, binst_graph=cbloq._binst_graph, manager=manager
     )
     msd = MusicalScoreData(
         max_x=max(v.seq_x for v in soq_assign.values()),

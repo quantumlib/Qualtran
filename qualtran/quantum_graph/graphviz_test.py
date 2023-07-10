@@ -6,7 +6,7 @@ import IPython.display
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, FancyRegisters, Soquet
+from qualtran import Bloq, BloqBuilder, Signature, Soquet
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.graphviz import (
     _assign_ids_to_bloqs_and_soqs,
@@ -18,14 +18,14 @@ from qualtran.quantum_graph.graphviz import (
 @frozen
 class Atom(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(q=1)
+    def signature(self) -> Signature:
+        return Signature.build(q=1)
 
 
 class TestParallelBloq(Bloq):
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(stuff=3)
+    def signature(self) -> Signature:
+        return Signature.build(stuff=3)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
 

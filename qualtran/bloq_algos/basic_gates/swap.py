@@ -9,7 +9,7 @@ from attrs import frozen
 from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, FancyRegisters, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 
 if TYPE_CHECKING:
     from qualtran.quantum_graph.bloq_counts import BloqCountT, SympySymbolAllocator
@@ -41,8 +41,8 @@ class TwoBitSwap(Bloq):
         return 'swap'
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(x=1, y=1)
+    def signature(self) -> Signature:
+        return Signature.build(x=1, y=1)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'
@@ -86,8 +86,8 @@ class TwoBitCSwap(Bloq):
         return 'swap'
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(ctrl=1, x=1, y=1)
+    def signature(self) -> Signature:
+        return Signature.build(ctrl=1, x=1, y=1)
 
     def as_cirq_op(
         self,
@@ -152,8 +152,8 @@ class CSwap(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+    def signature(self) -> Signature:
+        return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
