@@ -7,8 +7,7 @@ import inspect
 import cirq_ft
 import numpy as np
 
-import qualtran
-from qualtran.jupyter_autogen import (
+from .jupyter_autogen import (
     _get_code_for_demoing_a_gate,
     _get_lines_for_constructing_an_object,
     GateNbSpec,
@@ -31,8 +30,12 @@ def test_gate_nb_spec():
 
 
 def test_notebook_spec():
+    import qualtran_dev_tools.jupyter_autogen_test
+
     nbspec = NotebookSpec(
-        title='test', module=qualtran.jupyter_autogen_test, gate_specs=[GateNbSpec(_make_QROM)]
+        title='test',
+        module=qualtran_dev_tools.jupyter_autogen_test,
+        gate_specs=[GateNbSpec(_make_QROM)],
     )
     assert nbspec.title == 'test'
     assert inspect.ismodule(nbspec.module)
@@ -82,10 +85,12 @@ def test_get_code_for_demoing_a_gate():
 
 
 def test_render_notebook_cells():
+    import qualtran_dev_tools.jupyter_autogen_test
+
     cells = render_notebook_cells(
         NotebookSpec(
             title='Test Notebook',
-            module=qualtran.jupyter_autogen_test,
+            module=qualtran_dev_tools.jupyter_autogen_test,
             gate_specs=[GateNbSpec(_make_QROM)],
         )
     )

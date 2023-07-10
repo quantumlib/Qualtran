@@ -1,7 +1,5 @@
-import argparse
 import subprocess
 import sys
-from argparse import ArgumentParser
 from pathlib import Path
 from typing import List, Optional
 
@@ -9,16 +7,7 @@ import nbconvert
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 
-
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, universal_newlines=True
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    print('git root', path)
-    return path
+from .git_tools import get_git_root
 
 
 def get_nb_rel_paths(rootdir) -> List[Path]:
@@ -49,7 +38,7 @@ def is_out_of_date(source_path: Path, out_path: Path) -> bool:
     return ood
 
 
-def execute_and_export_nb(
+def execute_and_export_notebook(
     nbpath: Path, html_outpath: Optional[Path], nb_outpath: Optional[Path]
 ) -> Optional[Exception]:
     """Execute the notebook and export it in various forms.
@@ -88,7 +77,7 @@ def execute_and_export_nb(
             f.write(html)
 
 
-def main(output_nbs: bool, output_html: bool):
+def execute_and_export_notebooks(output_nbs: bool, output_html: bool):
     """Find, execute, and export all checked-in ipynbs.
 
     Args:
@@ -107,7 +96,9 @@ def main(output_nbs: bool, output_html: bool):
         html_outpath = reporoot / 'docs/nbrun' / html_rel_path if output_html else None
         nb_outpath = reporoot / 'docs' / nb_rel_path if output_nbs else None
 
-        err = execute_and_export_nb(nbpath=nbpath, html_outpath=html_outpath, nb_outpath=nb_outpath)
+        err = execute_and_export_notebook(
+            nbpath=nbpath, html_outpath=html_outpath, nb_outpath=nb_outpath
+        )
         if err is not None:
             bad_nbs.append(nbpath)
 
@@ -117,15 +108,3 @@ def main(output_nbs: bool, output_html: bool):
         for nb in bad_nbs:
             print(' ', nb)
         sys.exit(1)
-
-
-def parse_args():
-    p = ArgumentParser()
-    p.add_argument('--output-nbs', action=argparse.BooleanOptionalAction, default=True)
-    p.add_argument('--output-html', action=argparse.BooleanOptionalAction, default=False)
-    args = p.parse_args()
-    main(output_nbs=args.output_nbs, output_html=args.output_html)
-
-
-if __name__ == '__main__':
-    parse_args()
