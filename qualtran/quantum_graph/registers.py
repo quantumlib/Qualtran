@@ -138,7 +138,7 @@ class Signature:
         pass
 
     @overload
-    def __getitem__(self, key: slice) -> Tuple[Register]:
+    def __getitem__(self, key: slice) -> Tuple[Register, ...]:
         pass
 
     def __getitem__(self, key):
