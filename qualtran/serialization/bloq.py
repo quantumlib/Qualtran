@@ -19,6 +19,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Signature
 from qualtran.quantum_graph.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.serialization import annotations, args, registers
 
@@ -136,10 +137,10 @@ def _bloq_id_to_bloq(
     bloq = idx_to_proto[bloq_id]
     if bloq.bloq.name == 'CompositeBloq':
         idx_to_bloq[bloq_id] = CompositeBloq(
-            cxns=[
+            connections=[
                 _connection_from_proto(cxn, idx_to_proto, idx_to_bloq) for cxn in bloq.decomposition
             ],
-            registers=registers.registers_from_proto(bloq.bloq.registers),
+            signature=Signature(registers.registers_from_proto(bloq.bloq.registers)),
         )
     elif bloq.bloq.name in RESOLVER_DICT:
         kwargs = {}
@@ -185,7 +186,16 @@ def _soquet_from_proto(
 
 
 def _iter_fields(bloq: Bloq):
-    """Yields fields of `bloq` iff `type(bloq)` is implemented using `dataclasses` or `attr`."""
+    """Yields fields of `bloq` iff `type(bloq)` is implemented using `dataclasses` or `attr`.
+
+    The method only yields Fields corresponding to attributes that are part of the __init__ method
+    of the bloq. This ensures that for attrs / dataclasses based Bloqs that have a custom init
+    method, we yield only the fields that are accepted by the constructor (eg: `IntState` Bloq).
+    Note that this is a hacky solution and a more generalized long-term approach would be to have
+    a protocol to query init params for each class and use them as Bloq args during
+    serialization / deserialization.
+    """
+
     if dataclasses.is_dataclass(type(bloq)):
         for field in dataclasses.fields(bloq):
             if field.name in inspect.signature(type(bloq).__init__).parameters:
@@ -285,7 +295,7 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
 
     return bloq_pb2.Bloq(
         name=bloq.__class__.__name__,
-        registers=registers.registers_to_proto(bloq.registers),
+        registers=registers.registers_to_proto(bloq.signature),
         t_complexity=t_complexity,
         args=_bloq_args_to_proto(bloq, bloq_to_idx=bloq_to_idx),
     )

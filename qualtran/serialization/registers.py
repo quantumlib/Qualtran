@@ -1,17 +1,19 @@
+from typing import Iterable, List
+
 from qualtran.protos import registers_pb2
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
+from qualtran.quantum_graph.registers import Register, Side
 from qualtran.serialization import args
 
 
-def registers_to_proto(registers: FancyRegisters) -> registers_pb2.Registers:
+def registers_to_proto(registers: Iterable[Register]) -> registers_pb2.Registers:
     return registers_pb2.Registers(registers=[register_to_proto(reg) for reg in registers])
 
 
-def registers_from_proto(registers: registers_pb2.Registers) -> FancyRegisters:
-    return FancyRegisters(registers=[register_from_proto(reg) for reg in registers.registers])
+def registers_from_proto(registers: registers_pb2.Registers) -> List[Register]:
+    return [register_from_proto(reg) for reg in registers.registers]
 
 
-def register_to_proto(register: FancyRegister) -> registers_pb2.Register:
+def register_to_proto(register: Register) -> registers_pb2.Register:
     return registers_pb2.Register(
         name=register.name,
         bitsize=args.int_or_sympy_to_proto(register.bitsize),
@@ -20,8 +22,8 @@ def register_to_proto(register: FancyRegister) -> registers_pb2.Register:
     )
 
 
-def register_from_proto(register: registers_pb2.Register) -> FancyRegister:
-    return FancyRegister(
+def register_from_proto(register: registers_pb2.Register) -> Register:
+    return Register(
         name=register.name,
         bitsize=args.int_or_sympy_from_proto(register.bitsize),
         shape=tuple(args.int_or_sympy_from_proto(s) for s in register.shape),

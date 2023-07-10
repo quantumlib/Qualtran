@@ -6,7 +6,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Side
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature
 from qualtran.bloq_algos.basic_gates import CNOT
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.quantum_graph.classical_sim import (
@@ -59,10 +59,10 @@ def test_dtype_validation():
 
     # set up different register dtypes
     regs = [
-        FancyRegister('one_bit_int', 1),
-        FancyRegister('int', 5),
-        FancyRegister('bit_arr', 1, shape=(5,)),
-        FancyRegister('int_arr', 32, shape=(5,)),
+        Register('one_bit_int', 1),
+        Register('int', 5),
+        Register('bit_arr', 1, shape=(5,)),
+        Register('int_arr', 32, shape=(5,)),
     ]
 
     # base case: vals are as-expected.
@@ -92,9 +92,9 @@ def test_dtype_validation():
 @frozen
 class ApplyClassicalTest(Bloq):
     @property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters(
-            [FancyRegister('x', 1, shape=(5,)), FancyRegister('z', 1, shape=(5,), side=Side.RIGHT)]
+    def signature(self) -> 'Signature':
+        return Signature(
+            [Register('x', 1, shape=(5,)), Register('z', 1, shape=(5,), side=Side.RIGHT)]
         )
 
     def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
@@ -122,7 +122,7 @@ def test_cnot_assign_dict():
     cbloq = CNOT().as_composite_bloq()
     binst_graph = cbloq._binst_graph
     vals = dict(ctrl=1, target=0)
-    out_vals, soq_assign = _cbloq_call_classically(cbloq.registers, vals, binst_graph)
+    out_vals, soq_assign = _cbloq_call_classically(cbloq.signature, vals, binst_graph)
     assert out_vals == {'ctrl': 1, 'target': 1}
     # left-dangle, regs, right-dangle
     assert len(soq_assign) == 2 + 2 + 2
@@ -132,7 +132,7 @@ def test_cnot_assign_dict():
 
 def test_apply_classical_cbloq():
     bb = BloqBuilder()
-    x = bb.add_register(FancyRegister('x', 1, shape=(5,)))
+    x = bb.add_register(Register('x', 1, shape=(5,)))
     x, y = bb.add(ApplyClassicalTest(), x=x)
     y, z = bb.add(ApplyClassicalTest(), x=y)
     cbloq = bb.finalize(x=x, y=y, z=z)

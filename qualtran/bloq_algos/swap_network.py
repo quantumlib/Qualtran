@@ -7,7 +7,7 @@ from attrs import frozen
 from cirq_ft import MultiTargetCNOT, TComplexity
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, FancyRegister, FancyRegisters, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
 
 if TYPE_CHECKING:
     from qualtran.quantum_graph.classical_sim import ClassicalValT
@@ -39,8 +39,8 @@ class CSwapApprox(Bloq):
     bitsize: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+    def signature(self) -> Signature:
+        return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def cirq_decomposition(
         self, ctrl: Sequence[cirq.Qid], x: Sequence[cirq.Qid], y: Sequence[cirq.Qid]
@@ -71,7 +71,7 @@ class CSwapApprox(Bloq):
     ) -> Dict[str, 'SoquetT']:
         from qualtran.quantum_graph.cirq_conversion import cirq_circuit_to_cbloq
 
-        cirq_quregs = self.registers.get_cirq_quregs()
+        cirq_quregs = self.signature.get_cirq_quregs()
         cbloq = cirq_circuit_to_cbloq(cirq.Circuit(self.cirq_decomposition(**cirq_quregs)))
 
         # Split our registers to "flat" api from cirq circuit; add the circuit; join back up.
@@ -111,11 +111,11 @@ class SwapWithZero(Bloq):
     n_target_registers: int
 
     @cached_property
-    def registers(self) -> FancyRegisters:
-        return FancyRegisters(
+    def signature(self) -> Signature:
+        return Signature(
             [
-                FancyRegister('selection', self.selection_bitsize),
-                FancyRegister('targets', self.target_bitsize, shape=(self.n_target_registers,)),
+                Register('selection', self.selection_bitsize),
+                Register('targets', self.target_bitsize, shape=(self.n_target_registers,)),
             ]
         )
 

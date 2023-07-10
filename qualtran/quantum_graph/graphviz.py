@@ -8,7 +8,6 @@ import pydot
 
 from qualtran.quantum_graph.bloq import Bloq
 from qualtran.quantum_graph.cirq_conversion import CirqGateAsBloq
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -17,6 +16,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Side, Signature
 from qualtran.quantum_graph.util_bloqs import Join, Split
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ def _assign_ids_to_bloqs_and_soqs(
     for binst in bloq_instances:
         add(binst, f'{binst.bloq.__class__.__name__}')
 
-        for groupname, groupregs in binst.bloq.registers.groups():
+        for groupname, _ in binst.bloq.signature.groups():
             add((binst, groupname), groupname)
 
     for soq in all_soquets:
@@ -71,7 +71,7 @@ def _assign_ids_to_bloqs_and_soqs(
 
 
 def _parition_registers_in_a_group(
-    regs: Iterable[FancyRegister], binst: BloqInstance
+    regs: Iterable[Register], binst: BloqInstance
 ) -> Tuple[List[Soquet], List[Soquet], List[Soquet]]:
     """Construct and sort the expected Soquets for a given register group.
 
@@ -139,16 +139,16 @@ class GraphDrawer:
         return pydot.Node(self.ids[soq], label=soq.pretty(), shape='plaintext')
 
     def add_dangles(
-        self, graph: pydot.Graph, soquets: FancyRegisters, dangle: DanglingT
+        self, graph: pydot.Graph, signature: Signature, dangle: DanglingT
     ) -> pydot.Graph:
         """Add nodes representing dangling indices to the graph.
 
         We wrap this in a subgraph to align (rank=same) the 'nodes'
         """
         if dangle is LeftDangle:
-            regs = soquets.lefts()
+            regs = signature.lefts()
         elif dangle is RightDangle:
-            regs = soquets.rights()
+            regs = signature.rights()
         else:
             raise ValueError()
 
@@ -241,7 +241,7 @@ class GraphDrawer:
 
         label += f'  <TR><TD colspan="2">{self.get_binst_header_text(binst)}</TD></TR>\n'
 
-        for groupname, groupregs in binst.bloq.registers.groups():
+        for groupname, groupregs in binst.bloq.signature.groups():
             lefts, rights, thrus = _parition_registers_in_a_group(groupregs, binst)
 
             # Special case: all registers are THRU and we don't need different left and right
@@ -330,12 +330,12 @@ class GraphDrawer:
         This is the main entry-point to this class.
         """
         graph = pydot.Dot('my_graph', graph_type='digraph', rankdir='LR')
-        graph = self.add_dangles(graph, self._cbloq.registers, LeftDangle)
+        graph = self.add_dangles(graph, self._cbloq.signature, LeftDangle)
 
         for binst in self._binsts:
             graph = self.add_binst(graph, binst)
 
-        graph = self.add_dangles(graph, self._cbloq.registers, RightDangle)
+        graph = self.add_dangles(graph, self._cbloq.signature, RightDangle)
 
         for cxn in self._cbloq.connections:
             graph = self.add_cxn(graph, cxn)
@@ -372,7 +372,7 @@ class PrettyGraphDrawer(GraphDrawer):
             return f'q{ii}'
         return soq.pretty()
 
-    def get_default_text(self, reg: FancyRegister) -> str:
+    def get_default_text(self, reg: Register) -> str:
         if reg.name == 'control':
             return '\u2b24'
 
@@ -405,7 +405,7 @@ class ClassicalSimGraphDrawer(PrettyGraphDrawer):
         from qualtran.quantum_graph.classical_sim import _cbloq_call_classically
 
         _, soq_assign = _cbloq_call_classically(
-            self._cbloq.registers, vals, self._cbloq._binst_graph
+            self._cbloq.signature, vals, self._cbloq._binst_graph
         )
         self.soq_assign = soq_assign
 

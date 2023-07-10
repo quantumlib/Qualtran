@@ -25,7 +25,6 @@ from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from qualtran.quantum_graph.bloq import Bloq
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters, Side
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -34,12 +33,13 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     import cirq
 
     from qualtran.quantum_graph.bloq_counts import BloqCountT
-    from qualtran.quantum_graph.cirq_conversion import CirqQuregT
+    from qualtran.quantum_graph.cirq_conversion import CirqQuregInT, CirqQuregT
     from qualtran.quantum_graph.classical_sim import ClassicalValT
 
 
@@ -72,29 +72,19 @@ class CompositeBloq(Bloq):
 
     Args:
         cxns: A sequence of `Connection` encoding the quantum compute graph.
-        registers: The registers defining the inputs and outputs of this Bloq. This
+        signature: The registers defining the inputs and outputs of this Bloq. This
             should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    _cxns: Tuple[Connection, ...] = attrs.field(converter=tuple)
-    _registers: FancyRegisters
-
-    @property
-    def registers(self) -> FancyRegisters:
-        """The registers defining the inputs and outputs of this Bloq."""
-        return self._registers
-
-    @property
-    def connections(self) -> Tuple[Connection, ...]:
-        """A sequence of `Connection` encoding the quantum computer graph."""
-        return self._cxns
+    connections: Tuple[Connection, ...] = attrs.field(converter=tuple)
+    signature: Signature
 
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
         """The set of `BloqInstance`s making up the nodes of the graph."""
         return {
             soq.binst
-            for cxn in self._cxns
+            for cxn in self.connections
             for soq in [cxn.left, cxn.right]
             if not isinstance(soq.binst, DanglingT)
         }
@@ -102,8 +92,8 @@ class CompositeBloq(Bloq):
     @cached_property
     def all_soquets(self) -> FrozenSet[Soquet]:
         """A set of all `Soquet`s present in the compute graph."""
-        soquets = {cxn.left for cxn in self._cxns}
-        soquets |= {cxn.right for cxn in self._cxns}
+        soquets = {cxn.left for cxn in self.connections}
+        soquets |= {cxn.right for cxn in self.connections}
         return frozenset(soquets)
 
     @cached_property
@@ -150,7 +140,7 @@ class CompositeBloq(Bloq):
             qubit_manager = cirq.ops.SimpleQubitManager()
 
         return _cbloq_to_cirq_circuit(
-            self.registers, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
+            self.signature, cirq_quregs, self._binst_graph, qubit_manager=qubit_manager
         )
 
     @classmethod
@@ -181,15 +171,15 @@ class CompositeBloq(Bloq):
         """Support classical data by recursing into the composite bloq."""
         from qualtran.quantum_graph.classical_sim import _cbloq_call_classically
 
-        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
+        out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
         return out_vals
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Support classical data by recursing into the composite bloq."""
         from qualtran.quantum_graph.classical_sim import _cbloq_call_classically
 
-        out_vals, _ = _cbloq_call_classically(self.registers, vals, self._binst_graph)
-        return tuple(out_vals[reg.name] for reg in self.registers.rights())
+        out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
+        return tuple(out_vals[reg.name] for reg in self.signature.rights())
 
     def t_complexity(self) -> TComplexity:
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""
@@ -245,7 +235,7 @@ class CompositeBloq(Bloq):
         use `map_soqs` to map this cbloq's soquets to the correct ones for the
         new bloq.
 
-        >>> bb, _ = BloqBuilder.from_registers(self.registers)
+        >>> bb, _ = BloqBuilder.from_signature(self.signature)
         >>> soq_map: List[Tuple[SoquetT, SoquetT]] = []
         >>> for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
         >>>    in_soqs = map_soqs(in_soqs, soq_map)
@@ -263,12 +253,12 @@ class CompositeBloq(Bloq):
 
         for binst, preds, succs in self.iter_bloqnections():
             in_soqs = _cxn_to_soq_dict(
-                binst.bloq.registers.lefts(),
+                binst.bloq.signature.lefts(),
                 preds,
                 get_me=lambda x: x.right,
                 get_assign=lambda x: x.left,
             )
-            out_soqs = tuple(_reg_to_soq(binst, reg) for reg in binst.bloq.registers.rights())
+            out_soqs = tuple(_reg_to_soq(binst, reg) for reg in binst.bloq.signature.rights())
             yield binst, in_soqs, out_soqs
 
     def final_soqs(self) -> Dict[str, SoquetT]:
@@ -278,7 +268,7 @@ class CompositeBloq(Bloq):
         """
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
         return _cxn_to_soq_dict(
-            self.registers.rights(),
+            self.signature.rights(),
             final_preds,
             get_me=lambda x: x.right,
             get_assign=lambda x: x.left,
@@ -286,7 +276,7 @@ class CompositeBloq(Bloq):
 
     def copy(self) -> 'CompositeBloq':
         """Create a copy of this composite bloq by re-building it."""
-        bb, _ = BloqBuilder.from_registers(self.registers)
+        bb, _ = BloqBuilder.from_signature(self.signature)
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = map_soqs(in_soqs, soq_map)
@@ -318,7 +308,7 @@ class CompositeBloq(Bloq):
             DidNotFlattenAnythingError: If none of the bloq instances satisfied `pred`.
 
         """
-        bb, _ = BloqBuilder.from_registers(self.registers)
+        bb, _ = BloqBuilder.from_signature(self.signature)
 
         # We take particular care during flattening to preserve the `binst.i` of bloq instances
         # that are not flattened. We do this by initializing the bloq builder's `i` counter
@@ -458,7 +448,7 @@ def _binst_to_cxns(
 
 
 def _cxn_to_soq_dict(
-    regs: Iterable[FancyRegister],
+    regs: Iterable[Register],
     cxns: Iterable[Connection],
     get_me: Callable[[Connection], Soquet],
     get_assign: Callable[[Connection], Soquet],
@@ -497,11 +487,11 @@ def _cxn_to_soq_dict(
     return soqdict
 
 
-def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT]:
-    """Get instantiated dangling soquets from a `FancyRegisters`.
+def _get_dangling_soquets(signature: Signature, right=True) -> Dict[str, SoquetT]:
+    """Get instantiated dangling soquets from a `Signature`.
 
     Args:
-        regs: The registers
+        signature: The registers
         right: If True, return soquets corresponding to right registers; otherwise left.
 
     Returns:
@@ -511,10 +501,10 @@ def _get_dangling_soquets(regs: FancyRegisters, right=True) -> Dict[str, SoquetT
     """
 
     if right:
-        regs = regs.rights()
+        regs = signature.rights()
         dang = RightDangle
     else:
-        regs = regs.lefts()
+        regs = signature.lefts()
         dang = LeftDangle
 
     all_soqs: Dict[str, SoquetT] = {}
@@ -538,9 +528,9 @@ def _flatten_soquet_collection(vals: Iterable[SoquetT]) -> List[Soquet]:
     return soqvals
 
 
-def _get_flat_dangling_soqs(registers: FancyRegisters, right: bool) -> List[Soquet]:
+def _get_flat_dangling_soqs(signature: Signature, right: bool) -> List[Soquet]:
     """Flatten out the values of the soquet dictionaries from `_get_dangling_soquets`."""
-    soqdict = _get_dangling_soquets(registers, right=right)
+    soqdict = _get_dangling_soquets(signature, right=right)
     return _flatten_soquet_collection(soqdict.values())
 
 
@@ -563,9 +553,9 @@ def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
     """
     cbloq = bloq.decompose_bloq()
 
-    if bloq.registers != cbloq.registers:
+    if bloq.signature != cbloq.signature:
         err = "Parent registers do not match registers"
-        for reg, dreg in itertools.zip_longest(bloq.registers, cbloq.registers):
+        for reg, dreg in itertools.zip_longest(bloq.signature, cbloq.signature):
             if reg != dreg:
                 raise BloqError(f'{err}: {reg} != {dreg}')
 
@@ -581,9 +571,9 @@ def assert_registers_match_dangling(cbloq: CompositeBloq):
     to either `LeftDangle` or `RightDangle` to indicate the soquet's status as an input
     or output, respectively.
     """
-    lefts = frozenset(_get_flat_dangling_soqs(cbloq.registers, right=False))
+    lefts = frozenset(_get_flat_dangling_soqs(cbloq.signature, right=False))
     seen_lefts = set()
-    rights = frozenset(_get_flat_dangling_soqs(cbloq.registers, right=True))
+    rights = frozenset(_get_flat_dangling_soqs(cbloq.signature, right=True))
     seen_rights = set()
 
     for cxn in cbloq.connections:
@@ -670,7 +660,7 @@ def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
         if isinstance(soq.binst, DanglingT):
             continue
 
-        if soq.reg not in soq.binst.bloq.registers:
+        if soq.reg not in soq.binst.bloq.signature:
             raise BloqError(f"{soq}'s register doesn't exist on its bloq {soq.binst.bloq}")
 
 
@@ -733,7 +723,7 @@ class _IgnoreAvailable:
 
 def _reg_to_soq(
     binst: Union[BloqInstance, DanglingT],
-    reg: FancyRegister,
+    reg: Register,
     available: Union[Set[Soquet], _IgnoreAvailable] = _IgnoreAvailable(),
 ) -> SoquetT:
     """Create the soquet or array of soquets for a register.
@@ -767,10 +757,10 @@ def _reg_to_soq(
 
 
 def _process_soquets(
-    registers: Iterable[FancyRegister],
+    registers: Iterable[Register],
     in_soqs: Dict[str, SoquetT],
     debug_str: str,
-    func: Callable[[Soquet, FancyRegister, Tuple[int, ...]], None],
+    func: Callable[[Soquet, Register, Tuple[int, ...]], None],
 ) -> None:
     """Process and validate `in_soqs` in the context of `registers`.
 
@@ -871,7 +861,6 @@ class BloqBuilder:
     construction has the correct registers: namely, those of the decomposed bloq and parent
     bloq are the same. This affords some additional error checking.
     Initial soquets are passed as **kwargs (by register name) to the `build_composite_bloq` method.
-    See `from_registers` for more details.
 
     When using this class directly, you must call `add_register` to set up the composite bloq's
     registers. When adding a LEFT or THRU register, the method will return soquets to be
@@ -886,8 +875,8 @@ class BloqBuilder:
 
     def __init__(self, add_registers_allowed: bool = True):
         # To be appended to:
-        self._cxns: List[Connection] = []
-        self._regs: List[FancyRegister] = []
+        self.connections: List[Connection] = []
+        self._regs: List[Register] = []
 
         # Initialize our BloqInstance counter
         self._i = 0
@@ -899,7 +888,7 @@ class BloqBuilder:
         self.add_register_allowed = add_registers_allowed
 
     @overload
-    def add_register(self, reg: FancyRegister, bitsize: None = None) -> Union[None, SoquetT]:
+    def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]:
         ...
 
     @overload
@@ -907,11 +896,12 @@ class BloqBuilder:
         ...
 
     def add_register(
-        self, reg: Union[str, FancyRegister], bitsize: Optional[int] = None
+        self, reg: Union[str, Register], bitsize: Optional[int] = None
     ) -> Union[None, SoquetT]:
         """Add a new register to the composite bloq being built.
 
-        If this bloq builder was constructed with `from_registers`, this operation is not allowed.
+        If this bloq builder was constructed with `add_registers_allowed=False`,
+        this operation is not allowed.
 
         Args:
             reg: Either the register or a register name. If this is a register, then `bitsize`
@@ -930,7 +920,7 @@ class BloqBuilder:
                 "Ad hoc addition of more registers is not allowed."
             )
 
-        if isinstance(reg, FancyRegister):
+        if isinstance(reg, Register):
             if bitsize is not None:
                 raise ValueError("`bitsize` must not be specified if `reg` is a Register.")
         else:
@@ -941,7 +931,7 @@ class BloqBuilder:
                     "`bitsize` must be specified and must be an "
                     "integer if `reg` is a register name."
                 )
-            reg = FancyRegister(name=reg, bitsize=bitsize)
+            reg = Register(name=reg, bitsize=bitsize)
 
         self._regs.append(reg)
         if reg.side & Side.LEFT:
@@ -949,17 +939,17 @@ class BloqBuilder:
         return None
 
     @classmethod
-    def from_registers(cls, parent_regs: FancyRegisters, add_registers_allowed=False):
-        """Construct a BloqBuilder with pre-specified registers.
+    def from_signature(cls, signature: Signature, add_registers_allowed=False):
+        """Construct a BloqBuilder with a pre-specified signature.
 
-        This is safer if e.g. you're decomposing an existing Bloq and need the registers
+        This is safer if e.g. you're decomposing an existing Bloq and need the signatures
         to match. This constructor is used by `Bloq.decompose_bloq()`.
         """
         # Initial construction: allow register addition for the following loop.
         bb = cls(add_registers_allowed=True)
 
         initial_soqs: Dict[str, SoquetT] = {}
-        for reg in parent_regs:
+        for reg in signature:
             if reg.side & Side.LEFT:
                 initial_soqs[reg.name] = bb.add_register(reg)
             else:
@@ -976,7 +966,7 @@ class BloqBuilder:
         return i
 
     def _add_cxn(
-        self, binst: BloqInstance, idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]
+        self, binst: BloqInstance, idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]
     ) -> None:
         """Helper function to be used as the base for the `func` argument of `_process_soquets`.
 
@@ -991,7 +981,7 @@ class BloqBuilder:
                 f"{idxed_soq} is not an available Soquet for `{bloq}.{reg.name}`."
             ) from None
         cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
-        self._cxns.append(cxn)
+        self.connections.append(cxn)
 
     def add(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add a new bloq instance to the compute graph.
@@ -1004,10 +994,10 @@ class BloqBuilder:
 
         Returns:
             A `Soquet` or an array thereof for each output register ordered according to
-                `bloq.registers`.
+                `bloq.signature`.
                 Note: Analogous to a Python function call using kwargs and multiple return values,
                 the ordering is irrespective of the order of `in_soqs` that have been passed in
-                and depends only on the convention of the bloq's registers.
+                and depends only on the convention of the bloq's signature.
         """
         binst = BloqInstance(bloq, i=self._new_binst_i())
         return self._add_binst(binst, in_soqs=in_soqs)
@@ -1020,15 +1010,15 @@ class BloqBuilder:
         """
         bloq = binst.bloq
 
-        def _add(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
+        def _add(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
             # close over `binst`
             return self._add_cxn(binst, idxed_soq, reg, idx)
 
         _process_soquets(
-            registers=bloq.registers.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
+            registers=bloq.signature.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
         )
         out_soqs = tuple(
-            _reg_to_soq(binst, reg, available=self._available) for reg in bloq.registers.rights()
+            _reg_to_soq(binst, reg, available=self._available) for reg in bloq.signature.rights()
         )
         return out_soqs
 
@@ -1054,7 +1044,7 @@ class BloqBuilder:
 
         # Initial mapping of LeftDangle according to user-provided in_soqs.
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
-            (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.registers.lefts()
+            (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.signature.lefts()
         ]
 
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
@@ -1063,7 +1053,7 @@ class BloqBuilder:
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
         fsoqs = map_soqs(cbloq.final_soqs(), soq_map)
-        return tuple(fsoqs[reg.name] for reg in cbloq.registers.rights())
+        return tuple(fsoqs[reg.name] for reg in cbloq.signature.rights())
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:
         """Finish building a CompositeBloq and return the immutable CompositeBloq.
@@ -1087,13 +1077,13 @@ class BloqBuilder:
         # If items from `final_soqs` don't already exist in `_regs`, add RIGHT registers
         # for them. Then call `_finalize_strict` where the actual dangling connections are added.
 
-        def _infer_reg(name: str, soq: SoquetT) -> FancyRegister:
+        def _infer_reg(name: str, soq: SoquetT) -> Register:
             """Go from Soquet -> register, but use a specific name for the register."""
             if isinstance(soq, Soquet):
-                return FancyRegister(name=name, bitsize=soq.reg.bitsize, side=Side.RIGHT)
+                return Register(name=name, bitsize=soq.reg.bitsize, side=Side.RIGHT)
 
             # Get info from 0th soquet in an ndarray.
-            return FancyRegister(
+            return Register(
                 name=name, bitsize=soq.reshape(-1)[0].reg.bitsize, shape=soq.shape, side=Side.RIGHT
             )
 
@@ -1111,21 +1101,21 @@ class BloqBuilder:
             **final_soqs: Keyword arguments mapping the composite bloq's register names to
                 final`Soquet`s, e.g. the output soquets from a prior, final operation.
         """
-        registers = FancyRegisters(self._regs)
+        signature = Signature(self._regs)
 
-        def _fin(idxed_soq: Soquet, reg: FancyRegister, idx: Tuple[int, ...]):
+        def _fin(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
             # close over `RightDangle`
             return self._add_cxn(RightDangle, idxed_soq, reg, idx)
 
         _process_soquets(
-            registers=registers.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
+            registers=signature.rights(), debug_str='Finalizing', in_soqs=final_soqs, func=_fin
         )
         if self._available:
             raise BloqError(
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(cxns=self._cxns, registers=registers)
+        return CompositeBloq(connections=self.connections, signature=signature)
 
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.quantum_graph.util_bloqs import Allocate

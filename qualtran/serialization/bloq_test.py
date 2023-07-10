@@ -5,12 +5,11 @@ import attrs
 import cirq_ft
 import sympy
 
-import qualtran
+from qualtran import Bloq, Signature
 from qualtran.bloq_algos.factoring.mod_exp import ModExp
 from qualtran.protos import registers_pb2
 from qualtran.quantum_graph.bloq_test import TestCNOT
 from qualtran.quantum_graph.composite_bloq_test import TestTwoCNOT
-from qualtran.quantum_graph.fancy_registers import FancyRegisters
 from qualtran.quantum_graph.meta_bloq import ControlledBloq
 from qualtran.serialization import bloq as bloq_serialization
 
@@ -48,24 +47,24 @@ def test_cbloq_to_proto_two_cnot():
 
 
 @attrs.frozen
-class TestCSwap(qualtran.Bloq):
+class TestCSwap(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+    def signature(self) -> 'Signature':
+        return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def t_complexity(self) -> cirq_ft.TComplexity:
         return cirq_ft.TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
 
 @dataclasses.dataclass(frozen=True)
-class TestTwoCSwap(qualtran.Bloq):
+class TestTwoCSwap(Bloq):
     bitsize: Union[int, sympy.Expr]
 
     @property
-    def registers(self) -> 'FancyRegisters':
-        return FancyRegisters.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+    def signature(self) -> 'Signature':
+        return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(self, bb, ctrl, x, y):
         ctrl, x, y = bb.add(TestCSwap(self.bitsize), ctrl=ctrl, x=x, y=y)
@@ -120,16 +119,16 @@ def test_cbloq_to_proto_test_mod_exp():
 
 
 @attrs.frozen
-class TestMetaBloq(qualtran.Bloq):
-    sub_bloq_one: qualtran.Bloq
-    sub_bloq_two: qualtran.Bloq
+class TestMetaBloq(Bloq):
+    sub_bloq_one: Bloq
+    sub_bloq_two: Bloq
 
     def __post_attrs_init__(self):
-        assert self.sub_bloq_one.registers == self.sub_bloq_two.registers
+        assert self.sub_bloq_one.signature == self.sub_bloq_two.signature
 
     @property
-    def registers(self) -> 'FancyRegisters':
-        return self.sub_bloq_one.registers
+    def signature(self) -> 'Signature':
+        return self.sub_bloq_one.signature
 
     def build_composite_bloq(self, bb, **soqs):
         soqs |= zip(soqs.keys(), bb.add(self.sub_bloq_one, **soqs))

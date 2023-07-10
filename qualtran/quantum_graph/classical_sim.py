@@ -8,7 +8,6 @@ import sympy
 from numpy.typing import NDArray
 
 from qualtran.quantum_graph.composite_bloq import _binst_to_cxns
-from qualtran.quantum_graph.fancy_registers import FancyRegister, FancyRegisters
 from qualtran.quantum_graph.quantum_graph import (
     BloqInstance,
     Connection,
@@ -17,6 +16,7 @@ from qualtran.quantum_graph.quantum_graph import (
     RightDangle,
     Soquet,
 )
+from qualtran.quantum_graph.registers import Register, Signature
 
 ClassicalValT = Union[int, NDArray[int]]
 
@@ -54,7 +54,7 @@ def ints_to_bits(x: Union[int, Sequence[int], NDArray[np.uint]], w: int) -> NDAr
 
 
 def _get_in_vals(
-    binst: BloqInstance, reg: FancyRegister, soq_assign: Dict[Soquet, ClassicalValT]
+    binst: BloqInstance, reg: Register, soq_assign: Dict[Soquet, ClassicalValT]
 ) -> ClassicalValT:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
@@ -83,7 +83,7 @@ def _get_in_vals(
 
 
 def _update_assign_from_vals(
-    regs: Iterable[FancyRegister],
+    regs: Iterable[Register],
     binst: BloqInstance,
     vals: Dict[str, ClassicalValT],
     soq_assign: Dict[Soquet, ClassicalValT],
@@ -146,20 +146,20 @@ def _binst_on_classical_vals(
     for cxn in pred_cxns:
         soq_assign[cxn.right] = soq_assign[cxn.left]
 
-    def _in_vals(reg: FancyRegister):
+    def _in_vals(reg: Register):
         # close over binst and `soq_assign`
         return _get_in_vals(binst, reg, soq_assign=soq_assign)
 
     bloq = binst.bloq
-    in_vals = {reg.name: _in_vals(reg) for reg in bloq.registers.lefts()}
+    in_vals = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
 
     # Apply function
     out_vals = bloq.on_classical_vals(**in_vals)
-    _update_assign_from_vals(bloq.registers.rights(), binst, out_vals, soq_assign)
+    _update_assign_from_vals(bloq.signature.rights(), binst, out_vals, soq_assign)
 
 
 def _cbloq_call_classically(
-    registers: FancyRegisters, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
+    signature: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 
@@ -167,7 +167,7 @@ def _cbloq_call_classically(
     `_update_assign_from_vals`.
 
     Args:
-        registers: The cbloq's registers for validating inputs
+        signature: The cbloq's signature for validating inputs
         vals: Mapping from register name to classical values
         binst_graph: The cbloq's binst graph.
 
@@ -179,7 +179,7 @@ def _cbloq_call_classically(
     """
     # Keep track of each soquet's bit array. Initialize with LeftDangle
     soq_assign: Dict[Soquet, ClassicalValT] = {}
-    _update_assign_from_vals(registers.lefts(), LeftDangle, vals, soq_assign)
+    _update_assign_from_vals(signature.lefts(), LeftDangle, vals, soq_assign)
 
     # Bloq-by-bloq application
     for binst in nx.topological_sort(binst_graph):
@@ -189,14 +189,14 @@ def _cbloq_call_classically(
         _binst_on_classical_vals(binst, pred_cxns, soq_assign)
 
     # Track bloq-to-dangle name changes
-    if len(list(registers.rights())) > 0:
+    if len(list(signature.rights())) > 0:
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=binst_graph)
         for cxn in final_preds:
             soq_assign[cxn.right] = soq_assign[cxn.left]
 
     # Formulate output with expected API
-    def _f_vals(reg: FancyRegister):
+    def _f_vals(reg: Register):
         return _get_in_vals(RightDangle, reg, soq_assign)
 
-    final_vals = {reg.name: _f_vals(reg) for reg in registers.rights()}
+    final_vals = {reg.name: _f_vals(reg) for reg in signature.rights()}
     return final_vals, soq_assign

@@ -223,17 +223,17 @@ def generate_ref_docs():
         cirq_conversion,
         classical_sim,
         composite_bloq,
-        fancy_registers,
         graphviz,
         meta_bloq,
         musical_score,
         quantum_graph,
         quimb_sim,
+        registers,
         util_bloqs,
     )
 
     # prevent unused warnings:
-    assert [bloq, bloq_counts, cirq_conversion, classical_sim, composite_bloq, fancy_registers]
+    assert [bloq, bloq_counts, cirq_conversion, classical_sim, composite_bloq, registers]
     assert [graphviz, meta_bloq, musical_score, quantum_graph, quimb_sim, util_bloqs]
 
     reporoot = get_git_root()

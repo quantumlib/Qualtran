@@ -1,7 +1,7 @@
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, FancyRegister, FancyRegisters
+from qualtran import Bloq, Register, Signature
 
 
 @frozen
@@ -25,8 +25,8 @@ class Add(Bloq):
     bitsize: int
 
     @property
-    def registers(self):
-        return FancyRegisters.build(a=self.bitsize, b=self.bitsize)
+    def signature(self):
+        return Signature.build(a=self.bitsize, b=self.bitsize)
 
     def pretty_name(self) -> str:
         return "a + b"
@@ -59,8 +59,8 @@ class Square(Bloq):
     bitsize: int
 
     @property
-    def registers(self):
-        return FancyRegisters.build(a=self.bitsize, result=2 * self.bitsize)
+    def signature(self):
+        return Signature.build(a=self.bitsize, result=2 * self.bitsize)
 
     def pretty_name(self) -> str:
         return "a^2"
@@ -99,11 +99,11 @@ class SumOfSquares(Bloq):
     k: int
 
     @property
-    def registers(self):
-        return FancyRegisters(
+    def signature(self):
+        return Signature(
             [
-                FancyRegister("input", bitsize=self.bitsize, shape=(self.k,)),
-                FancyRegister("result", bitsize=2 * self.bitsize + 1),
+                Register("input", bitsize=self.bitsize, shape=(self.k,)),
+                Register("result", bitsize=2 * self.bitsize + 1),
             ]
         )
 
@@ -147,8 +147,8 @@ class Product(Bloq):
     b_bitsize: int
 
     @property
-    def registers(self):
-        return FancyRegisters.build(
+    def signature(self):
+        return Signature.build(
             a=self.a_bitsize, b=self.b_bitsize, result=2 * max(self.a_bitsize, self.b_bitsize)
         )
 
@@ -187,8 +187,8 @@ class GreaterThan(Bloq):
     bitsize: int
 
     @property
-    def registers(self):
-        return FancyRegisters.build(a=self.bitsize, b=self.bitsize, result=1)
+    def signature(self):
+        return Signature.build(a=self.bitsize, b=self.bitsize, result=1)
 
     def pretty_name(self) -> str:
         return "a gt b"
