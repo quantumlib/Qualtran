@@ -81,7 +81,7 @@ class Signature:
     It is analogous to a function signature in traditional computing where we specify the
     names and types of the expected inputs and outputs.
 
-    Each LEFT (including thru) register must have a unique name. Each RIGHT (including)
+    Each LEFT (including thru) register must have a unique name. Each RIGHT (including thru)
     register must have a unique name.
 
     Args:
