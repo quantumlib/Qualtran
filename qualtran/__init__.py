@@ -31,7 +31,7 @@ from ._infra.composite_bloq import (
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from ._infra.registers import Register, Signature, Side
+from ._infra.registers import Register, Signature, Side, CtrlRegister
 
 # Internal imports: none
 # External imports: none

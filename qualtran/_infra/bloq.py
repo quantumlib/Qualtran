@@ -3,6 +3,8 @@
 import abc
 from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
 
+from .registers import CtrlRegister
+
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
@@ -264,7 +266,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return not self.t_complexity.__qualname__.startswith('Bloq.')
 
-    def controlled(self) -> 'Bloq':
+    def controlled(self, ctrl_reg: 'CtrlRegister' = CtrlRegister()) -> 'Bloq':
         """The controlled version of this Bloq.
 
         By default, this is `ControlledBloq(self)`. This method is used
@@ -272,10 +274,14 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from qualtran.bloqs.controlled_bloq import ControlledBloq
 
-        return ControlledBloq(self)
+        return ControlledBloq.from_ctrl_register(self, ctrl_reg)
 
     def add_controlled(
-        self, bb: 'BloqBuilder', ctrl: 'Soquet', **soqs: 'SoquetT'
+        self,
+        bb: 'BloqBuilder',
+        ctrl_reg: 'CtrlRegister',
+        ctrl_soq: 'Soquet',
+        soqs: Dict[str, 'SoquetT'],
     ) -> Tuple['SoquetT', ...]:
         """Add a controlled version of this bloq to a BloqBuilder.
 
@@ -284,10 +290,11 @@ class Bloq(metaclass=abc.ABCMeta):
 
          Args:
              bb: The BloqBuilder containing the composite bloq under construction.
-             ctrl: A soquet named 'ctrl' which contains the control bit.
-             **soqs: The rest of the soquets according to this bloq's signature.
+             ctrl_reg: A specification of the control register to add.
+             ctrl_soq: The soquet containing the control data.
+             soqs: The rest of the soquets according to this bloq's signature.
         """
-        return bb.add(self.controlled(), ctrl=ctrl, **soqs)
+        return bb.add(self.controlled(ctrl_reg), **{ctrl_reg.name: ctrl_soq}, **soqs)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'

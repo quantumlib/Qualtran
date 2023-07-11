@@ -1,11 +1,13 @@
-from typing import Optional
+from functools import cached_property
+from typing import Dict, Optional
 
 import cirq
 import numpy as np
 import pytest
 import sympy
+from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder
+from qualtran import Bloq, BloqBuilder, CtrlRegister, Signature
 from qualtran.bloqs.basic_gates import (
     OneEffect,
     OneState,
@@ -152,3 +154,24 @@ def test_cswap_symbolic():
     assert counts[0] == (n, TwoBitCSwap())
     with pytest.raises(ValueError):
         cswap.decompose_bloq()
+
+
+@frozen
+class _DoubleCSwap(Bloq):
+    @cached_property
+    def signature(self):
+        return Signature.build(x=2, y=2)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x, y) -> Dict[str, 'SoquetT']:
+        (one,) = bb.add(OneState())
+        ctrl, x, y = bb.add(CSwap(2), ctrl=one, x=x, y=y)
+        ctrl, x, y = bb.add(CSwap(2), ctrl=ctrl, x=x, y=y)
+        bb.add(OneEffect(), q=ctrl)
+        return {'x': x, 'y': y}
+
+
+def test_controlled_cswap():
+    dcswap = _DoubleCSwap()
+    assert_valid_bloq_decomposition(dcswap)
+    c_dcswap = dcswap.controlled(CtrlRegister(name='outer_ctrl'))
+    assert_valid_bloq_decomposition(c_dcswap)

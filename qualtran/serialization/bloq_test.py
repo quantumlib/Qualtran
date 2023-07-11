@@ -108,14 +108,14 @@ def test_cbloq_to_proto_test_mod_exp():
     num_binst = len(set(binst.bloq for binst in cbloq.bloq_instances))
     assert len(proto_lib.table) == 1 + num_binst
 
-    cbloq = ControlledBloq(mod_exp)
-    proto_lib = bloq_serialization.bloqs_to_proto(cbloq, max_depth=1)
+    c_mod_exp = ControlledBloq(mod_exp, ctrl_name='outer_ctrl')
+    proto_lib = bloq_serialization.bloqs_to_proto(c_mod_exp, max_depth=1)
     # 2x that of ModExp.make_for_shor(17 * 19).decompose_bloq() because each bloq in the
     # decomposition is now controlled and each Controlled(subbloq) requires 2 entries in the
     # table - one for ControlledBloq and second for subbloq.
     assert len(proto_lib.table) == 2 * (1 + num_binst)
 
-    assert cbloq in bloq_serialization.bloqs_from_proto(proto_lib)
+    assert c_mod_exp in bloq_serialization.bloqs_from_proto(proto_lib)
 
 
 @attrs.frozen

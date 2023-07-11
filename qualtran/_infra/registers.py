@@ -3,7 +3,7 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Iterator, List, overload, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attr import frozen
@@ -61,6 +61,32 @@ class Register:
         This is the product of bitsize and each of the dimensions in `shape`.
         """
         return self.bitsize * int(np.product(self.shape))
+
+
+@frozen
+class CtrlRegister(Register):
+    """A register used to control the applicaiton of a bloq.
+
+    This provides one additional field to the normal `Register` class: `cv`. See its
+    description below. These registers should be used to imply that a bloq is controlled
+    by the quantum data on this register.
+
+    See also: `Bloq.controlled()`.
+
+    Attributes:
+        name: The name of the control register
+        bitsize: The bitsize of the control register
+        shape: The shape of the control register
+        cv: The control value or values. The bloq will be active if
+            the quantum data provided to this register is equal to the
+            control value or all the control values.
+    """
+
+    name: str = 'ctrl'
+    bitsize: int = 1
+    shape: Tuple[int, ...] = ()
+    side: Side = Side.THRU
+    cv: Union[int, Tuple[int, ...]] = 1
 
 
 def _dedupe(kv_iter: Iterable[Tuple[str, Register]]) -> Dict[str, Register]:
