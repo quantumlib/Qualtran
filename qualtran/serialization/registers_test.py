@@ -3,7 +3,12 @@ import pytest
 import sympy
 
 from qualtran import Register, Side
-from qualtran.serialization import registers_to_proto
+from qualtran.serialization.registers import (
+    register_from_proto,
+    register_to_proto,
+    registers_from_proto,
+    registers_to_proto,
+)
 
 
 @pytest.mark.parametrize(
@@ -21,7 +26,7 @@ from qualtran.serialization import registers_to_proto
 )
 def test_registers_to_proto(bitsize, shape, side):
     reg = Register('my_reg', bitsize=bitsize, shape=shape, side=side)
-    reg_proto = registers_to_proto.register_to_proto(reg)
+    reg_proto = register_to_proto(reg)
     assert reg_proto.name == 'my_reg'
     if shape and isinstance(shape[0], sympy.Expr):
         assert tuple(sympy.parse_expr(s.sympy_expr) for s in reg_proto.shape) == shape
@@ -33,10 +38,12 @@ def test_registers_to_proto(bitsize, shape, side):
         assert sympy.parse_expr(reg_proto.bitsize.sympy_expr) == bitsize
     assert reg_proto.side == side.value
 
+    assert register_from_proto(reg_proto) == reg
+
     reg2 = attrs.evolve(reg, name='my_reg2')
     reg3 = attrs.evolve(reg, name='my_reg3')
     registers = [reg, reg2, reg3]
-    registers_proto = registers_to_proto.registers_to_proto(registers)
-    assert list(registers_proto.registers) == [
-        registers_to_proto.register_to_proto(r) for r in registers
-    ]
+    registers_proto = registers_to_proto(registers)
+    assert list(registers_proto.registers) == [register_to_proto(r) for r in registers]
+
+    assert registers_from_proto(registers_proto) == registers
