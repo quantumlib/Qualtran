@@ -15,17 +15,19 @@ from attrs import frozen, mutable
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
-from qualtran.components.bloq import Bloq
-from qualtran.components.composite_bloq import _binst_to_cxns
-from qualtran.components.quantum_graph import (
+from qualtran import (
+    Bloq,
     BloqInstance,
     Connection,
     DanglingT,
     LeftDangle,
+    Register,
     RightDangle,
+    Side,
+    Signature,
     Soquet,
 )
-from qualtran.components.registers import Register, Side, Signature
+from qualtran.components.composite_bloq import _binst_to_cxns
 
 
 @frozen

@@ -24,16 +24,9 @@ import numpy as np
 from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
-from qualtran.components.bloq import Bloq
-from qualtran.components.quantum_graph import (
-    BloqInstance,
-    Connection,
-    DanglingT,
-    LeftDangle,
-    RightDangle,
-    Soquet,
-)
-from qualtran.components.registers import Register, Side, Signature
+from .bloq import Bloq
+from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
+from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     import cirq

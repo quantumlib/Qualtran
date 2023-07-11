@@ -92,7 +92,7 @@ class Bloq(metaclass=abc.ABCMeta):
             NotImplementedError: If there is no decomposition defined; namely: if
                 `build_composite_bloq` returns `NotImplemented`.
         """
-        from qualtran.components.composite_bloq import BloqBuilder
+        from qualtran import BloqBuilder
 
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
@@ -116,7 +116,7 @@ class Bloq(metaclass=abc.ABCMeta):
         This method is overriden so if this Bloq is already a CompositeBloq, it will
         be returned.
         """
-        from qualtran.components.composite_bloq import BloqBuilder
+        from qualtran import BloqBuilder
 
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         ret_soqs_tuple = bb.add(self, **initial_soqs)

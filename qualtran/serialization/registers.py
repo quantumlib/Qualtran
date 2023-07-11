@@ -1,6 +1,6 @@
 from typing import Iterable, List
 
-from qualtran.components.registers import Register, Side
+from qualtran import Register, Side
 from qualtran.protos import registers_pb2
 from qualtran.serialization import args
 

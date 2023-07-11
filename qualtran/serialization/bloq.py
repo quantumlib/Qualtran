@@ -8,21 +8,21 @@ import qualtran.bloqs.and_bloq
 import qualtran.bloqs.arithmetic
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
-from qualtran import bloqs
-from qualtran.bloqs import basic_gates, factoring
-from qualtran.bloqs.controlled_bloq import ControlledBloq
-from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
-from qualtran.components.bloq import Bloq
-from qualtran.components.composite_bloq import CompositeBloq
-from qualtran.components.quantum_graph import (
+from qualtran import (
+    Bloq,
     BloqInstance,
+    bloqs,
+    CompositeBloq,
     Connection,
     DanglingT,
     LeftDangle,
     RightDangle,
+    Signature,
     Soquet,
 )
-from qualtran.components.registers import Signature
+from qualtran.bloqs import basic_gates, factoring
+from qualtran.bloqs.controlled_bloq import ControlledBloq
+from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.protos import args_pb2, bloq_pb2
 from qualtran.resource_counting.bloq_counts import SympySymbolAllocator
 from qualtran.serialization import annotations, args, registers

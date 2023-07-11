@@ -6,16 +6,21 @@ from typing import Dict, List, Optional, Tuple
 import quimb.tensor as qtn
 from numpy.typing import NDArray
 
-from qualtran.components.bloq import Bloq
+from qualtran import (
+    Bloq,
+    BloqInstance,
+    CompositeBloq,
+    Connection,
+    DanglingT,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.components.composite_bloq import (
     _cxn_to_soq_dict,
     _flatten_soquet_collection,
     _get_flat_dangling_soqs,
-    CompositeBloq,
-    SoquetT,
 )
-from qualtran.components.quantum_graph import BloqInstance, Connection, DanglingT, Soquet
-from qualtran.components.registers import Signature
 
 
 def cbloq_to_quimb(

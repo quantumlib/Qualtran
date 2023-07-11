@@ -6,16 +6,18 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKIN
 import IPython.display
 import pydot
 
-from qualtran.components.bloq import Bloq
-from qualtran.components.quantum_graph import (
+from qualtran import (
+    Bloq,
     BloqInstance,
     Connection,
     DanglingT,
     LeftDangle,
+    Register,
     RightDangle,
+    Side,
+    Signature,
     Soquet,
 )
-from qualtran.components.registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT

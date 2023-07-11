@@ -8,8 +8,7 @@ import networkx as nx
 import pydot
 import sympy
 
-from qualtran.components.bloq import Bloq
-from qualtran.components.composite_bloq import CompositeBloq
+from qualtran import Bloq, CompositeBloq
 
 BloqCountT = Tuple[Union[int, sympy.Expr], Bloq]
 

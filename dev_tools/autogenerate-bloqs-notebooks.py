@@ -48,7 +48,6 @@ import qualtran.bloqs.sorting
 import qualtran.bloqs.sorting_test
 import qualtran.bloqs.swap_network
 import qualtran.bloqs.swap_network_test
-import qualtran.components
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
