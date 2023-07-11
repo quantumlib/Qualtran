@@ -55,8 +55,3 @@ class ControlledBloq(Bloq):
         if soq.reg.name == 'ctrl':
             return Circle(filled=True)
         return self.subbloq.wire_symbol(soq)
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
-            return Circle(filled=True)
-        return self.subbloq.wire_symbol(soq)

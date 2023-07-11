@@ -4,7 +4,7 @@ from typing import Dict, Optional
 import attrs
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature, Soquet, SoquetT, BloqBuilder
+from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.ctrl_pauli import CtrlPauli
 from qualtran.bloqs.qubitization.prepare import BlackBoxPrepare
 from qualtran.drawing import Circle, TextBox
@@ -39,9 +39,7 @@ class Reflect(Bloq):
         registers.append(Register('selection', self.prepare.bitsize))
         return Signature(registers)
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', **soqs: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         pauli = '-Z'
         if self.cv is None:
             phase_trg = bb.allocate(n=1)

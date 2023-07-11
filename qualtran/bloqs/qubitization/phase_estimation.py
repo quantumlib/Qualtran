@@ -13,7 +13,7 @@ from qualtran.cirq_interop import CirqGateAsBloq
 
 
 def get_resource_state(m: int) -> NDArray:
-    """Returns a state vector representing the resource state on m qubits from Eq.17 of Ref-1.
+    r"""Returns a state vector representing the resource state on m qubits from Eq.17 of Ref-1.
 
     Returns a numpy array of size 2^{m} representing the state vector corresponding to the state
     $$

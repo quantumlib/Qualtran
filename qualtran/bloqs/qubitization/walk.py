@@ -4,7 +4,7 @@ from typing import Dict
 import attrs
 from attrs import frozen
 
-from qualtran import Bloq, Signature, Soquet, SoquetT, BloqBuilder
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.qubitization.prepare import BlackBoxPrepare
 from qualtran.bloqs.qubitization.reflect import Reflect
 from qualtran.bloqs.qubitization.select_bloq import BlackBoxSelect

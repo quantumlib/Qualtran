@@ -8,7 +8,7 @@ from typing import Dict, List
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature, SoquetT, BloqBuilder
+from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
 from qualtran.bloqs.util_bloqs import Partition
 
 
@@ -130,7 +130,7 @@ class BlackBoxSelect(Bloq):
         return {'selection': selection, 'system': system, **ctrl}
 
     def short_name(self) -> str:
-        return f'BBSelect'
+        return 'BBSelect'
 
 
 @frozen
@@ -150,4 +150,4 @@ class DummySelect(Select):
         return Register(name='psi', bitsize=128)
 
     def short_name(self) -> str:
-        return f'Sel(p,q,s)'
+        return 'Sel(p,q,s)'
