@@ -4,14 +4,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 import attrs
 
-import qualtran.bloqs.and_bloq
-import qualtran.bloqs.arithmetic
-import qualtran.bloqs.sorting
-import qualtran.bloqs.swap_network
 from qualtran import (
     Bloq,
     BloqInstance,
-    bloqs,
     CompositeBloq,
     Connection,
     DanglingT,
@@ -20,7 +15,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.bloqs import basic_gates, factoring
+from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
 from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.protos import args_pb2, bloq_pb2
@@ -53,17 +48,17 @@ RESOLVER_DICT = {
     'CtrlScaleModAdd': factoring.CtrlScaleModAdd,
     'ModExp': factoring.ModExp,
     'CtrlModMul': factoring.CtrlModMul,
-    'And': bloqs.and_bloq.And,
-    'MultiAnd': bloqs.and_bloq.MultiAnd,
-    'Add': bloqs.arithmetic.Add,
-    'Square': bloqs.arithmetic.Square,
-    'SumOfSquares': bloqs.arithmetic.SumOfSquares,
-    'Product': bloqs.arithmetic.Product,
-    'GreaterThan': bloqs.arithmetic.GreaterThan,
-    'Comparator': bloqs.sorting.Comparator,
-    'BitonicSort': bloqs.sorting.BitonicSort,
-    'CSwapApprox': bloqs.swap_network.CSwapApprox,
-    'SwapWithZero': bloqs.swap_network.SwapWithZero,
+    'And': and_bloq.And,
+    'MultiAnd': and_bloq.MultiAnd,
+    'Add': arithmetic.Add,
+    'Square': arithmetic.Square,
+    'SumOfSquares': arithmetic.SumOfSquares,
+    'Product': arithmetic.Product,
+    'GreaterThan': arithmetic.GreaterThan,
+    'Comparator': sorting.Comparator,
+    'BitonicSort': sorting.BitonicSort,
+    'CSwapApprox': swap_network.CSwapApprox,
+    'SwapWithZero': swap_network.SwapWithZero,
     'Split': Split,
     'Join': Join,
     'Allocate': Allocate,
