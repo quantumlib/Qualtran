@@ -85,7 +85,7 @@ def test_create_binst_graph():
 
 def test_composite_bloq():
     cxns, signature = _manually_make_test_cbloq_cxns()
-    cbloq = CompositeBloq(cxns=cxns, signature=signature)
+    cbloq = CompositeBloq(connections=cxns, signature=signature)
     circuit, _ = cbloq.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
     cirq.testing.assert_has_diagram(
         circuit,
@@ -503,7 +503,7 @@ def test_copy(cls):
     cbloq = cls().decompose_bloq()
     cbloq2 = cbloq.copy()
     assert cbloq is not cbloq2
-    assert cbloq != cbloq2
+    assert cbloq == cbloq2
     assert cbloq.debug_text() == cbloq2.debug_text()
 
 

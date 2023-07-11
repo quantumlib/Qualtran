@@ -1,5 +1,4 @@
 """Classes for building and manipulating `CompositeBloq`."""
-
 import itertools
 from functools import cached_property
 from typing import (
@@ -19,6 +18,7 @@ from typing import (
     Union,
 )
 
+import attrs
 import networkx as nx
 import numpy as np
 from cirq_ft import TComplexity
@@ -55,6 +55,7 @@ canonicalize and return `SoquetT`.
 """
 
 
+@attrs.frozen
 class CompositeBloq(Bloq):
     """A bloq defined by a collection of sub-bloqs and dataflows between them
 
@@ -75,26 +76,15 @@ class CompositeBloq(Bloq):
             should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    def __init__(self, cxns: Sequence[Connection], signature: Signature):
-        self._cxns = tuple(cxns)
-        self._signature = signature
-
-    @property
-    def signature(self) -> Signature:
-        """The input and output names and types for this composite bloq."""
-        return self._signature
-
-    @property
-    def connections(self) -> Tuple[Connection, ...]:
-        """A sequence of `Connection` encoding the quantum computer graph."""
-        return self._cxns
+    connections: Tuple[Connection, ...] = attrs.field(converter=tuple)
+    signature: Signature
 
     @cached_property
     def bloq_instances(self) -> Set[BloqInstance]:
         """The set of `BloqInstance`s making up the nodes of the graph."""
         return {
             soq.binst
-            for cxn in self._cxns
+            for cxn in self.connections
             for soq in [cxn.left, cxn.right]
             if not isinstance(soq.binst, DanglingT)
         }
@@ -102,8 +92,8 @@ class CompositeBloq(Bloq):
     @cached_property
     def all_soquets(self) -> FrozenSet[Soquet]:
         """A set of all `Soquet`s present in the compute graph."""
-        soquets = {cxn.left for cxn in self._cxns}
-        soquets |= {cxn.right for cxn in self._cxns}
+        soquets = {cxn.left for cxn in self.connections}
+        soquets |= {cxn.right for cxn in self.connections}
         return frozenset(soquets)
 
     @cached_property
@@ -1125,7 +1115,7 @@ class BloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(cxns=self._cxns, signature=signature)
+        return CompositeBloq(connections=self._cxns, signature=signature)
 
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.quantum_graph.util_bloqs import Allocate
