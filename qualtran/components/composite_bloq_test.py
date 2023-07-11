@@ -26,18 +26,9 @@ from qualtran import (
 )
 from qualtran.bloqs.util_bloqs import Join
 from qualtran.components.bloq_test import TestCNOT
-from qualtran.components.composite_bloq import (
-    _create_binst_graph,
-    _get_dangling_soquets,
-    assert_connections_compatible,
-    assert_registers_match_dangling,
-    assert_registers_match_parent,
-    assert_soquets_belong_to_registers,
-    assert_soquets_used_exactly_once,
-    assert_valid_bloq_decomposition,
-    map_soqs,
-)
+from qualtran.components.composite_bloq import _create_binst_graph, _get_dangling_soquets, map_soqs
 from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def _manually_make_test_cbloq_cxns():
@@ -309,70 +300,6 @@ def test_get_soquets():
     soq = soqs['join']
     assert soq.shape == (10,)
     assert soq[0].reg.bitsize == 1
-
-
-def test_assert_registers_match_parent():
-    @frozen
-    class BadRegBloq(Bloq):
-        @cached_property
-        def signature(self) -> 'Signature':
-            return Signature.build(x=2, y=3)
-
-        def decompose_bloq(self) -> 'CompositeBloq':
-            # !! order of registers swapped.
-            bb, soqs = BloqBuilder.from_signature(Signature.build(y=3, x=2))
-            x, y = bb.add(BadRegBloq(), x=soqs['x'], y=soqs['y'])
-            return bb.finalize(x=x, y=y)
-
-    with pytest.raises(BloqError, match=r'Parent registers do not match.*'):
-        assert_registers_match_parent(BadRegBloq())
-
-
-def test_assert_registers_match_dangling():
-    cxns, _ = _manually_make_test_cbloq_cxns()
-    cbloq = CompositeBloq(cxns, signature=Signature.build(ctrl=1, target=1))
-    with pytest.raises(BloqError, match=r'.*.*does not match the registers of the bloq.*'):
-        assert_registers_match_dangling(cbloq)
-
-
-def test_assert_connections_compatible():
-    from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
-
-    bb = BloqBuilder()
-    ctrl = bb.add_register('c', 1)
-    x = bb.add_register('x', 10)
-    y = bb.add_register('y', 10)
-    ctrl, x, y = bb.add(CSwap(10), ctrl=ctrl, x=x, y=y)
-    ctrl, x, y = bb.add(TwoBitCSwap(), ctrl=ctrl, x=x, y=y)
-    cbloq = bb.finalize(c=ctrl, x=x, y=y)
-    assert_registers_match_dangling(cbloq)
-    with pytest.raises(BloqError, match=r'.*bitsizes are incompatible.*'):
-        assert_connections_compatible(cbloq)
-
-
-def test_assert_soquets_belong_to_registers():
-    cxns, signature = _manually_make_test_cbloq_cxns()
-    cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=Register('q3', 1)))
-    cbloq = CompositeBloq(cxns, signature)
-    assert_registers_match_dangling(cbloq)
-    assert_connections_compatible(cbloq)
-    with pytest.raises(BloqError, match=r".*register doesn't exist on its bloq.*"):
-        assert_soquets_belong_to_registers(cbloq)
-
-
-def test_assert_soquets_used_exactly_once():
-    cxns, signature = _manually_make_test_cbloq_cxns()
-    binst1 = BloqInstance(TestCNOT(), 1)
-    binst2 = BloqInstance(TestCNOT(), 2)
-    control, target = TestCNOT().signature
-
-    cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
-    cbloq = CompositeBloq(cxns, signature)
-    assert_registers_match_dangling(cbloq)
-    assert_connections_compatible(cbloq)
-    assert_soquets_belong_to_registers(cbloq)
-    with pytest.raises(BloqError, match=r".*had already been produced by a different bloq.*"):
-        assert_soquets_used_exactly_once(cbloq)
 
 
 class TestMultiCNOT(Bloq):

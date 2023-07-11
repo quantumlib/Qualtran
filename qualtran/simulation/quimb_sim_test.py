@@ -9,11 +9,9 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, DanglingT, Register, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import CNOT, XGate, ZGate
-from qualtran.components.composite_bloq import (
-    _get_dangling_soquets,
-    assert_valid_bloq_decomposition,
-)
+from qualtran.components.composite_bloq import _get_dangling_soquets
 from qualtran.simulation.quimb_sim import cbloq_to_quimb, get_right_and_left_inds
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @frozen

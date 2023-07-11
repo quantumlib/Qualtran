@@ -16,8 +16,8 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.bloqs.basic_gates.swap import _controlled_swap_matrix, _swap_matrix, CSwap
 from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.components.composite_bloq import assert_valid_bloq_decomposition
 from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def _make_CSwap():

@@ -1,8 +1,8 @@
 import pytest
 
 from qualtran.bloqs.controlled_bloq import ControlledBloq
-from qualtran.components.composite_bloq import assert_valid_bloq_decomposition
 from qualtran.components.composite_bloq_test import Atom, TestParallelBloq, TestSerialBloq
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_controlled_serial():

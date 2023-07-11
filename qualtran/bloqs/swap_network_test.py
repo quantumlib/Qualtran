@@ -9,8 +9,8 @@ import pytest
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
-from qualtran.components.composite_bloq import assert_valid_bloq_decomposition
 from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import assert_valid_bloq_decomposition
 
 random.seed(12345)
 
