@@ -16,7 +16,7 @@ and a library of quantum algorithms expressed in that language.
 :ref:`bloq_infra`
 -----------------------------
 
-``qualtran.bloq_infra`` contains the abstractions and infrastructure for expressing
+``qualtran`` and its submodules contain the abstractions and infrastructure for expressing
 and reasoning about quantum algorithms, programs, and subroutines.
 Our hosted language consists of Python objects representing operations (``Bloq``), quantum data
 types (``Register``), and algorithms (``CompositeBloq``). :ref:`Read more... <bloq_infra>`
@@ -24,20 +24,20 @@ types (``Register``), and algorithms (``CompositeBloq``). :ref:`Read more... <bl
 .. toctree::
    :maxdepth: 2
 
-   quantum_graph/index.rst
+   bloq_infra.rst
 
 
 
 :ref:`bloq_algos`
 ------------------------------
 
-``qualtran.bloq_algos`` contains implementations of primitive operations, quantum subroutines,
+``qualtran.bloqs`` contains implementations of primitive operations, quantum subroutines,
 and high-level quantum programs. :ref:`Read more... <bloq_algos>`
 
 .. toctree::
    :maxdepth: 2
 
-   bloq_algos/index.rst
+   bloqs/index.rst
 
 
 :ref:`reference`

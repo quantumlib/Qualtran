@@ -29,8 +29,8 @@ def filter_type_checking(path, parent, children):
 
 
 _TYPE_ALIAS_LOCATIONS = {
-    'SoquetT': ('qualtran.quantum_graph', 'composite_bloq'),
-    'SoquetInT': ('qualtran.quantum_graph', 'composite_bloq'),
+    'SoquetT': ('qualtran._infra', 'composite_bloq'),
+    'SoquetInT': ('qualtran._infra', 'composite_bloq'),
 }
 
 
@@ -216,33 +216,21 @@ def generate_ref_docs():
     # Important: we currently do not import submodules in our module's `__init__` methods,
     # so tensorflow-docs will not find a module that has not been imported. We import
     # them all here.
-    import qualtran.quantum_graph
-    from qualtran.quantum_graph import (
-        bloq,
-        bloq_counts,
-        cirq_conversion,
-        classical_sim,
-        composite_bloq,
-        graphviz,
-        meta_bloq,
-        musical_score,
-        quantum_graph,
-        quimb_sim,
-        registers,
-        util_bloqs,
-    )
+
+    import qualtran
+    from qualtran import cirq_interop, drawing, resource_counting
+    from qualtran.simulation import classical_sim, quimb_sim
 
     # prevent unused warnings:
-    assert [bloq, bloq_counts, cirq_conversion, classical_sim, composite_bloq, registers]
-    assert [graphviz, meta_bloq, musical_score, quantum_graph, quimb_sim, util_bloqs]
+    assert [drawing, resource_counting, cirq_interop, quimb_sim, classical_sim]
 
     reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
     doc_generator = DocGenerator(
         root_title="Qualtran",
-        py_modules=[("qualtran.quantum_graph", qualtran.quantum_graph)],
-        base_dir=[reporoot / 'qualtran/quantum_graph'],
-        code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/quantum_graph",
+        py_modules=[("qualtran", qualtran)],
+        base_dir=[reporoot / 'qualtran'],
+        code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran",
         callbacks=[
             local_definitions_filter,
             filter_type_checking,

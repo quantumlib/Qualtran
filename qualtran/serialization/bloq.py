@@ -4,23 +4,22 @@ from typing import Any, Callable, Dict, List, Optional
 
 import attrs
 
-from qualtran import bloq_algos
-from qualtran.bloq_algos import basic_gates, factoring
-from qualtran.protos import args_pb2, bloq_pb2
-from qualtran.quantum_graph.bloq import Bloq
-from qualtran.quantum_graph.bloq_counts import SympySymbolAllocator
-from qualtran.quantum_graph.composite_bloq import CompositeBloq
-from qualtran.quantum_graph.meta_bloq import ControlledBloq
-from qualtran.quantum_graph.quantum_graph import (
+from qualtran import (
+    Bloq,
     BloqInstance,
+    CompositeBloq,
     Connection,
     DanglingT,
     LeftDangle,
     RightDangle,
+    Signature,
     Soquet,
 )
-from qualtran.quantum_graph.registers import Signature
-from qualtran.quantum_graph.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
+from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
+from qualtran.bloqs.controlled_bloq import ControlledBloq
+from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
+from qualtran.protos import args_pb2, bloq_pb2
+from qualtran.resource_counting.bloq_counts import SympySymbolAllocator
 from qualtran.serialization import annotations, args, registers
 
 RESOLVER_DICT = {
@@ -49,17 +48,17 @@ RESOLVER_DICT = {
     'CtrlScaleModAdd': factoring.CtrlScaleModAdd,
     'ModExp': factoring.ModExp,
     'CtrlModMul': factoring.CtrlModMul,
-    'And': bloq_algos.and_bloq.And,
-    'MultiAnd': bloq_algos.and_bloq.MultiAnd,
-    'Add': bloq_algos.arithmetic.Add,
-    'Square': bloq_algos.arithmetic.Square,
-    'SumOfSquares': bloq_algos.arithmetic.SumOfSquares,
-    'Product': bloq_algos.arithmetic.Product,
-    'GreaterThan': bloq_algos.arithmetic.GreaterThan,
-    'Comparator': bloq_algos.sorting.Comparator,
-    'BitonicSort': bloq_algos.sorting.BitonicSort,
-    'CSwapApprox': bloq_algos.swap_network.CSwapApprox,
-    'SwapWithZero': bloq_algos.swap_network.SwapWithZero,
+    'And': and_bloq.And,
+    'MultiAnd': and_bloq.MultiAnd,
+    'Add': arithmetic.Add,
+    'Square': arithmetic.Square,
+    'SumOfSquares': arithmetic.SumOfSquares,
+    'Product': arithmetic.Product,
+    'GreaterThan': arithmetic.GreaterThan,
+    'Comparator': sorting.Comparator,
+    'BitonicSort': sorting.BitonicSort,
+    'CSwapApprox': swap_network.CSwapApprox,
+    'SwapWithZero': swap_network.SwapWithZero,
     'Split': Split,
     'Join': Join,
     'Allocate': Allocate,
