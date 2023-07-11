@@ -69,6 +69,71 @@ RESOLVER_DICT = {
 }
 
 
+class _BloqLibDeserializer:
+    def __init__(self, lib: bloq_pb2.BloqLibrary):
+        self.idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition] = {
+            b.bloq_id: b for b in lib.table
+        }
+        self.idx_to_bloq: Dict[int, Bloq] = {}
+        self.dangling_to_singleton = {"LeftDangle": LeftDangle, "RightDangle": RightDangle}
+
+    def bloq_id_to_bloq(self, bloq_id: int):
+        """Constructs a Bloq corresponding to a `bloq_id` given an `idx_to_proto` mapping.
+
+        The `idx_to_proto` mappping is constructed using a `BloqLibrary`.
+        The `idx_to_bloq` mapping acts as a cache to avoid redundant deserialization of Bloqs.
+        """
+        if bloq_id in self.idx_to_bloq:
+            return self.idx_to_bloq[bloq_id]
+        bloq_proto: bloq_pb2.BloqLibrary.BloqWithDecomposition = self.idx_to_proto[bloq_id]
+        if bloq_proto.bloq.name == 'CompositeBloq':
+            self.idx_to_bloq[bloq_id] = CompositeBloq(
+                connections=tuple(
+                    self._connection_from_proto(cxn) for cxn in bloq_proto.decomposition
+                ),
+                signature=Signature(registers.registers_from_proto(bloq_proto.bloq.registers)),
+            )
+        elif bloq_proto.bloq.name in RESOLVER_DICT:
+            kwargs = {}
+            for arg in bloq_proto.bloq.args:
+                if arg.HasField('subbloq'):
+                    kwargs[arg.name] = self.bloq_id_to_bloq(arg.subbloq)
+                else:
+                    kwargs.update(args.arg_from_proto(arg))
+            self.idx_to_bloq[bloq_id] = self._construct_bloq(bloq_proto.bloq.name, **kwargs)
+        else:
+            raise ValueError(f"Unable to find a Bloq corresponding to {bloq_proto.bloq.name=}")
+        return self.idx_to_bloq[bloq_id]
+
+    def _construct_bloq(self, name: str, **kwargs):
+        """Construct a Bloq using serialized name and BloqArgs."""
+        return RESOLVER_DICT[name](**kwargs)
+
+    def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
+        return Connection(
+            left=self._soquet_from_proto(cxn.left), right=self._soquet_from_proto(cxn.right)
+        )
+
+    def _soquet_from_proto(self, soq: bloq_pb2.Soquet) -> Soquet:
+        binst = (
+            self.dangling_to_singleton[soq.dangling_t]
+            if soq.HasField('dangling_t')
+            else BloqInstance(
+                i=soq.bloq_instance.instance_id,
+                bloq=self.bloq_id_to_bloq(soq.bloq_instance.bloq_id),
+            )
+        )
+        return Soquet(
+            binst=binst, reg=registers.register_from_proto(soq.register), idx=tuple(soq.index)
+        )
+
+
+def bloqs_from_proto(lib: bloq_pb2.BloqLibrary) -> List[Bloq]:
+    """Deserializes a BloqLibrary as a list of Bloqs."""
+    deserializer = _BloqLibDeserializer(lib)
+    return [deserializer.bloq_id_to_bloq(bloq.bloq_id) for bloq in lib.table]
+
+
 def bloqs_to_proto(
     *bloqs: Bloq,
     name: str = '',
@@ -112,77 +177,6 @@ def bloqs_to_proto(
             bloq=_bloq_to_proto(bloq, bloq_to_idx=bloq_to_idx),
         )
     return library
-
-
-def bloqs_from_proto(lib: bloq_pb2.BloqLibrary) -> List[Bloq]:
-    """Deserializes a BloqLibrary as a list of Bloqs."""
-
-    idx_to_proto = {b.bloq_id: b for b in lib.table}
-    idx_to_bloq: Dict[int, Bloq] = {}
-    return [_bloq_id_to_bloq(bloq.bloq_id, idx_to_proto, idx_to_bloq) for bloq in lib.table]
-
-
-def _bloq_id_to_bloq(
-    bloq_id: int,
-    idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition],
-    idx_to_bloq: Dict[int, Bloq],
-):
-    """Constructs a Bloq corresponding to a `bloq_id` given an `idx_to_proto` mapping.
-
-    The `idx_to_proto` mappping is constructed using a `BloqLibrary`.
-    The `idx_to_bloq` mapping acts as a cache to avoid redundant deserialization of Bloqs.
-    """
-    if bloq_id in idx_to_bloq:
-        return idx_to_bloq[bloq_id]
-    bloq = idx_to_proto[bloq_id]
-    if bloq.bloq.name == 'CompositeBloq':
-        idx_to_bloq[bloq_id] = CompositeBloq(
-            connections=[
-                _connection_from_proto(cxn, idx_to_proto, idx_to_bloq) for cxn in bloq.decomposition
-            ],
-            signature=Signature(registers.registers_from_proto(bloq.bloq.registers)),
-        )
-    elif bloq.bloq.name in RESOLVER_DICT:
-        kwargs = {}
-        for arg in bloq.bloq.args:
-            if arg.HasField('subbloq'):
-                kwargs[arg.name] = _bloq_id_to_bloq(arg.subbloq, idx_to_proto, idx_to_bloq)
-            else:
-                kwargs.update(args.arg_from_proto(arg))
-        idx_to_bloq[bloq_id] = RESOLVER_DICT[bloq.bloq.name](**kwargs)
-    else:
-        raise ValueError(f"Unable to deserialize {bloq=}")
-    return idx_to_bloq[bloq_id]
-
-
-def _connection_from_proto(
-    cxn: bloq_pb2.Connection,
-    idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition],
-    idx_to_bloq: Dict[int, Bloq],
-) -> Connection:
-    return Connection(
-        left=_soquet_from_proto(cxn.left, idx_to_proto, idx_to_bloq),
-        right=_soquet_from_proto(cxn.right, idx_to_proto, idx_to_bloq),
-    )
-
-
-def _soquet_from_proto(
-    soq: bloq_pb2.Soquet,
-    idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition],
-    idx_to_bloq: Dict[int, Bloq],
-) -> Soquet:
-    dangling_to_singleton = {"LeftDangle": LeftDangle, "RightDangle": RightDangle}
-    binst = (
-        dangling_to_singleton[soq.dangling_t]
-        if soq.HasField('dangling_t')
-        else BloqInstance(
-            i=soq.bloq_instance.instance_id,
-            bloq=_bloq_id_to_bloq(soq.bloq_instance.bloq_id, idx_to_proto, idx_to_bloq),
-        )
-    )
-    return Soquet(
-        binst=binst, reg=registers.register_from_proto(soq.register), idx=tuple(soq.index)
-    )
 
 
 def _iter_fields(bloq: Bloq):
