@@ -23,6 +23,26 @@ from qualtran._infra.composite_bloq import (
 )
 
 
+def bloq_has_custom_tensors(bloq: Bloq) -> bool:
+    """Whether this bloq declares custom tensors by overriding `.add_my_tensors(...)`.
+
+    This is a heuristic that checks that the method is overriden.
+    """
+    return not bloq.add_my_tensors.__qualname__.startswith('Bloq.')
+
+
+def flatten_for_tensor_contraction(bloq: Bloq, max_depth: int = 1_000) -> CompositeBloq:
+    """Flatten a (composite) bloq as much as possible to enable efficient tensor contraction.
+
+    By default, bloqs without custom tensors will be contracted to a dense tensor using their
+    decomposition and then that dense tensor will be used in the enclosing tensor network.
+    To allow a more efficient contraction ordering, use this function to decompose-and-flatten
+    as much as possible before starting the tensor contraction.
+    """
+    cbloq = bloq.as_composite_bloq()
+    return cbloq.flatten(lambda binst: not bloq_has_custom_tensors(binst.bloq), max_depth=max_depth)
+
+
 def cbloq_to_quimb(
     cbloq: CompositeBloq, pos: Optional[Dict[BloqInstance, Tuple[float, float]]] = None
 ) -> Tuple[qtn.TensorNetwork, Dict]:

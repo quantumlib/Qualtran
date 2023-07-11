@@ -76,7 +76,7 @@ class Bloq(metaclass=abc.ABCMeta):
             The soquets corresponding to the outputs of the Bloq (keyed by name) or
             `NotImplemented` if there is no decomposition.
         """
-        return NotImplemented
+        raise NotImplementedError(f"{self} does not support decomposition.")
 
     def decompose_bloq(self) -> 'CompositeBloq':
         """Decompose this Bloq into its constituent parts contained in a CompositeBloq.
@@ -96,9 +96,6 @@ class Bloq(metaclass=abc.ABCMeta):
 
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
-        if out_soqs is NotImplemented:
-            raise NotImplementedError(f"Cannot decompose {self}.")
-
         return bb.finalize(**out_soqs)
 
     def supports_decompose_bloq(self) -> bool:
@@ -218,15 +215,6 @@ class Bloq(metaclass=abc.ABCMeta):
         )
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def declares_my_tensors(self) -> bool:
-        """Whether this bloq declares its tensors by overriding `.add_my_tensors(...)`.
-
-        By default, we check that the method is overriden. For
-        extraordinary circumstances, you may need to override this method directly to
-        return an accurate value.
-        """
-        return not self.add_my_tensors.__qualname__.startswith('Bloq.')
-
     def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List['BloqCountT']:
         """Return a list of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
 
@@ -238,15 +226,6 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().bloq_counts(ssa)
 
-    def declares_bloq_counts(self) -> bool:
-        """Whether this bloq declares its bloq counts by overriding `.bloq_counts(...)`.
-
-        By default, we check that the method is overriden. For
-        extraordinary circumstances, you may need to override this method directly to
-        return an accurate value.
-        """
-        return not self.bloq_counts.__qualname__.startswith('Bloq.')
-
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.
 
@@ -254,15 +233,6 @@ class Bloq(metaclass=abc.ABCMeta):
         method can be overriden with a known value.
         """
         return self.decompose_bloq().t_complexity()
-
-    def declares_t_complexity(self) -> bool:
-        """Whether this bloq declares its t complexity by overriding `.t_complexity()`.
-
-        By default, we check that the method is overriden. For
-        extraordinary circumstances, you may need to override this method directly to
-        return an accurate value.
-        """
-        return not self.t_complexity.__qualname__.startswith('Bloq.')
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
