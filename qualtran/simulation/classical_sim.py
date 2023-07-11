@@ -17,7 +17,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.components.composite_bloq import _binst_to_cxns
+from qualtran._infra.composite_bloq import _binst_to_cxns
 
 ClassicalValT = Union[int, NDArray[int]]
 

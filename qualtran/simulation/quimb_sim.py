@@ -16,7 +16,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.components.composite_bloq import (
+from qualtran._infra.composite_bloq import (
     _cxn_to_soq_dict,
     _flatten_soquet_collection,
     _get_flat_dangling_soqs,

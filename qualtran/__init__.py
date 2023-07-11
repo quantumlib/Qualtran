@@ -13,14 +13,14 @@ isort:skip_file
 
 # Internal imports: none
 # External imports: none
-from .components.bloq import Bloq
+from ._infra.bloq import Bloq
 
 # External imports:
 #     networkx - create binst graph, topological sorting
 #     numpy - managing soquets in builder and map_soqs
 #     cirq_ft - tcomplexity is sum of children
-# Internal imports: bloq, registers, components
-from .components.composite_bloq import (
+# Internal imports: bloq, registers, _infra
+from ._infra.composite_bloq import (
     BloqError,
     CompositeBloq,
     BloqBuilder,
@@ -31,11 +31,11 @@ from .components.composite_bloq import (
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from .components.registers import Register, Signature, Side
+from ._infra.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none
-from .components.quantum_graph import (
+from ._infra.quantum_graph import (
     BloqInstance,
     Connection,
     DanglingT,

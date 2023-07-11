@@ -13,17 +13,22 @@ from cirq_ft import Register as LegacyRegister
 from cirq_ft import Registers as LegacyRegisters
 from numpy.typing import NDArray
 
-from qualtran.components.bloq import Bloq
-from qualtran.components.composite_bloq import _binst_to_cxns, BloqBuilder, CompositeBloq, SoquetT
-from qualtran.components.quantum_graph import (
+from qualtran import (
+    Bloq,
+    BloqBuilder,
     BloqInstance,
+    CompositeBloq,
     Connection,
     DanglingT,
     LeftDangle,
+    Register,
     RightDangle,
+    Side,
+    Signature,
     Soquet,
+    SoquetT,
 )
-from qualtran.components.registers import Register, Side, Signature
+from qualtran._infra.composite_bloq import _binst_to_cxns
 
 CirqQuregT = NDArray[cirq.Qid]
 CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]

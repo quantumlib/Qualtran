@@ -6,10 +6,10 @@ import cirq_ft
 import sympy
 
 from qualtran import Bloq, Signature
+from qualtran._infra.bloq_test import TestCNOT
+from qualtran._infra.composite_bloq_test import TestTwoCNOT
 from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
-from qualtran.components.bloq_test import TestCNOT
-from qualtran.components.composite_bloq_test import TestTwoCNOT
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
 

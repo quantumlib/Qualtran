@@ -24,9 +24,9 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran._infra.bloq_test import TestCNOT
+from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran.bloqs.util_bloqs import Join
-from qualtran.components.bloq_test import TestCNOT
-from qualtran.components.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.testing import assert_valid_bloq_decomposition
 

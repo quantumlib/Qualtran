@@ -29,8 +29,8 @@ def filter_type_checking(path, parent, children):
 
 
 _TYPE_ALIAS_LOCATIONS = {
-    'SoquetT': ('qualtran.components', 'composite_bloq'),
-    'SoquetInT': ('qualtran.components', 'composite_bloq'),
+    'SoquetT': ('qualtran._infra', 'composite_bloq'),
+    'SoquetInT': ('qualtran._infra', 'composite_bloq'),
 }
 
 

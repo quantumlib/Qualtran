@@ -1,7 +1,7 @@
 import pytest
 
 from qualtran import BloqInstance, DanglingT, LeftDangle, Register, RightDangle, Side, Soquet
-from qualtran.components.bloq_test import TestCNOT
+from qualtran._infra.bloq_test import TestCNOT
 
 
 def test_dangling():

@@ -1,7 +1,7 @@
 import itertools
 
 from qualtran import Bloq, BloqError, CompositeBloq, DanglingT, LeftDangle, RightDangle, Side
-from qualtran.components.composite_bloq import _get_flat_dangling_soqs
+from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:

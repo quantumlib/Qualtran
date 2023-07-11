@@ -17,7 +17,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.components.bloq_test import TestCNOT
+from qualtran._infra.bloq_test import TestCNOT
 from qualtran.testing import (
     assert_connections_compatible,
     assert_registers_match_dangling,
