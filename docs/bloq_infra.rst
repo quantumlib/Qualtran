@@ -12,10 +12,10 @@ types (``Register``), and algorithms (``CompositeBloq``).
    :maxdepth: 2
    :caption: Contents:
 
-   components/Bloqs-Tutorial.ipynb
-   components/composite_bloq.ipynb
+   _infra/Bloqs-Tutorial.ipynb
+   _infra/composite_bloq.ipynb
    simulation/classical_sim.ipynb
-   cirq_interop/cirq_conversion.ipynb
+   cirq_interop/cirq_interop.ipynb
    drawing/graphviz.ipynb
    drawing/musical_score.ipynb
    resource_counting/bloq_counts.ipynb
