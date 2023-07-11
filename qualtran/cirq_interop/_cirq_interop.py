@@ -29,6 +29,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran.drawing.musical_score import directional_text_box
 
 CirqQuregT = NDArray[cirq.Qid]
 CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
@@ -85,6 +86,11 @@ class CirqGateAsBloq(Bloq):
 
     def t_complexity(self) -> 'cirq_ft.TComplexity':
         return cirq_ft.t_complexity(self.gate)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        assert soq.reg.name == 'qubits'
+        (i,) = soq.idx
+        return directional_text_box(f'q{i}', soq.reg.side)
 
 
 def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:

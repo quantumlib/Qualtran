@@ -44,6 +44,13 @@ import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
+import qualtran.bloqs.qubitization.phase_estimation
+import qualtran.bloqs.qubitization.phase_estimation_test
+import qualtran.bloqs.qubitization.reflect_test
+import qualtran.bloqs.qubitization.select_bloq
+import qualtran.bloqs.qubitization.select_bloq_test
+import qualtran.bloqs.qubitization.walk
+import qualtran.bloqs.qubitization.walk_test
 import qualtran.bloqs.sorting
 import qualtran.bloqs.sorting_test
 import qualtran.bloqs.swap_network
@@ -111,6 +118,32 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.factoring.mod_mul_test._make_modmul),
         ],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
+    NotebookSpec(
+        title='Qubitization Walk Operator',
+        module=qualtran.bloqs.qubitization.walk,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.qubitization.walk_test._make_walk),
+            BloqNbSpec(qualtran.bloqs.qubitization.reflect_test._make_reflect),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/qubitization',
+    ),
+    NotebookSpec(
+        title='Qubitization Phase Estimation',
+        module=qualtran.bloqs.qubitization.phase_estimation,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.qubitization.phase_estimation_test._make_phase_esimation)
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/qubitization',
+    ),
+    NotebookSpec(
+        title='Qubitization Select',
+        module=qualtran.bloqs.qubitization.select_bloq,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.qubitization.select_bloq_test._make_select),
+            BloqNbSpec(qualtran.bloqs.qubitization.select_bloq_test._make_black_box_select),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/qubitization',
     ),
 ]
 

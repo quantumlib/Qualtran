@@ -264,6 +264,31 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return not self.t_complexity.__qualname__.startswith('Bloq.')
 
+    def controlled(self) -> 'Bloq':
+        """The controlled version of this Bloq.
+
+        By default, this is `ControlledBloq(self)`. This method is used
+        by the default implementation of `Bloq.add_controlled(...)`.
+        """
+        from qualtran.bloqs.controlled_bloq import ControlledBloq
+
+        return ControlledBloq(self)
+
+    def add_controlled(
+        self, bb: 'BloqBuilder', ctrl: 'Soquet', **soqs: 'SoquetT'
+    ) -> Tuple['SoquetT', ...]:
+        """Add a controlled version of this bloq to a BloqBuilder.
+
+        By default, this will add `self.controlled()` to the bloq builder, but this
+        method can be overridden with custom logic.
+
+         Args:
+             bb: The BloqBuilder containing the composite bloq under construction.
+             ctrl: A soquet named 'ctrl' which contains the control bit.
+             **soqs: The rest of the soquets according to this bloq's signature.
+        """
+        return bb.add(self.controlled(), ctrl=ctrl, **soqs)
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
