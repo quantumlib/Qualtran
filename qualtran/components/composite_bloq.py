@@ -230,10 +230,10 @@ class CompositeBloq(Bloq):
         >>> bb, _ = BloqBuilder.from_signature(self.signature)
         >>> soq_map: List[Tuple[SoquetT, SoquetT]] = []
         >>> for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
-        >>>    in_soqs = map_soqs(in_soqs, soq_map)
+        >>>    in_soqs = bb.map_soqs(in_soqs, soq_map)
         >>>    new_out_soqs = bb.add(binst.bloq, **in_soqs)
         >>>    soq_map.extend(zip(old_out_soqs, new_out_soqs))
-        >>> return bb.finalize(**map_soqs(self.final_soqs(), soq_map))
+        >>> return bb.finalize(**bb.map_soqs(self.final_soqs(), soq_map))
 
         Yields:
             binst: The current bloq instance
@@ -271,11 +271,11 @@ class CompositeBloq(Bloq):
         bb, _ = BloqBuilder.from_signature(self.signature)
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
-            in_soqs = map_soqs(in_soqs, soq_map)
+            in_soqs = _map_soqs(in_soqs, soq_map)
             new_out_soqs = bb.add(binst.bloq, **in_soqs)
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
-        fsoqs = map_soqs(self.final_soqs(), soq_map)
+        fsoqs = _map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
     def flatten_once(self, pred: Callable[[BloqInstance], bool]) -> 'CompositeBloq':
@@ -311,7 +311,7 @@ class CompositeBloq(Bloq):
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         did_work = False
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
-            in_soqs = map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
+            in_soqs = _map_soqs(in_soqs, soq_map)  # update `in_soqs` from old to new.
 
             if pred(binst):
                 new_out_soqs = bb.add_from(binst.bloq.decompose_bloq(), **in_soqs)
@@ -328,7 +328,7 @@ class CompositeBloq(Bloq):
         if not did_work:
             raise DidNotFlattenAnythingError()
 
-        fsoqs = map_soqs(self.final_soqs(), soq_map)
+        fsoqs = _map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
     def flatten(
@@ -628,12 +628,13 @@ def _process_soquets(
         raise BloqError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
 
 
-def map_soqs(
+def _map_soqs(
     soqs: Dict[str, SoquetT], soq_map: Iterable[Tuple[SoquetT, SoquetT]]
 ) -> Dict[str, SoquetT]:
     """Map `soqs` according to `soq_map`.
 
-    See `CompositeBloq.iter_bloqsoqs` for example code.
+    See `CompositeBloq.iter_bloqsoqs` for example code. The public entry-point
+    for this function is the `BloqBuilder.map_soqs` static function.
 
     Args:
         soqs: A soquet dictionary mapping register names to Soquets or arrays
@@ -785,6 +786,26 @@ class BloqBuilder:
 
         return bb, initial_soqs
 
+    @staticmethod
+    def map_soqs(
+        soqs: Dict[str, SoquetT], soq_map: Iterable[Tuple[SoquetT, SoquetT]]
+    ) -> Dict[str, SoquetT]:
+        """Map `soqs` according to `soq_map`.
+
+        See `CompositeBloq.iter_bloqsoqs` for example code.
+
+        Args:
+            soqs: A soquet dictionary mapping register names to Soquets or arrays
+                of Soquets. The values of this dictionary will be mapped.
+            soq_map: An iterable of (old_soq, new_soq) tuples that inform how to
+                perform the mapping. Note that this is a list of tuples (not a dictionary)
+                because `old_soq` may be an unhashable numpy array of Soquet.
+
+        Returns:
+            A mapped version of `soqs`.
+        """
+        return _map_soqs(soqs=soqs, soq_map=soq_map)
+
     def _new_binst_i(self) -> int:
         i = self._i
         self._i += 1
@@ -873,11 +894,11 @@ class BloqBuilder:
         ]
 
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
-            in_soqs = map_soqs(in_soqs, soq_map)
+            in_soqs = _map_soqs(in_soqs, soq_map)
             new_out_soqs = self.add(binst.bloq, **in_soqs)
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
-        fsoqs = map_soqs(cbloq.final_soqs(), soq_map)
+        fsoqs = _map_soqs(cbloq.final_soqs(), soq_map)
         return tuple(fsoqs[reg.name] for reg in cbloq.signature.rights())
 
     def finalize(self, **final_soqs: SoquetT) -> CompositeBloq:

@@ -6,7 +6,6 @@ from typing import List, Tuple
 from attrs import field, frozen
 
 from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Signature, Soquet, SoquetT
-from qualtran.components.composite_bloq import map_soqs
 from qualtran.drawing import Circle, WireSymbol
 
 
@@ -45,11 +44,11 @@ class ControlledBloq(Bloq):
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.subbloq.iter_bloqsoqs():
-            in_soqs = map_soqs(in_soqs, soq_map)
+            in_soqs = bb.map_soqs(in_soqs, soq_map)
             ctrl, *new_out_soqs = bb.add(ControlledBloq(binst.bloq), control=ctrl, **in_soqs)
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
-        fsoqs = map_soqs(self.subbloq.final_soqs(), soq_map)
+        fsoqs = bb.map_soqs(self.subbloq.final_soqs(), soq_map)
         return bb.finalize(control=ctrl, **fsoqs)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':

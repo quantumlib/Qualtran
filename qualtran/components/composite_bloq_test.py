@@ -26,7 +26,7 @@ from qualtran import (
 )
 from qualtran.bloqs.util_bloqs import Join
 from qualtran.components.bloq_test import TestCNOT
-from qualtran.components.composite_bloq import _create_binst_graph, _get_dangling_soquets, map_soqs
+from qualtran.components.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran.jupyter_tools import execute_notebook
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -131,18 +131,18 @@ def test_map_soqs():
     soq_map: List[Tuple[SoquetT, SoquetT]] = []
     for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
         if binst.i == 0:
-            assert in_soqs == map_soqs(in_soqs, soq_map)
+            assert in_soqs == bb.map_soqs(in_soqs, soq_map)
         elif binst.i == 1:
-            for k, val in map_soqs(in_soqs, soq_map).items():
+            for k, val in bb.map_soqs(in_soqs, soq_map).items():
                 assert val.binst.i >= 100
         else:
             raise AssertionError()
 
-        in_soqs = map_soqs(in_soqs, soq_map)
+        in_soqs = bb.map_soqs(in_soqs, soq_map)
         new_out_soqs = bb.add(binst.bloq, **in_soqs)
         soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
-    fsoqs = map_soqs(cbloq.final_soqs(), soq_map)
+    fsoqs = bb.map_soqs(cbloq.final_soqs(), soq_map)
     for k, val in fsoqs.items():
         assert val.binst.i >= 100
     cbloq = bb.finalize(**fsoqs)
