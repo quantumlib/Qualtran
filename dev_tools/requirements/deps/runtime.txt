@@ -2,11 +2,7 @@
 # due to a transitive dependency via fqe and openfermion. cirq-google is not a "real" requirement.
 cirq-core==1.2.0.dev20230613162638
 cirq-ft==1.2.0.dev20230613162638
-cirq-google==1.2.0.dev20230613162638
 
-fqe
-pyscf
-openfermion
 pydot
 
 # quimb and its tensor dependencies
