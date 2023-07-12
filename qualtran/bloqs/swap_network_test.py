@@ -10,6 +10,7 @@ from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
 from qualtran.jupyter_tools import execute_notebook
+from qualtran.simulation.quimb_sim import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition
 
 random.seed(12345)
@@ -35,7 +36,7 @@ def test_cswap_approx_decomp():
 @pytest.mark.parametrize('n', [5, 32])
 def test_approx_cswap_t_count(n):
     cswap = CSwapApprox(bitsize=n)
-    assert cswap.declares_t_complexity()
+    assert not cswap.t_complexity.__qualname__.startswith('Bloq.')
     cswap_d = cswap.decompose_bloq()
 
     assert cswap.t_complexity() == cswap_d.t_complexity()
@@ -66,9 +67,7 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
             trgs.append(trg)
         sel, trgs = bb.add(swz, selection=sel, targets=np.array(trgs))
         circuit = bb.finalize(sel=sel, trgs=trgs)
-        full_state_vector = circuit.flatten_once(
-            lambda binst: not binst.bloq.declares_my_tensors()
-        ).tensor_contract()
+        full_state_vector = flatten_for_tensor_contraction(circuit).tensor_contract()
 
         result_state_vector = cirq.sub_state_vector(
             full_state_vector,
