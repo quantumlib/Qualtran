@@ -1,19 +1,18 @@
-# Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google Quantum AI
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
 #
-#     https://www.apache.org/licenses/LICENSE-2.0
+#      https://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 
 from astroid import nodes
-
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IRawChecker
 
@@ -55,19 +54,19 @@ class CopyrightChecker(BaseChecker):
         if not self.linter.is_message_enabled("wrong-or-nonexistent-copyright-notice"):
             return
         golden = [
-            b'# Copyright 20XX Google Quantum AI',
+            b'#  Copyright 20XX Google Quantum AI',
             b'#',
-            b'# Licensed under the Apache License, Version 2.0 (the "License");',
-            b'# you may not use this file except in compliance with the License.',
-            b'# You may obtain a copy of the License at',
+            b'#  Licensed under the Apache License, Version 2.0 (the "License");',
+            b'#  you may not use this file except in compliance with the License.',
+            b'#  You may obtain a copy of the License at',
             b'#',
-            b'#     https://www.apache.org/licenses/LICENSE-2.0',
+            b'#      https://www.apache.org/licenses/LICENSE-2.0',
             b'#',
-            b'# Unless required by applicable law or agreed to in writing, software',
-            b'# distributed under the License is distributed on an "AS IS" BASIS,',
-            b'# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.',
-            b'# See the License for the specific language governing permissions and',
-            b'# limitations under the License.',
+            b'#  Unless required by applicable law or agreed to in writing, software',
+            b'#  distributed under the License is distributed on an "AS IS" BASIS,',
+            b'#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.',
+            b'#  See the License for the specific language governing permissions and',
+            b'#  limitations under the License.',
         ]
         with node.stream() as stream:
 
@@ -92,7 +91,7 @@ class CopyrightChecker(BaseChecker):
             for expected_line, (i, (lineno, line)) in zip(golden, enumerate(skip_shebang(stream))):
                 for expected_char, (colno, char) in zip(expected_line, enumerate(line)):
                     # The text needs to be same as the template except for the year.
-                    if expected_char != char and not (i == 0 and 14 <= colno <= 15):
+                    if expected_char != char and not (i == 0 and 15 <= colno <= 16):
                         self.add_message(
                             "wrong-or-nonexistent-copyright-notice",
                             line=lineno + 1,
