@@ -53,7 +53,8 @@ enable=
     wildcard-import,
     wrong-import-order,
     wrong-import-position,
-    yield-outside-function
+    yield-outside-function,
+    wrong-or-nonexistent-copyright-notice
 
 # Ignore long lines containing urls or pylint directives.
 ignore-long-lines=^(.*#\w*pylint: disable.*|\s*(# )?[<\[\(]?https?://\S+[>\]\)]?)$
