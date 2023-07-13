@@ -891,7 +891,7 @@ class BloqBuilder:
         used exactly once and soquets must match the `Register` specifications of the bloq.
 
         See also `add_t` or `add_d` for versions of this function that return output soquets
-        in a structured way that may be more apporpriate for programmatic adding of bloqs.
+        in a structured way that may be more appropriate for programmatic adding of bloqs.
 
         Args:
             bloq: The bloq representing the operation to add.
