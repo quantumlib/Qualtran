@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from typing import Any, Dict, Union
 
+import cirq
 import numpy as np
 import sympy
 from sympy.parsing.sympy_parser import parse_expr
@@ -44,6 +44,8 @@ def arg_to_proto(*, name: str, val: Any) -> args_pb2.BloqArg:
         return args_pb2.BloqArg(name=name, sympy_expr=str(val))
     if isinstance(val, np.ndarray):
         return args_pb2.BloqArg(name=name, ndarray=_ndarray_to_proto(val))
+    if isinstance(val, cirq.Gate):
+        return args_pb2.BloqArg(name=name, cirq_json_gzip=cirq.to_json_gzip(val))
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
@@ -58,6 +60,9 @@ def arg_from_proto(arg: args_pb2.BloqArg) -> Dict[str, Any]:
         return {arg.name: parse_expr(arg.sympy_expr)}
     if arg.HasField("ndarray"):
         return {arg.name: _ndarray_from_proto(arg.ndarray)}
+    if arg.HasField("cirq_json_gzip"):
+        return {arg.name: cirq.read_json_gzip(gzip_raw=arg.cirq_json_gzip)}
+    raise ValueError(f"Cannot deserialize {arg=}")
 
 
 def _ndarray_to_proto(arr: np.ndarray) -> args_pb2.NDArray:

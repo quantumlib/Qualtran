@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import cirq
@@ -29,6 +29,14 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+
+
+def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
+    from qualtran import BloqBuilder
+
+    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
+    out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
+    return bb.finalize(**out_soqs)
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -107,11 +115,27 @@ class Bloq(metaclass=abc.ABCMeta):
             NotImplementedError: If there is no decomposition defined; namely: if
                 `build_composite_bloq` returns `NotImplemented`.
         """
-        from qualtran import BloqBuilder
+        try:
+            return _decompose_from_build_composite_bloq(self)
+        except NotImplementedError as e:
+            from cirq.ops import Operation, SimpleQubitManager
+            from cirq.protocols import is_parameterized
 
-        bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
-        out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
-        return bb.finalize(**out_soqs)
+            from qualtran.cirq_interop import BloqAsCirqGate, cirq_optree_to_cbloq
+
+            if any(
+                is_parameterized(reg.bitsize) or is_parameterized(reg.side)
+                for reg in self.signature
+            ):
+                raise e
+
+            cirq_quregs = self.signature.get_cirq_quregs()
+            cirq_optree, cirq_quregs = self.as_cirq_op(SimpleQubitManager(), **cirq_quregs)
+            if cirq_optree is None or (
+                isinstance(cirq_optree, Operation) and isinstance(cirq_optree.gate, BloqAsCirqGate)
+            ):
+                raise e
+            return cirq_optree_to_cbloq(cirq_optree)
 
     def supports_decompose_bloq(self) -> bool:
         """Whether this bloq supports `.decompose_bloq()`.
@@ -239,7 +263,7 @@ class Bloq(metaclass=abc.ABCMeta):
         the subbloqs by overwriting bloq attributes that do not affect its cost with generic
         sympy symbols (perhaps with the aid of the provided `SympySymbolAllocator`).
         """
-        return self.decompose_bloq().bloq_counts(ssa)
+        return _decompose_from_build_composite_bloq(self).bloq_counts(ssa)
 
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.
@@ -251,7 +275,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+    ) -> Tuple[Optional['cirq.OP_TREE'], Dict[str, 'CirqQuregT']]:
         """Override this method to support conversion to a Cirq operation.
 
         If this method is not overriden, the default implementation will wrap this bloq

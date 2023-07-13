@@ -17,4 +17,4 @@
 isort:skip_file
 """
 
-from ._cirq_interop import CirqQuregT, CirqGateAsBloq, BloqAsCirqGate, cirq_circuit_to_cbloq
+from ._cirq_interop import CirqQuregT, CirqGateAsBloq, BloqAsCirqGate, cirq_optree_to_cbloq

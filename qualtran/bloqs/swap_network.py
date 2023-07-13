@@ -83,10 +83,10 @@ class CSwapApprox(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
-        from qualtran.cirq_interop import cirq_circuit_to_cbloq
+        from qualtran.cirq_interop import cirq_optree_to_cbloq
 
         cirq_quregs = self.signature.get_cirq_quregs()
-        cbloq = cirq_circuit_to_cbloq(cirq.Circuit(self.cirq_decomposition(**cirq_quregs)))
+        cbloq = cirq_optree_to_cbloq(cirq.Circuit(self.cirq_decomposition(**cirq_quregs)))
 
         # Split our registers to "flat" api from cirq circuit; add the circuit; join back up.
         qvars = np.concatenate(([ctrl], bb.split(x), bb.split(y)))

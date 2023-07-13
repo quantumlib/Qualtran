@@ -38,9 +38,6 @@ class TestCNOT(Bloq):
         (target,) = cirq_quregs['target']
         return cirq.CNOT(control, target), cirq_quregs
 
-    def t_complexity(self) -> 'TComplexity':
-        return TComplexity(clifford=1)
-
 
 def test_bloq():
     tb = TestCNOT()
@@ -54,9 +51,6 @@ def test_bloq():
     op, _ = tb.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
-
-    with pytest.raises(NotImplementedError):
-        tb.decompose_bloq()
 
 
 def test_as_composite_bloq():

@@ -21,7 +21,7 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
-from qualtran.cirq_interop import cirq_circuit_to_cbloq, CirqGateAsBloq, CirqQuregT
+from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.jupyter_tools import execute_notebook
 
 
@@ -51,7 +51,7 @@ def test_cirq_gate():
 def test_cirq_circuit_to_cbloq():
     qubits = cirq.LineQubit.range(6)
     circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
-    cbloq = cirq_circuit_to_cbloq(circuit)
+    cbloq = cirq_optree_to_cbloq(circuit)
 
     bloq_unitary = cbloq.tensor_contract()
     cirq_unitary = circuit.unitary(qubits)
@@ -61,7 +61,7 @@ def test_cirq_circuit_to_cbloq():
 def test_cbloq_to_cirq_circuit():
     qubits = cirq.LineQubit.range(6)
     circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
-    cbloq = cirq_circuit_to_cbloq(circuit)
+    cbloq = cirq_optree_to_cbloq(circuit)
 
     # important! we lose moment structure
     circuit = cirq.Circuit(circuit.all_operations())

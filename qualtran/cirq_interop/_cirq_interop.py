@@ -100,8 +100,14 @@ class CirqGateAsBloq(Bloq):
     def t_complexity(self) -> 'cirq_ft.TComplexity':
         return cirq_ft.t_complexity(self.gate)
 
+    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List['BloqCountT']:
+        raise NotImplementedError(f"{self} does not implement `bloq_counts`.")
 
-def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise NotImplementedError(f"{self} does not support decomposition.")
+
+
+def cirq_optree_to_cbloq(optree: cirq.OP_TREE) -> CompositeBloq:
     """Convert a Cirq circuit into a `CompositeBloq`.
 
     Each `cirq.Operation` will be wrapped into a `CirqGateAsBloq` wrapper. The
@@ -111,6 +117,7 @@ def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
     bb = BloqBuilder()
 
     # "qubits" means cirq qubits | "qvars" means bloq Soquets
+    circuit = cirq.Circuit(optree)
     all_qubits = sorted(circuit.all_qubits())
     all_qvars = bb.add_register(Register('qubits', 1, shape=(len(all_qubits),)))
     qubit_to_qvar = dict(zip(all_qubits, all_qvars))
@@ -179,7 +186,7 @@ def _binst_as_cirq_op(
     pred_cxns: Iterable[Connection],
     soq_assign: Dict[Soquet, NDArray[cirq.Qid]],
     qubit_manager: cirq.QubitManager,
-) -> Union[cirq.Operation, None]:
+) -> Optional[cirq.OP_TREE]:
     """Helper function used in `_cbloq_to_cirq_circuit`.
 
     Args:
@@ -204,9 +211,9 @@ def _binst_as_cirq_op(
     bloq = binst.bloq
     cirq_quregs = {reg.name: _in_vals(reg) for reg in bloq.signature.lefts()}
 
-    op, out_quregs = bloq.as_cirq_op(qubit_manager=qubit_manager, **cirq_quregs)
+    optree, out_quregs = bloq.as_cirq_op(qubit_manager=qubit_manager, **cirq_quregs)
     _update_assign_from_cirq_quregs(bloq.signature.rights(), binst, out_quregs, soq_assign)
-    return op
+    return optree
 
 
 def _cbloq_to_cirq_circuit(
@@ -238,9 +245,9 @@ def _cbloq_to_cirq_circuit(
                 continue
 
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-            op = _binst_as_cirq_op(binst, pred_cxns, soq_assign, qubit_manager=qubit_manager)
-            if op is not None:
-                moment.append(op)
+            optree = _binst_as_cirq_op(binst, pred_cxns, soq_assign, qubit_manager=qubit_manager)
+            if optree is not None:
+                moment.append(optree)
         if moment:
             moments.append(cirq.Moment(moment))
 
