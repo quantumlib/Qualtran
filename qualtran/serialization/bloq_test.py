@@ -145,8 +145,8 @@ class TestMetaBloq(Bloq):
         return self.sub_bloq_one.signature
 
     def build_composite_bloq(self, bb, **soqs):
-        soqs |= zip(soqs.keys(), bb.add(self.sub_bloq_one, **soqs))
-        soqs |= zip(soqs.keys(), bb.add(self.sub_bloq_two, **soqs))
+        soqs |= bb.add_d(self.sub_bloq_one, **soqs)
+        soqs |= bb.add_d(self.sub_bloq_two, **soqs)
         return soqs
 
 

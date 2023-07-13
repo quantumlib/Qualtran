@@ -121,7 +121,7 @@ def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
 
         bloq = CirqGateAsBloq(op.gate)
         qvars = np.array([qubit_to_qvar[qubit] for qubit in op.qubits])
-        (out_qvars,) = bb.add(bloq, qubits=qvars)
+        out_qvars = bb.add(bloq, qubits=qvars)
         qubit_to_qvar |= zip(op.qubits, out_qvars)
 
     qvars = np.array([qubit_to_qvar[qubit] for qubit in all_qubits])

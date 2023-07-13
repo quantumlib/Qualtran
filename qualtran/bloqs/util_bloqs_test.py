@@ -45,14 +45,14 @@ def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
 
 def test_util_bloqs():
     bb = BloqBuilder()
-    (qs1,) = bb.add(Allocate(10))
+    qs1 = bb.add(Allocate(10))
     assert isinstance(qs1, Soquet)
-    (qs2,) = bb.add(Split(10), split=qs1)
+    qs2 = bb.add(Split(10), split=qs1)
     assert qs2.shape == (10,)
-    (qs3,) = bb.add(Join(10), join=qs2)
+    qs3 = bb.add(Join(10), join=qs2)
     assert isinstance(qs3, Soquet)
     no_return = bb.add(Free(10), free=qs3)
-    assert no_return == tuple()
+    assert no_return is None
 
 
 def test_classical_sim():
@@ -60,7 +60,7 @@ def test_classical_sim():
     x = bb.allocate(4)
     xs = bb.split(x)
     xs_1_orig = xs[1]  # keep a copy for later
-    (xs[1],) = bb.add(XGate(), q=xs[1])
+    xs[1] = bb.add(XGate(), q=xs[1])
     y = bb.join(xs)
     cbloq = bb.finalize(y=y)
 

@@ -86,7 +86,7 @@ class ModExp(Bloq):
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
-        (x,) = bb.add(IntState(val=1, bitsize=self.x_bitsize))
+        x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 
         # https://en.wikipedia.org/wiki/Modular_exponentiation#Right-to-left_binary_method

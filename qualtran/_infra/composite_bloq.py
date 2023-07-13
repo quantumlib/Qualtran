@@ -241,7 +241,7 @@ class CompositeBloq(Bloq):
         >>> soq_map: List[Tuple[SoquetT, SoquetT]] = []
         >>> for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
         >>>    in_soqs = bb.map_soqs(in_soqs, soq_map)
-        >>>    new_out_soqs = bb.add(binst.bloq, **in_soqs)
+        >>>    new_out_soqs = bb.add_t(binst.bloq, **in_soqs)
         >>>    soq_map.extend(zip(old_out_soqs, new_out_soqs))
         >>> return bb.finalize(**bb.map_soqs(self.final_soqs(), soq_map))
 
@@ -282,7 +282,7 @@ class CompositeBloq(Bloq):
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.iter_bloqsoqs():
             in_soqs = _map_soqs(in_soqs, soq_map)
-            new_out_soqs = bb.add(binst.bloq, **in_soqs)
+            new_out_soqs = bb.add_t(binst.bloq, **in_soqs)
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
         fsoqs = _map_soqs(self.final_soqs(), soq_map)
@@ -331,7 +331,7 @@ class CompositeBloq(Bloq):
                 # bloqs, it is safe to call `bb._add_binst` with the old `binst` (and in
                 # particular with the old `binst.i`) to preserve the `binst.i` of unflattened
                 # bloqs.
-                new_out_soqs = bb._add_binst(binst, in_soqs=in_soqs)
+                new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
 
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
@@ -839,8 +839,12 @@ class BloqBuilder:
         cxn = Connection(idxed_soq, Soquet(binst, reg, idx))
         self._cxns.append(cxn)
 
-    def add(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
-        """Add a new bloq instance to the compute graph.
+    def add_t(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
+        """Add a new bloq instance to the compute graph and always return a tuple of soquets.
+
+        This method will always return a tuple of soquets. See `BloqBuilder.add_d(..)` for a
+        method that returns a dictionary of soquets. See `BloqBuilder.add(..)` for a return
+        type that depends on the arity of the bloq.
 
         Args:
             bloq: The bloq representing the operation to add.
@@ -850,15 +854,70 @@ class BloqBuilder:
 
         Returns:
             A `Soquet` or an array thereof for each output register ordered according to
-                `bloq.signature`.
-                Note: Analogous to a Python function call using kwargs and multiple return values,
-                the ordering is irrespective of the order of `in_soqs` that have been passed in
-                and depends only on the convention of the bloq's signature.
+                `bloq.signature`. If a bloq has one or zero output registers, we will return
+                a tuple of size one or zero, respectively. Note that the ordering is according
+                to `bloq.signature` and irrespective of the order of `**in_soqs`.
         """
         binst = BloqInstance(bloq, i=self._new_binst_i())
-        return self._add_binst(binst, in_soqs=in_soqs)
+        return tuple(soq for _, soq in self._add_binst(binst, in_soqs=in_soqs))
 
-    def _add_binst(self, binst: BloqInstance, in_soqs: Dict[str, SoquetInT]) -> Tuple[SoquetT, ...]:
+    def add_d(self, bloq: Bloq, **in_soqs: SoquetInT) -> Dict[str, SoquetT]:
+        """Add a new bloq instance to the compute graph and return new soquets as a dictionary.
+
+        This method returns a dictionary of soquets. See `BloqBuilder.add_t(..)` for a method
+        that returns an ordered tuple of soquets. See `BloqBuilder.add(..)` for a return
+        type that depends on the arity of the bloq.
+
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`s or an array thereof. This is likely the output soquets from a prior
+                operation.
+
+        Returns:
+            A dictionary mapping right (output) register names to SoquetT.
+        """
+        binst = BloqInstance(bloq, i=self._new_binst_i())
+        return dict(self._add_binst(binst, in_soqs=in_soqs))
+
+    def add(self, bloq: Bloq, **in_soqs: SoquetInT) -> Union[None, SoquetT, Tuple[SoquetT, ...]]:
+        """Add a new bloq instance to the compute graph.
+
+        This is the primary method for building a composite bloq. Each call to `add` adds a
+        new bloq instance to the compute graph, wires up the soquets from prior operations
+        into the new bloq, and returns new soquets to be used for subsequent bloqs.
+
+        This method will raise a `BloqError` if the addition is invalid. Soquets must be
+        used exactly once and soquets must match the `Register` specifications of the bloq.
+
+        See also `add_t` or `add_d` for versions of this function that return output soquets
+        in a structured way that may be more appropriate for programmatic adding of bloqs.
+
+        Args:
+            bloq: The bloq representing the operation to add.
+            **in_soqs: Keyword arguments mapping the new bloq's register names to input
+                `Soquet`s or an array thereof. This is likely the output soquets from a prior
+                operation.
+
+        Returns:
+            A `Soquet` or an array thereof for each right (output) register ordered according to
+                `bloq.signature`. If `bloq` has no right registers, this will return `None`;
+                If there is one right register, we return one `SoquetT`; If there are multiple
+                right registers we return a tuple of `SoquetT` that can be unpacked with tuple
+                unpacking. In this final case, the ordering is according to `bloq.signature`
+                and irrespective of the order of `**in_soqs`.
+        """
+        binst = BloqInstance(bloq, i=self._new_binst_i())
+        outs = tuple(soq for _, soq in self._add_binst(binst, in_soqs=in_soqs))
+        if len(outs) == 0:
+            return None
+        if len(outs) == 1:
+            return outs[0]
+        return outs
+
+    def _add_binst(
+        self, binst: BloqInstance, in_soqs: Dict[str, SoquetInT]
+    ) -> Iterator[Tuple[str, SoquetT]]:
         """Add a bloq instance.
 
         Warning! Do not use this function externally! Untold bad things will happen if
@@ -873,10 +932,10 @@ class BloqBuilder:
         _process_soquets(
             registers=bloq.signature.lefts(), in_soqs=in_soqs, debug_str=str(bloq), func=_add
         )
-        out_soqs = tuple(
-            _reg_to_soq(binst, reg, available=self._available) for reg in bloq.signature.rights()
+        yield from (
+            (reg.name, _reg_to_soq(binst, reg, available=self._available))
+            for reg in bloq.signature.rights()
         )
-        return out_soqs
 
     def add_from(self, bloq: Bloq, **in_soqs: SoquetInT) -> Tuple[SoquetT, ...]:
         """Add all the sub-bloqs from `bloq` to the composite bloq under construction.
@@ -905,7 +964,7 @@ class BloqBuilder:
 
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
             in_soqs = _map_soqs(in_soqs, soq_map)
-            new_out_soqs = self.add(binst.bloq, **in_soqs)
+            new_out_soqs = self.add_t(binst.bloq, **in_soqs)
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
         fsoqs = _map_soqs(cbloq.final_soqs(), soq_map)
@@ -976,8 +1035,7 @@ class BloqBuilder:
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
 
-        (out_soq,) = self.add(Allocate(n=n))
-        return out_soq
+        return self.add(Allocate(n=n))
 
     def free(self, soq: Soquet) -> None:
         from qualtran.bloqs.util_bloqs import Free
@@ -994,8 +1052,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
 
-        (out_soqs,) = self.add(Split(n=soq.reg.bitsize), split=soq)
-        return out_soqs
+        return self.add(Split(n=soq.reg.bitsize), split=soq)
 
     def join(self, soqs: NDArray[Soquet]) -> Soquet:
         from qualtran.bloqs.util_bloqs import Join
@@ -1008,5 +1065,4 @@ class BloqBuilder:
         if not all(soq.reg.bitsize == 1 for soq in soqs):
             raise ValueError("`join` can only join equal-bitsized soquets, currently only size 1.")
 
-        (out_soq,) = self.add(Join(n=n), join=soqs)
-        return out_soq
+        return self.add(Join(n=n), join=soqs)
