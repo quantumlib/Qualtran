@@ -844,7 +844,7 @@ class BloqBuilder:
 
         This method will always return a tuple of soquets. See `BloqBuilder.add_d(..)` for a
         method that returns a dictionary of soquets. See `BloqBuilder.add(..)` for a return
-        value that mimics Python function calls.
+        type that depends on the arity of the bloq.
 
         Args:
             bloq: The bloq representing the operation to add.
@@ -866,7 +866,7 @@ class BloqBuilder:
 
         This method returns a dictionary of soquets. See `BloqBuilder.add_t(..)` for a method
         that returns an ordered tuple of soquets. See `BloqBuilder.add(..)` for a return
-        value that mimics Python function calls.
+        type that depends on the arity of the bloq.
 
         Args:
             bloq: The bloq representing the operation to add.
@@ -901,12 +901,11 @@ class BloqBuilder:
 
         Returns:
             A `Soquet` or an array thereof for each right (output) register ordered according to
-                `bloq.signature`. This behaves like a Python function call: If `bloq` has
-                no right registers, this will return `None`; If there is one right register,
-                we return one `SoquetT`; If there are multiple right registers we return a tuple
-                of `SoquetT` that can be unpacked with tuple unpacking. In this final case,
-                the ordering is according to `bloq.signature` and irrespective of the order of
-                `**in_soqs`.
+                `bloq.signature`. If `bloq` has no right registers, this will return `None`;
+                If there is one right register, we return one `SoquetT`; If there are multiple
+                right registers we return a tuple of `SoquetT` that can be unpacked with tuple
+                unpacking. In this final case, the ordering is according to `bloq.signature`
+                and irrespective of the order of `**in_soqs`.
         """
         binst = BloqInstance(bloq, i=self._new_binst_i())
         outs = tuple(soq for _, soq in self._add_binst(binst, in_soqs=in_soqs))
