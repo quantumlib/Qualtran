@@ -13,6 +13,8 @@
 #  limitations under the License.
 
 import itertools
+import traceback
+from pathlib import Path
 
 from qualtran import Bloq, BloqError, CompositeBloq, DanglingT, LeftDangle, RightDangle, Side
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
@@ -183,3 +185,22 @@ def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
     cbloq = assert_registers_match_parent(bloq)
     assert_valid_cbloq(cbloq)
     return cbloq
+
+
+def execute_notebook(name: str):
+    """Execute a jupyter notebook in the caller's directory.
+
+    Args:
+        name: The name of the notebook without extension.
+
+    """
+    import nbformat
+    from nbconvert.preprocessors import ExecutePreprocessor
+
+    # Assumes that the notebook is in the same path from where the function was called,
+    # which may be different from `__file__`.
+    notebook_path = Path(traceback.extract_stack()[-2].filename).parent / f"{name}.ipynb"
+    with notebook_path.open() as f:
+        nb = nbformat.read(f, as_version=4)
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    ep.preprocess(nb)

@@ -18,7 +18,7 @@ isort:skip_file
 """
 
 
-from .graphviz import GraphDrawer, PrettyGraphDrawer, ClassicalSimGraphDrawer
+from .graphviz import GraphDrawer, PrettyGraphDrawer, ClassicalSimGraphDrawer, show_bloq
 from .musical_score import (
     RegPosition,
     HLine,

@@ -3,7 +3,9 @@
 cirq-core==1.2.0.dev20230613162638
 cirq-ft==1.2.0.dev20230613162638
 
+# drawing
 pydot
+ipython
 
 # quimb and its tensor dependencies
 quimb

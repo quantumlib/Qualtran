@@ -41,8 +41,7 @@ from qualtran import (
 from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran.bloqs.util_bloqs import Join
-from qualtran.jupyter_tools import execute_notebook
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def _manually_make_test_cbloq_cxns():

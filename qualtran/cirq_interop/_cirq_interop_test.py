@@ -22,7 +22,7 @@ from qualtran import Bloq, BloqBuilder, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.cirq_interop import cirq_circuit_to_cbloq, CirqGateAsBloq, CirqQuregT
-from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import execute_notebook
 
 
 def test_cirq_gate():
