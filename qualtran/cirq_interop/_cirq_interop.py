@@ -108,7 +108,7 @@ class CirqGateAsBloq(Bloq):
 
 
 def cirq_optree_to_cbloq(optree: cirq.OP_TREE) -> CompositeBloq:
-    """Convert a Cirq circuit into a `CompositeBloq`.
+    """Convert a Cirq OP-TREE into a `CompositeBloq`.
 
     Each `cirq.Operation` will be wrapped into a `CirqGateAsBloq` wrapper. The
     resultant composite bloq will represent a unitary with one thru-register

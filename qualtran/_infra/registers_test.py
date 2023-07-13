@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import cirq
-import numpy as np
 import pytest
 
 from qualtran import Register, Side, Signature

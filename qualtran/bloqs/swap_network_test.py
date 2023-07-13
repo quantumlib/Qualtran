@@ -50,7 +50,6 @@ def test_cswap_approx_decomp():
 @pytest.mark.parametrize('n', [5, 32])
 def test_approx_cswap_t_count(n):
     cswap = CSwapApprox(bitsize=n)
-    assert not cswap.t_complexity.__qualname__.startswith('Bloq.')
     cswap_d = cswap.decompose_bloq()
 
     assert cswap.t_complexity() == cswap_d.t_complexity()

@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Dict, Tuple
 
 import cirq
 import pytest
+import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 
@@ -39,6 +39,14 @@ class TestCNOT(Bloq):
         return cirq.CNOT(control, target), cirq_quregs
 
 
+@frozen
+class TestCNOTSymbolic(TestCNOT):
+    @cached_property
+    def signature(self) -> Signature:
+        c, t = sympy.Symbol('c'), sympy.Symbol('t')
+        return Signature.build(control=c, target=t)
+
+
 def test_bloq():
     tb = TestCNOT()
     assert len(tb.signature) == 2
@@ -51,6 +59,9 @@ def test_bloq():
     op, _ = tb.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
+
+    with pytest.raises(NotImplementedError):
+        TestCNOTSymbolic().decompose_bloq()
 
 
 def test_as_composite_bloq():
