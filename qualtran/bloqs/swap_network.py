@@ -21,8 +21,10 @@ from cirq_ft import MultiTargetCSwapApprox
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
+from qualtran.cirq_interop import decompose_from_cirq_op
 
 if TYPE_CHECKING:
+    from qualtran import CompositeBloq
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -55,6 +57,9 @@ class CSwapApprox(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_op(self)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'

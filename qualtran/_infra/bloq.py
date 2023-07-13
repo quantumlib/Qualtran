@@ -18,8 +18,6 @@
 import abc
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
-import numpy as np
-
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
@@ -39,64 +37,6 @@ def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
     out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
     return bb.finalize(**out_soqs)
-
-
-def _decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
-    from cirq.ops import Operation, SimpleQubitManager
-    from cirq.protocols import is_parameterized
-
-    from qualtran import BloqBuilder, Soquet
-    from qualtran.cirq_interop import BloqAsCirqGate, cirq_optree_to_cbloq
-
-    if any(is_parameterized(reg.bitsize) or is_parameterized(reg.side) for reg in bloq.signature):
-        return NotImplemented
-
-    cirq_quregs = bloq.signature.get_cirq_quregs()
-    cirq_optree, cirq_quregs = bloq.as_cirq_op(SimpleQubitManager(), **cirq_quregs)
-    if cirq_optree is None or (
-        isinstance(cirq_optree, Operation) and isinstance(cirq_optree.gate, BloqAsCirqGate)
-    ):
-        return NotImplemented
-
-    cbloq = cirq_optree_to_cbloq(cirq_optree)
-
-    # Magic to make sure signature of decomposed CompositeBloq matches that of the parent `bloq`.
-    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
-    qvars = {}
-    for name, soqs in initial_soqs.items():
-        if bloq.signature.get_left(name).bitsize > 1:
-            # Need to split all soquets here.
-            if isinstance(soqs, Soquet):
-                qvars[name] = bb.split(soqs)
-            else:
-                qvars[name] = np.concatenate([bb.split(soq) for soq in soqs.reshape(-1)])
-        else:
-            if isinstance(soqs, Soquet):
-                qvars[name] = [soqs]
-            else:
-                qvars[name] = soqs.reshape(-1)
-    (qvar_vals_out,) = bb.add_from(cbloq, qubits=np.concatenate([*qvars.values()]))
-    final_soqs = {}
-    idx = 0
-    for name in qvars:
-        reg = bloq.signature.get_right(name)
-        soqs = qvar_vals_out[idx : idx + len(qvars[name])]
-        idx = idx + len(qvars[name])
-        if reg.bitsize > 1:
-            # Need to combine the soquets here.
-            if len(soqs) == reg.bitsize:
-                final_soqs[name] = bb.join(soqs)
-            else:
-                final_soqs[name] = np.array(
-                    bb.join(subsoqs) for subsoqs in soqs[:: reg.bitsize]
-                ).reshape(reg.shape)
-        else:
-            if len(soqs) == 1:
-                final_soqs[name] = soqs[0]
-            else:
-                final_soqs[name] = soqs.reshape(reg.shape)
-
-    return bb.finalize(**final_soqs)
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -175,13 +115,7 @@ class Bloq(metaclass=abc.ABCMeta):
             NotImplementedError: If there is no decomposition defined; namely: if
                 `build_composite_bloq` returns `NotImplemented`.
         """
-        try:
-            return _decompose_from_build_composite_bloq(self)
-        except NotImplementedError as e:
-            cbloq = _decompose_from_cirq_op(self)
-            if cbloq is NotImplemented:
-                raise e
-            return cbloq
+        return _decompose_from_build_composite_bloq(self)
 
     def supports_decompose_bloq(self) -> bool:
         """Whether this bloq supports `.decompose_bloq()`.
@@ -306,7 +240,7 @@ class Bloq(metaclass=abc.ABCMeta):
         the subbloqs by overwriting bloq attributes that do not affect its cost with generic
         sympy symbols (perhaps with the aid of the provided `SympySymbolAllocator`).
         """
-        return _decompose_from_build_composite_bloq(self).bloq_counts(ssa)
+        return self.decompose_bloq().bloq_counts(ssa)
 
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.
@@ -318,7 +252,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Optional['cirq.OP_TREE'], Dict[str, 'CirqQuregT']]:
+    ) -> Tuple[Optional['cirq.Operation'], Dict[str, 'CirqQuregT']]:
         """Override this method to support conversion to a Cirq operation.
 
         If this method is not overriden, the default implementation will wrap this bloq

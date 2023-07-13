@@ -21,7 +21,7 @@ from attrs import frozen
 from cirq_ft import TComplexity
 
 from qualtran import Bloq, CompositeBloq, Side, Signature
-from qualtran.cirq_interop import CirqQuregT
+from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
 from qualtran.jupyter_tools import execute_notebook
 
 
@@ -30,6 +30,9 @@ class TestCNOT(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(control=1, target=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_op(self)
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
