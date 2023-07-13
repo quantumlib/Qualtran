@@ -49,7 +49,7 @@ class DecompBloq(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> Dict[str, 'SoquetT']:
         qs = bb.split(x)
         for i in range(self.bitsize):
-            (qs[i],) = bb.add(SubBloq(unrelated_param=i / 12), q=qs[i])
+            qs[i] = bb.add(SubBloq(unrelated_param=i / 12), q=qs[i])
 
         return {'x': bb.join(qs)}
 

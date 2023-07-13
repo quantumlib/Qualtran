@@ -131,10 +131,7 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran import BloqBuilder
 
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
-        ret_soqs_tuple = bb.add(self, **initial_soqs)
-        assert len(list(self.signature.rights())) == len(ret_soqs_tuple)
-        ret_soqs = {reg.name: v for reg, v in zip(self.signature.rights(), ret_soqs_tuple)}
-        return bb.finalize(**ret_soqs)
+        return bb.finalize(**bb.add_d(self, **initial_soqs))
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.

@@ -57,7 +57,7 @@ class ControlledBloq(Bloq):
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in self.subbloq.iter_bloqsoqs():
             in_soqs = bb.map_soqs(in_soqs, soq_map)
-            ctrl, *new_out_soqs = bb.add(ControlledBloq(binst.bloq), control=ctrl, **in_soqs)
+            ctrl, *new_out_soqs = bb.add_t(ControlledBloq(binst.bloq), control=ctrl, **in_soqs)
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
         fsoqs = bb.map_soqs(self.subbloq.final_soqs(), soq_map)

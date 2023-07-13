@@ -52,8 +52,8 @@ def _iter_and_truth_table(cv1: int, cv2: int):
 
     for a, b in itertools.product([0, 1], repeat=2):
         bb = BloqBuilder()
-        (q_a,) = bb.add(state[a])
-        (q_b,) = bb.add(state[b])
+        q_a = bb.add(state[a])
+        q_b = bb.add(state[b])
         (q_a, q_b), res = bb.add(And(cv1, cv2), ctrl=[q_a, q_b])
         bb.add(eff[a], q=q_a)
         bb.add(eff[b], q=q_b)
@@ -92,14 +92,14 @@ def test_bad_adjoint(cv1, cv2):
 
     for a, b in itertools.product([0, 1], repeat=2):
         bb = BloqBuilder()
-        (q_a,) = bb.add(state[a])
-        (q_b,) = bb.add(state[b])
+        q_a = bb.add(state[a])
+        q_b = bb.add(state[b])
         if (a == cv1) and (b == cv2):
-            (res,) = bb.add(ZeroState())
+            res = bb.add(ZeroState())
         else:
-            (res,) = bb.add(OneState())
+            res = bb.add(OneState())
 
-        ((q_a, q_b),) = bb.add(and_, ctrl=[q_a, q_b], target=res)
+        q_a, q_b = bb.add(and_, ctrl=[q_a, q_b], target=res)
         bb.add(eff[a], q=q_a)
         bb.add(eff[b], q=q_b)
         cbloq = bb.finalize()
@@ -113,7 +113,7 @@ def test_inverse():
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
     qs, trg = bb.add(And(), ctrl=[q0, q1])
-    (qs,) = bb.add(And(adjoint=True), ctrl=qs, target=trg)
+    qs = bb.add(And(adjoint=True), ctrl=qs, target=trg)
     cbloq = bb.finalize(q0=qs[0], q1=qs[1])
 
     mat = cbloq.tensor_contract()
@@ -133,7 +133,7 @@ def test_multi_truth_table():
     for cvs in all_cvs:
         for ctrl_string in ctrl_strings:
             bb = BloqBuilder()
-            ctrl_qs = [bb.add(state[c])[0] for c in ctrl_string]
+            ctrl_qs = [bb.add(state[c]) for c in ctrl_string]
 
             ctrl_qs, junk, res = bb.add_from(MultiAnd(cvs), ctrl=ctrl_qs)
 
@@ -186,7 +186,7 @@ class AndIdentity(Bloq):
         self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         qs, trg = bb.add(And(), ctrl=[q0, q1])
-        ((q0, q1),) = bb.add(And(adjoint=True), ctrl=qs, target=trg)
+        q0, q1 = bb.add(And(adjoint=True), ctrl=qs, target=trg)
         return {'q0': q0, 'q1': q1}
 
 

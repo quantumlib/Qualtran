@@ -103,7 +103,7 @@ def test_zero_state_effect(bit):
         state = ZeroState()
         eff = ZeroEffect()
 
-    (q0,) = bb.add(state)
+    q0 = bb.add(state)
     bb.add(eff, q=q0)
     cbloq = bb.finalize()
     val = cbloq.tensor_contract()
