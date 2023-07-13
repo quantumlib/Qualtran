@@ -100,12 +100,6 @@ class CirqGateAsBloq(Bloq):
     def t_complexity(self) -> 'cirq_ft.TComplexity':
         return cirq_ft.t_complexity(self.gate)
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List['BloqCountT']:
-        raise NotImplementedError(f"{self} does not implement `bloq_counts`.")
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        raise NotImplementedError(f"{self} does not support decomposition.")
-
 
 def cirq_optree_to_cbloq(optree: cirq.OP_TREE) -> CompositeBloq:
     """Convert a Cirq OP-TREE into a `CompositeBloq`.
@@ -229,13 +223,13 @@ def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
         raise NotImplementedError(f"{bloq} does not support decomposition.")
 
     cirq_quregs = bloq.signature.get_cirq_quregs()
-    cirq_optree, cirq_quregs = bloq.as_cirq_op(SimpleQubitManager(), **cirq_quregs)
-    if cirq_optree is None or (
-        isinstance(cirq_optree, Operation) and isinstance(cirq_optree.gate, BloqAsCirqGate)
+    cirq_op, cirq_quregs = bloq.as_cirq_op(SimpleQubitManager(), **cirq_quregs)
+    if cirq_op is None or (
+        isinstance(cirq_op, Operation) and isinstance(cirq_op.gate, BloqAsCirqGate)
     ):
         raise NotImplementedError(f"{bloq} does not support decomposition.")
 
-    cbloq = cirq_optree_to_cbloq(cirq_optree)
+    cbloq = cirq_optree_to_cbloq(cirq_op)
 
     # Magic to make sure signature of decomposed CompositeBloq matches that of the parent `bloq`.
     bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
@@ -305,9 +299,9 @@ def _cbloq_to_cirq_circuit(
                 continue
 
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
-            optree = _binst_as_cirq_op(binst, pred_cxns, soq_assign, qubit_manager=qubit_manager)
-            if optree is not None:
-                moment.append(optree)
+            op = _binst_as_cirq_op(binst, pred_cxns, soq_assign, qubit_manager=qubit_manager)
+            if op is not None:
+                moment.append(op)
         if moment:
             moments.append(cirq.Moment(moment))
 

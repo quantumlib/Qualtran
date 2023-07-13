@@ -16,12 +16,19 @@ from typing import Dict, Tuple
 
 import cirq
 import numpy as np
+import pytest
+import sympy
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
-from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
+from qualtran.cirq_interop import (
+    cirq_optree_to_cbloq,
+    CirqGateAsBloq,
+    CirqQuregT,
+    decompose_from_cirq_op,
+)
 from qualtran.jupyter_tools import execute_notebook
 
 
@@ -172,6 +179,48 @@ def test_bloq_as_cirq_gate_left_register():
     cbloq = bb.finalize()
     circuit, _ = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
+
+
+@frozen
+class TestCNOT(Bloq):
+    @property
+    def signature(self) -> Signature:
+        return Signature.build(control=1, target=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_op(self)
+
+    def as_cirq_op(
+        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        (control,) = cirq_quregs['control']
+        (target,) = cirq_quregs['target']
+        return cirq.CNOT(control, target), cirq_quregs
+
+
+@frozen
+class TestCNOTSymbolic(TestCNOT):
+    @property
+    def signature(self) -> Signature:
+        c, t = sympy.Symbol('c'), sympy.Symbol('t')
+        return Signature.build(control=c, target=t)
+
+
+def test_bloq_decompose_from_cirq_op():
+    tb = TestCNOT()
+    assert len(tb.signature) == 2
+    ctrl, trg = tb.signature
+    assert ctrl.bitsize == 1
+    assert ctrl.side == Side.THRU
+    assert tb.pretty_name() == 'TestCNOT'
+
+    quregs = tb.signature.get_cirq_quregs()
+    op, _ = tb.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
+    circuit = cirq.Circuit(op)
+    assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
+
+    with pytest.raises(NotImplementedError):
+        TestCNOTSymbolic().decompose_bloq()
 
 
 def test_notebook():

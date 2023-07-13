@@ -11,17 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 from functools import cached_property
 from typing import Dict, Tuple
 
 import cirq
 import pytest
-import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
 
 from qualtran import Bloq, CompositeBloq, Side, Signature
-from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
+from qualtran.cirq_interop import CirqQuregT
 from qualtran.jupyter_tools import execute_notebook
 
 
@@ -31,9 +31,6 @@ class TestCNOT(Bloq):
     def signature(self) -> Signature:
         return Signature.build(control=1, target=1)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
-
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
@@ -41,13 +38,8 @@ class TestCNOT(Bloq):
         (target,) = cirq_quregs['target']
         return cirq.CNOT(control, target), cirq_quregs
 
-
-@frozen
-class TestCNOTSymbolic(TestCNOT):
-    @cached_property
-    def signature(self) -> Signature:
-        c, t = sympy.Symbol('c'), sympy.Symbol('t')
-        return Signature.build(control=c, target=t)
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
 
 
 def test_bloq():
@@ -64,7 +56,7 @@ def test_bloq():
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
 
     with pytest.raises(NotImplementedError):
-        TestCNOTSymbolic().decompose_bloq()
+        tb.decompose_bloq()
 
 
 def test_as_composite_bloq():

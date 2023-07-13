@@ -26,14 +26,15 @@ from qualtran._infra.composite_bloq_test import TestTwoCNOT
 from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
 from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.cirq_interop._cirq_interop_test import TestCNOT as TestCNOTCirq
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
 
 
 def test_bloq_to_proto_cnot():
-    bloq_serialization.RESOLVER_DICT.update({'TestCNOT': TestCNOT})
+    bloq_serialization.RESOLVER_DICT.update({'TestCNOT': TestCNOTCirq})
 
-    cnot = TestCNOT()
+    cnot = TestCNOTCirq()
     proto_lib = bloq_serialization.bloqs_to_proto(cnot)
     assert len(proto_lib.table) == 2
     assert len(proto_lib.table[0].decomposition) == 4
