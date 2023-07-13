@@ -50,7 +50,7 @@ def test_plus_effect():
 def test_plus_state_effect():
     bb = BloqBuilder()
 
-    (q0,) = bb.add(PlusState())
+    q0 = bb.add(PlusState())
     bb.add(PlusEffect(), q=q0)
     cbloq = bb.finalize()
     val = cbloq.tensor_contract()

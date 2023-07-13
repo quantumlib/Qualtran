@@ -64,7 +64,7 @@ def _set_ctrl_two_bit_swap(ctrl_bit):
     effs = [ZeroEffect(), OneEffect()]
 
     bb = BloqBuilder()
-    (q0,) = bb.add(states[ctrl_bit])
+    q0 = bb.add(states[ctrl_bit])
     q1 = bb.add_register('q1', 1)
     q2 = bb.add_register('q2', 1)
     q0, q1, q2 = bb.add(TwoBitCSwap(), ctrl=q0, x=q1, y=q2)
@@ -102,7 +102,7 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
     effs = [ZeroEffect(), OneEffect()]
 
     bb = BloqBuilder()
-    (q0,) = bb.add(states[ctrl_bit])
+    q0 = bb.add(states[ctrl_bit])
     q1 = bb.add_register('q1', bloq.bitsize)
     q2 = bb.add_register('q2', bloq.bitsize)
     q0, q1, q2 = bb.add(bloq, ctrl=q0, x=q1, y=q2)

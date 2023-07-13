@@ -128,7 +128,7 @@ def cirq_optree_to_cbloq(optree: cirq.OP_TREE) -> CompositeBloq:
 
         bloq = CirqGateAsBloq(op.gate)
         qvars = np.array([qubit_to_qvar[qubit] for qubit in op.qubits])
-        (out_qvars,) = bb.add(bloq, qubits=qvars)
+        out_qvars = bb.add(bloq, qubits=qvars)
         qubit_to_qvar |= zip(op.qubits, out_qvars)
 
     qvars = np.array([qubit_to_qvar[qubit] for qubit in all_qubits])

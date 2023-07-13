@@ -58,8 +58,8 @@ def test_cnot_cbloq():
 def test_bell_state():
     bb = BloqBuilder()
 
-    (q0,) = bb.add(PlusState())
-    (q1,) = bb.add(ZeroState())
+    q0 = bb.add(PlusState())
+    q1 = bb.add(ZeroState())
 
     q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
 

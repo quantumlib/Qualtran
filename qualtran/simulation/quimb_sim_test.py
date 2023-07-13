@@ -124,10 +124,10 @@ class TensorAdderSimple(Bloq):
 def test_cbloq_to_quimb():
     bb = BloqBuilder()
     x = bb.add_register('x', 1)
-    (x,) = bb.add(TensorAdderSimple(), x=x)
-    (x,) = bb.add(TensorAdderSimple(), x=x)
-    (x,) = bb.add(TensorAdderSimple(), x=x)
-    (x,) = bb.add(TensorAdderSimple(), x=x)
+    x = bb.add(TensorAdderSimple(), x=x)
+    x = bb.add(TensorAdderSimple(), x=x)
+    x = bb.add(TensorAdderSimple(), x=x)
+    x = bb.add(TensorAdderSimple(), x=x)
     cbloq = bb.finalize(x=x)
 
     tn, _ = cbloq_to_quimb(cbloq)
@@ -144,7 +144,7 @@ class XNest(Bloq):
         return Signature.build(r=1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', r: 'SoquetT') -> Dict[str, 'SoquetT']:
-        (r,) = bb.add(XGate(), q=r)
+        r = bb.add(XGate(), q=r)
         return {'r': r}
 
 
@@ -155,7 +155,7 @@ class XDoubleNest(Bloq):
         return Signature.build(s=1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', s: 'SoquetT') -> Dict[str, 'SoquetT']:
-        (s,) = bb.add(XNest(), r=s)
+        s = bb.add(XNest(), r=s)
         return {'s': s}
 
 
@@ -182,9 +182,9 @@ class ComplexBloq(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q0: Soquet, q1: Soquet
     ) -> Dict[str, 'SoquetT']:
-        (q0,) = bb.add(XGate(), q=q0)
+        q0 = bb.add(XGate(), q=q0)
         q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
-        (q1,) = bb.add(ZGate(), q=q1)
+        q1 = bb.add(ZGate(), q=q1)
         return {'q0': q0, 'q1': q1}
 
 
