@@ -73,10 +73,10 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
     for selection_integer in range(len(data)):
 
         bb = BloqBuilder()
-        (sel,) = bb.add(IntState(val=selection_integer, bitsize=selection_bitsize))
+        sel = bb.add(IntState(val=selection_integer, bitsize=selection_bitsize))
         trgs = []
         for i in range(n_target_registers):
-            (trg,) = bb.add(IntState(val=data[i], bitsize=target_bitsize))
+            trg = bb.add(IntState(val=data[i], bitsize=target_bitsize))
             trgs.append(trg)
         sel, trgs = bb.add(swz, selection=sel, targets=np.array(trgs))
         circuit = bb.finalize(sel=sel, trgs=trgs)

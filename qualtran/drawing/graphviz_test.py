@@ -41,7 +41,7 @@ class TestParallelBloq(Bloq):
 
         qs = bb.split(stuff)
         for i in range(3):
-            (qs[i],) = bb.add(Atom(), q=qs[i])
+            qs[i] = bb.add(Atom(), q=qs[i])
         return {'stuff': bb.join(qs)}
 
 

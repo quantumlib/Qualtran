@@ -167,7 +167,7 @@ def test_multi_and_allocates():
 def test_bloq_as_cirq_gate_left_register():
     bb = BloqBuilder()
     q = bb.allocate(1)
-    (q,) = bb.add(XGate(), q=q)
+    q = bb.add(XGate(), q=q)
     bb.free(q)
     cbloq = bb.finalize()
     circuit, _ = cbloq.to_cirq_circuit()

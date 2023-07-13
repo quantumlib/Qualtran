@@ -213,7 +213,7 @@ class _IntVector(Bloq):
         states = [ZeroState(), OneState()]
         xs = []
         for bit in ints_to_bits(np.array([self.val]), w=self.bitsize)[0]:
-            (x,) = bb.add(states[bit])
+            x = bb.add(states[bit])
             xs.append(x)
         xs = np.array(xs)
 

@@ -152,7 +152,7 @@ def test_map_soqs():
             raise AssertionError()
 
         in_soqs = bb.map_soqs(in_soqs, soq_map)
-        new_out_soqs = bb.add(binst.bloq, **in_soqs)
+        new_out_soqs = bb.add_t(binst.bloq, **in_soqs)
         soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
     fsoqs = bb.map_soqs(cbloq.final_soqs(), soq_map)
@@ -409,7 +409,7 @@ class TestSerialBloq(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
 
         for i in range(3):
-            (stuff,) = bb.add(Atom(), stuff=stuff)
+            stuff = bb.add(Atom(), stuff=stuff)
         return {'stuff': stuff}
 
 
@@ -422,7 +422,7 @@ class TestParallelBloq(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
         stuff = bb.split(stuff)
         for i in range(len(stuff)):
-            stuff[i] = bb.add(Atom(), stuff=stuff[i])[0]
+            stuff[i] = bb.add(Atom(), stuff=stuff[i])
 
         return {'stuff': bb.join(stuff)}
 
@@ -451,7 +451,7 @@ def test_copy(cls):
 def test_add_from(call_decompose):
     bb = BloqBuilder()
     stuff = bb.add_register('stuff', 3)
-    (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
+    stuff = bb.add(TestParallelBloq(), stuff=stuff)
     if call_decompose:
         (stuff,) = bb.add_from(TestParallelBloq().decompose_bloq(), stuff=stuff)
     else:
@@ -499,8 +499,8 @@ def test_add_duplicate_register():
 def test_flatten():
     bb = BloqBuilder()
     stuff = bb.add_register('stuff', 3)
-    (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
-    (stuff,) = bb.add(TestParallelBloq(), stuff=stuff)
+    stuff = bb.add(TestParallelBloq(), stuff=stuff)
+    stuff = bb.add(TestParallelBloq(), stuff=stuff)
     cbloq = bb.finalize(stuff=stuff)
     assert len(cbloq.bloq_instances) == 2
 
