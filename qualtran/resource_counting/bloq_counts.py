@@ -15,7 +15,7 @@
 """Functionality for the `Bloq.bloq_counts()` protocol."""
 
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Callable, Dict, Optional, Sequence, Set, Tuple, Union
 
 import IPython.display
 import networkx as nx
@@ -55,7 +55,7 @@ class SympySymbolAllocator:
 
 def get_cbloq_bloq_counts(
     cbloq: CompositeBloq, generalizer: Callable[[Bloq], Optional[Bloq]] = None
-) -> List[BloqCountT]:
+) -> Set[BloqCountT]:
     """Count all the subbloqs in a composite bloq.
 
     `CompositeBloq.resource_counting` calls this with no generalizer.
@@ -77,7 +77,7 @@ def get_cbloq_bloq_counts(
 
         counts[bloq] += 1
 
-    return [(n, bloq) for bloq, n in counts.items()]
+    return {(n, bloq) for bloq, n in counts.items()}
 
 
 def _descend_counts(

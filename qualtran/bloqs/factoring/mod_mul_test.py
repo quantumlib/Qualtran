@@ -127,4 +127,4 @@ def test_consistent_counts():
 
     counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
 
-    assert set(counts1) == set(counts2)
+    assert counts1 == counts2

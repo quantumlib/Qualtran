@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
@@ -249,8 +250,8 @@ class _IntVector(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def bloq_counts(self, ss):
-        return [(big_O(1), ArbitraryClifford(self.bitsize))]
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(big_O(1), ArbitraryClifford(self.bitsize))}
 
     def short_name(self) -> str:
         return f'{self.val}'
