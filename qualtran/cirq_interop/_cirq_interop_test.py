@@ -11,16 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from typing import Dict, Tuple
 
 import cirq
+import cirq_ft
 import numpy as np
 import pytest
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, CompositeBloq, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.cirq_interop import (
@@ -214,10 +214,10 @@ def test_bloq_decompose_from_cirq_op():
     assert ctrl.side == Side.THRU
     assert tb.pretty_name() == 'TestCNOT'
 
-    quregs = tb.signature.get_cirq_quregs()
-    op, _ = tb.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
-    circuit = cirq.Circuit(op)
-    assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))
+    cirq_quregs = tb.signature.get_cirq_quregs()
+    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
+    assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
+    assert tb.t_complexity() == cirq_ft.TComplexity(clifford=1)
 
     with pytest.raises(NotImplementedError):
         TestCNOTSymbolic().decompose_bloq()

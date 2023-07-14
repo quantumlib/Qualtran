@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -252,7 +252,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Optional['cirq.Operation'], Dict[str, 'CirqQuregT']]:
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         """Override this method to support conversion to a Cirq operation.
 
         If this method is not overriden, the default implementation will wrap this bloq

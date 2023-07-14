@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING, Union
 
 import cirq
 from attrs import frozen
@@ -63,7 +63,7 @@ class CSwapApprox(Bloq):
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Optional['cirq.OP_TREE'], Dict[str, 'CirqQuregT']]:
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         (ctrl,) = cirq_quregs['ctrl']
         x = cirq_quregs['x'].tolist()
         y = cirq_quregs['y'].tolist()
