@@ -16,6 +16,7 @@ import dataclasses
 from typing import Union
 
 import attrs
+import cirq
 import cirq_ft
 import sympy
 
@@ -24,26 +25,31 @@ from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.composite_bloq_test import TestTwoCNOT
 from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
+from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.cirq_interop._cirq_interop_test import TestCNOT as TestCNOTCirq
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
 
 
 def test_bloq_to_proto_cnot():
-    bloq_serialization.RESOLVER_DICT.update({'TestCNOT': TestCNOT})
+    bloq_serialization.RESOLVER_DICT.update({'TestCNOT': TestCNOTCirq})
 
-    cnot = TestCNOT()
+    cnot = TestCNOTCirq()
     proto_lib = bloq_serialization.bloqs_to_proto(cnot)
-    assert len(proto_lib.table) == 1
-    proto = proto_lib.table[0]
-    assert len(proto.decomposition) == 0
-    proto = proto.bloq
+    assert len(proto_lib.table) == 2
+    assert len(proto_lib.table[0].decomposition) == 4
+    assert len(proto_lib.table[1].decomposition) == 0
+
+    proto = proto_lib.table[0].bloq
     assert proto.name == "TestCNOT"
     assert len(proto.registers.registers) == 2
     assert proto.registers.registers[0].name == 'control'
     assert proto.registers.registers[0].bitsize.int_val == 1
     assert proto.registers.registers[0].side == registers_pb2.Register.Side.THRU
 
-    assert bloq_serialization.bloqs_from_proto(proto_lib) == [cnot]
+    deserialized_bloqs = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert cnot in deserialized_bloqs
+    assert CirqGateAsBloq(cirq.CNOT) in deserialized_bloqs
 
 
 def test_cbloq_to_proto_two_cnot():

@@ -183,10 +183,11 @@ class Signature:
             if reg.shape:
                 return _qubit_array(reg)
 
-            return (
+            return np.array(
                 [cirq.NamedQubit(f"{reg.name}")]
                 if reg.bitsize == 1
-                else cirq.NamedQubit.range(reg.bitsize, prefix=reg.name)
+                else cirq.NamedQubit.range(reg.bitsize, prefix=reg.name),
+                dtype=object,
             )
 
         return {reg.name: _qubits_for_reg(reg) for reg in self.lefts()}

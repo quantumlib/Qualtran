@@ -13,17 +13,19 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Sequence, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING, Union
 
 import cirq
-import numpy as np
 from attrs import frozen
-from cirq_ft import MultiTargetCNOT, TComplexity
+from cirq_ft import MultiTargetCSwapApprox
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
+from qualtran.cirq_interop import decompose_from_cirq_op
 
 if TYPE_CHECKING:
+    from qualtran import CompositeBloq
+    from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -56,46 +58,19 @@ class CSwapApprox(Bloq):
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
-    def cirq_decomposition(
-        self, ctrl: Sequence[cirq.Qid], x: Sequence[cirq.Qid], y: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
-        """Write the decomposition as a cirq circuit.
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_op(self)
 
-        This method is taken from the cirq.GateWithRegisters implementation and is used
-        to partially support `build_composite_bloq` by relying on this cirq implementation.
-        """
-        (ctrl,) = ctrl
-
-        def g(q: cirq.Qid, adjoint=False) -> cirq.OP_TREE:
-            yield [cirq.S(q), cirq.H(q)]
-            yield cirq.T(q) ** (1 - 2 * adjoint)
-            yield [cirq.H(q), cirq.S(q) ** -1]
-
-        cnot_x_to_y = [cirq.CNOT(x, y) for x, y in zip(x, y)]
-        cnot_y_to_x = [cirq.CNOT(y, x) for x, y in zip(x, y)]
-        g_inv_on_y = [list(g(q, True)) for q in y]  # Uses len(target_y) T-gates
-        g_on_y = [list(g(q)) for q in y]  # Uses len(target_y) T-gates
-
-        yield [cnot_y_to_x, g_inv_on_y, cnot_x_to_y, g_inv_on_y]
-        yield MultiTargetCNOT(len(y)).on(ctrl, *y)
-        yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
-    ) -> Dict[str, 'SoquetT']:
-        from qualtran.cirq_interop import cirq_circuit_to_cbloq
-
-        cirq_quregs = self.signature.get_cirq_quregs()
-        cbloq = cirq_circuit_to_cbloq(cirq.Circuit(self.cirq_decomposition(**cirq_quregs)))
-
-        # Split our registers to "flat" api from cirq circuit; add the circuit; join back up.
-        qvars = np.concatenate(([ctrl], bb.split(x), bb.split(y)))
-        (qvars,) = bb.add_from(cbloq, qubits=qvars)
-        return {
-            'ctrl': qvars[0],
-            'x': bb.join(qvars[1 : self.bitsize + 1]),
-            'y': bb.join(qvars[-self.bitsize :]),
-        }
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        (ctrl,) = cirq_quregs['ctrl']
+        x = cirq_quregs['x'].tolist()
+        y = cirq_quregs['y'].tolist()
+        return (
+            MultiTargetCSwapApprox(self.bitsize).on_registers(control=ctrl, target_x=x, target_y=y),
+            cirq_quregs,
+        )
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -105,14 +80,6 @@ class CSwapApprox(Bloq):
         if ctrl == 1:
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
-
-    def t_complexity(self) -> TComplexity:
-        """T complexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
-        n = self.bitsize
-        # 4 * n: G gates, each wth 1 T and 4 cliffords
-        # 4 * n: CNOTs
-        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
-        return TComplexity(t=4 * n, clifford=22 * n - 1)
 
     def short_name(self) -> str:
         return '~swap'

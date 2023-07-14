@@ -101,31 +101,78 @@ class CirqGateAsBloq(Bloq):
         return cirq_ft.t_complexity(self.gate)
 
 
-def cirq_circuit_to_cbloq(circuit: cirq.Circuit) -> CompositeBloq:
-    """Convert a Cirq circuit into a `CompositeBloq`.
+def cirq_optree_to_cbloq(
+    optree: cirq.OP_TREE, *, signature: Optional[Signature] = None
+) -> CompositeBloq:
+    """Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.
 
-    Each `cirq.Operation` will be wrapped into a `CirqGateAsBloq` wrapper. The
-    resultant composite bloq will represent a unitary with one thru-register
-    named "qubits" of shape `(n_qubits,)`.
+    Each `cirq.Operation` will be wrapped into a `CirqGateAsBloq` wrapper.
+
+    If `signature` is not None, the signature of the resultant CompositeBloq is `signature`. For
+    multi-dimensional registers and registers with > 1 bitsize, this function automatically
+    splits the input soquets into a flat list and joins the output soquets into the correct shape
+    to ensure compatibility with the flat API expected by Cirq.
+
+    If `signature` is None, the resultant composite bloq will have one thru-register named "qubits"
+    of shape `(n_qubits,)`.
     """
-    bb = BloqBuilder()
-
     # "qubits" means cirq qubits | "qvars" means bloq Soquets
+    circuit = cirq.Circuit(optree)
     all_qubits = sorted(circuit.all_qubits())
-    all_qvars = bb.add_register(Register('qubits', 1, shape=(len(all_qubits),)))
-    qubit_to_qvar = dict(zip(all_qubits, all_qvars))
+    if signature is None:
+        signature = Signature([Register('qubits', 1, shape=(len(all_qubits),))])
+    bb, initial_soqs = BloqBuilder.from_signature(signature, add_registers_allowed=False)
+
+    # Magic to make sure signature of the CompositeBloq matches `Signature`.
+    qvars = {}
+    for reg in signature.lefts():
+        soqs = initial_soqs[reg.name]
+        if reg.bitsize > 1:
+            # Need to split all soquets here.
+            if isinstance(soqs, Soquet):
+                qvars[reg.name] = bb.split(soqs)
+            else:
+                qvars[reg.name] = np.concatenate([bb.split(soq) for soq in soqs.reshape(-1)])
+        else:
+            if isinstance(soqs, Soquet):
+                qvars[reg.name] = [soqs]
+            else:
+                qvars[reg.name] = soqs.reshape(-1)
+
+    qubit_to_qvar = dict(zip(all_qubits, np.concatenate([*qvars.values()])))
 
     for op in circuit.all_operations():
         if op.gate is None:
             raise ValueError(f"Only gate operations are supported, not {op}.")
 
         bloq = CirqGateAsBloq(op.gate)
-        qvars = np.array([qubit_to_qvar[qubit] for qubit in op.qubits])
-        out_qvars = bb.add(bloq, qubits=qvars)
-        qubit_to_qvar |= zip(op.qubits, out_qvars)
+        qvars_for_op = np.array([qubit_to_qvar[qubit] for qubit in op.qubits])
+        qvars_for_op_out = bb.add(bloq, qubits=qvars_for_op)
+        qubit_to_qvar |= zip(op.qubits, qvars_for_op_out)
 
-    qvars = np.array([qubit_to_qvar[qubit] for qubit in all_qubits])
-    return bb.finalize(qubits=qvars)
+    qvar_vals_out = np.array([qubit_to_qvar[qubit] for qubit in all_qubits])
+
+    final_soqs = {}
+    idx = 0
+    for reg in signature.rights():
+        name = reg.name
+        soqs = qvar_vals_out[idx : idx + len(qvars[name])]
+        idx = idx + len(qvars[name])
+        if reg.bitsize > 1:
+            # Need to combine the soquets here.
+            if len(soqs) == reg.bitsize:
+                final_soqs[name] = bb.join(soqs)
+            else:
+                final_soqs[name] = np.array(
+                    bb.join(subsoqs) for subsoqs in soqs[:: reg.bitsize]
+                ).reshape(reg.shape)
+        else:
+            if len(soqs) == 1:
+                final_soqs[name] = soqs[0]
+            else:
+                final_soqs[name] = soqs.reshape(reg.shape)
+
+    return bb.finalize(**final_soqs)
 
 
 def _get_in_cirq_quregs(
@@ -207,6 +254,31 @@ def _binst_as_cirq_op(
     op, out_quregs = bloq.as_cirq_op(qubit_manager=qubit_manager, **cirq_quregs)
     _update_assign_from_cirq_quregs(bloq.signature.rights(), binst, out_quregs, soq_assign)
     return op
+
+
+def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
+    """Returns a CompositeBloq constructed using Cirq operations obtained via `bloq.as_cirq_op`.
+
+    This method first checks whether `bloq.signature` is parameterized. If yes, it raises a
+    NotImplementedError. If not, it uses `cirq_optree_to_cbloq` to wrap the operations obtained
+    from `bloq.as_cirq_op` into a `CompositeBloq` which has the same signature as `bloq` and returns
+    the corresponding `CompositeBloq`.
+    """
+
+    if any(
+        cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
+        for reg in bloq.signature
+    ):
+        raise NotImplementedError(f"{bloq} does not support decomposition.")
+
+    cirq_quregs = bloq.signature.get_cirq_quregs()
+    cirq_op, cirq_quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **cirq_quregs)
+    if cirq_op is None or (
+        isinstance(cirq_op, cirq.Operation) and isinstance(cirq_op.gate, BloqAsCirqGate)
+    ):
+        raise NotImplementedError(f"{bloq} does not support decomposition.")
+
+    return cirq_optree_to_cbloq(cirq_op, signature=bloq.signature)
 
 
 def _cbloq_to_cirq_circuit(
