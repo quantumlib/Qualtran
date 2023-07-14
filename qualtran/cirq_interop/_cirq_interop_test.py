@@ -29,7 +29,7 @@ from qualtran.cirq_interop import (
     CirqQuregT,
     decompose_from_cirq_op,
 )
-from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import execute_notebook
 
 
 def test_cirq_gate():

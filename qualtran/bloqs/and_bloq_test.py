@@ -24,8 +24,7 @@ from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.drawing import Circle, get_musical_score_data
-from qualtran.jupyter_tools import execute_notebook
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def _make_and():

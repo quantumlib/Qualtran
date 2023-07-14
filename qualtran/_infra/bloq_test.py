@@ -22,7 +22,7 @@ from cirq_ft import TComplexity
 
 from qualtran import Bloq, CompositeBloq, Side, Signature
 from qualtran.cirq_interop import CirqQuregT
-from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import execute_notebook
 
 
 @frozen

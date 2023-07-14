@@ -15,7 +15,7 @@
 import pytest
 
 from qualtran.bloqs.sorting import BitonicSort, Comparator
-from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import execute_notebook
 
 
 def _make_comparator():

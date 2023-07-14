@@ -173,13 +173,10 @@ def _get_lines_for_constructing_an_object(func: Callable):
 
 
 _IMPORTS = """\
-import cirq
-import numpy as np
-import qualtran
-import cirq_ft
-import cirq_ft.infra.testing as cq_testing
-from qualtran.jupyter_tools import display_gate_and_compilation, show_bloq
-from typing import *\
+from qualtran import Bloq, CompositeBloq, BloqBuilder, Signature, Register
+from qualtran.drawing import show_bloq
+from typing import *
+import numpy as np\
 """
 
 _GATE_DISPLAY = """\
