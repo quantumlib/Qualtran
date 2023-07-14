@@ -1,0 +1,155 @@
+# BloqAsCirqGate
+`qualtran.cirq_interop.BloqAsCirqGate`
+
+
+<table class="tfo-notebook-buttons tfo-api nocontent" align="left">
+<td>
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L262-L427">
+    <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
+    View source on GitHub
+  </a>
+</td>
+</table>
+
+
+
+A shim for using bloqs in a Cirq circuit.
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>qualtran.cirq_interop.BloqAsCirqGate(
+    bloq: <a href="../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>,
+    reg_to_wires: Optional[Callable[[Register], List[str]]] = None
+)
+</code></pre>
+
+
+
+<!-- Placeholder for "Used in" -->
+
+
+<h2 class="add-link">Args</h2>
+
+`bloq`<a id="bloq"></a>
+: The bloq to wrap.
+
+`reg_to_wires`<a id="reg_to_wires"></a>
+: an optional callable to produce a list of wire symbols for each register
+  to match Cirq diagrams.
+
+
+
+
+
+
+<h2 class="add-link">Attributes</h2>
+
+`bloq`<a id="bloq"></a>
+: The bloq we're wrapping.
+
+`registers`<a id="registers"></a>
+: `cirq_ft.GateWithRegisters` registers.
+
+
+
+
+## Methods
+
+<h3 id="bloq_on"><code>bloq_on</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L318-L353">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>@classmethod</code>
+<code>bloq_on(
+    bloq: <a href="../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>,
+    cirq_quregs: Dict[str, 'CirqQuregT'],
+    qubit_manager: cirq.QubitManager
+) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]
+</code></pre>
+
+Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
+
+This is used as a default implementation for <a href="../../qualtran/Bloq.html#as_cirq_op"><code>Bloq.as_cirq_op</code></a> if a native
+cirq conversion is not specified.
+
+Args
+
+`bloq`
+: The bloq to be wrapped with `BloqAsCirqGate`
+
+`cirq_quregs`
+: The cirq qubit registers on which we call the gate.
+
+`qubit_manager`
+: A `cirq.QubitManager` to allocate new qubits.
+
+
+
+
+Returns
+
+`op`
+: A cirq operation whose gate is the `BloqAsCirqGate`-wrapped version of `bloq`.
+
+`cirq_quregs`
+: The output cirq qubit registers.
+
+
+
+
+<h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L355-L389">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>decompose_from_registers(
+    context: cirq.DecompositionContext, **qubit_regs
+) -> cirq.OP_TREE
+</code></pre>
+
+Implementation of the GatesWithRegisters decompose method.
+
+This delegates to `self.bloq.decompose_bloq()` and converts the result to a cirq circuit.
+
+Args
+
+`context`
+: `cirq.DecompositionContext` stores options for decomposing gates (eg:
+  cirq.QubitManager).
+
+`**qubit_regs`
+: Sequences of cirq qubits as expected for the legacy register shims
+  of the bloq's registers.
+
+
+
+
+Returns
+
+
+
+
+<h3 id="__eq__"><code>__eq__</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L415-L418">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>__eq__(
+    other
+)
+</code></pre>
+
+Return self==value.
+
+
+<h3 id="num_qubits"><code>num_qubits</code></h3>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>num_qubits() -> int
+</code></pre>
+
+The number of qubits this gate acts on.
+
+
+
+
