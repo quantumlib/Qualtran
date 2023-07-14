@@ -22,8 +22,8 @@ from qualtran import Bloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.jupyter_tools import execute_notebook
 from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
+from qualtran.testing import execute_notebook
 
 
 def _make_modexp():

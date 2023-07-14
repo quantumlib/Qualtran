@@ -22,7 +22,7 @@ from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Signature, Soquet
 from qualtran.drawing.graphviz import _assign_ids_to_bloqs_and_soqs, GraphDrawer, PrettyGraphDrawer
-from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import execute_notebook
 
 
 @frozen

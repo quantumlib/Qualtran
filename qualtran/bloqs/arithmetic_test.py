@@ -14,7 +14,7 @@
 
 from qualtran import BloqBuilder, Register
 from qualtran.bloqs.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
-from qualtran.jupyter_tools import execute_notebook
+from qualtran.testing import execute_notebook
 
 
 def _make_add():

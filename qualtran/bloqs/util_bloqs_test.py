@@ -20,8 +20,8 @@ import pytest
 from qualtran import Bloq, BloqBuilder, Side, Soquet
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
-from qualtran.jupyter_tools import execute_notebook
 from qualtran.simulation.classical_sim import _cbloq_call_classically
+from qualtran.testing import execute_notebook
 
 
 @pytest.mark.parametrize('n', [5, 123])

@@ -405,6 +405,11 @@ class PrettyGraphDrawer(GraphDrawer):
         )
 
 
+def show_bloq(bloq: Bloq):
+    """Display a graph representation of the bloq in IPython."""
+    IPython.display.display(PrettyGraphDrawer(bloq).get_svg())
+
+
 class ClassicalSimGraphDrawer(PrettyGraphDrawer):
     """A graph drawer that labels each edge with a classical value.
 

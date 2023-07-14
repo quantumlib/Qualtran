@@ -23,9 +23,8 @@ import pytest
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
-from qualtran.jupyter_tools import execute_notebook
 from qualtran.simulation.quimb_sim import flatten_for_tensor_contraction
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 random.seed(12345)
 

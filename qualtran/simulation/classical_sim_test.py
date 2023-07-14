@@ -22,13 +22,13 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Side, Signature
 from qualtran.bloqs.basic_gates import CNOT
-from qualtran.jupyter_tools import execute_notebook
 from qualtran.simulation.classical_sim import (
     _cbloq_call_classically,
     _update_assign_from_vals,
     bits_to_ints,
     ints_to_bits,
 )
+from qualtran.testing import execute_notebook
 
 
 def test_bits_to_int():
