@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -29,6 +29,14 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+
+
+def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
+    from qualtran import BloqBuilder
+
+    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
+    out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
+    return bb.finalize(**out_soqs)
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -107,11 +115,7 @@ class Bloq(metaclass=abc.ABCMeta):
             NotImplementedError: If there is no decomposition defined; namely: if
                 `build_composite_bloq` returns `NotImplemented`.
         """
-        from qualtran import BloqBuilder
-
-        bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
-        out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
-        return bb.finalize(**out_soqs)
+        return _decompose_from_build_composite_bloq(self)
 
     def supports_decompose_bloq(self) -> bool:
         """Whether this bloq supports `.decompose_bloq()`.

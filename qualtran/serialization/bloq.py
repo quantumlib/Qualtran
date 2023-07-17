@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ from qualtran import (
 from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
 from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
+from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.protos import args_pb2, bloq_pb2
 from qualtran.resource_counting.bloq_counts import SympySymbolAllocator
 from qualtran.serialization import annotations, args, registers
@@ -79,6 +80,7 @@ RESOLVER_DICT = {
     'Free': Free,
     'ArbitraryClifford': ArbitraryClifford,
     'ControlledBloq': ControlledBloq,
+    'CirqGateAsBloq': CirqGateAsBloq,
 }
 
 

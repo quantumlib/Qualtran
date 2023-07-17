@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -157,9 +157,9 @@ class CompositeBloq(Bloq):
         resultant composite bloq will represent a unitary with one thru-register
         named "qubits" of shape `(n_qubits,)`.
         """
-        from qualtran.cirq_interop import cirq_circuit_to_cbloq
+        from qualtran.cirq_interop import cirq_optree_to_cbloq
 
-        return cirq_circuit_to_cbloq(circuit)
+        return cirq_optree_to_cbloq(circuit)
 
     def tensor_contract(self) -> NDArray:
         """Return a contracted, dense ndarray representing this composite bloq.
