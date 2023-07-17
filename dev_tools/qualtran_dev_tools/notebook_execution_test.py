@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import time
 from pathlib import Path
 
 from nbformat import NotebookNode
@@ -32,6 +33,7 @@ def test_is_out_of_date(tmpdir):
         f.write('HELLO')
 
     assert not is_out_of_date(src_path, dest_path)
+    time.sleep(0.1)
 
     with src_path.open('a') as f:
         f.write('2')
