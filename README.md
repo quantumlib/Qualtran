@@ -1,6 +1,8 @@
 # Qᴜᴀʟᴛʀᴀɴ
 
-Software for quantum algorithms research.
+Qᴜᴀʟᴛʀᴀɴ (quantum algorithms translator) is a set of abstractions for representing quantum 
+programs and a library of quantum algorithms expressed in that language to support quantum 
+algorithms research.
 
 **Note:** Qualtran is an experimental preview release. We provide no backwards compatibility 
 guarantees. Some algorithms or library functionality may be incomplete or contain inaccuracies. 
