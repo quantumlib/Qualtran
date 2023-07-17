@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ class CopyrightChecker(BaseChecker):
         if not self.linter.is_message_enabled("wrong-or-nonexistent-copyright-notice"):
             return
         golden = [
-            b'#  Copyright 20XX Google Quantum AI',
+            b'#  Copyright 20XX Google LLC',
             b'#',
             b'#  Licensed under the Apache License, Version 2.0 (the "License");',
             b'#  you may not use this file except in compliance with the License.',
