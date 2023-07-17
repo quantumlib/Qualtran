@@ -33,7 +33,7 @@ def test_is_out_of_date(tmpdir):
 
     assert not is_out_of_date(src_path, dest_path)
 
-    with src_path.open('w+') as f:
+    with src_path.open('a') as f:
         f.write('2')
 
     assert is_out_of_date(src_path, dest_path)
