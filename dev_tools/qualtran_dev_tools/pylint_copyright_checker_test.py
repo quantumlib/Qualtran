@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ class TestCopyrightChecker(CheckerTestCase):
 
     def test_longer_copyright(self) -> None:
         r"""Report message when the copyright notice is incorrect."""
-        comment = "#  Copyright 2021 Google Quantum AI and extra"
+        comment = "#  Copyright 2021 Google LLC and extra"
         node = parse(comment)
         with self.assertAddsMessages(
             MessageTest(
@@ -74,7 +74,7 @@ class TestCopyrightChecker(CheckerTestCase):
         """Do not report a message when the correct copyright notice is shown."""
         node = parse(
             prefix
-            + """#  Copyright 2023 Google Quantum AI
+            + """#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
