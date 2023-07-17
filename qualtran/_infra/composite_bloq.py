@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregInT, CirqQuregT
-    from qualtran.resource_counting import BloqCountT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -201,7 +201,7 @@ class CompositeBloq(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 
-    def bloq_counts(self, _) -> List['BloqCountT']:
+    def bloq_counts(self, _: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""
         from qualtran.resource_counting import get_cbloq_bloq_counts
 

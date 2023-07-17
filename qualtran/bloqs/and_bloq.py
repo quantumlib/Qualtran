@@ -14,7 +14,7 @@
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import numpy as np
 import quimb.tensor as qtn
@@ -61,15 +61,15 @@ class And(Bloq):
             ]
         )
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[Tuple[int, Bloq]]:
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
             pre_post_cliffords = big_O(1)
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
         if self.adjoint:
-            return [(4 + 2 * pre_post_cliffords, ArbitraryClifford(n=2))]
+            return {(4 + 2 * pre_post_cliffords, ArbitraryClifford(n=2))}
 
-        return [(9 + 2 * pre_post_cliffords, ArbitraryClifford(n=2)), (4, TGate())]
+        return {(9 + 2 * pre_post_cliffords, ArbitraryClifford(n=2)), (4, TGate())}
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''

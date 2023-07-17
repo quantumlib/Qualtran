@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -231,8 +231,8 @@ class Bloq(metaclass=abc.ABCMeta):
         )
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List['BloqCountT']:
-        """Return a list of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        """Return a set of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
 
         By default, this method will use `self.decompose_bloq()` to count up bloqs.
         However, you can override this if you don't want to provide a complete decomposition,

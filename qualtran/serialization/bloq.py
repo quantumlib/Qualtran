@@ -177,7 +177,7 @@ def bloqs_to_proto(
         try:
             bloq_counts = {
                 bloq_to_idx[b]: args.int_or_sympy_to_proto(c)
-                for c, b in bloq.bloq_counts(SympySymbolAllocator())
+                for c, b in sorted(bloq.bloq_counts(SympySymbolAllocator()), key=lambda x: x[0])
             }
         except (NotImplementedError, KeyError):
             # NotImplementedError is raised if `bloq` does not implement bloq_counts.
@@ -277,7 +277,7 @@ def _populate_bloq_to_idx(
             # NotImplementedError is raised if `bloq` does not have a decomposition.
             ...
 
-        # Approximately decompose the current Bloq and it's decomposed Bloqs.
+        # Approximately decompose the current Bloq and its decomposed Bloqs.
         try:
             for _, subbloq in bloq.bloq_counts(SympySymbolAllocator()):
                 _add_bloq_to_dict(subbloq, bloq_to_idx)
