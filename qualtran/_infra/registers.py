@@ -168,29 +168,13 @@ class Signature:
 
     def get_cirq_quregs(self) -> Dict[str, 'NDArray[cirq.Qid]']:
         """Get arrays of cirq qubits for these registers."""
-        import cirq
+        import cirq_ft
 
-        def _qubit_array(reg: Register):
-            qubits = np.empty(reg.shape + (reg.bitsize,), dtype=object)
-            for ii in reg.all_idxs():
-                for j in range(reg.bitsize):
-                    qubits[ii + (j,)] = cirq.NamedQubit(
-                        f'{reg.name}[{", ".join(str(i) for i in ii + (j,))}]'
-                    )
-            return qubits
-
-        def _qubits_for_reg(reg: Register):
-            if reg.shape:
-                return _qubit_array(reg)
-
-            return np.array(
-                [cirq.NamedQubit(f"{reg.name}")]
-                if reg.bitsize == 1
-                else cirq.NamedQubit.range(reg.bitsize, prefix=reg.name),
-                dtype=object,
-            )
-
-        return {reg.name: _qubits_for_reg(reg) for reg in self.lefts()}
+        cirq_regs = [
+            cirq_ft.Register(name=reg.name, shape=reg.shape + (reg.bitsize,))
+            for reg in self.lefts()
+        ]
+        return cirq_ft.Registers(cirq_regs).get_named_qubits()
 
     def __hash__(self):
         return hash(self._registers)
