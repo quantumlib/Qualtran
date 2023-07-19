@@ -12,6 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Basic quantum gates.
+
+The bloqs in this module encode gates you'd expect to find in any quantum computing
+framework. It includes single-qubit unitary gates like rotations, bit- and phase-flip;
+basic multi-qubit unitary gates; and states and effects in the Pauli basis.
+"""
+
 from .cnot import CNOT
 from .rotation import Rx, Ry, Rz
 from .swap import CSwap, TwoBitCSwap, TwoBitSwap

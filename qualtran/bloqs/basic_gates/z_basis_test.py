@@ -26,6 +26,12 @@ from qualtran.bloqs.basic_gates import (
 )
 
 
+def _make_zero_state():
+    from qualtran.bloqs.basic_gates import ZeroState
+
+    return ZeroState()
+
+
 def test_zero_state():
     bloq = ZeroState()
     assert str(bloq) == 'ZeroState(n=1)'
