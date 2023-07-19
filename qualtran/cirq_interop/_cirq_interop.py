@@ -376,14 +376,14 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
             if not reg.shape:
                 compat_name = f'{reg.name}{side_suffixes[reg.side]}'
                 compat_name_map[compat_name] = (reg, ())
-                legacy_regs.append(LegacyRegister(name=compat_name, bitsize=reg.bitsize))
+                legacy_regs.append(LegacyRegister(name=compat_name, shape=reg.bitsize))
                 continue
 
             for idx in reg.all_idxs():
                 idx_str = '_'.join(str(i) for i in idx)
                 compat_name = f'{reg.name}{side_suffixes[reg.side]}_{idx_str}'
                 compat_name_map[compat_name] = (reg, idx)
-                legacy_regs.append(LegacyRegister(name=compat_name, bitsize=reg.bitsize))
+                legacy_regs.append(LegacyRegister(name=compat_name, shape=reg.bitsize))
 
         return LegacyRegisters(legacy_regs), compat_name_map
 
