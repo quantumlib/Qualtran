@@ -242,8 +242,8 @@ Raises
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>bloq_counts(
-    _
-) -> List['BloqCountT']
+    _: Optional['SympySymbolAllocator'] = None
+) -> Set['BloqCountT']
 </code></pre>
 
 Return the bloq counts by counting up all the subbloqs.

@@ -27,7 +27,7 @@ Count all the subbloqs in a composite bloq.
 <code>qualtran.resource_counting.get_cbloq_bloq_counts(
     cbloq: <a href="../../qualtran/CompositeBloq.html"><code>qualtran.CompositeBloq</code></a>,
     generalizer: Callable[[Bloq], Optional[Bloq]] = None
-) -> List[<a href="../../qualtran/resource_counting/BloqCountT.html"><code>qualtran.resource_counting.BloqCountT</code></a>]
+) -> Set[<a href="../../qualtran/resource_counting/BloqCountT.html"><code>qualtran.resource_counting.BloqCountT</code></a>]
 </code></pre>
 
 

@@ -50,6 +50,22 @@
 
 .. toctree::
    :hidden:
+   :caption: cirq_interop
+
+   qualtran/cirq_interop/BloqAsCirqGate.md
+   qualtran/cirq_interop/CirqGateAsBloq.md
+   qualtran/cirq_interop/cirq_optree_to_cbloq.md
+   qualtran/cirq_interop/decompose_from_cirq_op.md
+
+.. toctree::
+   :hidden:
+   :caption: simulation
+
+   qualtran/simulation/classical_sim.md
+   qualtran/simulation/quimb_sim.md
+
+.. toctree::
+   :hidden:
    :caption: resource_counting
 
    qualtran/resource_counting/BloqCountT.md
@@ -66,26 +82,19 @@
 
 .. toctree::
    :hidden:
-   :caption: simulation
-
-   qualtran/simulation/classical_sim.md
-   qualtran/simulation/quimb_sim.md
-
-.. toctree::
-   :hidden:
-   :caption: cirq_interop
-
-   qualtran/cirq_interop/BloqAsCirqGate.md
-   qualtran/cirq_interop/CirqGateAsBloq.md
-   qualtran/cirq_interop/cirq_circuit_to_cbloq.md
-
-.. toctree::
-   :hidden:
    :caption: musical_score
 
    qualtran/drawing/musical_score/MusicalScoreEncoder.md
    qualtran/drawing/musical_score/SoqData.md
    qualtran/drawing/musical_score/frozen.md
+
+.. toctree::
+   :hidden:
+   :caption: classical_sim
+
+   qualtran/simulation/classical_sim/ClassicalValT.md
+   qualtran/simulation/classical_sim/bits_to_ints.md
+   qualtran/simulation/classical_sim/ints_to_bits.md
 
 .. toctree::
    :hidden:
@@ -95,12 +104,4 @@
    qualtran/simulation/quimb_sim/cbloq_to_quimb.md
    qualtran/simulation/quimb_sim/flatten_for_tensor_contraction.md
    qualtran/simulation/quimb_sim/get_right_and_left_inds.md
-
-.. toctree::
-   :hidden:
-   :caption: classical_sim
-
-   qualtran/simulation/classical_sim/ClassicalValT.md
-   qualtran/simulation/classical_sim/bits_to_ints.md
-   qualtran/simulation/classical_sim/ints_to_bits.md
 
