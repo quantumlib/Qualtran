@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -127,4 +127,4 @@ def test_consistent_counts():
 
     counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
 
-    assert set(counts1) == set(counts2)
+    assert counts1 == counts2

@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -61,8 +61,9 @@ def test_mod_exp_symbolic():
     modexp = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     assert modexp.short_name() == 'g^e % N'
     counts = modexp.bloq_counts(SympySymbolAllocator())
-    assert counts[0][0] == 1, 'int state'
-    assert counts[1][0] == n_e, 'mod muls'
+    counts_by_bloq = {bloq.pretty_name(): n for n, bloq in counts}
+    assert counts_by_bloq['|1>'] == 1
+    assert counts_by_bloq['CtrlModMul'] == n_e
 
     b, x = modexp.call_classically(exponent=sympy.Symbol('b'))
     assert str(x) == 'Mod(g**b, N)'
@@ -87,7 +88,7 @@ def test_mod_exp_consistent_counts():
 
     counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
 
-    assert set(counts1) == set(counts2)
+    assert counts1 == counts2
 
 
 def test_intro_notebook():

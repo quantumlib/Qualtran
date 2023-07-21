@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Optional, Set, Union
 
 import numpy as np
 import sympy
@@ -22,7 +22,7 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
-from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -97,12 +97,14 @@ class ModExp(Bloq):
 
         return {'exponent': bb.join(exponent), 'x': x}
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List[Tuple[int, 'Bloq']]:
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        if ssa is None:
+            raise ValueError(f"{self} requires a SympySymbolAllocator")
         k = ssa.new_symbol('k')
-        return [
+        return {
             (1, IntState(val=1, bitsize=self.x_bitsize)),
             (self.exp_bitsize, self._CtrlModMul(k=k)),
-        ]
+        }
 
     def on_classical_vals(self, exponent: int):
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}

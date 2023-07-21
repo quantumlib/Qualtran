@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Optional, Set, Union
 
 import sympy
 from attrs import frozen
@@ -22,7 +22,7 @@ from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
-from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -83,9 +83,11 @@ class CtrlModMul(Bloq):
         bb.free(y)
         return {'ctrl': ctrl, 'x': x}
 
-    def bloq_counts(self, ssa: SympySymbolAllocator) -> List[Tuple[int, 'Bloq']]:
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        if ssa is None:
+            raise ValueError(f"{self} requires a SympySymbolAllocator")
         k = ssa.new_symbol('k')
-        return [(2, self._Add(k=k)), (1, CSwap(self.bitsize))]
+        return {(2, self._Add(k=k)), (1, CSwap(self.bitsize))}
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
         if ctrl == 0:

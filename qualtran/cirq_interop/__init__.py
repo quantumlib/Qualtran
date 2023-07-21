@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,4 +17,10 @@
 isort:skip_file
 """
 
-from ._cirq_interop import CirqQuregT, CirqGateAsBloq, BloqAsCirqGate, cirq_circuit_to_cbloq
+from ._cirq_interop import (
+    CirqQuregT,
+    CirqGateAsBloq,
+    BloqAsCirqGate,
+    cirq_optree_to_cbloq,
+    decompose_from_cirq_op,
+)

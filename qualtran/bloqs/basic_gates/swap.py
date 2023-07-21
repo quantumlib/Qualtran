@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -183,8 +183,8 @@ class CSwap(Bloq):
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List['BloqCountT']:
-        return [(self.bitsize, TwoBitCSwap())]
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(self.bitsize, TwoBitCSwap())}
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'

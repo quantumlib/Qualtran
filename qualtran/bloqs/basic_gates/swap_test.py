@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ def test_cswap_classical():
 def test_cswap_bloq_counts():
 
     bloq = CSwap(bitsize=8)
-    counts1 = bloq.bloq_counts(SympySymbolAllocator())
+    counts1 = bloq.bloq_counts()
 
     def generalize(b: Bloq) -> Optional[Bloq]:
         if isinstance(b, (Split, Join)):
@@ -156,13 +156,14 @@ def test_cswap_bloq_counts():
 
     counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
 
-    assert set(counts1) == set(counts2)
+    assert counts1 == counts2
 
 
 def test_cswap_symbolic():
     n = sympy.symbols('n')
     cswap = CSwap(bitsize=n)
     counts = cswap.bloq_counts(SympySymbolAllocator())
-    assert counts[0] == (n, TwoBitCSwap())
+    assert len(counts) == 1
+    assert counts.pop() == (n, TwoBitCSwap())
     with pytest.raises(ValueError):
         cswap.decompose_bloq()

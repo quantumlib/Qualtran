@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
@@ -59,13 +60,6 @@ class _ZVector(Bloq):
     def __attrs_post_init__(self):
         if self.n != 1:
             raise NotImplementedError("Come back later.")
-
-    def pretty_name(self) -> str:
-        s = self.short_name()
-        return f'|{s}>' if self.state else f'<{s}|'
-
-    def short_name(self) -> str:
-        return '1' if self.bit else '0'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -101,6 +95,22 @@ class _ZVector(Bloq):
         assert not vals, vals
         assert q == bit_int, q
         return {}
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        if not self.state:
+            raise ValueError(f"There is no Cirq equivalent for {self}")
+
+        (q,) = qubit_manager.qalloc(self.n)
+        return None, {'q': np.array([q])}
+
+    def pretty_name(self) -> str:
+        s = self.short_name()
+        return f'|{s}>' if self.state else f'<{s}|'
+
+    def short_name(self) -> str:
+        return '1' if self.bit else '0'
 
 
 def _hide_base_fields(cls, fields):
@@ -249,8 +259,8 @@ class _IntVector(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def bloq_counts(self, ss):
-        return [(big_O(1), ArbitraryClifford(self.bitsize))]
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(big_O(1), ArbitraryClifford(self.bitsize))}
 
     def short_name(self) -> str:
         return f'{self.val}'

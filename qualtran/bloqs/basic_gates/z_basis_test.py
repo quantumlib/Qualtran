@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -24,6 +24,12 @@ from qualtran.bloqs.basic_gates import (
     ZeroEffect,
     ZeroState,
 )
+
+
+def _make_zero_state():
+    from qualtran.bloqs.basic_gates import ZeroState
+
+    return ZeroState()
 
 
 def test_zero_state():

@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -59,7 +59,11 @@ def test_signature():
         "r2": cirq.NamedQubit.range(2, prefix="r2"),
         "r3": [cirq.NamedQubit("r3")],
     }
-    assert signature.get_cirq_quregs() == expected_named_qubits
+    assert list(signature.get_cirq_quregs().keys()) == list(expected_named_qubits.keys())
+    assert all(
+        (a == b).all()
+        for a, b in zip(signature.get_cirq_quregs().values(), expected_named_qubits.values())
+    )
     # Python dictionaries preserve insertion order, which should be same as insertion order of
     # initial registers.
     for reg_order in [[r1, r2, r3], [r2, r3, r1]]:

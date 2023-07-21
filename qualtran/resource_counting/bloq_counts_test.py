@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,17 +13,17 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 import attrs
 import networkx as nx
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
-from qualtran.resource_counting import get_bloq_counts_graph, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountT, get_bloq_counts_graph, SympySymbolAllocator
 
 
 @frozen
@@ -34,8 +34,8 @@ class BigBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def bloq_counts(self, ssa: SympySymbolAllocator):
-        return [(sympy.log(self.bitsize), SubBloq(unrelated_param=0.5))]
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(sympy.log(self.bitsize), SubBloq(unrelated_param=0.5))}
 
 
 @frozen
@@ -62,8 +62,8 @@ class SubBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def bloq_counts(self, ssa: SympySymbolAllocator):
-        return [(3, TGate())]
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(3, TGate())}
 
 
 def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, int]]:

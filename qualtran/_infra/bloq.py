@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -29,6 +29,14 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+
+
+def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
+    from qualtran import BloqBuilder
+
+    bb, initial_soqs = BloqBuilder.from_signature(bloq.signature, add_registers_allowed=False)
+    out_soqs = bloq.build_composite_bloq(bb=bb, **initial_soqs)
+    return bb.finalize(**out_soqs)
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -107,11 +115,7 @@ class Bloq(metaclass=abc.ABCMeta):
             NotImplementedError: If there is no decomposition defined; namely: if
                 `build_composite_bloq` returns `NotImplemented`.
         """
-        from qualtran import BloqBuilder
-
-        bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
-        out_soqs = self.build_composite_bloq(bb=bb, **initial_soqs)
-        return bb.finalize(**out_soqs)
+        return _decompose_from_build_composite_bloq(self)
 
     def supports_decompose_bloq(self) -> bool:
         """Whether this bloq supports `.decompose_bloq()`.
@@ -227,8 +231,8 @@ class Bloq(metaclass=abc.ABCMeta):
         )
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def bloq_counts(self, ssa: 'SympySymbolAllocator') -> List['BloqCountT']:
-        """Return a list of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        """Return a set of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
 
         By default, this method will use `self.decompose_bloq()` to count up bloqs.
         However, you can override this if you don't want to provide a complete decomposition,

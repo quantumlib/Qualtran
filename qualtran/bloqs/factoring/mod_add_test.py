@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ def test_ctrl_scale_mod_add():
     assert bloq.short_name() == 'y += x*123 % 221'
 
     counts = bloq.bloq_counts(SympySymbolAllocator())
-    assert counts[0][0] == 8
+    ((n, bloq),) = counts
+    assert n == 8
 
 
 def test_ctrl_mod_add_k():
@@ -29,4 +30,5 @@ def test_ctrl_mod_add_k():
     assert bloq.short_name() == 'x += 123 % 221'
 
     counts = bloq.bloq_counts(SympySymbolAllocator())
-    assert counts[0][0] == 5
+    ((n, bloq),) = counts
+    assert n == 5

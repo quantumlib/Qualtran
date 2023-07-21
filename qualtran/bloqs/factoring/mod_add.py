@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Union
+from typing import Dict, Optional, Set, Union
 
 import sympy
 from attrs import frozen
@@ -21,7 +21,7 @@ from cirq_ft import TComplexity
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
-from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -54,9 +54,11 @@ class CtrlScaleModAdd(Bloq):
             ]
         )
 
-    def bloq_counts(self, ssa: SympySymbolAllocator):
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        if ssa is None:
+            raise ValueError(f"{self} requires a SympySymbolAllocator")
         k = ssa.new_symbol('k')
-        return [(self.bitsize, CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod))]
+        return {(self.bitsize, CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod))}
 
     def t_complexity(self) -> 'TComplexity':
         ((n, bloq),) = self.bloq_counts(SympySymbolAllocator())
@@ -98,9 +100,11 @@ class CtrlModAddK(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
-    def bloq_counts(self, ss):
-        k = ss.new_symbol('k')
-        return [(5, CtrlAddK(k=k, bitsize=self.bitsize))]
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        if ssa is None:
+            raise ValueError(f"{self} requires a SympySymbolAllocator")
+        k = ssa.new_symbol('k')
+        return {(5, CtrlAddK(k=k, bitsize=self.bitsize))}
 
     def t_complexity(self) -> 'TComplexity':
         ((n, bloq),) = self.bloq_counts(SympySymbolAllocator())
@@ -133,8 +137,8 @@ class CtrlAddK(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
-    def bloq_counts(self, mgr):
-        return [(2 * self.bitsize, TGate())]
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(2 * self.bitsize, TGate())}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=2 * self.bitsize)

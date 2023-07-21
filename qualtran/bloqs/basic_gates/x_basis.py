@@ -1,4 +1,4 @@
-#  Copyright 2023 Google Quantum AI
+#  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import quimb.tensor as qtn
@@ -54,13 +54,6 @@ class _XVector(Bloq):
         if self.n != 1:
             raise NotImplementedError("Come back later.")
 
-    def pretty_name(self) -> str:
-        s = self.short_name()
-        return f'|{s}>' if self.state else f'<{s}|'
-
-    def short_name(self) -> str:
-        return '-' if self.bit else '+'
-
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
@@ -81,6 +74,24 @@ class _XVector(Bloq):
                 tags=[self.short_name(), binst],
             )
         )
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        if not self.state:
+            raise ValueError(f"There is no Cirq equivalent for {self}")
+
+        import cirq
+
+        (q,) = qubit_manager.qalloc(self.n)
+        return cirq.H(q), {'q': np.array([q])}
+
+    def pretty_name(self) -> str:
+        s = self.short_name()
+        return f'|{s}>' if self.state else f'<{s}|'
+
+    def short_name(self) -> str:
+        return '-' if self.bit else '+'
 
 
 def _hide_base_fields(cls, fields):
