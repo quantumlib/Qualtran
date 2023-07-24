@@ -1,6 +1,9 @@
 # for testing packaging in isolation
 virtualenv
 
+# for building protos
+grpcio-tools
+
 # for creating packages
 setuptools
 wheel

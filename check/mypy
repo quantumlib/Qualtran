@@ -15,7 +15,7 @@ cd "${topdir}" || exit $?
 CONFIG_FILE='mypy.ini'
 
 echo -e -n "\033[31m"
-mypy --config-file=dev_tools/conf/$CONFIG_FILE "$@" cirq_qubitization/  dev_tools/
+mypy --config-file=dev_tools/conf/$CONFIG_FILE "$@" qualtran/  dev_tools/
 result=$?
 echo -e -n "\033[0m"
 

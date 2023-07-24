@@ -93,7 +93,7 @@ check/pytest "${changed_python_tests[@]}" \
 pytest_result=$?
 
 # Analyze coverage files.
-python dev_tools/check_incremental_coverage_annotations.py "${rev}"
+python dev_tools/check-incremental-coverage-annotations.py "${rev}"
 cover_result=$?
 
 # Clean up generated coverage files.

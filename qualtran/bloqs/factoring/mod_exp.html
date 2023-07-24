@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>shor</title>
+</head>
+<style>
+    div#content{margin: 10px;}
+</style>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<body>
+<input name="b1" type="button" value="bloq" onclick="make_from_data('mod_exp_bloq.json')" />
+<input name="b2" type="button" value="cbloq" onclick="make_from_data('mod_exp_cbloq.json')" />
+<div id="content">
+
+</div>
+<script>
+    let xDomain = [-1, 13];
+    let yDomain = [0, 10];
+</script>
+<script src="../../quantum_graph/musical_score.js"></script>
+</body>
+</html>

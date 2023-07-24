@@ -1,12 +1,9 @@
-fqe
-pyscf
-openfermion
-# cirq-google as pinned to make sure pip-compile picks up the correct cirq-google version
-# due to a transitive dependency via fqe and openfermion. cirq-google is not a "real" requirement.
-cirq-google==1.2.0.dev20230607180358
-cirq-core==1.2.0.dev20230607180358
-sphinx
+cirq-core==1.2.0
+cirq-ft==1.2.0
+
+# drawing
 pydot
+ipython
 
 # quimb and its tensor dependencies
 quimb

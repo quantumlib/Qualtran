@@ -1,49 +1,57 @@
-import io
+#  Copyright 2023 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 import re
 
 from setuptools import find_packages, setup
 
-from dev_tools.requirements import explode
-
 
 def version_number(path: str) -> str:
-    """Get cirq-qubitization's version number from the src directory"""
+    """Get the version number from the src directory"""
     exp = r'__version__[ ]*=[ ]*["|\']([\d]+\.[\d]+\.[\d]+[\.dev[\d]*]?)["|\']'
     version_re = re.compile(exp)
 
-    with open(path, "r") as fqe_version:
-        version = version_re.search(fqe_version.read()).group(1)
+    with open(path, "r") as f:
+        version = version_re.search(f.read()).group(1)
 
     return version
 
 
 def main() -> None:
     """ """
-    version_path = "cirq_qubitization/_version.py"
-
+    version_path = "qualtran/_version.py"
     __version__ = version_number(version_path)
-
     if __version__ is None:
         raise ValueError("Version information not found in " + version_path)
 
-    long_description = "=================\n" + "CIRQ-QUBITIZATION\n" + "=================\n"
-    stream = io.open("README.md", encoding="utf-8")
-    stream.readline()
-    long_description += stream.read()
+    with open("README.md") as f:
+        long_description = f.read()
 
-    requirements = explode("dev_tools/requirements/deps/runtime.txt")
-    dev_requirements = explode("dev_tools/requirements/deps/dev-tools.txt")
-    # requirements = [r.strip() for r in requirements_buffer]
+    requirements = [
+        r.strip()
+        for r in open("dev_tools/requirements/deps/runtime.txt").readlines()
+        if not r.startswith('#')
+    ]
 
     setup(
-        name="cirq_qubitization",
+        name="qualtran",
         version=__version__,
-        author="Nicholas C. Rubin and Tanuj Khattar",
-        author_email="rubinnc0@gmail.com",
-        description="Learning tools and basics for quantum chemistry",
+        author="Google Quantum AI",
+        author_email="mpharrigan@google.com",
+        description="Software for fault-tolerant quantum algorithms research.",
         long_description=long_description,
         install_requires=requirements,
-        extras_require={"dev_env": dev_requirements},
         license="Apache 2",
         packages=find_packages(),
     )

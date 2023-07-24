@@ -1,0 +1,78 @@
+/*
+  Copyright 2023 Google LLC
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
+syntax = "proto3";
+
+import "qualtran/protos/annotations.proto";
+import "qualtran/protos/args.proto";
+import "qualtran/protos/registers.proto";
+
+package qualtran;
+
+// A library of Bloqs. BloqLibrary should be used to represent both primitive Bloqs and
+// composite Bloqs; i.e. Bloqs consisting of other subbloqs, like `CompositeBloq`,
+// `ControlledBloq` etc.
+message BloqLibrary {
+
+  string name = 1; // A name for the library.
+
+  // Decompositions are specified using integer IDs referencing other Bloqs within this library.
+  message BloqWithDecomposition {
+    int32 bloq_id = 1; // Unique identifier for this Bloq within the library.
+    repeated Connection decomposition = 2; // Decomposition of the Bloq as an edge-list.
+    map<int32, IntOrSympy> bloq_counts = 3; // Rough decomposition of the Bloq as bloq-counts.
+    Bloq bloq = 4; // The Bloq itself.
+  }
+  repeated BloqWithDecomposition table = 2;
+}
+
+// Messages to enable efficient description of a BloqLibrary, including Bloq decompositions in
+// terms of other simpler bloqs.
+
+// A Bloq without it's decomposition.
+message Bloq {
+  // `name` identifies the Bloq.
+  string name = 1;
+  // `Args` are used to construct the Bloq.
+  repeated BloqArg args = 2;
+  // `Registers` specify the signature of the Bloq and are often derived using `args`.
+  Registers registers = 3;
+  // Other useful annotations.
+  TComplexity t_complexity = 4;
+}
+
+// Specific instance of a Bloq.
+message BloqInstance {
+  int32 instance_id = 1;
+  int32 bloq_id = 2;
+}
+
+// One half of a connection.
+message Soquet {
+  oneof binst {
+    BloqInstance bloq_instance = 1;
+    string dangling_t = 2;
+  }
+  Register register = 3;
+  repeated int32 index = 4;
+}
+
+// A connection between two Soquets. Quantum compute graph can be represented as a list of
+// connections.
+message Connection {
+  Soquet left = 1;
+  Soquet right = 2;
+}
