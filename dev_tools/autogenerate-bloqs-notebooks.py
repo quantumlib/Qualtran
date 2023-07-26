@@ -54,7 +54,10 @@ import qualtran.bloqs.arithmetic_test
 import qualtran.bloqs.basic_gates.cnot_test
 import qualtran.bloqs.basic_gates.rotation_test
 import qualtran.bloqs.basic_gates.swap_test
+import qualtran.bloqs.basic_gates.t_gate_test
+import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
+import qualtran.bloqs.basic_gates.z_basis_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
@@ -82,7 +85,10 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         gate_specs=[
             BloqNbSpec(qualtran.bloqs.basic_gates.cnot_test._make_CNOT),
             BloqNbSpec(qualtran.bloqs.basic_gates.x_basis_test._make_plus_state),
+            BloqNbSpec(qualtran.bloqs.basic_gates.z_basis_test._make_zero_state),
+            BloqNbSpec(qualtran.bloqs.basic_gates.t_gate_test._make_t_gate),
             BloqNbSpec(qualtran.bloqs.basic_gates.rotation_test._make_Rz),
+            BloqNbSpec(qualtran.bloqs.basic_gates.toffoli_test._make_Toffoli),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),
