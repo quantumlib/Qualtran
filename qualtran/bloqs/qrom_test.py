@@ -14,7 +14,6 @@
 
 
 import numpy as np
-import sympy
 from cirq_ft import QROM as CirqQROM
 from cirq_ft.infra import t_complexity
 
