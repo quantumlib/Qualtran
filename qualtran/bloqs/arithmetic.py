@@ -12,10 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from attrs import frozen
-from cirq_ft import TComplexity
+from functools import cached_property
+from typing import Dict, Tuple, Union
 
-from qualtran import Bloq, Register, Signature
+import cirq
+import numpy as np
+from attrs import frozen
+from cirq_ft import LessThanEqualGate as CirqLessThanEqual
+
+from qualtran import Bloq, CompositeBloq, Register, Signature
+from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
 
 
 @frozen
@@ -212,3 +218,39 @@ class GreaterThan(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         return TComplexity(t=8 * self.bitsize)
+
+
+@frozen
+class LessThanEqual(Bloq):
+    r"""Implements $U|x,y,z\rangle = |x, y, x \le y\rangle$.
+
+    Args:
+        x_bitsize: bitsize of x register.
+        y_bitsize: bitsize of y register.
+
+    Registers:
+     - x, y: Registers to compare against oneanother.
+     - z: Register to hold result of comparison.
+    """
+
+    x_bitsize: int
+    y_bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register("x", bitsize=self.x_bitsize),
+                Register("y", bitsize=self.y_bitsize),
+                Register("z", bitsize=1),
+            ]
+        )
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_op(self)
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        less_than = CirqLessThanEqual(x_bitsize=self.x_bitsize, y_bitsize=self.y_bitsize)
+        return (less_than.on_registers(**cirq_quregs), cirq_quregs)
