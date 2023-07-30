@@ -27,5 +27,6 @@ def _make_prepare():
 
     return PrepareTHC(num_mu=10, num_spin_orb=4, keep_bitsize=8)
 
+
 def test_notebook():
     execute_notebook('thc')
