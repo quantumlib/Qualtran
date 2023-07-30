@@ -16,7 +16,6 @@ from functools import cached_property
 from typing import Dict, Tuple, Union
 
 import cirq
-import numpy as np
 from attrs import frozen
 from cirq_ft import LessThanEqualGate as CirqLessThanEqual
 from cirq_ft import TComplexity

@@ -1,18 +1,22 @@
-import itertools
+#  Copyright 2023 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, Union
+from typing import Tuple
 
-import numpy as np
-import quimb.tensor as qtn
-import sympy
-from attrs import field, frozen
-from numpy.typing import NDArray
+from attrs import frozen
 
-from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
-from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
-from qualtran.resource_counting import big_O, SympySymbolAllocator
+from qualtran import Bloq, Register, Signature
 
 
 @frozen

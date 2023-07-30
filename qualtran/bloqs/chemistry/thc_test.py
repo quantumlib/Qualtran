@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from qualtran.testing import execute_notebook
+
 
 def _make_uniform_superposition():
     from qualtran.bloqs.chemistry.thc import UniformSuperpositionTHC
