@@ -52,7 +52,8 @@ class QROM(Bloq):
             Register(f"selection{i}", bitsize=bs) for i, bs in enumerate(self.selection_bitsizes)
         ]
         regs += [Register(f"target{i}", bitsize=bs) for i, bs in enumerate(self.data_bitsizes)]
-        regs += [Register("control", bitsize=1, shape=(len(self.cvs),))]
+        if len(self.cvs) > 0:
+            regs += [Register("control", bitsize=1, shape=(len(self.cvs),))]
         return Signature(regs)
 
     def decompose_bloq(self) -> 'CompositeBloq':

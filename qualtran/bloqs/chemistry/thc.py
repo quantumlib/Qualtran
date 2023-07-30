@@ -146,8 +146,6 @@ class PrepareTHC(Bloq):
             UniformSuperpositionTHC(bitsize=log_mu), mu=regs['mu'], nu=regs['nu'], succ=regs['succ']
         )
         # 2. Make contiguous register from mu and nu and store in register `s`.
-        for k, v in regs.items():
-            print(k, v)
         mu, nu, s = bb.add(ContiguousRegister(log_mu, log_d), mu=mu, nu=nu, s=regs['s'])
         # qrom_regs: Dict[str, 'SoquetT'] = {}
         qrom = QROM(
