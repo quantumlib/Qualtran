@@ -58,6 +58,8 @@ import qualtran.bloqs.basic_gates.t_gate_test
 import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
+import qualtran.bloqs.chemistry.thc
+import qualtran.bloqs.chemistry.thc_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
@@ -131,6 +133,16 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.factoring.mod_mul_test._make_modmul),
         ],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
+    NotebookSpec(
+        title='Tensor Hypercontraction',
+        module=qualtran.bloqs.chemistry,
+        path_stem='thc',
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.chemistry.thc_test._make_uniform_superposition),
+            BloqNbSpec(qualtran.bloqs.chemistry.thc_test._make_prepare),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry',
     ),
 ]
 
