@@ -12,8 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, Register
-from qualtran.bloqs.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
+from qualtran.bloqs.arithmetic import (
+    Add,
+    GreaterThan,
+    LessThanConstant,
+    LessThanEqual,
+    Product,
+    Square,
+    SumOfSquares,
+)
 from qualtran.testing import execute_notebook
 
 
@@ -94,6 +103,17 @@ def test_greater_than():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, result=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
+
+
+def test_less_than_equal():
+    lte = LessThanEqual(5, 5)
+    print(lte.decompose_bloq().t_complexity())
+    qlt_testing.assert_valid_bloq_decomposition(lte)
+
+
+def test_less_than_constant():
+    lte = LessThanConstant(5, 7)
+    qlt_testing.assert_valid_bloq_decomposition(lte)
 
 
 def test_notebook():
