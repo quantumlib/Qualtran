@@ -28,3 +28,4 @@ from .t_gate import TGate
 from .toffoli import Toffoli
 from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate
 from .z_basis import IntEffect, IntState, OneEffect, OneState, ZeroEffect, ZeroState, ZGate
+from .hadamard import Hadamard, MultiHadamard
