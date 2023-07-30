@@ -19,6 +19,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 from cirq_ft import LessThanEqualGate as CirqLessThanEqual
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, CompositeBloq, Register, Signature
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
