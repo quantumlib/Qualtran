@@ -17,10 +17,18 @@ import numpy as np
 from cirq_ft import QROM as CirqQROM
 from cirq_ft.infra import t_complexity
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.qrom import QROM
 
 
-def test_qrom():
+def test_qrom_decomp():
+    data = np.zeros((10, 10))
+    sel_bitsizes = tuple((s - 1).bit_length() for s in data.shape)
+    qrom = QROM(data_bitsizes=(4,), selection_bitsizes=sel_bitsizes, data_ranges=data.shape)
+    qlt_testing.assert_valid_bloq_decomposition(qrom)
+
+
+def test_tcomplexity():
     data = np.zeros((10, 10))
     sel_bitsizes = tuple((s - 1).bit_length() for s in data.shape)
     qrom = QROM(data_bitsizes=(4,), selection_bitsizes=sel_bitsizes, data_ranges=data.shape)
