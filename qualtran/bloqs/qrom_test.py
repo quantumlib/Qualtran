@@ -22,16 +22,26 @@ from qualtran.bloqs.qrom import QROM
 
 
 def test_qrom_decomp():
-    data = np.zeros((10, 10))
+    data = np.ones((10, 10))
     sel_bitsizes = tuple((s - 1).bit_length() for s in data.shape)
-    qrom = QROM(data_bitsizes=(4,), selection_bitsizes=sel_bitsizes, data_ranges=data.shape)
+    qrom = QROM(data=[data], data_bitsizes=(4,), selection_bitsizes=sel_bitsizes)
     qlt_testing.assert_valid_bloq_decomposition(qrom)
 
 
 def test_tcomplexity():
-    data = np.zeros((10, 10))
+    data = np.ones((10, 10))
     sel_bitsizes = tuple((s - 1).bit_length() for s in data.shape)
-    qrom = QROM(data_bitsizes=(4,), selection_bitsizes=sel_bitsizes, data_ranges=data.shape)
+    qrom = QROM([data], selection_bitsizes=sel_bitsizes, data_bitsizes=(4,))
     cbloq = qrom.decompose_bloq()
-    cqrom = CirqQROM.build(data)
+    cqrom = CirqQROM(data=[data], selection_bitsizes=sel_bitsizes, target_bitsizes=(4,))
     assert cbloq.t_complexity() == t_complexity(cqrom)
+
+
+def test_hashing():
+    data = np.ones((10, 10))
+    sel_bitsizes = tuple((s - 1).bit_length() for s in data.shape)
+    qrom = QROM([data], selection_bitsizes=sel_bitsizes, data_bitsizes=(4,))
+    assert hash(qrom) == hash(qrom)
+    qrom_2 = QROM([data], selection_bitsizes=sel_bitsizes, data_bitsizes=(5,))
+    assert qrom == qrom
+    assert qrom_2 != qrom
