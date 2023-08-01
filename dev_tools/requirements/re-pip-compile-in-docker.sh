@@ -16,16 +16,20 @@
 
 set -ex
 
+# https://stackoverflow.com/q/59895
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+readonly SCRIPT_DIR
+
 # We use docker to run the actual `pip-compile` command because its
 # behavior depends on the platform from which it is run. Please see
 # ./Dockerfile for the list of `pip-compile` commands that are run.
-docker build -t qualtran-pip-compile .
+docker build -t qualtran-pip-compile "$SCRIPT_DIR"
 
 # Create a container from the image so we can copy out the outputs
-id=$(docker create qualtran-pip-compile)
+container_id=$(docker create qualtran-pip-compile)
 
 # Copy out the files and organize them
-docker cp $id:/pip-compile/envs ./
+docker cp "$container_id:/pip-compile/envs" "$SCRIPT_DIR/"
 
 # Clean up
-docker rm -v $id
+docker rm -v "$container_id"
