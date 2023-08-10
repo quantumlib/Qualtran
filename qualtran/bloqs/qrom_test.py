@@ -27,11 +27,13 @@ def test_qrom_decomp():
     qrom = QROM(data=[data], data_bitsizes=(4,), selection_bitsizes=sel_bitsizes)
     qlt_testing.assert_valid_bloq_decomposition(qrom)
 
+
 def test_qrom_decomp_with_control():
     data = np.ones((10, 10))
     sel_bitsizes = tuple((s - 1).bit_length() for s in data.shape)
     qrom = QROM(data=[data], data_bitsizes=(4,), selection_bitsizes=sel_bitsizes, num_controls=1)
     qlt_testing.assert_valid_bloq_decomposition(qrom)
+
 
 def test_tcomplexity():
     data = np.ones((10, 10))
