@@ -43,13 +43,13 @@ class QROM(Bloq):
         data_bitsizes: The number of bits used to represent the data
             registers. This can be deduced from the maximum element of each of the
             datasets. Should be of length len(data), i.e. the number of datasets.
-        cvs: The control values for the gate. Defaults to no controls.
+        num_controls: The number of controls registers.
     """
 
     data: Sequence[NDArray]
     selection_bitsizes: Tuple[int, ...]
     data_bitsizes: Tuple[int, ...]
-    cvs: Tuple[int, ...] = ()
+    num_controls: int = 0
 
     @cached_property
     def signature(self) -> Signature:
@@ -57,8 +57,8 @@ class QROM(Bloq):
             Register(f"selection{i}", bitsize=bs) for i, bs in enumerate(self.selection_bitsizes)
         ]
         regs += [Register(f"target{i}", bitsize=bs) for i, bs in enumerate(self.data_bitsizes)]
-        if len(self.cvs) > 0:
-            regs += [Register("control", bitsize=1, shape=(len(self.cvs),))]
+        if self.num_controls > 0:
+            regs += [Register("control", bitsize=self.num_controls)]
         return Signature(regs)
 
     def decompose_bloq(self) -> 'CompositeBloq':
@@ -71,7 +71,7 @@ class QROM(Bloq):
             data=self.data,
             selection_bitsizes=self.selection_bitsizes,
             target_bitsizes=self.data_bitsizes,
-            num_controls=self.cvs,
+            num_controls=self.num_controls,
         )
         return (qrom.on_registers(**cirq_quregs), cirq_quregs)
 
