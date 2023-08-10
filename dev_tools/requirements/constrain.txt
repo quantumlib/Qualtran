@@ -1,4 +1,4 @@
 # Use this file as an argument to `pip-compile` to constrain things to the complete & compatible
 # dev env
 
--c dev.env.txt
+-c envs/dev.env.txt
