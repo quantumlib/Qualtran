@@ -17,9 +17,8 @@ from functools import cached_property
 from typing import Dict
 
 import attrs
-import quimb.tensor as qtn
 
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
 
 
 @attrs.frozen
@@ -33,6 +32,7 @@ class OnEach(Bloq):
     Registers:
      - q: an n-qubit register.
     """
+
     n: int
     gate: Bloq
 
@@ -44,13 +44,9 @@ class OnEach(Bloq):
     def short_name(self) -> str:
         return f'{self.gate.short_name()}^{self.n}'
 
-    def build_composite_bloq(
-            self, bb: BloqBuilder, *, q: SoquetT,
-    ) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> Dict[str, SoquetT]:
 
         qs = bb.split(q)
         for i in range(self.n):
             qs[i] = bb.add(self.gate, q=qs[i])
-        return {
-            'q': bb.join(qs),
-        }
+        return {'q': bb.join(qs)}
