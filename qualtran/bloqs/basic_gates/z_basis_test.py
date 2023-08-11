@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import cirq
 import numpy as np
 import pytest
 
@@ -23,6 +23,7 @@ from qualtran.bloqs.basic_gates import (
     OneState,
     ZeroEffect,
     ZeroState,
+    ZGate,
 )
 
 
@@ -145,3 +146,25 @@ def test_int_effect():
 
     with pytest.raises(AssertionError):
         k.call_classically(val=245)
+
+
+def test_to_cirq():
+    bb = BloqBuilder()
+    q = bb.add(ZeroState())
+    q = bb.add(ZGate(), q=q)
+    cbloq = bb.finalize(q=q)
+    circuit, _ = cbloq.to_cirq_circuit()
+    cirq.testing.assert_has_diagram(circuit, "_c(0): ───Z───")
+    vec1 = cbloq.tensor_contract()
+    vec2 = cirq.final_state_vector(circuit)
+    np.testing.assert_allclose(vec1, vec2)
+
+    bb = BloqBuilder()
+    q = bb.add(OneState())
+    q = bb.add(ZGate(), q=q)
+    cbloq = bb.finalize(q=q)
+    circuit, _ = cbloq.to_cirq_circuit()
+    cirq.testing.assert_has_diagram(circuit, "_c(0): ───X───Z───")
+    vec1 = cbloq.tensor_contract()
+    vec2 = cirq.final_state_vector(circuit)
+    np.testing.assert_allclose(vec1, vec2)
