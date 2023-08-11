@@ -10,3 +10,19 @@ Open issues or contact the authors with bug reports or feedback.
 
 Subscribe to [qualtran-announce@googlegroups.com](https://groups.google.com/g/qualtran-announce)
 to receive the latest news and updates!
+
+## Documentation
+
+Documentation is available at https://qualtran.readthedocs.io/
+
+## Installation
+
+Qualtran is being actively developed. We recommend installing from source:
+
+    git clone https://github.com/quantumlib/Qualtran.git
+    cd Qualtran/
+    pip install -e .
+
+You can also install the latest tagged release using `pip`:
+
+    pip install qualtran

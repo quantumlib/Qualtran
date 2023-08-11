@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import cirq
 import numpy as np
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.basic_gates import PlusEffect, PlusState
+from qualtran.bloqs.basic_gates import MinusState, PlusEffect, PlusState, XGate
 
 
 def _make_plus_state():
@@ -57,3 +57,25 @@ def test_plus_state_effect():
 
     should_be = 1
     np.testing.assert_allclose(should_be, val)
+
+
+def test_to_cirq():
+    bb = BloqBuilder()
+    q = bb.add(PlusState())
+    q = bb.add(XGate(), q=q)
+    cbloq = bb.finalize(q=q)
+    circuit, _ = cbloq.to_cirq_circuit()
+    cirq.testing.assert_has_diagram(circuit, "_c(0): ───H───X───")
+    vec1 = cbloq.tensor_contract()
+    vec2 = cirq.final_state_vector(circuit)
+    np.testing.assert_allclose(vec1, vec2)
+
+    bb = BloqBuilder()
+    q = bb.add(MinusState())
+    q = bb.add(XGate(), q=q)
+    cbloq = bb.finalize(q=q)
+    circuit, _ = cbloq.to_cirq_circuit()
+    cirq.testing.assert_has_diagram(circuit, "_c(0): ───[ _c(0): ───X───H─── ]───X───")
+    vec1 = cbloq.tensor_contract()
+    vec2 = cirq.final_state_vector(circuit)
+    np.testing.assert_allclose(vec1, vec2)

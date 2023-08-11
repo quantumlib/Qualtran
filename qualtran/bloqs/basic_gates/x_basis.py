@@ -84,7 +84,13 @@ class _XVector(Bloq):
         import cirq
 
         (q,) = qubit_manager.qalloc(self.n)
-        return cirq.H(q), {'q': np.array([q])}
+
+        if self.bit:
+            op = cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q), cirq.H(q)))
+        else:
+            op = cirq.H(q)
+
+        return op, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
         s = self.short_name()
