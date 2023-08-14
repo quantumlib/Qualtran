@@ -18,7 +18,7 @@ import cirq
 from attrs import frozen
 from cirq_ft import MultiControlPauli as CirqMultiControlPauli
 
-from qualtran import Bloq, CompositeBloq, Signature
+from qualtran import Bloq, CompositeBloq, Register, Signature
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
 
 
@@ -38,12 +38,14 @@ class MultiControlPauli(Bloq):
         target_gate: Pauli gate to apply to target register.
     """
 
-    cvs: Tuple[int, ...]
+    cvs: Tuple[Tuple[int, ...], ...]
     target_gate: Bloq
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(controls=len(self.cvs), target=1)
+        regs = [Register(f"ctrl{i}", bitsize=len(cv)) for i, cv in enumerate(self.cvs)]
+        regs += [Register('trgt', bitsize=1)]
+        return Signature(regs)
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_op(self)
@@ -51,8 +53,8 @@ class MultiControlPauli(Bloq):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        controls = cirq_quregs['controls'].tolist()
-        target = cirq_quregs['target'].tolist()
+        controls = [cirq_quregs[f'ctrl{i}'].tolist() for i, _ in enumerate(self.cvs)]
+        target = cirq_quregs['trgt'].tolist()
         gate_map = {'X': cirq.X, 'Y': cirq.Y, 'Z': cirq.Z}
         bloq_gate = self.target_gate.short_name()[0]
         return (
