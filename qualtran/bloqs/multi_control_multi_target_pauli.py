@@ -15,6 +15,7 @@ from functools import cached_property
 from typing import Dict, Tuple
 
 import cirq
+import numpy as np
 from attrs import frozen
 from cirq_ft import MultiControlPauli as CirqMultiControlPauli
 
@@ -53,13 +54,15 @@ class MultiControlPauli(Bloq):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        controls = [cirq_quregs[f'ctrl{i}'].tolist() for i, _ in enumerate(self.cvs)]
+        controls = np.concatenate(
+            [cirq_quregs[f'ctrl{i}'].tolist() for i, _ in enumerate(self.cvs)]
+        )
         target = cirq_quregs['trgt'].tolist()
         gate_map = {'X': cirq.X, 'Y': cirq.Y, 'Z': cirq.Z}
         bloq_gate = self.target_gate.short_name()[0]
         return (
-            CirqMultiControlPauli(self.cvs, target_gate=gate_map[bloq_gate]).on_registers(
-                controls=controls, target=target
-            ),
+            CirqMultiControlPauli(
+                tuple(np.concatenate(self.cvs)), target_gate=gate_map[bloq_gate]
+            ).on_registers(controls=controls, target=target),
             cirq_quregs,
         )
