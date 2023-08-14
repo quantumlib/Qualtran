@@ -99,11 +99,19 @@ class _ZVector(Bloq):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
+        import cirq
+
         (q,) = qubit_manager.qalloc(self.n)
-        return None, {'q': np.array([q])}
+
+        if self.bit:
+            op = cirq.X(q)
+        else:
+            op = None
+        return op, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
         s = self.short_name()
