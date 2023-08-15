@@ -12,10 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
+from typing import Dict, Tuple, Union
+
+import cirq
 from attrs import frozen
+from cirq_ft import LessThanEqualGate as CirqLessThanEqual
+from cirq_ft import LessThanGate as CirqLessThanGate
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, CompositeBloq, Register, Signature
+from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
 
 
 @frozen
@@ -212,3 +219,74 @@ class GreaterThan(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         return TComplexity(t=8 * self.bitsize)
+
+
+@frozen
+class LessThanEqual(Bloq):
+    r"""Implements $U|x,y,z\rangle = |x, y, z \oplus {x \le y}\rangle$.
+
+    Args:
+        x_bitsize: bitsize of x register.
+        y_bitsize: bitsize of y register.
+
+    Registers:
+     - x, y: Registers to compare against eachother.
+     - z: Register to hold result of comparison.
+    """
+
+    x_bitsize: int
+    y_bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register("x", bitsize=self.x_bitsize),
+                Register("y", bitsize=self.y_bitsize),
+                Register("z", bitsize=1),
+            ]
+        )
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_op(self)
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        less_than = CirqLessThanEqual(x_bitsize=self.x_bitsize, y_bitsize=self.y_bitsize)
+        x = cirq_quregs['x']
+        y = cirq_quregs['y']
+        z = cirq_quregs['z']
+        return (less_than.on(*x, *y, *z), cirq_quregs)
+
+
+@frozen
+class LessThanConstant(Bloq):
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x < a)\rangle"
+
+    Args:
+        bitsize: bitsize of x register.
+        val: integer to compare x against (a above.)
+
+    Registers:
+     - x: Registers to compare against val.
+     - z: Register to hold result of comparison.
+    """
+
+    bitsize: int
+    val: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(x=self.bitsize, z=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_op(self)
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        less_than = CirqLessThanGate(bitsize=self.bitsize, less_than_val=self.val)
+        x = cirq_quregs['x']
+        z = cirq_quregs['z']
+        return (less_than.on(*x, *z), cirq_quregs)
