@@ -27,7 +27,7 @@ class OnEach(Bloq):
 
     Args:
         n: the number of qubits to add the bloq to.
-        gate: A single qubit gate
+        gate: A single qubit gate. The single qubit register must be named q.
 
     Registers:
      - q: an n-qubit register.
@@ -36,13 +36,18 @@ class OnEach(Bloq):
     n: int
     gate: Bloq
 
+    def __attrs_post_init__(self):
+        assert len(self.gate.signature) == 1, "Gate must only have a single register."
+        assert self.gate.signature[0].bitsize == 1, "Must be single qubit gate."
+        assert self.gate.signature[0].name == 'q', "Register must be named q."
+
     @cached_property
     def signature(self) -> Signature:
         reg = Register('q', bitsize=self.n)
         return Signature([reg])
 
     def short_name(self) -> str:
-        return f'{self.gate.short_name()}^{self.n}'
+        return rf'{self.gate.short_name()}⨂{self.n}'
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> Dict[str, SoquetT]:
 
