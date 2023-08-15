@@ -223,7 +223,7 @@ class GreaterThan(Bloq):
 
 @frozen
 class LessThanEqual(Bloq):
-    r"""Implements $U|x,y,z\rangle = |x, y, x \le y\rangle$.
+    r"""Implements $U|x,y,z\rangle = |x, y, z \oplus {x \le y}\rangle$.
 
     Args:
         x_bitsize: bitsize of x register.
@@ -254,8 +254,8 @@ class LessThanEqual(Bloq):
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         less_than = CirqLessThanEqual(x_bitsize=self.x_bitsize, y_bitsize=self.y_bitsize)
-        x = cirq_quregs['x'].tolist()
-        y = cirq_quregs['y'].tolist()
+        x = cirq_quregs['x']
+        y = cirq_quregs['y']
         z = cirq_quregs['z']
         return (less_than.on(*x, *y, *z), cirq_quregs)
 
@@ -287,6 +287,6 @@ class LessThanConstant(Bloq):
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
         less_than = CirqLessThanGate(bitsize=self.bitsize, less_than_val=self.val)
-        x = cirq_quregs['x'].tolist()
+        x = cirq_quregs['x']
         z = cirq_quregs['z']
         return (less_than.on(*x, *z), cirq_quregs)
