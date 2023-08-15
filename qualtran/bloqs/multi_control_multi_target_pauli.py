@@ -35,12 +35,21 @@ class MultiControlPauli(Bloq):
         (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
 
     Args:
-        cvs: Control values.
-        target_gate: Pauli gate to apply to target register.
+        cvs: Control values. Expect a tuple of tuples of control values, where
+            each tuple of control values should be the same length as the number
+            of bits in the corresponding control register. E.g. cvs = ((1, 1),
+            (1,), (1,1,1)) would mean we have 3 control registers of sizes (2,
+            1, 3). Currently we assume only control values of 1, a zero would
+            signify anti controls.
+        target_pauli: The name of the Pauli gate ("X", "Y", or "Z")
     """
 
     cvs: Tuple[Tuple[int, ...], ...]
-    target_gate: Bloq
+    pauli_name: str
+
+    def __attrs_post_init__(self):
+        assert isinstance(self.pauli_name, str)
+        assert self.pauli_name in ("X", "Y", "Z")
 
     @cached_property
     def signature(self) -> Signature:
@@ -59,10 +68,9 @@ class MultiControlPauli(Bloq):
         )
         target = cirq_quregs['trgt'].tolist()
         gate_map = {'X': cirq.X, 'Y': cirq.Y, 'Z': cirq.Z}
-        bloq_gate = self.target_gate.short_name()[0]
         return (
             CirqMultiControlPauli(
-                tuple(np.concatenate(self.cvs)), target_gate=gate_map[bloq_gate]
+                tuple(np.concatenate(self.cvs)), target_gate=gate_map[self.pauli_name]
             ).on_registers(controls=controls, target=target),
             cirq_quregs,
         )
