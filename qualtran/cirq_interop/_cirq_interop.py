@@ -461,7 +461,8 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
             symbs = reg_to_wires(reg)
             assert len(symbs) == reg.total_bits()
             wire_symbols.extend(symbs)
-        wire_symbols[0] = self._bloq.pretty_name()
+        if self._reg_to_wires is None:
+            wire_symbols[0] = self._bloq.pretty_name()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __eq__(self, other):
