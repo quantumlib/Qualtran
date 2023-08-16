@@ -164,6 +164,9 @@ class XGate(Bloq):
             )
         )
 
+    def short_name(self) -> str:
+        return 'X'
+
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
         return {'q': (q + 1) % 2}
 
