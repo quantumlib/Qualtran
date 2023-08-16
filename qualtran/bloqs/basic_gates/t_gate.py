@@ -57,6 +57,9 @@ class TGate(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=1)
 
+    def short_name(self) -> str:
+        return 'T'
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
