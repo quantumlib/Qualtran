@@ -23,7 +23,9 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, CompositeBloq, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.cirq_interop import (
+    BloqAsCirqGate,
     cirq_optree_to_cbloq,
     CirqGateAsBloq,
     CirqQuregT,
@@ -178,7 +180,7 @@ def test_bloq_as_cirq_gate_left_register():
     bb.free(q)
     cbloq = bb.finalize()
     circuit, _ = cbloq.to_cirq_circuit()
-    cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
+    cirq.testing.assert_has_diagram(circuit, """_c(0): ───Allocate───X───Free───""")
 
 
 @frozen
@@ -221,6 +223,77 @@ def test_bloq_decompose_from_cirq_op():
 
     with pytest.raises(NotImplementedError):
         TestCNOTSymbolic().decompose_bloq()
+
+
+def test_bloq_as_cirq_gate_multi_dimensional_signature():
+    bloq = SwapWithZero(2, 3, 4)
+    cirq_quregs = bloq.signature.get_cirq_quregs()
+    op = BloqAsCirqGate(bloq).on_registers(**cirq_quregs)
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(op),
+        '''
+selection0: ──────SwapWithZero───
+                  │
+selection1: ──────selection──────
+                  │
+targets[0, 0]: ───targets────────
+                  │
+targets[0, 1]: ───targets────────
+                  │
+targets[0, 2]: ───targets────────
+                  │
+targets[1, 0]: ───targets────────
+                  │
+targets[1, 1]: ───targets────────
+                  │
+targets[1, 2]: ───targets────────
+                  │
+targets[2, 0]: ───targets────────
+                  │
+targets[2, 1]: ───targets────────
+                  │
+targets[2, 2]: ───targets────────
+                  │
+targets[3, 0]: ───targets────────
+                  │
+targets[3, 1]: ───targets────────
+                  │
+targets[3, 2]: ───targets────────
+''',
+    )
+    cbloq = bloq.decompose_bloq()
+    cirq.testing.assert_has_diagram(
+        cbloq.to_cirq_circuit(**cirq_quregs)[0],
+        '''
+selection0: ──────────────────────────────@(approx)───
+                                          │
+selection1: ──────@(approx)───@(approx)───┼───────────
+                  │           │           │
+targets[0, 0]: ───×(x)────────┼───────────×(x)────────
+                  │           │           │
+targets[0, 1]: ───×(x)────────┼───────────×(x)────────
+                  │           │           │
+targets[0, 2]: ───×(x)────────┼───────────×(x)────────
+                  │           │           │
+targets[1, 0]: ───×(y)────────┼───────────┼───────────
+                  │           │           │
+targets[1, 1]: ───×(y)────────┼───────────┼───────────
+                  │           │           │
+targets[1, 2]: ───×(y)────────┼───────────┼───────────
+                              │           │
+targets[2, 0]: ───────────────×(x)────────×(y)────────
+                              │           │
+targets[2, 1]: ───────────────×(x)────────×(y)────────
+                              │           │
+targets[2, 2]: ───────────────×(x)────────×(y)────────
+                              │
+targets[3, 0]: ───────────────×(y)────────────────────
+                              │
+targets[3, 1]: ───────────────×(y)────────────────────
+                              │
+targets[3, 2]: ───────────────×(y)────────────────────
+''',
+    )
 
 
 def test_notebook():
