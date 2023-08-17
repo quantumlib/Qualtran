@@ -15,10 +15,11 @@
 
 import numpy as np
 from cirq_ft import QROM as CirqQROM
+from cirq_ft import SelectSwapQROM as CirqSelectSwapQROM
 from cirq_ft.infra import t_complexity
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.qrom import QROM, SelectSwapQROM
 
 
 def test_qrom_decomp():
@@ -52,3 +53,15 @@ def test_hashing():
     qrom_2 = QROM([data], selection_bitsizes=sel_bitsizes, data_bitsizes=(5,))
     assert qrom == qrom
     assert qrom_2 != qrom
+
+
+def test_select_swap_qrom_decomp():
+    qrom = SelectSwapQROM.build(*[[0, 1, 2, 3, 4]])
+    qlt_testing.assert_valid_bloq_decomposition(qrom)
+
+
+def test_select_swap_qrom_tcomplexity():
+    qrom = SelectSwapQROM.build([0, 1], [2, 3])
+    cbloq = qrom.decompose_bloq()
+    cqrom = CirqSelectSwapQROM([0, 1], [2, 3], target_bitsizes=(1, 2))
+    assert cbloq.t_complexity() == t_complexity(cqrom)
