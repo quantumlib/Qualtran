@@ -907,8 +907,7 @@ class BloqBuilder:
                 unpacking. In this final case, the ordering is according to `bloq.signature`
                 and irrespective of the order of `**in_soqs`.
         """
-        binst = BloqInstance(bloq, i=self._new_binst_i())
-        outs = tuple(soq for _, soq in self._add_binst(binst, in_soqs=in_soqs))
+        outs = self.add_t(bloq, **in_soqs)
         if len(outs) == 0:
             return None
         if len(outs) == 1:
