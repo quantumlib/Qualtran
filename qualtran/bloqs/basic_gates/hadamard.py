@@ -64,6 +64,9 @@ class Hadamard(Bloq):
             )
         )
 
+    def short_name(self) -> 'str':
+        return 'H'
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
