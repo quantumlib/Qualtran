@@ -12,7 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.surface_code.algorithm_specs import AlgorithmSpecs
-from qualtran.surface_code.physical_parameters import PhysicalParameters
-from qualtran.surface_code.rotation_cost_model import RotationCostLinearModel, RotationCostModel
-from qualtran.surface_code.t_factory import TFactory
+from qualtran.surface_code.rotation_cost_model import RotationCostLinearModel
+
+
+def test_linear_model():
+    model = RotationCostLinearModel(1, 2, 3, 4)
+    assert model.mean_cost(0.5) == 3
+    assert model.max_cost(0.5) == 7

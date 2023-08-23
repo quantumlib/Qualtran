@@ -12,7 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.surface_code.algorithm_specs import AlgorithmSpecs
-from qualtran.surface_code.physical_parameters import PhysicalParameters
-from qualtran.surface_code.rotation_cost_model import RotationCostLinearModel, RotationCostModel
-from qualtran.surface_code.t_factory import TFactory
+
+from qualtran.surface_code.t_factory import MagicStateCount, TFactory
+
+
+def test_footprint():
+    factory = TFactory(num_qubits=5, duration=1, t_states_rate=0.1)
+    magic_count = MagicStateCount(t_count=1, ccz_count=1)
+    assert factory.footprint() == 5
+    assert factory.n_cycles(magic_count) == 50
+    assert factory.distillation_error(magic_count, 0.5) == 25
