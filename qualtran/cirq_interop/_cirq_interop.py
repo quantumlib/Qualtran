@@ -24,8 +24,6 @@ import networkx as nx
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
-from cirq_ft import Register as LegacyRegister
-from cirq_ft import Registers as LegacyRegisters
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -135,7 +133,7 @@ class CirqGateAsBloq(Bloq):
 
         wire_symbols = cirq.circuit_diagram_info(self.gate).wire_symbols
         begin = 0
-        symbol = soq.pretty()
+        symbol: str = soq.pretty()
         for reg in self.signature:
             finish = begin + np.product(reg.shape)
             if reg == soq.reg:
@@ -144,7 +142,10 @@ class CirqGateAsBloq(Bloq):
         return directional_text_box(text=symbol, side=soq.reg.side)
 
 
-def split_qvars(qvars: Sequence[Soquet], signature: Signature) -> Dict[str, NDArray[Soquet]]:
+def _split_qvars_for_regs(
+    qvars: Sequence[Soquet], signature: Signature
+) -> Dict[str, NDArray[Soquet]]:
+    """Split a flat list of soquets into a dictionary corresponding to `signature`."""
     qvars_regs = {}
     base = 0
     for reg in signature:
@@ -172,10 +173,9 @@ def cirq_optree_to_cbloq(
     OP-TREE corresponding to the `signature`. If `signature` has registers with entry
         - `Register('x', bitsize=2, shape=(3, 4))` and
         - `Register('y', bitsize=1, shape=(10, 20))`
-    then `cirq_quregs` should one entry corresponding to each register as follows:
+    then `cirq_quregs` should have one entry corresponding to each register as follows:
         - key='x'; value=`np.array(cirq_qubits_used_in_optree, shape=(3, 4, 2))` and
-        - key='y'; value=`np.array(cirq_qubits_used_in_optree, shape=(10, 20))`.
-
+        - key='y'; value=`np.array(cirq_qubits_used_in_optree, shape=(10, 20, 1))`.
 
     If `signature` is None, the resultant composite bloq will have one thru-register named "qubits"
     of shape `(n_qubits,)`.
@@ -198,7 +198,7 @@ def cirq_optree_to_cbloq(
         assert reg.name in cirq_quregs
         soqs = initial_soqs[reg.name]
         if isinstance(soqs, Soquet):
-            soqs = np.array([soqs])
+            soqs = np.asarray(soqs)[np.newaxis, ...]
         if reg.bitsize > 1:
             soqs = np.array([bb.split(soq) for soq in soqs.flatten()])
         soqs = soqs.reshape(reg.shape + (reg.bitsize,))
@@ -217,7 +217,7 @@ def cirq_optree_to_cbloq(
                 allocated_qubits.add(q)
 
         qvars_in = [qubit_to_qvar[qubit] for qubit in op.qubits]
-        qvars_out = bb.add_t(bloq, **split_qvars(qvars_in, bloq.signature))
+        qvars_out = bb.add_t(bloq, **_split_qvars_for_regs(qvars_in, bloq.signature))
         qubit_to_qvar |= zip(
             op.qubits, itertools.chain.from_iterable([arr.flatten() for arr in qvars_out])
         )
@@ -225,7 +225,7 @@ def cirq_optree_to_cbloq(
     for q in allocated_qubits:
         bb.add(Free(1), free=qubit_to_qvar[q])
 
-    qvars = [*qubit_to_qvar.values()]
+    qvars = np.array([*qubit_to_qvar.values()])
     final_soqs = {}
     idx = 0
     for reg in signature.rights():
@@ -236,16 +236,19 @@ def cirq_optree_to_cbloq(
         if reg.bitsize > 1:
             # Need to combine the soquets here.
             if len(soqs) == reg.bitsize:
-                final_soqs[name] = bb.join(np.array(soqs))
+                final_soqs[name] = bb.join(soqs)
             else:
                 final_soqs[name] = np.array(
-                    bb.join(np.array(subsoqs)) for subsoqs in soqs[:: reg.bitsize]
+                    [
+                        bb.join(soqs[st : st + reg.bitsize])
+                        for st in range(0, len(soqs), reg.bitsize)
+                    ]
                 ).reshape(reg.shape)
         else:
             if len(soqs) == 1 and reg.shape == ():
                 final_soqs[name] = soqs[0]
             else:
-                final_soqs[name] = np.array(soqs).reshape(reg.shape)
+                final_soqs[name] = soqs.reshape(reg.shape)
     return bb.finalize(**final_soqs)
 
 
@@ -427,12 +430,12 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
         return self._bloq
 
     @property
-    def registers(self) -> LegacyRegisters:
+    def registers(self) -> cirq_ft.Registers:
         """`cirq_ft.GateWithRegisters` registers."""
         return self._legacy_regs
 
     @staticmethod
-    def _init_legacy_regs(bloq: Bloq) -> Tuple[LegacyRegisters, Mapping[str, Register]]:
+    def _init_legacy_regs(bloq: Bloq) -> Tuple[cirq_ft.Registers, Mapping[str, Register]]:
         """Initialize legacy registers.
 
         We flatten multidimensional registers and annotate non-thru registers with
@@ -443,15 +446,15 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
             compat_name_map: A mapping from the compatability-shim string names of the legacy
                 registers back to the original (register, idx) pair.
         """
-        legacy_regs: List[LegacyRegister] = []
+        legacy_regs: List[cirq_ft.Register] = []
         side_suffixes = {Side.LEFT: '_l', Side.RIGHT: '_r', Side.THRU: ''}
         compat_name_map = {}
         for reg in bloq.signature:
             compat_name = f'{reg.name}{side_suffixes[reg.side]}'
             compat_name_map[compat_name] = reg
             full_shape = reg.shape + (reg.bitsize,)
-            legacy_regs.append(LegacyRegister(name=compat_name, shape=full_shape))
-        return LegacyRegisters(legacy_regs), compat_name_map
+            legacy_regs.append(cirq_ft.Register(name=compat_name, shape=full_shape))
+        return cirq_ft.Registers(legacy_regs), compat_name_map
 
     @classmethod
     def bloq_on(
