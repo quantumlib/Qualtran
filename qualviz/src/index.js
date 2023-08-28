@@ -1,152 +1,141 @@
-import Diagram from 'diagram-js';
 
-import ConnectModule from 'diagram-js/lib/features/connect';
-import ContextPadModule from 'diagram-js/lib/features/context-pad';
-import CreateModule from 'diagram-js/lib/features/create';
-import LassoToolModule from 'diagram-js/lib/features/lasso-tool';
-import ModelingModule from 'diagram-js/lib/features/modeling';
-import MoveCanvasModule from 'diagram-js/lib/navigation/movecanvas';
-import MoveModule from 'diagram-js/lib/features/move';
-import OutlineModule from 'diagram-js/lib/features/outline';
-import PaletteModule from 'diagram-js/lib/features/palette';
-import ResizeModule from 'diagram-js/lib/features/resize';
-import RulesModule from 'diagram-js/lib/features/rules';
-import SelectionModule from 'diagram-js/lib/features/selection';
-import ZoomScrollModule from 'diagram-js/lib/navigation/zoomscroll';
+import * as d3 from "d3";
+
+// Declare the chart dimensions and margins.
+const width = 800;
+const height = 600;
+const marginTop = 20;
+const marginRight = 20;
+const marginBottom = 30;
+const marginLeft = 40;
+
+// Declare the x (horizontal position) scale.
+const x = d3.scaleLinear()
+  .domain([0, 100])
+  .range([marginLeft, width - marginRight]);
+
+// Declare the y (vertical position) scale.
+const y = d3.scaleLinear()
+  .domain([0, 100])
+  .range([marginTop, height - marginBottom]);
+
+// Create the SVG container.
+const svg = d3.create("svg")
+  .attr("width", width)
+  .attr("height", height);
+
+const boxes = [
+  { x: 5, y: 5 },
+  { x: 50, y: 50 }
+];
+
+const boxwidth = 20;
+const boxheight = 20;
+const box_offsets = [
+  { x: 0, y: 0 + 5 },
+  { x: boxwidth, y: 0 + 5 },
+  { x: 0, y: boxheight - 5 },
+  { x: boxwidth, y: boxheight - 5 },
+];
+
+const cxns = [
+  { lefti: 0, righti: 1, leftport: 3, rightport: 0 }
+];
 
 
-/**
- * A module that changes the default diagram look.
- */
-const ElementStyleModule = {
-  __init__: [
-    [ 'defaultRenderer', function(defaultRenderer) {
-      // override default styles
-      defaultRenderer.CONNECTION_STYLE = { fill: 'none', strokeWidth: 5, stroke: '#000' };
-      defaultRenderer.SHAPE_STYLE = { fill: 'white', stroke: '#000', strokeWidth: 2 };
-      defaultRenderer.FRAME_STYLE = { fill: 'none', stroke: '#000', strokeDasharray: 4, strokeWidth: 2 };
-    } ]
-  ]
-};
+function my_box_drag() {
 
+  function dragstarted(event, d) {
+    console.log("drag start", d)
+    d3.select(this).raise().attr("stroke", "red");
+  }
 
-/**
- * Our editor constructor
- *
- * @param { { container: Element, additionalModules?: Array<any> } } options
- *
- * @return {Diagram}
- */
-export default function Editor(options) {
+  function dragged(event, d) {
+    d.x = x.invert(event.x);
+    d.y = y.invert(event.y);
+    d3.select(this).attr("transform", `translate(${event.x}, ${event.y})`)
+    update_cxns();
+  }
 
-  const {
-    container,
-    additionalModules = []
-  } = options;
+  function dragended(event, d) {
+    d3.select(this).attr("stroke", "white");
+  }
 
-  // default modules provided by the toolbox
-  const builtinModules = [
-    ConnectModule,
-    ContextPadModule,
-    CreateModule,
-    LassoToolModule,
-    ModelingModule,
-    MoveCanvasModule,
-    MoveModule,
-    OutlineModule,
-    PaletteModule,
-    ResizeModule,
-    RulesModule,
-    SelectionModule,
-    ZoomScrollModule
-  ];
+  function subject(event, d) {
+    console.log("subject", d)
+    return { x: x(d.x), y: y(d.y) }
+  }
 
-  // our own modules, contributing controls, customizations, and more
-  const customModules = [
-    ElementStyleModule
-  ];
-
-  return new Diagram({
-    canvas: {
-      container
-    },
-    modules: [
-      ...builtinModules,
-      ...customModules,
-      ...additionalModules
-    ]
-  });
+  return d3.drag()
+    .container(svg)
+    .subject(subject)
+    .on("start", dragstarted)
+    .on("drag", dragged)
+    .on("end", dragended);
 }
 
-// (1) create new editor instance
 
-const diagram = new Editor({
-    container: document.querySelector('#container')
-  });
-  
-  
-  // (2) draw diagram elements (i.e. import)
-  
-  const canvas = diagram.get('canvas');
-  const elementFactory = diagram.get('elementFactory');
-  
-  // add root
-  var root = elementFactory.createRoot();
-  
-  canvas.setRootElement(root);
-  
-  // add shapes
-  var shape1 = elementFactory.createShape({
-    x: 150,
-    y: 100,
-    width: 100,
-    height: 80
-  });
-  
-  canvas.addShape(shape1, root);
-  
-  var shape2 = elementFactory.createShape({
-    x: 290,
-    y: 220,
-    width: 100,
-    height: 80
-  });
-  
-  canvas.addShape(shape2, root);
-  
-  
-  var connection1 = elementFactory.createConnection({
-    waypoints: [
-      { x: 250, y: 180 },
-      { x: 290, y: 220 }
-    ],
-    source: shape1,
-    target: shape2
-  });
-  
-  canvas.addConnection(connection1, root);
-  
-  
-  var shape3 = elementFactory.createShape({
-    x: 450,
-    y: 80,
-    width: 100,
-    height: 80
-  });
-  
-  canvas.addShape(shape3, root);
-  
-  var shape4 = elementFactory.createShape({
-    x: 425,
-    y: 50,
-    width: 300,
-    height: 200,
-    isFrame: true
-  });
-  
-  canvas.addShape(shape4, root);
-  
-  
-// (3) interact with the diagram via API
-//   const selection = diagram.get('selection');
-//   selection.select(shape3);
+function get_cxn_coords(cxn) {
+  let box1 = boxes[cxn.lefti];
+  let box2 = boxes[cxn.righti];
+  let x1 = box1.x + box_offsets[cxn.leftport].x;
+  let y1 = box1.y + box_offsets[cxn.leftport].y;
+  let x2 = box2.x + box_offsets[cxn.rightport].x;
+  let y2 = box2.y + box_offsets[cxn.rightport].y;
+  return { x1: x(x1), y1: y(y1), x2: x(x2), y2: y(y2) }
+}
+
+function update_cxns() {
+  let cxn_data = cxns.map(get_cxn_coords)
+  svg.selectAll("line.cxn")
+    .data(cxn_data)
+    .join("line")
+    .attr("class", "cxn")
+    .attr("stroke", "green")
+    .attr("stroke-width", 2)
+    .attr("x1", d => d.x1).attr("y1", d => d.y1)
+    .attr("x2", d => d.x2).attr("y2", d => d.y2)
+}
+update_cxns();
+
+svg.selectAll("g.binst")
+  .data(boxes)
+  .join("g")
+  .attr("class", "binst")
+  .attr("stroke", "white")
+  .attr("transform", d => `translate(${x(d.x)}, ${y(d.y)})`)
+  .call(g => g.append("rect")
+    .attr("width", x(boxwidth) - x(0)).attr("height", y(boxheight) - y(0))
+  )
+  .call(g => g.selectAll("circle")
+    .data(box_offsets)
+    .join("circle")
+    .attr("fill", "white")
+    .attr("cx", d => x(d.x) - x(0))
+    .attr("cy", d => y(d.y) - y(0))
+    .attr("r", 5)
+  )
+  .call(my_box_drag());
+
+
+// Add the x-axis.
+svg.append("g")
+  .attr("transform", `translate(0,${height - marginBottom})`)
+  .call(d3.axisBottom(x));
+
+// Add the y-axis.
+svg.append("g")
+  .attr("transform", `translate(${marginLeft},0)`)
+  .call(d3.axisLeft(y));
+
+let ui_div = d3.create("div");
+
+function expandBloq(event) {
+  console.log(event)
+}
+
+ui_div.append("button").text("hey2").on("click", expandBloq);
+
+// Append the SVG element.
+container.append(svg.node());
+container.append(ui_div.node());
