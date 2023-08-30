@@ -21,7 +21,7 @@ _PRETTY_FLOAT = attr.ib(type=float, default=0.0, repr=lambda x: f'{x:g}')
 
 @frozen
 class AlgorithmSpecs:
-    """AlgorithmSpecs is a summary of a quantum algorithm/circuit.
+    """Properties of a quantum algorithm that impact its physical cost
 
     Attributes:
         algorithm_qubits: Number of qubits used by the algorithm.
