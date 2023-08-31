@@ -81,7 +81,7 @@ class Square(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, result=2 * self.bitsize)
+        return Signature.build(a=self.bitsize, result=2 * self.bitsize + 2)
 
     def pretty_name(self) -> str:
         return "a^2"

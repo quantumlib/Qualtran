@@ -12,28 +12,57 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import itertools
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Dict
 
 import numpy as np
-import quimb.tensor as qtn
-import sympy
-from attrs import field, frozen
-from numpy.typing import NDArray
+from attrs import frozen
 
-from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
-from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
-from qualtran.resource_counting import big_O, SympySymbolAllocator
+from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran.bloqs.arithmetic import SumOfSquares
 
 
 @frozen
-class FunctionInterpolation(Bloq):
-    """
+class QuantumVariableRotation(Bloq):
+    r"""Bloq implementing Quantum Variable Rotation
+
+    $$
+        \sum_j c_j|\phi_j\rangle \rightarrow \sum_j e^{i \xi \phi_j}  c_j | \phi_j\rangle
+    $$
 
     Args:
+        bitsize: The number of bits encoding the phase angle $\phi_j$.
+
+    Register:
+     - phi: a bitsize size register storing the angle $\phi_j$.
+
+    References:
+        (Faster quantum chemistry simulation on fault-tolerant quantum
+            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+    """
+    phi_bitsize: int
+    target_bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('phi', bitsize=self.phi_bitsize),
+                Register('target', bitsize=self.target_bitsize),
+            ]
+        )
+
+
+@frozen
+class KineticEnergy(Bloq):
+    """Bloq for Kinetic energy unitary.
+
+    Args:
+        num_elec: The number of electrons.
+        num_grid: The number of grid points in each of the x, y and z
+            directions. In total, for a cubic grid there are N = num_grid**3
+            grid points. The number of bits required (in each spatial dimension)
+            is thus log N + 1, where the + 1 is for the sign bit.
 
     Registers:
      -
@@ -44,78 +73,96 @@ class FunctionInterpolation(Bloq):
             Optimization)[https://arxiv.org/pdf/2007.07391.pdf].
     """
 
-    adjoint: bool = False
+    num_elec: int
+    num_grid: int
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('ctrl', 1, shape=(2,)),
-                Register('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
+                Register(
+                    'system',
+                    shape=(self.num_elec, 3),
+                    bitsize=((self.num_grid - 1).bit_length() + 1),
+                )
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
-            pre_post_cliffords = big_O(1)
-        else:
-            pre_post_cliffords = 2 - self.cv1 - self.cv2
-        if self.adjoint:
-            return {(4 + 2 * pre_post_cliffords, ArbitraryClifford(n=2))}
+    def short_name(self) -> str:
+        return 'U_T(dt)'
 
-        return {(9 + 2 * pre_post_cliffords, ArbitraryClifford(n=2)), (4, TGate())}
-
-    def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f'And{dag}'
-
-    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        if self.adjoint:
-            raise NotImplementedError("Come back later.")
-
-        target = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
-        return {'ctrl': ctrl, 'target': target}
-
-    def add_my_tensors(
-        self,
-        tn: qtn.TensorNetwork,
-        tag: Any,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
-        # Fill in our tensor using "and" logic.
-        data = np.zeros((2, 2, 2, 2, 2), dtype=np.complex128)
-        for c1, c2 in itertools.product((0, 1), repeat=2):
-            if c1 == self.cv1 and c2 == self.cv2:
-                data[c1, c2, c1, c2, 1] = 1
-            else:
-                data[c1, c2, c1, c2, 0] = 1
-
-        # Here: adjoint just switches the direction of the target index.
-        if self.adjoint:
-            trg = incoming['target']
-        else:
-            trg = outgoing['target']
-
-        tn.add(
-            qtn.Tensor(
-                data=data,
-                inds=(
-                    incoming['ctrl'][0],
-                    incoming['ctrl'][1],
-                    outgoing['ctrl'][0],
-                    outgoing['ctrl'][1],
-                    trg,
-                ),
-                tags=['And', tag],
+    def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
+        bitsize = (self.num_grid - 1).bit_length() + 1
+        # TODO: discrepency here with target bitsize of 2*bitsize + 1 vs 2*bitsize + 2 listed in fusion paper.
+        for i in range(self.num_elec):
+            # temporary register to store output of sum of momenta
+            sos = bb.allocate(2 * bitsize + 1)
+            system[i], sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=system[i], result=sos)
+            sys_i = bb.join(np.array([bb.split(soq) for soq in system[i]]).ravel())
+            sos, sys_i = bb.add(
+                QuantumVariableRotation(phi_bitsize=(2 * bitsize + 1), target_bitsize=3 * bitsize),
+                phi=sos,
+                target=sys_i,
             )
+            # Need to reshape this back into 3 registers of size bitsize
+            system[i] = [bb.join(d) for d in np.array(bb.split(sys_i)).reshape(3, bitsize)]
+            bb.free(sos)
+        return {'system': system}
+
+
+@frozen
+class PotentialEnergy(Bloq):
+    """Bloq for Kinetic energy unitary.
+
+    Args:
+        num_elec: The number of electrons.
+        num_grid: The number of grid points in each of the x, y and z
+            directions. In total, for a cubic grid there are N = num_grid**3
+            grid points. The number of bits required (in each spatial dimension)
+            is thus log N + 1, where the + 1 is for the sign bit.
+
+    Registers:
+     -
+     -
+
+    References:
+        (Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial
+            Optimization)[https://arxiv.org/pdf/2007.07391.pdf].
+    """
+
+    num_elec: int
+    num_grid: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register(
+                    'system',
+                    shape=(self.num_elec, 3),
+                    bitsize=((self.num_grid - 1).bit_length() + 1),
+                )
+            ]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'target':
-            return directional_text_box('∧', side=soq.reg.side)
+    def short_name(self) -> str:
+        return 'V_T(dt)'
 
-        (c_idx,) = soq.idx
-        filled = bool(self.cv1 if c_idx == 0 else self.cv2)
-        return Circle(filled)
+    def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
+        bitsize = (self.num_grid - 1).bit_length() + 1
+        # TODO: discrepency here with target bitsize of 2*bitsize + 1 vs 2*bitsize + 2 listed in fusion paper.
+        for i in range(self.num_elec):
+            # temporary register to store output of sum of momenta
+            sos = bb.allocate(2 * bitsize + 1)
+            system[i], sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=system[i], result=sos)
+            # Compute inverse squareroot of x^2 using variable spaced QROM, interpolation and newton-raphson
+            sys_i = bb.join(np.array([bb.split(soq) for soq in system[i]]).ravel())
+            sos, sys_i = bb.add(
+                QuantumVariableRotation(phi_bitsize=(2 * bitsize + 1), target_bitsize=3 * bitsize),
+                phi=sos,
+                target=sys_i,
+            )
+            # Need to reshape this back into 3 registers of size bitsize
+            system[i] = [bb.join(d) for d in np.array(bb.split(sys_i)).reshape(3, bitsize)]
+            bb.free(sos)
+        return {'system': system}
