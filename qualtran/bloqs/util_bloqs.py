@@ -132,7 +132,6 @@ class Join(Bloq):
         return {'join': bits_to_ints(join)[0]}
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-
         if soq.reg.shape:
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
@@ -148,11 +147,10 @@ class Allocate(Bloq):
     """
 
     n: int
-    shape: Tuple[int,...] = (1,)
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('alloc', bitsize=self.n, shape=self.shape, side=Side.RIGHT)])
+        return Signature([Register('alloc', bitsize=self.n, side=Side.RIGHT)])
 
     def on_classical_vals(self) -> Dict[str, int]:
         return {'alloc': 0}
@@ -170,11 +168,10 @@ class Free(Bloq):
     """
 
     n: int
-    shape: Tuple[int, ...] = (1,)
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('free', bitsize=self.n, shape=self.shape, side=Side.LEFT)])
+        return Signature([Register('free', bitsize=self.n, side=Side.LEFT)])
 
     def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
         if free != 0:

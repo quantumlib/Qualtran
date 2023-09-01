@@ -17,6 +17,7 @@ from typing import Dict
 
 import numpy as np
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
@@ -51,6 +52,9 @@ class QuantumVariableRotation(Bloq):
                 Register('target', bitsize=self.target_bitsize),
             ]
         )
+
+    def short_name(self) -> str:
+        return 'e^{i*phi}'
 
 
 @frozen
@@ -88,6 +92,19 @@ class NewtonRaphson(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
+
+    def short_name(self) -> str:
+        return 'y = x^{-1/2}'
+
+    # def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+    #     if ssa is None:
+    #         raise ValueError(f"{self} requires a SympySymbolAllocator")
+    #     k = ssa.new_symbol('k')
+    #     return {(self.bitsize, CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod))}
+
+    def t_complexity(self) -> 'TComplexity':
+        # Rough estimate from fusion paper, not sure where the 24 bits comes from
+        return TComplexity(t=3 * self.bitsize**2 + n)
 
 
 @frozen
@@ -148,8 +165,73 @@ class KineticEnergy(Bloq):
 
 
 @frozen
+class PairPotential(Bloq):
+    """Bloq for single pair of particles i and j."""
+
+    bitsize: int
+    label: str = "V"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('system_i', shape=(3,), bitsize=self.bitsize),
+                Register('system_j', shape=(3,), bitsize=self.bitsize),
+            ]
+        )
+
+    def short_name(self) -> str:
+        return f'{self.label}(dt)_ij'
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, *, system_i: SoquetT, system_j
+    ) -> Dict[str, SoquetT]:
+        # compute r_i - r_j
+        # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
+        # We're potentially abusing this adder here with the result stored in register b.
+        diff_ij = np.array([bb.allocate(self.bitsize) for _ in range(3)])
+        for xyz in range(3):
+            system_i[xyz], system_j[xyz], diff_ij[xyz] = bb.add(
+                OutOfPlaceAdder(self.bitsize), a=system_i[xyz], b=system_j[xyz], c=diff_ij[xyz]
+            )
+        # temporary register to store output r_{ij}^2 = (x_i-x_j)^2 + ...
+        sos = bb.allocate(2 * self.bitsize + 1)
+        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize, k=3), input=diff_ij, result=sos)
+        # Compute inverse squareroot of x^2 using variable spaced QROM, interpolation and newton-raphson
+        # Function interpolation QROM
+        inv_sqrt_sos = bb.allocate(2 * self.bitsize + 1)
+        sos, inv_sqrt_sos = bb.add(NewtonRaphson(2 * self.bitsize + 1), x=sos, y=inv_sqrt_sos)
+        sys_ij = bb.join(
+            np.array(
+                [bb.split(soq) for soq in system_i] + [bb.split(soq) for soq in system_j]
+            ).ravel()
+        )
+        inv_sqrt_sos, sys_ij = bb.add(
+            QuantumVariableRotation(
+                phi_bitsize=(2 * self.bitsize + 1), target_bitsize=6 * self.bitsize
+            ),
+            phi=inv_sqrt_sos,
+            target=sys_ij,
+        )
+        # Need to reshape this back into 3 registers of size self.self.bitsize
+        sys_ij = bb.split(sys_ij)
+        # print([bb.join(d) for d in np.array(sys_ij[: 3 * self.self.bitsize]).reshape(3, self.self.bitsize)])
+        system_i = [
+            bb.join(d) for d in np.array(sys_ij[: 3 * self.bitsize]).reshape(3, self.bitsize)
+        ]
+        system_j = [
+            bb.join(d) for d in np.array(sys_ij[3 * self.bitsize :]).reshape(3, self.bitsize)
+        ]
+        bb.free(sos)
+        bb.free(inv_sqrt_sos)
+        for x in diff_ij:
+            bb.free(x)
+        return {'system_i': system_i, "system_j": system_j}
+
+
+@frozen
 class PotentialEnergy(Bloq):
-    """Bloq for encodingo a Coulombic Unitary.
+    """Bloq for a Coulombic Unitary.
 
     Args:
         num_elec: The number of electrons.
@@ -188,40 +270,13 @@ class PotentialEnergy(Bloq):
         )
 
     def short_name(self) -> str:
-        return f'{self.label}_(dt)'
+        return f'{self.label}(dt)'
 
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
         bitsize = (self.num_grid - 1).bit_length() + 1
         ij_pairs = np.triu_indices(self.num_elec, k=1)
-        # for i, j in zip(*ij_pairs):
-        # compute r_i - r_j
-        # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
-        # We're potentially abusing this adder here with the result stored in register b.
-        # diff_ij = np.array([bb.allocate(bitsize) for _ in range(3)])
-        i = 0
-        j = 1
-        #diff = bb.allocate(bitsize)
-        # for xyz in range(3):
-        xyz = 0
-        # system[i, xyz], system[j, xyz], diff = bb.add(
-        #     OutOfPlaceAdder(bitsize), a=system[i, xyz], b=system[j, xyz], c=diff
-        # )
-        # temporary register to store output r_{ij}^2 = (x_i-x_j)^2 + ...
-        sos = bb.allocate(2 * bitsize + 1)
-        # diff_ij, sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=diff_ij, result=sos)
-        # Compute inverse squareroot of x^2 using variable spaced QROM, interpolation and newton-raphson
-        # sys_i = bb.join(np.array([bb.split(soq) for soq in system[i]]).ravel())
-        # sos, sys_i = bb.add(
-        #     QuantumVariableRotation(phi_bitsize=(2 * bitsize + 1), target_bitsize=3 * bitsize),
-        #     phi=sos,
-        #     target=sys_i,
-        # )
-        # # Need to reshape this back into 3 registers of size bitsize
-        # system[i] = [bb.join(d) for d in np.array(bb.split(sys_i)).reshape(3, bitsize)]
-        bb.free(sos)
-        # print(diff_ij)
-        # bb.free(diff)
-        # for x in diff_ij:
-        #     print(x.reg.bitsize, x.reg.shape)
-        #     bb.free(x)
+        for i, j in zip(*ij_pairs):
+            system[i], system[j] = bb.add(
+                PairPotential(bitsize), system_i=system[i], system_j=system[j]
+            )
         return {'system': system}
