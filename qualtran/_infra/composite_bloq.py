@@ -1034,7 +1034,7 @@ class BloqBuilder:
     def allocate(self, n: int = 1, shape=tuple()) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
 
-        return self.add(Allocate(n=n, shape=shape))
+        return self.add(Allocate(n=n))
 
     def free(self, soq: Soquet) -> None:
         from qualtran.bloqs.util_bloqs import Free
@@ -1042,7 +1042,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(n=soq.reg.bitsize, shape=soq.reg.shape), free=soq)
+        self.add(Free(n=soq.reg.bitsize), free=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""

@@ -59,6 +59,39 @@ class Add(Bloq):
 
 
 @frozen
+class OutOfPlaceAdder(Bloq):
+    r"""An n-bit addition gate.
+
+    Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$ using $4n - 4 T$ gates.
+
+    Args:
+        bitsize: Number of bits used to represent each integer. Must be large
+            enough to hold the result in the output register of a + b.
+
+    Registers:
+     - a: A bitsize-sized input register (register a above).
+     - b: A bitsize-sized input/output register (register b above).
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
+    """
+
+    bitsize: int
+
+    @property
+    def signature(self):
+        return Signature.build(a=self.bitsize, b=self.bitsize, c=self.bitsize)
+
+    def pretty_name(self) -> str:
+        return "c = a + b"
+
+    def t_complexity(self):
+        num_clifford = (self.bitsize - 2) * 19 + 16
+        num_t_gates = 4 * self.bitsize - 4
+        return TComplexity(t=num_t_gates, clifford=num_clifford)
+
+
+@frozen
 class Square(Bloq):
     r"""Square an n-bit number.
 
