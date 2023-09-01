@@ -52,6 +52,9 @@ class QuantumVariableRotation(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return 'e^{i*phi}'
+
 
 @frozen
 class NewtonRaphson(Bloq):
@@ -88,6 +91,9 @@ class NewtonRaphson(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
+
+    def short_name(self) -> str:
+        return 'y = x^{-1/2}'
 
 
 @frozen
@@ -193,35 +199,39 @@ class PotentialEnergy(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
         bitsize = (self.num_grid - 1).bit_length() + 1
         ij_pairs = np.triu_indices(self.num_elec, k=1)
-        # for i, j in zip(*ij_pairs):
-        # compute r_i - r_j
-        # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
-        # We're potentially abusing this adder here with the result stored in register b.
-        # diff_ij = np.array([bb.allocate(bitsize) for _ in range(3)])
-        i = 0
-        j = 1
-        #diff = bb.allocate(bitsize)
-        # for xyz in range(3):
-        xyz = 0
-        # system[i, xyz], system[j, xyz], diff = bb.add(
-        #     OutOfPlaceAdder(bitsize), a=system[i, xyz], b=system[j, xyz], c=diff
-        # )
-        # temporary register to store output r_{ij}^2 = (x_i-x_j)^2 + ...
-        sos = bb.allocate(2 * bitsize + 1)
-        # diff_ij, sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=diff_ij, result=sos)
-        # Compute inverse squareroot of x^2 using variable spaced QROM, interpolation and newton-raphson
-        # sys_i = bb.join(np.array([bb.split(soq) for soq in system[i]]).ravel())
-        # sos, sys_i = bb.add(
-        #     QuantumVariableRotation(phi_bitsize=(2 * bitsize + 1), target_bitsize=3 * bitsize),
-        #     phi=sos,
-        #     target=sys_i,
-        # )
-        # # Need to reshape this back into 3 registers of size bitsize
-        # system[i] = [bb.join(d) for d in np.array(bb.split(sys_i)).reshape(3, bitsize)]
-        bb.free(sos)
-        # print(diff_ij)
-        # bb.free(diff)
-        # for x in diff_ij:
-        #     print(x.reg.bitsize, x.reg.shape)
-        #     bb.free(x)
-        return {'system': system}
+        for i, j in zip(*ij_pairs):
+            # compute r_i - r_j
+            # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
+            # We're potentially abusing this adder here with the result stored in register b.
+            diff_ij = np.array([bb.allocate(bitsize) for _ in range(3)])
+            for xyz in range(3):
+                system[i, xyz], system[j, xyz], diff_ij[xyz] = bb.add(
+                    OutOfPlaceAdder(bitsize), a=system[i, xyz], b=system[j, xyz], c=diff_ij[xyz]
+                )
+            # temporary register to store output r_{ij}^2 = (x_i-x_j)^2 + ...
+            sos = bb.allocate(2 * bitsize + 1)
+            diff_ij, sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=diff_ij, result=sos)
+            # Compute inverse squareroot of x^2 using variable spaced QROM, interpolation and newton-raphson
+            # Function interpolation QROM
+            inv_sqrt_sos = bb.allocate(2 * bitsize + 1)
+            sos, inv_sqrt_sos = bb.add(NewtonRaphson(2 * bitsize + 1), x=sos, y=inv_sqrt_sos)
+            sys_ij = bb.join(
+                np.array(
+                    [bb.split(soq) for soq in system[i]] + [bb.split(soq) for soq in system[j]]
+                ).ravel()
+            )
+            inv_sqrt_sos, sys_ij = bb.add(
+                QuantumVariableRotation(phi_bitsize=(2 * bitsize + 1), target_bitsize=6 * bitsize),
+                phi=inv_sqrt_sos,
+                target=sys_ij,
+            )
+            # Need to reshape this back into 3 registers of size bitsize
+            sys_ij = bb.split(sys_ij)
+            # print([bb.join(d) for d in np.array(sys_ij[: 3 * bitsize]).reshape(3, bitsize)])
+            system[i] = [bb.join(d) for d in np.array(sys_ij[: 3 * bitsize]).reshape(3, bitsize)]
+            system[j] = [bb.join(d) for d in np.array(sys_ij[3 * bitsize :]).reshape(3, bitsize)]
+            bb.free(sos)
+            bb.free(inv_sqrt_sos)
+            for x in diff_ij:
+                bb.free(x)
+        eturn {'system': system}
