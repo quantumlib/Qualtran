@@ -56,6 +56,9 @@ class QuantumVariableRotation(Bloq):
     def short_name(self) -> str:
         return 'e^{i*phi}'
 
+    def t_complexity(self) -> 'TComplexity':
+        # To update
+        return TComplexity(t=0)
 
 @frozen
 class NewtonRaphson(Bloq):
@@ -104,7 +107,7 @@ class NewtonRaphson(Bloq):
 
     def t_complexity(self) -> 'TComplexity':
         # Rough estimate from fusion paper, not sure where the 24 bits comes from
-        return TComplexity(t=3 * self.bitsize**2 + n)
+        return TComplexity(t=3 * self.bitsize**2 + self.bitsize)
 
 
 @frozen
