@@ -12,21 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from cirq_ft.algos import LessThanEqualGate as CirqLessThanEquals
-from cirq_ft.algos import LessThanGate as CirqLessThanConstant
-from cirq_ft.infra import t_complexity
-
-import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, Register
-from qualtran.bloqs.arithmetic import (
-    Add,
-    GreaterThan,
-    LessThanConstant,
-    LessThanEqual,
-    Product,
-    Square,
-    SumOfSquares,
-)
+from qualtran.bloqs.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
 from qualtran.testing import execute_notebook
 
 
