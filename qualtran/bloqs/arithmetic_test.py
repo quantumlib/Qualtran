@@ -109,19 +109,5 @@ def test_greater_than():
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
 
 
-def test_less_than_equal():
-    lte = LessThanEqual(5, 5)
-    qlt_testing.assert_valid_bloq_decomposition(lte)
-    cirq_lte = CirqLessThanEquals(5, 5)
-    assert lte.decompose_bloq().t_complexity() == t_complexity(cirq_lte)
-
-
-def test_less_than_constant():
-    ltc = LessThanConstant(5, 7)
-    qlt_testing.assert_valid_bloq_decomposition(ltc)
-    cirq_ltc = CirqLessThanConstant(5, 7)
-    assert ltc.decompose_bloq().t_complexity() == t_complexity(cirq_ltc)
-
-
 def test_notebook():
     execute_notebook('arithmetic')
