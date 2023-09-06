@@ -1,0 +1,16 @@
+body {
+    background-color: lightslategrey;
+}
+
+#container {
+    border: solid black;
+}
+
+text.soqlabel {
+    dominant-baseline: middle;
+}
+
+text.binstlabel{
+    text-anchor: middle;
+    font-size: 18pt;
+}
