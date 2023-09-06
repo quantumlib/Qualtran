@@ -1,16 +1,29 @@
 body {
-    background-color: lightslategrey;
+    background-color: rgb(243, 249, 255);
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 #container {
     border: solid black;
 }
 
+rect.binstbox{
+    fill: rgb(226, 232, 237);
+}
+
 text.soqlabel {
+    fill: black;
     dominant-baseline: middle;
 }
 
-text.binstlabel{
+.soqcircle {
+    fill: white;
+    stroke: black;
+    stroke-width: 1px;
+}
+
+text.binstlabel {
     text-anchor: middle;
-    font-size: 18pt;
+    font-size: 16pt;
+    fill: darkred;
 }

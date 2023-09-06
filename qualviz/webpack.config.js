@@ -33,6 +33,6 @@ module.exports = {
   output: {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
-    clean:true,
+    clean: true,
   },
 };
