@@ -8,7 +8,7 @@ interface CanvasProps {
 }
 
 export const canvas: CanvasProps = {
-    width: 800,
+    width: 1000,
     height: 600,
     marginTop: 20,
     marginRight: 30,
@@ -16,16 +16,29 @@ export const canvas: CanvasProps = {
     marginLeft: 30,
 }
 
+export const stroke_color = "black";
+export const highlight_stroke_color = "red";
+
+export const boxDrawProps = {
+    width: 70,
+    headerHeight: 20,
+    perSoqHeight: 15,
+    marginLeft: 8,
+    marginRight: 8,
+    marginTop: 5,
+    soqCircleR: 6,
+}
+
 export function get_scales(canvas: CanvasProps) {
     // The x (horizontal position) scale.
     const x = d3.scaleLinear()
-        .domain([0, 100])
+        .domain([50, 750])
         .range([canvas.marginLeft, canvas.width - canvas.marginRight]);
     const x_hat = x(1) - x(0);
 
     // The y (vertical position) scale.
     const y = d3.scaleLinear()
-        .domain([0, 100])
+        .domain([0, 300])
         .range([canvas.marginTop, canvas.height - canvas.marginBottom]);
     const y_hat = y(1) - y(0);
 

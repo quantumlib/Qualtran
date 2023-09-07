@@ -1,15 +1,19 @@
 
 export interface Soquet {
-  thru?: string;
-  left?: string;
-  right?: string;
+  label:string;
+  side:string;
+}
+
+export interface Bloq{
+  pretty_name: string;
 }
 
 export interface BinstBox {
+  i: number;
+  bloq: Bloq;
+  soqs: Array<Soquet>;
   x: number;
   y: number;
-  title: string;
-  soqs: Array<Soquet>;
 }
 
 export interface Port {

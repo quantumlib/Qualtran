@@ -7,7 +7,8 @@ module.exports = {
   mode: 'development',
   devtool: 'inline-source-map',
   devServer: {
-    static: './dist'
+    static: './dist',
+    proxy: {'/bloq': 'http://localhost:8081'},
   },
   plugins: [
     new HtmlWebpackPlugin({

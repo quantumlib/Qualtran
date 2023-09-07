@@ -24,6 +24,7 @@ text.soqlabel {
 
 text.binstlabel {
     text-anchor: middle;
-    font-size: 16pt;
+    dominant-baseline: hanging;
+    font-size: 12pt;
     fill: darkred;
 }
