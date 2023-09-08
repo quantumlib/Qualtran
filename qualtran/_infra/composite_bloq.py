@@ -1031,7 +1031,7 @@ class BloqBuilder:
 
         return CompositeBloq(connections=self._cxns, signature=signature)
 
-    def allocate(self, n: int = 1, shape=tuple()) -> Soquet:
+    def allocate(self, n: int = 1) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
 
         return self.add(Allocate(n=n))

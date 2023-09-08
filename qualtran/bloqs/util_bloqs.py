@@ -132,6 +132,7 @@ class Join(Bloq):
         return {'join': bits_to_ints(join)[0]}
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+
         if soq.reg.shape:
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
