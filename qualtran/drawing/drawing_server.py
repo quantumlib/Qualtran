@@ -17,6 +17,7 @@ import re
 from functools import lru_cache
 from typing import Dict, Any, Tuple
 
+import networkx as nx
 import pydot
 import tornado
 
@@ -26,8 +27,8 @@ from qualtran.drawing import PrettyGraphDrawer
 from qualtran.drawing.graphviz_test import TestParallelBloq
 
 
-def minimal_soq_to_json(soq: Tuple[Register, Tuple[int, ...]]):
-    reg, idx = soq
+def reg_instance_to_json(ri: Tuple[Register, Tuple[int, ...]]):
+    reg, idx = ri
     label = reg.name
     if len(idx) > 0:
         label = f'{label}[{", ".join(str(i) for i in idx)}]'
@@ -38,25 +39,25 @@ def minimal_soq_to_json(soq: Tuple[Register, Tuple[int, ...]]):
 
 
 @lru_cache()
-def get_minimal_soqs(signature: Signature):
-    minimal_soqs = []
+def get_reg_instances(signature: Signature):
+    ris = []
     for reg in signature:
         if reg.shape:
             for idx in reg.all_idxs():
-                minimal_soqs.append((reg, idx))
+                ris.append((reg, idx))
         else:
-            minimal_soqs.append((reg, ()))
+            ris.append((reg, ()))
 
-    return minimal_soqs
+    return ris
 
 
 @lru_cache()
-def get_minimal_soqs_back_map(signature: Signature):
-    return {msoq: i for i, msoq in enumerate(get_minimal_soqs(signature))}
+def get_reg_instance_back_map(signature: Signature):
+    return {ri: i for i, ri in enumerate(get_reg_instances(signature))}
 
 
 def signature_to_json(signature: Signature):
-    return [minimal_soq_to_json(soq) for soq in get_minimal_soqs(signature)]
+    return [reg_instance_to_json(soq) for soq in get_reg_instances(signature)]
 
 
 def bloq_to_json(bloq: Bloq):
@@ -82,7 +83,7 @@ def get_pos_data(cbloq: CompositeBloq):
 
         x, y = strpos.rstrip('"').lstrip('"').split(',')
         x_pos[binst.i] = float(x)
-        y_pos[binst.i] = float(y)
+        y_pos[binst.i] = 500-float(y)
     return x_pos, y_pos
 
 
@@ -90,7 +91,7 @@ def soq_to_soqref(soq: Soquet):
     if isinstance(soq.binst, DanglingT):
         return
     msoq = (soq.reg, soq.idx)
-    soq_i = get_minimal_soqs_back_map(soq.binst.bloq.signature)[msoq]
+    soq_i = get_reg_instance_back_map(soq.binst.bloq.signature)[msoq]
 
     return {
         'binst_i': soq.binst.i,
@@ -101,15 +102,24 @@ def soq_to_soqref(soq: Soquet):
 def cbloq_to_json(cbloq: CompositeBloq) -> Dict[str, Any]:
     xpos, ypos = get_pos_data(cbloq)
     binsts = sorted(cbloq.bloq_instances, key=lambda b: b.i)
+
+    topo_gens = {}
+    for gen_i, gen in enumerate(nx.topological_generations(cbloq._binst_graph)):
+        for binst in gen:
+            topo_gens[binst] = gen_i
+
     binsts = [
         {
             'i': binst.i,
             'bloq': bloq_to_json(binst.bloq),
-            'soqs': signature_to_json(binst.bloq.signature),
+            'reg_instances': signature_to_json(binst.bloq.signature),
             'x': xpos[binst.i],
             'y': ypos[binst.i],
+            'gen_i': topo_gens[binst],
         } for binst in binsts]
     cxns = [(soq_to_soqref(cxn.left), soq_to_soqref(cxn.right)) for cxn in cbloq.connections]
+
+    # Filter out dangling (for now):
     cxns = [cxn for cxn in cxns if cxn[0] is not None and cxn[1] is not None]
 
     return {'binsts': binsts, 'cxns': cxns}

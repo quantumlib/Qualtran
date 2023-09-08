@@ -1,24 +1,27 @@
 
-export interface Soquet {
-  label:string;
-  side:string;
+export interface RegInstance {
+  label: string;
+  side: string;
 }
 
-export interface Bloq{
+export interface Bloq {
   pretty_name: string;
 }
 
 export interface BinstBox {
   i: number;
   bloq: Bloq;
-  soqs: Array<Soquet>;
+  reg_instances: Array<RegInstance>;
   x: number;
   y: number;
+  gen_i: number;
+  fx?: number;
+  fy?: number;
 }
 
-export interface Port {
-  binst_i: number;
+export interface Soquet {
+  binst: BinstBox;
   soq_i: number;
 }
 
-export type Cxn = [Port, Port];
+export type Cxn = [Soquet, Soquet];

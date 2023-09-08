@@ -20,9 +20,9 @@ export const stroke_color = "black";
 export const highlight_stroke_color = "red";
 
 export const boxDrawProps = {
-    width: 70,
-    headerHeight: 20,
-    perSoqHeight: 15,
+    width: 100,
+    headerHeight: 50,
+    perSoqHeight: 45,
     marginLeft: 8,
     marginRight: 8,
     marginTop: 5,
@@ -32,13 +32,13 @@ export const boxDrawProps = {
 export function get_scales(canvas: CanvasProps) {
     // The x (horizontal position) scale.
     const x = d3.scaleLinear()
-        .domain([50, 750])
+        .domain([0, 1000])
         .range([canvas.marginLeft, canvas.width - canvas.marginRight]);
     const x_hat = x(1) - x(0);
 
     // The y (vertical position) scale.
     const y = d3.scaleLinear()
-        .domain([0, 300])
+        .domain([0, 1000])
         .range([canvas.marginTop, canvas.height - canvas.marginBottom]);
     const y_hat = y(1) - y(0);
 
