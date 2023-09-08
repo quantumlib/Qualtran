@@ -12,19 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Optional, Set, Tuple
 
-import cirq
 from attrs import frozen
-from cirq_ft import LessThanEqualGate as CirqLessThanEqual
-from cirq_ft import LessThanGate as CirqLessThanGate
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, CompositeBloq, Register, Signature
+from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
 
 
 @frozen
@@ -415,6 +410,12 @@ class GreaterThan(Bloq):
 
     def pretty_name(self) -> str:
         return "a gt b"
+
+    def t_complexity(self):
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        return TComplexity(t=8 * self.bitsize)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         return {(8 * self.bitsize, TGate())}
