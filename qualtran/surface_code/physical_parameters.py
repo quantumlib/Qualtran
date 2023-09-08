@@ -17,7 +17,7 @@ from attrs import field, frozen
 
 @frozen
 class PhysicalParameters:
-    """The physical properties of a quantum computer..
+    """The physical properties of a quantum computer.
 
     Attributes:
         t_gate_ns: Clifford gate time.
