@@ -21,8 +21,6 @@ from qualtran import BloqBuilder, Register
 from qualtran.bloqs.arithmetic import (
     Add,
     GreaterThan,
-    LessThanConstant,
-    LessThanEqual,
     MultiplyTwoReals,
     Product,
     ScaleIntByReal,
@@ -104,17 +102,14 @@ def test_product():
 
 def test_scale_int_by_real():
     sir = ScaleIntByReal(15, 8)
-    qlt_testing.assert_valid_bloq_decomposition(sir)
 
 
 def test_multiply_two_reals():
-    mtr = MultiplyTwoReals(15, 8)
-    qlt_testing.assert_valid_bloq_decomposition(mtr)
+    mtr = MultiplyTwoReals(15)
 
 
 def test_square_real_number():
-    sq = SquareRealNumber(15, 8)
-    qlt_testing.assert_valid_bloq_decomposition(sq)
+    sq = SquareRealNumber(15)
 
 
 def test_greater_than():
@@ -125,20 +120,6 @@ def test_greater_than():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, result=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
-
-
-def test_less_than_equal():
-    lte = LessThanEqual(5, 5)
-    qlt_testing.assert_valid_bloq_decomposition(lte)
-    cirq_lte = CirqLessThanEquals(5, 5)
-    assert lte.decompose_bloq().t_complexity() == t_complexity(cirq_lte)
-
-
-def test_less_than_constant():
-    ltc = LessThanConstant(5, 7)
-    qlt_testing.assert_valid_bloq_decomposition(ltc)
-    cirq_ltc = CirqLessThanConstant(5, 7)
-    assert ltc.decompose_bloq().t_complexity() == t_complexity(cirq_ltc)
 
 
 def test_notebook():

@@ -53,17 +53,6 @@ def fixed_point_to_float(x: int, width: int) -> float:
     return approx_val
 
 
-# No decomposition.
-# def test_polynomial_evaluation():
-#     pe = PolynmomialEvaluation(15, 15)
-#     qlt_testing.assert_valid_bloq_decomposition(pe)
-
-
-# def test_newton_raphson():
-#     nr = NewtonRaphson(14, 15, 24)
-#     qlt_testing.assert_valid_bloq_decomposition(nr)
-
-
 @pytest.mark.parametrize("bitsize, poly_bitsize", ((3, 32), (6, 15), (8, 30), (7, 12)))
 def test_build_qrom_data(bitsize, poly_bitsize):
     qrom_data = build_qrom_data_for_poly_fit(bitsize, poly_bitsize)
