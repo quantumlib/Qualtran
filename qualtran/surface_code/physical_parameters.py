@@ -35,7 +35,10 @@ class PhysicalParameters:
 
 
 FowlerGidney = PhysicalParameters(
-    t_gate_ns=100, t_meas_ns=100, physical_error_rate=1e-3, reference='https://arxiv.org/abs/1808.06709'
+    t_gate_ns=100,
+    t_meas_ns=100,
+    physical_error_rate=1e-3,
+    reference='https://arxiv.org/abs/1808.06709',
 )
 
 
