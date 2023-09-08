@@ -23,6 +23,7 @@ import tornado
 from qualtran import CompositeBloq, Bloq, Signature, Register, Soquet, DanglingT
 from qualtran.bloqs.factoring import ModExp
 from qualtran.drawing import PrettyGraphDrawer
+from qualtran.drawing.graphviz_test import TestParallelBloq
 
 
 def minimal_soq_to_json(soq: Tuple[Register, Tuple[int, ...]]):
@@ -116,6 +117,7 @@ def cbloq_to_json(cbloq: CompositeBloq) -> Dict[str, Any]:
 
 ROOT_BLOQS = {
     'ModExp': ModExp(base=8, mod=27, exp_bitsize=3, x_bitsize=2048),
+    'TestParallelBloq': TestParallelBloq()
 }
 
 

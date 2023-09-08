@@ -198,7 +198,8 @@ function d3_join_binsts(binsts: Array<BinstBox>, tt: TransitionIn) {
         )
         .call(add_soqcircles)
         .call(add_soqlabels)
-        .call(get_box_drag_behavior()),
+        .call(get_box_drag_behavior())
+        .on("contextmenu", (event: PointerEvent, d: BinstBox) => { console.log(d); event.preventDefault() }),
       update => update
         .call(update => update.transition(tt)
           .attr("transform", d => `translate(${x(d.x)}, ${y(d.y)})`)
@@ -233,6 +234,14 @@ function handle_new_data(bloq_resp: BloqResponse) {
   d3_join_binsts(BOXES, tt);
 }
 
+function reset() {
+  const tt = svg.transition().duration(750);
+  BOXES = [];
+  CXNS = [];
+  d3_join_cxns(CXNS, BOXES, tt);
+  d3_join_binsts(BOXES, tt);
+}
+
 function expandBloq(bloq_key: string) {
   d3.json(bloq_key)
     .then(handle_new_data)
@@ -242,10 +251,15 @@ function expandBloq(bloq_key: string) {
 // Top level stuff
 
 let ui_panel = d3.create("div").attr("id", "ui_panel");
-
-ui_panel.append("button").text("bloq/ModExp").on("click", (event) => expandBloq('bloq/ModExp'));
-ui_panel.append("button").text("bloq/ModExp/i0").on("click", (event) => expandBloq('bloq/ModExp/i0'));
-ui_panel.append("button").text("bloq/ModExp/i0/i4").on("click", (event) => expandBloq('bloq/ModExp/i0/i4'));
+let row0 = ui_panel.append("div");
+row0.append("button").text("RESET").on("click", (event) => reset());
+let row1 = ui_panel.append("div");
+row1.append("button").text("bloq/ModExp").on("click", (event) => expandBloq('bloq/ModExp'));
+row1.append("button").text("bloq/ModExp/i0").on("click", (event) => expandBloq('bloq/ModExp/i0'));
+row1.append("button").text("bloq/ModExp/i0/i4").on("click", (event) => expandBloq('bloq/ModExp/i0/i4'));
+let row2 = ui_panel.append("div");
+row2.append("button").text("bloq/TestParallelBloq").on("click", (event) => expandBloq('bloq/TestParallelBloq'));
+row2.append("button").text("bloq/TestParallelBloq/i0").on("click", (event) => expandBloq('bloq/TestParallelBloq/i0'));
 
 // Append the SVG element.
 const container = document.createElement("div");
