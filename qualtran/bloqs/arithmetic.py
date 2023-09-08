@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 import cirq
 from attrs import frozen
@@ -22,6 +22,8 @@ from cirq_ft import LessThanGate as CirqLessThanGate
 from cirq_ft import TComplexity
 
 from qualtran import Bloq, CompositeBloq, Register, Signature
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
 
 
@@ -57,6 +59,11 @@ class Add(Bloq):
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_clifford = (self.bitsize - 2) * 19 + 16
+        num_t_gates = 4 * self.bitsize - 4
+        return {(num_t_gates, TGate()), (num_clifford, ArbitraryClifford(n=1))}
+
 
 @frozen
 class OutOfPlaceAdder(Bloq):
@@ -85,15 +92,21 @@ class OutOfPlaceAdder(Bloq):
     def pretty_name(self) -> str:
         return "c = a + b"
 
+    # TODO: This is just copied from above, not sure if correct.
     def t_complexity(self):
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_clifford = (self.bitsize - 2) * 19 + 16
+        num_t_gates = 4 * self.bitsize - 4
+        return {(num_t_gates, TGate()), (num_clifford, ArbitraryClifford(n=1))}
+
 
 @frozen
 class Square(Bloq):
-    r"""Square an n-bit number.
+    r"""Square an n-bit binary number.
 
     Implements $U|a\rangle|0\rangle \rightarrow |a\rangle|a^2\rangle$ using $4n - 4 T$ gates.
 
@@ -126,10 +139,14 @@ class Square(Bloq):
         num_toff = self.bitsize * (self.bitsize - 1)
         return TComplexity(t=4 * num_toff)
 
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_toff = self.bitsize * (self.bitsize - 1)
+        return {(4 * num_toff, TGate())}
+
 
 @frozen
 class SumOfSquares(Bloq):
-    r"""Compute the sum of squares of k n-bit numbers.
+    r"""Compute the sum of squares of k n-bit binary numbers.
 
     Implements $U|a\rangle|b\rangle\dots k\rangle|0\rangle \rightarrow
         |a\rangle|b\rangle\dots|k\rangle|a^2+b^2+\dots k^2\rangle$ using
@@ -157,7 +174,7 @@ class SumOfSquares(Bloq):
         return Signature(
             [
                 Register("input", bitsize=self.bitsize, shape=(self.k,)),
-                Register("result", bitsize=2 * self.bitsize + 1),
+                Register("result", bitsize=2 * self.bitsize + 2),
             ]
         )
 
@@ -173,10 +190,16 @@ class SumOfSquares(Bloq):
             num_toff -= 1
         return TComplexity(t=4 * num_toff)
 
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_toff = self.k * self.bitsize**2 - self.bitsize
+        if self.k % 3 == 0:
+            num_toff -= 1
+        return {(4 * num_toff, TGate())}
+
 
 @frozen
 class Product(Bloq):
-    r"""Compute the product of an `n` and `m` bit integer.
+    r"""Compute the product of an `n` and `m` bit binary number.
 
     Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
     |a\rangle|b\rangle|a\times b\rangle$ using $2nm-n$ Toffolis.
@@ -216,6 +239,152 @@ class Product(Bloq):
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
         return TComplexity(t=4 * num_toff)
 
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
+        return {(4 * num_toff, TGate())}
+
+
+@frozen
+class ScaleIntByReal(Bloq):
+    r"""Scale an integer by fixed-point representation of a real number.
+
+        i.e.
+
+        $$
+            |r\rangle|i\rangle|0\rangle \rightarrow |r\rangle|i\rangle|r \times i\rangle
+        $$
+
+        The real number is assumed to be in the range [0, 1).
+
+        Args:
+            r_bitsize: Number of bits used to represent the real number.
+            i_bitsize: Number of bits used to represent the integer.
+
+        Registers:
+         - real_in: r_bitsize-sized input register.
+         - int_in: i_bitsize-sized input register.
+         - result: r_bitsize output register
+
+        References:
+            [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
+    ](https://arxiv.org/pdf/2007.07391.pdf) pg 70.
+    """
+
+    r_bitsize: int
+    i_bitsize: int
+
+    @property
+    def signature(self):
+        return Signature.build(real_in=self.r_bitsize, int_in=self.i_bitsize, result=self.r_bitsize)
+
+    def pretty_name(self) -> str:
+        return "r*i"
+
+    def t_complexity(self):
+        # Eq. D8, we are assuming dA and dB there are assumed as inputs and the
+        # user has ensured these are large enough for their desired precision.
+        num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
+        return TComplexity(t=4 * num_toff)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # Eq. D8, we are assuming dA(r_bitsize) and dB(i_bitsize) are inputs and
+        # the user has ensured these are large enough for their desired
+        # precision.
+        num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
+        return {(4 * num_toff, TGate())}
+
+
+@frozen
+class MultiplyTwoReals(Bloq):
+    r"""Multiply two fixed-point representations of real numbers
+
+        i.e.
+
+        $$
+            |a\rangle|b\rangle|0\rangle \rightarrow |a\rangle|b\rangle|a \times b\rangle
+        $$
+
+        The real numbers are assumed to be in the range [0, 1).
+
+        Args:
+            bitsize: Number of bits used to represent the real number.
+
+        Registers:
+         - a: bitsize-sized input register.
+         - b: bitsize-sized input register.
+         - result: bitsize output register
+
+        References:
+            [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
+    ](https://arxiv.org/pdf/2007.07391.pdf) pg 71.
+    """
+
+    bitsize: int
+
+    @property
+    def signature(self):
+        return Signature.build(a=self.bitsize, b=self.bitsize, result=self.bitsize)
+
+    def pretty_name(self) -> str:
+        return "a*b"
+
+    def t_complexity(self):
+        # Eq. D13, there it is suggested keeping both registers the same size is optimal.
+        num_toff = self.bitsize**2 - self.bitsize - 1
+        return TComplexity(t=4 * num_toff)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # Eq. D13, there it is suggested keeping both registers the same size is optimal.
+        num_toff = self.bitsize**2 - self.bitsize - 1
+        return {(4 * num_toff, TGate())}
+
+
+@frozen
+class SquareRealNumber(Bloq):
+    r"""Square a fixed-point representation of a real number
+
+        i.e.
+
+        $$
+            |a\rangle|0\rangle \rightarrow |a\rangle||a^2\rangle
+        $$
+
+        The real numbers are assumed to be in the range [0, 1).
+
+        Args:
+            bitsize: Number of bits used to represent the real number.
+
+        Registers:
+         - a: bitsize-sized input register.
+         - b: bitsize-sized input register.
+         - result: bitsize output register
+
+        References:
+            [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
+    ](https://arxiv.org/pdf/2007.07391.pdf) pg 74.
+    """
+
+    bitsize: int
+
+    def __attrs_post_init__(self):
+        assert self.bitsize > 3, "Must have at least 3 bits for bloq to make sense."
+
+    @property
+    def signature(self):
+        return Signature.build(a=self.bitsize, b=self.bitsize, result=self.bitsize)
+
+    def pretty_name(self) -> str:
+        return "a^2"
+
+    def t_complexity(self):
+        num_toff = self.bitsize**2 // 2 - 4
+        return TComplexity(t=4 * num_toff)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # Bottom of page 74
+        num_toff = self.bitsize**2 // 2 - 4
+        return {(4 * num_toff, TGate())}
+
 
 @frozen
 class GreaterThan(Bloq):
@@ -247,11 +416,8 @@ class GreaterThan(Bloq):
     def pretty_name(self) -> str:
         return "a gt b"
 
-    def t_complexity(self):
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        return TComplexity(t=8 * self.bitsize)
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        return {(8 * self.bitsize, TGate())}
 
 
 @frozen

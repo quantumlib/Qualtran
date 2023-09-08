@@ -23,8 +23,11 @@ from qualtran.bloqs.arithmetic import (
     GreaterThan,
     LessThanConstant,
     LessThanEqual,
+    MultiplyTwoReals,
     Product,
+    ScaleIntByReal,
     Square,
+    SquareRealNumber,
     SumOfSquares,
 )
 from qualtran.testing import execute_notebook
@@ -97,6 +100,21 @@ def test_product():
     q2 = bb.add_register('result', 2 * max(bitsize, mbits))
     q0, q1, q2 = bb.add(Product(bitsize, mbits), a=q0, b=q1, result=q2)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
+
+
+def test_scale_int_by_real():
+    sir = ScaleIntByReal(15, 8)
+    qlt_testing.assert_valid_bloq_decomposition(sir)
+
+
+def test_multiply_two_reals():
+    mtr = MultiplyTwoReals(15, 8)
+    qlt_testing.assert_valid_bloq_decomposition(mtr)
+
+
+def test_square_real_number():
+    sq = SquareRealNumber(15, 8)
+    qlt_testing.assert_valid_bloq_decomposition(sq)
 
 
 def test_greater_than():
