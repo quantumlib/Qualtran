@@ -19,8 +19,12 @@ _PRETTY_FLOAT = field(default=0.0, repr=lambda x: f'{x:g}')
 
 
 @frozen
-class AlgorithmSpecs:
+class AlgorithmSummary:
     """Properties of a quantum algorithm that impact its physical cost
+
+        Counts of different properities that affect the physical cost of
+        running an algorithm (e.g. number of T gates).
+        All counts default to zero.
 
     Attributes:
         algorithm_qubits: Number of qubits used by the algorithm $Q_{alg}$.

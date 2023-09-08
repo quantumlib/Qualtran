@@ -20,14 +20,14 @@ class PhysicalParameters:
     """The physical properties of a quantum computer..
 
     Attributes:
-        t_gate_ns: Clifford gate time (ns).
-        t_meas_ns: Measurement time (bs).
+        t_gate_ns: Clifford gate time.
+        t_meas_ns: Measurement time.
         physical_error_rate: Physical error rate.
         reference: Source of these estimates.
     """
 
-    t_gate = field(default=1, repr=lambda x: f'{x:g}')  # 1ns
-    t_meas = field(default=1, repr=lambda x: f'{x:g}')  # 1ns
+    t_gate_ns = field(default=1, repr=lambda x: f'{x:g}')
+    t_meas_ns = field(default=1, repr=lambda x: f'{x:g}')
 
     physical_error_rate = field(default=1e-3, repr=lambda x: f'{x:g}')
 
@@ -35,13 +35,13 @@ class PhysicalParameters:
 
 
 FowlerGidney = PhysicalParameters(
-    t_gate=100, t_meas=100, physical_error_rate=1e-3, reference='https://arxiv.org/abs/1808.06709'
+    t_gate_ns=100, t_meas_ns=100, physical_error_rate=1e-3, reference='https://arxiv.org/abs/1808.06709'
 )
 
 
 BeverlandEtAl = PhysicalParameters(
-    t_gate=50,  # 50ns
-    t_meas=100,  # 100ns
+    t_gate_ns=50,  # 50ns
+    t_meas_ns=100,  # 100ns
     physical_error_rate=1e-4,
     reference='https://arxiv.org/abs/2211.07629',
 )
