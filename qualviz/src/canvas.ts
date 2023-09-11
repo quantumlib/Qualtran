@@ -22,7 +22,7 @@ export const highlight_stroke_color = "red";
 export const boxDrawProps = {
     width: 100,
     headerHeight: 50,
-    perSoqHeight: 45,
+    perSoqHeight: 15,
     marginLeft: 8,
     marginRight: 8,
     marginTop: 5,
@@ -38,7 +38,7 @@ export function get_scales(canvas: CanvasProps) {
 
     // The y (vertical position) scale.
     const y = d3.scaleLinear()
-        .domain([0, 1000])
+        .domain([0, 1000*(600/1000)])
         .range([canvas.marginTop, canvas.height - canvas.marginBottom]);
     const y_hat = y(1) - y(0);
 

@@ -28,3 +28,8 @@ text.binstlabel {
     font-size: 12pt;
     fill: darkred;
 }
+
+text.rilabel {
+    text-anchor: middle;
+    dominant-baseline: middle;
+}

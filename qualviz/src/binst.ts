@@ -1,27 +1,29 @@
 
 export interface RegInstance {
+  i: number;
   label: string;
   side: string;
+  x: number;
+  y: number;
+  binst: Binst;
+  fx?: number;
+  fy?: number;
 }
 
 export interface Bloq {
   pretty_name: string;
 }
 
-export interface BinstBox {
+export interface Binst {
   i: number;
   bloq: Bloq;
-  reg_instances: Array<RegInstance>;
-  x: number;
-  y: number;
   gen_i: number;
-  fx?: number;
-  fy?: number;
+  reg_instances: Array<RegInstance>;
+  x0?: number;
+  x1?: number;
+  y0?: number;
+  y1?: number;
 }
 
-export interface Soquet {
-  binst: BinstBox;
-  soq_i: number;
-}
 
-export type Cxn = [Soquet, Soquet];
+export type Cxn = [RegInstance, RegInstance];
