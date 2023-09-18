@@ -35,7 +35,16 @@ from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq
 def split_join_cirq_arithmetic_gates(
     bb: 'BloqBuilder', cirq_bloq: Bloq, **regs: SoquetT
 ) -> Tuple[SoquetT, ...]:
-    """Helper to split and join the registers appropriately"""
+    """Helper function to split / join registers for cirq arithmetic gates.
+
+    Args:
+        bb: Bloq builder used during decompostion.
+        cirq_bloq: A CirqGateAsBloq wrapped arithmetic gate.
+        regs: bloq registers we wish to use as flat list of qubits for cirq gate.
+
+    Returns:
+        regs: bloq registers appropriately rejoined following split.
+    """
     flat_regs = []
     for _, v in regs.items():
         if v.reg.bitsize == 1:
@@ -47,7 +56,6 @@ def split_join_cirq_arithmetic_gates(
     out_soqs = {}
     start = 0
     for _, v in regs.items():
-        # print(k, v.reg.bitsize)
         if v.reg.bitsize == 1:
             end = start + 1
             out_soqs[v] = qubits[start:end][0]
