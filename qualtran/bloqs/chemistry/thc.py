@@ -13,9 +13,10 @@
 #  limitations under the License.
 """SELECT and PREPARE for the tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Tuple
 
 import cirq
+import cirq_ft.infra.testing as cq_testing
 import numpy as np
 from attrs import frozen
 from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
@@ -28,7 +29,34 @@ from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.chemistry.contiguous_register import ToConitguousIndex
 from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.swap_network import CSwapApprox
-from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq
+
+
+def split_join_cirq_arithmetic_gates(
+    bb: 'BloqBuilder', cirq_bloq: Bloq, **regs: SoquetT
+) -> Tuple[SoquetT, ...]:
+    """Helper to split and join the registers appropriately"""
+    flat_regs = []
+    for _, v in regs.items():
+        if v.reg.bitsize == 1:
+            flat_regs.append([v])
+        else:
+            flat_regs.append(bb.split(v))
+    qubits = np.concatenate(flat_regs)
+    qubits = bb.add(cirq_bloq, qubits=qubits)
+    out_soqs = {}
+    start = 0
+    for _, v in regs.items():
+        # print(k, v.reg.bitsize)
+        if v.reg.bitsize == 1:
+            end = start + 1
+            out_soqs[v] = qubits[start:end][0]
+            start += 1
+        else:
+            end = start + v.reg.bitsize
+            out_soqs[v] = bb.join(qubits[start:end])
+            start += v.reg.bitsize
+    return tuple(s for _, s in out_soqs.items())
 
 
 @frozen
@@ -75,32 +103,6 @@ class UniformSuperpositionTHC(Bloq):
             ]
         )
 
-    @staticmethod
-    def add_cirq_comparator_gate(bb: 'BloqBuilder', cirq_bloq: Bloq, **regs: SoquetT):
-        """Helper to split and join the registers appropriately"""
-        flat_regs = []
-        for k, v in regs.items():
-            if v.reg.bitsize == 1:
-                flat_regs.append([v])
-            else:
-                flat_regs.append(bb.split(v))
-        print(flat_regs)
-        qubits = bb.join(np.concatenate(flat_regs))
-        bb.add(cirq_bloq, qubits=qubits)
-        splt_qubits = bb.split(qubits)
-        out_soqs = {}
-        start = 0
-        for k, v in regs.items():
-            if v.reg.bitsize == 1:
-                end = start + 1
-                out_soqs[v] = splt_qubits[start:end]
-                start += 1
-            else:
-                end = start + v.reg.bitsize
-                out_soqs[v] = splt_qubits[start:end]
-                start += v.reg.bitsize
-        return list(out_soqs.items())
-
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
         mu = regs['mu']
         nu = regs['nu']
@@ -108,89 +110,87 @@ class UniformSuperpositionTHC(Bloq):
         eq_nu_mp1 = regs['eq_nu_mp1']
         lte_mu_nu, lte_nu_mp1, gt_mu_n, junk, amp = bb.split(bb.allocate(5))
         num_bits_mu = self.num_mu.bit_length()
+        # 1. Prepare uniform superposition over all mu and nu
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
+        # 2. Rotate an ancilla by `an angle`, appropriately chosen to be related
+        # to the amount of data we actually want to load (upper triangle +
+        # one-body)
         data_size = self.num_mu * (self.num_mu + 1) // 2 + self.num_spin_orb // 2
         angle = np.arccos(1 - 2 ** np.floor(np.log2(data_size)) / data_size)
         amp = bb.add(Ry(angle), q=amp)
-        # # lt_qubits = np.concatenate([bb.split(nu), lte_nu_mp1])
-        # splt_nu = bb.split(nu)
-        # self.add_cirq_arithmetic_gate(mu=mu, nu=nu, lte=lte_mu_nu)
-        # lt_qubits = np.concatenate([splt_nu, [lte_nu_mp1]])
-        nu, lte_nu_mp1 = self.add_cirq_comparator_gate(
-            bb,
-            CirqGateAsBloq(LessThanGate(num_bits_mu, self.num_mu + 1)),
-            nu=nu,
-            lte_nu_mp1=lte_nu_mp1,
+        # 3. nu <= mu + 1 (zero indexing we use mu)
+        lt_gate = CirqGateAsBloq(LessThanGate(num_bits_mu, self.num_mu))
+        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
+        # 4. mu <= nu (upper triangular)
+        lte_gate = CirqGateAsBloq(LessThanEqualGate(num_bits_mu, num_bits_mu))
+        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
-        # mu, nu, lte_mu_nu = bb.add(
-        #     CirqGateAsBloq(LessThanEqualGate(num_bits_mu, num_bits_mu)), x=mu, y=nu, z=lte_mu_nu
-        # )
-        # nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
-        self.add_cirq_arithmetic_gate(mu=mu, nu=nu, lte=lte_mu_nu)
-        # mu, gt_mu_n = bb.add(
-        #     GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
-        # )
-        # junk = bb.add(XGate(), q=junk)
-        # (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
-        # amp, lte_nu_mp1, lte_mu_nu, junk = bb.add(
-        #     CirqGateAsBloq(MultiControlPauli(((1,), (1,), (1,)), cirq.Z)),
-        #     ctrl0=amp,
-        #     ctrl1=lte_nu_mp1,
-        #     ctrl2=lte_mu_nu,
-        #     trgt=junk,
-        # )
-        # nu, lte_nu_mp1 = bb.add(
-        #     CirqGateAsBloq(LessThanGate(num_bits_mu, self.num_mu + 1)), x=nu, z=lte_nu_mp1
-        # )
-        # mu, nu, lte_mu_nu = bb.add(
-        #     CirqGateAsBloq(LessThanEqualGate(num_bits_mu, num_bits_mu)), x=mu, y=nu, z=lte_mu_nu
-        # )
-        # nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
-        # mu, gt_mu_n = bb.add(
-        #     GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
-        # )
-        # (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
-        # amp = bb.add(Ry(-angle), q=amp)
-        # mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
-        # nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
-        # mu, nu, amp = bb.add(
-        #     CirqGateAsBloq(MultiControlPauli(((1,) * num_bits_mu, (1,) * num_bits_mu), cirq.Z)),
-        #     ctrl0=mu,
-        #     ctrl1=nu,
-        #     trgt=amp,
-        # )
-        # mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
-        # nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
-        # nu, lte_nu_mp1 = bb.add(
-        #     CirqGateAsBloq(LessThanGate(num_bits_mu, self.num_mu + 1)), x=nu, z=lte_nu_mp1
-        # )
-        # mu, nu, lte_mu_nu = bb.add(
-        #     CirqGateAsBloq(LessThanEqualGate(num_bits_mu, num_bits_mu)), x=mu, y=nu, z=lte_mu_nu
-        # )
-        # nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
-        # mu, gt_mu_n = bb.add(
-        #     GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
-        # )
-        # (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
-        # lte_nu_mp1, lte_mu_nu, junk, succ = bb.add(
-        #     CirqGateAsBloq(MultiControlPauli(((1,), (1,), (1,)), cirq.X)),
-        #     ctrl0=lte_nu_mp1,
-        #     ctrl1=lte_mu_nu,
-        #     ctrl2=junk,
-        #     trgt=succ,
-        # )
-        # (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
-        # nu, lte_nu_mp1 = bb.add(
-        #     CirqGateAsBloq(LessThanConstantGate(num_bits_mu, self.num_mu + 1)), x=nu, z=lte_nu_mp1
-        # )
-        # mu, nu, lte_mu_nu = bb.add(
-        #     CirqGateAsBloq(LessThanEqualGate(num_bits_mu, num_bits_mu)), x=mu, y=nu, z=lte_mu_nu
-        # )
-        # mu, gt_mu_n = bb.add(
-        #     GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
-        # )
-        # junk = bb.add(XGate(), q=junk)
+        # 5. nu == M (i.e. flag one-body contribution)
+        nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
+        # 6. nu > N / 2 (flag out of range for one-body bits)
+        mu, gt_mu_n = bb.add(
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+        )
+        # 7. Control off of 5 and 6 to not prepare if these conditions are met
+        (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
+        # 6. Reflect on comparitors, rotated qubit and |+>.
+        (amp, lte_nu_mp1, lte_mu_nu), trg = bb.add(
+            CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z)),
+            controls=[amp, lte_nu_mp1, lte_mu_nu],
+            target=[junk],
+        )
+        # hack for wrapping. Target needs to have shape=(1,)
+        junk = trg[0]
+        # We now undo comparitors and rotations and repeat the steps
+        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
+        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
+        )
+        nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
+        mu, gt_mu_n = bb.add(
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+        )
+        (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
+        amp = bb.add(Ry(-angle), q=amp)
+        mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
+        nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
+        ctrls, trg = bb.add(
+            CirqGateAsBloq(MultiControlPauli(((1,) * num_bits_mu + (1,) * num_bits_mu), cirq.Z)),
+            controls=np.concatenate([bb.split(mu), bb.split(nu)]),
+            target=[amp],
+        )
+        amp = trg[0]
+        mu = bb.join(ctrls[:num_bits_mu])
+        nu = bb.join(ctrls[num_bits_mu:])
+        mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
+        nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
+        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
+        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
+        )
+        nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
+        mu, gt_mu_n = bb.add(
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+        )
+        (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
+        ctrls, trg = bb.add(
+            CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X)),
+            controls=[lte_nu_mp1, lte_mu_nu, junk],
+            target=[succ],
+        )
+        lte_nu_mp1, lte_mu_nu, junk = ctrls
+        succ = trg[0]
+        (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
+        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
+        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
+        )
+        mu, gt_mu_n = bb.add(
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+        )
+        junk = bb.add(XGate(), q=junk)
         bb.free(bb.join(np.array([lte_mu_nu, lte_nu_mp1, gt_mu_n, junk, amp])))
         out_regs = {'mu': mu, 'nu': nu, 'succ': succ, 'eq_nu_mp1': eq_nu_mp1}
         return out_regs

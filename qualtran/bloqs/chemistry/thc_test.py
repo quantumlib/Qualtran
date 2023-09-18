@@ -12,8 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numpy as np
+from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
+
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
+from qualtran import BloqBuilder, Register
+from qualtran.bloqs.chemistry.thc import (
+    PrepareTHC,
+    split_join_cirq_arithmetic_gates,
+    UniformSuperpositionTHC,
+)
+from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.testing import execute_notebook
 
 
@@ -30,8 +39,30 @@ def _make_prepare():
 
     num_mu = 10
     num_spin_orb = 4
-
     return PrepareTHC(num_mu=num_mu, num_spin_orb=num_spin_orb, keep_bitsize=8)
+
+
+def test_split_join_arithmetic_gates():
+    bb = BloqBuilder()
+    bitsize = 9
+    val = bb.add_register(Register("val", bitsize=bitsize))
+    res = bb.add_register(Register("res", bitsize=1))
+    val, res = split_join_cirq_arithmetic_gates(
+        bb, CirqGateAsBloq(LessThanGate(bitsize, 7)), val=val, res=res
+    )
+    cbloq = bb.finalize(val=val, res=res)
+    assert cbloq.t_complexity() == CirqGateAsBloq(LessThanGate(bitsize, 7)).t_complexity()
+    bb = BloqBuilder()
+    x = bb.add_register(Register("x", bitsize=bitsize))
+    y = bb.add_register(Register("y", bitsize=bitsize))
+    res = bb.add_register(Register("res", bitsize=1))
+    x, y, res = split_join_cirq_arithmetic_gates(
+        bb, CirqGateAsBloq(LessThanEqualGate(bitsize, bitsize)), x=x, y=y, res=res
+    )
+    cbloq = bb.finalize(x=x, y=y, res=res)
+    assert (
+        cbloq.t_complexity() == CirqGateAsBloq(LessThanEqualGate(bitsize, bitsize)).t_complexity()
+    )
 
 
 def test_uniform_superposition():
