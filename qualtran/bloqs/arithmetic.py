@@ -290,3 +290,57 @@ class LessThanConstant(Bloq):
         x = cirq_quregs['x']
         z = cirq_quregs['z']
         return (less_than.on(*x, *z), cirq_quregs)
+
+
+@frozen
+class GreaterThanConstant(Bloq):
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x > a)\rangle"
+
+    Args:
+        bitsize: bitsize of x register.
+        val: integer to compare x against (a above.)
+
+    Registers:
+     - x: Registers to compare against val.
+     - z: Register to hold result of comparison.
+    """
+
+    bitsize: int
+    val: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(x=self.bitsize, z=1)
+
+    def t_complexity(self):
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        return TComplexity(t=8 * self.bitsize)
+
+
+@frozen
+class EqualsAConstant(Bloq):
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x == a)\rangle"
+
+    Args:
+        bitsize: bitsize of x register.
+        val: integer to compare x against (a above.)
+
+    Registers:
+     - x: Registers to compare against val.
+     - z: Register to hold result of comparison.
+    """
+
+    bitsize: int
+    val: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(x=self.bitsize, z=1)
+
+    def t_complexity(self):
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        return TComplexity(t=8 * self.bitsize)
