@@ -31,7 +31,6 @@ from qualtran.bloqs.chemistry.thc_tutorial import (
 def test_signed_state_preparation(num_states, epsilon):
     np.random.seed(11)
     lcu_coefficients = np.random.randint(1, 10, num_states)
-    # np.random.seed(7)
     signs = np.random.randint(0, 2, num_states)
     probs = lcu_coefficients / np.sum(lcu_coefficients)
     gate = SignedStatePreparationAliasSampling.from_lcu_probs(
@@ -66,7 +65,6 @@ def test_signed_state_preparation(num_states, epsilon):
 def test_signed_state_preparation_lower_non_clifford(num_states, epsilon):
     np.random.seed(11)
     lcu_coefficients = np.random.randint(1, 10, num_states)
-    # np.random.seed(7)
     signs = np.random.randint(0, 2, num_states)
     probs = lcu_coefficients / np.sum(lcu_coefficients)
     gate = SignedStatePreparationAliasSamplingLowerCost.from_lcu_probs(
@@ -94,9 +92,6 @@ def test_signed_state_preparation_lower_non_clifford(num_states, epsilon):
     # of amplitudes) is same as `lcu_coefficients` upto `epsilon`.
     np.testing.assert_allclose(probs, abs(prepared_state) ** 2, atol=epsilon)
     state_signs = np.real(np.sign(prepared_state))
-    # print((-1) ** signs)
-    # print(state_signs)
-    # cirq.Circuit(cirq.decompose_once(g.operation))
     np.testing.assert_equal(state_signs, (-1) ** signs)
 
 
@@ -131,20 +126,17 @@ def test_uniform_state_prep_up_triang(num_rows_cols):
 #     assert len(np.where(np.abs(result.final_state_vector) > 1e-8)[0]) == nupt
 
 
-@pytest.mark.parametrize("num_rows_cols", [2])
+@pytest.mark.parametrize("num_rows_cols", [2, 4])
 def test_state_prep_matrix(num_rows_cols):
     np.random.seed(3748)
     zeta = np.random.randint(1, 10, size=(num_rows_cols, num_rows_cols))
-    gate = PrepareMatrix.build(mat=zeta, epsilon=0.004)
+    gate = PrepareMatrix.build(mat=zeta, epsilon=0.005)
     g = cirq_ft.testing.GateHelper(gate)
     qubit_order = g.operation.qubits
-    # print(cirq.Circuit(cirq.decompose_once(g.operation)))
     assert len(g.circuit.all_qubits()) < 22
-    # # print(g.circuit.all_qubits())
     qubit_order = g.operation.qubits
     result = cirq.Simulator(dtype=np.complex128).simulate(g.circuit, qubit_order=qubit_order)
     state_vector = result.final_state_vector
-    # print(g.circuit)
     L, logL = len(zeta.ravel()), (int(np.prod(zeta.shape) - 1).bit_length())
     state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
     num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
@@ -152,33 +144,8 @@ def test_state_prep_matrix(num_rows_cols):
     assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
     assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
     prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
-    # print(zeta.ravel() / np.sum(zeta))
-    print(len(np.where(np.abs(prepared_state) > 0)[0]))
-    print(cirq.dirac_notation(prepared_state**2, decimals=4), 1 / L)
-    print(zeta.ravel() / np.sum(zeta))
-    # print(cirq.dirac_notation(prepared_state))
-    from cirq_ft.algos.state_preparation import StatePreparationAliasSampling
-
-    sp = StatePreparationAliasSampling.from_lcu_probs(
-        zeta.ravel() / np.sum(zeta), probability_epsilon=2e-3
-    )
-    g = cirq_ft.testing.GateHelper(sp)
-    # print(g.circuit)
-    # qubit_order = g.operation.qubits
-    # assert len(g.circuit.all_qubits()) < 22
-    # print(len(g.circuit.all_qubits()))
-    # result = cirq.Simulator(dtype=np.complex128).simulate(g.circuit, qubit_order=qubit_order)
-    # state_vector = result.final_state_vector
-    # print(state_vector)
-    # L, logL = len(zeta.ravel()), len(g.quregs['selection'])
-    # state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
-    # num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
-    # prepared_state = state_vector.sum(axis=1)
-    # assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
-    # assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
-    # prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
-    # print(zeta.ravel() / np.sum(zeta))
-    # print(cirq.dirac_notation(prepared_state**2))
+    probs = zeta / np.sum(zeta)
+    np.testing.assert_allclose(probs.ravel(), abs(prepared_state) ** 2, atol=0.004)
 
 
 def test_contiguous_register_gate():
