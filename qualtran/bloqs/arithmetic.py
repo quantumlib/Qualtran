@@ -23,6 +23,7 @@ from cirq_ft import LessThanGate as CirqLessThanGate
 from cirq_ft import TComplexity
 
 from qualtran import Bloq, CompositeBloq, Register, Signature
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
 from qualtran.simulation.classical_sim import ClassicalValT
 
