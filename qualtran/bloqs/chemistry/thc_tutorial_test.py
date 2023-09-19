@@ -18,8 +18,10 @@ import numpy as np
 import pytest
 
 from qualtran.bloqs.chemistry.thc_tutorial import (
+    PrepareUpperTriangular,
     SignedStatePreparationAliasSampling,
     SignedStatePreparationAliasSamplingLowerCost,
+    UniformPrepareUpperTriangular,
 )
 
 
@@ -59,7 +61,6 @@ def test_signed_state_preparation(num_states, epsilon):
 
 
 @pytest.mark.parametrize("num_states, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
-# @pytest.mark.parametrize("num_states, epsilon", [[2, 3e-3]])
 def test_signed_state_preparation_lower_non_clifford(num_states, epsilon):
     np.random.seed(11)
     lcu_coefficients = np.random.randint(1, 10, num_states)
@@ -95,3 +96,34 @@ def test_signed_state_preparation_lower_non_clifford(num_states, epsilon):
     # print(state_signs)
     # cirq.Circuit(cirq.decompose_once(g.operation))
     np.testing.assert_equal(state_signs, (-1) ** signs)
+
+
+@pytest.mark.parametrize("num_rows_cols", [3, 4, 5])
+def test_uniform_state_prep_up_triang(num_rows_cols):
+    for theta in np.linspace(0, 0.8 * np.pi, 10_000):
+        # for theta in [np.arccos(1 - 8 / 10)]:
+        gate = UniformPrepareUpperTriangular(num_rows_cols, theta)
+        g = cirq_ft.testing.GateHelper(gate)
+        # assertion to ensure that simulating the `decomposed_circuit` doesn't run out of memory.
+        assert len(g.circuit.all_qubits()) < 22
+        qubit_order = g.operation.qubits
+        # print(cirq.Circuit(cirq.decompose_once(g.operation)))
+        result = cirq.Simulator(dtype=np.complex128).simulate(
+            cirq.Circuit(cirq.decompose_once(g.operation))
+        )
+        ntot = num_rows_cols**2
+        nupt = num_rows_cols * (num_rows_cols + 1) // 2
+        if len(np.where(np.abs(result.final_state_vector) > 1e-3)[0]) < 2 ** (num_rows_cols):
+            print(
+                theta,
+                np.arccos(1 - 8 / 10),
+                len(np.where(np.abs(result.final_state_vector) > 1e-3)[0]),
+            )
+        # print(cirq.dirac_notation(result.final_state_vector))
+        # final_target_state = cirq.sub_state_vector(
+        #     result.final_state_vector, keep_indices=list(range(nupt))
+        # )
+        # expected_target_state = np.asarray([np.sqrt(1.0 / nupt)] * nupt + [0] * (2 ** len(ntot) - nupt))
+        # cirq.testing.assert_allclose_up_to_global_phase(
+        #     expected_target_state, result.final_state_vector, atol=1e-6
+        # )

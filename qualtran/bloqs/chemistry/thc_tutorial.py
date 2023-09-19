@@ -283,6 +283,7 @@ class UniformPrepareUpperTriangular(infra.GateWithRegisters):
     """
 
     n: int
+    theta: float
 
     @cached_property
     def registers(self) -> infra.Registers:
@@ -311,7 +312,9 @@ class UniformPrepareUpperTriangular(infra.GateWithRegisters):
         ancilla = context.qubit_manager.qalloc(3)
 
         l = self.n * (self.n + 1) // 2
-        theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
+        theta = self.theta
+        # theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
+        # theta *= 1.485
         logn = (self.n - 1).bit_length()
         yield arithmetic_gates.LessThanEqualGate(logn, logn).on(*p, *q, ancilla[0])
         yield cirq.Ry(rads=theta)(ancilla[1])
@@ -324,7 +327,7 @@ class UniformPrepareUpperTriangular(infra.GateWithRegisters):
         # Second half of circuit
         yield cirq.H.on_each(*p)
         yield cirq.H.on_each(*q)
-        control_pqa = self.registers.merge_qubits(**quregs) + ancilla[:2]
+        control_pqa = infra.merge_qubits(self.registers, **quregs) + ancilla[:2]
         yield MultiControlPauli(cvs=[0] * (2 * logn + 2), target_gate=cirq.X).on_registers(
             controls=control_pqa, target=ancilla[2]
         )
@@ -404,11 +407,11 @@ class PrepareUpperTriangular(infra.GateWithRegisters):
             selection=contiguous_reg_anc, target0=alt_p_anc, target1=alt_q_anc, target2=keep_anc
         )
         yield cirq.H.on_each(*sigma_anc)
-        # # 3. Inequality test
+        # 3. Inequality test
         yield arithmetic_gates.LessThanEqualGate(self.mu, self.mu).on(
             *keep_anc, *sigma_anc, *ineq_anc
         )
-        # # 4. Swaps
+        # 4. Swaps
         yield swap_network.MultiTargetCSwap.make_on(
             control=ineq_anc, target_x=alt_p_anc, target_y=p
         )
