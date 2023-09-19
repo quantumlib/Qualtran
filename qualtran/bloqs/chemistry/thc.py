@@ -244,12 +244,20 @@ class PrepareTHC(Bloq):
     Args:
         num_mu: THC auxiliary index dimension $M$
         num_spin_orb: number of spin orbitals $N$
+        alt_mu: Alternate values for mu indices.
+        alt_nu: Alternate values for nu indices.
+        alt_theta: Alternate values for theta indices.
+        theta: Signs of lcu coefficients.
+        keep: keep values.
         keep_bitsize: number of bits for keep register for coherent alias sampling.
 
     Registers:
      - mu: $\mu$ register.
      - nu: $\nu$ register.
      - theta: sign register.
+     - succ: success flag qubit from uniform state preparation
+     - eq_nu_mp1: flag for if $nu = M+1$
+     - plus_a / plus_b: plus state for controlled swaps on spins.
 
     References:
         [Even more efficient quantum computations of chemistry through
@@ -272,6 +280,10 @@ class PrepareTHC(Bloq):
                 Register("mu", bitsize=(self.num_mu).bit_length()),
                 Register("nu", bitsize=(self.num_mu).bit_length()),
                 Register("theta", bitsize=1),
+                Register("succ", bitsize=1),
+                Register("eq_nu_mp1", bitsize=1),
+                Register("plus_a", bitsize=1),
+                Register("plus_b", bitsize=1),
             ]
         )
 
@@ -310,7 +322,7 @@ class PrepareTHC(Bloq):
             alt_nu=tuple(alt_nu),
             alt_theta=tuple(alt_theta),
             theta=tuple(thetas),
-            keep=keep,
+            keep=tuple(keep),
             keep_bitsize=mu,
         )
 
@@ -319,7 +331,7 @@ class PrepareTHC(Bloq):
         log_mu = (self.num_mu).bit_length()
         log_d = (data_size - 1).bit_length()
         # Allocate ancillae
-        succ, eq_nu_mp1, flag_plus, less_than, alt_theta = bb.split(bb.allocate(5))
+        less_than, alt_theta = bb.split(bb.allocate(2))
         s = bb.allocate(log_d)
         sigma = bb.allocate(self.keep_bitsize)
         keep = bb.allocate(self.keep_bitsize)
@@ -331,8 +343,8 @@ class PrepareTHC(Bloq):
             UniformSuperpositionTHC(num_mu=self.num_mu, num_spin_orb=self.num_spin_orb),
             mu=regs['mu'],
             nu=regs['nu'],
-            succ=succ,
-            eq_nu_mp1=eq_nu_mp1,
+            succ=regs['succ'],
+            eq_nu_mp1=regs['eq_nu_mp1'],
         )
         # 2. Make contiguous register from mu and nu and store in register `s`.
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
@@ -359,7 +371,6 @@ class PrepareTHC(Bloq):
         keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
-        # TODO: uncomment once controlled bloq decomposes correctly.
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z))
         alt_theta, less_than = add_from_bloq_register_flat_qubits(
             bb, cz, alt_theta=alt_theta, less_than=less_than
@@ -374,17 +385,19 @@ class PrepareTHC(Bloq):
         keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
-        flag_plus = bb.add(Hadamard(), q=flag_plus)
+        # Reuse one of the |+> states later in prepare
+        plus_a = bb.add(Hadamard(), q=regs['plus_a'])
+        plus_b = bb.add(Hadamard(), q=regs['plus_b'])
         # negative cotrol on flag register
         less_than, flag_plus = add_from_bloq_register_flat_qubits(
             bb, cz, less_than=less_than, flag_plus=flag_plus
         )
         flag_plus, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=flag_plus, x=mu, y=nu)
-        bb.free(bb.join(np.array([succ, eq_nu_mp1, flag_plus, less_than, alt_theta])))
+        bb.free(bb.join(np.array([less_than, alt_theta])))
         bb.free(s)
         bb.free(sigma)
         bb.free(keep)
         bb.free(alt_mu)
         bb.free(alt_nu)
-        out_regs = {'mu': mu, 'nu': nu, 'theta': theta}
+        out_regs = {'mu': mu, 'nu': nu, 'theta': theta, 'plus_a': plus_a, 'plus_b': plus_b}
         return out_regs

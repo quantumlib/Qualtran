@@ -39,9 +39,13 @@ def _make_uniform_superposition():
 def _make_prepare():
     from qualtran.bloqs.chemistry.thc import PrepareTHC
 
-    num_mu = 10
-    num_spin_orb = 4
-    return PrepareTHC(num_mu=num_mu, num_spin_orb=num_spin_orb, keep_bitsize=8)
+    num_spat = 4
+    num_mu = 8
+    t_l = np.random.normal(0, 1, size=num_spat)
+    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
+    zeta = 0.5 * (zeta + zeta.T)
+    eps = 1e-3
+    return PrepareTHC.build(t_l, zeta, probability_epsilon=eps)
 
 
 def test_split_join_arithmetic_gates():
