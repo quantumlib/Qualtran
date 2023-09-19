@@ -21,8 +21,10 @@ from qualtran.bloqs.chemistry.thc_tutorial import SignedStatePreparationAliasSam
 
 
 @pytest.mark.parametrize("num_states, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
-def test_state_preparation_via_coherent_alias_sampling(num_states, epsilon):
+def test_signed_state_preparation(num_states, epsilon):
+    np.random.seed(11)
     lcu_coefficients = np.random.randint(1, 10, num_states)
+    # np.random.seed(7)
     signs = np.random.randint(0, 2, num_states)
     probs = lcu_coefficients / np.sum(lcu_coefficients)
     gate = SignedStatePreparationAliasSampling.from_lcu_probs(
@@ -30,9 +32,12 @@ def test_state_preparation_via_coherent_alias_sampling(num_states, epsilon):
     )
     g = cirq_ft.testing.GateHelper(gate)
     qubit_order = g.operation.qubits
+    zs = cirq.Circuit([cirq.Moment(cirq.Z(g.quregs['theta'][0]))])
+    # Add a layer of Zs to pull out the sign
+    sp_with_zs = g.circuit + zs
     # assertion to ensure that simulating the `decomposed_circuit` doesn't run out of memory.
     assert len(g.circuit.all_qubits()) < 22
-    result = cirq.Simulator(dtype=np.complex128).simulate(g.circuit, qubit_order=qubit_order)
+    result = cirq.Simulator(dtype=np.complex128).simulate(sp_with_zs, qubit_order=qubit_order)
     state_vector = result.final_state_vector
     # State vector is of the form |l>|temp_{l}>. We trace out the |temp_{l}> part to
     # get the coefficients corresponding to |l>.
@@ -43,6 +48,8 @@ def test_state_preparation_via_coherent_alias_sampling(num_states, epsilon):
     assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
     assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
     prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
-    # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
-    # same as `lcu_coefficients` upto `epsilon`.
+    # Assert that the absolute square of prepared state (probabilities instead
+    # of amplitudes) is same as `lcu_coefficients` upto `epsilon`.
     np.testing.assert_allclose(probs, abs(prepared_state) ** 2, atol=epsilon)
+    state_signs = np.real(np.sign(prepared_state))
+    np.testing.assert_equal(state_signs, (-1) ** signs)
