@@ -11,12 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""SELECT and PREPARE for the tensor hypercontraction (THC) hamiltonian"""
+"""SELECT and PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import cirq
-import cirq_ft.infra.testing as cq_testing
 import numpy as np
 from attrs import frozen
 from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
@@ -32,10 +31,10 @@ from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
 
 
-def split_join_cirq_arithmetic_gates(
+def add_from_bloq_register_flat_qubits(
     bb: 'BloqBuilder', cirq_bloq: Bloq, **regs: SoquetT
 ) -> Tuple[SoquetT, ...]:
-    """Helper function to split / join registers for cirq arithmetic gates.
+    """Helper function to split / join registers for cirq gates expeciting single 'qubits' register.
 
     Args:
         bb: Bloq builder used during decompostion.
@@ -74,7 +73,6 @@ def add_from_bloq_registers(
     cirq_regs = {}
     for reg_name, soq in bloq_regs.items():
         cirq_regs[reg_name] = bb.split(soq)
-        # cirq_regs[reg.name] = bb.split(bloq_regs[reg.name])
     cirq_regs = bb.add(cirq_bloq, **cirq_regs)
     out_soqs = {}
     for ix, (reg_name, soq) in enumerate(bloq_regs.items()):
@@ -144,10 +142,12 @@ class UniformSuperpositionTHC(Bloq):
         amp = bb.add(Ry(angle), q=amp)
         # 3. nu <= mu + 1 (zero indexing we use mu)
         lt_gate = CirqGateAsBloq(LessThanGate(num_bits_mu, self.num_mu))
-        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
+        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
+            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
+        )
         # 4. mu <= nu (upper triangular)
         lte_gate = CirqGateAsBloq(LessThanEqualGate(num_bits_mu, num_bits_mu))
-        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
         # 5. nu == M (i.e. flag one-body contribution)
@@ -167,8 +167,10 @@ class UniformSuperpositionTHC(Bloq):
         # hack for wrapping. Target needs to have shape=(1,)
         junk = trg[0]
         # We now undo comparitors and rotations and repeat the steps
-        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
-        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
+            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
+        )
+        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
         nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
@@ -189,8 +191,10 @@ class UniformSuperpositionTHC(Bloq):
         nu = bb.join(ctrls[num_bits_mu:])
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
-        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
-        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
+            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
+        )
+        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
         nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
@@ -206,8 +210,10 @@ class UniformSuperpositionTHC(Bloq):
         lte_nu_mp1, lte_mu_nu, junk = ctrls
         succ = trg[0]
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
-        nu, lte_nu_mp1 = split_join_cirq_arithmetic_gates(bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1)
-        mu, nu, lte_mu_nu = split_join_cirq_arithmetic_gates(
+        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
+            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
+        )
+        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
         mu, gt_mu_n = bb.add(
@@ -252,6 +258,11 @@ class PrepareTHC(Bloq):
 
     num_mu: int
     num_spin_orb: int
+    alt_mu: Tuple[int, ...]
+    alt_nu: Tuple[int, ...]
+    alt_theta: Tuple[int, ...]
+    theta: Tuple[int, ...]
+    keep: Tuple[int, ...]
     keep_bitsize: int
 
     @cached_property
@@ -266,15 +277,41 @@ class PrepareTHC(Bloq):
 
     @classmethod
     def build(cls, t_l, zeta, probability_epsilon=1e-8) -> 'PrepareTHC':
+        """Factory method to build PrepareTHC from Hamiltonian coefficients."""
+        assert len(t_l.shape) == 1
         assert len(zeta.shape) == 2
-        num_spatial = len(t_l)
         num_mu = zeta.shape[0]
+        num_spat = t_l.shape[0]
         triu_indices = np.triu_indices(num_mu)
-        flat_data = np.concatenate(t_l, zeta[triu_indices])
-        thetas = (1 - np.sign(flat_data)) // 2
-        lambda_thc = np.sum(np.abs(t_l)) + 0.5 * np.sum(np.abs(zeta))
+        num_ut = len(triu_indices[0])
+        flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
+        thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
         alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            np.sqrt(flat_data / lambda_thc), epsilon=probability_epsilon
+            flat_data, epsilon=probability_epsilon
+        )
+        num_up_t = len(triu_indices[0])
+        alt_mu = []
+        alt_nu = []
+        alt_theta = []
+        for k in alt:
+            if k < num_up_t:
+                # if k < n * (n + 1) / 2 we are dealing with mu / nu indices
+                alt_mu.append(int(triu_indices[0][k]))
+                alt_nu.append(int(triu_indices[1][k]))
+            else:
+                # else we are dealing with the one-body bit
+                alt_mu.append(int(k - num_ut))
+                alt_nu.append(int(num_mu))
+            alt_theta.append(thetas[k])
+        return PrepareTHC(
+            num_mu,
+            2 * num_spat,
+            alt_mu=tuple(alt_mu),
+            alt_nu=tuple(alt_nu),
+            alt_theta=tuple(alt_theta),
+            theta=tuple(thetas),
+            keep=keep,
+            keep_bitsize=mu,
         )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
@@ -286,8 +323,9 @@ class PrepareTHC(Bloq):
         s = bb.allocate(log_d)
         sigma = bb.allocate(self.keep_bitsize)
         keep = bb.allocate(self.keep_bitsize)
-        alt_mu = bb.allocate(log_mu)
-        alt_nu = bb.allocate(log_mu)
+        alt_bitsize = max(max(self.alt_mu).bit_length(), max(self.alt_nu).bit_length())
+        alt_mu = bb.allocate(alt_bitsize)
+        alt_nu = bb.allocate(alt_bitsize)
         # 1. Prepare THC uniform superposition over mu, nu. succ flags success.
         mu, nu, succ, eq_nu_mp1 = bb.add(
             UniformSuperpositionTHC(num_mu=self.num_mu, num_spin_orb=self.num_spin_orb),
@@ -300,15 +338,11 @@ class PrepareTHC(Bloq):
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
         theta = regs['theta']
         # 3. Load alt / keep values
-        data = (
-            tuple([1] * data_size),
-            tuple([1] * data_size),
-            tuple([10] * data_size),
-            tuple([10] * data_size),
-            tuple([10] * data_size),
-        )
         qroam = CirqGateAsBloq(
-            SelectSwapQROM(*data, target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize))
+            SelectSwapQROM(
+                *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
+                target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
+            )
         )
         s, theta, alt_theta, alt_mu, alt_nu, keep = add_from_bloq_registers(
             bb,
@@ -322,27 +356,27 @@ class PrepareTHC(Bloq):
         )
         sigma = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=sigma)
         lte_gate = CirqGateAsBloq(LessThanEqualGate(self.keep_bitsize, self.keep_bitsize))
-        keep, sigma, less_than = split_join_cirq_arithmetic_gates(
+        keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
         # TODO: uncomment once controlled bloq decomposes correctly.
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z))
-        alt_theta, less_than = split_join_cirq_arithmetic_gates(
+        alt_theta, less_than = add_from_bloq_register_flat_qubits(
             bb, cz, alt_theta=alt_theta, less_than=less_than
         )
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z, control_values=(0,)))
         # negative control on the less_than register
-        less_than, theta = split_join_cirq_arithmetic_gates(
+        less_than, theta = add_from_bloq_register_flat_qubits(
             bb, cz, less_than=less_than, theta=theta
         )
         less_than, alt_mu, mu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_mu, y=mu)
         less_than, alt_nu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_nu, y=nu)
-        keep, sigma, less_than = split_join_cirq_arithmetic_gates(
+        keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
         flag_plus = bb.add(Hadamard(), q=flag_plus)
         # negative cotrol on flag register
-        less_than, flag_plus = split_join_cirq_arithmetic_gates(
+        less_than, flag_plus = add_from_bloq_register_flat_qubits(
             bb, cz, less_than=less_than, flag_plus=flag_plus
         )
         flag_plus, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=flag_plus, x=mu, y=nu)
