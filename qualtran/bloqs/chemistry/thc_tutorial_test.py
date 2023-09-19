@@ -20,6 +20,7 @@ import pytest
 from qualtran.bloqs.chemistry.thc_tutorial import (
     ContiguousRegister,
     PrepareMatrix,
+    PrepareMatrixUpperTriangular,
     PrepareUpperTriangular,
     SignedStatePreparationAliasSampling,
     SignedStatePreparationAliasSamplingLowerCost,
@@ -146,6 +147,42 @@ def test_state_prep_matrix(num_rows_cols):
     prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
     probs = zeta / np.sum(zeta)
     np.testing.assert_allclose(probs.ravel(), abs(prepared_state) ** 2, atol=0.004)
+
+
+@pytest.mark.parametrize("num_rows_cols", [2])
+def test_state_prep_matrix_upper_triangular(num_rows_cols):
+    np.random.seed(3748)
+    zeta = np.random.randint(1, 10, size=(num_rows_cols, num_rows_cols))
+    gate = PrepareMatrixUpperTriangular.build(mat=zeta, epsilon=0.005)
+    g = cirq_ft.testing.GateHelper(gate)
+    qubit_order = g.operation.qubits
+    assert len(g.circuit.all_qubits()) < 22
+    qubit_order = g.operation.qubits
+    c2 = cirq.Circuit(cirq.decompose_once(g.operation))
+    result = cirq.Simulator(dtype=np.complex128).simulate(c2, qubit_order=qubit_order)
+    state_vector = result.final_state_vector
+    ntot = num_rows_cols**2
+    nupt = num_rows_cols * (num_rows_cols + 1) // 2
+    # assert len(np.where(np.abs(result.final_state_vector) > 1e-8)[0]) == nupt
+    gate = UniformPrepareUpperTriangular(num_rows_cols)
+    g = cirq_ft.testing.GateHelper(gate)
+    assert len(g.circuit.all_qubits()) < 22
+    qubit_order = g.operation.qubits
+    result = cirq.Simulator(dtype=np.complex128).simulate(
+        # cirq.Circuit(cirq.decompose_once(g.operation))
+    )
+    ntot = num_rows_cols**2
+    nupt = num_rows_cols * (num_rows_cols + 1) // 2
+    assert len(np.where(np.abs(result.final_state_vector) > 1e-8)[0]) == nupt
+    # L, logL = len(zeta.ravel()), (int(np.prod(zeta.shape) - 1).bit_length())
+    # state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
+    # num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
+    # prepared_state = state_vector.sum(axis=1)
+    # assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
+    # assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
+    # prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
+    # probs = zeta / np.sum(zeta)
+    # np.testing.assert_allclose(probs.ravel(), abs(prepared_state) ** 2, atol=0.004)
 
 
 def test_contiguous_register_gate():

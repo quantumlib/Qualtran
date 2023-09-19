@@ -141,7 +141,7 @@ def analyze_state_vector(gate_helper, length: int):
 
 
 @attr.frozen
-class ContiguousRegisterGateEqual(cirq.ArithmeticGate):
+class ContiguousRegisterUpperTriangular(cirq.ArithmeticGate):
     """Applies U|x>|y>|0> -> |x>|y>|(y+1)y//2 + x>
 
     This is useful in the case when $|x>$ and $|y>$ represent two selection registers such that
@@ -728,6 +728,130 @@ class PrepareMatrix(select_and_prepare.PrepareOracle):
         yield swap_network.MultiTargetCSwap.make_on(control=ineq, target_x=alt_q, target_y=q)
         # Uncompute inequality
         yield arithmetic_gates.LessThanEqualGate(self.mu, self.mu).on(*keep, *sigma_mu, *ineq)
+
+
+@cirq.value_equality()
+@attr.frozen
+class PrepareMatrixUpperTriangular(select_and_prepare.PrepareOracle):
+    r"""Initialize a state with $L$ unique coefficients using coherent alias sampling."""
+    dim: int
+    selection_registers: Tuple[infra.SelectionRegister, ...]
+    alt_p: Tuple[int, ...]
+    alt_q: Tuple[int, ...]
+    keep: NDArray[np.int_]
+    mu: int
+
+    @classmethod
+    def build(cls, mat: NDArray[np.int_], epsilon: float = 1e-8) -> "PrepareUpperTriangular":
+        assert len(mat.shape) == 2
+        assert (mat > 0).all()
+        dim = mat.shape[0]
+        triu_indices = np.triu_indices(dim)
+        num_ut = len(triu_indices[0])
+        flat_data = mat[triu_indices]
+        probs = flat_data / np.sum(flat_data)
+        alt, keep, mu = linalg.preprocess_lcu_coefficients_for_reversible_sampling(
+            lcu_coefficients=probs, epsilon=epsilon
+        )
+        p_upper, q_upper = np.triu_indices(dim)
+        # Get the correct p and q indices from their corresponding upper triangular values.
+        alt_p = tuple([int(p) for p in p_upper[alt]])
+        alt_q = tuple([int(q) for q in q_upper[alt]])
+        keep = tuple([int(k) for k in keep])
+        ndata = len(p_upper)
+        return PrepareMatrixUpperTriangular(
+            dim,
+            selection_registers=tuple(
+                [
+                    infra.SelectionRegister('p', (ndata - 1).bit_length() // 2, dim),
+                    infra.SelectionRegister('q', (ndata - 1).bit_length() // 2, dim),
+                    infra.SelectionRegister('cont_reg', (ndata - 1).bit_length(), ndata),
+                ]
+            ),
+            alt_p=alt_p,
+            alt_q=alt_q,
+            keep=keep,
+            mu=mu,
+        )
+
+    @cached_property
+    def sigma_mu_bitsize(self) -> int:
+        return self.mu
+
+    @cached_property
+    def alternates_bitsize(self) -> int:
+        return self.selection_registers[2].total_bits() // 2
+
+    @cached_property
+    def keep_bitsize(self) -> int:
+        return self.mu
+
+    @cached_property
+    def selection_bitsize(self) -> int:
+        return self.selection_registers[2].total_bits
+
+    @cached_property
+    def junk_registers(self) -> infra.Registers:
+        return infra.Registers.build(
+            sigma_mu=self.sigma_mu_bitsize,
+            alt_p=self.alternates_bitsize,
+            alt_q=self.alternates_bitsize,
+            keep=self.keep_bitsize,
+            less_than_equal=1,
+        )
+
+    def _value_equality_values_(self):
+        return (
+            self.selection_registers,
+            tuple(self.alt_p.ravel()),
+            tuple(self.alt_q.ravel()),
+            tuple(self.keep.ravel()),
+            self.mu,
+        )
+
+    def __repr__(self) -> str:
+        alt_repr = cirq._compat.proper_repr(self.alt_p)
+        keep_repr = cirq._compat.proper_repr(self.keep)
+        return (
+            f'cirq_ft.StatePreparationAliasSampling('
+            f'{self.selection_registers}, '
+            f'{alt_repr}, '
+            f'{keep_repr}, '
+            f'{self.mu})'
+        )
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+    ) -> cirq.OP_TREE:
+        p, q, s = quregs['p'], quregs['q'], quregs['cont_reg']
+        alt_p, alt_q = quregs['alt_p'], quregs['alt_q']
+        keep, sigma_mu, ineq = quregs['keep'], quregs['sigma_mu'], quregs['less_than_equal']
+        # Allocate ancillas
+        log_dim = self.selection_registers[0].total_bits()
+        alt_bitsize = max(max(self.alt_p).bit_length(), max(self.alt_q).bit_length())
+        # 0. Prepare uniform superposition
+        yield UniformPrepareUpperTriangular(n=self.dim).on_registers(p=p, q=q)
+        # yield cirq.H.on_each(*p)
+        # yield cirq.H.on_each(*q)
+        # 1. Contiguous register gate from p and q
+        # yield ContiguousRegisterUpperTriangular(log_dim, 2 * log_dim, 2**log_dim).on(*p, *q, *s)
+        # # 2. SelectSwapQROM for alt / keep
+        # yield QROM(
+        #     [np.array(self.alt_p), np.array(self.alt_q), np.array(self.keep)],
+        #     selection_bitsizes=(2 * log_dim,),
+        #     target_bitsizes=(alt_bitsize, alt_bitsize, self.mu),
+        # ).on_registers(selection=s, target0=alt_p, target1=alt_q, target2=keep)
+        # yield cirq.H.on_each(*sigma_mu)
+        # # 3. Inequality test
+        # yield arithmetic_gates.LessThanEqualGate(self.mu, self.mu).on(*keep, *sigma_mu, *ineq)
+        # # 4. Swaps
+        # yield swap_network.MultiTargetCSwap.make_on(control=ineq, target_x=alt_p, target_y=p)
+        # yield swap_network.MultiTargetCSwap.make_on(control=ineq, target_x=alt_q, target_y=q)
+        # # Uncompute inequality
+        # yield arithmetic_gates.LessThanEqualGate(self.mu, self.mu).on(*keep, *sigma_mu, *ineq)
 
 
 @cirq.value_equality()
