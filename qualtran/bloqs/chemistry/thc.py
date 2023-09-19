@@ -389,15 +389,23 @@ class PrepareTHC(Bloq):
         plus_a = bb.add(Hadamard(), q=regs['plus_a'])
         plus_b = bb.add(Hadamard(), q=regs['plus_b'])
         # negative cotrol on flag register
-        less_than, flag_plus = add_from_bloq_register_flat_qubits(
-            bb, cz, less_than=less_than, flag_plus=flag_plus
+        less_than, plus_a = add_from_bloq_register_flat_qubits(
+            bb, cz, less_than=less_than, plus_a=plus_a
         )
-        flag_plus, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=flag_plus, x=mu, y=nu)
+        plus_a, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=plus_a, x=mu, y=nu)
         bb.free(bb.join(np.array([less_than, alt_theta])))
         bb.free(s)
         bb.free(sigma)
         bb.free(keep)
         bb.free(alt_mu)
         bb.free(alt_nu)
-        out_regs = {'mu': mu, 'nu': nu, 'theta': theta, 'plus_a': plus_a, 'plus_b': plus_b}
+        out_regs = {
+            'mu': mu,
+            'nu': nu,
+            'theta': theta,
+            'plus_a': plus_a,
+            'plus_b': plus_b,
+            'succ': succ,
+            'eq_nu_mp1': eq_nu_mp1,
+        }
         return out_regs
