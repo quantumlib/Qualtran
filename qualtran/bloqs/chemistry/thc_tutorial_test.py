@@ -18,6 +18,8 @@ import numpy as np
 import pytest
 
 from qualtran.bloqs.chemistry.thc_tutorial import (
+    ContiguousRegister,
+    PrepareMatrix,
     PrepareUpperTriangular,
     SignedStatePreparationAliasSampling,
     SignedStatePreparationAliasSamplingLowerCost,
@@ -98,32 +100,95 @@ def test_signed_state_preparation_lower_non_clifford(num_states, epsilon):
     np.testing.assert_equal(state_signs, (-1) ** signs)
 
 
-@pytest.mark.parametrize("num_rows_cols", [3, 4, 5])
+@pytest.mark.parametrize("num_rows_cols", [2, 4, 8])
 def test_uniform_state_prep_up_triang(num_rows_cols):
-    for theta in np.linspace(0, 0.8 * np.pi, 10_000):
-        # for theta in [np.arccos(1 - 8 / 10)]:
-        gate = UniformPrepareUpperTriangular(num_rows_cols, theta)
-        g = cirq_ft.testing.GateHelper(gate)
-        # assertion to ensure that simulating the `decomposed_circuit` doesn't run out of memory.
-        assert len(g.circuit.all_qubits()) < 22
-        qubit_order = g.operation.qubits
-        # print(cirq.Circuit(cirq.decompose_once(g.operation)))
-        result = cirq.Simulator(dtype=np.complex128).simulate(
-            cirq.Circuit(cirq.decompose_once(g.operation))
-        )
-        ntot = num_rows_cols**2
-        nupt = num_rows_cols * (num_rows_cols + 1) // 2
-        if len(np.where(np.abs(result.final_state_vector) > 1e-3)[0]) < 2 ** (num_rows_cols):
-            print(
-                theta,
-                np.arccos(1 - 8 / 10),
-                len(np.where(np.abs(result.final_state_vector) > 1e-3)[0]),
-            )
-        # print(cirq.dirac_notation(result.final_state_vector))
-        # final_target_state = cirq.sub_state_vector(
-        #     result.final_state_vector, keep_indices=list(range(nupt))
-        # )
-        # expected_target_state = np.asarray([np.sqrt(1.0 / nupt)] * nupt + [0] * (2 ** len(ntot) - nupt))
-        # cirq.testing.assert_allclose_up_to_global_phase(
-        #     expected_target_state, result.final_state_vector, atol=1e-6
-        # )
+    gate = UniformPrepareUpperTriangular(num_rows_cols)
+    g = cirq_ft.testing.GateHelper(gate)
+    assert len(g.circuit.all_qubits()) < 22
+    qubit_order = g.operation.qubits
+    result = cirq.Simulator(dtype=np.complex128).simulate(
+        cirq.Circuit(cirq.decompose_once(g.operation))
+    )
+    ntot = num_rows_cols**2
+    nupt = num_rows_cols * (num_rows_cols + 1) // 2
+    assert len(np.where(np.abs(result.final_state_vector) > 1e-8)[0]) == nupt
+
+
+# @pytest.mark.parametrize("num_rows_cols", [2, 4, 8])
+# def test_state_prep_up_triang(num_rows_cols):
+#     np.random.seed(3748)
+#     zeta = np.random.randint(1, 10, size=(num_rows_cols, num_rows_cols))
+#     gate = PrepareUpperTriangular.build()
+#     g = cirq_ft.testing.GateHelper(gate)
+#     assert len(g.circuit.all_qubits()) < 22
+#     qubit_order = g.operation.qubits
+#     # print(cirq.Circuit(cirq.decompose_once(g.operation)))
+#     result = cirq.Simulator(dtype=np.complex128).simulate(
+#         cirq.Circuit(cirq.decompose_once(g.operation))
+#     )
+#     ntot = num_rows_cols**2
+#     nupt = num_rows_cols * (num_rows_cols + 1) // 2
+#     assert len(np.where(np.abs(result.final_state_vector) > 1e-8)[0]) == nupt
+
+
+@pytest.mark.parametrize("num_rows_cols", [2])
+def test_state_prep_matrix(num_rows_cols):
+    np.random.seed(3748)
+    zeta = np.random.randint(1, 10, size=(num_rows_cols, num_rows_cols))
+    gate = PrepareMatrix.build(mat=zeta, epsilon=0.004)
+    g = cirq_ft.testing.GateHelper(gate)
+    qubit_order = g.operation.qubits
+    # print(cirq.Circuit(cirq.decompose_once(g.operation)))
+    assert len(g.circuit.all_qubits()) < 22
+    # # print(g.circuit.all_qubits())
+    qubit_order = g.operation.qubits
+    result = cirq.Simulator(dtype=np.complex128).simulate(g.circuit, qubit_order=qubit_order)
+    state_vector = result.final_state_vector
+    # print(g.circuit)
+    L, logL = len(zeta.ravel()), (int(np.prod(zeta.shape) - 1).bit_length())
+    state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
+    num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
+    prepared_state = state_vector.sum(axis=1)
+    assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
+    assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
+    prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
+    # print(zeta.ravel() / np.sum(zeta))
+    print(len(np.where(np.abs(prepared_state) > 0)[0]))
+    print(cirq.dirac_notation(prepared_state**2, decimals=4), 1 / L)
+    print(zeta.ravel() / np.sum(zeta))
+    # print(cirq.dirac_notation(prepared_state))
+    from cirq_ft.algos.state_preparation import StatePreparationAliasSampling
+
+    sp = StatePreparationAliasSampling.from_lcu_probs(
+        zeta.ravel() / np.sum(zeta), probability_epsilon=2e-3
+    )
+    g = cirq_ft.testing.GateHelper(sp)
+    # print(g.circuit)
+    # qubit_order = g.operation.qubits
+    # assert len(g.circuit.all_qubits()) < 22
+    # print(len(g.circuit.all_qubits()))
+    # result = cirq.Simulator(dtype=np.complex128).simulate(g.circuit, qubit_order=qubit_order)
+    # state_vector = result.final_state_vector
+    # print(state_vector)
+    # L, logL = len(zeta.ravel()), len(g.quregs['selection'])
+    # state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
+    # num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
+    # prepared_state = state_vector.sum(axis=1)
+    # assert all(num_non_zero[:L] > 0) and all(num_non_zero[L:] == 0)
+    # assert all(np.abs(prepared_state[:L]) > 1e-6) and all(np.abs(prepared_state[L:]) <= 1e-6)
+    # prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
+    # print(zeta.ravel() / np.sum(zeta))
+    # print(cirq.dirac_notation(prepared_state**2))
+
+
+def test_contiguous_register_gate():
+    gate = ContiguousRegister(3, 6, 8)
+    circuit = cirq.Circuit(gate.on(*cirq.LineQubit.range(2 * 3 + 6)))
+    basis_map = {}
+    for p in range(2**3):
+        for q in range(2**3):
+            inp = f'0b_{p:03b}_{q:03b}_{0:06b}'
+            out = f'0b_{p:03b}_{q:03b}_{p*8 + q:06b}'
+            basis_map[int(inp, 2)] = int(out, 2)
+
+    cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
