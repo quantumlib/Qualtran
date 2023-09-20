@@ -311,7 +311,7 @@ class MultiplyTwoReals(Bloq):
 
         References:
             [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
-    ](https://arxiv.org/pdf/2007.07391.pdf) pg 71.
+                ](https://arxiv.org/pdf/2007.07391.pdf) pg 71.
     """
 
     bitsize: int
