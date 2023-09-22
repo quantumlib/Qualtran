@@ -13,12 +13,15 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature, SoquetT
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
@@ -74,3 +77,9 @@ class Hadamard(Bloq):
 
         (q,) = q
         return cirq.H(q), {'q': np.array([q])}
+
+    def t_complexity(self):
+        return TComplexity(clifford=1)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        return {(1, ArbitraryClifford(n=1))}
