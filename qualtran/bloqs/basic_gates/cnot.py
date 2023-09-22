@@ -14,14 +14,17 @@
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature, Soquet, SoquetT
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.drawing import Circle, ModPlus, WireSymbol
+from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
@@ -97,3 +100,9 @@ class CNOT(Bloq):
         elif soq.reg.name == 'target':
             return ModPlus()
         raise ValueError(f'Bad wire symbol soquet: {soq}')
+
+    def t_complexity(self):
+        return TComplexity(clifford=1)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        return {(1, ArbitraryClifford(n=1))}

@@ -16,9 +16,11 @@ from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
+from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
@@ -66,3 +68,6 @@ class Toffoli(Bloq):
 
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
+
+    def t_complexity(self):
+        return TComplexity(t=4)
