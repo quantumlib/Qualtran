@@ -293,25 +293,25 @@ class ScaleIntByReal(Bloq):
 class MultiplyTwoReals(Bloq):
     r"""Multiply two fixed-point representations of real numbers
 
-        i.e.
+    i.e.
 
-        $$
-            |a\rangle|b\rangle|0\rangle \rightarrow |a\rangle|b\rangle|a \times b\rangle
-        $$
+    $$
+        |a\rangle|b\rangle|0\rangle \rightarrow |a\rangle|b\rangle|a \times b\rangle
+    $$
 
-        The real numbers are assumed to be in the range [0, 1).
+    The real numbers are assumed to be in the range [0, 1).
 
-        Args:
-            bitsize: Number of bits used to represent the real number.
+    Args:
+        bitsize: Number of bits used to represent the real number.
 
-        Registers:
-         - a: bitsize-sized input register.
-         - b: bitsize-sized input register.
-         - result: bitsize output register
+    Registers:
+     - a: bitsize-sized input register.
+     - b: bitsize-sized input register.
+     - result: bitsize output register
 
-        References:
-            [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
-                ](https://arxiv.org/pdf/2007.07391.pdf) pg 71.
+    References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
+            ](https://arxiv.org/pdf/2007.07391.pdf) pg 71.
     """
 
     bitsize: int

@@ -22,7 +22,6 @@ from qualtran.bloqs.arithmetic import (
     Square,
     SquareRealNumber,
     SumOfSquares,
-)
 from qualtran.testing import execute_notebook
 
 
