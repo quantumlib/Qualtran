@@ -42,7 +42,6 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
-from qualtran.bloqs.util_bloqs import Allocate, Free
 
 CirqQuregT = NDArray[cirq.Qid]
 CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
