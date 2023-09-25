@@ -71,6 +71,3 @@ class Toffoli(Bloq):
 
     def t_complexity(self):
         return TComplexity(t=4)
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(4, TGate())}
