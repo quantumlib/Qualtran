@@ -20,7 +20,6 @@ from cirq_ft import TComplexity
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:

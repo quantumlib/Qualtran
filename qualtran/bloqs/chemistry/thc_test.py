@@ -114,5 +114,15 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
     assert np.allclose(unraveled_dist[:num_spat, num_mu], flat_data[num_ut:] / total, atol=eps)
 
 
+def test_prepare_graph():
+    from qualtran.bloqs.chemistry.thc_notebook_utils import generalize
+    from qualtran.resource_counting import get_bloq_counts_graph, GraphvizCounts
+
+    num_mu = 10
+    num_spin_orb = 4
+    uniform_bloq = UniformSuperpositionTHC(num_mu=num_mu, num_spin_orb=num_spin_orb)
+    graph, sigma = get_bloq_counts_graph(uniform_bloq, generalizer=generalize)
+
+
 def test_notebook():
     execute_notebook('thc')

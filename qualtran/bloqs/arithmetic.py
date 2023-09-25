@@ -15,16 +15,14 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, Union
 
-import cirq
+import cirq_ft
 import sympy
 from attrs import frozen
-from cirq_ft import LessThanEqualGate as CirqLessThanEqual
-from cirq_ft import LessThanGate as CirqLessThanGate
-from cirq_ft import TComplexity
 
-from qualtran import Bloq, CompositeBloq, Register, Signature
+from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -58,7 +56,7 @@ class Add(Bloq):
     def t_complexity(self):
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
-        return TComplexity(t=num_t_gates, clifford=num_clifford)
+        return cirq_ft.TComplexity(t=num_t_gates, clifford=num_clifford)
 
 
 @frozen
@@ -94,7 +92,7 @@ class Square(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = self.bitsize * (self.bitsize - 1)
-        return TComplexity(t=4 * num_toff)
+        return cirq_ft.TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -141,7 +139,7 @@ class SumOfSquares(Bloq):
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
-        return TComplexity(t=4 * num_toff)
+        return cirq_ft.TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -184,7 +182,7 @@ class Product(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return TComplexity(t=4 * num_toff)
+        return cirq_ft.TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -204,9 +202,7 @@ class GreaterThan(Bloq):
      - result: A single bit output register to store the result of A > B.
 
     References:
-        [Improved techniques for preparing eigenstates of fermionic
-        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5#additional-information),
-        Comparison Oracle from SI: Appendix 2B (pg 3)
+        See cirq_ft comparitors.
     """
     bitsize: int
 
@@ -218,81 +214,15 @@ class GreaterThan(Bloq):
         return "a gt b"
 
     def t_complexity(self):
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        return TComplexity(t=8 * self.bitsize)
+        return cirq_ft.algos.arithmetic_gates.LessThanEqualGate(
+            self.bitsize, self.bitsize
+        )._t_complexity_()
 
-
-@frozen
-class LessThanEqual(Bloq):
-    r"""Implements $U|x,y,z\rangle = |x, y, z \oplus {x \le y}\rangle$.
-
-    Args:
-        x_bitsize: bitsize of x register.
-        y_bitsize: bitsize of y register.
-
-    Registers:
-     - x, y: Registers to compare against eachother.
-     - z: Register to hold result of comparison.
-    """
-
-    x_bitsize: int
-    y_bitsize: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("x", bitsize=self.x_bitsize),
-                Register("y", bitsize=self.y_bitsize),
-                Register("z", bitsize=1),
-            ]
-        )
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
-
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        less_than = CirqLessThanEqual(x_bitsize=self.x_bitsize, y_bitsize=self.y_bitsize)
-        x = cirq_quregs['x']
-        y = cirq_quregs['y']
-        z = cirq_quregs['z']
-        return (less_than.on(*x, *y, *z), cirq_quregs)
-
-
-@frozen
-class LessThanConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x < a)\rangle"
-
-    Args:
-        bitsize: bitsize of x register.
-        val: integer to compare x against (a above.)
-
-    Registers:
-     - x: Registers to compare against val.
-     - z: Register to hold result of comparison.
-    """
-
-    bitsize: int
-    val: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, z=1)
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
-
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        less_than = CirqLessThanGate(bitsize=self.bitsize, less_than_val=self.val)
-        x = cirq_quregs['x']
-        z = cirq_quregs['z']
-        return (less_than.on(*x, *z), cirq_quregs)
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        tcomp = self.t_complexity()
+        return {(tcomp.t, TGate()), (tcomp.clifford, ArbitraryClifford(n=1))}
 
 
 @frozen
@@ -316,10 +246,13 @@ class GreaterThanConstant(Bloq):
         return Signature.build(x=self.bitsize, z=1)
 
     def t_complexity(self):
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        return TComplexity(t=8 * self.bitsize)
+        return cirq_ft.algos.arithmetic_gates.LessThanGate(self.bitsize, self.val)._t_complexity_()
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        tcomp = self.t_complexity()
+        return {(tcomp.t, TGate()), (tcomp.clifford, ArbitraryClifford(n=1))}
 
 
 @frozen
@@ -343,10 +276,13 @@ class EqualsAConstant(Bloq):
         return Signature.build(x=self.bitsize, z=1)
 
     def t_complexity(self):
-        # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        return TComplexity(t=8 * self.bitsize)
+        return cirq_ft.algos.arithmetic_gates.LessThanGate(self.bitsize, self.val)._t_complexity_()
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        tcomp = self.t_complexity()
+        return {(tcomp.t, TGate()), (tcomp.clifford, ArbitraryClifford(n=1))}
 
 
 @frozen
@@ -393,8 +329,8 @@ class ToContiguousIndex(Bloq):
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(self.bitsize**2 + self.bitsize - 1, TGate())}
+        return {(4*(self.bitsize**2 + self.bitsize - 1), TGate())}
 
-    def t_complexity(self) -> 'TComplexity':
+    def t_complexity(self) -> 'cirq_ft.TComplexity':
         num_toffoli = self.bitsize**2 + self.bitsize - 1
-        return TComplexity(t=4 * num_toffoli)
+        return cirq_ft.TComplexity(t=4 * num_toffoli)
