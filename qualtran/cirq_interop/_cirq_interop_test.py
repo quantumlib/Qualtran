@@ -13,6 +13,7 @@
 #  limitations under the License.
 from typing import Dict, Tuple
 
+import attr
 import cirq
 import cirq_ft
 import numpy as np
@@ -20,10 +21,14 @@ import pytest
 import sympy
 from attrs import frozen
 
+import qualtran
 from qualtran import Bloq, BloqBuilder, CompositeBloq, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.swap_network import SwapWithZero
+from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import (
+    BloqAsCirqGate,
     cirq_optree_to_cbloq,
     CirqGateAsBloq,
     CirqQuregT,
@@ -81,6 +86,66 @@ def test_cbloq_to_cirq_circuit():
     )
 
     assert circuit == circuit2
+
+
+def test_cirq_optree_to_cbloq():
+    @attr.frozen
+    class CirqGateWithRegisters(cirq_ft.GateWithRegisters):
+        reg: cirq_ft.Register
+
+        @property
+        def registers(self) -> cirq_ft.Registers:
+            return cirq_ft.Registers([self.reg])
+
+    reg1 = cirq_ft.Register('x', shape=(3, 4, 2))
+    reg2 = cirq_ft.Register('y', shape=(12, 2))
+    anc_reg = cirq_ft.Register('anc', shape=(2, 3))
+    qubits = cirq.LineQubit.range(24)
+    anc_qubits = cirq.NamedQubit.range(3, prefix='anc')
+    circuit = cirq.Circuit(
+        CirqGateWithRegisters(reg1).on(*qubits),
+        CirqGateWithRegisters(anc_reg).on(*anc_qubits, *qubits[:3]),
+        CirqGateWithRegisters(reg2).on(*qubits),
+    )
+    # Test-1: When no signature is specified, the method uses a default signature. Ancilla qubits
+    # are also included in the signature itself, so no allocations / deallocations are needed.
+    cbloq = cirq_optree_to_cbloq(circuit)
+    assert cbloq.signature == qualtran.Signature(
+        [qualtran.Register(name='qubits', bitsize=1, shape=(27,))]
+    )
+    bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
+    assert bloq_instances[0].bloq == CirqGateAsBloq(CirqGateWithRegisters(reg1))
+    assert bloq_instances[0].bloq.signature == qualtran.Signature(
+        [qualtran.Register(name='x', bitsize=1, shape=(3, 4, 2))]
+    )
+    assert bloq_instances[1].bloq == CirqGateAsBloq(CirqGateWithRegisters(anc_reg))
+    assert bloq_instances[1].bloq.signature == qualtran.Signature(
+        [qualtran.Register(name='anc', bitsize=1, shape=(2, 3))]
+    )
+    assert bloq_instances[2].bloq == CirqGateAsBloq(CirqGateWithRegisters(reg2))
+    assert bloq_instances[2].bloq.signature == qualtran.Signature(
+        [qualtran.Register(name='y', bitsize=1, shape=(12, 2))]
+    )
+    # Test-2: If you provide an explicit signature, you must also provide a mapping of cirq qubits
+    # matching the signature. The additional ancilla allocations are automatically handled.
+    new_signature = qualtran.Signature(
+        [
+            qualtran.Register('xx', bitsize=3, shape=(3, 2)),
+            qualtran.Register('yy', bitsize=1, shape=(2, 3)),
+        ]
+    )
+    cirq_quregs = {
+        'xx': np.asarray(qubits[:18]).reshape((3, 2, 3)),
+        'yy': np.asarray(qubits[18:]).reshape((2, 3, 1)),
+    }
+    cbloq = cirq_optree_to_cbloq(circuit, signature=new_signature, cirq_quregs=cirq_quregs)
+    assert cbloq.signature == new_signature
+    # Splits, joins, Alloc, Free are automatically inserted.
+    bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
+    assert bloqs_list.count(Split(3)) == 6
+    assert bloqs_list.count(Join(3)) == 6
+    assert bloqs_list.count(Allocate(1)) == 3
+    assert bloqs_list.count(Free(1)) == 3
 
 
 @frozen
@@ -178,7 +243,7 @@ def test_bloq_as_cirq_gate_left_register():
     bb.free(q)
     cbloq = bb.finalize()
     circuit, _ = cbloq.to_cirq_circuit()
-    cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
+    cirq.testing.assert_has_diagram(circuit, """_c(0): ───Allocate───X───Free───""")
 
 
 @frozen
@@ -221,6 +286,77 @@ def test_bloq_decompose_from_cirq_op():
 
     with pytest.raises(NotImplementedError):
         TestCNOTSymbolic().decompose_bloq()
+
+
+def test_bloq_as_cirq_gate_multi_dimensional_signature():
+    bloq = SwapWithZero(2, 3, 4)
+    cirq_quregs = bloq.signature.get_cirq_quregs()
+    op = BloqAsCirqGate(bloq).on_registers(**cirq_quregs)
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(op),
+        '''
+selection0: ──────SwapWithZero───
+                  │
+selection1: ──────selection──────
+                  │
+targets[0, 0]: ───targets────────
+                  │
+targets[0, 1]: ───targets────────
+                  │
+targets[0, 2]: ───targets────────
+                  │
+targets[1, 0]: ───targets────────
+                  │
+targets[1, 1]: ───targets────────
+                  │
+targets[1, 2]: ───targets────────
+                  │
+targets[2, 0]: ───targets────────
+                  │
+targets[2, 1]: ───targets────────
+                  │
+targets[2, 2]: ───targets────────
+                  │
+targets[3, 0]: ───targets────────
+                  │
+targets[3, 1]: ───targets────────
+                  │
+targets[3, 2]: ───targets────────
+''',
+    )
+    cbloq = bloq.decompose_bloq()
+    cirq.testing.assert_has_diagram(
+        cbloq.to_cirq_circuit(**cirq_quregs)[0],
+        '''
+selection0: ──────────────────────────────@(approx)───
+                                          │
+selection1: ──────@(approx)───@(approx)───┼───────────
+                  │           │           │
+targets[0, 0]: ───×(x)────────┼───────────×(x)────────
+                  │           │           │
+targets[0, 1]: ───×(x)────────┼───────────×(x)────────
+                  │           │           │
+targets[0, 2]: ───×(x)────────┼───────────×(x)────────
+                  │           │           │
+targets[1, 0]: ───×(y)────────┼───────────┼───────────
+                  │           │           │
+targets[1, 1]: ───×(y)────────┼───────────┼───────────
+                  │           │           │
+targets[1, 2]: ───×(y)────────┼───────────┼───────────
+                              │           │
+targets[2, 0]: ───────────────×(x)────────×(y)────────
+                              │           │
+targets[2, 1]: ───────────────×(x)────────×(y)────────
+                              │           │
+targets[2, 2]: ───────────────×(x)────────×(y)────────
+                              │
+targets[3, 0]: ───────────────×(y)────────────────────
+                              │
+targets[3, 1]: ───────────────×(y)────────────────────
+                              │
+targets[3, 2]: ───────────────×(y)────────────────────
+''',
+    )
 
 
 def test_notebook():

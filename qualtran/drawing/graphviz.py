@@ -378,13 +378,9 @@ class PrettyGraphDrawer(GraphDrawer):
 
     def soq_label(self, soq: Soquet):
         from qualtran.bloqs.util_bloqs import Join, Split
-        from qualtran.cirq_interop import CirqGateAsBloq
 
         if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, (Split, Join)):
             return ''
-        if isinstance(soq.binst, BloqInstance) and isinstance(soq.binst.bloq, CirqGateAsBloq):
-            (ii,) = soq.idx
-            return f'q{ii}'
         return soq.pretty()
 
     def get_default_text(self, reg: Register) -> str:
