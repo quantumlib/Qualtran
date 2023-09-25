@@ -329,7 +329,7 @@ class ToContiguousIndex(Bloq):
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(4*(self.bitsize**2 + self.bitsize - 1), TGate())}
+        return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}
 
     def t_complexity(self) -> 'cirq_ft.TComplexity':
         num_toffoli = self.bitsize**2 + self.bitsize - 1

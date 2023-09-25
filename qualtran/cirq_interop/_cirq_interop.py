@@ -208,7 +208,8 @@ def cirq_optree_to_cbloq(
     allocated_qubits = set()
     for op in circuit.all_operations():
         if op.gate is None:
-            raise ValueError(f"Only gate operations are supported, not {op}.")
+            # raise ValueError(f"Only gate operations are supported, not {op}.")
+            continue
 
         bloq = CirqGateAsBloq(op.gate)
         for q in op.qubits:
