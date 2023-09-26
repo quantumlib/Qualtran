@@ -171,10 +171,10 @@ class Signature:
         import cirq_ft
 
         cirq_regs = [
-            cirq_ft.Register(name=reg.name, shape=reg.shape + (reg.bitsize,))
+            cirq_ft.Register(name=reg.name, bitsize=reg.bitsize, shape=reg.shape)
             for reg in self.lefts()
         ]
-        return cirq_ft.Registers(cirq_regs).get_named_qubits()
+        return cirq_ft.infra.get_named_qubits(cirq_regs)
 
     def __hash__(self):
         return hash(self._registers)

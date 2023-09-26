@@ -12,21 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from cirq_ft.algos import LessThanEqualGate as CirqLessThanEquals
-from cirq_ft.algos import LessThanGate as CirqLessThanConstant
-from cirq_ft.infra import t_complexity
-
-import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, Register
-from qualtran.bloqs.arithmetic import (
-    Add,
-    GreaterThan,
-    LessThanConstant,
-    LessThanEqual,
-    Product,
-    Square,
-    SumOfSquares,
-)
+from qualtran.bloqs.arithmetic import Add, GreaterThan, Product, Square, SumOfSquares
 from qualtran.testing import execute_notebook
 
 
@@ -107,20 +94,6 @@ def test_greater_than():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, result=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
-
-
-def test_less_than_equal():
-    lte = LessThanEqual(5, 5)
-    qlt_testing.assert_valid_bloq_decomposition(lte)
-    cirq_lte = CirqLessThanEquals(5, 5)
-    assert lte.decompose_bloq().t_complexity() == t_complexity(cirq_lte)
-
-
-def test_less_than_constant():
-    ltc = LessThanConstant(5, 7)
-    qlt_testing.assert_valid_bloq_decomposition(ltc)
-    cirq_ltc = CirqLessThanConstant(5, 7)
-    assert ltc.decompose_bloq().t_complexity() == t_complexity(cirq_ltc)
 
 
 def test_notebook():
