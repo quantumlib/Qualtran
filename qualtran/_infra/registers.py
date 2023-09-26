@@ -174,7 +174,7 @@ class Signature:
             cirq_ft.Register(name=reg.name, shape=reg.shape + (reg.bitsize,))
             for reg in self.lefts()
         ]
-        return cirq_ft.infra.gate_with_registers.get_named_qubits(cirq_ft.Registers(cirq_regs))
+        return cirq_ft.Registers(cirq_regs).get_named_qubits()
 
     def __hash__(self):
         return hash(self._registers)
