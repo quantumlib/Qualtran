@@ -20,8 +20,8 @@ class PhysicalParameters:
     """The physical properties of a quantum computer.
 
     Attributes:
-        t_gate_ns: Clifford gate time.
-        t_meas_ns: Measurement time.
+        t_gate_ns: Clifford gate physical time.
+        t_meas_ns: Measurement physical time.
         physical_error_rate: Physical error rate.
         reference: Source of these estimates.
     """
