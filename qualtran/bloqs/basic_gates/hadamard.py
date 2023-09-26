@@ -13,15 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature, SoquetT
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
