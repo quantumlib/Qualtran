@@ -90,7 +90,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
     qlt_testing.assert_valid_bloq_decomposition(prep)
     triu_indices = np.triu_indices(num_mu)
     enlarged_matrix = np.zeros((num_mu + 1, num_mu + 1))
-    # THC paper uses row major ordering of the data
+    # THC paper uses column major ordering of the data it seems
     enlarged_matrix[:num_mu, :num_mu] = np.abs(zeta)
     enlarged_matrix[:num_spat, num_mu] = np.abs(t_l)
     flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))

@@ -92,7 +92,7 @@ class CSwapApprox(Bloq):
     def t_complexity(self) -> cirq_ft.TComplexity:
         """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
         n = self.bitsize
-        # 4 * n: G gates, each wth 1 T and 4 cliffords
+        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
         return cirq_ft.TComplexity(t=4 * n, clifford=22 * n - 1)
@@ -100,8 +100,15 @@ class CSwapApprox(Bloq):
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        tcomp = self.t_complexity()
-        return {(tcomp.t, TGate()), (tcomp.clifford, ArbitraryClifford(n=1))}
+        n = self.bitsize
+        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
+        # 4 * n: CNOTs
+        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
+        return {
+            (4 * n, TGate()),
+            (16 * n, ArbitraryClifford(n=1)),
+            (6 * n - 1, ArbitraryClifford(n=2)),
+        }
 
 
 @frozen

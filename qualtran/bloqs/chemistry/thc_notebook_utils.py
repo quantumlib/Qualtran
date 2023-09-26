@@ -53,6 +53,7 @@ mcp_cv0 = ssa.new_symbol('cv3')
 
 
 def generalize(bloq):
+    """Genereralizer for THC prepare bloqs."""
     if isinstance(bloq, (Allocate, Free, Split, Join)):
         return None
     if isinstance(bloq, (Rx, Ry, Rz)):
@@ -64,6 +65,7 @@ def generalize(bloq):
             return SwapWithZero(
                 bloq.gate.selection_bitsize, bloq.gate.target_bitsize, bloq.gate.n_target_registers
             )
+        # How to check type of cirg_gate**-1
         if (
             isinstance(bloq.gate, cirq.ops.raw_types._InverseCompositeGate)
             and 'SwapWithZero' in bloq.pretty_name()
@@ -82,14 +84,25 @@ def generalize(bloq):
             and isinstance(bloq.gate._sub_gate, single_qubit_clifford)
             and bloq.gate.num_controls() == 1
         ):
-            # Dangerous
             return ArbitraryClifford(n=2)
     return bloq
 
 
 def bin_bloq_counts(bloq):
+    """Classify bloq counts.
+
+    It's helpful to classify bloqs by their type (comparators, reflections, swaps, ...)
+
+    TODO: Generalize to take in a dict and custom classifier callable similar to
+    generalize for bloq counts.
+
+    Returns
+    -------
+    classified_bloqs : Dictionary of type of bloq and the sum of the counts of
+        bloqs of this type.
+    """
     tot_t = 0
-    cost_bin = defaultdict(list)
+    classified_bloqs = defaultdict(list)
     for num_calls, bloq in bloq.bloq_counts():
         if isinstance(bloq, (Split, Join, Allocate, Free)):
             pass
@@ -98,22 +111,22 @@ def bin_bloq_counts(bloq):
             if num_t is not None:
                 tot_t += num_calls * num_t
                 if isinstance(bloq, bloq_comparators):
-                    cost_bin['comparator'] += [num_calls * num_t]
+                    classified_bloqs['comparator'] += [num_calls * num_t]
                 elif isinstance(bloq, CirqGateAsBloq):
                     if isinstance(bloq.gate, cirq_ft.MultiControlPauli) and isinstance(
                         bloq.gate.target_gate, cirq.ops.common_gates.ZPowGate
                     ):
-                        cost_bin['reflections'] += [num_calls * num_t]
+                        classified_bloqs['reflections'] += [num_calls * num_t]
                     if isinstance(bloq.gate, cirq_comparators):
-                        cost_bin['comparator'] += [num_calls * num_t]
+                        classified_bloqs['comparator'] += [num_calls * num_t]
                     if isinstance(bloq.gate, (cirq_ft.SelectSwapQROM, cirq_ft.QROM)):
-                        cost_bin['qrom'] += [num_calls * num_t]
+                        classified_bloqs['qrom'] += [num_calls * num_t]
                 elif isinstance(bloq, CSwapApprox):
-                    cost_bin['controlled_swaps'] += [num_calls * num_t]
+                    classified_bloqs['controlled_swaps'] += [num_calls * num_t]
                 elif isinstance(bloq, rotation_bloqs):
-                    cost_bin['rotation'] += [num_calls * num_t]
+                    classified_bloqs['rotation'] += [num_calls * num_t]
                 elif isinstance(bloq, ToContiguousIndex):
-                    cost_bin['contiguous_register'] += [num_calls * num_t]
+                    classified_bloqs['contiguous_register'] += [num_calls * num_t]
                 else:
-                    cost_bin['other'] += [num_calls * num_t]
-    return {k: sum(v) for k, v in cost_bin.items()}
+                    classified_bloqs['other'] += [num_calls * num_t]
+    return {k: sum(v) for k, v in classified_bloqs.items()}

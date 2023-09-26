@@ -52,6 +52,9 @@ class Toffoli(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(4, TGate())}
 
+    def t_complexity(self):
+        return TComplexity(t=4)
+
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', target: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
@@ -68,6 +71,3 @@ class Toffoli(Bloq):
 
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
-
-    def t_complexity(self):
-        return TComplexity(t=4)

@@ -80,6 +80,3 @@ class Hadamard(Bloq):
 
     def t_complexity(self):
         return TComplexity(clifford=1)
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(1, ArbitraryClifford(n=1))}
