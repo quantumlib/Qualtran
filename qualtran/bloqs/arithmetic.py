@@ -15,9 +15,10 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, Union
 
-import cirq_ft
 import sympy
 from attrs import frozen
+from cirq_ft import t_complexity, TComplexity
+from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
@@ -56,7 +57,7 @@ class Add(Bloq):
     def t_complexity(self):
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
-        return cirq_ft.TComplexity(t=num_t_gates, clifford=num_clifford)
+        return TComplexity(t=num_t_gates, clifford=num_clifford)
 
 
 @frozen
@@ -92,7 +93,7 @@ class Square(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = self.bitsize * (self.bitsize - 1)
-        return cirq_ft.TComplexity(t=4 * num_toff)
+        return TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -139,7 +140,7 @@ class SumOfSquares(Bloq):
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
-        return cirq_ft.TComplexity(t=4 * num_toff)
+        return TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -182,7 +183,7 @@ class Product(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return cirq_ft.TComplexity(t=4 * num_toff)
+        return TComplexity(t=4 * num_toff)
 
 
 @frozen
@@ -214,9 +215,7 @@ class GreaterThan(Bloq):
         return "a gt b"
 
     def t_complexity(self):
-        return cirq_ft.algos.arithmetic_gates.LessThanEqualGate(
-            self.bitsize, self.bitsize
-        )._t_complexity_()
+        return t_complexity(LessThanEqualGate(self.bitsize, self.bitsize))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
@@ -246,7 +245,7 @@ class GreaterThanConstant(Bloq):
         return Signature.build(x=self.bitsize, z=1)
 
     def t_complexity(self):
-        return cirq_ft.algos.arithmetic_gates.LessThanGate(self.bitsize, self.val)._t_complexity_()
+        return t_complexity(LessThanGate(self.bitsize, self.val))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
@@ -276,7 +275,7 @@ class EqualsAConstant(Bloq):
         return Signature.build(x=self.bitsize, z=1)
 
     def t_complexity(self):
-        return cirq_ft.algos.arithmetic_gates.LessThanGate(self.bitsize, self.val)._t_complexity_()
+        return t_complexity(LessThanGate(self.bitsize, self.val))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
@@ -333,4 +332,4 @@ class ToContiguousIndex(Bloq):
 
     def t_complexity(self) -> 'cirq_ft.TComplexity':
         num_toffoli = self.bitsize**2 + self.bitsize - 1
-        return cirq_ft.TComplexity(t=4 * num_toffoli)
+        return TComplexity(t=4 * num_toffoli)
