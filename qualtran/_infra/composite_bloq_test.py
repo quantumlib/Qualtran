@@ -344,19 +344,20 @@ def test_complicated_target_register():
     cirq.testing.assert_has_diagram(
         circuit,
         """\
-control: ───────────@───@───@───@───@───@───
-                    │   │   │   │   │   │
-target[0, 0, 0]: ───X───┼───┼───┼───┼───┼───
-                        │   │   │   │   │
-target[0, 1, 0]: ───────X───┼───┼───┼───┼───
-                            │   │   │   │
-target[0, 2, 0]: ───────────X───┼───┼───┼───
-                                │   │   │
-target[1, 0, 0]: ───────────────X───┼───┼───
-                                    │   │
-target[1, 1, 0]: ───────────────────X───┼───
-                                        │
-target[1, 2, 0]: ───────────────────────X───""",
+control: ────────@───@───@───@───@───@───
+                 │   │   │   │   │   │
+target[0, 0]: ───X───┼───┼───┼───┼───┼───
+                     │   │   │   │   │
+target[0, 1]: ───────X───┼───┼───┼───┼───
+                         │   │   │   │
+target[0, 2]: ───────────X───┼───┼───┼───
+                             │   │   │
+target[1, 0]: ───────────────X───┼───┼───
+                                 │   │
+target[1, 1]: ───────────────────X───┼───
+                                     │
+target[1, 2]: ───────────────────────X───
+""",
     )
 
 
@@ -407,7 +408,6 @@ class TestSerialBloq(Bloq):
         return Signature.build(stuff=1)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
-
         for i in range(3):
             stuff = bb.add(Atom(), stuff=stuff)
         return {'stuff': stuff}
