@@ -109,6 +109,10 @@ class NotebookSpec:
 class _GoogleDocstringToMarkdown(GoogleDocstring):
     """Subclass of sphinx's parser to emit Markdown from Google-style docstrings."""
 
+    def _load_custom_sections(self) -> None:
+        super()._load_custom_sections()
+        self._sections['registers'] = self._parse_registers_section
+
     def _parse_parameters_section(self, section: str) -> List[str]:
         """Sphinx method to emit a 'Parameters' section."""
 
@@ -127,6 +131,17 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
         return [
             '#### References',
             ' '.join(line.strip() for line in self._consume_to_next_section()),
+            '',
+        ]
+
+    def _parse_registers_section(self, section: str) -> List[str]:
+        def _template(name, desc_lines):
+            desc = ' '.join(desc_lines)
+            return f' - `{name}`: {desc}'
+
+        return [
+            '#### Registers',
+            *[_template(name, desc) for name, _type, desc in self._consume_fields()],
             '',
         ]
 
