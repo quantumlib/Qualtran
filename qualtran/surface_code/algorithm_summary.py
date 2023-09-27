@@ -15,16 +15,16 @@
 
 from attrs import field, frozen
 
-_PRETTY_FLOAT = field(default=0.0, repr=lambda x: f'{x:g}')
+_PRETTY_FLOAT = field(default=0.0, converter=float, repr=lambda x: f'{x:g}')
 
 
 @frozen
 class AlgorithmSummary:
     """Properties of a quantum algorithm that impact its physical cost
 
-        Counts of different properities that affect the physical cost of
-        running an algorithm (e.g. number of T gates).
-        All counts default to zero.
+    Counts of different properities that affect the physical cost of
+    running an algorithm (e.g. number of T gates).
+    All counts default to zero.
 
     Attributes:
         algorithm_qubits: Number of qubits used by the algorithm $Q_{alg}$.
@@ -35,9 +35,9 @@ class AlgorithmSummary:
         rotation_circuit_depth: Depth of rotation circuit $D_R$.
     """
 
-    algorithm_qubits = _PRETTY_FLOAT
-    measurements = _PRETTY_FLOAT
-    t_gates = _PRETTY_FLOAT
-    toffoli_gates = _PRETTY_FLOAT
-    rotation_gates = _PRETTY_FLOAT
-    rotation_circuit_depth = _PRETTY_FLOAT
+    algorithm_qubits: float = _PRETTY_FLOAT
+    measurements: float = _PRETTY_FLOAT
+    t_gates: float = _PRETTY_FLOAT
+    toffoli_gates: float = _PRETTY_FLOAT
+    rotation_gates: float = _PRETTY_FLOAT
+    rotation_circuit_depth: float = _PRETTY_FLOAT

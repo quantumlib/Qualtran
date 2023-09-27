@@ -26,20 +26,12 @@ class PhysicalParameters:
         reference: Source of these estimates.
     """
 
-    t_gate_ns = field(default=1, repr=lambda x: f'{x:g}')
-    t_meas_ns = field(default=1, repr=lambda x: f'{x:g}')
+    t_gate_ns: float = field(repr=lambda x: f'{x:g}')
+    t_meas_ns: float = field(repr=lambda x: f'{x:g}')
 
-    physical_error_rate = field(default=1e-3, repr=lambda x: f'{x:g}')
+    physical_error_rate: float = field(default=1e-3, repr=lambda x: f'{x:g}')
 
-    reference = field(default='')
-
-
-FowlerGidney = PhysicalParameters(
-    t_gate_ns=100,
-    t_meas_ns=100,
-    physical_error_rate=1e-3,
-    reference='https://arxiv.org/abs/1808.06709',
-)
+    reference: str | None = None
 
 
 BeverlandEtAl = PhysicalParameters(
