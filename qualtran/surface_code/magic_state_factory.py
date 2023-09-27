@@ -14,8 +14,6 @@
 
 import abc
 
-from attrs import frozen
-
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 
 
