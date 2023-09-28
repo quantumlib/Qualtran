@@ -17,6 +17,7 @@ from typing import Dict, Sequence
 
 import cirq
 import cirq_ft
+import numpy as np
 from attrs import frozen
 from cirq_ft.algos.programmable_rotation_gate_array import ProgrammableRotationGateArrayBase
 from cirq_ft.infra import GateWithRegisters
@@ -28,83 +29,110 @@ from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.swap_network import CSwapApprox
 
 
-class THCRotationNetwork(cirq_ft.infra.GateWithRegistersBase):
-    """Programmable Rotation Gate Array for THC SELECT rotations.
+def find_givens_angles(chi: NDArray[float]):
+    """Find rotation angles for givens rotations.
+
+    Args:
+        chi: THC leaf tensor of shape [num_spatial_orbs, num_mu]. Assumed that
+            each column is individually normalized.
+    Returns:
+        thetas: An [num_mu, num_spatial_orbitals] array of rotation angles.
 
     References:
-        Fig 73.
-        [Quantum computing enhanced computational catalysis]
-        (https://arxiv.org/abs/2007.14460).
-            Burg, Low et. al. 2021.
+        https://arxiv.org/pdf/2007.14460.pdf Eq. 57
     """
+    # verify Eq 55. Build Vs using these thetas, Build U, and then compute
+    # thetas again check they match.
+    thetas = np.zeros(chi.T.shape)
+    for mu, chi_mu in enumerate(chi.T):
+        div_fac = 1.0
+        for p, u_p in enumerate(chi_mu):
+            rhs = u_p / (2 * div_fac)
+            if abs(rhs) > 0.5:
+                rhs = 0.5 * np.sign(rhs)
+            theta_p = 0.5 * np.arccos(rhs)
+            div_fac *= np.sin(2 * theta_p)
+            thetas[mu, p] = theta_p
+    return thetas
 
-    def __init__(self, *angles: Sequence[int], kappa: int, rotation_gate: cirq.Gate):
-        super().__init__(*angles, kappa=kappa, rotation_gate=rotation_gate)
 
-    def interleaved_unitary(
-        self, index: int, inverse: bool = False, **qubit_regs: NDArray[cirq.Qid]
-    ) -> cirq.Operation:
-        C0 = [
-            cirq.H(qubit_regs['target'][index]),
-            cirq.S(qubit_regs['target'][index + 1]) ** -1,
-            cirq.H(qubit_regs['target'][index + 1]),
-            cirq.CNOT(qubit_regs['target'][index], qubit_regs['target'][index + 1]),
-        ]
-        C1 = [
-            cirq.S(qubit_regs['target'][index]),
-            cirq.H(qubit_regs['target'][index]),
-            cirq.H(qubit_regs['target'][index + 1]),
-            cirq.CNOT(qubit_regs['target'][index], qubit_regs['target'][index + 1]),
-        ]
-        two_qubit_ops_factory = [C0, C1]
-        if inverse:
-            return cirq.inverse(two_qubit_ops_factory[index % 2])
-        else:
-            return two_qubit_ops_factory[index % 2]
+# class THCRotationNetwork(cirq_ft.infra.GateWithRegistersBase):
+#     """Programmable Rotation Gate Array for THC SELECT rotations.
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
-        selection, kappa_load_target = quregs.pop('selection'), quregs.pop('kappa_load_target')
-        rotations_target = quregs.pop('rotations_target')
-        interleaved_unitary_target = quregs
+#     References:
+#         Fig 73.
+#         [Quantum computing enhanced computational catalysis]
+#         (https://arxiv.org/abs/2007.14460).
+#             Burg, Low et. al. 2021.
+#     """
 
-        # 1. Find a convenient way to process batches of size kappa.
-        num_bits = sum(max(thetas).bit_length() for thetas in self.angles)
-        iteration_length = self.selection_registers[0].iteration_length
-        selection_bitsizes = [s.total_bits() for s in self.selection_registers]
-        angles_bits = np.zeros(shape=(iteration_length, num_bits), dtype=int)
-        angles_bit_pow = np.zeros(shape=(num_bits,), dtype=int)
-        angles_idx = np.zeros(shape=(num_bits,), dtype=int)
-        st, en = 0, 0
-        for i, thetas in enumerate(self.angles):
-            bit_width = max(thetas).bit_length()
-            st, en = en, en + bit_width
-            angles_bits[:, st:en] = [[*iter_bits(t, bit_width)] for t in thetas]
-            angles_bit_pow[st:en] = [*range(bit_width)][::-1]
-            angles_idx[st:en] = i
-        assert en == num_bits
-        # 2. Process batches of size kappa.
-        power_of_2s = 2 ** np.arange(self.kappa)[::-1]
-        last_id = 0
-        data = np.zeros(iteration_length, dtype=int)
-        for st in range(0, num_bits, self.kappa):
-            en = min(st + self.kappa, num_bits)
-            data ^= angles_bits[:, st:en].dot(power_of_2s[: en - st])
-            yield qrom.QROM(
-                [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
-            ).on_registers(selection=selection, target0=kappa_load_target)
-            data = angles_bits[:, st:en].dot(power_of_2s[: en - st])
-            for cqid, bpow, idx in zip(kappa_load_target, angles_bit_pow[st:en], angles_idx[st:en]):
-                if idx != last_id:
-                    yield self.interleaved_unitary(
-                        last_id, rotations_target=rotations_target, **interleaved_unitary_target
-                    )
-                    last_id = idx
-                yield self.rotation_gate(bpow).on(*rotations_target).controlled_by(cqid)
-        yield qrom.QROM(
-            [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
-        ).on_registers(selection=selection, target0=kappa_load_target)
+#     def __init__(self, *angles: Sequence[int], kappa: int, rotation_gate: cirq.Gate):
+#         super().__init__(*angles, kappa=kappa, rotation_gate=rotation_gate)
+
+#     def interleaved_unitary(
+#         self, index: int, inverse: bool = False, **qubit_regs: NDArray[cirq.Qid]
+#     ) -> cirq.Operation:
+#         C0 = [
+#             cirq.H(qubit_regs['target'][index]),
+#             cirq.S(qubit_regs['target'][index + 1]) ** -1,
+#             cirq.H(qubit_regs['target'][index + 1]),
+#             cirq.CNOT(qubit_regs['target'][index], qubit_regs['target'][index + 1]),
+#         ]
+#         C1 = [
+#             cirq.S(qubit_regs['target'][index]),
+#             cirq.H(qubit_regs['target'][index]),
+#             cirq.H(qubit_regs['target'][index + 1]),
+#             cirq.CNOT(qubit_regs['target'][index], qubit_regs['target'][index + 1]),
+#         ]
+#         two_qubit_ops_factory = [C0, C1]
+#         if inverse:
+#             return cirq.inverse(two_qubit_ops_factory[index % 2])
+#         else:
+#             return two_qubit_ops_factory[index % 2]
+
+#     def decompose_from_registers(
+#         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+#     ) -> cirq.OP_TREE:
+#         selection, kappa_load_target = quregs.pop('selection'), quregs.pop('kappa_load_target')
+#         rotations_target = quregs.pop('rotations_target')
+#         interleaved_unitary_target = quregs
+
+#         # 1. Find a convenient way to process batches of size kappa.
+#         num_bits = sum(max(thetas).bit_length() for thetas in self.angles)
+#         iteration_length = self.selection_registers[0].iteration_length
+#         selection_bitsizes = [s.total_bits() for s in self.selection_registers]
+#         angles_bits = np.zeros(shape=(iteration_length, num_bits), dtype=int)
+#         angles_bit_pow = np.zeros(shape=(num_bits,), dtype=int)
+#         angles_idx = np.zeros(shape=(num_bits,), dtype=int)
+#         st, en = 0, 0
+#         for i, thetas in enumerate(self.angles):
+#             bit_width = max(thetas).bit_length()
+#             st, en = en, en + bit_width
+#             angles_bits[:, st:en] = [[*iter_bits(t, bit_width)] for t in thetas]
+#             angles_bit_pow[st:en] = [*range(bit_width)][::-1]
+#             angles_idx[st:en] = i
+#         assert en == num_bits
+#         # 2. Process batches of size kappa.
+#         power_of_2s = 2 ** np.arange(self.kappa)[::-1]
+#         last_id = 0
+#         data = np.zeros(iteration_length, dtype=int)
+#         for st in range(0, num_bits, self.kappa):
+#             en = min(st + self.kappa, num_bits)
+#             data ^= angles_bits[:, st:en].dot(power_of_2s[: en - st])
+#             yield qrom.QROM(
+#                 [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
+#             ).on_registers(selection=selection, target0=kappa_load_target)
+#             data = angles_bits[:, st:en].dot(power_of_2s[: en - st])
+#             for cqid, bpow, idx in zip(kappa_load_target, angles_bit_pow[st:en], angles_idx[st:en]):
+#                 if idx != last_id:
+#                     yield self.interleaved_unitary(
+#                         last_id, rotations_target=rotations_target, **interleaved_unitary_target
+#                     )
+#                     last_id = idx
+#                 yield self.rotation_gate(bpow).on(*rotations_target).controlled_by(cqid)
+#         yield qrom.QROM(
+#             [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
+#         ).on_registers(selection=selection, target0=kappa_load_target)
 
 
 @frozen
@@ -194,7 +222,7 @@ class SelectTHC(Bloq):
         )
 
         # Rotations
-        gate_array = Prog
+        # gate_array = Prog
         # Controlled Z
 
         # Clean up

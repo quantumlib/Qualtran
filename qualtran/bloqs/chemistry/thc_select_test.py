@@ -16,14 +16,9 @@ import cirq
 import numpy as np
 import pytest
 import scipy.linalg
-from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
-from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, Register
-from qualtran.bloqs.chemistry.thc_select import SelectTHC
-from qualtran.cirq_interop import CirqGateAsBloq
-from qualtran.testing import execute_notebook
+from qualtran.bloqs.chemistry.thc_select import find_givens_angles
 
 
 def _make_select():
@@ -56,3 +51,43 @@ def test_interleaved_cliffords(theta):
     RYX_ref = scipy.linalg.expm(1j * theta * UYX / 2)
     RYX = cirq.unitary(cirq.Circuit([C1, cirq.Rz(rads=-theta)(b), cirq.inverse(C1)]))
     assert np.allclose(RYX.T, RYX_ref)
+
+
+def test_givens_unitary():
+    num_orb = 10
+    mat = np.random.random((num_orb, num_orb))
+    mat = 0.5 * (mat + mat.T)
+    unitary, _ = np.linalg.qr(mat)
+    assert np.allclose(unitary.T @ unitary, np.eye(num_orb))
+    thetas = find_givens_angles(unitary)
+    qubits = cirq.LineQubit.range(num_orb)
+    from openfermion.linalg import get_sparse_operator
+    from openfermion.ops import MajoranaOperator
+
+    gamma_0 = MajoranaOperator(((1), 1))
+    print(get_sparse_operator(gamma_0))
+
+    # def build_vop(u, p, theta, qubits):
+    #     id_before = cirq.IdentityGate(qubits[p])
+    #     # for i in range(p):
+    #     #     #print(after)
+    #     #     id_before *= cirq.IdentityGate(i)
+    #     id_after = cirq.IdentityGate(qubits[p + 1])
+    #     # print(id_after)
+    #     # for i in range(p + 1, len(qubits)):
+    #     #     id_after *= cirq.IdentityGate(i)
+    #     print()
+    #     print(id_before)
+    #     print(id_after)
+    #     XY = id_before * cirq.X(qubits[p]) * cirq.Y(qubits[p + 1]) * id_after
+    #     RXY = scipy.linalg.expm(1j * theta * UXY.matrix())
+    #     return RXY
+
+    # U = np.eye(2**num_orb)
+    # for p in range(num_orb - 1):
+    #     Vp = build_vop(0, p, thetas[0, p], qubits)
+    #     U = np.dot(U, Vp)
+
+    # Z = cirq.unitary(cirq.Circuit(cirq.Z(qubits[0]) + [cirq.IdentityGate(q) for q in qubits[1:]]))
+    # maj_0, maj_1 = zip(*[build_majoranas(p, qubits) for p in range(num_orb)])
+    # trans = U.conj().T @ Z @ U
