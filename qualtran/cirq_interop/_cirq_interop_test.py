@@ -94,8 +94,8 @@ def test_cirq_optree_to_cbloq():
         reg: cirq_ft.Register
 
         @property
-        def registers(self) -> cirq_ft.Registers:
-            return cirq_ft.Registers([self.reg])
+        def signature(self) -> cirq_ft.Signature:
+            return cirq_ft.Signature([self.reg])
 
     reg1 = cirq_ft.Register('x', shape=(3, 4), bitsize=2)
     reg2 = cirq_ft.Register('y', shape=12, bitsize=2)
@@ -140,14 +140,16 @@ def test_cirq_optree_to_cbloq():
         'xx': np.asarray(qubits[:18]).reshape((3, 2, 3)),
         'yy': np.asarray(qubits[18:]).reshape((2, 3, 1)),
     }
-    cbloq = cirq_optree_to_cbloq(circuit, signature=new_signature, cirq_quregs=cirq_quregs)
+    cbloq = cirq_optree_to_cbloq(
+        circuit, signature=new_signature, in_quregs=cirq_quregs, out_quregs=cirq_quregs
+    )
     assert cbloq.signature == new_signature
     # Splits, joins, Alloc, Free are automatically inserted.
     bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
     assert bloqs_list.count(Split(3)) == 6
     assert bloqs_list.count(Join(3)) == 6
-    assert bloqs_list.count(Allocate(4)) == 1
-    assert bloqs_list.count(Free(4)) == 1
+    assert bloqs_list.count(Allocate(2)) == 2
+    assert bloqs_list.count(Free(2)) == 2
 
 
 @frozen
