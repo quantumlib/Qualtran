@@ -12,15 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Interoperability with Cirq
+"""Bi-directional interop between Qualtran & Cirq using Cirq-FT.
 
 isort:skip_file
 """
 
-from ._cirq_interop import (
-    CirqQuregT,
-    CirqGateAsBloq,
-    BloqAsCirqGate,
-    cirq_optree_to_cbloq,
-    decompose_from_cirq_op,
-)
+from ._cirq_to_bloq import CirqQuregT, CirqGateAsBloq, cirq_optree_to_cbloq, decompose_from_cirq_op
+
+from ._bloq_to_cirq import BloqAsCirqGate
