@@ -11,17 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 from typing import Dict, Tuple
 
 import cirq
+import cirq_ft
 import numpy as np
+import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.swap_network import SwapWithZero
-from qualtran.cirq_interop import BloqAsCirqGate, CirqQuregT
+from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate, BloqAsCirqGate, CirqQuregT
 from qualtran.testing import execute_notebook
 
 
@@ -113,6 +117,38 @@ def test_multi_and_allocates():
     assert sorted(out_quregs.keys()) == ['ctrl', 'junk', 'target']
 
 
+def test_contruct_op_from_gate():
+    and_gate = cirq_ft.And()
+    in_quregs = {'ctrl': np.array([*cirq.LineQubit.range(2)]).reshape(2, 1)}
+    qm = cirq.ops.SimpleQubitManager()
+    # Allocates new qubits for RIGHT only registers.
+    op, out_quregs = _construct_op_from_gate(and_gate, in_quregs, qm)
+    assert len(out_quregs['target']) == 1
+    assert op == and_gate.on_registers(**out_quregs)
+    # Deallocates qubits for LEFT only registers.
+    and_inv = cirq_ft.And(adjoint=True)
+    op, inv_out_quregs = _construct_op_from_gate(and_inv, out_quregs, qm)
+    assert inv_out_quregs == in_quregs
+    assert op == and_inv.on_registers(**out_quregs)
+
+
+def test_construct_op_from_gate_raises():
+    and_gate = cirq_ft.And()
+    qm = cirq.ops.SimpleQubitManager()
+    q = [*cirq.LineQubit.range(2)]
+    in_quregs = {}
+    with pytest.raises(ValueError, match='Compatible reg.*must exist'):
+        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+
+    in_quregs = {'ctrl': np.array(q)}
+    with pytest.raises(ValueError, match='Compatible reg.*must exist'):
+        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+
+    in_quregs = {'ctrl': np.array(q).reshape(2, 1), 'target': np.array([cirq.q('t')])}
+    with pytest.raises(ValueError, match='RIGHT register.*shouldn\'t exist in'):
+        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+
+
 def test_bloq_as_cirq_gate_left_register():
     bb = BloqBuilder()
     q = bb.allocate(1)
@@ -191,6 +227,59 @@ targets[3][1]: ───────────────×(y)─────
                               │
 targets[3][2]: ───────────────×(y)────────────────────
 ''',
+    )
+
+
+def test_bloq_as_cirq_gate_for_mod_exp():
+    # ModExp is a good test because, similar to And gate, it has a RIGHT only register.
+    # but also has a decomposition specified.
+    mod_exp = ModExp.make_for_shor(4, 3)
+    gate = BloqAsCirqGate(mod_exp)
+    # Use Cirq's infrastructure to construct an operation and corresponding decomposition.
+    quregs = cirq_ft.infra.get_named_qubits(gate.signature)
+    op = gate.on_registers(**quregs)
+    circuit = cirq.Circuit(op, cirq.decompose_once(op))
+    assert cirq_ft.t_complexity(circuit) == 2 * mod_exp.t_complexity()
+    cirq.testing.assert_has_diagram(
+        circuit,
+        '''
+exponent0: ───ModExp──────────────────────────────────────────────────CtrlModMul───
+              │                                                       │
+exponent1: ───exponent───────────────────────────────────CtrlModMul───┼────────────
+              │                                          │            │
+exponent2: ───exponent──────────────────────CtrlModMul───┼────────────┼────────────
+              │                             │            │            │
+exponent3: ───exponent─────────CtrlModMul───┼────────────┼────────────┼────────────
+              │                │            │            │            │
+x0: ──────────x──────────|1>───x────────────x────────────x────────────x────────────
+              │          │     │            │            │            │
+x1: ──────────x──────────val───x────────────x────────────x────────────x──────────── 
+''',
+    )
+    # Alternatively, decompose the Bloq and then convert the composite Bloq to a Cirq circuit.
+    cbloq = mod_exp.decompose_bloq()
+    # When converting a composite Bloq to a Cirq circuit, we only need to specify the input
+    # registers.
+    decomposed_circuit, out_regs = cbloq.to_cirq_circuit(exponent=quregs['exponent'])
+    # Whereas when directly applying a cirq gate on qubits to get an operations, we need to
+    # specify both input and output registers.
+    circuit = cirq.Circuit(gate.on_registers(**out_regs), decomposed_circuit)
+    assert cirq_ft.t_complexity(circuit) == 2 * mod_exp.t_complexity()
+    # Notice the newly allocated qubits _C(0) and _C(1) for output register x.
+    cirq.testing.assert_has_diagram(
+        circuit,
+        '''
+_c(0): ───────x──────────|1>───x────────────x────────────x────────────x────────────
+              │          │     │            │            │            │
+_c(1): ───────x──────────val───x────────────x────────────x────────────x────────────
+              │                │            │            │            │
+exponent0: ───ModExp───────────┼────────────┼────────────┼────────────CtrlModMul───
+              │                │            │            │
+exponent1: ───exponent─────────┼────────────┼────────────CtrlModMul────────────────
+              │                │            │
+exponent2: ───exponent─────────┼────────────CtrlModMul─────────────────────────────
+              │                │
+exponent3: ───exponent─────────CtrlModMul──────────────────────────────────────────''',
     )
 
 
