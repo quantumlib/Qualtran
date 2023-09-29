@@ -24,7 +24,7 @@ import numpy as np
 
 from qualtran import Bloq, Connection, LeftDangle, Register, RightDangle, Side, Signature, Soquet
 from qualtran._infra.composite_bloq import _binst_to_cxns
-from qualtran.cirq_interop._cirq_to_bloq import CirqQuregT, CirqQuregInT, _QReg
+from qualtran.cirq_interop._cirq_to_bloq import _QReg, CirqQuregInT, CirqQuregT
 
 
 class BloqAsCirqGate(cirq_ft.GateWithRegisters):

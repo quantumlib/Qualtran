@@ -25,10 +25,10 @@ import qualtran
 from qualtran import Bloq, CompositeBloq, Side, Signature
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import (
+    cirq_optree_to_cbloq,
     CirqGateAsBloq,
     CirqQuregT,
     decompose_from_cirq_op,
-    cirq_optree_to_cbloq,
 )
 
 

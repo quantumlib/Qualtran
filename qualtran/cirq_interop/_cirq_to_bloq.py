@@ -15,7 +15,7 @@
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 import itertools
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import cirq_ft
