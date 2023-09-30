@@ -99,8 +99,8 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
         Args:
             context: `cirq.DecompositionContext` stores options for decomposing gates (eg:
                 cirq.QubitManager).
-            **quregs: Sequences of cirq qubits as expected for the legacy register shims
-            of the bloq's registers.
+            **quregs: Appropriately shaped qubit arrays corresponding to Cirq-FT registers defined
+                as per `self.signature`.
 
         Returns:
             A cirq circuit containing the cirq-exported version of the bloq decomposition.
