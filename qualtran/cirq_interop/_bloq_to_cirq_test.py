@@ -238,6 +238,11 @@ def test_bloq_as_cirq_gate_for_mod_exp():
     # Use Cirq's infrastructure to construct an operation and corresponding decomposition.
     quregs = cirq_ft.infra.get_named_qubits(gate.signature)
     op = gate.on_registers(**quregs)
+    # cirq.decompose_once(op) delegates to underlying Bloq's decomposition specified in
+    # `bloq.decompose_bloq()` and wraps resulting composite bloq in a Cirq op-tree. Note
+    # how `BloqAsCirqGate.decompose_with_registers()` automatically takes care of mapping
+    # newly allocated RIGHT registers in the decomposition to the one's specified by the user
+    # when constructing the original operation (in this case, register `x`).
     circuit = cirq.Circuit(op, cirq.decompose_once(op))
     assert cirq_ft.t_complexity(circuit) == 2 * mod_exp.t_complexity()
     cirq.testing.assert_has_diagram(

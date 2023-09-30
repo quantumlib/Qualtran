@@ -22,7 +22,8 @@ import sympy
 from attrs import frozen
 
 import qualtran
-from qualtran import Bloq, CompositeBloq, Side, Signature
+from qualtran import Bloq, BloqBuilder, CompositeBloq, Side, Signature
+from qualtran.bloqs.basic_gates import OneState
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import (
     cirq_optree_to_cbloq,
@@ -57,7 +58,7 @@ class TestCNOTSymbolic(TestCNOT):
         return Signature.build(control=c, target=t)
 
 
-def test_cirq_gate():
+def test_cirq_gate_as_bloq_for_trivial_gates():
     x = CirqGateAsBloq(cirq.X)
     rx = CirqGateAsBloq(cirq.Rx(rads=0.123 * np.pi))
     toffoli = CirqGateAsBloq(cirq.TOFFOLI)
@@ -78,6 +79,19 @@ def test_cirq_gate():
 
     assert toffoli.pretty_name() == 'cirq.TOFFOLI'
     assert toffoli.short_name() == 'cirq.TOFFOLI'
+
+
+def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
+    and_gate = cirq_ft.And()
+    bb = BloqBuilder()
+    ctrl = [bb.add(OneState()) for _ in range(2)]
+    ctrl, target = bb.add(CirqGateAsBloq(and_gate), ctrl=ctrl)
+    cbloq = bb.finalize(ctrl=ctrl, target=target)
+    state_vector = cbloq.tensor_contract()
+    assert np.isclose(state_vector[7], 1)
+
+    with pytest.raises(NotImplementedError, match="supported only for unitary gates"):
+        _ = CirqGateAsBloq(cirq_ft.And(adjoint=True)).as_composite_bloq().tensor_contract()
 
 
 def test_bloq_decompose_from_cirq_op():
