@@ -36,8 +36,8 @@ class CtrlModMul(Bloq):
         bitsize: The size of the `x` register.
 
     Registers:
-     - ctrl: The control bit
-     - x: The integer being multiplied
+        ctrl: The control bit
+        x: The integer being multiplied
     """
 
     k: Union[int, sympy.Expr]

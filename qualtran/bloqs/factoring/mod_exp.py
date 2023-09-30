@@ -42,8 +42,8 @@ class ModExp(Bloq):
         x_bitsize: The size of the `x` right-register
 
     Registers:
-     - exponent: The exponent
-     - x [right]: The output register containing the result of the exponentiation
+        exponent: The exponent
+        x [right]: The output register containing the result of the exponentiation
 
     References:
         [GE2019] How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits.

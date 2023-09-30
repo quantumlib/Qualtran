@@ -33,9 +33,9 @@ class Comparator(Bloq):
         bitsize: Number of bits used to represent each integer.
 
     Registers:
-     - a: A nbit-sized input register (register a above).
-     - b: A nbit-sized input register (register b above).
-     - out: A single bit output register which will store the result of the comparator.
+        a: A nbit-sized input register (register a above).
+        b: A nbit-sized input register (register b above).
+        out: A single bit output register which will store the result of the comparator.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
@@ -79,8 +79,7 @@ class BitonicSort(Bloq):
         k: Number of integers to sort.
 
     Registers:
-     - input: A k-nbit-sized input register (register a above). List of integers
-        we want to sort.
+        input: A k-nbit-sized input register (register a above). List of integers we want to sort.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
