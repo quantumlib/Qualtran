@@ -29,8 +29,8 @@ class Add(Bloq):
             enough to hold the result in the output register of a + b.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input/output register (register b above).
+        a: A bitsize-sized input register (register a above).
+        b: A bitsize-sized input/output register (register b above).
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -62,8 +62,8 @@ class Square(Bloq):
             result is stored in a register of size 2*bitsize.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - result: A 2-bitsize-sized input/ouput register.
+        a: A bitsize-sized input register (register a above).
+        result: A 2-bitsize-sized input/output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -100,8 +100,8 @@ class SumOfSquares(Bloq):
         k: The number of integers we want to square.
 
     Registers:
-     - input: k n-bit registers.
-     - result: 2 * bitsize + 1 sized output register.
+        input: k n-bit registers.
+        result: 2 * bitsize + 1 sized output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -146,10 +146,9 @@ class Product(Bloq):
         b_bitsize: Number of bits used to represent the second integer.
 
     Registers:
-     - a: a_bitsize-sized input register.
-     - b: b_bitsize-sized input register.
-     - result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store
-        the result a*b.
+        a: a_bitsize-sized input register.
+        b: b_bitsize-sized input register.
+        result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store the result a*b.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -189,9 +188,9 @@ class GreaterThan(Bloq):
         bitsize: Number of bits used to represent the two integers a and b.
 
     Registers:
-     - a: n-bit-sized input registers.
-     - b: n-bit-sized input registers.
-     - result: A single bit output register to store the result of A > B.
+        a: n-bit-sized input registers.
+        b: n-bit-sized input registers.
+        result: A single bit output register to store the result of A > B.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
