@@ -11,143 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 from typing import Dict, Tuple
 
-import attr
 import cirq
 import cirq_ft
 import numpy as np
 import pytest
-import sympy
 from attrs import frozen
 
-import qualtran
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.swap_network import SwapWithZero
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
-from qualtran.cirq_interop import (
-    BloqAsCirqGate,
-    cirq_optree_to_cbloq,
-    CirqGateAsBloq,
-    CirqQuregT,
-    decompose_from_cirq_op,
-)
+from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate, BloqAsCirqGate, CirqQuregT
 from qualtran.testing import execute_notebook
-
-
-def test_cirq_gate():
-    x = CirqGateAsBloq(cirq.X)
-    rx = CirqGateAsBloq(cirq.Rx(rads=0.123 * np.pi))
-    toffoli = CirqGateAsBloq(cirq.TOFFOLI)
-
-    for b in [x, rx, toffoli]:
-        assert len(b.signature) == 1
-        assert b.signature[0].side == Side.THRU
-
-    assert x.signature[0].shape == (1,)
-    assert toffoli.signature[0].shape == (3,)
-
-    assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
-    assert x.pretty_name() == 'cirq.X'
-    assert x.short_name() == 'cirq.X'
-
-    assert rx.pretty_name() == 'cirq.Rx(0.123π)'
-    assert rx.short_name() == 'cirq.Rx'
-
-    assert toffoli.pretty_name() == 'cirq.TOFFOLI'
-    assert toffoli.short_name() == 'cirq.TOFFOLI'
-
-
-def test_cirq_circuit_to_cbloq():
-    qubits = cirq.LineQubit.range(6)
-    circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
-    cbloq = cirq_optree_to_cbloq(circuit)
-
-    bloq_unitary = cbloq.tensor_contract()
-    cirq_unitary = circuit.unitary(qubits)
-    np.testing.assert_allclose(cirq_unitary, bloq_unitary, atol=1e-8)
-
-
-def test_cbloq_to_cirq_circuit():
-    qubits = cirq.LineQubit.range(6)
-    circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
-    cbloq = cirq_optree_to_cbloq(circuit)
-
-    # important! we lose moment structure
-    circuit = cirq.Circuit(circuit.all_operations())
-
-    # Note: a 1d `shape` bloq register is actually two-dimensional in cirq-world
-    # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
-    # CirqGate has registers of bitsize=1 and shape=(n,); hence the list transpose below.
-    circuit2, _ = cbloq.to_cirq_circuit(
-        **{'qubits': [[q] for q in qubits]}, qubit_manager=cirq.ops.SimpleQubitManager()
-    )
-
-    assert circuit == circuit2
-
-
-def test_cirq_optree_to_cbloq():
-    @attr.frozen
-    class CirqGateWithRegisters(cirq_ft.GateWithRegisters):
-        reg: cirq_ft.Register
-
-        @property
-        def registers(self) -> cirq_ft.Registers:
-            return cirq_ft.Registers([self.reg])
-
-    reg1 = cirq_ft.Register('x', shape=(3, 4), bitsize=2)
-    reg2 = cirq_ft.Register('y', shape=12, bitsize=2)
-    anc_reg = cirq_ft.Register('anc', shape=4, bitsize=2)
-    qubits = cirq.LineQubit.range(24)
-    anc_qubits = cirq.NamedQubit.range(4, prefix='anc')
-    circuit = cirq.Circuit(
-        CirqGateWithRegisters(reg1).on(*qubits),
-        CirqGateWithRegisters(anc_reg).on(*anc_qubits, *qubits[:4]),
-        CirqGateWithRegisters(reg2).on(*qubits),
-    )
-    # Test-1: When no signature is specified, the method uses a default signature. Ancilla qubits
-    # are also included in the signature itself, so no allocations / deallocations are needed.
-    cbloq = cirq_optree_to_cbloq(circuit)
-    assert cbloq.signature == qualtran.Signature(
-        [qualtran.Register(name='qubits', bitsize=1, shape=(28,))]
-    )
-    bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
-    assert all(bloq_instances[i].bloq == Join(2) for i in range(14))
-    assert bloq_instances[14].bloq == CirqGateAsBloq(CirqGateWithRegisters(reg1))
-    assert bloq_instances[14].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='x', bitsize=2, shape=(3, 4))]
-    )
-    assert bloq_instances[15].bloq == CirqGateAsBloq(CirqGateWithRegisters(anc_reg))
-    assert bloq_instances[15].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='anc', bitsize=2, shape=(4,))]
-    )
-    assert bloq_instances[16].bloq == CirqGateAsBloq(CirqGateWithRegisters(reg2))
-    assert bloq_instances[16].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='y', bitsize=2, shape=(12,))]
-    )
-    assert all(bloq_instances[-i].bloq == Split(2) for i in range(1, 15))
-    # Test-2: If you provide an explicit signature, you must also provide a mapping of cirq qubits
-    # matching the signature. The additional ancilla allocations are automatically handled.
-    new_signature = qualtran.Signature(
-        [
-            qualtran.Register('xx', bitsize=3, shape=(3, 2)),
-            qualtran.Register('yy', bitsize=1, shape=(2, 3)),
-        ]
-    )
-    cirq_quregs = {
-        'xx': np.asarray(qubits[:18]).reshape((3, 2, 3)),
-        'yy': np.asarray(qubits[18:]).reshape((2, 3, 1)),
-    }
-    cbloq = cirq_optree_to_cbloq(circuit, signature=new_signature, cirq_quregs=cirq_quregs)
-    assert cbloq.signature == new_signature
-    # Splits, joins, Alloc, Free are automatically inserted.
-    bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
-    assert bloqs_list.count(Split(3)) == 6
-    assert bloqs_list.count(Join(3)) == 6
-    assert bloqs_list.count(Allocate(4)) == 1
-    assert bloqs_list.count(Free(4)) == 1
 
 
 @frozen
@@ -238,6 +117,38 @@ def test_multi_and_allocates():
     assert sorted(out_quregs.keys()) == ['ctrl', 'junk', 'target']
 
 
+def test_contruct_op_from_gate():
+    and_gate = cirq_ft.And()
+    in_quregs = {'ctrl': np.array([*cirq.LineQubit.range(2)]).reshape(2, 1)}
+    qm = cirq.ops.SimpleQubitManager()
+    # Allocates new qubits for RIGHT only registers.
+    op, out_quregs = _construct_op_from_gate(and_gate, in_quregs, qm)
+    assert len(out_quregs['target']) == 1
+    assert op == and_gate.on_registers(**out_quregs)
+    # Deallocates qubits for LEFT only registers.
+    and_inv = cirq_ft.And(adjoint=True)
+    op, inv_out_quregs = _construct_op_from_gate(and_inv, out_quregs, qm)
+    assert inv_out_quregs == in_quregs
+    assert op == and_inv.on_registers(**out_quregs)
+
+
+def test_construct_op_from_gate_raises():
+    and_gate = cirq_ft.And()
+    qm = cirq.ops.SimpleQubitManager()
+    q = [*cirq.LineQubit.range(2)]
+    in_quregs = {}
+    with pytest.raises(ValueError, match='Compatible reg.*must exist'):
+        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+
+    in_quregs = {'ctrl': np.array(q)}
+    with pytest.raises(ValueError, match='Compatible reg.*must exist'):
+        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+
+    in_quregs = {'ctrl': np.array(q).reshape(2, 1), 'target': np.array([cirq.q('t')])}
+    with pytest.raises(ValueError, match='RIGHT register.*shouldn\'t exist in'):
+        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+
+
 def test_bloq_as_cirq_gate_left_register():
     bb = BloqBuilder()
     q = bb.allocate(1)
@@ -246,48 +157,6 @@ def test_bloq_as_cirq_gate_left_register():
     cbloq = bb.finalize()
     circuit, _ = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, """_c(0): ───Allocate───X───Free───""")
-
-
-@frozen
-class TestCNOT(Bloq):
-    @property
-    def signature(self) -> Signature:
-        return Signature.build(control=1, target=1)
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
-
-    def as_cirq_op(
-        self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        (control,) = cirq_quregs['control']
-        (target,) = cirq_quregs['target']
-        return cirq.CNOT(control, target), cirq_quregs
-
-
-@frozen
-class TestCNOTSymbolic(TestCNOT):
-    @property
-    def signature(self) -> Signature:
-        c, t = sympy.Symbol('c'), sympy.Symbol('t')
-        return Signature.build(control=c, target=t)
-
-
-def test_bloq_decompose_from_cirq_op():
-    tb = TestCNOT()
-    assert len(tb.signature) == 2
-    ctrl, trg = tb.signature
-    assert ctrl.bitsize == 1
-    assert ctrl.side == Side.THRU
-    assert tb.pretty_name() == 'TestCNOT'
-
-    cirq_quregs = tb.signature.get_cirq_quregs()
-    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
-    assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
-    assert tb.t_complexity() == cirq_ft.TComplexity(clifford=1)
-
-    with pytest.raises(NotImplementedError):
-        TestCNOTSymbolic().decompose_bloq()
 
 
 def test_bloq_as_cirq_gate_multi_dimensional_signature():
@@ -358,6 +227,64 @@ targets[3][1]: ───────────────×(y)─────
                               │
 targets[3][2]: ───────────────×(y)────────────────────
 ''',
+    )
+
+
+def test_bloq_as_cirq_gate_for_mod_exp():
+    # ModExp is a good test because, similar to And gate, it has a RIGHT only register.
+    # but also has a decomposition specified.
+    mod_exp = ModExp.make_for_shor(4, 3)
+    gate = BloqAsCirqGate(mod_exp)
+    # Use Cirq's infrastructure to construct an operation and corresponding decomposition.
+    quregs = cirq_ft.infra.get_named_qubits(gate.signature)
+    op = gate.on_registers(**quregs)
+    # cirq.decompose_once(op) delegates to underlying Bloq's decomposition specified in
+    # `bloq.decompose_bloq()` and wraps resulting composite bloq in a Cirq op-tree. Note
+    # how `BloqAsCirqGate.decompose_with_registers()` automatically takes care of mapping
+    # newly allocated RIGHT registers in the decomposition to the one's specified by the user
+    # when constructing the original operation (in this case, register `x`).
+    circuit = cirq.Circuit(op, cirq.decompose_once(op))
+    assert cirq_ft.t_complexity(circuit) == 2 * mod_exp.t_complexity()
+    cirq.testing.assert_has_diagram(
+        circuit,
+        '''
+exponent0: ───ModExp──────────────────────────────────────────────────CtrlModMul───
+              │                                                       │
+exponent1: ───exponent───────────────────────────────────CtrlModMul───┼────────────
+              │                                          │            │
+exponent2: ───exponent──────────────────────CtrlModMul───┼────────────┼────────────
+              │                             │            │            │
+exponent3: ───exponent─────────CtrlModMul───┼────────────┼────────────┼────────────
+              │                │            │            │            │
+x0: ──────────x──────────|1>───x────────────x────────────x────────────x────────────
+              │          │     │            │            │            │
+x1: ──────────x──────────val───x────────────x────────────x────────────x────────────
+''',
+    )
+    # Alternatively, decompose the Bloq and then convert the composite Bloq to a Cirq circuit.
+    cbloq = mod_exp.decompose_bloq()
+    # When converting a composite Bloq to a Cirq circuit, we only need to specify the input
+    # registers.
+    decomposed_circuit, out_regs = cbloq.to_cirq_circuit(exponent=quregs['exponent'])
+    # Whereas when directly applying a cirq gate on qubits to get an operations, we need to
+    # specify both input and output registers.
+    circuit = cirq.Circuit(gate.on_registers(**out_regs), decomposed_circuit)
+    assert cirq_ft.t_complexity(circuit) == 2 * mod_exp.t_complexity()
+    # Notice the newly allocated qubits _C(0) and _C(1) for output register x.
+    cirq.testing.assert_has_diagram(
+        circuit,
+        '''
+_c(0): ───────x──────────|1>───x────────────x────────────x────────────x────────────
+              │          │     │            │            │            │
+_c(1): ───────x──────────val───x────────────x────────────x────────────x────────────
+              │                │            │            │            │
+exponent0: ───ModExp───────────┼────────────┼────────────┼────────────CtrlModMul───
+              │                │            │            │
+exponent1: ───exponent─────────┼────────────┼────────────CtrlModMul────────────────
+              │                │            │
+exponent2: ───exponent─────────┼────────────CtrlModMul─────────────────────────────
+              │                │
+exponent3: ───exponent─────────CtrlModMul──────────────────────────────────────────''',
     )
 
 
