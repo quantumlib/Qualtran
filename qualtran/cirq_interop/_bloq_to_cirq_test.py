@@ -258,7 +258,7 @@ exponent3: ───exponent─────────CtrlModMul───┼─
               │                │            │            │            │
 x0: ──────────x──────────|1>───x────────────x────────────x────────────x────────────
               │          │     │            │            │            │
-x1: ──────────x──────────val───x────────────x────────────x────────────x──────────── 
+x1: ──────────x──────────val───x────────────x────────────x────────────x────────────
 ''',
     )
     # Alternatively, decompose the Bloq and then convert the composite Bloq to a Cirq circuit.
