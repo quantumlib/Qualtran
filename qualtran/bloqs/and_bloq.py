@@ -38,8 +38,8 @@ class And(Bloq):
         cv2: Whether the second bit is a positive control.
 
     Registers:
-     - ctrl: A two-bit control register.
-     - (right) target: The output bit.
+        ctrl: A two-bit control register.
+        target [right]: The output bit.
 
     References:
         (Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity)[https://arxiv.org/abs/1805.03662].
@@ -137,9 +137,9 @@ class MultiAnd(Bloq):
             control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
 
     Registers:
-     - ctrl: An n-bit control register.
-     - (right) An `n-2` bit junk register to be cleaned up by the inverse operation.
-     - (right) target: The output bit.
+        ctrl: An n-bit control register.
+        junk [right]: An `n-2` bit junk register to be cleaned up by the inverse operation.
+        target [right]: The output bit.
     """
 
     cvs: Tuple[int, ...] = field(validator=lambda i, f, v: len(v) >= 3, converter=tuple)
