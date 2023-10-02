@@ -74,7 +74,7 @@ def test_swap_with_zero_gate(selection_bitsize, target_bitsize, n_target_registe
 def test_swap_with_zero_gate_diagram():
     gate = SwapWithZeroGate(3, 2, 4)
     q = cirq.LineQubit.range(cirq.num_qubits(gate))
-    circuit = cirq.Circuit(gate.on_registers(**cirq_ft.infra.split_qubits(gate.registers, q)))
+    circuit = cirq.Circuit(gate.on_registers(**cirq_ft.infra.split_qubits(gate.signature, q)))
     cirq.testing.assert_has_diagram(
         circuit,
         """
