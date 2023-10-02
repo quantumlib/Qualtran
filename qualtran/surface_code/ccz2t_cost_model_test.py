@@ -14,13 +14,13 @@
 
 import numpy as np
 
+from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.ccz2t_cost_model import get_ccz2t_costs
-from qualtran.surface_code.magic_state_factory import MagicStateCount
 
 
 def test_vs_spreadsheet():
     re = get_ccz2t_costs(
-        n_magic=MagicStateCount(t_count=10**8, ccz_count=10**8),
+        n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
         n_algo_qubits=100,
         error_budget=0.01,
         phys_err=1e-3,

@@ -14,27 +14,7 @@
 
 import abc
 
-from attrs import frozen
-
-
-@frozen
-class MagicStateCount:
-    """The number of magic states needed for a computation.
-
-    Each `count` excludes the resources needed to perform operations captured in other
-    magic state counts.
-
-    Args:
-        t_count: The number of T operations that need to be performed.
-        ccz_count: The number of Toffoli or CCZ operations that need to be performed.
-    """
-
-    t_count: int
-    ccz_count: int
-
-    def all_t_count(self) -> int:
-        """The T count needed to do all magic operations with T only."""
-        return self.t_count + 4 * self.ccz_count
+from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 
 
 class MagicStateFactory(metaclass=abc.ABCMeta):
@@ -50,9 +30,9 @@ class MagicStateFactory(metaclass=abc.ABCMeta):
         """The number of physical qubits used by the magic state factory."""
 
     @abc.abstractmethod
-    def n_cycles(self, n_magic: MagicStateCount) -> int:
+    def n_cycles(self, n_magic: AlgorithmSummary) -> int:
         """The number of cycles (time) required to produce the requested number of magic states."""
 
     @abc.abstractmethod
-    def distillation_error(self, n_magic: MagicStateCount, phys_err: float) -> float:
+    def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
         """The total error expected from distilling magic states with a given physical error rate."""
