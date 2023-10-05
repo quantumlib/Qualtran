@@ -32,7 +32,6 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
         The logical error rate as a function of code distance $d$ and physical error rate $p$ 
         is given by
         $$
-        $$
         a \left ( \frac{p}{p^*}  \right )^\frac{d + 1}{2}
         $$
         Where $a$ is the error_rate_scaler and $p^*$ is the error_rate_threshold.
