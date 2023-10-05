@@ -29,7 +29,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
         number of physical qubits and the logical time step given a code distance and
         physical assumptions.
 
-        The logical error rate as a function of code distance $d$ and physical error rate $p$ 
+        The logical error rate as a function of code distance $d$ and physical error rate $p$
         is given by
         $$
         a \left ( \frac{p}{p^*}  \right )^\frac{d + 1}{2}
