@@ -23,7 +23,7 @@ from qualtran.surface_code.physical_parameters import PhysicalParameters
 
 @frozen
 class QuantumErrorCorrectionSchemeSummary(abc.ABC):
-    """QuantumErrorCorrectionSchemeSummary represents a high level view of a QEC scheme.
+    r"""QuantumErrorCorrectionSchemeSummary represents a high level view of a QEC scheme.
 
         QuantumErrorCorrectionSchemeSummary provides estimates for the logical error rate,
         number of physical qubits and the logical time step given a code distance and
