@@ -140,7 +140,7 @@ class CompositeBloq(Bloq):
         """
         import cirq
 
-        from qualtran.cirq_interop._cirq_interop import _cbloq_to_cirq_circuit
+        from qualtran.cirq_interop._bloq_to_cirq import _cbloq_to_cirq_circuit
 
         if qubit_manager is None:
             qubit_manager = cirq.ops.SimpleQubitManager()

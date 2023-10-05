@@ -15,4 +15,4 @@ Algos
    factoring/factoring-via-modexp.ipynb
    factoring/ref-factoring.ipynb
    util_bloqs.ipynb
-
+   comparison_gates.ipynb

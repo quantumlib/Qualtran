@@ -12,17 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from functools import cached_property
-from typing import Dict, Tuple, Union
-
-import cirq
 from attrs import frozen
-from cirq_ft import LessThanEqualGate as CirqLessThanEqual
-from cirq_ft import LessThanGate as CirqLessThanGate
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, CompositeBloq, Register, Signature
-from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_op
+from qualtran import Bloq, Register, Signature
 
 
 @frozen
@@ -36,8 +29,8 @@ class Add(Bloq):
             enough to hold the result in the output register of a + b.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input/output register (register b above).
+        a: A bitsize-sized input register (register a above).
+        b: A bitsize-sized input/output register (register b above).
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -69,8 +62,8 @@ class Square(Bloq):
             result is stored in a register of size 2*bitsize.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - result: A 2-bitsize-sized input/ouput register.
+        a: A bitsize-sized input register (register a above).
+        result: A 2-bitsize-sized input/output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -107,8 +100,8 @@ class SumOfSquares(Bloq):
         k: The number of integers we want to square.
 
     Registers:
-     - input: k n-bit registers.
-     - result: 2 * bitsize + 1 sized output register.
+        input: k n-bit registers.
+        result: 2 * bitsize + 1 sized output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -153,10 +146,9 @@ class Product(Bloq):
         b_bitsize: Number of bits used to represent the second integer.
 
     Registers:
-     - a: a_bitsize-sized input register.
-     - b: b_bitsize-sized input register.
-     - result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store
-        the result a*b.
+        a: a_bitsize-sized input register.
+        b: b_bitsize-sized input register.
+        result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store the result a*b.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -196,9 +188,9 @@ class GreaterThan(Bloq):
         bitsize: Number of bits used to represent the two integers a and b.
 
     Registers:
-     - a: n-bit-sized input registers.
-     - b: n-bit-sized input registers.
-     - result: A single bit output register to store the result of A > B.
+        a: n-bit-sized input registers.
+        b: n-bit-sized input registers.
+        result: A single bit output register to store the result of A > B.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
@@ -219,74 +211,3 @@ class GreaterThan(Bloq):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         return TComplexity(t=8 * self.bitsize)
-
-
-@frozen
-class LessThanEqual(Bloq):
-    r"""Implements $U|x,y,z\rangle = |x, y, z \oplus {x \le y}\rangle$.
-
-    Args:
-        x_bitsize: bitsize of x register.
-        y_bitsize: bitsize of y register.
-
-    Registers:
-     - x, y: Registers to compare against eachother.
-     - z: Register to hold result of comparison.
-    """
-
-    x_bitsize: int
-    y_bitsize: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("x", bitsize=self.x_bitsize),
-                Register("y", bitsize=self.y_bitsize),
-                Register("z", bitsize=1),
-            ]
-        )
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
-
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        less_than = CirqLessThanEqual(x_bitsize=self.x_bitsize, y_bitsize=self.y_bitsize)
-        x = cirq_quregs['x']
-        y = cirq_quregs['y']
-        z = cirq_quregs['z']
-        return (less_than.on(*x, *y, *z), cirq_quregs)
-
-
-@frozen
-class LessThanConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x < a)\rangle"
-
-    Args:
-        bitsize: bitsize of x register.
-        val: integer to compare x against (a above.)
-
-    Registers:
-     - x: Registers to compare against val.
-     - z: Register to hold result of comparison.
-    """
-
-    bitsize: int
-    val: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, z=1)
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
-
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        less_than = CirqLessThanGate(bitsize=self.bitsize, less_than_val=self.val)
-        x = cirq_quregs['x']
-        z = cirq_quregs['z']
-        return (less_than.on(*x, *z), cirq_quregs)

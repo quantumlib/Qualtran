@@ -12,37 +12,31 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import attr
-from attrs import frozen
+from attrs import field, frozen
 
 
 @frozen
 class PhysicalParameters:
-    """PhysicalParameters contains physical properties of a quantum computer.
+    """The physical properties of a quantum computer.
 
     Attributes:
-        t_gate: Clifford gate time.
-        t_meas: Measurement time.
+        t_gate_ns: Clifford gate physical time.
+        t_meas_ns: Measurement physical time.
         physical_error_rate: Physical error rate.
         reference: Source of these estimates.
     """
 
-    t_gate = attr.ib(type=float, default=1e-6, repr=lambda x: f'{x:g}')  # 1us
-    t_meas = attr.ib(type=float, default=1e-6, repr=lambda x: f'{x:g}')  # 1us
+    t_gate_ns: float = field(repr=lambda x: f'{x:g}')
+    t_meas_ns: float = field(repr=lambda x: f'{x:g}')
 
-    physical_error_rate = attr.ib(type=float, default=1e-3, repr=lambda x: f'{x:g}')
+    physical_error_rate: float = field(default=1e-3, repr=lambda x: f'{x:g}')
 
-    reference = attr.ib(type=str, default='')
-
-
-FowlerGidney = PhysicalParameters(
-    t_gate=1e-6, t_meas=1e-6, physical_error_rate=1e-3, reference='https://arxiv.org/abs/1808.06709'
-)
+    reference: str | None = None
 
 
 BeverlandEtAl = PhysicalParameters(
-    t_gate=50 * 1e-9,
-    t_meas=100 * 1e-9,
+    t_gate_ns=50,  # 50ns
+    t_meas_ns=100,  # 100ns
     physical_error_rate=1e-4,
     reference='https://arxiv.org/abs/2211.07629',
 )
