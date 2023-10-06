@@ -93,16 +93,15 @@ class OutOfPlaceAdder(Bloq):
         return "c = a + b"
 
     def t_complexity(self):
-        # TODO: This is just copied from adder above, not sure if correct.
-        # see https://github.com/quantumlib/Qualtran/issues/375
-        num_clifford = (self.bitsize - 2) * 19 + 16
+        # extra bitsize cliffords comes from CNOTs before adding:
+        # yield CNOT.on_each(zip(b, c))
+        # yield Add(a, c)
+        num_clifford = (self.bitsize - 2) * 19 + 16 + self.bitsize
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        num_clifford = (self.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.bitsize - 4
-        return {(num_t_gates, TGate()), (num_clifford, ArbitraryClifford(n=1))}
+        return {(1, Add(self.bitsize)), (self.bitsize, ArbitraryClifford(n=2))}
 
 
 @frozen
