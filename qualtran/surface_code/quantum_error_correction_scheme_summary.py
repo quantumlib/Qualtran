@@ -25,18 +25,18 @@ from qualtran.surface_code.physical_parameters import PhysicalParameters
 class QuantumErrorCorrectionSchemeSummary(abc.ABC):
     r"""QuantumErrorCorrectionSchemeSummary represents a high level view of a QEC scheme.
 
-        QuantumErrorCorrectionSchemeSummary provides estimates for the logical error rate,
-        number of physical qubits and the logical time step given a code distance and
-        physical assumptions.
+    QuantumErrorCorrectionSchemeSummary provides estimates for the logical error rate,
+    number of physical qubits and the logical time step given a code distance and
+    physical assumptions.
 
-        The logical error rate as a function of code distance $d$ and physical error rate $p$
-        is given by
-        $$
-        a \left ( \frac{p}{p^*}  \right )^\frac{d + 1}{2}
-        $$
-        Where $a$ is the error_rate_scaler and $p^*$ is the error_rate_threshold.
+    The logical error rate as a function of code distance $d$ and physical error rate $p$
+    is given by
+    $$
+    a \left ( \frac{p}{p^*}  \right )^\frac{d + 1}{2}
+    $$
+    Where $a$ is the error_rate_scaler and $p^*$ is the error_rate_threshold.
 
-        Note: The logical error-suppression factor $\Lambda = \frac{p^*}{p}$
+    Note: The logical error-suppression factor $\Lambda = \frac{p^*}{p}$
 
     Attributes:
         error_rate_scaler: Logical error rate coefficient.
