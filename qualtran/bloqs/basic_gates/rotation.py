@@ -14,13 +14,14 @@
 
 import abc
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature
+from qualtran.bloqs.basic_gates.t_gate import TGate
 
 if TYPE_CHECKING:
     import cirq
@@ -45,6 +46,10 @@ class RotationBloq(Bloq, metaclass=abc.ABCMeta):
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
         return TComplexity(t=num_t)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
+        return {(num_t, TGate())}
 
 
 @frozen
