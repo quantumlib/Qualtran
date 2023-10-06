@@ -36,6 +36,8 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
         $$
         Where $a$ is the error_rate_scaler and $p^*$ is the error_rate_threshold.
 
+        Note: The logical error-suppression factor $\Lambda = \frac{p^*}{p}$
+
     Attributes:
         error_rate_scaler: Logical error rate coefficient.
         error_rate_threshold: Logical error rate threshold.
