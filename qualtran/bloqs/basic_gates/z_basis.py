@@ -230,15 +230,26 @@ class _IntVector(Bloq):
         side = Side.RIGHT if self.state else Side.LEFT
         return Signature([Register('val', bitsize=self.bitsize, side=side)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
-        states = [ZeroState(), OneState()]
-        xs = []
-        for bit in ints_to_bits(np.array([self.val]), w=self.bitsize)[0]:
-            x = bb.add(states[bit])
-            xs.append(x)
-        xs = np.array(xs)
+    def build_composite_bloq(self, bb: 'BloqBuilder', **val) -> Dict[str, 'SoquetT']:
+        bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
 
-        return {'val': bb.join(xs)}
+        if self.state:
+            assert not val
+            states = [ZeroState(), OneState()]
+            xs = []
+            for bit in bits:
+                x = bb.add(states[bit])
+                xs.append(x)
+            xs = np.array(xs)
+
+            return {'val': bb.join(xs)}
+
+        val = val['val']
+        xs = bb.split(val)
+        effects = [ZeroEffect(), OneEffect()]
+        for i, bit in enumerate(bits):
+            bb.add(effects[bit], q=xs[i])
+        return {}
 
     def add_my_tensors(
         self,
