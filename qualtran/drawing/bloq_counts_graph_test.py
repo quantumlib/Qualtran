@@ -13,7 +13,7 @@
 #  limitations under the License.
 import re
 
-from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.drawing import format_counts_graph_markdown, format_counts_sigma, GraphvizCounts
 from qualtran.resource_counting import get_bloq_counts_graph
 
@@ -35,7 +35,7 @@ def test_format_counts_graph_markdown():
     ret = format_counts_graph_markdown(graph)
     assert (
         ret
-        == """\
+        == r"""\
  - `MultiAnd(cvs=(1, 1, 1, 1, 1, 1), adjoint=False)`
    - `And(cv1=1, cv2=1, adjoint=False)`: $\displaystyle 5$
  - `And(cv1=1, cv2=1, adjoint=False)`

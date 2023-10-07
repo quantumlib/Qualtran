@@ -15,7 +15,7 @@
 """Classes for drawing bloqs with Graphviz."""
 
 import itertools
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import IPython.display
 import pydot
