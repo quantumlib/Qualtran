@@ -15,7 +15,9 @@
 from qualtran import BloqBuilder, Register
 from qualtran.bloqs.arithmetic import (
     Add,
+    EqualsAConstant,
     GreaterThan,
+    GreaterThanConstant,
     MultiplyTwoReals,
     OutOfPlaceAdder,
     Product,
@@ -23,6 +25,7 @@ from qualtran.bloqs.arithmetic import (
     Square,
     SquareRealNumber,
     SumOfSquares,
+    ToContiguousIndex,
 )
 from qualtran.testing import execute_notebook
 
@@ -56,6 +59,20 @@ def _make_greater_than():
 
     return GreaterThan(bitsize=4)
 
+def _make_greater_than_constant():
+    from qualtran.bloqs.arithmetic import GreaterThanConstant
+
+    return GreaterThanConstant(bitsize=4, val=13)
+
+def _make_equals_a_constant():
+    from qualtran.bloqs.arithmetic import EqualsAConstant
+
+    return EqualsAConstant(bitsize=4, val=13)
+
+def _make_to_contiguous_index():
+    from qualtran.bloqs.arithmetic import ToContiguousIndex
+
+    return ToContiguousIndex(bitsize=4, s_bitsize=8)
 
 def _make_scale_int_by_real():
     from qualtran.bloqs.arithmetic import ScaleIntByReal
@@ -154,6 +171,31 @@ def test_greater_than():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, result=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
+
+def test_greater_than_constant():
+    bb = BloqBuilder()
+    bitsize = 5
+    q0 = bb.add_register('x', bitsize)
+    anc = bb.add_register('result', 1)
+    q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, result=anc)
+    cbloq = bb.finalize(x=q0, result=anc)
+
+def test_equals_a_constant():
+    bb = BloqBuilder()
+    bitsize = 5
+    q0 = bb.add_register('x', bitsize)
+    anc = bb.add_register('result', 1)
+    q0, anc = bb.add(EqualsAConstant(bitsize, 17), x=q0, result=anc)
+    cbloq = bb.finalize(x=q0, result=anc)
+
+def test_to_contiguous_index():
+    bb = BloqBuilder()
+    bitsize = 5
+    q0 = bb.add_register('mu', bitsize)
+    q1 = bb.add_register('nu', bitsize)
+    out = bb.add_register('s', 1)
+    q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2*bitsize), mu=q0, nu=q1, s=out)
+    cbloq = bb.finalize(mu=q0, nu=q1, s=out)
 
 
 def test_notebook():
