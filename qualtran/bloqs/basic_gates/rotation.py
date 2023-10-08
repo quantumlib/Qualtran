@@ -22,12 +22,12 @@ from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
-from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.resource_counting import SympySymbolAllocator
 
 
 @frozen
@@ -62,7 +62,7 @@ class Rz(RotationBloq):
         eps: precision for implementation of rotation.
 
     Registers:
-     - q: One-bit register.
+        q: One-bit register.
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success

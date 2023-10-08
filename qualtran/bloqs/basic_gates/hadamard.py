@@ -42,7 +42,7 @@ class Hadamard(Bloq):
     $$
 
     Registers:
-     - q: The qubit
+        q: The qubit
     """
 
     @cached_property

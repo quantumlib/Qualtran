@@ -39,7 +39,7 @@ class TGate(Bloq):
     the common Clifford+T gateset.
 
     Registers:
-     - q: The qubit
+        q: The qubit
 
     References:
         [Universal Quantum Computation with ideal Clifford gates and noisy ancillas](https://arxiv.org/abs/quant-ph/0403025).

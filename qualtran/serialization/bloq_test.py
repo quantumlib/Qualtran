@@ -26,7 +26,7 @@ from qualtran._infra.composite_bloq_test import TestTwoCNOT
 from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
 from qualtran.cirq_interop import CirqGateAsBloq
-from qualtran.cirq_interop._cirq_interop_test import TestCNOT as TestCNOTCirq
+from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
 
