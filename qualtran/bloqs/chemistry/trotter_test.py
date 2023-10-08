@@ -18,7 +18,7 @@ from cirq_ft.infra.bit_tools import iter_bits, iter_bits_fixed_point
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.trotter import (
     build_qrom_data_for_poly_fit,
-    get_polynomial_coeffs,
+    get_inverse_square_root_poly_coeffs,
     KineticEnergy,
     PairPotential,
     PotentialEnergy,
@@ -32,7 +32,8 @@ def test_potential_bloq(nelec, nx):
     poly_bitsize = 15
     pe = PotentialEnergy(nelec, ngrid_x)
     qlt_testing.assert_valid_bloq_decomposition(pe)
-    qrom_data = build_qrom_data_for_poly_fit(2 * bitsize + 2, poly_bitsize)
+    poly_coeffs = get_inverse_square_root_poly_coeffs()
+    qrom_data = build_qrom_data_for_poly_fit(2 * bitsize + 2, poly_bitsize, poly_coeffs)
     qrom_data = tuple(tuple(int(k) for k in d) for d in qrom_data)
     pp = PairPotential(bitsize=bitsize, qrom_data=qrom_data, poly_bitsize=pe.poly_bitsize)
     qlt_testing.assert_valid_bloq_decomposition(pp)
@@ -55,8 +56,9 @@ def fixed_point_to_float(x: int, width: int) -> float:
 
 @pytest.mark.parametrize("bitsize, poly_bitsize", ((3, 32), (6, 15), (8, 30), (7, 12)))
 def test_build_qrom_data(bitsize, poly_bitsize):
-    qrom_data = build_qrom_data_for_poly_fit(bitsize, poly_bitsize)
-    poly_coeffs_a, poly_coeffs_b = get_polynomial_coeffs()
+    poly_coeffs = get_inverse_square_root_poly_coeffs()
+    qrom_data = build_qrom_data_for_poly_fit(bitsize, poly_bitsize, poly_coeffs)
+    poly_coeffs_a, poly_coeffs_b = get_inverse_square_root_poly_coeffs()
     for c in range(4):
         unique = np.unique(qrom_data[c], axis=0)[::-1]
         assert len(unique) == 2 * bitsize

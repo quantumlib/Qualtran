@@ -118,7 +118,6 @@ def build_qrom_data_for_poly_fit(
             _, coeff = float_as_fixed_width_int(a / 2 ** (k / 2), target_bitsize)
             # Number of time to repeat the data.
             data_size = max(1, 2 ** (k - 1))
-            num_data += data_size
             end = start + data_size
             data[i, start:end] = coeff
             _, coeff = float_as_fixed_width_int(b / 2 ** (k / 2), target_bitsize)
@@ -370,9 +369,7 @@ class KineticEnergy(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
         bitsize = (self.num_grid - 1).bit_length() + 1
         for i in range(self.num_elec):
-            # temporary register to store output of sum of momenta
-            sos = bb.allocate(2 * bitsize + 2)
-            system[i], sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=system[i], result=sos)
+            system[i], sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=system[i])
             sos = bb.add(QuantumVariableRotation(phi_bitsize=(2 * bitsize + 2)), phi=sos)
             bb.free(sos)
         return {'system': system}
@@ -430,17 +427,13 @@ class PairPotential(Bloq):
             )
         # Compute r_{ij}^2 = (x_i-x_j)^2 + ...
         bitsize_rij_sq = 2 * self.bitsize + 2
-        sos = bb.allocate(bitsize_rij_sq)
-        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize, k=3), input=diff_ij, result=sos)
+        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize, k=3), input=diff_ij)
         # Use rij^2 as the selection register for QROM to output a polynomial approximation to r_{ij}^{-1}.
-        # This is a bit awkward, maybe better to allocate 4x reshape and split.
-        qrom_anc_c0 = bb.split(bb.allocate(self.poly_bitsize))
-        qrom_anc_c1 = bb.split(bb.allocate(self.poly_bitsize))
-        qrom_anc_c2 = bb.split(bb.allocate(self.poly_bitsize))
-        qrom_anc_c3 = bb.split(bb.allocate(self.poly_bitsize))
-        sos = bb.split(sos)
+        qrom_anc_c0 = bb.allocate(self.poly_bitsize)
+        qrom_anc_c1 = bb.allocate(self.poly_bitsize)
+        qrom_anc_c2 = bb.allocate(self.poly_bitsize)
+        qrom_anc_c3 = bb.allocate(self.poly_bitsize)
         if isinstance(self.qrom_data, Tuple):
-            # Ok, this is a bit silly converting back and forth between tuples of ints and arrays
             qrom = QROM(
                 [np.array(d) for d in self.qrom_data],
                 selection_bitsizes=(bitsize_rij_sq,),
@@ -466,11 +459,6 @@ class PairPotential(Bloq):
             )
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
-        qrom_anc_c0 = bb.join(qrom_anc_c0)
-        qrom_anc_c1 = bb.join(qrom_anc_c1)
-        qrom_anc_c2 = bb.join(qrom_anc_c2)
-        qrom_anc_c3 = bb.join(qrom_anc_c3)
-        sos = bb.join(sos)
         poly_out = bb.allocate(self.poly_bitsize)
         sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3, poly_out = bb.add(
             PolynmomialEvaluation(
@@ -561,7 +549,8 @@ class PotentialEnergy(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
         bitsize = (self.num_grid - 1).bit_length() + 1
         ij_pairs = np.triu_indices(self.num_elec, k=1)
-        qrom_data = build_qrom_data_for_poly_fit(2 * bitsize + 2, self.poly_bitsize)
+        poly_coeffs = get_inverse_square_root_poly_coeffs()
+        qrom_data = build_qrom_data_for_poly_fit(2 * bitsize + 2, self.poly_bitsize, poly_coeffs)
         # Make hashable
         qrom_data = tuple(tuple(int(k) for k in d) for d in qrom_data)
         for i, j in zip(*ij_pairs):
