@@ -146,18 +146,6 @@ def test_square_real_number():
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
 
 
-def test_scale_int_by_real():
-    sir = ScaleIntByReal(15, 8)
-
-
-def test_multiply_two_reals():
-    mtr = MultiplyTwoReals(15)
-
-
-def test_square_real_number():
-    sq = SquareRealNumber(15)
-
-
 def test_greater_than():
     bb = BloqBuilder()
     bitsize = 5

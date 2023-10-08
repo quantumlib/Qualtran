@@ -31,7 +31,7 @@ from qualtran.bloqs.arithmetic import (
     SquareRealNumber,
     SumOfSquares,
 )
-from qualtran.bloqs.basic_gates import Rz, TGate
+from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.basic_gates.rotation import RotationBloq
 from qualtran.cirq_interop import CirqGateAsBloq
 
