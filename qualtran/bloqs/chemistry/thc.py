@@ -151,7 +151,7 @@ class UniformSuperpositionTHC(Bloq):
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
         # 5. nu == M (i.e. flag one-body contribution)
-        nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
+        # nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
         # 6. nu > N / 2 (flag out of range for one-body bits)
         mu, gt_mu_n = bb.add(
             GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
@@ -159,13 +159,14 @@ class UniformSuperpositionTHC(Bloq):
         # 7. Control off of 5 and 6 to not prepare if these conditions are met
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
         # 6. Reflect on comparitors, rotated qubit and |+>.
-        (amp, lte_nu_mp1, lte_mu_nu), trg = bb.add(
+        #print(CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z)).signature)
+        ctrls = bb.join(np.array([amp, lte_nu_mp1, lte_mu_nu]))
+        ctrls, junk = bb.add(
             CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z)),
-            controls=[amp, lte_nu_mp1, lte_mu_nu],
-            target=[junk],
+            controls=ctrls,
+            target=junk,
         )
-        # hack for wrapping. Target needs to have shape=(1,)
-        junk = trg[0]
+        (amp, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
         nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
             bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
@@ -181,14 +182,15 @@ class UniformSuperpositionTHC(Bloq):
         amp = bb.add(Ry(-angle), q=amp)
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
-        ctrls, trg = bb.add(
+        ctrls, amp = bb.add(
             CirqGateAsBloq(MultiControlPauli(((1,) * num_bits_mu + (1,) * num_bits_mu), cirq.Z)),
-            controls=np.concatenate([bb.split(mu), bb.split(nu)]),
-            target=[amp],
+            controls=bb.join(np.concatenate([bb.split(mu), bb.split(nu)])),
+            target=amp,
         )
-        amp = trg[0]
-        mu = bb.join(ctrls[:num_bits_mu])
-        nu = bb.join(ctrls[num_bits_mu:])
+        # amp = trg[0]
+        mu_nu = bb.split(ctrls)
+        mu = bb.join(mu_nu[:num_bits_mu])
+        nu = bb.join(mu_nu[num_bits_mu:])
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
         nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
@@ -202,13 +204,13 @@ class UniformSuperpositionTHC(Bloq):
             GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
         )
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
-        ctrls, trg = bb.add(
+        ctrls = bb.join(np.array([lte_nu_mp1, lte_mu_nu, junk]))
+        ctrls, succ = bb.add(
             CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X)),
-            controls=[lte_nu_mp1, lte_mu_nu, junk],
-            target=[succ],
+            controls=ctrls,
+            target=succ,
         )
-        lte_nu_mp1, lte_mu_nu, junk = ctrls
-        succ = trg[0]
+        lte_nu_mp1, lte_mu_nu, junk = bb.split(ctrls)
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
         nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
             bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
