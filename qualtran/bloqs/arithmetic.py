@@ -451,7 +451,7 @@ class GreaterThan(Bloq):
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(8*self.bitsize, TGate())}
+        return {(8 * self.bitsize, TGate())}
 
 
 @frozen
@@ -480,7 +480,7 @@ class GreaterThanConstant(Bloq):
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(4*self.bitsize, TGate())}
+        return {(4 * self.bitsize, TGate())}
 
 
 @frozen
@@ -509,7 +509,7 @@ class EqualsAConstant(Bloq):
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(4*self.bitsize, TGate())}
+        return {(4 * self.bitsize, TGate())}
 
 
 @frozen
@@ -554,15 +554,11 @@ class ToContiguousIndex(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}
-
     def t_complexity(self) -> 'cirq_ft.TComplexity':
         num_toffoli = self.bitsize**2 + self.bitsize - 1
         return TComplexity(t=4 * num_toffoli)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        num_toffoli = self.bitsize**2 + self.bitsize - 1
-        return {(num_toffoli, TGate())}
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}
