@@ -12,26 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-<<<<<<< HEAD
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import sympy
-=======
-from typing import Optional, Set, Tuple, TYPE_CHECKING
-
->>>>>>> main
 from attrs import frozen
 from cirq_ft import t_complexity, TComplexity
 from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 
-<<<<<<< HEAD
-from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.resource_counting import SympySymbolAllocator
-from qualtran.simulation.classical_sim import ClassicalValT
-=======
 from qualtran import Bloq, Register, Side, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -39,7 +27,6 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
->>>>>>> main
 
 
 @frozen
