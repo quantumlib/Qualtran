@@ -12,14 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional, Set, Tuple
+from typing import Optional, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 from cirq_ft import TComplexity
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, Register, Side, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -33,8 +37,8 @@ class Add(Bloq):
             enough to hold the result in the output register of a + b.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input/output register (register b above).
+        a: A bitsize-sized input register (register a above).
+        b: A bitsize-sized input/output register (register b above).
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -64,7 +68,8 @@ class Add(Bloq):
 class OutOfPlaceAdder(Bloq):
     r"""An n-bit addition gate.
 
-    Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$ using $4n - 4 T$ gates.
+    Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$
+    using $4n - 4 T$ gates.
 
     Args:
         bitsize: Number of bits used to represent each integer. Must be large
@@ -87,31 +92,31 @@ class OutOfPlaceAdder(Bloq):
     def pretty_name(self) -> str:
         return "c = a + b"
 
-    # TODO: This is just copied from above, not sure if correct.
     def t_complexity(self):
-        num_clifford = (self.bitsize - 2) * 19 + 16
+        # extra bitsize cliffords comes from CNOTs before adding:
+        # yield CNOT.on_each(zip(b, c))
+        # yield Add(a, c)
+        num_clifford = (self.bitsize - 2) * 19 + 16 + self.bitsize
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        num_clifford = (self.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.bitsize - 4
-        return {(num_t_gates, TGate()), (num_clifford, ArbitraryClifford(n=1))}
+        return {(1, Add(self.bitsize)), (self.bitsize, ArbitraryClifford(n=2))}
 
 
 @frozen
 class Square(Bloq):
     r"""Square an n-bit binary number.
 
-    Implements $U|a\rangle|0\rangle \rightarrow |a\rangle|a^2\rangle$ using $4n - 4 T$ gates.
+    Implements $U|a\rangle|0\rangle \rightarrow |a\rangle|a^2\rangle$ using $n^2 - n$ Toffolis.
 
     Args:
         bitsize: Number of bits used to represent the integer to be squared. The
             result is stored in a register of size 2*bitsize.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - result: A 2-bitsize-sized input/ouput register.
+        a: A bitsize-sized input register (register a above).
+        result: A 2-bitsize-sized input/output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -122,7 +127,9 @@ class Square(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, result=2 * self.bitsize + 2)
+        return Signature(
+            [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=Side.RIGHT)]
+        )
 
     def pretty_name(self) -> str:
         return "a^2"
@@ -147,13 +154,15 @@ class SumOfSquares(Bloq):
         |a\rangle|b\rangle\dots|k\rangle|a^2+b^2+\dots k^2\rangle$ using
         $4 k n^2 T$ gates.
 
+    The number of bits required by the output register is 2*bitsize + ceil(log2(k)).
+
     Args:
         bitsize: Number of bits used to represent each of the k integers.
         k: The number of integers we want to square.
 
     Registers:
-     - input: k n-bit registers.
-     - result: 2 * bitsize + 1 sized output register.
+        input: k n-bit registers.
+        result: 2 * bitsize + ceil(log2(k)) sized output register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -169,7 +178,9 @@ class SumOfSquares(Bloq):
         return Signature(
             [
                 Register("input", bitsize=self.bitsize, shape=(self.k,)),
-                Register("result", bitsize=2 * self.bitsize + 2),
+                Register(
+                    "result", bitsize=2 * self.bitsize + (self.k - 1).bit_length(), side=Side.RIGHT
+                ),
             ]
         )
 
@@ -204,10 +215,9 @@ class Product(Bloq):
         b_bitsize: Number of bits used to represent the second integer.
 
     Registers:
-     - a: a_bitsize-sized input register.
-     - b: b_bitsize-sized input register.
-     - result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store
-        the result a*b.
+        a: a_bitsize-sized input register.
+        b: b_bitsize-sized input register.
+        result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store the result a*b.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -220,8 +230,12 @@ class Product(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(
-            a=self.a_bitsize, b=self.b_bitsize, result=2 * max(self.a_bitsize, self.b_bitsize)
+        return Signature(
+            [
+                Register("a", self.a_bitsize),
+                Register("b", self.b_bitsize),
+                Register("result", 2 * max(self.a_bitsize, self.b_bitsize), side=Side.RIGHT),
+            ]
         )
 
     def pretty_name(self) -> str:
@@ -243,26 +257,26 @@ class Product(Bloq):
 class ScaleIntByReal(Bloq):
     r"""Scale an integer by fixed-point representation of a real number.
 
-        i.e.
+    i.e.
 
-        $$
-            |r\rangle|i\rangle|0\rangle \rightarrow |r\rangle|i\rangle|r \times i\rangle
-        $$
+    $$
+        |r\rangle|i\rangle|0\rangle \rightarrow |r\rangle|i\rangle|r \times i\rangle
+    $$
 
-        The real number is assumed to be in the range [0, 1).
+    The real number is assumed to be in the range [0, 1).
 
-        Args:
-            r_bitsize: Number of bits used to represent the real number.
-            i_bitsize: Number of bits used to represent the integer.
+    Args:
+        r_bitsize: Number of bits used to represent the real number.
+        i_bitsize: Number of bits used to represent the integer.
 
-        Registers:
-         - real_in: r_bitsize-sized input register.
-         - int_in: i_bitsize-sized input register.
-         - result: r_bitsize output register
+    Registers:
+     - real_in: r_bitsize-sized input register.
+     - int_in: i_bitsize-sized input register.
+     - result: r_bitsize output register
 
-        References:
-            [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
-    ](https://arxiv.org/pdf/2007.07391.pdf) pg 70.
+    References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
+        (https://arxiv.org/pdf/2007.07391.pdf) pg 70.
     """
 
     r_bitsize: int
@@ -270,7 +284,13 @@ class ScaleIntByReal(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(real_in=self.r_bitsize, int_in=self.i_bitsize, result=self.r_bitsize)
+        return Signature(
+            [
+                Register("real_in", self.r_bitsize),
+                Register("int_in", self.i_bitsize),
+                Register("result", self.r_bitsize, side=Side.RIGHT),
+            ]
+        )
 
     def pretty_name(self) -> str:
         return "r*i"
@@ -310,15 +330,21 @@ class MultiplyTwoReals(Bloq):
      - result: bitsize output register
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
-            ](https://arxiv.org/pdf/2007.07391.pdf) pg 71.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
+            (https://arxiv.org/pdf/2007.07391.pdf) pg 71.
     """
 
     bitsize: int
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, result=self.bitsize)
+        return Signature(
+            [
+                Register("a", self.bitsize),
+                Register("b", self.bitsize),
+                Register("result", self.bitsize, side=Side.RIGHT),
+            ]
+        )
 
     def pretty_name(self) -> str:
         return "a*b"
@@ -338,35 +364,42 @@ class MultiplyTwoReals(Bloq):
 class SquareRealNumber(Bloq):
     r"""Square a fixed-point representation of a real number
 
-        i.e.
+    i.e.
 
-        $$
-            |a\rangle|0\rangle \rightarrow |a\rangle||a^2\rangle
-        $$
+    $$
+        |a\rangle|0\rangle \rightarrow |a\rangle|a^2\rangle
+    $$
 
-        The real numbers are assumed to be in the range [0, 1).
+    The real numbers are assumed to be in the range [0, 1).
 
-        Args:
-            bitsize: Number of bits used to represent the real number.
+    Args:
+        bitsize: Number of bits used to represent the real number.
 
-        Registers:
-         - a: bitsize-sized input register.
-         - b: bitsize-sized input register.
-         - result: bitsize output register
+    Registers:
+     - a: bitsize-sized input register.
+     - b: bitsize-sized input register.
+     - result: bitsize output register
 
-        References:
-            [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
-    ](https://arxiv.org/pdf/2007.07391.pdf) pg 74.
+    References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
+            ](https://arxiv.org/pdf/2007.07391.pdf) pg 74.
     """
 
     bitsize: int
 
     def __attrs_post_init__(self):
-        assert self.bitsize > 3, "Must have at least 3 bits for bloq to make sense."
+        if self.bitsize < 3:
+            raise ValueError("bitsize must be at least 3 for SquareRealNumber bloq to make sense.")
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, result=self.bitsize)
+        return Signature(
+            [
+                Register("a", self.bitsize),
+                Register("b", self.bitsize),
+                Register("result", self.bitsize, side=Side.RIGHT),
+            ]
+        )
 
     def pretty_name(self) -> str:
         return "a^2"
@@ -393,9 +426,9 @@ class GreaterThan(Bloq):
         bitsize: Number of bits used to represent the two integers a and b.
 
     Registers:
-     - a: n-bit-sized input registers.
-     - b: n-bit-sized input registers.
-     - result: A single bit output register to store the result of A > B.
+        a: n-bit-sized input registers.
+        b: n-bit-sized input registers.
+        result: A single bit output register to store the result of A > B.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic

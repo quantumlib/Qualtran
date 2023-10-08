@@ -61,7 +61,7 @@ class Rz(RotationBloq):
         eps: precision for implementation of rotation.
 
     Registers:
-     - q: One-bit register.
+        q: One-bit register.
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success

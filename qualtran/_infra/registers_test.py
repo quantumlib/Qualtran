@@ -103,10 +103,10 @@ def test_agg_split():
 
 
 def test_get_named_qubits_multidim():
-    regs = Signature([Register('matt', shape=(2, 3), bitsize=4)])
+    regs = Signature([Register('q', shape=(2, 3), bitsize=4)])
     quregs = regs.get_cirq_quregs()
-    assert quregs['matt'].shape == (2, 3, 4)
-    assert quregs['matt'][1, 2, 3] == cirq.NamedQubit('matt[1, 2, 3]')
+    assert quregs['q'].shape == (2, 3, 4)
+    assert quregs['q'][1, 2, 3] == cirq.NamedQubit('q[1, 2][3]')
 
 
 def test_duplicate_names():

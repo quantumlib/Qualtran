@@ -17,9 +17,10 @@ from typing import Optional
 
 from attrs import frozen
 
+from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
 from qualtran.surface_code.formulae import code_distance_from_budget, error_at
-from qualtran.surface_code.magic_state_factory import MagicStateCount, MagicStateFactory
+from qualtran.surface_code.magic_state_factory import MagicStateFactory
 from qualtran.surface_code.physical_cost import PhysicalCost
 
 
@@ -132,16 +133,16 @@ class CCZ2TFactory(MagicStateFactory):
         l2 = 4 * 8 * 2 * self.distillation_l2_d**2
         return 6 * l1 + l2
 
-    def distillation_error(self, n_magic: MagicStateCount, phys_err: float) -> float:
+    def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
         """Error resulting from the magic state distillation part of the computation."""
-        n_ccz_states = n_magic.ccz_count + math.ceil(n_magic.t_count / 2)
+        n_ccz_states = n_magic.toffoli_gates + math.ceil(n_magic.t_gates / 2)
         return self.l2_error(phys_err) * n_ccz_states
 
-    def n_cycles(self, n_magic: MagicStateCount) -> int:
+    def n_cycles(self, n_magic: AlgorithmSummary) -> int:
         """The number of error-correction cycles to distill enough magic states."""
         distillation_d = max(2 * self.distillation_l1_d + 1, self.distillation_l2_d)
-        n_ccz_states = n_magic.ccz_count + math.ceil(n_magic.t_count / 2)
-        catalyzations = math.ceil(n_magic.t_count / 2)
+        n_ccz_states = n_magic.toffoli_gates + math.ceil(n_magic.t_gates / 2)
+        catalyzations = math.ceil(n_magic.t_gates / 2)
 
         # Naive depth of 8.5, but can be overlapped to effective depth of 5.5
         # See section 2, paragraph 2 of the reference.
@@ -152,7 +153,7 @@ class CCZ2TFactory(MagicStateFactory):
 
 def get_ccz2t_costs(
     *,
-    n_magic: MagicStateCount,
+    n_magic: AlgorithmSummary,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: Optional[float] = 1e-2,
