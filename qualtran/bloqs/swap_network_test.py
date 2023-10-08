@@ -119,6 +119,7 @@ def test_t_complexity(n):
     g = cirq_ft.MultiTargetCSwapApprox(n)
     cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
 
+
 @pytest.mark.parametrize("n", [*range(2, 6)])
 def test_cswap_approx_bloq_counts(n):
     csa = CSwapApprox(n)
@@ -126,6 +127,7 @@ def test_cswap_approx_bloq_counts(n):
     t_cost, cliff_cost = get_t_count_and_clifford(bc)
     assert csa.t_complexity().clifford == cliff_cost
     assert csa.t_complexity().t == t_cost
+
 
 @pytest.mark.parametrize(
     "selection_bitsize, target_bitsize, n_target_registers, want",
@@ -141,8 +143,8 @@ def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_
     gate = SwapWithZero(selection_bitsize, target_bitsize, n_target_registers)
     bc = list(gate.bloq_counts())[0]
     t_cost, cliff_cost = get_t_count_and_clifford(bc[1].bloq_counts())
-    assert bc[0]*t_cost == want.t
-    assert bc[0]*cliff_cost == want.clifford
+    assert bc[0] * t_cost == want.t
+    assert bc[0] * cliff_cost == want.clifford
 
 
 @pytest.mark.parametrize(
