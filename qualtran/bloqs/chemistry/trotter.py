@@ -293,42 +293,6 @@ class PolynmomialEvaluation(Bloq):
         return {(3, MultiplyTwoReals(self.poly_bitsize)), (3, Add(self.poly_bitsize))}
 
 
-# REMOVE THIS
-@frozen
-class QROMHack(Bloq):
-    r"""Bloq to evaluate polynomial from QROM
-
-    Args:
-        bitsize: The number of bits encoding the input registers.
-
-    Register:
-     - in: QROM input containing polynomial coefficients.
-     - out: Output register to store polynomial approximation to inverse square root.
-
-    References:
-    """
-    sel_bitsize: int
-    trg_bitsize: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('selection', bitsize=1, shape=(self.sel_bitsize,)),
-                Register('target0', bitsize=1, shape=(self.trg_bitsize,)),
-                Register('target1', bitsize=1, shape=(self.trg_bitsize,)),
-                Register('target2', bitsize=1, shape=(self.trg_bitsize,)),
-                Register('target3', bitsize=1, shape=(self.trg_bitsize,)),
-            ]
-        )
-
-    def short_name(self) -> str:
-        return 'QROM'
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(4 * (2 * self.sel_bitsize - 2), TGate())}
-
-
 @frozen
 class KineticEnergy(Bloq):
     """Bloq for Kinetic energy unitary.
@@ -412,8 +376,18 @@ class PairPotential(Bloq):
             ]
         )
 
+    def pretty_name(self) -> str:
+        return "PairPotential"
+
     def short_name(self) -> str:
         return f'U_{self.label}(dt)_ij'
+
+    def __repr__(self) -> str:
+        # overwriting this to avoid data entering repr which is used during bloq count visualization.
+        return (
+            "PairPotential(bitsize={self.bitsize}, poly_bitsize={self.poly_bitsize}, "
+            "inv_sqrt_bitsize={self.inv_sqrt_bitsize})"
+        )
 
     def build_composite_bloq(
         self, bb: BloqBuilder, *, system_i: SoquetT, system_j
@@ -433,30 +407,20 @@ class PairPotential(Bloq):
         qrom_anc_c1 = bb.allocate(self.poly_bitsize)
         qrom_anc_c2 = bb.allocate(self.poly_bitsize)
         qrom_anc_c3 = bb.allocate(self.poly_bitsize)
-        if isinstance(self.qrom_data, Tuple):
-            qrom = QROM(
-                [np.array(d) for d in self.qrom_data],
-                selection_bitsizes=(bitsize_rij_sq,),
-                target_bitsizes=(self.poly_bitsize,) * 4,
-            )
-            qrom_bloq = CirqGateAsBloq(qrom)
-            sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3 = bb.add(
-                qrom_bloq,
-                selection=sos,
-                target0=qrom_anc_c0,
-                target1=qrom_anc_c1,
-                target2=qrom_anc_c2,
-                target3=qrom_anc_c3,
-            )
-        else:
-            sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3 = bb.add(
-                QROMHack(bitsize_rij_sq, self.poly_bitsize),
-                selection=sos,
-                target0=qrom_anc_c0,
-                target1=qrom_anc_c1,
-                target2=qrom_anc_c2,
-                target3=qrom_anc_c3,
-            )
+        qrom = QROM(
+            [np.array(d) for d in self.qrom_data],
+            selection_bitsizes=(bitsize_rij_sq,),
+            target_bitsizes=(self.poly_bitsize,) * 4,
+        )
+        qrom_bloq = CirqGateAsBloq(qrom)
+        sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3 = bb.add(
+            qrom_bloq,
+            selection=sos,
+            target0=qrom_anc_c0,
+            target1=qrom_anc_c1,
+            target2=qrom_anc_c2,
+            target3=qrom_anc_c3,
+        )
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
         poly_out = bb.allocate(self.poly_bitsize)
@@ -542,6 +506,9 @@ class PotentialEnergy(Bloq):
                 )
             ]
         )
+
+    def pretty_name(self) -> str:
+        return "PotentialEnergy"
 
     def short_name(self) -> str:
         return f'U_{self.label}(dt)'
