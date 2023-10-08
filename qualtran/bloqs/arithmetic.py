@@ -23,7 +23,6 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
