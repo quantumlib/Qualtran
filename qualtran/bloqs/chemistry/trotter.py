@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -35,11 +35,21 @@ from qualtran.bloqs.basic_gates import Rz, TGate
 from qualtran.bloqs.basic_gates.rotation import RotationBloq
 from qualtran.cirq_interop import CirqGateAsBloq
 
+if TYPE_CHECKING:
+    from qualtran.resource_counting import SympySymbolAllocator
 
-def get_polynomial_coeffs() -> Tuple[NDArray, NDArray]:
-    """Polynomial coefficients from Fusion paper.
 
-    Useful for tests and notebook so add as function.
+def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
+    """Polynomial coefficients for approximating inverse square root.
+
+    This function returns the coefficients of a piecewise cubic polynomial
+    interpolation to the inverse square root, defined over two intervals [1,
+    3/2] (a) and [3/2, 2] (b). The coefficients were provided by the reference
+    below in the context of computing the Coulomb potential.
+
+    References:
+        [Quantum computation of stopping power for inertial fusion target design]
+        (https://browse.arxiv.org/pdf/2308.12352.pdf) pg. 12 / 13.
     """
     poly_coeffs_a = np.array(
         [
@@ -60,31 +70,40 @@ def get_polynomial_coeffs() -> Tuple[NDArray, NDArray]:
     return poly_coeffs_a, poly_coeffs_b
 
 
-def build_qrom_data_for_poly_fit(selection_bitsize: int, target_bitsize: int) -> NDArray:
-    """Build QROM data from polynomial coefficients from Fusion paper.
+def build_qrom_data_for_poly_fit(
+    selection_bitsize: int, target_bitsize: int, poly_coeffs: Tuple[NDArray, NDArray]
+) -> NDArray:
+    """Build QROM data from polynomial coefficients from Referenence.
 
     Args:
         selection_bitsize: Number of bits for QROM selection register. This is
             determined in practice by the number of bits required to store
             r_{ij}^2.
         target_bitsize: Number of bits of precision for polynomial coefficients.
+        poly_coeffs: Coefficients for piecewise polynomial approximation to
+            inverse square root. These are provided by the function
+            get_inverse_square_root_poly_coeffs.
 
     Returns:
         qrom_data: An array of integers representing the appropriately
             repeated scaled fixed-point representation of the polynomial
             coefficients required for the variable spaced QROM.
+
+    References:
+        [Quantum computation of stopping power for inertial fusion target design]
+        (https://browse.arxiv.org/pdf/2308.12352.pdf) pg. 12.
     """
-    # We compute the inverse square root of x^2 using variable spaced QROM, interpolation and newton-raphson
-    # Build data so QROM recognizes repeated entries so as to use the variable spaced QROM implementation.
-    # The repeated ranges occur for l :-> l + 2^k, and are repeated twice
-    # for coeffs_a and coeffs_b. We need to scale the coefficients by 2^{-(k-1)}
-    # to correclty account for the selection range (r_{ij}^2)
-    # Our coefficients are initially defined in the range [1, 3/2] for "_a" and [3/2, 2] for "_b".
-    poly_coeffs_a, poly_coeffs_b = get_polynomial_coeffs()
+    poly_coeffs_a, poly_coeffs_b = poly_coeffs
+    # We compute the inverse square root of x^2 using variable spaced QROM,
+    # interpolation and newton-raphson Build data so QROM recognizes repeated
+    # entries so as to use the variable spaced QROM implementation.  The
+    # repeated ranges occur for l :-> l + 2^k, and are repeated twice for
+    # coeffs_a and coeffs_b. We need to scale the coefficients by 2^{-(k-1)} to
+    # correclty account for the selection range (r_{ij}^2) Our coefficients are
+    # initially defined in the range [1, 3/2] for "_a" and [3/2, 2] for "_b".
     data = np.zeros((4, 2 ** (selection_bitsize)), dtype=np.int_)
     for i, (a, b) in enumerate(zip(poly_coeffs_a, poly_coeffs_b)):
-        # x = 0 is never encountered as the minimum distance is 1 for our grid.
-        num_data = 0
+        # In practice we should set x = 0 to some large constant, but we will just skip for now.
         # x = 1
         _, coeff = float_as_fixed_width_int(a, target_bitsize)
         data[i, 1] = coeff
@@ -141,12 +160,13 @@ class QuantumVariableRotation(Bloq):
         return 'e^{i*phi}'
 
     def t_complexity(self) -> 'TComplexity':
-        # Upper bounding for othe moment with just phi_bitsize * Rz rotation gates.
+        # Upper bounding for the moment with just phi_bitsize * Rz rotation gates.
         return self.phi_bitsize * Rz(0.0).t_complexity()
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # return {(self.phi_bitsize, RotationBloq(0.0))}
-        return {(self.phi_bitsize, RotationBloq(0.0))}
+        theta = ssa.new_symbol('theta')
+        # need to update rotation bloq.
+        return {(self.phi_bitsize, RotationBloq(theta))}
 
 
 @frozen
@@ -154,7 +174,7 @@ class NewtonRaphson(Bloq):
     r"""Bloq implementing a single Newton-Raphson step
 
     Given a (polynomial) approximation for $y_n = 1/sqrt{x}$ we can approximate
-    the inverse squareroot by
+    the inverse square root by
 
     $$
         y_{n+1} = \frac{1}{2}y_n\left(3-y_n^2 x\right)
@@ -177,7 +197,7 @@ class NewtonRaphson(Bloq):
     Register:
      - xsq: an input_bitsize size register storing the value x^2.
      - ply: an size register storing the value x^2.
-     - trg: a target_bitsize size register storing the output of the newton raphson step. Should approximate $1/
+     - trg: a target_bitsize size register storing the output of the newton raphson step.
 
     References:
         (Faster quantum chemistry simulation on fault-tolerant quantum
@@ -274,6 +294,7 @@ class PolynmomialEvaluation(Bloq):
         return {(3, MultiplyTwoReals(self.poly_bitsize)), (3, Add(self.poly_bitsize))}
 
 
+# REMOVE THIS
 @frozen
 class QROMHack(Bloq):
     r"""Bloq to evaluate polynomial from QROM
@@ -348,7 +369,6 @@ class KineticEnergy(Bloq):
 
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
         bitsize = (self.num_grid - 1).bit_length() + 1
-        # TODO: discrepency here with target bitsize of 2*bitsize + 1 vs 2*bitsize + 2 listed in fusion paper.
         for i in range(self.num_elec):
             # temporary register to store output of sum of momenta
             sos = bb.allocate(2 * bitsize + 2)
