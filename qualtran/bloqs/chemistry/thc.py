@@ -357,7 +357,8 @@ class PrepareTHC(Bloq):
                 target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
             )
         )
-        s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(qroam,
+        s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
+            qroam,
             selection=s,
             target0=theta,
             target1=alt_theta,
