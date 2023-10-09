@@ -159,7 +159,6 @@ class UniformSuperpositionTHC(Bloq):
         # 7. Control off of 5 and 6 to not prepare if these conditions are met
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
         # 6. Reflect on comparitors, rotated qubit and |+>.
-        #print(CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z)).signature)
         ctrls = bb.join(np.array([amp, lte_nu_mp1, lte_mu_nu]))
         ctrls, junk = bb.add(
             CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z)),
@@ -358,9 +357,7 @@ class PrepareTHC(Bloq):
                 target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
             )
         )
-        s, theta, alt_theta, alt_mu, alt_nu, keep = add_from_bloq_registers(
-            bb,
-            qroam,
+        s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(qroam,
             selection=s,
             target0=theta,
             target1=alt_theta,
@@ -387,15 +384,22 @@ class PrepareTHC(Bloq):
         keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
-        # Reuse one of the |+> states later in prepare
+        # Select expects two plus states so set them up here.
         plus_a = bb.add(Hadamard(), q=regs['plus_a'])
         plus_b = bb.add(Hadamard(), q=regs['plus_b'])
-        # negative cotrol on flag register
-        less_than, plus_a = add_from_bloq_register_flat_qubits(
-            bb, cz, less_than=less_than, plus_a=plus_a
+        # Need a toffoli gate with one negative control. And it into an ancilla
+        # and control off this for the swaps.
+        junk = bb.allocate(1)
+        ctrls = bb.join(np.array([eq_nu_mp1, plus_a]))
+        ctrls, junk = bb.add(
+            CirqGateAsBloq(MultiControlPauli(cvs=(0, 1), target_gate=cirq.X)),
+            controls=ctrls,
+            target=junk,
         )
-        plus_a, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=plus_a, x=mu, y=nu)
+        eq_nu_mp1, plus_a = bb.split(ctrls)
+        junk, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=junk, x=mu, y=nu)
         bb.free(bb.join(np.array([less_than, alt_theta])))
+        bb.free(junk)
         bb.free(s)
         bb.free(sigma)
         bb.free(keep)
