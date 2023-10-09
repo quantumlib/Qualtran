@@ -39,7 +39,7 @@ class TGate(Bloq):
     the common Clifford+T gateset.
 
     Registers:
-     - q: The qubit
+        q: The qubit
 
     References:
         [Universal Quantum Computation with ideal Clifford gates and noisy ancillas](https://arxiv.org/abs/quant-ph/0403025).
@@ -56,6 +56,9 @@ class TGate(Bloq):
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=1)
+
+    def short_name(self) -> str:
+        return 'T'
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'

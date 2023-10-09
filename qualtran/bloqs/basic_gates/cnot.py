@@ -43,8 +43,8 @@ class CNOT(Bloq):
     """Two-qubit controlled-NOT.
 
     Registers:
-     - ctrl: One-bit control register.
-     - target: One-bit target register.
+        ctrl: One-bit control register.
+        target: One-bit target register.
     """
 
     @cached_property

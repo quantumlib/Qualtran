@@ -16,12 +16,17 @@
 
 The bloqs in this module encode gates you'd expect to find in any quantum computing
 framework. It includes single-qubit unitary gates like rotations, bit- and phase-flip;
-basic multi-qubit unitary gates; and states and effects in the Pauli basis.
+basic multi-qubit unitary gates; states and effects in the Pauli basis; and non-Clifford
+gates `TGate` and `Toffoli` which are commonly counted to estimate algorithm resource
+requirements.
 """
 
 from .cnot import CNOT
+from .hadamard import Hadamard
 from .rotation import Rx, Ry, Rz
 from .swap import CSwap, TwoBitCSwap, TwoBitSwap
 from .t_gate import TGate
+from .toffoli import Toffoli
 from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate
+from .y_gate import YGate
 from .z_basis import IntEffect, IntState, OneEffect, OneState, ZeroEffect, ZeroState, ZGate

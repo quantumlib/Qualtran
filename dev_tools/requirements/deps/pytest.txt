@@ -8,3 +8,4 @@ pytest-xdist
 # test executing notebooks
 nbformat
 nbconvert
+ipykernel

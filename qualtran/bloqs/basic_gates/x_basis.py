@@ -84,7 +84,13 @@ class _XVector(Bloq):
         import cirq
 
         (q,) = qubit_manager.qalloc(self.n)
-        return cirq.H(q), {'q': np.array([q])}
+
+        if self.bit:
+            op = cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q), cirq.H(q)))
+        else:
+            op = cirq.H(q)
+
+        return op, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
         s = self.short_name()
@@ -157,6 +163,9 @@ class XGate(Bloq):
                 data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
             )
         )
+
+    def short_name(self) -> str:
+        return 'X'
 
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
         return {'q': (q + 1) % 2}

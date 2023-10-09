@@ -35,9 +35,9 @@ class CtrlScaleModAdd(Bloq):
         bitsize: The size of the two registers.
 
     Registers:
-     - ctrl: The control bit
-     - x: The 'source' quantum register containing the integer to be scaled and added to `y`.
-     - y: The 'destination' quantum register to which the addition will apply.
+        ctrl: The control bit
+        x: The 'source' quantum register containing the integer to be scaled and added to `y`.
+        y: The 'destination' quantum register to which the addition will apply.
     """
 
     k: Union[int, sympy.Expr]

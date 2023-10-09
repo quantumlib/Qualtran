@@ -52,9 +52,11 @@ import qualtran.bloqs.and_bloq_test
 import qualtran.bloqs.arithmetic
 import qualtran.bloqs.arithmetic_test
 import qualtran.bloqs.basic_gates.cnot_test
+import qualtran.bloqs.basic_gates.hadamard_test
 import qualtran.bloqs.basic_gates.rotation_test
 import qualtran.bloqs.basic_gates.swap_test
 import qualtran.bloqs.basic_gates.t_gate_test
+import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
 import qualtran.bloqs.factoring.mod_exp
@@ -87,6 +89,8 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.basic_gates.z_basis_test._make_zero_state),
             BloqNbSpec(qualtran.bloqs.basic_gates.t_gate_test._make_t_gate),
             BloqNbSpec(qualtran.bloqs.basic_gates.rotation_test._make_Rz),
+            BloqNbSpec(qualtran.bloqs.basic_gates.toffoli_test._make_Toffoli),
+            BloqNbSpec(qualtran.bloqs.basic_gates.hadamard_test._make_Hadamard),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),
@@ -108,6 +112,9 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_sum_of_squares),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_greater_than),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_scale_int_by_real),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_multiply_two_reals),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square_real_number),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),
