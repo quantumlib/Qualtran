@@ -268,6 +268,8 @@ class CompositeBloq(Bloq):
 
         This method is helpful for finalizing an "add from" operation, see `iter_bloqsoqs`.
         """
+        if RightDangle not in self._binst_graph:
+            return {}
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
         return _cxn_to_soq_dict(
             self.signature.rights(),
