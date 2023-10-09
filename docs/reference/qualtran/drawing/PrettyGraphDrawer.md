@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L368-L405">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L368-L401">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -80,7 +80,7 @@ Overridable method returning the text used for the header cell of a bloq.
 
 <h3 id="soq_label"><code>soq_label</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L379-L388">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L379-L384">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>soq_label(
@@ -93,7 +93,7 @@ Overridable method for getting label text for a Soquet.
 
 <h3 id="get_default_text"><code>get_default_text</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L390-L394">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L386-L390">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_default_text(
@@ -106,7 +106,7 @@ Overridable method for getting label text for a Soquet.
 
 <h3 id="cxn_edge"><code>cxn_edge</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L396-L405">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L392-L401">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>cxn_edge(

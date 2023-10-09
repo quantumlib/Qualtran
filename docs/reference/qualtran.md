@@ -9,7 +9,7 @@ qualtran
 isort:skip_file
 ## Modules
 
-[`cirq_interop`](./qualtran/cirq_interop.md): Interoperability with Cirq
+[`cirq_interop`](./qualtran/cirq_interop.md): Bi-directional interop between Qualtran & Cirq using Cirq-FT.
 
 [`drawing`](./qualtran/drawing.md): Draw and visualize bloqs
 

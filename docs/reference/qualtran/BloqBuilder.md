@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L690-L1068">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L690-L1067">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -207,7 +207,7 @@ Returns
 
 <h3 id="add"><code>add</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L883-L916">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L883-L915">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add(
@@ -248,7 +248,7 @@ Returns
 
 <h3 id="add_from"><code>add_from</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L940-L971">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L939-L970">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_from(
@@ -279,7 +279,7 @@ Returns
 
 <h3 id="finalize"><code>finalize</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L973-L1010">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L972-L1009">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>finalize(
@@ -309,7 +309,7 @@ Args
 
 <h3 id="allocate"><code>allocate</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1035-L1038">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1034-L1037">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>allocate(
@@ -322,7 +322,7 @@ Args
 
 <h3 id="free"><code>free</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1040-L1046">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1039-L1045">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>free(
@@ -335,7 +335,7 @@ Args
 
 <h3 id="split"><code>split</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1048-L1055">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1047-L1054">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>split(
@@ -348,7 +348,7 @@ Add a Split bloq to split up a register.
 
 <h3 id="join"><code>join</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1057-L1068">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/composite_bloq.py#L1056-L1067">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>join(

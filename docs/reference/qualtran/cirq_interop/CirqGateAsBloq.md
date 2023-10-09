@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L51-L101">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L44-L175">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -13,7 +13,7 @@
 
 
 
-A Bloq wrapper around a `cirq.Gate`.
+A Bloq wrapper around a `cirq.Gate`, preserving signature if gate is a `GateWithRegisters`.
 
 Inherits From: [`Bloq`](../../qualtran/Bloq.md)
 
@@ -27,17 +27,15 @@ Inherits From: [`Bloq`](../../qualtran/Bloq.md)
 
 <!-- Placeholder for "Used in" -->
 
-This bloq has one thru-register named "qubits", which is a 1D array of soquets
-representing individual qubits.
 
 
 
 <h2 class="add-link">Attributes</h2>
 
-`gate`<a id="gate"></a>
+`cirq_registers`<a id="cirq_registers"></a>
 : &nbsp;
 
-`n_qubits`<a id="n_qubits"></a>
+`gate`<a id="gate"></a>
 : &nbsp;
 
 `signature`<a id="signature"></a>
@@ -50,7 +48,7 @@ representing individual qubits.
 
 <h3 id="pretty_name"><code>pretty_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L61-L62">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L50-L51">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>pretty_name() -> str
@@ -61,7 +59,7 @@ representing individual qubits.
 
 <h3 id="short_name"><code>short_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L64-L66">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L53-L55">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>short_name() -> str
@@ -70,9 +68,37 @@ representing individual qubits.
 
 
 
+<h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L75-L85">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>decompose_bloq() -> 'CompositeBloq'
+</code></pre>
+
+Decompose this Bloq into its constituent parts contained in a CompositeBloq.
+
+Bloq users can call this function to delve into the definition of a Bloq. If you're
+trying to define a bloq's decomposition, consider overriding `build_composite_bloq`
+which provides helpful arguments for implementers.
+
+Returns
+
+
+
+
+Raises
+
+`NotImplementedError`
+: If there is no decomposition defined; namely: if
+  `build_composite_bloq` returns `NotImplemented`.
+
+
+
+
 <h3 id="add_my_tensors"><code>add_my_tensors</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L76-L92">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L87-L146">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_my_tensors(
@@ -115,11 +141,11 @@ Args
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L94-L98">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L148-L159">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
-    qubit_manager: 'cirq.QubitManager', qubits: 'CirqQuregT'
+    qubit_manager: 'cirq.QubitManager', **cirq_quregs
 ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]
 </code></pre>
 
@@ -159,7 +185,7 @@ Returns
 
 <h3 id="t_complexity"><code>t_complexity</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_interop.py#L100-L101">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L161-L162">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>t_complexity() -> 'cirq_ft.TComplexity'
@@ -169,6 +195,26 @@ The `TComplexity` for this bloq.
 
 By default, this will recurse into this bloq's decomposition but this
 method can be overriden with a known value.
+
+<h3 id="wire_symbol"><code>wire_symbol</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L164-L175">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>wire_symbol(
+    soq: 'Soquet'
+) -> 'WireSymbol'
+</code></pre>
+
+On a musical score visualization, use this `WireSymbol` to represent `soq`.
+
+By default, we use a "directional text box", which is a text box that is either
+rectangular for thru-registers or facing to the left or right for non-thru-registers.
+
+Override this method to provide a more relevant `WireSymbol` for the provided soquet.
+This method can access bloq attributes. For example: you may want to draw either
+a filled or empty circle for a control register depending on a control value bloq
+attribute.
 
 <h3 id="__eq__"><code>__eq__</code></h3>
 

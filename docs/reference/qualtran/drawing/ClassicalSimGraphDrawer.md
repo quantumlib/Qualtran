@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L413-L450">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L409-L446">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -53,7 +53,7 @@ The (composite) bloq must be composed entirely of classically-simulable bloqs.
 
 <h3 id="cxn_label"><code>cxn_label</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L432-L438">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L428-L434">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>cxn_label(
@@ -66,7 +66,7 @@ Label the connection with its classical value.
 
 <h3 id="cxn_edge"><code>cxn_edge</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L440-L450">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L436-L446">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>cxn_edge(

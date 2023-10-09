@@ -1,15 +1,14 @@
 # Module: cirq_interop
 
 
-Interoperability with Cirq
-
+Bi-directional interop between Qualtran & Cirq using Cirq-FT.
 
 
 
 isort:skip_file
 ## Classes
 
-[`class CirqGateAsBloq`](../qualtran/cirq_interop/CirqGateAsBloq.md): A Bloq wrapper around a `cirq.Gate`.
+[`class CirqGateAsBloq`](../qualtran/cirq_interop/CirqGateAsBloq.md): A Bloq wrapper around a `cirq.Gate`, preserving signature if gate is a `GateWithRegisters`.
 
 [`class BloqAsCirqGate`](../qualtran/cirq_interop/BloqAsCirqGate.md): A shim for using bloqs in a Cirq circuit.
 
