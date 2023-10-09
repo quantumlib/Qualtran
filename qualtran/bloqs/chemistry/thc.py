@@ -66,20 +66,6 @@ def add_from_bloq_register_flat_qubits(
     return tuple(s for _, s in out_soqs.items())
 
 
-def add_from_bloq_registers(
-    bb: 'BloqBuilder', cirq_bloq: Bloq, **bloq_regs: SoquetT
-) -> Tuple[SoquetT, ...]:
-    """Shift from bitsize=n, shape=() to bitsize=1, shape=(n,)"""
-    cirq_regs = {}
-    for reg_name, soq in bloq_regs.items():
-        cirq_regs[reg_name] = bb.split(soq)
-    cirq_regs = bb.add(cirq_bloq, **cirq_regs)
-    out_soqs = {}
-    for ix, (reg_name, soq) in enumerate(bloq_regs.items()):
-        out_soqs[reg_name] = bb.join(cirq_regs[ix])
-    return tuple(s for _, s in out_soqs.items())
-
-
 @frozen
 class UniformSuperpositionTHC(Bloq):
     r"""Prepare uniform superposition state for THC.
