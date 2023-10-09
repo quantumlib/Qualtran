@@ -201,3 +201,22 @@ def test_cirq_optree_to_cbloq():
     assert bloqs_list.count(Join(3)) == 6
     assert bloqs_list.count(Allocate(2)) == 2
     assert bloqs_list.count(Free(2)) == 2
+
+
+def test_cirq_gate_as_bloq_for_left_only_gates():
+    class LeftOnlyGate(cirq_ft.GateWithRegisters):
+        @property
+        def signature(self):
+            return cirq_ft.Signature([cirq_ft.Register('junk', 2, side=cirq_ft.infra.Side.LEFT)])
+
+        def decompose_from_registers(self, *, context, junk) -> cirq.OP_TREE:
+            yield cirq.CNOT(*junk)
+            yield cirq.reset_each(*junk)
+
+    # Using InteropQubitManager enables support for LeftOnlyGate's in CirqGateAsBloq.
+    cbloq = CirqGateAsBloq(gate=LeftOnlyGate()).decompose_bloq()
+    bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
+    assert bloqs_list.count(Split(2)) == 1
+    assert bloqs_list.count(Free(1)) == 2
+    assert bloqs_list.count(CirqGateAsBloq(cirq.CNOT)) == 1
+    assert bloqs_list.count(CirqGateAsBloq(cirq.ResetChannel())) == 2
