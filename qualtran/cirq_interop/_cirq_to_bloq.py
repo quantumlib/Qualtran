@@ -26,12 +26,19 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
 
 CirqQuregT = NDArray[cirq.Qid]
 CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
+
+
+def get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
+    ret = signature.get_cirq_quregs()
+    qm.manage_qubits(itertools.chain.from_iterable(qreg.flatten() for qreg in ret.values()))
+    return ret
 
 
 @frozen
@@ -66,8 +73,8 @@ class CirqGateAsBloq(Bloq):
             )
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        in_quregs = self.signature.get_cirq_quregs()
-        qubit_manager = cirq.ops.SimpleQubitManager()
+        qubit_manager = InteropQubitManager()
+        in_quregs = get_cirq_quregs(self.signature, qubit_manager)
         cirq_op, out_quregs = self.as_cirq_op(qubit_manager, **in_quregs)
         context = cirq.DecompositionContext(qubit_manager=qubit_manager)
         decomposed_optree = cirq.decompose_once(cirq_op, context=context, default=None)
@@ -358,8 +365,9 @@ def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
     ):
         raise NotImplementedError(f"{bloq} does not support decomposition.")
 
-    in_quregs = bloq.signature.get_cirq_quregs()
-    cirq_op, out_quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **in_quregs)
+    qubit_manager = InteropQubitManager()
+    in_quregs = get_cirq_quregs(bloq.signature, qubit_manager)
+    cirq_op, out_quregs = bloq.as_cirq_op(qubit_manager, **in_quregs)
     from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
     if cirq_op is None or (
