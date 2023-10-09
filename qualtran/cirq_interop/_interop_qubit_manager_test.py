@@ -22,7 +22,7 @@ def test_interop_qubit_manager():
     q = cirq.q('junk')
     with pytest.raises(ValueError, match='not allocated'):
         qm.qfree([q])
-    # You can add delegate qubits to be "managed" by the InteropQubitManager.
+    # You can delegate qubits to be "managed" by the InteropQubitManager.
     qm.manage_qubits([q])
     qm.qfree([q])
     # q was already deallocated.

@@ -18,7 +18,7 @@ from typing import Iterable
 import cirq
 
 
-class InteropQubitManager(cirq.SimpleQubitManager):
+class InteropQubitManager(cirq.ops.SimpleQubitManager):
     """Qubit Manager to use to facilitate interop of Cirq gates and Bloqs."""
 
     def __init__(self):
