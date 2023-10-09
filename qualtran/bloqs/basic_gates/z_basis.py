@@ -21,8 +21,9 @@ import quimb.tensor as qtn
 import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
+from numpy.typing import NDArray
 
-from qualtran import Bloq, Register, Side, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.resource_counting import big_O
 from qualtran.simulation.classical_sim import ints_to_bits
@@ -230,26 +231,35 @@ class _IntVector(Bloq):
         side = Side.RIGHT if self.state else Side.LEFT
         return Signature([Register('val', bitsize=self.bitsize, side=side)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **val) -> Dict[str, 'SoquetT']:
-        bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
+    @staticmethod
+    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
+        states = [ZeroState(), OneState()]
+        xs = []
+        for bit in bits:
+            x = bb.add(states[bit])
+            xs.append(x)
+        xs = np.array(xs)
 
-        if self.state:
-            assert not val
-            states = [ZeroState(), OneState()]
-            xs = []
-            for bit in bits:
-                x = bb.add(states[bit])
-                xs.append(x)
-            xs = np.array(xs)
+        return {'val': bb.join(xs)}
 
-            return {'val': bb.join(xs)}
-
-        val = val['val']
+    @staticmethod
+    def _build_composite_effect(
+        bb: 'BloqBuilder', val: 'SoquetT', bits: NDArray[np.uint8]
+    ) -> Dict[str, 'SoquetT']:
         xs = bb.split(val)
         effects = [ZeroEffect(), OneEffect()]
         for i, bit in enumerate(bits):
             bb.add(effects[bit], q=xs[i])
         return {}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
+        bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
+        if self.state:
+            assert not val
+            return self._build_composite_state(bb, bits)
+        else:
+            val = val['val']
+            return self._build_composite_effect(bb, val, bits)
 
     def add_my_tensors(
         self,
