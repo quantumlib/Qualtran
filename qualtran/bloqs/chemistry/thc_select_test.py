@@ -27,7 +27,7 @@ def _make_select():
 def test_select_thc():
     num_mu = 10
     num_spin_orb = 2 * 4
-    angles = ((0.5,) * num_spin_orb // 2,) * num_mu
+    angles = ((0.5,) * (num_spin_orb // 2),) * num_mu
     select = SelectTHC(
         num_mu=num_mu, num_spin_orb=num_spin_orb, rotation_angles=angles, num_bits_theta=12
     )
