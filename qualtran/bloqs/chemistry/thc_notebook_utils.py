@@ -52,6 +52,17 @@ and_cv1 = ssa.new_symbol('cv1')
 mcp_cv0 = ssa.new_symbol('cv3')
 
 
+def custom_qroam_repr(self) -> str:
+    target_repr = repr(self._target_bitsizes)
+    return f"cirq_ft.SelectSwapQROM(target_bitsizes={target_repr}, block_size={self.block_size})"
+
+
+def custom_qrom_repr(self) -> str:
+    target_repr = repr(self.target_bitsizes)
+    selection_repr = repr(self.selection_bitsizes)
+    return f"cirq_ft.QROM(selection_bitsizes={selection_repr}, target_bitsizes={target_repr})"
+
+
 def generalize(bloq):
     """Genereralizer for THC prepare bloqs."""
     if isinstance(bloq, (Allocate, Free, Split, Join)):
@@ -75,6 +86,10 @@ def generalize(bloq):
                 (bloq.gate**-1).target_bitsize,
                 (bloq.gate**-1).n_target_registers,
             )
+        if isinstance(bloq.gate, cirq_ft.algos.SelectSwapQROM):
+            bloq.gate.__class__.__repr__ = custom_qroam_repr
+        if isinstance(bloq.gate, cirq_ft.algos.QROM):
+            bloq.gate.__class__.__repr__ = custom_qrom_repr
         if isinstance(bloq.gate, single_qubit_clifford):
             return ArbitraryClifford(n=1)
         if isinstance(bloq.gate, two_qubit_clifford):

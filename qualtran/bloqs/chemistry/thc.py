@@ -274,6 +274,12 @@ class PrepareTHC(Bloq):
             ]
         )
 
+    def __repr__(self) -> str:
+        return (
+            f"PrepareTHC(num_mu={self.num_mu}, num_spin_orb={self.num_spin_orb},"
+            "keep_bitsize={self.keep_bitsize})"
+        )
+
     @classmethod
     def build(cls, t_l, zeta, probability_epsilon=1e-8) -> 'PrepareTHC':
         """Factory method to build PrepareTHC from Hamiltonian coefficients."""
