@@ -59,6 +59,7 @@ import qualtran.bloqs.basic_gates.t_gate_test
 import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
+import qualtran.bloqs.chemistry.single_factorization_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test

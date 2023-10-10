@@ -93,7 +93,6 @@ class SingleFactorization(BlockEncoding):
         out_regs = {}
         # prepare_l
         epsilon = 2**-self.num_bits_state_prep / len(self.out_prep_probs)
-        alt_anc, keep_anc = bb.allocate(self.mu)
         outer_prep = CirqGateAsBloq(StatePreparationAliasSampling.from_lcu_probs(self.outer_prep_probs, epsilon=epsilon))
         l, succ_l, l_ne_zero = bb.add(
             outer_prep, l=l, succ_l=succ_l, l_ne_zero=l_ne_zero
@@ -101,7 +100,8 @@ class SingleFactorization(BlockEncoding):
         one_body = SingleFactorizationOneBody(self.num_spin_orb)
         one_body_sq = BlockEncodeChebyshevPolynomial(one_body, order=2)
         # prepare_l^dag
+        # Is this the correct adjoint?
         l, succ_l, l_ne_zero = bb.add(
-            OuterPrepareSingleFactorization(norms, adjoint=True), l=l, succ_l=succ_l, l_ne_zero=l_ne_zero
+            outer_prep, l=l, succ_l=succ_l, l_ne_zero=l_ne_zero
         )
         return out_regs
