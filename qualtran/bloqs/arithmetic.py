@@ -463,8 +463,8 @@ class GreaterThanConstant(Bloq):
         val: integer to compare x against (a above.)
 
     Registers:
-     - x: Register to compare against val.
-     - result: Register to hold result of comparison.
+        x: Register to compare against val.
+        result: Register to hold result of comparison.
     """
 
     bitsize: int
@@ -492,8 +492,8 @@ class EqualsAConstant(Bloq):
         val: integer to compare x against (a above.)
 
     Registers:
-     - x: Register to compare against val.
-     - result: Register to hold result of comparison.
+        x: Register to compare against val.
+        result: Register to hold result of comparison.
     """
 
     bitsize: int
@@ -527,9 +527,10 @@ class ToContiguousIndex(Bloq):
         bitsize: number of bits for mu and nu registers.
         s_bitsize: Number of bits for contiguous register.
 
-    Registers
-     - mu, nu: input registers
-     - s: output contiguous register
+    Registers:
+        mu: input register
+        nu: input register
+        s: output contiguous register
 
     References:
         (Even more efficient quantum computations of chemistry through
