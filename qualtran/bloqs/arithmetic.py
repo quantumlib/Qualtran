@@ -424,24 +424,25 @@ class GreaterThan(Bloq):
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
+    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    assuming a clean decomposition which should yield identical costs.
+
+    See: https://github.com/quantumlib/Qualtran/pull/381 and
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
+
     Args:
         bitsize: Number of bits used to represent the two integers a and b.
 
     Registers:
         a: n-bit-sized input registers.
         b: n-bit-sized input registers.
-        result: A single bit output register to store the result of A > B.
-
-    References:
-        [Improved techniques for preparing eigenstates of fermionic
-        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5#additional-information),
-        Comparison Oracle from SI: Appendix 2B (pg 3)
+        target: A single bit output register to store the result of A > B.
     """
     bitsize: int
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, result=1)
+        return Signature.build(a=self.bitsize, b=self.bitsize, target=1)
 
     def pretty_name(self) -> str:
         return "a gt b"
@@ -461,7 +462,14 @@ class GreaterThan(Bloq):
 
 @frozen
 class GreaterThanConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x > a)\rangle"
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x > a)\rangle$
+
+    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    assuming a clean decomposition which should yield identical costs.
+
+    See: https://github.com/quantumlib/Qualtran/pull/381 and
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
+
 
     Args:
         bitsize: bitsize of x register.
@@ -469,7 +477,7 @@ class GreaterThanConstant(Bloq):
 
     Registers:
         x: Register to compare against val.
-        result: Register to hold result of comparison.
+        target: Register to hold result of comparison.
     """
 
     bitsize: int
@@ -477,7 +485,7 @@ class GreaterThanConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, result=1)
+        return Signature.build(x=self.bitsize, target=1)
 
     def t_complexity(self) -> TComplexity:
         return t_complexity(LessThanGate(self.bitsize, val=self.val))
@@ -494,7 +502,10 @@ class GreaterThanConstant(Bloq):
 
 @frozen
 class EqualsAConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x == a)\rangle"
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x = a)\rangle$
+
+    The bloq_counts and t_complexity are derived from:
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html#equality-as-a-special-case
 
     Args:
         bitsize: bitsize of x register.
@@ -502,7 +513,7 @@ class EqualsAConstant(Bloq):
 
     Registers:
         x: Register to compare against val.
-        result: Register to hold result of comparison.
+        target: Register to hold result of comparison.
     """
 
     bitsize: int
@@ -510,18 +521,17 @@ class EqualsAConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, result=1)
+        return Signature.build(x=self.bitsize, target=1)
 
     def t_complexity(self) -> 'TComplexity':
-        return LessThanGate(self.bitsize, val=self.val).t_complexity()
+        return TComplexity(t=4 * (self.bitsize - 1))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        t_complexity = self.t_complexity()
-        return {(t_complexity.t, TGate())}
+        return {(4 * (self.bitsize - 1), TGate())}
 
 
 @frozen
