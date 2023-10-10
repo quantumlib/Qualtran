@@ -17,7 +17,7 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen
-from cirq_ft import TComplexity
+from cirq_ft import t_complexity, TComplexity
 from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 
 from qualtran import Bloq, Register, Side, Signature
@@ -447,7 +447,7 @@ class GreaterThan(Bloq):
         return "a gt b"
 
     def t_complexity(self) -> 'TComplexity':
-        return LessThanEqualGate(self.bitsize, self.bitsize).t_complexity()
+        return t_complexity(LessThanEqualGate(self.bitsize, self.bitsize))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
@@ -480,7 +480,7 @@ class GreaterThanConstant(Bloq):
         return Signature.build(x=self.bitsize, result=1)
 
     def t_complexity(self) -> TComplexity:
-        return LessThanGate(self.bitsize, val=self.val).t_complexity()
+        return t_complexity(LessThanGate(self.bitsize, val=self.val))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
