@@ -18,6 +18,7 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 import sympy
 from attrs import frozen
 from cirq_ft import TComplexity
+from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 
 from qualtran import Bloq, Register, Side, Signature
 from qualtran.bloqs.basic_gates import TGate
@@ -445,13 +446,17 @@ class GreaterThan(Bloq):
     def pretty_name(self) -> str:
         return "a gt b"
 
-    def t_complexity(self):
-        return TComplexity(t=8 * self.bitsize)
+    def t_complexity(self) -> 'TComplexity':
+        return LessThanEqualGate(self.bitsize, self.bitsize).t_complexity()
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(8 * self.bitsize, TGate())}
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        t_complexity = self.t_complexity()
+        return {(t_complexity.t, TGate())}
 
 
 @frozen
@@ -474,13 +479,17 @@ class GreaterThanConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=self.bitsize, result=1)
 
-    def t_complexity(self):
-        return TComplexity(t=4 * self.bitsize)
+    def t_complexity(self) -> TComplexity:
+        return LessThanGate(self.bitsize, val=self.val).t_complexity()
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(4 * self.bitsize, TGate())}
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        t_complexity = self.t_complexity()
+        return {(t_complexity.t, TGate())}
 
 
 @frozen
@@ -503,13 +512,16 @@ class EqualsAConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=self.bitsize, result=1)
 
-    def t_complexity(self):
-        return TComplexity(t=4 * self.bitsize)
+    def t_complexity(self) -> 'TComplexity':
+        return LessThanGate(self.bitsize, val=self.val).t_complexity()
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(4 * self.bitsize, TGate())}
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        t_complexity = self.t_complexity()
+        return {(t_complexity.t, TGate())}
 
 
 @frozen
