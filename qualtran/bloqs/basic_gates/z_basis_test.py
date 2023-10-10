@@ -15,6 +15,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import (
     IntEffect,
@@ -146,6 +147,9 @@ def test_int_effect():
 
     with pytest.raises(AssertionError):
         k.call_classically(val=245)
+
+    qlt_testing.assert_valid_bloq_decomposition(k)
+    np.testing.assert_allclose(k.tensor_contract(), k.decompose_bloq().tensor_contract())
 
 
 def test_to_cirq():
