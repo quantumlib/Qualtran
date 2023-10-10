@@ -24,6 +24,7 @@ from attrs import frozen
 from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
+import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
     BloqBuilder,
@@ -34,14 +35,15 @@ from qualtran import (
     LeftDangle,
     Register,
     RightDangle,
+    Side,
     Signature,
     Soquet,
     SoquetT,
 )
 from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
+from qualtran.bloqs.basic_gates import IntEffect, ZeroEffect
 from qualtran.bloqs.util_bloqs import Join
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def _manually_make_test_cbloq_cxns():
@@ -333,7 +335,7 @@ class TestMultiCNOT(Bloq):
 
 def test_complicated_target_register():
     bloq = TestMultiCNOT()
-    cbloq = assert_valid_bloq_decomposition(bloq)
+    cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert len(cbloq.bloq_instances) == 2 * 3
 
     binst_graph = _create_binst_graph(cbloq.connections)
@@ -429,12 +431,12 @@ class TestParallelBloq(Bloq):
 
 def test_test_serial_bloq_decomp():
     sbloq = TestSerialBloq()
-    assert_valid_bloq_decomposition(sbloq)
+    qlt_testing.assert_valid_bloq_decomposition(sbloq)
 
 
 def test_test_parallel_bloq_decomp():
     pbloq = TestParallelBloq()
-    assert_valid_bloq_decomposition(pbloq)
+    qlt_testing.assert_valid_bloq_decomposition(pbloq)
 
 
 @pytest.mark.parametrize('cls', [TestSerialBloq, TestParallelBloq])
@@ -488,6 +490,23 @@ Join(n=3)<5>
     )
 
 
+def test_final_soqs():
+    bloq = ZeroEffect()
+    fs = bloq.as_composite_bloq().final_soqs()
+    assert fs == {}
+
+
+def test_add_from_left_bloq():
+    bb = BloqBuilder()
+    x = bb.add_register(Register('x', 8, side=Side.LEFT))
+
+    # The following exercises the special case of calling `final_soqs`
+    # for a gate with left registers only
+    bb.add_from(IntEffect(255, bitsize=8), val=x)
+    cbloq = bb.finalize()
+    qlt_testing.assert_valid_cbloq(cbloq)
+
+
 def test_add_duplicate_register():
     bb = BloqBuilder()
     _ = bb.add_register('control', 1)
@@ -525,4 +544,4 @@ def test_t_complexity():
 
 
 def test_notebook():
-    execute_notebook('composite_bloq')
+    qlt_testing.execute_notebook('composite_bloq')
