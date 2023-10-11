@@ -49,9 +49,21 @@ class BlockEncoding(Bloq):
     def junk_registers(self) -> Iterable[Register]:
         ...
 
+    @property
+    @abc.abstractmethod
+    def selection_registers(self) -> Iterable[Register]:
+        ...
+
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.control_registers, *self.junk_registers, *self.target_registers])
+        return Signature(
+            [
+                *self.control_registers,
+                *self.junk_registers,
+                *self.target_registers,
+                *self.selection_registers,
+            ]
+        )
 
 
 @frozen
