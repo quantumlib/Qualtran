@@ -14,7 +14,7 @@
 
 from qualtran.bloqs.chemistry.single_factorization import (
     SingleFactorization,
-    SingleFactorizationOneBody,
+    #SingleFactorizationOneBody,
 )
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
