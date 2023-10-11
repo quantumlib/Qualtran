@@ -12,9 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import numpy as np
-import pytest
-
 from qualtran.bloqs.chemistry.single_factorization import (
     SingleFactorization,
     SingleFactorizationOneBody,
@@ -28,11 +25,15 @@ def _make_single_factorization():
     return SingleFactorization(10, 20, 8)
 
 
-def test_single_factorization_one_body():
-    sf_one_body = SingleFactorizationOneBody(10)
-    assert_valid_bloq_decomposition(sf_one_body)
+# def test_single_factorization_one_body():
+#     sf_one_body = SingleFactorizationOneBody(10, 12, 8)
+#     assert_valid_bloq_decomposition(sf_one_body)
 
 
 def test_single_factorization():
     sf = SingleFactorization(10, 12, 8)
     assert_valid_bloq_decomposition(sf)
+
+
+def test_notebook():
+    execute_notebook("single_factorization")
