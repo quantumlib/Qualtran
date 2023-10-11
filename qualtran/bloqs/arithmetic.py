@@ -424,6 +424,11 @@ class GreaterThan(Bloq):
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
+    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    assuming a clean decomposition which should yield identical costs.
+
+    See: https://github.com/quantumlib/Qualtran/pull/381 and
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
 
     Args:
         bitsize: Number of bits used to represent the two integers a and b.
@@ -431,41 +436,48 @@ class GreaterThan(Bloq):
     Registers:
         a: n-bit-sized input registers.
         b: n-bit-sized input registers.
-        result: A single bit output register to store the result of A > B.
-
-    References:
-        See cirq_ft comparitors.
+        target: A single bit output register to store the result of A > B.
     """
     bitsize: int
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, result=1)
+        return Signature.build(a=self.bitsize, b=self.bitsize, target=1)
 
     def pretty_name(self) -> str:
         return "a gt b"
 
-    def t_complexity(self):
+    def t_complexity(self) -> 'TComplexity':
         return t_complexity(LessThanEqualGate(self.bitsize, self.bitsize))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        tcomp = self.t_complexity()
-        return {(tcomp.t, TGate()), (tcomp.clifford, ArbitraryClifford(n=1))}
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        t_complexity = self.t_complexity()
+        return {(t_complexity.t, TGate())}
 
 
 @frozen
 class GreaterThanConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x > a)\rangle"
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x > a)\rangle$
+
+    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    assuming a clean decomposition which should yield identical costs.
+
+    See: https://github.com/quantumlib/Qualtran/pull/381 and
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
+
 
     Args:
         bitsize: bitsize of x register.
         val: integer to compare x against (a above.)
 
     Registers:
-     - x: Registers to compare against val.
-     - z: Register to hold result of comparison.
+        x: Register to compare against val.
+        target: Register to hold result of comparison.
     """
 
     bitsize: int
@@ -473,29 +485,40 @@ class GreaterThanConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, z=1)
+        return Signature.build(x=self.bitsize, target=1)
 
-    def t_complexity(self):
-        return t_complexity(LessThanGate(self.bitsize, self.val))
+    def t_complexity(self) -> TComplexity:
+        return t_complexity(LessThanGate(self.bitsize, val=self.val))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        tcomp = self.t_complexity()
-        return {(tcomp.t, TGate()), (tcomp.clifford, ArbitraryClifford(n=1))}
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        t_complexity = self.t_complexity()
+        return {(t_complexity.t, TGate())}
 
 
 @frozen
 class EqualsAConstant(Bloq):
-    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z ^ (x == a)\rangle"
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x = a)\rangle$
 
-    Args:
-        bitsize: bitsize of x register.
-        val: integer to compare x against (a above.)
+        The bloq_counts and t_complexity are derived from:
+        https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html#equality-as-a-special-case
 
-    Registers:
-     - x: Registers to compare against val.
-     - z: Register to hold result of comparison.
+        Args:
+            bitsize: bitsize of x register.
+            val: integer to compare x against (a above.)
+
+        Registers:
+    <<<<<<< HEAD
+         - x: Registers to compare against val.
+         - z: Register to hold result of comparison.
+    =======
+            x: Register to compare against val.
+            target: Register to hold result of comparison.
+    >>>>>>> main
     """
 
     bitsize: int
@@ -503,16 +526,17 @@ class EqualsAConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, z=1)
+        return Signature.build(x=self.bitsize, target=1)
 
-    def t_complexity(self):
-        return t_complexity(LessThanGate(self.bitsize, self.val))
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(t=4 * (self.bitsize - 1))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        tcomp = self.t_complexity()
-        return {(tcomp.t, TGate()), (tcomp.clifford, ArbitraryClifford(n=1))}
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        return {(4 * (self.bitsize - 1), TGate())}
 
 
 @frozen
@@ -530,9 +554,10 @@ class ToContiguousIndex(Bloq):
         bitsize: number of bits for mu and nu registers.
         s_bitsize: Number of bits for contiguous register.
 
-    Registers
-     - mu, nu: input registers
-     - s: output contiguous register
+    Registers:
+        mu: input register
+        nu: input register
+        s: output contiguous register
 
     References:
         (Even more efficient quantum computations of chemistry through
@@ -557,11 +582,11 @@ class ToContiguousIndex(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
 
+    def t_complexity(self) -> 'cirq_ft.TComplexity':
+        num_toffoli = self.bitsize**2 + self.bitsize - 1
+        return TComplexity(t=4 * num_toffoli)
+
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
         return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}
-
-    def t_complexity(self) -> 'cirq_ft.TComplexity':
-        num_toffoli = self.bitsize**2 + self.bitsize - 1
-        return TComplexity(t=4 * num_toffoli)
