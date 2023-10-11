@@ -67,6 +67,62 @@ class BlockEncoding(Bloq):
 
 
 @frozen
+class Reflection(Bloq):
+    """Implement a reflection about zero using a "controled" multi-controlled pauli-Z gate.
+
+    Args:
+        bitsize: the number of bits to reflect about.
+        num_controls: the number of (on) controls.
+
+    Registers:
+        refl: Registers to reflect about.
+        ctrl: Control registers.
+    """
+
+    bitsize: int
+    num_controls: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(refl=self.bitsize, ctrl=self.num_controls)
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', refl: SoquetT, ctrl: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        """ """
+        # Apply the Z to one of the on controls
+        # need to merge controls and junk for reflection
+        # assuming controls is a list of single qubit controls
+        controls = bb.split(ctrl)
+        if self.num_controls > 1:
+            merged_controls_for_mcp = bb.join(np.concatenate([controls[1:], bb.split(refl)]))
+        else:
+            merged_controls_for_mcp = refl
+        mcp = CirqGateAsBloq(
+            MultiControlPauli(
+                [1] * (self.num_controls - 1) + [0] * self.bitsize, target_gate=cirq.Z
+            )
+        )
+        # apply the Z to the first control
+        merged_controls_for_mcp, controls[0] = bb.add(
+            mcp, controls=merged_controls_for_mcp, target=controls[0]
+        )
+        split_controls = bb.split(merged_controls_for_mcp)
+        if len(controls) > 1:
+            controls[1:] = split_controls[: self.num_controls - 1]
+        refl = split_controls[self.num_controls - 1 :]
+        return {"refl": bb.join(refl), "ctrl": bb.join(controls)}
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        cvs = (1,) * (self.num_controls - 1) + (0,) * self.bitsize
+        return {
+            (1, MultiAnd(cvs)),
+            # (n - 1, MultiAnd(cvs, adjoint=True)), Not implemented error.
+            (1, ArbitraryClifford(n=2)),  # CZ gate
+        }
+
+
+@frozen
 class BlockEncodeChebyshevPolynomial(Bloq):
     r"""Block encoding of T_j[H] where T_j is the jth Chebyshev polynomial.
 
@@ -99,9 +155,10 @@ class BlockEncodeChebyshevPolynomial(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                *self.block_encoding.target_registers,
-                *self.block_encoding.junk_registers,
                 *self.block_encoding.control_registers,
+                *self.block_encoding.selection_registers,
+                *self.block_encoding.junk_registers,
+                *self.block_encoding.target_registers,
             ]
         )
 
@@ -109,51 +166,14 @@ class BlockEncodeChebyshevPolynomial(Bloq):
         if self.order < 1:
             raise ValueError(f"order must be greater >= 1. Found {self.order}.")
 
-    def add_reflection(self, bb, controls: SoquetT, junk: SoquetT) -> Tuple[SoquetT, SoquetT]:
-        # Apply the Z to one of the on controls
-        # need to merge controls and junk for felection
-        # assuming controls is a list of single qubit controls
-        num_controls = len(self.block_encoding.control_registers) - 1
-        num_junk = sum([r.bitsize * np.prod(r.shape) for r in junk])
-        # merge the remaining controls and the junk registers for the MultiControlledPauli
-        if len(controls) == 1:
-            merged_controls = bb.join([bb.split(r) for r in junk])
-        else:
-            merged_controls = bb.join(np.concatenate((controls[1:], [bb.split(r) for r in junk])))
-        mcp = CirqGateAsBloq(
-            MultiControlPauli([1] * num_controls + [0] * num_junk, target_gate=cirq.Z)
-        )
-        merged_controls, controls[0] = bb.add(mcp, controls=merged_controls, target=controls[0])
-        split_controls = bb.split(merged_controls)
-        if len(controls) > 1:
-            controls[1:] = split_controls[:num_controls]
-        start = 1
-        for ir, reg in enumerate(junk):
-            end = start + reg.bitsize * np.prod(reg.shape)
-            junk[ir] = bb.join(split_controls[start:end].reshape(reg.shape))
-            start = end
-        return controls, junk
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', controls: SoquetT, target: SoquetT, junk: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        target, junk = bb.add(self.block_encoding, controls=controls, target=target, junk=junk)
-        controls, junk = self.add_reflection(bb, controls, junk)
-        for _ in range(1, self.order):
-            # Ref_a
-            controls, junk = self.add_reflection(bb, controls, junk)
-            # B[H]
-            target, junk = bb.add(self.block_encoding, controls=controls, target=target, junk=junk)
-        return {'controls': controls, 'target': target, 'junk': junk}
-
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n = self.order
-        num_junk = sum([r.bitsize * np.prod(r.shape) for r in junk])
-        cvs = (1,) * (len(self.block_encoding.control_registers) - 1) + (0,) * num_junk
+        num_junk = sum(
+            [r.bitsize * int(np.prod(r.shape)) for r in self.block_encoding.junk_registers]
+        )
+        num_ctrl = len(self.block_encoding.control_registers)
         # there are n - 1 reflections and n B[H]'s
         return {
-            (n - 1, MultiAnd(cvs)),
-            (n - 1, MultiAnd(cvs, adjoint=True)),
-            (n - 1, ArbitraryClifford(n=2)),  # CZ gate
+            (n - 1, Reflection(bitsize=num_junk, num_controls=num_ctrl)),
             (n, self.block_encoding),
         }

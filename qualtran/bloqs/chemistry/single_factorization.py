@@ -134,12 +134,72 @@ class SELECT(Bloq):
 
 
 @frozen
+class OuterPrepare(Bloq):
+    r"""Outer state preparation.
+
+    Implements Eq. B8 from Ref[1]
+
+    Args:
+        num_aux: Dimension of auxiliary index for single factorized Hamiltonian. Call L in Ref[1].
+        kl: QROAM blocking factor for data prepared over l (auxiliary) index.
+            Defaults to 1 (i.e. QROM).
+        adjoint: Whether to dagger the bloq or not.
+
+    Registers:
+        l: register to store L values for auxiliary index.
+        p: spatial orbital index. range(0, num_spin_orb // 2)
+        q: spatial orbital index. range(0, num_spin_orb // 2)
+        succ_l: flag for success of this state preparation.
+
+    Refererences:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305)
+    """
+
+    num_aux: int
+    kl: int
+    num_bits_state_prep: int
+    num_bits_rot: int = 8
+    adjoint: bool = False
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"OuterPrep{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(l=self.num_aux.bit_length(), succ_l=1, l_ne_zero=1)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # prepaing on L + 1 basis states and an inequality test to flag l_ne_zero to on
+        # eta is a number such that L + 1 is divisible by 2^\eta
+        # if eta is a power of 2 then we see a reduction in the cost
+        # https://arxiv.org/pdf/2011.03494.pdf page 44
+        factors = factorint(self.num_aux)
+        eta = factors[min(list(sorted(factors.keys())))]
+        if self.num_aux % 2 == 1:
+            eta = 0
+        num_bits_l = self.num_aux.bit_length()
+        cost_a = 3 * num_bits_l - 3 * eta + 2 * self.num_bits_rot - 9
+        output_size = num_bits_l + self.num_bits_state_prep + 2
+        if self.adjoint:
+            cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + self.kl
+        else:
+            cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + output_size * (self.kl - 1)
+        cost_c = self.num_bits_state_prep
+        cost_d = num_bits_l + 1
+        return {(4 * (cost_a + cost_b + cost_c + cost_d), TGate())}
+
+
+@frozen
 class SingleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of single factorization one-body Hamiltonian.
 
     Implements inner "half" of Fig. 15 in the reference. This block encoding is
     applied twice (with a reflection around the inner state preparation
     registers) to implement a (roughly) the square of this one-body operator.
+
+    Note succ_pq will be allocated as an ancilla during decomposition and it is not relected on.
 
     Args:
         num_aux: Dimension of auxiliary index for single factorized Hamiltonian. Call L in Ref[1].
@@ -157,7 +217,6 @@ class SingleFactorizationOneBody(BlockEncoding):
         l: register to store L values for auxiliary index.
         p: spatial orbital index. range(0, num_spin_orb // 2)
         q: spatial orbital index. range(0, num_spin_orb // 2)
-        succ_pq: flag for success of this state preparation.
         succ_l: flag for success of this state preparation.
 
     Refererences:
@@ -223,72 +282,55 @@ class SingleFactorizationOneBody(BlockEncoding):
 
 
 @frozen
-class OuterPrepare(Bloq):
-    r"""Outer state preparation.
+class SingleFactorization(BlockEncoding):
+    r"""Block encoding of single factorization Hamiltonian.
 
-    Implements Eq. B8 from Ref[1]
+    Implements Fig. 15 in the reference.
 
     Args:
-        num_aux: Dimension of auxiliary index for single factorized Hamiltonian. Call L in Ref[1].
-        kl: QROAM blocking factor for data prepared over l (auxiliary) index.
-            Defaults to 1 (i.e. QROM).
-        adjoint: Whether to dagger the bloq or not.
+        num_spin_orb: The number of spin orbitals. Typically called N.
+        num_aux: Dimension of auxiliary index for single factorized Hamiltonian. Called L in Ref[1].
+        num_bits_state_prep: The number of bits of precision for coherent alias
+            sampling. Called aleph (fancy N) in Ref[1].
+        num_bits_rot: Number of bits of precision for rotations for amplitude
+            amplification in uniform state preparation. Called b_r in Ref[1].
+        qroam_k_factor: QROAM blocking factor for data prepared over l (auxiliary) index.
+            Defaults to 1 (i.e. use QROM).
 
     Registers:
         l: register to store L values for auxiliary index.
-        p: spatial orbital index. range(0, num_spin_orb // 2)
-        q: spatial orbital index. range(0, num_spin_orb // 2)
         succ_pq: flag for success of this state preparation.
         succ_l: flag for success of this state preparation.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305)
+            hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/prxquantum.2.030305)
     """
-
-    num_aux: int
-    kl: int
-    num_bits_state_prep: int
-    num_bits_rot: int = 8
-    adjoint: bool = False
-
-    def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"OuterPrep{dag}"
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(l=self.num_aux.bit_length(), succ_l=1, l_ne_zero=1)
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # prepaing on L + 1 basis states and an inequality test to flag l_ne_zero to on
-        # eta is a number such that L + 1 is divisible by 2^\eta
-        # if eta is a power of 2 then we see a reduction in the cost
-        # https://arxiv.org/pdf/2011.03494.pdf page 44
-        factors = factorint(self.num_aux)
-        eta = factors[min(list(sorted(factors.keys())))]
-        if self.num_aux % 2 == 1:
-            eta = 0
-        num_bits_l = self.num_aux.bit_length()
-        cost_a = 3 * num_bits_l - 3 * eta + 2 * self.num_bits_rot - 9
-        output_size = num_bits_l + self.num_bits_state_prep + 2
-        if self.adjoint:
-            cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + self.kl
-        else:
-            cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + output_size * (self.kl - 1)
-        cost_c = self.num_bits_state_prep
-        cost_d = num_bits_l + 1
-        return {(4 * (cost_a + cost_b + cost_c + cost_d), TGate())}
-
-
-@frozen
-class SingleFactorization(BlockEncoding):
-    r"""Block encoding of single factorization one-body Hamiltonian."""
     num_spin_orb: int
     num_aux: int
     num_bits_state_prep: int
     num_bits_rot: int = 8
     qroam_k_factor: int = 1
+
+    @classmethod
+    def build(cls, one_body_ham, factorized_two_body_ham):
+        """Factory method to build single factorization block encoding given Hamiltonian inputs.
+
+        Args:
+            one_body_ham: One body hamiltonian ($T_{pq}$') matrix elements. (includes exchange terms).
+            factorized_two_body_ham: One body hamiltonian ($W^{(l)}_{pq}$).
+
+        Returns:
+            SingleFactorization bloq with alt/keep values appropriately constructed.
+
+        Refererences:
+            [Even More Efficient Quantum Computations of Chemistry Through Tensor
+                hypercontraction]
+                (https://journals.aps.org/prxquantum/pdf/10.1103/prxquantum.2.030305). Eq. B7 pg 43.
+        """
+        assert len(one_body_ham.shape) == 2
+        assert len(factorized_two_body_ham.shape) == 3
+        raise NotImplementedError("Factory method not implemented yet.")
 
     @property
     def control_registers(self) -> Iterable[Register]:
@@ -299,11 +341,15 @@ class SingleFactorization(BlockEncoding):
         return [Register("sys", bitsize=self.num_spin_orb)]
 
     @property
+    def selection_registers(self) -> Iterable[Register]:
+        return [Register("l", bitsize=self.num_aux.bit_length())]
+
+    @property
     def junk_registers(self) -> Iterable[Register]:
         return [
             Register("succ_l", bitsize=1),
+            Register("theta", bitsize=1),
             Register("l_ne_zero", bitsize=1),
-            Register("l", bitsize=self.num_aux.bit_length()),
             Register("p", bitsize=self.num_spin_orb // 2),
             Register("q", bitsize=self.num_spin_orb // 2),
             Register("swap_pq", bitsize=1),
@@ -321,11 +367,12 @@ class SingleFactorization(BlockEncoding):
         swap_pq = regs['swap_pq']
         alpha = regs['alpha']
         ctrl = regs['ctrl']
+        theta = regs['theta']
         # prepare_l
         # epsilon = 2**-self.num_bits_state_prep / len(self.out_prep_probs)
         outer_prep = OuterPrepare(
             self.num_aux,
-            qroam_factor=self.qroam_k_factor,
+            kl=self.qroam_k_factor,
             num_bits_state_prep=self.num_bits_state_prep,
             num_bits_rot=self.num_bits_rot,
         )
@@ -334,20 +381,21 @@ class SingleFactorization(BlockEncoding):
             self.num_aux, self.num_spin_orb, self.num_bits_state_prep, self.num_bits_rot
         )
         one_body_sq = BlockEncodeChebyshevPolynomial(one_body, order=2)
-        sys, p, q, swap_pq, alpha, succ_l, l_ne_zero = bb.add(
+        succ_l, l_ne_zero, l, p, q, swap_pq, alpha, sys = bb.add(
             one_body_sq,
-            sys=sys,
+            succ_l=succ_l,
+            l_ne_zero=l_ne_zero,
+            l=l,
             p=p,
             q=q,
             swap_pq=swap_pq,
             alpha=alpha,
-            succ_l=succ_l,
-            l_ne_zero=l_ne_zero,
+            sys=sys,
         )
         # prepare_l^dag
         outer_prep = OuterPrepare(
             self.num_aux,
-            qroam_factor=self.qroam_k_factor,
+            kl=self.qroam_k_factor,
             num_bits_state_prep=self.num_bits_state_prep,
             num_bits_rot=self.num_bits_rot,
             adjoint=True,
@@ -362,6 +410,7 @@ class SingleFactorization(BlockEncoding):
             'q': q,
             'swap_pq': swap_pq,
             'alpha': alpha,
+            'theta': theta,
             'ctrl': ctrl,
         }
         return out_regs
