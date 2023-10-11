@@ -137,10 +137,12 @@ class UniformSuperpositionTHC(Bloq):
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
         # 5. nu == M (i.e. flag one-body contribution)
-        # nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
+        nu, eq_nu_mp1 = bb.add(
+            EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, target=eq_nu_mp1
+        )
         # 6. nu > N / 2 (flag out of range for one-body bits)
         mu, gt_mu_n = bb.add(
-            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, target=gt_mu_n
         )
         # 7. Control off of 5 and 6 to not prepare if these conditions are met
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
@@ -159,9 +161,11 @@ class UniformSuperpositionTHC(Bloq):
         mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
-        nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
+        nu, eq_nu_mp1 = bb.add(
+            EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, target=eq_nu_mp1
+        )
         mu, gt_mu_n = bb.add(
-            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, target=gt_mu_n
         )
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
         amp = bb.add(Ry(-angle), q=amp)
@@ -184,9 +188,11 @@ class UniformSuperpositionTHC(Bloq):
         mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
-        nu, eq_nu_mp1 = bb.add(EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, z=eq_nu_mp1)
+        nu, eq_nu_mp1 = bb.add(
+            EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, target=eq_nu_mp1
+        )
         mu, gt_mu_n = bb.add(
-            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, target=gt_mu_n
         )
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
         ctrls = bb.join(np.array([lte_nu_mp1, lte_mu_nu, junk]))
@@ -204,7 +210,7 @@ class UniformSuperpositionTHC(Bloq):
             bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
         )
         mu, gt_mu_n = bb.add(
-            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, z=gt_mu_n
+            GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, target=gt_mu_n
         )
         junk = bb.add(XGate(), q=junk)
         bb.free(bb.join(np.array([lte_mu_nu, lte_nu_mp1, gt_mu_n, junk, amp])))

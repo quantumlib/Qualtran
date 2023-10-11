@@ -488,7 +488,7 @@ class GreaterThanConstant(Bloq):
         return Signature.build(x=self.bitsize, target=1)
 
     def t_complexity(self) -> TComplexity:
-        return t_complexity(LessThanGate(self.bitsize, val=self.val))
+        return t_complexity(LessThanGate(self.bitsize, less_than_val=self.val))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
@@ -504,21 +504,16 @@ class GreaterThanConstant(Bloq):
 class EqualsAConstant(Bloq):
     r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x = a)\rangle$
 
-        The bloq_counts and t_complexity are derived from:
-        https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html#equality-as-a-special-case
+    The bloq_counts and t_complexity are derived from:
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html#equality-as-a-special-case
 
-        Args:
-            bitsize: bitsize of x register.
-            val: integer to compare x against (a above.)
+    Args:
+        bitsize: bitsize of x register.
+        val: integer to compare x against (a above.)
 
-        Registers:
-    <<<<<<< HEAD
-         - x: Registers to compare against val.
-         - z: Register to hold result of comparison.
-    =======
-            x: Register to compare against val.
-            target: Register to hold result of comparison.
-    >>>>>>> main
+    Registers:
+        x: Register to compare against val.
+        target: Register to hold result of comparison.
     """
 
     bitsize: int
