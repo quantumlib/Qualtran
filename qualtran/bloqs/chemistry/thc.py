@@ -71,7 +71,7 @@ class UniformSuperpositionTHC(Bloq):
     r"""Prepare uniform superposition state for THC.
 
     $$
-        |0\rangle^{\otimes 2\log(M+1)} \rightarrow \sum_{\mu\le\nu}^{M} |\mu\rangle|\nu\rangle 
+        |0\rangle^{\otimes 2\log(M+1)} \rightarrow \sum_{\mu\le\nu}^{M} |\mu\rangle|\nu\rangle
         + \sum_{\mu}^{N/2}|\mu\rangle|\nu=M+1\rangle,
     $$
 
@@ -82,7 +82,7 @@ class UniformSuperpositionTHC(Bloq):
         1. inverting inequality tests should not need more toffolis.
         2. We are not using phase-gradient gate toffoli cost for Ry rotations
         3. Small differences in quoted vs implemented comparator costs.
-    
+
     See: https://github.com/quantumlib/Qualtran/issues/390
 
     Args:
