@@ -116,7 +116,8 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
 
 def test_prepare_graph():
     from qualtran.bloqs.chemistry.thc_notebook_utils import generalize
-    from qualtran.resource_counting import get_bloq_counts_graph, GraphvizCounts
+    from qualtran.drawing import GraphvizCounts
+    from qualtran.resource_counting import get_bloq_counts_graph
 
     num_mu = 10
     num_spin_orb = 4
