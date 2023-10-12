@@ -15,7 +15,8 @@
 import cirq
 import numpy as np
 import pytest
-from cirq_ft.infra.decompose_protocol import (
+
+from qualtran.cirq_interop.decompose_protocol import (
     _decompose_once_considering_known_decomposition,
     _fredkin,
     _try_decompose_from_known_decompositions,
