@@ -19,7 +19,7 @@ from collections import defaultdict
 from typing import Dict, Iterable, Iterator, List, overload, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attr import frozen
+from attr import field, frozen
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -61,7 +61,9 @@ class Register:
 
     name: str
     bitsize: int
-    shape: Tuple[int, ...] = tuple()
+    shape: Tuple[int, ...] = field(
+        default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
+    )
     side: Side = Side.THRU
 
     def all_idxs(self) -> Iterable[Tuple[int, ...]]:

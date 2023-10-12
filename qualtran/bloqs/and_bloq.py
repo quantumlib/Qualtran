@@ -16,22 +16,24 @@ import itertools
 from functools import cached_property
 from typing import Any, Dict, Optional, Set, Tuple
 
+import cirq
 import numpy as np
 import quimb.tensor as qtn
 import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, GateWithRegisters, Register, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import big_O, SympySymbolAllocator
 
 
 @frozen
-class And(Bloq):
-    """A two-bit 'and' operation.
+class And(GateWithRegisters):
+    """A two-bit 'and' operation optimized for T-count.
 
     Args:
         cv1: Whether the first bit is a positive control.
@@ -90,7 +92,6 @@ class And(Bloq):
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
-
         # Fill in our tensor using "and" logic.
         data = np.zeros((2, 2, 2, 2, 2), dtype=np.complex128)
         for c1, c2 in itertools.product((0, 1), repeat=2):
@@ -127,9 +128,62 @@ class And(Bloq):
         filled = bool(self.cv1 if c_idx == 0 else self.cv2)
         return Circle(filled)
 
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
+
+        * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
+        * And(cv, adjoint=True).on(c1, c2, target) uses measurement based un-computation
+            (0 T-gates) and will always leave the target in |0> state.
+        """
+        (c1, c2), (target,) = (quregs['ctrl'].flatten(), quregs['target'].flatten())
+        pre_post_ops = [cirq.X(q) for (q, v) in zip([c1, c2], [self.cv1, self.cv2]) if v == 0]
+        yield pre_post_ops
+        if self.adjoint:
+            yield cirq.H(target)
+            yield cirq.measure(target, key=f"{target}")
+            yield cirq.CZ(c1, c2).with_classical_controls(f"{target}")
+            yield cirq.reset(target)
+        else:
+            yield [cirq.H(target), cirq.T(target)]
+            yield [cirq.CNOT(c1, target), cirq.CNOT(c2, target)]
+            yield [cirq.CNOT(target, c1), cirq.CNOT(target, c2)]
+            yield [cirq.T(c1) ** -1, cirq.T(c2) ** -1, cirq.T(target)]
+            yield [cirq.CNOT(target, c1), cirq.CNOT(target, c2)]
+            yield [cirq.H(target), cirq.S(target)]
+        yield pre_post_ops
+
+    def __pow__(self, power: int) -> "And":
+        if power == 1:
+            return self
+        if power == -1:
+            return And(self.cv1, self.cv2, adjoint=self.adjoint ^ True)
+        return NotImplemented  # pragma: no cover
+
+    def __str__(self) -> str:
+        suffix = "" if self.cv1 == self.cv2 == 1 else str((self.cv1, self.cv2))
+        return f"And†{suffix}" if self.adjoint else f"And{suffix}"
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        controls = ["(0)", "@"]
+        target = "And†" if self.adjoint else "And"
+        wire_symbols = [controls[self.cv1], controls[self.cv2], target]
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def _has_unitary_(self) -> bool:
+        return not self.adjoint
+
+    def _t_complexity_(self) -> TComplexity:
+        pre_post_cliffords = 2 - self.cv1 - self.cv2  # number of zeros in self.cv
+        if self.adjoint:
+            return TComplexity(clifford=4 + 2 * pre_post_cliffords)
+        else:
+            return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
+
 
 @frozen
-class MultiAnd(Bloq):
+class MultiAnd(GateWithRegisters):
     """A many-bit (multi-control) 'and' operation.
 
     Args:
@@ -160,11 +214,11 @@ class MultiAnd(Bloq):
         dag = '†' if self.adjoint else ''
         return f'And{dag}'
 
-    def decompose_bloq(self) -> 'CompositeBloq':
-        cbloq = super().decompose_bloq()
-        if self.adjoint:
-            raise NotImplementedError("Come back soon.")
-        return cbloq
+    # def decompose_bloq(self) -> 'CompositeBloq':
+    #     cbloq = Bloq.decompose_bloq(self)
+    #     if self.adjoint:
+    #         raise NotImplementedError("Come back soon.")
+    #     return cbloq
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, ctrl: NDArray[Soquet]
@@ -205,3 +259,71 @@ class MultiAnd(Bloq):
         accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
+
+    def __pow__(self, power: int) -> "And":
+        if power == 1:
+            return self
+        if power == -1:
+            return And(self.cvs, adjoint=self.adjoint ^ True)
+        return NotImplemented  # pragma: no cover
+
+    def __str__(self) -> str:
+        suffix = "" if self.cvs == (1,) * len(self.cvs) else str(self.cvs)
+        return f"And†{suffix}" if self.adjoint else f"And{suffix}"
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        controls = ["(0)", "@"]
+        target = "And†" if self.adjoint else "And"
+        wire_symbols = [controls[c] for c in self.cvs]
+        wire_symbols += ["Anc"] * (len(self.cvs) - 2)
+        wire_symbols += [target]
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def _has_unitary_(self) -> bool:
+        return not self.adjoint
+
+    def _decompose_via_tree(
+        self,
+        controls: NDArray[cirq.Qid],
+        control_values: Tuple[int, ...],
+        ancillas: NDArray[cirq.Qid],
+        target: cirq.Qid,
+    ) -> cirq.ops.op_tree.OpTree:
+        """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
+
+        if len(controls) == 2:
+            yield And(*control_values, adjoint=self.adjoint).on(*controls, target)
+            return
+        new_controls = np.concatenate([ancillas[0:1], controls[2:]])
+        new_control_values = (1, *control_values[2:])
+        and_op = And(*control_values[:2], adjoint=self.adjoint).on(*controls[:2], ancillas[0])
+        if self.adjoint:
+            yield from self._decompose_via_tree(
+                new_controls, new_control_values, ancillas[1:], target
+            )
+            yield and_op
+        else:
+            yield and_op
+            yield from self._decompose_via_tree(
+                new_controls, new_control_values, ancillas[1:], target
+            )
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        control, ancilla, target = (
+            quregs['ctrl'].flatten(),
+            quregs.get('junk', np.array([])).flatten(),
+            quregs['target'].flatten(),
+        )
+        yield self._decompose_via_tree(control, self.cvs, ancilla, *target)
+
+    def _t_complexity_(self) -> TComplexity:
+        pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
+        num_single_and = len(self.cv) - 1
+        if self.adjoint:
+            return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
+        else:
+            return TComplexity(
+                t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
+            )

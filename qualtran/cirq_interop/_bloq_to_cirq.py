@@ -18,16 +18,25 @@ from functools import cached_property
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import cirq
-import cirq_ft
 import networkx as nx
 import numpy as np
 
-from qualtran import Bloq, Connection, LeftDangle, Register, RightDangle, Side, Signature, Soquet
+from qualtran import (
+    Bloq,
+    Connection,
+    GateWithRegisters,
+    LeftDangle,
+    Register,
+    RightDangle,
+    Side,
+    Signature,
+    Soquet,
+)
 from qualtran._infra.composite_bloq import _binst_to_cxns
 from qualtran.cirq_interop._cirq_to_bloq import _QReg, CirqQuregInT, CirqQuregT
 
 
-class BloqAsCirqGate(cirq_ft.GateWithRegisters):
+class BloqAsCirqGate(GateWithRegisters):
     """A shim for using bloqs in a Cirq circuit.
 
     Args:
@@ -52,19 +61,9 @@ class BloqAsCirqGate(cirq_ft.GateWithRegisters):
         return self._bloq
 
     @cached_property
-    def signature(self) -> cirq_ft.Signature:
+    def signature(self) -> Signature:
         """`cirq_ft.GateWithRegisters` registers."""
-        legacy_regs: List[cirq_ft.Register] = []
-        for reg in self.bloq.signature:
-            legacy_regs.append(
-                cirq_ft.Register(
-                    name=reg.name,
-                    shape=reg.shape,
-                    bitsize=reg.bitsize,
-                    side=cirq_ft.infra.Side(reg.side.value),
-                )
-            )
-        return cirq_ft.Signature(legacy_regs)
+        return self.bloq.signature
 
     @classmethod
     def bloq_on(
@@ -254,14 +253,12 @@ def _cbloq_to_cirq_circuit(
 
 
 def _construct_op_from_gate(
-    gate: cirq_ft.GateWithRegisters,
-    in_quregs: Dict[str, 'CirqQuregT'],
-    qubit_manager: cirq.QubitManager,
+    gate: GateWithRegisters, in_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager
 ) -> Tuple[cirq.Operation, Dict[str, 'CirqQuregT']]:
     """Allocates / Deallocates qubits for RIGHT / LEFT only registers to construct a Cirq operation
 
     Args:
-        gate: A `cirq_ft.GateWithRegisters` which specifies a signature.
+        gate: A `GateWithRegisters` which specifies a signature.
         in_quregs: Mapping from LEFT register names of `gate` and corresponding cirq qubits.
         qubit_manager: For allocating / deallocating qubits for RIGHT / LEFT only registers.
 
@@ -271,25 +268,26 @@ def _construct_op_from_gate(
     """
     all_quregs: Dict[str, 'CirqQuregT'] = {}
     out_quregs: Dict[str, 'CirqQuregT'] = {}
+    # def _cmp()
     for reg in gate.signature:
         full_shape = reg.shape + (reg.bitsize,)
-        if reg.side & cirq_ft.infra.Side.LEFT:
+        if Side(reg.side.value) & Side.LEFT:
             if reg.name not in in_quregs or in_quregs[reg.name].shape != full_shape:
                 # Left registers should exist as input to `as_cirq_op`.
                 raise ValueError(f'Compatible {reg=} must exist in {in_quregs=}')
             all_quregs[reg.name] = in_quregs[reg.name]
-        if reg.side == cirq_ft.infra.Side.RIGHT:
+        if Side(reg.side.value) == Side.RIGHT:
             # Right only registers will get allocated as part of `as_cirq_op`.
             if reg.name in in_quregs:
                 raise ValueError(f"RIGHT register {reg=} shouldn't exist in {in_quregs=}.")
             all_quregs[reg.name] = np.array(qubit_manager.qalloc(reg.total_bits())).reshape(
                 full_shape
             )
-        if reg.side == cirq_ft.infra.Side.LEFT:
+        if Side(reg.side.value) == Side.LEFT:
             # LEFT only registers should be de-allocated and not be part of output.
             qubit_manager.qfree(in_quregs[reg.name].flatten())
 
-        if reg.side & cirq_ft.infra.Side.RIGHT:
+        if Side(reg.side.value) & Side.RIGHT:
             # Right registers should be part of the output.
             out_quregs[reg.name] = all_quregs[reg.name]
     return gate.on_registers(**all_quregs), out_quregs
