@@ -11,6 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+r"""Bloqs for the double-factorized chemistry Hamiltonian in second quantization.
+
+Recall that for the single factorized Hamiltonian we have
+$$
+H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l \left(\sum_{pq} W_{pq}^{(l)} a_p^\dagger a_q\right)^2.
+$$
+The double factorized Hamiltonian is arrived at by further factorizing the $W_{pq}^{(l)}$ factors as
+$$
+W^{l}_{pq} = \sum_{k} U_{pk}^{l} f_k^{(l)} U_{qk}^*
+$$
+so that
+$$
+H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l U^{(l)}\left(\sum_{k}^{\Xi^{(l)}} f_k^{(l)} n_k\right)^2 U^{(l)}^\dagger
+$$
+where $\Xi^{(l)} $ is the rank of second factorization. In principle one can
+truncate the second factorization to reduce the amount of information required
+to specify the Hamiltonian. 
+"""
 
 from functools import cached_property
 from typing import Dict, Iterable, Optional, Set, Tuple, TYPE_CHECKING
@@ -20,9 +38,11 @@ from attrs import frozen
 from sympy import factorint
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.block_encoding import BlockEncodeChebyshevPolynomial, BlockEncoding
 from qualtran.bloqs.swap_network import CSwapApprox
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
@@ -30,42 +50,31 @@ if TYPE_CHECKING:
 
 @frozen
 class InnerPrepare(Bloq):
-    """Inner prepare for THC block encoding.
+    """Inner prepare for DF block encoding.
 
-    Prepares the state in Eq. B11 of Ref [1].
+    Prepare state over $p$ register controlled on outer $l$ register.
 
     Currently we only provide costs as listed in Ref[1] without their corresponding decompositions.
 
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
-        num_spin_orb: The number of spin orbitals. Typically called N.
-        num_bits_state_prep: The number of bits of precision for coherent alias
-            sampling. Called aleph (fancy N) in Ref[1].
-        num_bits_rot: Number of bits of precision for rotations for amplitude
-            amplification in uniform state preparation. Called b_r in Ref[1].
-        adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
-        kp1: QROAM blocking factor for data prepared over l (auxiliary) index.
-            Defaults to 1 (i.e. QROM).
-        kp1: QROAM blocking factor for data prepared over pq indicies. Defaults to 1 (i.e.) QROM.
 
     Registers:
-        l: register to store L values for auxiliary index.
-        p: spatial orbital index. range(0, num_spin_orb // 2)
-        q: spatial orbital index. range(0, num_spin_orb // 2)
-        succ_pq: flag for success of this state preparation.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305)
+            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305).
+            Step 3. Page 52.
     """
 
     num_aux: int
     num_spin_orb: int
+    num_xi: int
+    num_bits_rot_aa: int
+    num_bits_offset: int
     num_bits_state_prep: int
-    num_bits_rot: int = 8
     adjoint: bool = False
-    kp1: int = 1
-    kp2: int = 1
+    kp: int = 1
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
@@ -73,71 +82,36 @@ class InnerPrepare(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        n = (self.num_spin_orb // 2 - 1).bit_length()
-        return Signature.build(l=self.num_aux.bit_length(), p=n, q=n, succ_pq=1)
+        return Signature.build(
+            xi=self.num_bits_xi,
+            offset=self.num_bits_offset,
+            rot=self.num_bits_rot_aa,
+            succ_p=1,
+            p=self.num_bits_lxi,
+        )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        n = (self.num_spin_orb // 2 - 1).bit_length()
-        # prep uniform upper triangular.
-        cost_a = 6 * n + 2 * self.num_bits_rot - 7
-        # contiguous index
-        cost_b = n**2 + n - 1
-        # QROAM
-        # Strictly speaking kp1 and kp2 can be different for the adjoint
-        cost_c = int(np.ceil((self.num_aux + 1) / self.kp1))
-        cost_c *= int(np.ceil((self.num_spin_orb**2 / 8 + self.num_spin_orb / 2) / self.kp2))
-        bp = 2 * n + self.num_bits_state_prep + 2
-        if self.adjoint:
-            cost_c += self.kp1 * self.kp2
-        else:
-            cost_c += bp * (self.kp1 * self.kp2 - 1)
-        # inequality test
+        cost_a = 7 * self.num_bits_xi + 2 * self.num_bits_rot_aa - 6
+        cost_b = self.num_bits_lxi - 1
+        bp = self.num_bits_xi + self.num_bits_state_prep + 2
+        cost_c = int(
+            np.ceil((self.num_aux * self.num_xi + self.num_spin_orb // 2) / self.kp)
+        ) + bp * (self.kp - 1)
         cost_d = self.num_bits_state_prep
-        # controlled swap
-        cost_e = 2 * n
-        return {(4 * (cost_a + cost_b + cost_c + cost_d + cost_e), TGate())}
-
-
-@frozen
-class SELECT(Bloq):
-    r"""Single Factorization SELECT bloq.
-
-    Implements selected Majorana Fermion operation. Placeholder for the moment.
-
-    Args:
-        num_spin_orb: The number of spin orbitals. Typically called N.
-        additional_control: whether to control on $l \ne zero$ or not.
-
-    Registers:
-        l: register to store L values for auxiliary index.
-        p: spatial orbital index. range(0, num_spin_orb // 2)
-        q: spatial orbital index. range(0, num_spin_orb // 2)
-        succ_pq: flag for success of this state preparation.
-
-    Refererences:
-        [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305)
-    """
-
-    num_spin_orb: int
-    additional_control: bool = False
-
-    @cached_property
-    def signature(self) -> Signature:
-        n = (self.num_spin_orb // 2 - 1).bit_length()
-        if self.additional_control:
-            return Signature.build(p=n, q=n, alpha=1, succ_pq=1, succ_l=1, l_ne_zero=1)
-        return Signature.build(p=n, q=n, alpha=1, succ_pq=1, succ_l=1)
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(2 * (self.num_spin_orb - 2), TGate())}
+        return {(4 * (cost_a + cost_b + cost_c + cost_d), TGate())}
 
 
 @frozen
 class OuterPrepare(Bloq):
     r"""Outer state preparation.
 
-    Implements "the appropriate superposition state" on the $l$ register.
+    Implements "the appropriate superposition state" on the $l$ register. i.e.
+
+    $$
+    |0\rangle = \sum_l a_l |l\rangle,
+    $$
+
+    where $a_l = \sqrt{\frac{c^{l}}{\sum_{l} c^{(l)}}$, and $c^{l} = \sum_{k} f_k^{(l)}^2$.
 
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
@@ -190,6 +164,111 @@ class OuterPrepare(Bloq):
 
 
 @frozen
+class OutputIndexedData(Bloq):
+    r"""Output data indexed by outer index $l$ needed for inner preparation.
+
+    We need to output $\Xi^{(l)}$ with $n_{\Xi}$ bits and $b_r$ bits for the
+    rotation for amplitude amplification in the inner state preparation. We also
+    output an offset with $n_{L\Xi}$ bits. The offset will be used to help index
+    a contiguous register formed from $l$ and $k$.
+
+    Args:
+
+    Registers:
+        l: register to store L values for auxiliary index.
+        l_ne_zero: flag for one-body term.
+        xi: rank for each l
+        offset: offset for each DF factor.
+        rot: rotation for amplitude amplification.
+
+    Refererences:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            Hypercontraction](https://arxiv.org/pdf/2011.03494.pdf)
+            Appendix C, page 52. Step 2.
+    """
+
+    num_aux: int
+    num_bits_offset: int
+    num_bits_xi: int
+    num_bits_rot_aa: int = 8
+    ko: int = 1
+    adjoint: bool = False
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"OutputIdxData{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(
+            l=self.num_aux.bit_length(),
+            le_ne_zero=1,
+            xi=self.num_bits_xi,
+            rot=self.num_bits_rot_aa,
+            offset=self.num_bits_offset,
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        bo = self.num_bits_xi + self.num_bits_offset + self.num_bits_rot_aa + 1
+        if self.adjoint:
+            cost_qrom = int(np.ceil((self.num_aux + 1) / self.ko)) + self.ko
+        else:
+            cost_qrom = int(np.ceil((self.num_aux + 1) / self.ko)) + bo * (self.ko - 1)
+        return {(4 * cost_qrom, TGate())}
+
+
+@frozen
+class ProgRotGateArray(Bloq):
+    """Apply number operators through controlled rotations.
+
+    Args:
+        num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
+
+    Registers:
+
+    Refererences:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305).
+            Step 4. Page 53.
+    """
+
+    num_aux: int
+    num_xi: int
+    num_spin_orb: int
+    num_bits_rot: int
+    num_bits_offset: int
+    adjoint: bool = False
+    kr: int = 1
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"Rotations{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        num_bits_lxi = (self.num_aux * self.num_xi + self.num_spin_orb // 2 - 1).bit_length()
+        return Signature.build(
+            offset=self.num_bits_offset,
+            succ_p=1,
+            p=num_bits_lxi,
+            rotations=(self.num_spin_orb // 2) * self.num_bits_rot,
+            spin_sel=1,
+            sys_a=self.num_spin_orb // 2,
+            sys_b=self.num_spin_orb // 2,
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_bits_lxi = (self.num_aux * self.num_xi + self.num_spin_orb // 2 - 1).bit_length()
+        cost_a = num_bits_lxi - 1  # contiguous register
+        cost_b = (
+            int(np.ceil(self.num_aux * self.num_xi / self.kr))
+            + self.num_spin_orb * self.num_bits_rot * (self.kr - 1) // 2
+        )  # QROAM
+        cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations
+        return {(4 * (cost_a + cost_b + cost_c), TGate())}
+
+
+@frozen
 class DoubleFactorizationOneBody(BlockEncoding):
     r"""Block encoding of double factorization one-body Hamiltonian.
 
@@ -223,15 +302,20 @@ class DoubleFactorizationOneBody(BlockEncoding):
     """
     num_aux: int
     num_spin_orb: int
+    num_xi: int
     num_bits_state_prep: int
+    num_bits_offset: int
     num_bits_rot: int = 8
     adjoint: bool = False
     kp1: int = 1
-    kp2: int = 1
 
     @property
     def control_registers(self) -> Iterable[Register]:
-        return [Register("succ_l", bitsize=1), Register("l_ne_zero", bitsize=1)]
+        return [
+            Register("succ_l", bitsize=1),
+            Register("succ_p", bitsize=1),
+            Register("l", bitsize=1),
+        ]
 
     @property
     def selection_registers(self) -> Iterable[Register]:
@@ -243,22 +327,18 @@ class DoubleFactorizationOneBody(BlockEncoding):
 
     @property
     def junk_registers(self) -> Iterable[Register]:
-        return [
-            Register("p", bitsize=self.num_spin_orb // 2),
-            Register("q", bitsize=self.num_spin_orb // 2),
-            Register("swap_pq", bitsize=1),
-            Register("alpha", bitsize=1),
-        ]
+        return [Register("p", bitsize=self.num_spin_orb // 2), Register("spin", bitsize=1)]
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         iprep = InnerPrepare(
-            self.num_aux,
-            self.num_spin_orb,
-            self.num_bits_state_prep,
-            self.num_bits_rot,
+            num_aux=self.num_aux,
+            num_spin_orb=self.num_spin_orb,
+            num_xi=self.num_xi,
+            num_bits_rot_aa=self.num_bits_rot,
+            num_bits_offset=self.num_bits_offset,
+            num_bits_state_prep=self.num_bits_state_prep,
             adjoint=False,
             kp1=self.kp1,
-            kp2=self.kp2,
         )
         iprep_dag = InnerPrepare(
             self.num_aux,
@@ -267,15 +347,33 @@ class DoubleFactorizationOneBody(BlockEncoding):
             self.num_bits_rot,
             adjoint=True,
             kp1=self.kp1,
-            kp2=self.kp2,
         )
-        n = (self.num_spin_orb // 2 - 1).bit_length()
-        # prepare + prepare^dag, 2 SWAPS, SELECT
+        n = self.num_spin_orb // 2
+        rot = ProgRotGateArray(
+            num_aux=self.num_aux,
+            num_xi=self.num_xi,
+            num_spin_orb=self.num_spin_orb,
+            num_bits_rot=self.num_bits_rot,
+            num_bits_offset=self.num_bits_offset,
+            adjoint=False,
+        )
+        rot_dag = ProgRotGateArray(
+            num_aux=self.num_aux,
+            num_xi=self.num_xi,
+            num_spin_orb=self.num_spin_orb,
+            num_bits_rot=self.num_bits_rot,
+            num_bits_offset=self.num_bits_offset,
+            adjoint=True,
+        )
+        # 2*In-prep_l, addition, Rotations, 2*H, 2*SWAPS, subtraction
         return {
-            (1, iprep),
-            (1, iprep_dag),
-            (2, CSwapApprox(n)),
-            (1, SELECT(num_spin_orb=self.num_spin_orb)),
+            (1, iprep),  # in-prep_l
+            (1, iprep_dag),  # in_prep_l^dag
+            (1, rot),  # rotate into system basis
+            (4, TGate()),  # apply CCZ / CCCZ (this should be accounted for)
+            (1, rot_dag),  # Undo rotations
+            (2, CSwapApprox(self.num_spin_orb // 2)),  # Swaps for spins
+            (2, ArbitraryClifford(n=1)),  # 2 Hadamards for spin superposition
         }
 
 
@@ -374,7 +472,16 @@ class DoubleFactorization(BlockEncoding):
             num_bits_state_prep=self.num_bits_state_prep,
             num_bits_rot=self.num_bits_rot,
         )
-        l, succ_l, l_ne_zero = bb.add(outer_prep, l=l, succ_l=succ_l, l_ne_zero=l_ne_zero)
+        l, succ_l, l_ne_zero = bb.add(outer_prep, l=l, succ_l=succ_l)
+        in_l_data_l = OutputIndexedData(
+            num_aux=self.num_aux,
+            num_bits_offset=num_bits_offset,
+            num_bits_xi=num_bits_xi,
+            num_bits_rot_aa=self.num_bits_rot_aa,
+        )
+        l, l_ne_zero, xi, rot, offset = bb.add(
+            in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot=rot, offset=offset
+        )
         one_body = DoubleFactorizationOneBody(
             self.num_aux, self.num_spin_orb, self.num_bits_state_prep, self.num_bits_rot
         )
@@ -389,6 +496,16 @@ class DoubleFactorization(BlockEncoding):
             swap_pq=swap_pq,
             alpha=alpha,
             sys=sys,
+        )
+        in_l_data_l = OutputIndexedData(
+            num_aux=self.num_aux,
+            num_bits_offset=num_bits_offset,
+            num_bits_xi=num_bits_xi,
+            num_bits_rot_aa=self.num_bits_rot_aa,
+            adjoint=True,
+        )
+        l, l_ne_zero, xi, rot, offset = bb.add(
+            in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot=rot, offset=offset
         )
         # prepare_l^dag
         outer_prep = OuterPrepare(
