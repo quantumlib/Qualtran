@@ -13,10 +13,8 @@
 #  limitations under the License.
 
 import abc
-import itertools
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
-import attr
 import cirq
 import numpy as np
 import quimb.tensor as qtn
@@ -25,7 +23,7 @@ from numpy.typing import NDArray
 from qualtran._infra.bloq import Bloq
 from qualtran._infra.composite_bloq import CompositeBloq, SoquetT
 from qualtran._infra.quantum_graph import Soquet
-from qualtran._infra.registers import Register, Side, Signature
+from qualtran._infra.registers import Register
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT

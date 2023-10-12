@@ -161,10 +161,6 @@ class And(GateWithRegisters):
             return And(self.cv1, self.cv2, adjoint=self.adjoint ^ True)
         return NotImplemented  # pragma: no cover
 
-    def __str__(self) -> str:
-        suffix = "" if self.cv1 == self.cv2 == 1 else str((self.cv1, self.cv2))
-        return f"And†{suffix}" if self.adjoint else f"And{suffix}"
-
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
         target = "And†" if self.adjoint else "And"
@@ -214,44 +210,6 @@ class MultiAnd(GateWithRegisters):
         dag = '†' if self.adjoint else ''
         return f'And{dag}'
 
-    # def decompose_bloq(self) -> 'CompositeBloq':
-    #     cbloq = Bloq.decompose_bloq(self)
-    #     if self.adjoint:
-    #         raise NotImplementedError("Come back soon.")
-    #     return cbloq
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, ctrl: NDArray[Soquet]
-    ) -> Dict[str, 'SoquetT']:
-        """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls-1.
-
-        This method builds the `adjoint=False` composite bloq. `self.decompose_bloq()`
-        will throw if `self.adjoint=True`.
-        """
-        # 'and' the first two control lines together into an ancilla.
-        cv1, cv2, *_ = self.cvs
-        c1c2, anc = bb.add(And(cv1=cv1, cv2=cv2), ctrl=ctrl[:2])
-
-        if len(self.cvs) == 3:
-            # Base case: add a final `And` to complete the ladder.
-            (anc, c3), target = bb.add(And(cv1=1, cv2=self.cvs[2]), ctrl=[anc, ctrl[2]])
-            return {
-                'ctrl': np.concatenate((c1c2, [c3])),
-                'junk': np.asarray([anc]),
-                'target': target,
-            }
-
-        # Recursive step: Replace the first two controls with the ancilla.
-        # Note: change `bb.add_from` to `bb.add` to decompose one recursive step at a time.
-        (anc, *c_rest), junk, target = bb.add_from(
-            MultiAnd(cvs=(1, *self.cvs[2:])), ctrl=np.concatenate(([anc], ctrl[2:]))
-        )
-        return {
-            'ctrl': np.concatenate((c1c2, c_rest)),
-            'junk': np.concatenate(([anc], junk)),
-            'target': target,
-        }
-
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
         if self.adjoint:
             raise NotImplementedError("Come back later.")
@@ -266,10 +224,6 @@ class MultiAnd(GateWithRegisters):
         if power == -1:
             return And(self.cvs, adjoint=self.adjoint ^ True)
         return NotImplemented  # pragma: no cover
-
-    def __str__(self) -> str:
-        suffix = "" if self.cvs == (1,) * len(self.cvs) else str(self.cvs)
-        return f"And†{suffix}" if self.adjoint else f"And{suffix}"
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
