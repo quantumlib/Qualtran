@@ -17,9 +17,7 @@
 from collections import defaultdict
 from typing import Callable, Dict, Optional, Sequence, Set, Tuple, Union
 
-import IPython.display
 import networkx as nx
-import pydot
 import sympy
 
 from qualtran import Bloq, CompositeBloq
@@ -182,93 +180,3 @@ def print_counts_graph(g: nx.DiGraph):
     for b in nx.topological_sort(g):
         for succ in g.succ[b]:
             print(b, '--', g.edges[b, succ]['n'], '->', succ)
-
-
-def markdown_bloq_expr(bloq: Bloq, expr: Union[int, sympy.Expr]):
-    """Return "`bloq`: expr" as markdown."""
-    try:
-        expr = expr._repr_latex_()
-    except AttributeError:
-        expr = f'{expr}'
-
-    return f'`{bloq}`: {expr}'
-
-
-def markdown_counts_graph(graph: nx.DiGraph) -> IPython.display.Markdown:
-    """Render the graph returned from `get_bloq_counts_graph` as markdown."""
-    m = ""
-    for bloq in nx.topological_sort(graph):
-        if not graph.succ[bloq]:
-            continue
-        m += f' - `{bloq}`\n'
-        for succ in graph.succ[bloq]:
-            expr = sympy.sympify(graph.edges[bloq, succ]['n'])
-            m += f'   - {markdown_bloq_expr(bloq, expr)}\n'
-
-    return IPython.display.Markdown(m)
-
-
-def markdown_counts_sigma(sigma: Dict[Bloq, Union[int, sympy.Expr]]) -> IPython.display.Markdown:
-    lines = []
-    for bloq, expr in sigma.items():
-        lines.append(' - ' + markdown_bloq_expr(bloq, expr))
-    return IPython.display.Markdown('\n'.join(lines))
-
-
-class GraphvizCounts:
-    """This class turns a bloqs count graph into Graphviz objects and drawings.
-
-    Args:
-        g: The counts graph.
-    """
-
-    def __init__(self, g: nx.DiGraph):
-        self.g = g
-        self._ids: Dict[Bloq, str] = {}
-        self._i = 0
-
-    def get_id(self, b: Bloq) -> str:
-        if b in self._ids:
-            return self._ids[b]
-        new_id = f'b{self._i}'
-        self._i += 1
-        self._ids[b] = new_id
-        return new_id
-
-    def get_node_properties(self, b: Bloq):
-        """Get graphviz properties for a bloq node representing `b`."""
-        label = [
-            '<',
-            f'{b.pretty_name().replace("<", "&lt;").replace(">", "&gt;")}<br />',
-            f'<font face="monospace" point-size="10">{repr(b)}</font><br/>',
-            '>',
-        ]
-        return {'label': ''.join(label), 'shape': 'rect'}
-
-    def add_nodes(self, graph: pydot.Graph):
-        """Helper function to add nodes to the pydot graph."""
-        b: Bloq
-        for b in nx.topological_sort(self.g):
-            graph.add_node(pydot.Node(self.get_id(b), **self.get_node_properties(b)))
-
-    def add_edges(self, graph: pydot.Graph):
-        """Helper function to add edges to the pydot graph."""
-        for b1, b2 in self.g.edges:
-            n = self.g.edges[b1, b2]['n']
-            label = sympy.printing.pretty(n)
-            graph.add_edge(pydot.Edge(self.get_id(b1), self.get_id(b2), label=label))
-
-    def get_graph(self):
-        """Get the pydot graph."""
-        graph = pydot.Dot('counts', graph_type='digraph', rankdir='TB')
-        self.add_nodes(graph)
-        self.add_edges(graph)
-        return graph
-
-    def get_svg_bytes(self) -> bytes:
-        """Get the SVG code (as bytes) for drawing the graph."""
-        return self.get_graph().create_svg()
-
-    def get_svg(self) -> IPython.display.SVG:
-        """Get an IPython SVG object displaying the graph."""
-        return IPython.display.SVG(self.get_svg_bytes())
