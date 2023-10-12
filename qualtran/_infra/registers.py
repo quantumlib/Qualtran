@@ -170,13 +170,9 @@ class Signature:
 
     def get_cirq_quregs(self) -> Dict[str, 'NDArray[cirq.Qid]']:
         """Get arrays of cirq qubits for these registers."""
-        import cirq_ft
+        from qualtran._infra.gate_with_registers import get_named_qubits
 
-        cirq_regs = [
-            cirq_ft.Register(name=reg.name, bitsize=reg.bitsize, shape=reg.shape)
-            for reg in self.lefts()
-        ]
-        return cirq_ft.infra.get_named_qubits(cirq_regs)
+        return get_named_qubits(self.lefts())
 
     def __hash__(self):
         return hash(self._registers)

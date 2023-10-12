@@ -17,9 +17,9 @@ from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
-from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq

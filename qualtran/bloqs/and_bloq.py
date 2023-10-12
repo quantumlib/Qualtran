@@ -274,7 +274,7 @@ class MultiAnd(GateWithRegisters):
 
     def _t_complexity_(self) -> TComplexity:
         pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
-        num_single_and = len(self.cv) - 1
+        num_single_and = len(self.cvs) - 1
         if self.adjoint:
             return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
         else:

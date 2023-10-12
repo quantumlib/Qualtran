@@ -207,3 +207,4 @@ def test_to_contiguous_index():
 
 def test_notebook():
     execute_notebook('arithmetic')
+    execute_notebook('comparison_gates')

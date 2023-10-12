@@ -62,7 +62,7 @@ class BloqAsCirqGate(GateWithRegisters):
 
     @cached_property
     def signature(self) -> Signature:
-        """`cirq_ft.GateWithRegisters` registers."""
+        """`GateWithRegisters` registers."""
         return self.bloq.signature
 
     @classmethod

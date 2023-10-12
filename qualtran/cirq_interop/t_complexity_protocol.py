@@ -17,6 +17,7 @@ from typing import Any, Callable, Hashable, Iterable, Optional, overload, Union
 import attr
 import cachetools
 import cirq
+
 from typing_extensions import Literal, Protocol
 
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition

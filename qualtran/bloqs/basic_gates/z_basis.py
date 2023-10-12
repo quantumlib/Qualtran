@@ -20,11 +20,11 @@ import numpy as np
 import quimb.tensor as qtn
 import sympy
 from attrs import frozen
-from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O
 from qualtran.simulation.classical_sim import ints_to_bits
 

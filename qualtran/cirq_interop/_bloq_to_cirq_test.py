@@ -15,17 +15,18 @@
 from typing import Dict, Tuple
 
 import cirq
-import cirq_ft
 import numpy as np
 import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
-from qualtran.bloqs.and_bloq import MultiAnd
+from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate, BloqAsCirqGate, CirqQuregT
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
 
 
@@ -118,7 +119,7 @@ def test_multi_and_allocates():
 
 
 def test_contruct_op_from_gate():
-    and_gate = cirq_ft.And()
+    and_gate = And()
     in_quregs = {'ctrl': np.array([*cirq.LineQubit.range(2)]).reshape(2, 1)}
     qm = cirq.ops.SimpleQubitManager()
     # Allocates new qubits for RIGHT only registers.
@@ -126,14 +127,14 @@ def test_contruct_op_from_gate():
     assert len(out_quregs['target']) == 1
     assert op == and_gate.on_registers(**out_quregs)
     # Deallocates qubits for LEFT only registers.
-    and_inv = cirq_ft.And(adjoint=True)
+    and_inv = And(adjoint=True)
     op, inv_out_quregs = _construct_op_from_gate(and_inv, out_quregs, qm)
     assert inv_out_quregs == in_quregs
     assert op == and_inv.on_registers(**out_quregs)
 
 
 def test_construct_op_from_gate_raises():
-    and_gate = cirq_ft.And()
+    and_gate = And()
     qm = cirq.ops.SimpleQubitManager()
     q = [*cirq.LineQubit.range(2)]
     in_quregs = {}
@@ -236,7 +237,7 @@ def test_bloq_as_cirq_gate_for_mod_exp():
     mod_exp = ModExp.make_for_shor(4, 3)
     gate = BloqAsCirqGate(mod_exp)
     # Use Cirq's infrastructure to construct an operation and corresponding decomposition.
-    quregs = cirq_ft.infra.get_named_qubits(gate.signature)
+    quregs = get_named_qubits(gate.signature)
     op = gate.on_registers(**quregs)
     # cirq.decompose_once(op) delegates to underlying Bloq's decomposition specified in
     # `bloq.decompose_bloq()` and wraps resulting composite bloq in a Cirq op-tree. Note
@@ -244,7 +245,7 @@ def test_bloq_as_cirq_gate_for_mod_exp():
     # newly allocated RIGHT registers in the decomposition to the one's specified by the user
     # when constructing the original operation (in this case, register `x`).
     circuit = cirq.Circuit(op, cirq.decompose_once(op))
-    assert cirq_ft.t_complexity(circuit) == 2 * mod_exp.t_complexity()
+    assert t_complexity(circuit) == 2 * mod_exp.t_complexity()
     cirq.testing.assert_has_diagram(
         circuit,
         '''
@@ -269,7 +270,7 @@ x1: ──────────x──────────val───x�
     # Whereas when directly applying a cirq gate on qubits to get an operations, we need to
     # specify both input and output registers.
     circuit = cirq.Circuit(gate.on_registers(**out_regs), decomposed_circuit)
-    assert cirq_ft.t_complexity(circuit) == 2 * mod_exp.t_complexity()
+    assert t_complexity(circuit) == 2 * mod_exp.t_complexity()
     # Notice the newly allocated qubits _C(0) and _C(1) for output register x.
     cirq.testing.assert_has_diagram(
         circuit,

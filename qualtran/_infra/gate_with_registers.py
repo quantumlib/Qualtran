@@ -106,11 +106,11 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     `_decompose_` method that yields the sub-operations provided a flat list of qubits.
 
     This API quickly becomes inconvenient when defining operations that act on multiple qubit
-    registers of variable sizes. Cirq-FT extends the `cirq.Gate` idea by introducing a new abstract
-    base class `cirq_ft.GateWithRegisters` containing abstract methods `registers` and optional
+    registers of variable sizes. Qualtran extends the `cirq.Gate` idea by introducing a new abstract
+    base class `GateWithRegisters` containing abstract methods `registers` and optional
     method `decompose_from_registers` that provides an overlay to the Cirq flat address API.
 
-    As an example, in the following code snippet we use the `cirq_ft.GateWithRegisters` to
+    As an example, in the following code snippet we use the `GateWithRegisters` to
     construct a multi-target controlled swap operation:
 
     >>> import attr
