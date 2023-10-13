@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 import cirq
+import numpy as np
 import pytest
 
-from qualtran import Register, Side, Signature
+from qualtran import Register, SelectionRegister, Side, Signature
 
 
 def test_register():
@@ -35,6 +36,45 @@ def test_multidim_register():
     assert not r.side & Side.LEFT
     assert r.side & Side.THRU
     assert r.total_bits() == 2 * 3
+
+
+@pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
+def test_selection_registers_indexing(n, N, m, M):
+    regs = [SelectionRegister('x', n, N), SelectionRegister('y', m, M)]
+    for x in range(regs[0].iteration_length):
+        for y in range(regs[1].iteration_length):
+            assert np.ravel_multi_index((x, y), (N, M)) == x * M + y
+            assert np.unravel_index(x * M + y, (N, M)) == (x, y)
+
+    assert np.prod(tuple(reg.iteration_length for reg in regs)) == N * M
+
+
+def test_selection_registers_consistent():
+    with pytest.raises(ValueError, match="iteration length must be in "):
+        _ = SelectionRegister('a', 3, 10)
+
+    with pytest.raises(ValueError, match="should be flat"):
+        _ = SelectionRegister('a', bitsize=1, shape=(3, 5), iteration_length=5)
+
+    selection_reg = Signature(
+        [
+            SelectionRegister('n', bitsize=3, iteration_length=5),
+            SelectionRegister('m', bitsize=4, iteration_length=12),
+        ]
+    )
+    assert selection_reg[0] == SelectionRegister('n', 3, 5)
+    assert selection_reg[1] == SelectionRegister('m', 4, 12)
+    assert selection_reg[:1] == tuple([SelectionRegister('n', 3, 5)])
+
+
+def test_registers_getitem_raises():
+    g = Signature.build(a=4, b=3, c=2)
+    with pytest.raises(TypeError, match="indices must be integers or slices"):
+        _ = g[2.5]
+
+    selection_reg = Signature([SelectionRegister('n', bitsize=3, iteration_length=5)])
+    with pytest.raises(TypeError, match='indices must be integers or slices'):
+        _ = selection_reg[2.5]
 
 
 def test_signature():
