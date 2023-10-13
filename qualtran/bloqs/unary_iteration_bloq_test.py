@@ -192,7 +192,6 @@ def test_unary_iteration_loop_empty_range():
 )
 def test_bloq_has_consistent_decomposition(selection_bitsize, target_bitsize, control_bitsize):
     bloq = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
-    print(bloq.signature)
     assert_valid_bloq_decomposition(bloq)
 
 
