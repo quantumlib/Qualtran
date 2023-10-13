@@ -16,7 +16,6 @@ from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
-import cirq_ft
 import numpy as np
 import sympy
 from attrs import frozen
