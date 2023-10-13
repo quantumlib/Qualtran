@@ -103,6 +103,7 @@ def test_add():
     q1 = bb.add_register('b', bitsize)
     a, b = bb.add(Add(bitsize), a=q0, b=q1)
     cbloq = bb.finalize(a=a, b=b)
+    cbloq.t_complexity()
 
 
 def test_out_of_place_adder():
@@ -113,6 +114,7 @@ def test_out_of_place_adder():
     q2 = bb.add_register('c', bitsize)
     a, b, c = bb.add(OutOfPlaceAdder(bitsize), a=q0, b=q1, c=q2)
     cbloq = bb.finalize(a=a, b=b, c=c)
+    cbloq.t_complexity()
 
 
 def test_square():
@@ -121,6 +123,7 @@ def test_square():
     q0 = bb.add_register('a', bitsize)
     q0, q1 = bb.add(Square(bitsize), a=q0)
     cbloq = bb.finalize(a=q0, result=q1)
+    cbloq.t_complexity()
 
 
 def test_sum_of_squares():
@@ -131,6 +134,7 @@ def test_sum_of_squares():
     inp, out = bb.add(SumOfSquares(bitsize, k), input=inp)
     cbloq = bb.finalize(input=inp, result=out)
     assert SumOfSquares(bitsize, k).signature[1].bitsize == 2 * bitsize + 2
+    cbloq.t_complexity()
 
 
 def test_product():
@@ -141,6 +145,7 @@ def test_product():
     q1 = bb.add_register('b', mbits)
     q0, q1, q2 = bb.add(Product(bitsize, mbits), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
+    cbloq.t_complexity()
 
 
 def test_scale_int_by_real():
@@ -149,6 +154,7 @@ def test_scale_int_by_real():
     q1 = bb.add_register('b', 8)
     q0, q1, q2 = bb.add(ScaleIntByReal(15, 8), real_in=q0, int_in=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
+    cbloq.t_complexity()
 
 
 def test_multiply_two_reals():
@@ -157,6 +163,7 @@ def test_multiply_two_reals():
     q1 = bb.add_register('b', 15)
     q0, q1, q2 = bb.add(MultiplyTwoReals(15), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
+    cbloq.t_complexity()
 
 
 def test_square_real_number():
@@ -175,6 +182,7 @@ def test_greater_than():
     anc = bb.add_register('result', 1)
     q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
+    cbloq.t_complexity()
 
 
 def test_greater_than_constant():
@@ -184,6 +192,7 @@ def test_greater_than_constant():
     anc = bb.add_register('result', 1)
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
+    cbloq.t_complexity()
 
 
 def test_equals_a_constant():
@@ -193,6 +202,7 @@ def test_equals_a_constant():
     anc = bb.add_register('result', 1)
     q0, anc = bb.add(EqualsAConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
+    cbloq.t_complexity()
 
 
 def test_to_contiguous_index():
@@ -203,6 +213,7 @@ def test_to_contiguous_index():
     out = bb.add_register('s', 1)
     q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2 * bitsize), mu=q0, nu=q1, s=out)
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
+    cbloq.t_complexity()
 
 
 def test_arithmetic_notebook():
