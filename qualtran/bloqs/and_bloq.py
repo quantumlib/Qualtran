@@ -218,11 +218,11 @@ class MultiAnd(GateWithRegisters):
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 
-    def __pow__(self, power: int) -> "And":
+    def __pow__(self, power: int) -> "MultiAnd":
         if power == 1:
             return self
         if power == -1:
-            return And(self.cvs, adjoint=self.adjoint ^ True)
+            return MultiAnd(self.cvs, adjoint=self.adjoint ^ True)
         return NotImplemented  # pragma: no cover
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
