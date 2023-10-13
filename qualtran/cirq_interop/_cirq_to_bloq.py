@@ -25,7 +25,17 @@ import quimb.tensor as qtn
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    CompositeBloq,
+    DecomposeTypeError,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
 if TYPE_CHECKING:
@@ -363,7 +373,7 @@ def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
         cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
         for reg in bloq.signature
     ):
-        raise NotImplementedError(f"{bloq} does not support decomposition.")
+        raise DecomposeTypeError(f"{bloq} does not support decomposition.")
 
     qubit_manager = InteropQubitManager()
     in_quregs = get_cirq_quregs(bloq.signature, qubit_manager)

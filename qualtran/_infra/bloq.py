@@ -39,6 +39,14 @@ def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     return bb.finalize(**out_soqs)
 
 
+class DecomposeNotImplementedError(NotImplementedError):
+    pass
+
+
+class DecomposeTypeError(TypeError):
+    pass
+
+
 class Bloq(metaclass=abc.ABCMeta):
     """Bloq is the primary abstract base class for all operations.
 
@@ -99,7 +107,7 @@ class Bloq(metaclass=abc.ABCMeta):
             The soquets corresponding to the outputs of the Bloq (keyed by name) or
             `NotImplemented` if there is no decomposition.
         """
-        raise NotImplementedError(f"{self} does not support decomposition.")
+        raise DecomposeNotImplementedError(f"{self}.")
 
     def decompose_bloq(self) -> 'CompositeBloq':
         """Decompose this Bloq into its constituent parts contained in a CompositeBloq.
