@@ -156,9 +156,9 @@ class BlockEncodeChebyshevPolynomial(Bloq):
         return Signature(
             [
                 *self.block_encoding.control_registers,
-                *self.block_encoding.selection_registers,
                 *self.block_encoding.junk_registers,
                 *self.block_encoding.target_registers,
+                *self.block_encoding.selection_registers,
             ]
         )
 

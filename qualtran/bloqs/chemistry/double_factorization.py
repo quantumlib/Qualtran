@@ -15,19 +15,24 @@ r"""Bloqs for the double-factorized chemistry Hamiltonian in second quantization
 
 Recall that for the single factorized Hamiltonian we have
 $$
-H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l \left(\sum_{pq} W_{pq}^{(l)} a_p^\dagger a_q\right)^2.
+    H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l \left(\sum_{pq} 
+W_{pq}^{(l)} a_p^\dagger a_q\right)^2.
 $$
-The double factorized Hamiltonian is arrived at by further factorizing the $W_{pq}^{(l)}$ factors as
+One arrives at the double factorized (DF) Hamiltonian by further factorizing the
+$W_{pq}^{(l)}$ terms as
 $$
-W^{l}_{pq} = \sum_{k} U_{pk}^{l} f_k^{(l)} U_{qk}^*
+    W^{(l)}_{pq} = \sum_{k} U^{(l)}_{pk} f_k^{(l)} U^{(l)*}_{qk},
 $$
 so that
 $$
-H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l U^{(l)}\left(\sum_{k}^{\Xi^{(l)}} f_k^{(l)} n_k\right)^2 U^{(l)}^\dagger
+    H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l U^{(l)}\left(\sum_{k}^{\Xi^{(l)}} 
+f_k^{(l)} n_k\right)^2 U^{(l)\dagger}
 $$
 where $\Xi^{(l)} $ is the rank of second factorization. In principle one can
 truncate the second factorization to reduce the amount of information required
-to specify the Hamiltonian. 
+to specify the Hamiltonian. However this somewhat complicates the implementation
+and it is more convenient to fix the rank of the second factorization for all
+$l$ terms. Nevertheless the authors of Ref[1] chose to do it the hard way.
 """
 
 from functools import cached_property
@@ -195,7 +200,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
     num_spin_orb: int
     num_xi: int
     num_bits_state_prep: int
-    num_bits_offset: int
     num_bits_rot_aa: int = 8
     num_bits_rot: int = 24
     adjoint: bool = False
@@ -210,10 +214,18 @@ class DoubleFactorizationOneBody(BlockEncoding):
         ]
 
     @property
+    def junk_registers(self) -> Iterable[Register]:
+        return [Register("p", bitsize=self.num_spin_orb // 2), Register("spin", bitsize=1)]
+
+    @property
+    def target_registers(self) -> Iterable[Register]:
+        return [Register("sys", bitsize=self.num_spin_orb)]
+
+    @property
     def selection_registers(self) -> Iterable[Register]:
         # really of size L + 1, hence just bit_length()
         nlxi = (self.num_aux * self.num_xi + self.num_spin_orb // 2).bit_length()  # C15
-        nxi = (self.num_aux - 1).bit_length()  # C14
+        nxi = (self.num_xi - 1).bit_length()  # C14
         return [
             Register("l", bitsize=self.num_aux.bit_length()),
             # slight abuse of selection registers here, these are really data
@@ -223,21 +235,14 @@ class DoubleFactorizationOneBody(BlockEncoding):
             Register("rot", bitsize=self.num_bits_rot_aa),
         ]
 
-    @property
-    def target_registers(self) -> Iterable[Register]:
-        return [Register("sys", bitsize=self.num_spin_orb)]
-
-    @property
-    def junk_registers(self) -> Iterable[Register]:
-        return [Register("p", bitsize=self.num_spin_orb // 2), Register("spin", bitsize=1)]
-
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         in_prep = InnerPrepare(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
             num_bits_rot_aa=self.num_bits_rot,
-            num_bits_offset=self.num_bits_offset,
+            num_bits_offset=num_bits_lxi,
             num_bits_state_prep=self.num_bits_state_prep,
             kp=self.kp,
             adjoint=False,
@@ -247,7 +252,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
             num_bits_rot_aa=self.num_bits_rot,
-            num_bits_offset=self.num_bits_offset,
+            num_bits_offset=num_bits_lxi,
             num_bits_state_prep=self.num_bits_state_prep,
             kp=self.kp,
             adjoint=True,
@@ -258,7 +263,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_xi=self.num_xi,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
-            num_bits_offset=self.num_bits_offset,
+            num_bits_offset=num_bits_lxi,
             adjoint=False,
         )
         rot_dag = ProgRotGateArray(
@@ -266,7 +271,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_xi=self.num_xi,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
-            num_bits_offset=self.num_bits_offset,
+            num_bits_offset=num_bits_lxi,
             adjoint=True,
         )
         # 2*In-prep_l, addition, Rotations, 2*H, 2*SWAPS, subtraction
@@ -386,7 +391,7 @@ class OutputIndexedData(Bloq):
     def signature(self) -> Signature:
         return Signature.build(
             l=self.num_aux.bit_length(),
-            le_ne_zero=1,
+            l_ne_zero=1,
             xi=(self.num_xi - 1).bit_length(),
             rot=self.num_bits_rot_aa,
             offset=get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb),
@@ -412,6 +417,7 @@ class DoubleFactorization(BlockEncoding):
     Args:
         num_spin_orb: The number of spin orbitals. Typically called N.
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Called L in Ref[1].
+        num_xi: Rank of second factorization. Full rank implies xi = num_spin_orb // 2.
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called aleph (fancy N) in Ref[1].
         num_bits_rot: Number of bits of precision for rotations for amplitude
@@ -430,13 +436,14 @@ class DoubleFactorization(BlockEncoding):
     """
     num_spin_orb: int
     num_aux: int
-    num_bits_state_prep: int
+    num_xi: int
+    num_bits_state_prep: int = 8
     num_bits_rot: int = 24
     num_bits_rot_aa: int = 8
     qroam_k_factor: int = 1
 
     @classmethod
-    def build(cls, one_body_ham, factorized_two_body_ham) -> 'DoubleFactorization':
+    def build_from_coeffs(cls, one_body_ham, factorized_two_body_ham) -> 'DoubleFactorization':
         """Factory method to build double factorization block encoding given Hamiltonian inputs.
 
         Args:
@@ -470,7 +477,6 @@ class DoubleFactorization(BlockEncoding):
     @property
     def junk_registers(self) -> Iterable[Register]:
         return [
-            Register("theta", bitsize=1),
             Register("p", bitsize=self.num_spin_orb // 2),
             # equal superposition states for alias sampling l/p registers, aleph1/aleph2
             # 2 AA rotation qubits
@@ -478,54 +484,54 @@ class DoubleFactorization(BlockEncoding):
         ]
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
-        """ """
-        succ_l = regs['succ_l']
-        l_ne_zero = regs['l_ne_zero']
         l = regs['l']
         sys = regs['sys']
         p = regs['p']
-        q = regs['q']
-        swap_pq = regs['swap_pq']
-        alpha = regs['alpha']
-        ctrl = regs['ctrl']
-        theta = regs['theta']
-        # prepare_l
-        # epsilon = 2**-self.num_bits_state_prep / len(self.out_prep_probs)
+        spin = regs['spin']
+        succ_l, l_ne_zero, theta, succ_p = bb.split(bb.allocate(4))
+        num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
+        num_bits_xi = (self.num_xi - 1).bit_length()
+        xi = bb.allocate(num_bits_xi)
+        offset = bb.allocate(num_bits_lxi)
+        rot = bb.allocate(self.num_bits_rot_aa)
+
         outer_prep = OuterPrepare(
             self.num_aux,
             kl=self.qroam_k_factor,
             num_bits_state_prep=self.num_bits_state_prep,
             num_bits_rot=self.num_bits_rot,
         )
-        l, succ_l, l_ne_zero = bb.add(outer_prep, l=l, succ_l=succ_l)
+        l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
         in_l_data_l = OutputIndexedData(
             num_aux=self.num_aux,
-            num_bits_offset=num_bits_offset,
-            num_bits_xi=num_bits_xi,
+            num_spin_orb=self.num_spin_orb,
+            num_xi=self.num_xi,
             num_bits_rot_aa=self.num_bits_rot_aa,
         )
         l, l_ne_zero, xi, rot, offset = bb.add(
             in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot=rot, offset=offset
         )
         one_body = DoubleFactorizationOneBody(
-            self.num_aux, self.num_spin_orb, self.num_bits_state_prep, self.num_bits_rot
+            self.num_aux, self.num_spin_orb, self.num_xi, self.num_bits_state_prep
         )
         one_body_sq = BlockEncodeChebyshevPolynomial(one_body, order=2)
-        succ_l, l_ne_zero, l, p, q, swap_pq, alpha, sys = bb.add(
+        succ_l, succ_p, l_ne_zero, p, spin, sys, l, xi, offset, rot = bb.add(
             one_body_sq,
             succ_l=succ_l,
+            succ_p=succ_p,
             l_ne_zero=l_ne_zero,
-            l=l,
             p=p,
-            q=q,
-            swap_pq=swap_pq,
-            alpha=alpha,
+            spin=spin,
             sys=sys,
+            l=l,
+            xi=xi,
+            offset=offset,
+            rot=rot,
         )
         in_l_data_l = OutputIndexedData(
             num_aux=self.num_aux,
-            num_bits_offset=num_bits_offset,
-            num_bits_xi=num_bits_xi,
+            num_spin_orb=self.num_spin_orb,
+            num_xi=self.num_xi,
             num_bits_rot_aa=self.num_bits_rot_aa,
             adjoint=True,
         )
@@ -540,17 +546,13 @@ class DoubleFactorization(BlockEncoding):
             num_bits_rot=self.num_bits_rot,
             adjoint=True,
         )
-        l, succ_l, l_ne_zero = bb.add(outer_prep, l=l, succ_l=succ_l, l_ne_zero=l_ne_zero)
-        out_regs = {
-            'l': l,
-            'succ_l': succ_l,
-            'l_ne_zero': l_ne_zero,
-            'sys': sys,
-            'p': p,
-            'q': q,
-            'swap_pq': swap_pq,
-            'alpha': alpha,
-            'theta': theta,
-            'ctrl': ctrl,
-        }
+        l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
+        bb.free(xi)
+        bb.free(offset)
+        bb.free(rot)
+        bb.free(succ_l)
+        bb.free(succ_p)
+        bb.free(l_ne_zero)
+        bb.free(theta)
+        out_regs = {'l': l, 'sys': sys, 'p': p, 'spin': spin, 'ctrl': regs['ctrl']}
         return out_regs

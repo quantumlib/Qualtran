@@ -12,7 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.double_factorization import DoubleFactorization
+from qualtran.resource_counting import get_bloq_counts_graph
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
@@ -25,6 +27,11 @@ def _make_double_factorization():
 def test_double_factorization():
     df = DoubleFactorization(10, 12, 8)
     assert_valid_bloq_decomposition(df)
+
+
+def test_double_factorization_counts_graph():
+    graph, sigma = get_bloq_counts_graph(DoubleFactorization(4, 10, 4))
+    assert sigma[TGate()] == 4656
 
 
 def test_notebook():
