@@ -45,7 +45,7 @@ def _make_prepare():
     zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
     eps = 1e-3
-    return PrepareTHC.build(t_l, zeta, probability_epsilon=eps)
+    return PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, probability_epsilon=eps)
 
 
 def test_split_join_arithmetic_gates():
@@ -57,7 +57,7 @@ def test_split_join_arithmetic_gates():
         bb, CirqGateAsBloq(LessThanGate(bitsize, 7)), val=val, res=res
     )
     cbloq = bb.finalize(val=val, res=res)
-    assert cbloq.t_complexity() == CirqGateAsBloq(LessThanGate(bitsize, 7)).t_complexity()
+    assert cbloq.t_complexity().t == CirqGateAsBloq(LessThanGate(bitsize, 7)).t_complexity().t
     bb = BloqBuilder()
     x = bb.add_register(Register("x", bitsize=bitsize))
     y = bb.add_register(Register("y", bitsize=bitsize))
@@ -67,7 +67,8 @@ def test_split_join_arithmetic_gates():
     )
     cbloq = bb.finalize(x=x, y=y, res=res)
     assert (
-        cbloq.t_complexity() == CirqGateAsBloq(LessThanEqualGate(bitsize, bitsize)).t_complexity()
+        cbloq.t_complexity().t
+        == CirqGateAsBloq(LessThanEqualGate(bitsize, bitsize)).t_complexity().t
     )
 
 
@@ -84,7 +85,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
     t_l = np.random.normal(0, 1, size=num_spat)
     zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
-    prep = PrepareTHC.build(t_l, zeta, probability_epsilon=eps)
+    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, probability_epsilon=eps)
     qlt_testing.assert_valid_bloq_decomposition(prep)
     # Test that the alt / keep values are correct
     qlt_testing.assert_valid_bloq_decomposition(prep)

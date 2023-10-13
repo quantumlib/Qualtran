@@ -364,6 +364,7 @@ class PrepareTHC(Bloq):
         keep = bb.allocate(self.keep_bitsize)
         alt_mu = bb.allocate(alt_bitsize)
         alt_nu = bb.allocate(alt_bitsize)
+        alt_theta = bb.allocate(1)
         qroam = CirqGateAsBloq(
             SelectSwapQROM(
                 *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
@@ -383,7 +384,7 @@ class PrepareTHC(Bloq):
         sigma = bb.allocate(self.keep_bitsize)
         sigma = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=sigma)
         lte_gate = CirqGateAsBloq(LessThanEqualGate(self.keep_bitsize, self.keep_bitsize))
-        less_than, alt_theta = bb.split(bb.allocate(2))
+        less_than = bb.allocate(1)
         keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
@@ -404,8 +405,9 @@ class PrepareTHC(Bloq):
         bb.free(keep)
         bb.free(alt_mu)
         bb.free(alt_nu)
+        bb.free(alt_theta)
         bb.free(sigma)
-        bb.free(bb.join(np.array([less_than, alt_theta])))
+        bb.free(less_than)
         # Select expects two plus states so set them up here.
         plus_a = bb.add(Hadamard(), q=plus_a)
         plus_b = bb.add(Hadamard(), q=plus_b)
