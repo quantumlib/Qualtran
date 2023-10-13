@@ -17,12 +17,12 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen
-from cirq_ft import t_complexity, TComplexity
 from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 
 from qualtran import Bloq, Register, Side, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator

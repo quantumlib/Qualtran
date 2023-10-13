@@ -20,10 +20,10 @@ from typing import Dict, Tuple, TYPE_CHECKING, Union
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
-from cirq_ft import TComplexity
 from sympy import Expr
 
 from qualtran import Bloq, BloqInstance, Register, Side, Signature, Soquet, SoquetT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
@@ -132,7 +132,6 @@ class Join(Bloq):
         return {'join': bits_to_ints(join)[0]}
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-
         if soq.reg.shape:
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)

@@ -21,11 +21,11 @@ from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 if TYPE_CHECKING:
     import cirq
     import quimb.tensor as qtn
-    from cirq_ft import TComplexity
     from numpy.typing import NDArray
 
     from qualtran import BloqBuilder, CompositeBloq, Signature, Soquet, SoquetT
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
