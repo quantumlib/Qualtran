@@ -17,11 +17,12 @@ from typing import Dict, Tuple
 
 import cirq
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
 from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 from cirq_ft.algos.multi_control_multi_target_pauli import MultiControlPauli
 from cirq_ft.algos.select_swap_qrom import SelectSwapQROM
 from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic import EqualsAConstant, GreaterThanConstant, ToContiguousIndex
@@ -34,7 +35,7 @@ from qualtran.cirq_interop import CirqGateAsBloq
 def add_from_bloq_register_flat_qubits(
     bb: 'BloqBuilder', cirq_bloq: Bloq, **regs: SoquetT
 ) -> Tuple[SoquetT, ...]:
-    """Helper function to split / join registers for cirq gates expeciting single 'qubits' register.
+    """Helper function to split / join registers for cirq gates expecting single 'qubits' register.
 
     Args:
         bb: Bloq builder used during decompostion.
@@ -90,10 +91,10 @@ class UniformSuperpositionTHC(Bloq):
         num_spin_orb: number of spin orbitals $N$
 
     Registers:
-    - mu: $\mu$ register.
-    - nu: $\nu$ register.
-    - succ: ancilla flagging success of amplitude amplification.
-    - eq_nu_mp1: ancillas for flagging if $\nu = M+1$.
+        mu: $\mu$ register.
+        nu: $\nu$ register.
+        succ: ancilla flagging success of amplitude amplification.
+        eq_nu_mp1: ancillas for flagging if $\nu = M+1$.
 
     References:
         [Even more efficient quantum computations of chemistry through
@@ -107,18 +108,16 @@ class UniformSuperpositionTHC(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", bitsize=(self.num_mu).bit_length()),
-                Register("nu", bitsize=(self.num_mu).bit_length()),
+                Register("mu", bitsize=self.num_mu.bit_length()),
+                Register("nu", bitsize=self.num_mu.bit_length()),
                 Register("succ", bitsize=1),
                 Register("eq_nu_mp1", bitsize=1),
             ]
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
-        mu = regs['mu']
-        nu = regs['nu']
-        succ = regs['succ']
-        eq_nu_mp1 = regs['eq_nu_mp1']
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', mu: SoquetT, nu: SoquetT, succ: SoquetT, eq_nu_mp1: SoquetT
+    ) -> Dict[str, 'SoquetT']:
         lte_mu_nu, lte_nu_mp1, gt_mu_n, junk, amp = bb.split(bb.allocate(5))
         num_bits_mu = self.num_mu.bit_length()
         # 1. Prepare uniform superposition over all mu and nu
@@ -263,11 +262,11 @@ class PrepareTHC(Bloq):
 
     num_mu: int
     num_spin_orb: int
-    alt_mu: Tuple[int, ...]
-    alt_nu: Tuple[int, ...]
-    alt_theta: Tuple[int, ...]
-    theta: Tuple[int, ...]
-    keep: Tuple[int, ...]
+    alt_mu: Tuple[int, ...] = field(repr=False)
+    alt_nu: Tuple[int, ...] = field(repr=False)
+    alt_theta: Tuple[int, ...] = field(repr=False)
+    theta: Tuple[int, ...] = field(repr=False)
+    keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
 
     @cached_property
@@ -284,15 +283,20 @@ class PrepareTHC(Bloq):
             ]
         )
 
-    def __repr__(self) -> str:
-        return (
-            f"PrepareTHC(num_mu={self.num_mu}, num_spin_orb={self.num_spin_orb},"
-            "keep_bitsize={self.keep_bitsize})"
-        )
-
     @classmethod
-    def build(cls, t_l, zeta, probability_epsilon=1e-8) -> 'PrepareTHC':
-        """Factory method to build PrepareTHC from Hamiltonian coefficients."""
+    def from_hamiltonian_coeffs(
+        cls, t_l: NDArray[np.float64], zeta: NDArray[np.float64], probability_epsilon: float = 1e-8
+    ) -> 'PrepareTHC':
+        """Factory method to build PrepareTHC from Hamiltonian coefficients.
+
+        Args:
+            t_l: One body hamiltonian eigenvalues.
+            zeta: THC central tensor.
+            probability_epsilon: precision for state preparation via coherence alias sampling.
+
+        Returns:
+            Constructed PrepareTHC object.
+        """
         assert len(t_l.shape) == 1
         assert len(zeta.shape) == 2
         num_mu = zeta.shape[0]
@@ -329,30 +333,37 @@ class PrepareTHC(Bloq):
             keep_bitsize=mu,
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        mu: SoquetT,
+        nu: SoquetT,
+        theta: SoquetT,
+        succ: SoquetT,
+        eq_nu_mp1: SoquetT,
+        plus_a: SoquetT,
+        plus_b: SoquetT,
+    ) -> Dict[str, 'SoquetT']:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = (self.num_mu).bit_length()
         log_d = (data_size - 1).bit_length()
         # Allocate ancillae
-        less_than, alt_theta = bb.split(bb.allocate(2))
-        s = bb.allocate(log_d)
-        sigma = bb.allocate(self.keep_bitsize)
-        keep = bb.allocate(self.keep_bitsize)
         alt_bitsize = max(max(self.alt_mu).bit_length(), max(self.alt_nu).bit_length())
-        alt_mu = bb.allocate(alt_bitsize)
-        alt_nu = bb.allocate(alt_bitsize)
         # 1. Prepare THC uniform superposition over mu, nu. succ flags success.
         mu, nu, succ, eq_nu_mp1 = bb.add(
             UniformSuperpositionTHC(num_mu=self.num_mu, num_spin_orb=self.num_spin_orb),
-            mu=regs['mu'],
-            nu=regs['nu'],
-            succ=regs['succ'],
-            eq_nu_mp1=regs['eq_nu_mp1'],
+            mu=mu,
+            nu=nu,
+            succ=succ,
+            eq_nu_mp1=eq_nu_mp1,
         )
         # 2. Make contiguous register from mu and nu and store in register `s`.
+        s = bb.allocate(log_d)
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
-        theta = regs['theta']
         # 3. Load alt / keep values
+        keep = bb.allocate(self.keep_bitsize)
+        alt_mu = bb.allocate(alt_bitsize)
+        alt_nu = bb.allocate(alt_bitsize)
         qroam = CirqGateAsBloq(
             SelectSwapQROM(
                 *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
@@ -368,8 +379,11 @@ class PrepareTHC(Bloq):
             target3=alt_nu,
             target4=keep,
         )
+        bb.free(s)
+        sigma = bb.allocate(self.keep_bitsize)
         sigma = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=sigma)
         lte_gate = CirqGateAsBloq(LessThanEqualGate(self.keep_bitsize, self.keep_bitsize))
+        less_than, alt_theta = bb.split(bb.allocate(2))
         keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
@@ -387,9 +401,14 @@ class PrepareTHC(Bloq):
         keep, sigma, less_than = add_from_bloq_register_flat_qubits(
             bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
         )
+        bb.free(keep)
+        bb.free(alt_mu)
+        bb.free(alt_nu)
+        bb.free(sigma)
+        bb.free(bb.join(np.array([less_than, alt_theta])))
         # Select expects two plus states so set them up here.
-        plus_a = bb.add(Hadamard(), q=regs['plus_a'])
-        plus_b = bb.add(Hadamard(), q=regs['plus_b'])
+        plus_a = bb.add(Hadamard(), q=plus_a)
+        plus_b = bb.add(Hadamard(), q=plus_b)
         # Need a toffoli gate with one negative control. And it into an ancilla
         # and control off this for the swaps.
         junk = bb.allocate(1)
@@ -401,13 +420,7 @@ class PrepareTHC(Bloq):
         )
         eq_nu_mp1, plus_a = bb.split(ctrls)
         junk, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=junk, x=mu, y=nu)
-        bb.free(bb.join(np.array([less_than, alt_theta])))
         bb.free(junk)
-        bb.free(s)
-        bb.free(sigma)
-        bb.free(keep)
-        bb.free(alt_mu)
-        bb.free(alt_nu)
         out_regs = {
             'mu': mu,
             'nu': nu,
