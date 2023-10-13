@@ -20,10 +20,10 @@ import numpy as np
 import quimb.tensor as qtn
 import sympy
 from attrs import frozen
-from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
