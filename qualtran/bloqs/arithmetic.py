@@ -12,10 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from functools import cached_property
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
+import sympy
 from attrs import frozen
-from cirq_ft import TComplexity
+from cirq_ft import t_complexity, TComplexity
+from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 
 from qualtran import Bloq, Register, Side, Signature
 from qualtran.bloqs.basic_gates import TGate
@@ -421,6 +424,11 @@ class GreaterThan(Bloq):
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
+    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    assuming a clean decomposition which should yield identical costs.
+
+    See: https://github.com/quantumlib/Qualtran/pull/381 and
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
 
     Args:
         bitsize: Number of bits used to represent the two integers a and b.
@@ -428,27 +436,152 @@ class GreaterThan(Bloq):
     Registers:
         a: n-bit-sized input registers.
         b: n-bit-sized input registers.
-        result: A single bit output register to store the result of A > B.
-
-    References:
-        [Improved techniques for preparing eigenstates of fermionic
-        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5#additional-information),
-        Comparison Oracle from SI: Appendix 2B (pg 3)
+        target: A single bit output register to store the result of A > B.
     """
     bitsize: int
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, result=1)
+        return Signature.build(a=self.bitsize, b=self.bitsize, target=1)
 
     def pretty_name(self) -> str:
         return "a gt b"
 
-    def t_complexity(self):
+    def t_complexity(self) -> 'TComplexity':
+        return t_complexity(LessThanEqualGate(self.bitsize, self.bitsize))
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        return TComplexity(t=8 * self.bitsize)
+        t_complexity = self.t_complexity()
+        return {(t_complexity.t, TGate())}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(8 * self.bitsize, TGate())}
+
+@frozen
+class GreaterThanConstant(Bloq):
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x > a)\rangle$
+
+    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    assuming a clean decomposition which should yield identical costs.
+
+    See: https://github.com/quantumlib/Qualtran/pull/381 and
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
+
+
+    Args:
+        bitsize: bitsize of x register.
+        val: integer to compare x against (a above.)
+
+    Registers:
+        x: Register to compare against val.
+        target: Register to hold result of comparison.
+    """
+
+    bitsize: int
+    val: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(x=self.bitsize, target=1)
+
+    def t_complexity(self) -> TComplexity:
+        return t_complexity(LessThanGate(self.bitsize, val=self.val))
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        t_complexity = self.t_complexity()
+        return {(t_complexity.t, TGate())}
+
+
+@frozen
+class EqualsAConstant(Bloq):
+    r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x = a)\rangle$
+
+    The bloq_counts and t_complexity are derived from:
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html#equality-as-a-special-case
+
+    Args:
+        bitsize: bitsize of x register.
+        val: integer to compare x against (a above.)
+
+    Registers:
+        x: Register to compare against val.
+        target: Register to hold result of comparison.
+    """
+
+    bitsize: int
+    val: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(x=self.bitsize, target=1)
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(t=4 * (self.bitsize - 1))
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        return {(4 * (self.bitsize - 1), TGate())}
+
+
+@frozen
+class ToContiguousIndex(Bloq):
+    r"""Build a contiguous register s from mu and nu.
+
+    $$
+        s = \nu (\nu + 1) / 2 + \mu
+    $$
+
+    Assuming nu is zero indexed (in contrast to the THC paper which assumes 1,
+    hence the slightly different formula).
+
+    Args:
+        bitsize: number of bits for mu and nu registers.
+        s_bitsize: Number of bits for contiguous register.
+
+    Registers:
+        mu: input register
+        nu: input register
+        s: output contiguous register
+
+    References:
+        (Even more efficient quantum computations of chemistry through
+        tensor hypercontraction)[https://arxiv.org/pdf/2011.03494.pdf] Eq. 29.
+    """
+
+    bitsize: int
+    s_bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register("mu", bitsize=self.bitsize),
+                Register("nu", bitsize=self.bitsize),
+                Register("s", bitsize=self.s_bitsize),
+            ]
+        )
+
+    def on_classical_vals(
+        self, mu: 'ClassicalValT', nu: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
+
+    def t_complexity(self) -> 'cirq_ft.TComplexity':
+        num_toffoli = self.bitsize**2 + self.bitsize - 1
+        return TComplexity(t=4 * num_toffoli)
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}

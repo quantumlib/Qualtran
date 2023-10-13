@@ -11,17 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import cirq
+import pytest
 
-"""Counting resource usage (bloqs, qubits)
+from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
-isort:skip_file
-"""
 
-from .bloq_counts import (
-    BloqCountT,
-    big_O,
-    SympySymbolAllocator,
-    get_cbloq_bloq_counts,
-    get_bloq_counts_graph,
-    print_counts_graph,
-)
+def test_interop_qubit_manager():
+    qm = InteropQubitManager()
+    q = cirq.q('junk')
+    with pytest.raises(ValueError, match='not allocated'):
+        qm.qfree([q])
+    # You can delegate qubits to be "managed" by the InteropQubitManager.
+    qm.manage_qubits([q])
+    qm.qfree([q])
+    # q was already deallocated.
+    with pytest.raises(ValueError, match='not allocated'):
+        qm.qfree([q])
