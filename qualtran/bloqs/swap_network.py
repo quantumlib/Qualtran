@@ -17,6 +17,7 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import cirq_ft
+import numpy as np
 import sympy
 from attrs import frozen
 from cirq_ft import MultiTargetCSwapApprox
@@ -155,8 +156,7 @@ class SwapWithZero(Bloq):
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        num_swaps = 0
-        for j in range(self.selection_bitsize):
-            for i in range(0, self.n_target_registers - 2**j, 2 ** (j + 1)):
-                num_swaps += 1
+        num_swaps = np.floor(
+            sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
+        )
         return {(num_swaps, CSwapApprox(self.target_bitsize))}
