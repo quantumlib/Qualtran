@@ -220,12 +220,26 @@ def execute_notebook(name: str):
 
 
 class BloqCheckResult(Enum):
+    """The status result of the `check_bloq_example_xxx` functions."""
+
     PASS = 0
+    """The check passed and is an unqualified success."""
+
     FAIL = 1
+    """The check failed with a broken assertion or invariant."""
+
     MISSING = 2
+    """The check did not pass because the required functionality is missing."""
+
     NA = 3
+    """The check is not applicable in the current context."""
+
     UNVERIFIED = 4
+    """The bloq protocol has provided a value, but some functionality is missing so we can't
+    verify the result."""
+
     ERROR = 5
+    """An unexpected error occurred during execution of the check."""
 
 
 def _check_bloq_example_make_impl(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
@@ -242,7 +256,12 @@ def _check_bloq_example_make_impl(bloq_ex: BloqExample) -> Tuple[BloqCheckResult
 
 
 def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
-    """Check that the BloqExample returns the desired bloq."""
+    """Check that the BloqExample returns the desired bloq.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
     try:
         return _check_bloq_example_make_impl(bloq_ex)
     except Exception as e:
@@ -272,6 +291,10 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
     This will use `assert_valid_decomposition` which has a variety of sub-checks. A failure
     in any of those checks will result in `FAIL`. `DecomposeTypeError` results in a
     not-applicable `NA` status. `DecomposeNotImplementedError` results in a `MISSING` status.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
     """
     try:
         return _check_bloq_example_decompose_impl(bloq_ex)

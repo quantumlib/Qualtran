@@ -20,6 +20,21 @@ from .bloq import Bloq
 
 @frozen
 class BloqExample:
+    """An instantiation of a bloq and its metadata.
+
+    In particular, this class wraps a callable that returns a bloq instantiation with
+    explicit attribute values.
+
+    Consider using the decorator `@bloq_example` to construct a `BloqExample` from a function.
+
+    Args:
+        func: The function that returns the bloq instantiation. Calling the `BloqExample` instance
+            will call this function.
+        name: A name for the bloq instantiation.
+        bloq_cls: The `Bloq` class that this instantiation is an instance of.
+        generalizer: Passed to `get_bloq_counts_graph` calls for bloq-counts equivalence checking.
+    """
+
     _func: Callable[[], Bloq] = field(repr=False, hash=False)
     name: str
     bloq_cls: Type[Bloq]
@@ -38,11 +53,13 @@ class BloqExample:
         return self.make()
 
 
-def _name_from_func_name(func: Callable[[], Bloq]):
+def _name_from_func_name(func: Callable[[], Bloq]) -> str:
+    """Use the name of the function as the `BloqExample.name` when using the decorator."""
     return func.__name__.lstrip('_')
 
 
-def _bloq_cls_from_func_annotation(func: Callable[[], Bloq]):
+def _bloq_cls_from_func_annotation(func: Callable[[], Bloq]) -> Type[Bloq]:
+    """Use the function return type annotation as the `BloqExample.bloq_cls` with the decorator."""
     anno = func.__annotations__
     if 'return' not in anno:
         raise ValueError(f'{func} must have a return type annotation.')

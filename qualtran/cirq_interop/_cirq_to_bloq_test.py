@@ -22,7 +22,7 @@ import sympy
 from attrs import frozen
 
 import qualtran
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Side, Signature
+from qualtran import Bloq, BloqBuilder, CompositeBloq, DecomposeTypeError, Side, Signature
 from qualtran.bloqs.basic_gates import OneState
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import (
@@ -107,7 +107,7 @@ def test_bloq_decompose_from_cirq_op():
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == cirq_ft.TComplexity(clifford=1)
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(DecomposeTypeError):
         TestCNOTSymbolic().decompose_bloq()
 
 

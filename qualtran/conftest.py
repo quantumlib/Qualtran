@@ -31,6 +31,10 @@ from qualtran import BloqExample
 
 
 def assert_bloq_example_make(bloq_ex: BloqExample):
+    """Wrap `check_bloq_example_make`.
+
+    Anything other than PASS is a test failure.
+    """
     status, err = qlt_testing.check_bloq_example_make(bloq_ex)
     if status is qlt_testing.BloqCheckResult.PASS:
         return
@@ -39,6 +43,10 @@ def assert_bloq_example_make(bloq_ex: BloqExample):
 
 
 def assert_bloq_example_decompose(bloq_ex: BloqExample):
+    """Wrap `check_bloq_example_decompose`.
+
+    `NA` or `MISSING` result in the test being skipped.
+    """
     status, err = qlt_testing.check_bloq_example_decompose(bloq_ex)
     if status is qlt_testing.BloqCheckResult.PASS:
         return

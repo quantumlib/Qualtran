@@ -40,11 +40,21 @@ def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
 
 
 class DecomposeNotImplementedError(NotImplementedError):
-    pass
+    """Raised if a decomposition is not yet provided.
+
+    In contrast to `DecomposeTypeError`, a decomposition is theoretically possible; just not
+    implemented yet.
+    """
 
 
 class DecomposeTypeError(TypeError):
-    pass
+    """Raised if a decomposition does not make sense in this context.
+
+    In contrast to `DecomposeNotImplementedError`, a decomposition does not make sense
+    in this context. This can be raised if the bloq is "atomic" -- that is, considered part
+    of the compilation target gateset. This can be raised if certain bloq attributes do not
+    permit a decomposition, most commonly if an attribute is symbolic.
+    """
 
 
 class Bloq(metaclass=abc.ABCMeta):
@@ -107,7 +117,7 @@ class Bloq(metaclass=abc.ABCMeta):
             The soquets corresponding to the outputs of the Bloq (keyed by name) or
             `NotImplemented` if there is no decomposition.
         """
-        raise DecomposeNotImplementedError(f"{self}.")
+        raise DecomposeNotImplementedError(f"{self}")
 
     def decompose_bloq(self) -> 'CompositeBloq':
         """Decompose this Bloq into its constituent parts contained in a CompositeBloq.

@@ -373,7 +373,7 @@ def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
         cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
         for reg in bloq.signature
     ):
-        raise DecomposeTypeError(f"{bloq} does not support decomposition.")
+        raise DecomposeTypeError(f"Cannot decompose parameterized {bloq}.")
 
     qubit_manager = InteropQubitManager()
     in_quregs = get_cirq_quregs(bloq.signature, qubit_manager)
@@ -383,7 +383,7 @@ def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
     if cirq_op is None or (
         isinstance(cirq_op, cirq.Operation) and isinstance(cirq_op.gate, BloqAsCirqGate)
     ):
-        raise NotImplementedError(f"{bloq} does not support decomposition.")
+        raise ValueError(f"Cannot decompose from cirq op: {bloq} doesn't have a cirq op.")
 
     return cirq_optree_to_cbloq(
         cirq_op, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
