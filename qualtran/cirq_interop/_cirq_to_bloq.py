@@ -19,14 +19,15 @@ from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
-import cirq_ft
 import numpy as np
 import quimb.tensor as qtn
 from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran._infra.gate_with_registers import split_qubits
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
@@ -56,33 +57,22 @@ class CirqGateAsBloq(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [
-                Register(reg.name, bitsize=reg.bitsize, shape=reg.shape, side=Side(reg.side.value))
-                for reg in self.cirq_registers
-            ]
-        )
-
-    @cached_property
-    def cirq_registers(self) -> cirq_ft.Signature:
-        if isinstance(self.gate, cirq_ft.GateWithRegisters):
+        if isinstance(self.gate, Bloq):
             return self.gate.signature
-        else:
-            return cirq_ft.Signature(
-                [cirq_ft.Register('qubits', shape=(cirq.num_qubits(self.gate),), bitsize=1)]
+        import cirq_ft
+
+        if isinstance(self.gate, cirq_ft.GateWithRegisters):
+            # TODO(gh/Qualtran/issues/398): Remove once `cirq_ft.GateWithRegisters` is deprecated.
+            return Signature(
+                [
+                    Register(reg.name, reg.bitsize, reg.shape, Side(reg.side.value))
+                    for reg in self.gate.signature
+                ]
             )
+        return Signature([Register('qubits', shape=cirq.num_qubits(self.gate), bitsize=1)])
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        qubit_manager = InteropQubitManager()
-        in_quregs = get_cirq_quregs(self.signature, qubit_manager)
-        cirq_op, out_quregs = self.as_cirq_op(qubit_manager, **in_quregs)
-        context = cirq.DecompositionContext(qubit_manager=qubit_manager)
-        decomposed_optree = cirq.decompose_once(cirq_op, context=context, default=None)
-        if decomposed_optree is None:
-            raise NotImplementedError(f"{self} does not support decomposition.")
-        return cirq_optree_to_cbloq(
-            decomposed_optree, signature=self.signature, in_quregs=in_quregs, out_quregs=out_quregs
-        )
+        return decompose_from_cirq_op(self, decompose_once=True)
 
     def add_my_tensors(
         self,
@@ -92,65 +82,25 @@ class CirqGateAsBloq(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
-        if not cirq.has_unitary(self.gate):
-            raise NotImplementedError(
-                f"CirqGateAsBloq.add_my_tensors is currently supported only for unitary gates. "
-                f"Found {self.gate}."
-            )
-        unitary_shape = []
-        reg_to_idx = defaultdict(list)
-        for reg in self.cirq_registers:
-            start = len(unitary_shape)
-            for i in range(int(np.prod(reg.shape))):
-                reg_to_idx[reg.name].append(start + i)
-                unitary_shape.append(2**reg.bitsize)
-
-        unitary_shape = (*unitary_shape, *unitary_shape)
-        unitary = cirq.unitary(self.gate).reshape(unitary_shape)
-        idx: List[Union[int, slice]] = [slice(x) for x in unitary_shape]
-        n = len(unitary_shape) // 2
-        for reg in self.signature:
-            if reg.side == Side.LEFT:
-                for i in reg_to_idx[reg.name]:
-                    # LEFT register ends, extract right subspace that's equivalent to 0.
-                    idx[i] = 0
-            if reg.side == Side.RIGHT:
-                for i in reg_to_idx[reg.name]:
-                    # Right register begins, extract the left subspace that's equivalent to 0.
-                    idx[i + n] = 0
-        unitary = unitary[tuple(idx)]
-        new_shape = tuple(
-            [
-                *itertools.chain.from_iterable(
-                    (2**reg.bitsize,) * int(np.prod(reg.shape))
-                    for reg in [*self.signature.rights(), *self.signature.lefts()]
-                )
-            ]
-        )
-        assert unitary.shape == new_shape
-        incoming_list = [
-            *itertools.chain.from_iterable(
-                [np.array(incoming[reg.name]).flatten() for reg in self.signature.lefts()]
-            )
-        ]
-        outgoing_list = [
-            *itertools.chain.from_iterable(
-                [np.array(outgoing[reg.name]).flatten() for reg in self.signature.rights()]
-            )
-        ]
-
-        tn.add(
-            qtn.Tensor(
-                data=unitary, inds=outgoing_list + incoming_list, tags=[self.short_name(), tag]
-            )
+        _add_my_tensors_from_gate(
+            self.gate,
+            self.signature,
+            self.short_name(),
+            tn=tn,
+            tag=tag,
+            incoming=incoming,
+            outgoing=outgoing,
         )
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        import cirq_ft
+
+        from qualtran import GateWithRegisters
         from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate
 
-        if not isinstance(self.gate, cirq_ft.GateWithRegisters):
+        if not isinstance(self.gate, (cirq_ft.GateWithRegisters, GateWithRegisters)):
             return self.gate.on(*cirq_quregs['qubits'].flatten()), cirq_quregs
         return _construct_op_from_gate(
             self.gate,
@@ -158,21 +108,84 @@ class CirqGateAsBloq(Bloq):
             qubit_manager=qubit_manager,
         )
 
-    def t_complexity(self) -> 'cirq_ft.TComplexity':
-        return cirq_ft.t_complexity(self.gate)
+    def t_complexity(self) -> 'TComplexity':
+        return t_complexity(self.gate)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box
+        return _wire_symbol_from_gate(self.gate, self.signature, soq)
 
-        wire_symbols = cirq.circuit_diagram_info(self.gate).wire_symbols
-        begin = 0
-        symbol: str = soq.pretty()
-        for reg in self.signature:
-            finish = begin + int(np.prod(reg.shape))
-            if reg == soq.reg:
-                symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
-            begin = finish
-        return directional_text_box(text=symbol, side=soq.reg.side)
+
+def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet') -> 'WireSymbol':
+    from qualtran.drawing import directional_text_box
+
+    wire_symbols = cirq.circuit_diagram_info(gate).wire_symbols
+    begin = 0
+    symbol: str = soq.pretty()
+    for reg in signature:
+        finish = begin + int(np.prod(reg.shape))
+        if reg == soq.reg:
+            symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
+        begin = finish
+    return directional_text_box(text=symbol, side=soq.reg.side)
+
+
+def _add_my_tensors_from_gate(
+    gate: cirq.Gate,
+    signature: Signature,
+    short_name: str,
+    tn: qtn.TensorNetwork,
+    tag: Any,
+    *,
+    incoming: Dict[str, 'SoquetT'],
+    outgoing: Dict[str, 'SoquetT'],
+):
+    if not cirq.has_unitary(gate):
+        raise NotImplementedError(
+            f"CirqGateAsBloq.add_my_tensors is currently supported only for unitary gates. "
+            f"Found {gate}."
+        )
+    unitary_shape = []
+    reg_to_idx = defaultdict(list)
+    for reg in signature:
+        start = len(unitary_shape)
+        for i in range(int(np.prod(reg.shape))):
+            reg_to_idx[reg.name].append(start + i)
+            unitary_shape.append(2**reg.bitsize)
+
+    unitary_shape = (*unitary_shape, *unitary_shape)
+    unitary = cirq.unitary(gate).reshape(unitary_shape)
+    idx: List[Union[int, slice]] = [slice(x) for x in unitary_shape]
+    n = len(unitary_shape) // 2
+    for reg in signature:
+        if reg.side == Side.LEFT:
+            for i in reg_to_idx[reg.name]:
+                # LEFT register ends, extract right subspace that's equivalent to 0.
+                idx[i] = 0
+        if reg.side == Side.RIGHT:
+            for i in reg_to_idx[reg.name]:
+                # Right register begins, extract the left subspace that's equivalent to 0.
+                idx[i + n] = 0
+    unitary = unitary[tuple(idx)]
+    new_shape = tuple(
+        [
+            *itertools.chain.from_iterable(
+                (2**reg.bitsize,) * int(np.prod(reg.shape))
+                for reg in [*signature.rights(), *signature.lefts()]
+            )
+        ]
+    )
+    assert unitary.shape == new_shape
+    incoming_list = [
+        *itertools.chain.from_iterable(
+            [np.array(incoming[reg.name]).flatten() for reg in signature.lefts()]
+        )
+    ]
+    outgoing_list = [
+        *itertools.chain.from_iterable(
+            [np.array(outgoing[reg.name]).flatten() for reg in signature.rights()]
+        )
+    ]
+    tn.add(qtn.Tensor(data=unitary, inds=outgoing_list + incoming_list, tags=[short_name, tag]))
 
 
 @frozen
@@ -309,11 +322,11 @@ def cirq_optree_to_cbloq(
         if op.gate is None:
             raise ValueError(f"Only gate operations are supported, not {op}.")
 
-        bloq = CirqGateAsBloq(op.gate)
+        bloq = op.gate if isinstance(op.gate, Bloq) else CirqGateAsBloq(op.gate)
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
             k: np.apply_along_axis(_QReg, -1, v)
-            for k, v in cirq_ft.infra.split_qubits(bloq.cirq_registers, op.qubits).items()
+            for k, v in split_qubits(bloq.signature, op.qubits).items()
         }
         in_op_quregs: Dict[str, NDArray[_QReg]] = {
             reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
@@ -350,7 +363,7 @@ def cirq_optree_to_cbloq(
     return bb.finalize(**final_soqs_dict)
 
 
-def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
+def decompose_from_cirq_op(bloq: 'Bloq', *, decompose_once: bool = False) -> 'CompositeBloq':
     """Returns a CompositeBloq constructed using Cirq operations obtained via `bloq.as_cirq_op`.
 
     This method first checks whether `bloq.signature` is parameterized. If yes, it raises a
@@ -368,13 +381,14 @@ def decompose_from_cirq_op(bloq: 'Bloq') -> 'CompositeBloq':
     qubit_manager = InteropQubitManager()
     in_quregs = get_cirq_quregs(bloq.signature, qubit_manager)
     cirq_op, out_quregs = bloq.as_cirq_op(qubit_manager, **in_quregs)
-    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    context = cirq.DecompositionContext(qubit_manager=qubit_manager)
+    decomposed_optree = (
+        cirq.decompose_once(cirq_op, context=context, default=None) if decompose_once else cirq_op
+    )
 
-    if cirq_op is None or (
-        isinstance(cirq_op, cirq.Operation) and isinstance(cirq_op.gate, BloqAsCirqGate)
-    ):
+    if decomposed_optree is None:
         raise NotImplementedError(f"{bloq} does not support decomposition.")
 
     return cirq_optree_to_cbloq(
-        cirq_op, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
+        decomposed_optree, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
     )

@@ -22,6 +22,7 @@ from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq

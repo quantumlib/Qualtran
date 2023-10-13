@@ -16,7 +16,6 @@ from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
-import cirq_ft
 import numpy as np
 import sympy
 from attrs import frozen
@@ -27,12 +26,16 @@ from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_op
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+
+
+# TODO(gh/Qualtran/issues/398): Replace with `swap_network.py` from Cirq-FT
 
 
 @frozen
@@ -90,13 +93,13 @@ class CSwapApprox(Bloq):
     def short_name(self) -> str:
         return '~swap'
 
-    def t_complexity(self) -> cirq_ft.TComplexity:
+    def t_complexity(self) -> TComplexity:
         """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
-        return cirq_ft.TComplexity(t=4 * n, clifford=22 * n - 1)
+        return TComplexity(t=4 * n, clifford=22 * n - 1)
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
