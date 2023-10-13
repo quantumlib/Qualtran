@@ -14,7 +14,7 @@
 
 from typing import Any, Callable, Hashable, Iterable, Optional, overload, Union
 
-import attr
+import attrs
 import cachetools
 import cirq
 from typing_extensions import Literal, Protocol
@@ -24,7 +24,7 @@ from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
 
-@attr.frozen
+@attrs.frozen
 class TComplexity:
     """Dataclass storing counts of logical T-gates, Clifford gates and single qubit rotations."""
 

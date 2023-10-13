@@ -62,6 +62,7 @@ class CirqGateAsBloq(Bloq):
         import cirq_ft
 
         if isinstance(self.gate, cirq_ft.GateWithRegisters):
+            # TODO(gh/Qualtran/issues/398): Remove once `cirq_ft.GateWithRegisters` is deprecated.
             return Signature(
                 [
                     Register(reg.name, reg.bitsize, reg.shape, Side(reg.side.value))

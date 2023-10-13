@@ -205,6 +205,9 @@ def test_to_contiguous_index():
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
 
 
-def test_notebook():
+def test_arithmetic_notebook():
     execute_notebook('arithmetic')
+
+
+def test_comparison_gates_notebook():
     execute_notebook('comparison_gates')

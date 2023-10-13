@@ -268,7 +268,8 @@ def _construct_op_from_gate(
     """
     all_quregs: Dict[str, 'CirqQuregT'] = {}
     out_quregs: Dict[str, 'CirqQuregT'] = {}
-    # def _cmp()
+    # TODO(gh/Qualtran/issues/398): Replace Side(reg.side.value) with `reg.side` once Side from
+    # Cirq-FT is deprecated.
     for reg in gate.signature:
         full_shape = reg.shape + (reg.bitsize,)
         if Side(reg.side.value) & Side.LEFT:

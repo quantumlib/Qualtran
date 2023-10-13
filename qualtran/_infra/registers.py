@@ -19,7 +19,7 @@ from collections import defaultdict
 from typing import Dict, Iterable, Iterator, List, overload, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attr import field, frozen
+from attrs import field, frozen
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
@@ -170,6 +170,7 @@ class Signature:
 
     def get_cirq_quregs(self) -> Dict[str, 'NDArray[cirq.Qid]']:
         """Get arrays of cirq qubits for these registers."""
+        # TODO(gh/Qualtran/issues/398): Make `get_cirq_quregs` an independent method.
         from qualtran._infra.gate_with_registers import get_named_qubits
 
         return get_named_qubits(self.lefts())
