@@ -58,4 +58,6 @@ from ._infra.quantum_graph import (
     Soquet,
 )
 
+from ._infra.bloq_example import BloqExample, bloq_example
+
 # --------------------------------------------------------------------------------------------------
