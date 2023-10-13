@@ -13,19 +13,25 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
+import cirq_ft
+import numpy as np
+import sympy
 from attrs import frozen
 from cirq_ft import MultiTargetCSwapApprox
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_op
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.resource_counting import SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -87,6 +93,27 @@ class CSwapApprox(Bloq):
     def short_name(self) -> str:
         return '~swap'
 
+    def t_complexity(self) -> cirq_ft.TComplexity:
+        """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
+        n = self.bitsize
+        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
+        # 4 * n: CNOTs
+        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
+        return cirq_ft.TComplexity(t=4 * n, clifford=22 * n - 1)
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        n = self.bitsize
+        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
+        # 4 * n: CNOTs
+        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
+        return {
+            (4 * n, TGate()),
+            (16 * n, ArbitraryClifford(n=1)),
+            (6 * n - 1, ArbitraryClifford(n=2)),
+        }
+
 
 @frozen
 class SwapWithZero(Bloq):
@@ -128,3 +155,11 @@ class SwapWithZero(Bloq):
                 )
 
         return {'selection': bb.join(selection), 'targets': targets}
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        num_swaps = np.floor(
+            sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
+        )
+        return {(num_swaps, CSwapApprox(self.target_bitsize))}
