@@ -16,7 +16,7 @@ from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
 from cirq_ft import TComplexity
 from cirq_ft.algos.qrom import QROM
 from cirq_ft.infra.bit_tools import float_as_fixed_width_int
@@ -43,13 +43,13 @@ def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
     """Polynomial coefficients for approximating inverse square root.
 
     This function returns the coefficients of a piecewise cubic polynomial
-    interpolation to the inverse square root, defined over two intervals [1,
-    3/2] (a) and [3/2, 2] (b). The coefficients were provided by the reference
-    below in the context of computing the Coulomb potential.
+    interpolation to the inverse square root, defined over two intervals [1, 3/2] (a) and
+    [3/2, 2] (b). The coefficients were provided by the reference below in the
+    context of computing the Coulomb potential.
 
     References:
         [Quantum computation of stopping power for inertial fusion target design]
-        (https://browse.arxiv.org/pdf/2308.12352.pdf) pg. 12 / 13.
+        (https://arxiv.org/abs/2308.12352) pg. 12 / 13.
     """
     poly_coeffs_a = np.array(
         [
@@ -73,7 +73,7 @@ def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
 def build_qrom_data_for_poly_fit(
     selection_bitsize: int, target_bitsize: int, poly_coeffs: Tuple[NDArray, NDArray]
 ) -> NDArray:
-    """Build QROM data from polynomial coefficients from Referenence.
+    """Build QROM data from polynomial coefficients from the referenence.
 
     Args:
         selection_bitsize: Number of bits for QROM selection register. This is
@@ -99,7 +99,7 @@ def build_qrom_data_for_poly_fit(
     # entries so as to use the variable spaced QROM implementation.  The
     # repeated ranges occur for l :-> l + 2^k, and are repeated twice for
     # coeffs_a and coeffs_b. We need to scale the coefficients by 2^{-(k-1)} to
-    # correclty account for the selection range (r_{ij}^2) Our coefficients are
+    # correctly account for the selection range (r_{ij}^2). Our coefficients are
     # initially defined in the range [1, 3/2] for "_a" and [3/2, 2] for "_b".
     data = np.zeros((4, 2 ** (selection_bitsize)), dtype=np.int_)
     for i, (a, b) in enumerate(zip(poly_coeffs_a, poly_coeffs_b)):
@@ -142,7 +142,7 @@ class QuantumVariableRotation(Bloq):
         bitsize: The number of bits encoding the phase angle $\phi_j$.
 
     Register:
-     - phi: a bitsize size register storing the angle $\phi_j$.
+        phi: a bitsize size register storing the angle $\phi_j$.
 
     References:
         (Faster quantum chemistry simulation on fault-tolerant quantum
@@ -169,8 +169,8 @@ class QuantumVariableRotation(Bloq):
 
 
 @frozen
-class NewtonRaphson(Bloq):
-    r"""Bloq implementing a single Newton-Raphson step
+class NewtonRaphsonApproxInverseSquareRoot(Bloq):
+    r"""Bloq implementing a single Newton-Raphson step to approximate the inverse square root.
 
     Given a (polynomial) approximation for $y_n = 1/sqrt{x}$ we can approximate
     the inverse square root by
@@ -194,9 +194,9 @@ class NewtonRaphson(Bloq):
         output_bitsize: The number of bits to store the output of the NewtonRaphson step.
 
     Register:
-     - xsq: an input_bitsize size register storing the value x^2.
-     - ply: an size register storing the value x^2.
-     - trg: a target_bitsize size register storing the output of the newton raphson step.
+        x_sq: an input_bitsize size register storing the value x^2.
+        poly: an poly_bitsize size register storing the value x^2.
+        target: a target_bitsize size register storing the output of the newton raphson step.
 
     References:
         (Faster quantum chemistry simulation on fault-tolerant quantum
@@ -210,9 +210,9 @@ class NewtonRaphson(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('xsq', bitsize=self.x_sq_bitsize),
-                Register('ply', bitsize=self.poly_bitsize),
-                Register('trg', self.target_bitsize),
+                Register('x_sq', bitsize=self.x_sq_bitsize),
+                Register('poly', bitsize=self.poly_bitsize),
+                Register('target', self.target_bitsize),
             ]
         )
 
@@ -243,22 +243,22 @@ class NewtonRaphson(Bloq):
 
 
 @frozen
-class PolynmomialEvaluation(Bloq):
-    r"""Bloq to evaluate polynomial from QROM
+class PolynmomialEvaluationInverseSquareRoot(Bloq):
+    r"""Bloq to evaluate a polynomial approximation to inverse Square root from QROM.
 
     Args:
         in_bitsize: The number of bits encoding the input registers.
         out_bitsize: The number of bits encoding the input registers.
 
     Register:
-     - in_c{0,1,2,3}: QROM input containing the 4 polynomial coefficients.
+        in_c{0,1,2,3}: QROM input containing the 4 polynomial coefficients.
      - out: Output register to store polynomial approximation to inverse square root.
 
     References:
         (Quantum computation of stopping power for inertial fusion target design
     )[https://arxiv.org/pdf/2308.12352.pdf]
     """
-    xsq_bitsize: int
+    x_sq_bitsize: int
     poly_bitsize: int
     out_bitsize: int
 
@@ -266,11 +266,8 @@ class PolynmomialEvaluation(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('xsq', bitsize=self.xsq_bitsize),
-                Register('in_c0', bitsize=self.poly_bitsize),
-                Register('in_c1', bitsize=self.poly_bitsize),
-                Register('in_c2', bitsize=self.poly_bitsize),
-                Register('in_c3', bitsize=self.poly_bitsize),
+                Register('x_sq', bitsize=self.x_sq_bitsize),
+                Register('in_coeff', bitsize=self.poly_bitsize, shape=(4,)),
                 Register('out', bitsize=self.out_bitsize),
             ]
         )
@@ -288,14 +285,14 @@ class PolynmomialEvaluation(Bloq):
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # This should probably by scale int by float rather than 3 real
-        # multiplications as x in 49 is an integer.
+        # This should probably be scale int by float rather than 3 real
+        # multiplications as x in Eq. 49 of the reference is an integer.
         return {(3, MultiplyTwoReals(self.poly_bitsize)), (3, Add(self.poly_bitsize))}
 
 
 @frozen
 class KineticEnergy(Bloq):
-    """Bloq for Kinetic energy unitary.
+    """Bloq for the Kinetic energy unitary defined in the reference.
 
     Args:
         num_elec: The number of electrons.
@@ -362,7 +359,7 @@ class PairPotential(Bloq):
     """
 
     bitsize: int
-    qrom_data: Tuple[Tuple[int], ...]
+    qrom_data: Tuple[Tuple[int], ...] = field(repr=False)
     poly_bitsize: int = 15
     inv_sqrt_bitsize: int = 24
     label: str = "V"
@@ -382,15 +379,8 @@ class PairPotential(Bloq):
     def short_name(self) -> str:
         return f'U_{self.label}(dt)_ij'
 
-    def __repr__(self) -> str:
-        # overwriting this to avoid data entering repr which is used during bloq count visualization.
-        return (
-            "PairPotential(bitsize={self.bitsize}, poly_bitsize={self.poly_bitsize}, "
-            "inv_sqrt_bitsize={self.inv_sqrt_bitsize})"
-        )
-
     def build_composite_bloq(
-        self, bb: BloqBuilder, *, system_i: SoquetT, system_j
+        self, bb: BloqBuilder, *, system_i: SoquetT, system_j: SoquetT
     ) -> Dict[str, SoquetT]:
         # compute r_i - r_j
         # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
@@ -424,30 +414,27 @@ class PairPotential(Bloq):
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
         poly_out = bb.allocate(self.poly_bitsize)
-        sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3, poly_out = bb.add(
-            PolynmomialEvaluation(
-                xsq_bitsize=bitsize_rij_sq,
+        sos, [qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3], poly_out = bb.add(
+            PolynmomialEvaluationInverseSquareRoot(
+                x_sq_bitsize=bitsize_rij_sq,
                 poly_bitsize=self.poly_bitsize,
                 out_bitsize=self.poly_bitsize,
             ),
-            xsq=sos,
-            in_c0=qrom_anc_c0,
-            in_c1=qrom_anc_c1,
-            in_c2=qrom_anc_c2,
-            in_c3=qrom_anc_c3,
+            x_sq=sos,
+            in_coeff=np.array([qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3]),
             out=poly_out,
         )
         # Do a Newton-Raphson step to obtain a more accurate estimate of r_{ij}^{-1}
         inv_sqrt_sos = bb.allocate(self.inv_sqrt_bitsize)
         sos, poly_out, inv_sqrt_sos = bb.add(
-            NewtonRaphson(
+            NewtonRaphsonApproxInverseSquareRoot(
                 x_sq_bitsize=bitsize_rij_sq,
                 poly_bitsize=self.poly_bitsize,
                 target_bitsize=self.inv_sqrt_bitsize,
             ),
-            xsq=sos,
-            ply=poly_out,
-            trg=inv_sqrt_sos,
+            x_sq=sos,
+            poly=poly_out,
+            target=inv_sqrt_sos,
         )
         inv_sqrt_sos = bb.add(
             QuantumVariableRotation(phi_bitsize=self.inv_sqrt_bitsize), phi=inv_sqrt_sos
