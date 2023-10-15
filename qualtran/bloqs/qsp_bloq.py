@@ -8,15 +8,45 @@ from cirq_ft.infra import GateWithRegisters, Register, Signature
 from numpy.typing import NDArray
 
 
-def _arbitrary_SU2_rotation(theta, phi, lambd):
-    el = np.exp(lambd * 1j)
-    ep = np.exp(phi * 1j)
-    cs = np.cos(theta)
-    sn = np.sin(theta)
-    return np.array([[el * ep * cs, ep * sn], [el * sn, -cs]])
+def _arbitrary_SU2_rotation(theta: float, phi: float, lambd: float):
+    r"""
+    Implements an arbitrary SU(2) rotation defined by
+
+    .. math::
+
+        \begin{matrix}
+        e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
+        e^{i\phi} \sin(\theta) & - \cos(\theta) \\
+        \end{matrix}
+
+    Returns:
+        A 2x2 rotation matrix
+
+    References:
+        [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
+            Motlagh and Wiebe. (2023). Equation 7.
+    """
+    return np.array(
+        [
+            [np.exp(1j * (lambd + phi)) * np.cos(theta), np.exp(1j * phi) * np.sin(theta)],
+            [np.exp(1j * lambd) * np.sin(theta), -np.cos(theta)],
+        ]
+    )
 
 
 def qsp_phase_factors(P: np.ndarray, Q: np.ndarray) -> Dict[str, Any]:
+    """
+    Computes the QSP signal rotations for a given pair of polynomials.
+    The QSP transformation is described in Theorem 3, and the algorithm for computing co-efficients is described in Algorithm 1.
+
+    Args:
+        P: Co-efficients of a complex polynomial.
+        Q: Co-efficients of a complex polynomial.
+
+    References:
+        [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
+            Motlagh and Wiebe. (2023). Theorem 3; Algorithm 1.
+    """
     P = np.array(P)
     Q = np.array(Q)
     if P.ndim != 1 or Q.ndim != 1 or P.shape != Q.shape:
@@ -47,6 +77,20 @@ def qsp_phase_factors(P: np.ndarray, Q: np.ndarray) -> Dict[str, Any]:
 
 @frozen
 class QEVTCircuit(GateWithRegisters):
+    """
+    Applies a QSP sequence described by a pair of polynomials $P, Q$, to a unitary $U$ to obtain a block-encoding of $P(U)$.
+    The exact circuit is described in Figure 2.
+
+    Args:
+        U: Unitary operation (encoding some Hermitian matrix $H$ as $e^iH$).
+        P: Co-efficients of a complex polynomial.
+        Q: Co-efficients of a complex polynomial.
+
+    References:
+        [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
+            Motlagh and Wiebe. (2023). Theorem 3; Figure 2.
+    """
+
     U: GateWithRegisters
     P: Tuple[float]
     Q: Tuple[float]
