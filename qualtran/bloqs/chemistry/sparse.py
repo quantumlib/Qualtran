@@ -11,7 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""SELECT and PREPARE for the sparse chemistry Hamtilonian in second quantization."""
+"""SELECT and PREPARE for the sparse chemistry Hamiltonian in second quantization.
+
+The sparse Hamiltonian simply takes the standard second quantized chemistry
+Hamiltonian and sets to zero any term whose magnitude is smaller than some
+threshold. 
+"""
 
 from functools import cached_property
 from typing import Optional, Set, Tuple, TYPE_CHECKING
@@ -34,8 +39,9 @@ class PrepareUniformSuperposition(Bloq):
 
     Before preparing the state in Eq. A11 of the reference we need to prepare a
     uniform superposition over $d$ basis states, where $d$ is the number of
-    non-zero entries in our Hamiltonian. We will use this register output the
-    non-zero (p,q)_j and (p,q,r,s)_j tuples of non-zero matrix element indicies.
+    non-zero entries in our Hamiltonian. We will use this state to ultimately
+    output the non-zero (p,q)_j and (p,q,r,s)_j tuples of non-zero symmetry
+    inequivalent matrix element indicies.
 
     Args:
         num_non_zero: The number of non-zero matrix elements.
@@ -44,11 +50,11 @@ class PrepareUniformSuperposition(Bloq):
             preparataion. Default 8.
 
     Registers:
-        control: control register for selection
+        d: the register to prepare the uniform superposition on.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            hypercontraction](https://arxiv.org/abs/2011.03494) Fig 13.
+            hypercontraction](https://arxiv.org/abs/2011.03494) Page 39.
     """
     num_non_zero: int
     num_bits_rot_aa: int = 8
@@ -66,7 +72,7 @@ class PrepareUniformSuperposition(Bloq):
         uniform_prep = (
             3 * (self.num_non_zero - 1).bit_length() - 3 * eta + 2 * self.num_bits_rot_aa - 9
         )
-        return {(4 * uniform_prep, TGate())}  # uniform state prep
+        return {(4 * uniform_prep, TGate())}
 
 
 @frozen
@@ -87,11 +93,19 @@ class PrepareSparse(Bloq):
         k: qroam blocking factor.
 
     Registers:
-        control: control register for selection
+        pqrs: the register to store the spatial orbital index.
+        theta: sign qubit.
+        alpha: spin for (pq) indicies.
+        beta: spin for (rs) indicies.
+        swap_pq: a |+> state to restore the symmetries of the p and q indices.
+        swap_rs: a |+> state to restore the symmetries of the r and s indices.
+        swap_pqrs: a |+> state to restore the symmetries of between (pq) and (rs).
+        flag_1b: a single qubit to flag whether the one-body Hamiltonian is to
+            be applied or not during SELECT.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            hypercontraction](https://arxiv.org/abs/2011.03494) Fig 13.
+            hypercontraction](https://arxiv.org/abs/2011.03494) Eq. A11.
     """
     num_spin_orb: int
     num_non_zero: int
@@ -140,7 +154,7 @@ class PrepareSparse(Bloq):
 
 
 @frozen
-class SparseSelect(Bloq):
+class SelectSparse(Bloq):
     r"""SELECT oracle for the sparse Hamiltonian.
 
     Implements the two applications of Fig. 13.
@@ -150,7 +164,15 @@ class SparseSelect(Bloq):
         num_controls: The number of controls.
 
     Registers:
-        control: control register for selection
+        flag_1b: a single qubit to flag whether the one-body Hamiltonian is to
+            be applied or not during SELECT.
+        swap_pq: a |+> state to restore the symmetries of the p and q indices.
+        swap_rs: a |+> state to restore the symmetries of the r and s indices.
+        swap_pqrs: a |+> state to restore the symmetries of between (pq) and (rs).
+        theta: sign qubit.
+        pqrs: the register to store the spatial orbital index.
+        alpha: spin for (pq) indicies.
+        beta: spin for (rs) indicies.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
@@ -179,7 +201,7 @@ class SparseSelect(Bloq):
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
         # which is not controlled (for the two body part of the Ham). The figure
         # is a bit misleading as applying that circuit twice would square the
-        # value in the sign. In reality the Z to pick up the phase could be done
+        # value in the sign. In reality the Z to pick up the sign could be done
         # after prepare (but only once).
-        # We would apply the majoranas to pq and then rs.
+        # In practice we would apply the selected majoranas to (p, q, alpha) and then (r, s, beta).
         return {(4 * (4 * self.num_spin_orb - 6), TGate())}

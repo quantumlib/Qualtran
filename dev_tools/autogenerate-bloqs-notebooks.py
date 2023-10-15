@@ -63,6 +63,8 @@ import qualtran.bloqs.chemistry.double_factorization
 import qualtran.bloqs.chemistry.double_factorization_test
 import qualtran.bloqs.chemistry.single_factorization
 import qualtran.bloqs.chemistry.single_factorization_test
+import qualtran.bloqs.chemistry.sparse
+import qualtran.bloqs.chemistry.sparse_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
@@ -143,6 +145,15 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.factoring.mod_mul_test._make_modmul),
         ],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
+    NotebookSpec(
+        title='Sparse',
+        module=qualtran.bloqs.chemistry.sparse,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.chemistry.sparse_test._make_sparse_select),
+            BloqNbSpec(qualtran.bloqs.chemistry.sparse_test._make_sparse_prepare),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry',
     ),
     NotebookSpec(
         title='Single Factorization',

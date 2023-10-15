@@ -12,28 +12,38 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.single_factorization import (
-    SingleFactorization,
-    #SingleFactorizationOneBody,
-)
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
+from qualtran.resource_counting import get_bloq_counts_graph
+from qualtran.testing import execute_notebook
 
 
-def _make_single_factorization():
-    from qualtran.bloqs.chemistry.single_factorization import SingleFactorization
+def _make_sparse_select():
+    from qualtran.bloqs.chemistry.sparse import SelectSparse
 
-    return SingleFactorization(10, 20, 8)
-
-
-# def test_single_factorization_one_body():
-#     sf_one_body = SingleFactorizationOneBody(10, 12, 8)
-#     assert_valid_bloq_decomposition(sf_one_body)
+    return SelectSparse(10)
 
 
-def test_single_factorization():
-    sf = SingleFactorization(10, 12, 8)
-    assert_valid_bloq_decomposition(sf)
+def _make_sparse_prepare():
+    from qualtran.bloqs.chemistry.sparse import PrepareSparse
+
+    return PrepareSparse(10, 1_000, 8)
+
+
+def test_sparse_prepare():
+    prep = PrepareSparse(10, 1_000, 8)
+
+
+def test_sparse_prepare_bloq_counts():
+    _, sigma = get_bloq_counts_graph(PrepareSparse(10, 1_000, 8))
+
+
+def test_sparse_select_bloq_counts():
+    _, sigma = get_bloq_counts_graph(SelectSparse(10))
+
+
+def test_sparse_select():
+    sel = SelectSparse(10)
 
 
 def test_notebook():
-    execute_notebook("single_factorization")
+    execute_notebook("sparse")
