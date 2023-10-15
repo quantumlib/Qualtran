@@ -20,7 +20,7 @@ from attrs import field, frozen
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Signature
+from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
