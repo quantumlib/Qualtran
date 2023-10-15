@@ -55,7 +55,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
         return Signature.build(x=self.bitsize, target=1)
 
     def pretty_name(self) -> str:
-        return f'x < {self.less_than_val}'
+        return f'x lt {self.less_than_val}'
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, self.less_than_val, [2]
