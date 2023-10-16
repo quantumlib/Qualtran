@@ -9,14 +9,13 @@ from numpy.typing import NDArray
 
 
 def _arbitrary_SU2_rotation(theta: float, phi: float, lambd: float):
-    r"""
-    Implements an arbitrary SU(2) rotation defined by
+    r"""Implements an arbitrary SU(2) rotation defined by
 
     .. math::
 
         \begin{matrix}
         e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
-        e^{i\phi} \sin(\theta) & - \cos(\theta) \\
+        e^{i\phi} \sin(\theta) & - \cos(\theta)
         \end{matrix}
 
     Returns:
@@ -35,8 +34,7 @@ def _arbitrary_SU2_rotation(theta: float, phi: float, lambd: float):
 
 
 def qsp_phase_factors(P: np.ndarray, Q: np.ndarray) -> Dict[str, Any]:
-    """
-    Computes the QSP signal rotations for a given pair of polynomials.
+    """Computes the QSP signal rotations for a given pair of polynomials.
     The QSP transformation is described in Theorem 3, and the algorithm for computing co-efficients is described in Algorithm 1.
 
     Args:
@@ -77,12 +75,11 @@ def qsp_phase_factors(P: np.ndarray, Q: np.ndarray) -> Dict[str, Any]:
 
 @frozen
 class QEVTCircuit(GateWithRegisters):
-    """
-    Applies a QSP sequence described by a pair of polynomials $P, Q$, to a unitary $U$ to obtain a block-encoding of $P(U)$.
+    """Applies a QSP sequence described by a pair of polynomials $P, Q$, to a unitary $U$ to obtain a block-encoding of $P(U)$.
     The exact circuit is described in Figure 2.
 
     Args:
-        U: Unitary operation (encoding some Hermitian matrix $H$ as $e^iH$).
+        U: Unitary operation (encoding some Hermitian matrix $H$ as $e^{iH}$).
         P: Co-efficients of a complex polynomial.
         Q: Co-efficients of a complex polynomial.
 
