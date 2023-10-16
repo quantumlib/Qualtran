@@ -26,6 +26,8 @@ from qualtran.cirq_interop import BloqAsCirqGate
 # for reprs
 _MY_NAMESPACE = 'qualtran.bloqs.swap_network_cirq'
 
+# TODO(gh/Qualtran/issues/398): Replace with `swap_network.py` from Cirq-FT
+
 
 class MultiTargetCSwap(BloqAsCirqGate):
     def __init__(self, target_bitsize: int):

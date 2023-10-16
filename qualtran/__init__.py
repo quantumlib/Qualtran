@@ -45,7 +45,7 @@ from ._infra.composite_bloq import (
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from ._infra.registers import Register, Signature, Side
+from ._infra.registers import Register, SelectionRegister, Signature, Side
 
 # Internal imports: none
 # External imports: none
@@ -57,6 +57,8 @@ from ._infra.quantum_graph import (
     RightDangle,
     Soquet,
 )
+
+from ._infra.gate_with_registers import GateWithRegisters
 
 from ._infra.bloq_example import BloqExample, bloq_example
 

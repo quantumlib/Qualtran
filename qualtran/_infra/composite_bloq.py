@@ -34,7 +34,6 @@ from typing import (
 import attrs
 import networkx as nx
 import numpy as np
-from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -45,6 +44,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregInT, CirqQuregT
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -187,8 +187,10 @@ class CompositeBloq(Bloq):
         out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
         return tuple(out_vals[reg.name] for reg in self.signature.rights())
 
-    def t_complexity(self) -> TComplexity:
+    def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""
+        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
         rc = TComplexity()
         for binst in self.bloq_instances:
             rc += binst.bloq.t_complexity()

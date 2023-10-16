@@ -31,6 +31,7 @@ from qualtran.cirq_interop import (
     CirqQuregT,
     decompose_from_cirq_op,
 )
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 @frozen
@@ -105,7 +106,7 @@ def test_bloq_decompose_from_cirq_op():
     cirq_quregs = tb.signature.get_cirq_quregs()
     circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
-    assert tb.t_complexity() == cirq_ft.TComplexity(clifford=1)
+    assert tb.t_complexity() == TComplexity(clifford=1)
 
     with pytest.raises(DecomposeTypeError):
         TestCNOTSymbolic().decompose_bloq()

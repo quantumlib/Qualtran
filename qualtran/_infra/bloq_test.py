@@ -18,10 +18,10 @@ from typing import Dict, Tuple
 import cirq
 import pytest
 from attrs import frozen
-from cirq_ft import TComplexity
 
 from qualtran import Bloq, CompositeBloq, Side, Signature
 from qualtran.cirq_interop import CirqQuregT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.testing import execute_notebook
 
 
