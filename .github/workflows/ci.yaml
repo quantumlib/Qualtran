@@ -78,7 +78,7 @@ jobs:
           cache-dependency-path: 'dev_tools/requirements/envs/pylint.env.txt'
       - name: Install dependencies
         run: |
-          pip install -r dev_tools/requirements/envs/pylint.env.txt
+          pip install --no-deps -r dev_tools/requirements/envs/pylint.env.txt
           pip install --no-deps -e .
       - run: |
           check/pylint
