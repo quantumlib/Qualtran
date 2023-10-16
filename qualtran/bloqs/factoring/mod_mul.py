@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Set, Union
 
 import sympy
 from attrs import frozen
@@ -83,9 +83,7 @@ class CtrlModMul(Bloq):
         bb.free(y)
         return {'ctrl': ctrl, 'x': x}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        if ssa is None:
-            raise ValueError(f"{self} requires a SympySymbolAllocator")
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
         return {(2, self._Add(k=k)), (1, CSwap(self.bitsize))}
 

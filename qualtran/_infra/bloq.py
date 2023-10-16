@@ -16,11 +16,13 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
+    import networkx as nx
     import quimb.tensor as qtn
+    import sympy
     from numpy.typing import NDArray
 
     from qualtran import BloqBuilder, CompositeBloq, Signature, Soquet, SoquetT
@@ -231,16 +233,36 @@ class Bloq(metaclass=abc.ABCMeta):
         )
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        """Return a set of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        """Override this method to build the bloq call graph.
+
+        This method must return a set of `(n, bloq)` tuples where bloq is called `n` times in
+        the decomposition.
 
         By default, this method will use `self.decompose_bloq()` to count up bloqs.
-        However, you can override this if you don't want to provide a complete decomposition,
-        if you know symbolic expressions for the counts, or if you need to "generalize"
-        the subbloqs by overwriting bloq attributes that do not affect its cost with generic
-        sympy symbols (perhaps with the aid of the provided `SympySymbolAllocator`).
+        However, you can provide specific callees directly by overriding this method if
+        1) you don't want to provide a complete decomposition, 2) you know symbolic expressions
+        for the counts, 3) or you need to "generalize" the subbloqs by overwriting bloq
+        attributes that do not affect its cost with generic sympy symbols using
+        the provided `SympySymbolAllocator`.
         """
-        return self.decompose_bloq().bloq_counts(ssa)
+        return self.decompose_bloq().build_call_graph(ssa)
+
+    def call_graph(
+        self,
+        generalizer: Callable[['Bloq'], Optional['Bloq']] = None,
+        keep: Optional[Sequence['Bloq']] = None,
+        max_depth: Optional[int] = None,
+    ) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]:
+        from qualtran.resource_counting.bloq_counts import get_bloq_call_graph
+
+        return get_bloq_call_graph(self, generalizer=generalizer, keep=keep, max_depth=max_depth)
+
+    def bloq_counts(
+        self, generalizer: Callable[['Bloq'], Optional['Bloq']] = None
+    ) -> Dict['Bloq', Union[int, 'sympy.Expr']]:
+        _, sigma = self.call_graph(generalizer=generalizer, max_depth=1)
+        return sigma
 
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.

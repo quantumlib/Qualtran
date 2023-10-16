@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
 from attrs import frozen
 
@@ -47,7 +47,7 @@ class Toffoli(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('ctrl', 1, shape=(2,)), Register('target', 1)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(4, TGate())}
 
     def on_classical_vals(

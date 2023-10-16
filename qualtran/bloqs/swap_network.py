@@ -13,11 +13,10 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
-import sympy
 from attrs import frozen
 from cirq_ft import MultiTargetCSwapApprox
 from numpy.typing import NDArray
@@ -31,7 +30,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -101,9 +100,7 @@ class CSwapApprox(Bloq):
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
         return TComplexity(t=4 * n, clifford=22 * n - 1)
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs
@@ -156,9 +153,7 @@ class SwapWithZero(Bloq):
 
         return {'selection': bb.join(selection), 'targets': targets}
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_swaps = np.floor(
             sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
         )

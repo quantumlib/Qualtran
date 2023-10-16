@@ -30,7 +30,6 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.bloqs.basic_gates.swap import _controlled_swap_matrix, _swap_matrix, CSwap
 from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -154,16 +153,15 @@ def test_cswap_bloq_counts():
             return
         return b
 
-    counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
-
+    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
     assert counts1 == counts2
 
 
 def test_cswap_symbolic():
     n = sympy.symbols('n')
     cswap = CSwap(bitsize=n)
-    counts = cswap.bloq_counts(SympySymbolAllocator())
+    counts = cswap.bloq_counts()
     assert len(counts) == 1
-    assert counts.pop() == (n, TwoBitCSwap())
+    assert counts[TwoBitCSwap()] == n
     with pytest.raises(ValueError):
         cswap.decompose_bloq()
