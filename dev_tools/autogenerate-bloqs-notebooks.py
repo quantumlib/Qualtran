@@ -59,8 +59,6 @@ import qualtran.bloqs.basic_gates.t_gate_test
 import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
-import qualtran.bloqs.chemistry.single_factorization
-import qualtran.bloqs.chemistry.single_factorization_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
@@ -141,16 +139,6 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.factoring.mod_mul_test._make_modmul),
         ],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
-    ),
-    NotebookSpec(
-        title='Single Factorization',
-        module=qualtran.bloqs.chemistry.single_factorization,
-        gate_specs=[
-            BloqNbSpec(
-                qualtran.bloqs.chemistry.single_factorization_test._make_single_factorization
-            )
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/chemistry',
     ),
 ]
 
