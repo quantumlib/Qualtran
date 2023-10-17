@@ -57,6 +57,32 @@ def get_num_bits_lxi(num_aux, num_xi, num_spin_orb) -> int:
     return num_bits_lxi
 
 
+def get_qroam_cost(data_size: int, bitsize: int, adjoint=False) -> Tuple[int, int]:
+    """This gives the optimal k and minimum cost for a QROM over L values of
+        size M.
+
+    Adapted from openfermion.
+
+    Args:
+        data_size: Amount of data we want to load.
+        bitsize: the amount of bits of output we need.
+
+    Returns:
+       val_opt: minimal (optimal) cost of QROM
+    """
+    if adjoint:
+        k = 0.5 * np.log2(data_size)
+        value = lambda k: data_size / 2**k + 2**k
+    else:
+        k = 0.5 * np.log2(data_size / bitsize)
+        assert k >= 0
+        value = lambda k: data_size / 2**k + bitsize * (2**k - 1)
+    k_int = np.array([np.floor(k), np.ceil(k)])
+    k_opt = k_int[np.argmin(value(k_int))]
+    val_opt = np.ceil(value(k_opt))
+    return int(val_opt)
+
+
 @frozen
 class QROAM(Bloq):
     """Placeholder bloq for QROAM.
@@ -66,8 +92,7 @@ class QROAM(Bloq):
 
     data_size: int
     target_bitsize: int
-    k: int
-    adjoint = False
+    adjoint: bool = False
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
@@ -80,13 +105,9 @@ class QROAM(Bloq):
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        if self.adjoint:
-            fac_1 = int(np.ceil(self.data_size / self.k))
-            fac_2 = self.k
-        else:
-            fac_1 = int(np.ceil(self.data_size / self.k))
-            fac_2 = self.target_bitsize * (self.k - 1)
-        return {(4 * (fac_1 + fac_2), TGate())}
+        cost = get_qroam_cost(self.data_size, self.target_bitsize, adjoint=self.adjoint)
+        # print("QROM ", self.adjoint, cost)
+        return {(4 * cost, TGate())}
 
 
 @frozen
@@ -97,7 +118,7 @@ class QROAMTwoRegs(Bloq):
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://arxiv.org/pdf/2011.03494.pdf)
+            Hypercontraction](https://arxiv.org/abs/2011.03494)
             Appendix B, page 44
     """
 
@@ -155,7 +176,6 @@ class ProgRotGateArray(Bloq):
     num_bits_rot: int
     num_bits_offset: int
     adjoint: bool = False
-    kr: int = 1
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
@@ -180,8 +200,8 @@ class ProgRotGateArray(Bloq):
         data_size = self.num_aux * self.num_xi + self.num_spin_orb // 2
         cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations
         return {
-            (4 * (cost_a, cost_c), TGate()),
-            (1, QROAM(data_size, self.num_spin_orb * self.num_bits_rot, self.kr)),
+            (4 * (cost_a + cost_c), TGate()),
+            (1, QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2, adjoint=self.adjoint)),
         }
 
 
@@ -211,7 +231,6 @@ class InnerPrepare(Bloq):
     num_bits_offset: int
     num_bits_state_prep: int
     adjoint: bool = False
-    kp: int = 1
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
@@ -220,7 +239,7 @@ class InnerPrepare(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(
-            xi=self.num_bits_xi,
+            xi=(self.num_xi - 1).bit_length(),
             offset=self.num_bits_offset,
             rot=self.num_bits_rot_aa,
             succ_p=1,
@@ -237,14 +256,10 @@ class InnerPrepare(Bloq):
         cost_b = num_bits_lxi - 1
         # QROAM for alt/keep values
         bp = num_bits_xi + self.num_bits_state_prep + 2  # C31
-        cost_c = int(
-            np.ceil((self.num_aux * self.num_xi + self.num_spin_orb // 2) / self.kp)
-        ) + bp * (
-            self.kp - 1
-        )  # C32
+        cost_c = (1, QROAM(self.num_aux * self.num_xi + self.num_spin_orb // 2, bp, self.adjoint))
         # inequality tests + CSWAP
         cost_d = self.num_bits_state_prep + num_bits_xi
-        return {(4 * (cost_a + cost_b + cost_c + cost_d), TGate())}
+        return {(4 * (cost_a + cost_b + cost_d), TGate()), cost_c}
 
 
 @frozen
@@ -279,7 +294,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
     num_bits_rot_aa: int = 8
     num_bits_rot: int = 24
     adjoint: bool = False
-    kp: int = 1
 
     @property
     def control_registers(self) -> Iterable[Register]:
@@ -291,7 +305,12 @@ class DoubleFactorizationOneBody(BlockEncoding):
 
     @property
     def junk_registers(self) -> Iterable[Register]:
-        return [Register("p", bitsize=self.num_spin_orb // 2), Register("spin", bitsize=1)]
+        return [
+            Register("p", bitsize=(self.num_xi - 1).bit_length()),
+            Register("spin", bitsize=1),
+            Register("rot", bitsize=1),
+            Register("state_prep", bitsize=self.num_bits_state_prep),
+        ]
 
     @property
     def target_registers(self) -> Iterable[Register]:
@@ -300,7 +319,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
     @property
     def selection_registers(self) -> Iterable[Register]:
         # really of size L + 1, hence just bit_length()
-        nlxi = (self.num_aux * self.num_xi + self.num_spin_orb // 2).bit_length()  # C15
+        nlxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         nxi = (self.num_xi - 1).bit_length()  # C14
         return [
             Register("l", bitsize=self.num_aux.bit_length()),
@@ -308,7 +327,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
             # registers which are l dependent
             Register("xi", bitsize=nxi),
             Register("offset", bitsize=nlxi),
-            Register("rot", bitsize=self.num_bits_rot_aa),
         ]
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
@@ -317,20 +335,18 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
-            num_bits_rot_aa=self.num_bits_rot,
+            num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_offset=num_bits_lxi,
             num_bits_state_prep=self.num_bits_state_prep,
-            kp=self.kp,
             adjoint=False,
         )
         in_prep_dag = InnerPrepare(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
-            num_bits_rot_aa=self.num_bits_rot,
+            num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_offset=num_bits_lxi,
             num_bits_state_prep=self.num_bits_state_prep,
-            kp=self.kp,
             adjoint=True,
         )
         n = self.num_spin_orb // 2
@@ -352,9 +368,9 @@ class DoubleFactorizationOneBody(BlockEncoding):
         )
         # 2*In-prep_l, addition, Rotations, 2*H, 2*SWAPS, subtraction
         return {
-            (1, in_prep),  # in-prep_l
+            (1, in_prep),  # in-prep_l listing 3 page 52/53
             (1, in_prep_dag),  # in_prep_l^dag
-            (1, rot),  # rotate into system basis
+            (1, rot),  # rotate into system basis  listing 4 pg 54
             (4, TGate()),  # apply CCZ / CCCZ (this should be accounted for but is not currently)
             (1, rot_dag),  # Undo rotations
             (2, CSwapApprox(self.num_spin_orb // 2)),  # Swaps for spins
@@ -376,8 +392,6 @@ class OuterPrepare(Bloq):
 
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
-        kl: QROAM blocking factor for data prepared over l (auxiliary) index.
-            Defaults to 1 (i.e. QROM).
         adjoint: Whether to dagger the bloq or not.
 
     Registers:
@@ -388,14 +402,13 @@ class OuterPrepare(Bloq):
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://arxiv.org/pdf/2011.03494.pdf)
+            Hypercontraction](https://arxiv.org/abs/2011.03494)
             Appendix C, page 51 and 52
     """
 
     num_aux: int
-    kl: int
     num_bits_state_prep: int
-    num_bits_rot: int = 8
+    num_bits_rot_aa: int = 8
     adjoint: bool = False
 
     def pretty_name(self) -> str:
@@ -411,21 +424,18 @@ class OuterPrepare(Bloq):
         # accounts for tiny factor if L is not divisible by factor of 2^eta.
         factors = factorint(self.num_aux)
         eta = factors[min(list(sorted(factors.keys())))]
-        if self.num_aux % 2 == 1:
+        if (self.num_aux + 1) % 2 == 1:
             eta = 0
         num_bits_l = self.num_aux.bit_length()
-        cost_a = 3 * num_bits_l - 3 * eta + 2 * self.num_bits_rot - 9
+        cost_a = 3 * num_bits_l - 3 * eta + 2 * self.num_bits_rot_aa - 9
         # QROM for alt/keep
         output_size = num_bits_l + self.num_bits_state_prep
-        if self.adjoint:
-            cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + self.kl
-        else:
-            cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + output_size * (self.kl - 1)
+        cost_b = (1, QROAM(self.num_aux + 1, output_size, adjoint=self.adjoint))
         # inequality test
         cost_c = self.num_bits_state_prep
         # controlled swaps
         cost_d = num_bits_l
-        return {(4 * (cost_a + cost_b + cost_c + cost_d), TGate())}
+        return {(4 * (cost_a + cost_c + cost_d), TGate()), cost_b}
 
 
 @frozen
@@ -448,7 +458,7 @@ class OutputIndexedData(Bloq):
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://arxiv.org/pdf/2011.03494.pdf)
+            Hypercontraction](https://arxiv.org/abs/2011.03494)
             Appendix C, page 52. Step 2.
     """
 
@@ -461,7 +471,7 @@ class OutputIndexedData(Bloq):
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
-        return f"OutputIdxData{dag}"
+        return f"In_l-data_l{dag}"
 
     @cached_property
     def signature(self) -> Signature:
@@ -474,14 +484,12 @@ class OutputIndexedData(Bloq):
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # listing 2 C29/30 page 52
         num_bits_xi = (self.num_xi - 1).bit_length()
         num_bits_offset = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         bo = num_bits_xi + num_bits_offset + self.num_bits_rot_aa + 1
-        if self.adjoint:
-            cost_qrom = int(np.ceil((self.num_aux + 1) / self.ko)) + self.ko
-        else:
-            cost_qrom = int(np.ceil((self.num_aux + 1) / self.ko)) + bo * (self.ko - 1)
-        return {(4 * cost_qrom, TGate())}
+        print("this: ", bo, num_bits_xi, num_bits_offset, self.num_bits_rot_aa)
+        return {(1, QROAM(self.num_aux + 1, bo, adjoint=self.adjoint))}
 
 
 @frozen
@@ -515,8 +523,8 @@ class DoubleFactorization(BlockEncoding):
     num_xi: int
     num_bits_state_prep: int = 8
     num_bits_rot: int = 24
-    num_bits_rot_aa: int = 8
-    qroam_k_factor: int = 1
+    num_bits_rot_aa_outer: int = 8
+    num_bits_rot_aa_inner: int = 8
 
     @classmethod
     def build_from_coeffs(cls, one_body_ham, factorized_two_body_ham) -> 'DoubleFactorization':
@@ -532,7 +540,7 @@ class DoubleFactorization(BlockEncoding):
         Refererences:
             [Even More Efficient Quantum Computations of Chemistry Through Tensor
                 hypercontraction]
-                (https://journals.aps.org/prxquantum/pdf/10.1103/prxquantum.2.030305). Eq. B7 pg 43.
+                (https://arxiv.org/abs/2011.03494). Eq. B7 pg 43.
         """
         assert len(one_body_ham.shape) == 2
         assert len(factorized_two_body_ham.shape) == 3
@@ -552,12 +560,7 @@ class DoubleFactorization(BlockEncoding):
 
     @property
     def junk_registers(self) -> Iterable[Register]:
-        return [
-            Register("p", bitsize=self.num_spin_orb // 2),
-            # equal superposition states for alias sampling l/p registers, aleph1/aleph2
-            # 2 AA rotation qubits
-            Register("spin", bitsize=1),
-        ]
+        return [Register("p", bitsize=(self.num_xi - 1).bit_length()), Register("spin", bitsize=1)]
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
         l = regs['l']
@@ -569,46 +572,53 @@ class DoubleFactorization(BlockEncoding):
         num_bits_xi = (self.num_xi - 1).bit_length()
         xi = bb.allocate(num_bits_xi)
         offset = bb.allocate(num_bits_lxi)
-        rot = bb.allocate(self.num_bits_rot_aa)
+        rot = bb.allocate(self.num_bits_rot_aa_inner)
 
         outer_prep = OuterPrepare(
             self.num_aux,
-            kl=self.qroam_k_factor,
             num_bits_state_prep=self.num_bits_state_prep,
-            num_bits_rot=self.num_bits_rot,
+            num_bits_rot_aa=self.num_bits_rot_aa_outer,
         )
         l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
         in_l_data_l = OutputIndexedData(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
-            num_bits_rot_aa=self.num_bits_rot_aa,
+            num_bits_rot_aa=self.num_bits_rot_aa_inner,
         )
         l, l_ne_zero, xi, rot, offset = bb.add(
             in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot=rot, offset=offset
         )
         one_body = DoubleFactorizationOneBody(
-            self.num_aux, self.num_spin_orb, self.num_xi, self.num_bits_state_prep
+            self.num_aux,
+            self.num_spin_orb,
+            self.num_xi,
+            self.num_bits_state_prep,
+            num_bits_rot_aa=self.num_bits_rot_aa_inner,
+            num_bits_rot=self.num_bits_rot,
         )
+        state_prep_anc = bb.allocate(self.num_bits_state_prep)
         one_body_sq = BlockEncodeChebyshevPolynomial(one_body, order=2)
-        succ_l, succ_p, l_ne_zero, p, spin, sys, l, xi, offset, rot = bb.add(
+        succ_l, succ_p, l_ne_zero, p, spin, rot, state_prep_anc, sys, l, xi, offset = bb.add(
             one_body_sq,
             succ_l=succ_l,
             succ_p=succ_p,
             l_ne_zero=l_ne_zero,
             p=p,
             spin=spin,
+            rot=rot,
+            state_prep=state_prep_anc,
             sys=sys,
             l=l,
             xi=xi,
             offset=offset,
-            rot=rot,
         )
+        bb.free(state_prep_anc)
         in_l_data_l = OutputIndexedData(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
-            num_bits_rot_aa=self.num_bits_rot_aa,
+            num_bits_rot_aa=self.num_bits_rot_aa_inner,
             adjoint=True,
         )
         l, l_ne_zero, xi, rot, offset = bb.add(
@@ -617,9 +627,8 @@ class DoubleFactorization(BlockEncoding):
         # prepare_l^dag
         outer_prep = OuterPrepare(
             self.num_aux,
-            kl=self.qroam_k_factor,
             num_bits_state_prep=self.num_bits_state_prep,
-            num_bits_rot=self.num_bits_rot,
+            num_bits_rot_aa=self.num_bits_rot_aa_outer,
             adjoint=True,
         )
         l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
