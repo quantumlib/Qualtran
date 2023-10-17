@@ -27,7 +27,7 @@ isort:skip_file
 
 # Internal imports: none
 # External imports: none
-from ._infra.bloq import Bloq
+from ._infra.bloq import Bloq, DecomposeTypeError, DecomposeNotImplementedError
 
 # External imports:
 #     networkx - create binst graph, topological sorting
@@ -59,5 +59,7 @@ from ._infra.quantum_graph import (
 )
 
 from ._infra.gate_with_registers import GateWithRegisters
+
+from ._infra.bloq_example import BloqExample, bloq_example
 
 # --------------------------------------------------------------------------------------------------
