@@ -149,16 +149,37 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def decompose_bloq(self) -> 'CompositeBloq':
         """Decompose this Bloq into its constituent parts contained in a CompositeBloq.
 
-        Bloq users can call this function to delve into the definition of a Bloq. If you're
-        trying to define a bloq's decomposition, consider overriding `build_composite_bloq`
-        which provides helpful arguments for implementers.
+        Bloq users can call this function to delve into the definition of a Bloq. The function
+        returns the decomposition of this Bloq represented as an explicit compute graph wrapped
+        in a `CompositeBloq` object.
+
+        Bloq authors can the bloq's decomposition by overriding any of the two convenience methods:
+
+        - `build_composite_bloq`: Override this method to define a bloq-style decomposition using a
+            `BloqBuilder` builder class to construct the `CompositeBloq` directly.
+        - `decompose_from_registers`: Override this method to define a cirq-style decomposition by
+            yielding cirq style operations applied on qubits.
+
+        Irrespective of the choice of backend chosen by the Bloq authors to implement the
+        decomposition, Bloq users will be able to access both the Bloq-style and Cirq-style
+        interfaces, i.e. for a bloq that inherits from `GateWithRegisters`, usrs can do:
+
+        - `cirq.decompose_once(bloq.on_registers(**cirq_quregs))`: This will yield a cirq-style
+            `OPTREE` where only bloqs which do not inherit from `GateWithRegisters` will be wrapped
+            in a `BloqAsCirqGate` wrapper.
+        - `bloq.decompose_bloq()`: This will return a `CompositeBloq` where only cirq gates which do
+            not inherit from `GateWithRegisters` will be be wrapped in a `CirqGateAsBloq` wrapper.
+
+        Thus, `GateWithRegisters` class provides a convenient way of defining objects that can be used
+        interchangeably with both `Cirq` and `Bloq` constructs.
 
         Returns:
-            A CompositeBloq containing the decomposition of this Bloq.
+            A `CompositeBloq` containing the decomposition of this Bloq.
 
         Raises:
-            DecomposeNotImplementedError: If there is no decomposition defined; namely: if
-                `build_composite_bloq` returns `NotImplemented`.
+            DecomposeNotImplementedError: If there is no decomposition defined; namely if both:
+                - `build_composite_bloq` raises a `DecomposeNotImplementedError` and
+                - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
         from qualtran.cirq_interop._cirq_to_bloq import decompose_from_cirq_op
 
@@ -166,30 +187,6 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
             return Bloq.decompose_bloq(self)
         except DecomposeNotImplementedError:
             return decompose_from_cirq_op(self, decompose_once=True)
-
-    def add_my_tensors(
-        self,
-        tn: qtn.TensorNetwork,
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        try:
-            # First try to add tensors via decomposition.
-            Bloq.add_my_tensors(self, tn, tag, incoming=incoming, outgoing=outgoing)
-        except DecomposeNotImplementedError:
-            from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
-
-            _add_my_tensors_from_gate(
-                self,
-                self.signature,
-                self.short_name(),
-                tn=tn,
-                tag=tag,
-                incoming=incoming,
-                outgoing=outgoing,
-            )
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'

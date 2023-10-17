@@ -27,6 +27,8 @@ from qualtran import (
     CompositeBloq,
     Connection,
     DanglingT,
+    LeftDangle,
+    RightDangle,
     Side,
     Signature,
     Soquet,
@@ -126,15 +128,15 @@ def cbloq_to_quimb(
 
     inds = get_right_and_left_inds(cbloq.signature)
     if len(inds) != 2:
+        # In this case, the tensor network is a vector (bra/ket) instead of a unitary operation.
         return tn, fix
 
-    l, r = inds
-    for in_soq in l:
-        if in_soq not in tn.ind_map:
-            assert in_soq.reg.side == Side.THRU
-            for out_soq in r:
-                if out_soq.reg == in_soq.reg and out_soq.idx == in_soq.idx:
-                    tn.add(qtn.Tensor(data=np.eye(2**in_soq.reg.bitsize), inds=[out_soq, in_soq]))
+    for cxn in cbloq.connections:
+        if cxn.left.binst is LeftDangle and cxn.right.binst is RightDangle:
+            # This register has no Bloq acting  on it, and thus it would not have a variable in the
+            # the tensor network. Add an identity tensor acting on this register to make sure the
+            # tensor network has variables corresponding to all input / output registers.
+            tn.add(qtn.Tensor(data=np.eye(2**cxn.left.reg.bitsize), inds=[cxn.right, cxn.left]))
 
     return tn, fix
 
