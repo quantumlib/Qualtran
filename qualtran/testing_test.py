@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import re
 from functools import cached_property
 
 import attrs
@@ -20,6 +20,7 @@ from attrs import frozen
 
 from qualtran import (
     Bloq,
+    bloq_example,
     BloqBuilder,
     BloqError,
     BloqInstance,
@@ -32,12 +33,16 @@ from qualtran import (
     Soquet,
 )
 from qualtran._infra.bloq_test import TestCNOT
+from qualtran.drawing.graphviz_test import Atom, TestParallelBloq
 from qualtran.testing import (
     assert_connections_compatible,
     assert_registers_match_dangling,
     assert_registers_match_parent,
     assert_soquets_belong_to_registers,
     assert_soquets_used_exactly_once,
+    BloqCheckResult,
+    check_bloq_example_decompose,
+    check_bloq_example_make,
 )
 
 
@@ -121,3 +126,51 @@ def test_assert_soquets_used_exactly_once():
     assert_soquets_belong_to_registers(cbloq)
     with pytest.raises(BloqError, match=r".*had already been produced by a different bloq.*"):
         assert_soquets_used_exactly_once(cbloq)
+
+
+def test_check_bloq_example_make():
+    @bloq_example
+    def _my_cnot() -> TestCNOT:
+        return 'CNOT 0 1'
+
+    res, msg = check_bloq_example_make(_my_cnot)
+    assert res is BloqCheckResult.FAIL, msg
+    assert re.match(r'.*is not an instance of Bloq', msg)
+
+    @bloq_example
+    def _my_cnot_2() -> TestCNOT:
+        return TestCNOT()
+
+    res, msg = check_bloq_example_make(_my_cnot_2)
+    assert res is BloqCheckResult.PASS, msg
+    assert msg == ''
+
+
+def test_check_bloq_decompose_pass():
+    @bloq_example
+    def _my_bloq() -> TestParallelBloq:
+        return TestParallelBloq()
+
+    res, msg = check_bloq_example_decompose(_my_bloq)
+    assert res is BloqCheckResult.PASS, msg
+    assert msg == ''
+
+
+def test_check_bloq_decompose_na():
+    @bloq_example
+    def _my_bloq() -> Atom:
+        return Atom()
+
+    res, msg = check_bloq_example_decompose(_my_bloq)
+    assert res is BloqCheckResult.NA, msg
+    assert re.match(r'.*is atomic', msg)
+
+
+def test_check_bloq_decompose_missing():
+    @bloq_example
+    def _my_bloq() -> TestCNOT:
+        return TestCNOT()
+
+    res, msg = check_bloq_example_decompose(_my_bloq)
+    assert res is BloqCheckResult.MISSING, msg
+    assert re.match(r'.*declare a decomposition', msg)
