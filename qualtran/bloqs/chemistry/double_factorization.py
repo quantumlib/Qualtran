@@ -58,6 +58,82 @@ def get_num_bits_lxi(num_aux, num_xi, num_spin_orb) -> int:
 
 
 @frozen
+class QROAM(Bloq):
+    """Placeholder bloq for QROAM.
+
+    Helpful for comparing costs to those quoted in literature and those from cirq_ft.
+    """
+
+    data_size: int
+    target_bitsize: int
+    k: int
+    adjoint = False
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"QROAM{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(
+            sel=(int(np.ceil((self.data_size / self.k)) - 1).bit_length()), trg=self.target_bitsize
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        if self.adjoint:
+            fac_1 = int(np.ceil(self.data_size / self.k))
+            fac_2 = self.k
+        else:
+            fac_1 = int(np.ceil(self.data_size / self.k))
+            fac_2 = self.target_bitsize * (self.k - 1)
+        return {(4 * (fac_1 + fac_2), TGate())}
+
+
+@frozen
+class QROAMTwoRegs(Bloq):
+    """Placeholder bloq for QROAM on two registers.
+
+    Helpful for comparing costs to those quoted in literature and those from cirq_ft.
+
+    Refererences:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            Hypercontraction](https://arxiv.org/pdf/2011.03494.pdf)
+            Appendix B, page 44
+    """
+
+    data_size_a: int
+    data_size_b: int
+    target_bitsize_a: int
+    target_bitsize_b: int
+    ka: int
+    kb: int
+    adjoint = False
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"QROAM{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(
+            sel_a=(int(np.ceil((self.data_size_a / self.ka)) - 1).bit_length()),
+            sel_b=(int(np.ceil((self.data_size_b / self.kb)) - 1).bit_length()),
+            trg=self.target_bitsize_a + self.target_bitsize_b,  # ?
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        if self.adjoint:
+            fac_1 = int(np.ceil(self.data_size_a / self.ka))
+            fac_2 = int(np.ceil(self.data_size_b / self.kb))
+            fac_3 = (self.target_bitsize_a + self.target_bitsize_b) * (self.ka * self.kb - 1)
+        else:
+            fac_1 = int(np.ceil(self.data_size_a / self.ka))
+            fac_2 = int(np.ceil(self.data_size_b / self.kb))
+            fac_3 = self.ka * self.kb
+        return {(4 * (fac_1 + fac_2 + fac_3), TGate())}
+
+
+@frozen
 class ProgRotGateArray(Bloq):
     """Rotate to to/from MO basis so-as-to apply number operators in DF basis.
 
@@ -101,12 +177,12 @@ class ProgRotGateArray(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         cost_a = num_bits_lxi - 1  # contiguous register
-        cost_b = (
-            int(np.ceil(self.num_aux * self.num_xi / self.kr))
-            + self.num_spin_orb * self.num_bits_rot * (self.kr - 1) // 2
-        )  # QROAM
+        data_size = self.num_aux * self.num_xi + self.num_spin_orb // 2
         cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations
-        return {(4 * (cost_a + cost_b + cost_c), TGate())}
+        return {
+            (4 * (cost_a, cost_c), TGate()),
+            (1, QROAM(data_size, self.num_spin_orb * self.num_bits_rot, self.kr)),
+        }
 
 
 @frozen
