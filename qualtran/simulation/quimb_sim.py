@@ -29,7 +29,6 @@ from qualtran import (
     DanglingT,
     LeftDangle,
     RightDangle,
-    Side,
     Signature,
     Soquet,
     SoquetT,
