@@ -13,11 +13,10 @@
 #  limitations under the License.
 
 import abc
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
