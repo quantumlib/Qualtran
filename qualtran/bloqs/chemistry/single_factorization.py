@@ -41,7 +41,7 @@ class InnerPrepare(Bloq):
         num_spin_orb: The number of spin orbitals. Typically called N.
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called aleph (fancy N) in Ref[1].
-        num_bits_rot: Number of bits of precision for rotations for amplitude
+        num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called b_r in Ref[1].
         adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
         kp1: QROAM blocking factor for data prepared over l (auxiliary) index.
@@ -62,7 +62,7 @@ class InnerPrepare(Bloq):
     num_aux: int
     num_spin_orb: int
     num_bits_state_prep: int
-    num_bits_rot: int = 8
+    num_bits_rot_aa: int = 8
     adjoint: bool = False
     kp1: int = 1
     kp2: int = 1
@@ -79,13 +79,13 @@ class InnerPrepare(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n = (self.num_spin_orb // 2 - 1).bit_length()
         # prep uniform upper triangular.
-        cost_a = 6 * n + 2 * self.num_bits_rot - 7
+        cost_a = 6 * n + 2 * self.num_bits_rot_aa - 7
         # contiguous index
         cost_b = n**2 + n - 1
         # QROAM
-        # Strictly speaking kp1 and kp2 can be different for the adjoint
         cost_c = int(np.ceil((self.num_aux + 1) / self.kp1))
-        cost_c *= int(np.ceil((self.num_spin_orb**2 / 8 + self.num_spin_orb / 2) / self.kp2))
+        nprime = self.num_spin_orb**2 // 8 + self.num_spin_orb // 2
+        cost_c *= int(np.ceil(nprime / self.kp2))
         bp = 2 * n + self.num_bits_state_prep + 2
         if self.adjoint:
             cost_c += self.kp1 * self.kp2
@@ -130,7 +130,8 @@ class SELECT(Bloq):
         return Signature.build(p=n, q=n, alpha=1, succ_pq=1, succ_l=1)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(2 * (self.num_spin_orb - 2), TGate())}
+        # single application is 2 (N - 2) Toffolis
+        return {(4 * 2 * (self.num_spin_orb - 2), TGate())}
 
 
 @frozen
@@ -159,7 +160,7 @@ class OuterPrepare(Bloq):
     num_aux: int
     kl: int
     num_bits_state_prep: int
-    num_bits_rot: int = 8
+    num_bits_rot_aa: int = 8
     adjoint: bool = False
 
     def pretty_name(self) -> str:
@@ -175,16 +176,16 @@ class OuterPrepare(Bloq):
         # eta is a number such that L + 1 is divisible by 2^\eta
         # if eta is a power of 2 then we see a reduction in the cost
         # https://arxiv.org/pdf/2011.03494.pdf page 44
-        factors = factorint(self.num_aux)
+        factors = factorint(self.num_aux + 1)
         eta = factors[min(list(sorted(factors.keys())))]
-        if self.num_aux % 2 == 1:
+        if (self.num_aux + 1) % 2 == 1:
             eta = 0
         num_bits_l = self.num_aux.bit_length()
-        cost_a = 3 * num_bits_l - 3 * eta + 2 * self.num_bits_rot - 9
-        output_size = num_bits_l + self.num_bits_state_prep + 2
+        cost_a = 3 * num_bits_l - 3 * eta + 2 * self.num_bits_rot_aa - 9
         if self.adjoint:
             cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + self.kl
         else:
+            output_size = num_bits_l + self.num_bits_state_prep + 2
             cost_b = int(np.ceil((self.num_aux + 1) / self.kl)) + output_size * (self.kl - 1)
         cost_c = self.num_bits_state_prep
         cost_d = num_bits_l + 1
@@ -206,7 +207,7 @@ class SingleFactorizationOneBody(BlockEncoding):
         num_spin_orb: The number of spin orbitals. Typically called N.
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called aleph (fancy N) in Ref[1].
-        num_bits_rot: Number of bits of precision for rotations for amplitude
+        num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called b_r in Ref[1].
         adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
         kp1: QROAM blocking factor for data prepared over l (auxiliary) index.
@@ -226,10 +227,12 @@ class SingleFactorizationOneBody(BlockEncoding):
     num_aux: int
     num_spin_orb: int
     num_bits_state_prep: int
-    num_bits_rot: int = 8
+    num_bits_rot_aa: int = 8
     adjoint: bool = False
     kp1: int = 1
     kp2: int = 1
+    kp1_inv: int = 1
+    kp2_inv: int = 1
 
     @property
     def control_registers(self) -> Iterable[Register]:
@@ -246,10 +249,12 @@ class SingleFactorizationOneBody(BlockEncoding):
     @property
     def junk_registers(self) -> Iterable[Register]:
         return [
-            Register("p", bitsize=self.num_spin_orb // 2),
-            Register("q", bitsize=self.num_spin_orb // 2),
+            Register("p", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
+            Register("q", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
             Register("swap_pq", bitsize=1),
+            Register("state_prep", bitsize=self.num_bits_state_prep),
             Register("alpha", bitsize=1),
+            Register("amp", bitsize=1),
         ]
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
@@ -257,7 +262,7 @@ class SingleFactorizationOneBody(BlockEncoding):
             self.num_aux,
             self.num_spin_orb,
             self.num_bits_state_prep,
-            self.num_bits_rot,
+            self.num_bits_rot_aa,
             adjoint=False,
             kp1=self.kp1,
             kp2=self.kp2,
@@ -266,10 +271,10 @@ class SingleFactorizationOneBody(BlockEncoding):
             self.num_aux,
             self.num_spin_orb,
             self.num_bits_state_prep,
-            self.num_bits_rot,
+            self.num_bits_rot_aa,
             adjoint=True,
-            kp1=self.kp1,
-            kp2=self.kp2,
+            kp1=self.kp1_inv,
+            kp2=self.kp2_inv,
         )
         n = (self.num_spin_orb // 2 - 1).bit_length()
         # prepare + prepare^dag, 2 SWAPS, SELECT
@@ -292,10 +297,11 @@ class SingleFactorization(BlockEncoding):
         num_aux: Dimension of auxiliary index for single factorized Hamiltonian. Called L in Ref[1].
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called aleph (fancy N) in Ref[1].
-        num_bits_rot: Number of bits of precision for rotations for amplitude
+        num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called b_r in Ref[1].
         qroam_k_factor: QROAM blocking factor for data prepared over l (auxiliary) index.
             Defaults to 1 (i.e. use QROM).
+        qroam_ki_factor: inverse QROAM blocking factor for data.
 
     Registers:
         l: register to store L values for auxiliary index.
@@ -309,8 +315,14 @@ class SingleFactorization(BlockEncoding):
     num_spin_orb: int
     num_aux: int
     num_bits_state_prep: int
-    num_bits_rot: int = 8
-    qroam_k_factor: int = 1
+    num_bits_rot_aa_outer: int = 8
+    num_bits_rot_aa_inner: int = 8
+    kl: int = 1
+    kl_inv: int = 1
+    kp1: int = 1
+    kp2: int = 1
+    kp1_inv: int = 1
+    kp2_inv: int = 1
 
     @classmethod
     def build(cls, one_body_ham, factorized_two_body_ham):
@@ -347,41 +359,47 @@ class SingleFactorization(BlockEncoding):
     @property
     def junk_registers(self) -> Iterable[Register]:
         return [
-            Register("succ_l", bitsize=1),
-            Register("theta", bitsize=1),
-            Register("l_ne_zero", bitsize=1),
-            Register("p", bitsize=self.num_spin_orb // 2),
-            Register("q", bitsize=self.num_spin_orb // 2),
+            Register("pq", bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(2,)),
             Register("swap_pq", bitsize=1),
             Register("alpha", bitsize=1),
         ]
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        *,
+        ctrl: SoquetT,
+        pq: SoquetT,
+        swap_pq: SoquetT,
+        alpha: SoquetT,
+        sys: SoquetT,
+        l: SoquetT,
+    ) -> Dict[str, 'SoquetT']:
         """ """
-        succ_l = regs['succ_l']
-        l_ne_zero = regs['l_ne_zero']
-        l = regs['l']
-        sys = regs['sys']
-        p = regs['p']
-        q = regs['q']
-        swap_pq = regs['swap_pq']
-        alpha = regs['alpha']
-        ctrl = regs['ctrl']
-        theta = regs['theta']
+        succ_l, l_ne_zero, theta, amp = bb.split(bb.allocate(4))
+        p, q = pq
         # prepare_l
         # epsilon = 2**-self.num_bits_state_prep / len(self.out_prep_probs)
         outer_prep = OuterPrepare(
             self.num_aux,
-            kl=self.qroam_k_factor,
+            kl=self.kl,
             num_bits_state_prep=self.num_bits_state_prep,
-            num_bits_rot=self.num_bits_rot,
+            num_bits_rot_aa=self.num_bits_rot_aa_outer,
         )
         l, succ_l, l_ne_zero = bb.add(outer_prep, l=l, succ_l=succ_l, l_ne_zero=l_ne_zero)
         one_body = SingleFactorizationOneBody(
-            self.num_aux, self.num_spin_orb, self.num_bits_state_prep, self.num_bits_rot
+            self.num_aux,
+            self.num_spin_orb,
+            self.num_bits_state_prep,
+            self.num_bits_rot_aa_inner,
+            kp1=self.kp1,
+            kp1_inv=self.kp1_inv,
+            kp2=self.kp2,
+            kp2_inv=self.kp2_inv,
         )
         one_body_sq = BlockEncodeChebyshevPolynomial(one_body, order=2)
-        succ_l, l_ne_zero, l, p, q, swap_pq, alpha, sys = bb.add(
+        state_prep = bb.allocate(self.num_bits_state_prep)
+        succ_l, l_ne_zero, l, p, q, swap_pq, state_prep, alpha, amp, sys = bb.add(
             one_body_sq,
             succ_l=succ_l,
             l_ne_zero=l_ne_zero,
@@ -389,28 +407,31 @@ class SingleFactorization(BlockEncoding):
             p=p,
             q=q,
             swap_pq=swap_pq,
+            state_prep=state_prep,
             alpha=alpha,
+            amp=amp,
             sys=sys,
         )
+        bb.free(state_prep)
         # prepare_l^dag
         outer_prep = OuterPrepare(
             self.num_aux,
-            kl=self.qroam_k_factor,
+            kl=self.kl_inv,
             num_bits_state_prep=self.num_bits_state_prep,
-            num_bits_rot=self.num_bits_rot,
+            num_bits_rot_aa=self.num_bits_rot_aa_outer,
             adjoint=True,
         )
         l, succ_l, l_ne_zero = bb.add(outer_prep, l=l, succ_l=succ_l, l_ne_zero=l_ne_zero)
+        bb.free(succ_l)
+        bb.free(l_ne_zero)
+        bb.free(theta)
+        bb.free(amp)
         out_regs = {
             'l': l,
-            'succ_l': succ_l,
-            'l_ne_zero': l_ne_zero,
             'sys': sys,
-            'p': p,
-            'q': q,
+            'pq': np.array([p, q]),
             'swap_pq': swap_pq,
             'alpha': alpha,
-            'theta': theta,
             'ctrl': ctrl,
         }
         return out_regs

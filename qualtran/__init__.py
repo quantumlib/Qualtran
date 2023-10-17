@@ -58,4 +58,6 @@ from ._infra.quantum_graph import (
     Soquet,
 )
 
+from ._infra.gate_with_registers import GateWithRegisters
+
 # --------------------------------------------------------------------------------------------------

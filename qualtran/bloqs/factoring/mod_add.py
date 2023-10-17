@@ -17,10 +17,10 @@ from typing import Dict, Optional, Set, Union
 
 import sympy
 from attrs import frozen
-from cirq_ft import TComplexity
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
