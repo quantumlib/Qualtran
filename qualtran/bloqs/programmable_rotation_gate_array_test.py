@@ -20,7 +20,7 @@ import pytest
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import Register, SelectionRegister, Signature
+from qualtran import Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.programmable_rotation_gate_array import (
     ProgrammableRotationGateArray,
