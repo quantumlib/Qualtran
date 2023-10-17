@@ -123,7 +123,7 @@ def test_cswap_cirq_decomp():
     circuit = cirq.Circuit(cswap_op, cirq.decompose_once(cswap_op))
     cirq.testing.assert_has_diagram(
         circuit,
-        f'''
+        r'''
 ctrl: ───@──────@───@───@───
          │      │   │   │
 x0: ─────×(x)───×───┼───┼───

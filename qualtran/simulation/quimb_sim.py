@@ -46,7 +46,7 @@ def bloq_has_custom_tensors(bloq: Bloq) -> bool:
     """
     return not bloq.add_my_tensors.__qualname__.startswith(
         'Bloq.'
-    )  # and not bloq.add_my_tensors.__qualname__.startswith('GateWithRegisters.')
+    ) and not bloq.add_my_tensors.__qualname__.startswith('GateWithRegisters.')
 
 
 def flatten_for_tensor_contraction(bloq: Bloq, max_depth: int = 1_000) -> CompositeBloq:
