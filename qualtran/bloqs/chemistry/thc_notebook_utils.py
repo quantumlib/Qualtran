@@ -36,11 +36,10 @@ single_qubit_clifford = (
     cirq.ops.common_gates.XPowGate,
     cirq.ops.common_gates.YPowGate,
     cirq.ops.common_gates.ZPowGate,
-    cirq.ops.common_gates.S,
+    type(cirq.ops.common_gates.S),
+    cirq.ops.pauli_gates._PauliX,
 )
 two_qubit_clifford = (cirq.ops.common_gates.CZPowGate, cirq.ops.common_gates.CXPowGate)
-# one of the tuple elements isn't a type?
-single_qubit_clifford = tuple(type(x) for x in single_qubit_clifford)
 rotation_bloqs = (Rx, Ry, Rz)
 bloq_comparators = (EqualsAConstant, GreaterThanConstant, GreaterThan)
 cirq_comparators = (LessThanEqualGate, LessThanGate)
