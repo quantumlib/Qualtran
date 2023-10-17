@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections import defaultdict
+from typing import Dict
 
 import attrs
 import cirq
@@ -37,7 +38,6 @@ single_qubit_clifford = (
     cirq.ops.common_gates.YPowGate,
     cirq.ops.common_gates.ZPowGate,
     type(cirq.ops.common_gates.S),
-    cirq.ops.pauli_gates._PauliX,
 )
 two_qubit_clifford = (cirq.ops.common_gates.CZPowGate, cirq.ops.common_gates.CXPowGate)
 rotation_bloqs = (Rx, Ry, Rz)
@@ -102,45 +102,41 @@ def generalize(bloq):
     return bloq
 
 
-def bin_bloq_counts(bloq):
+def bin_bloq_counts(bloq) -> Dict[str, int]:
     """Classify bloq counts.
 
     It's helpful to classify bloqs by their type (comparators, reflections, swaps, ...)
 
-    TODO: Generalize to take in a dict and custom classifier callable similar to
-    generalize for bloq counts.
+    Args:
+        bloq: the bloq to classify.
 
     Returns
     -------
-    classified_bloqs : Dictionary of type of bloq and the sum of the counts of
-        bloqs of this type.
+        classified_bloqs : Dataclass containing bloq counts for different types of bloqs.
     """
-    tot_t = 0
-    classified_bloqs = defaultdict(list)
+    classified_bloqs = defaultdict(int)
     for num_calls, bloq in bloq.bloq_counts():
         if isinstance(bloq, (Split, Join, Allocate, Free)):
-            pass
-        else:
-            num_t = get_bloq_counts_graph(bloq, generalizer=generalize)[1].get(TGate())
-            if num_t is not None:
-                tot_t += num_calls * num_t
-                if isinstance(bloq, bloq_comparators):
-                    classified_bloqs['comparator'] += [num_calls * num_t]
-                elif isinstance(bloq, CirqGateAsBloq):
-                    if isinstance(bloq.gate, cirq_ft.MultiControlPauli) and isinstance(
-                        bloq.gate.target_gate, cirq.ops.common_gates.ZPowGate
-                    ):
-                        classified_bloqs['reflections'] += [num_calls * num_t]
-                    if isinstance(bloq.gate, cirq_comparators):
-                        classified_bloqs['comparator'] += [num_calls * num_t]
-                    if isinstance(bloq.gate, (cirq_ft.SelectSwapQROM, cirq_ft.QROM)):
-                        classified_bloqs['qrom'] += [num_calls * num_t]
-                elif isinstance(bloq, CSwapApprox):
-                    classified_bloqs['controlled_swaps'] += [num_calls * num_t]
-                elif isinstance(bloq, rotation_bloqs):
-                    classified_bloqs['rotation'] += [num_calls * num_t]
-                elif isinstance(bloq, ToContiguousIndex):
-                    classified_bloqs['contiguous_register'] += [num_calls * num_t]
-                else:
-                    classified_bloqs['other'] += [num_calls * num_t]
-    return {k: sum(v) for k, v in classified_bloqs.items()}
+            continue
+        num_t = get_bloq_counts_graph(bloq, generalizer=generalize)[1].get(TGate())
+        if num_t is not None:
+            if isinstance(bloq, bloq_comparators):
+                classified_bloqs['comparator'] += num_calls * num_t
+            elif isinstance(bloq, CirqGateAsBloq):
+                if isinstance(bloq.gate, cirq_ft.MultiControlPauli) and isinstance(
+                    bloq.gate.target_gate, cirq.ops.common_gates.ZPowGate
+                ):
+                    classified_bloqs['reflections'] += num_calls * num_t
+                if isinstance(bloq.gate, cirq_comparators):
+                    classified_bloqs['comparator'] += num_calls * num_t
+                if isinstance(bloq.gate, (cirq_ft.SelectSwapQROM, cirq_ft.QROM)):
+                    classified_bloqs['qrom'] += num_calls * num_t
+            elif isinstance(bloq, CSwapApprox):
+                classified_bloqs['controlled_swaps'] += num_calls * num_t
+            elif isinstance(bloq, rotation_bloqs):
+                classified_bloqs['rotation'] += num_calls * num_t
+            elif isinstance(bloq, ToContiguousIndex):
+                classified_bloqs['contiguous_register'] += num_calls * num_t
+            else:
+                classified_bloqs['other'] += num_calls * num_t
+    return classified_bloqs

@@ -78,11 +78,11 @@ class UniformSuperpositionTHC(Bloq):
 
     where $M$ is the THC auxiliary dimension, and $N$ is the number of spin orbitals.
 
-    The toffoli complexity of this gate should be 10 * log(M+1) + 2 b_r - 9.
+    The toffoli complexity of this gate should be $10 \log(M+1) + 2 b_r - 9$.
     Currently it is a good deal larger due to:
-        1. inverting inequality tests should not need more toffolis.
-        2. We are not using phase-gradient gate toffoli cost for Ry rotations
-        3. Small differences in quoted vs implemented comparator costs.
+     1. inverting inequality tests should not need more toffolis.
+     2. We are not using phase-gradient gate toffoli cost for Ry rotations
+     3. Small differences in quoted vs implemented comparator costs.
 
     See: https://github.com/quantumlib/Qualtran/issues/390
 
@@ -248,12 +248,12 @@ class PrepareTHC(Bloq):
         keep_bitsize: number of bits for keep register for coherent alias sampling.
 
     Registers:
-     - mu: $\mu$ register.
-     - nu: $\nu$ register.
-     - theta: sign register.
-     - succ: success flag qubit from uniform state preparation
-     - eq_nu_mp1: flag for if $nu = M+1$
-     - plus_a / plus_b: plus state for controlled swaps on spins.
+        mu: $\mu$ register.
+        nu: $\nu$ register.
+        theta: sign register.
+        succ: success flag qubit from uniform state preparation
+        eq_nu_mp1: flag for if $nu = M+1$
+        plus_a / plus_b: plus state for controlled swaps on spins.
 
     References:
         [Even more efficient quantum computations of chemistry through
