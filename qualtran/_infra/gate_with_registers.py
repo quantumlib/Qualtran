@@ -162,7 +162,10 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         """
         from qualtran.cirq_interop._cirq_to_bloq import decompose_from_cirq_op
 
-        return decompose_from_cirq_op(self, decompose_once=True)
+        try:
+            return Bloq.decompose_bloq(self)
+        except NotImplementedError:
+            return decompose_from_cirq_op(self, decompose_once=True)
 
     def add_my_tensors(
         self,
@@ -172,17 +175,21 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
-        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+        try:
+            # First try to add tensors via decomposition.
+            Bloq.add_my_tensors(self, tn, tag, incoming=incoming, outgoing=outgoing)
+        except NotImplementedError:
+            from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
-        _add_my_tensors_from_gate(
-            self,
-            self.signature,
-            self.short_name(),
-            tn=tn,
-            tag=tag,
-            incoming=incoming,
-            outgoing=outgoing,
-        )
+            _add_my_tensors_from_gate(
+                self,
+                self.signature,
+                self.short_name(),
+                tn=tn,
+                tag=tag,
+                incoming=incoming,
+                outgoing=outgoing,
+            )
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
@@ -213,7 +220,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        return NotImplemented
+        raise NotImplementedError(f"{self} does not support decomposition.")
 
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
@@ -221,7 +228,11 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         qubit_regs = split_qubits(self.signature, qubits)
         if context is None:
             context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
-        return self.decompose_from_registers(context=context, **qubit_regs)
+        try:
+            return self.decompose_from_registers(context=context, **qubit_regs)
+        except NotImplementedError:
+            qm = context.qubit_manager
+            return Bloq.decompose_bloq(self).to_cirq_circuit(qubit_manager=qm, **qubit_regs)[0]
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)

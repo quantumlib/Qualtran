@@ -17,6 +17,7 @@
 import itertools
 from typing import Dict, List, Optional, Tuple
 
+import numpy as np
 import quimb.tensor as qtn
 from numpy.typing import NDArray
 
@@ -26,6 +27,7 @@ from qualtran import (
     CompositeBloq,
     Connection,
     DanglingT,
+    Side,
     Signature,
     Soquet,
     SoquetT,
@@ -42,7 +44,9 @@ def bloq_has_custom_tensors(bloq: Bloq) -> bool:
 
     This is a heuristic that checks that the method is overriden.
     """
-    return not bloq.add_my_tensors.__qualname__.startswith('Bloq.')
+    return not bloq.add_my_tensors.__qualname__.startswith(
+        'Bloq.'
+    )  # and not bloq.add_my_tensors.__qualname__.startswith('GateWithRegisters.')
 
 
 def flatten_for_tensor_contraction(bloq: Bloq, max_depth: int = 1_000) -> CompositeBloq:
@@ -119,6 +123,18 @@ def cbloq_to_quimb(
         bloq.add_my_tensors(tn, binst, incoming=inc_d, outgoing=out_d)
         if pos is not None:
             fix[tuple([binst])] = pos[binst]
+
+    inds = get_right_and_left_inds(cbloq.signature)
+    if len(inds) != 2:
+        return tn, fix
+
+    l, r = inds
+    for in_soq in l:
+        if in_soq not in tn.ind_map:
+            assert in_soq.reg.side == Side.THRU
+            for out_soq in r:
+                if out_soq.reg == in_soq.reg and out_soq.idx == in_soq.idx:
+                    tn.add(qtn.Tensor(data=np.eye(2**in_soq.reg.bitsize), inds=[out_soq, in_soq]))
 
     return tn, fix
 
