@@ -40,6 +40,7 @@ from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexit
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
