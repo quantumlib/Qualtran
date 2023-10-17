@@ -18,6 +18,7 @@ import itertools
 from collections import defaultdict
 from typing import Dict, Iterable, Iterator, List, overload, Tuple, TYPE_CHECKING
 
+import attrs
 import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
@@ -76,6 +77,15 @@ class Register:
         This is the product of bitsize and each of the dimensions in `shape`.
         """
         return self.bitsize * int(np.product(self.shape))
+
+    def dag(self) -> 'Register':
+        """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
+        if self.side is Side.THRU:
+            return self
+        if self.side is Side.LEFT:
+            return attrs.evolve(self, side=Side.RIGHT)
+        if self.side is Side.RIGHT:
+            return attrs.evolve(self, side=Side.LEFT)
 
 
 @frozen
@@ -209,6 +219,10 @@ class Signature:
             groups[reg.name].append(reg)
 
         yield from groups.items()
+
+    def dag(self) -> 'Signature':
+        """Swap all RIGHT and LEFT registers in this collection."""
+        return Signature(reg.dag() for reg in self._registers)
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'

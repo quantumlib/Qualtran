@@ -403,6 +403,9 @@ class Atom(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=100)
 
+    def dag(self) -> 'Atom':
+        return self
+
 
 class TestSerialBloq(Bloq):
     @cached_property
@@ -446,6 +449,15 @@ def test_copy(cls):
     cbloq2 = cbloq.copy()
     assert cbloq is not cbloq2
     assert cbloq == cbloq2
+    assert cbloq.debug_text() == cbloq2.debug_text()
+
+
+@pytest.mark.parametrize('cls', [TestSerialBloq, TestParallelBloq])
+def test_dag(cls):
+    cbloq = cls().decompose_bloq()
+    cbloq2 = cbloq.dag()
+    assert cbloq is not cbloq2
+    assert cbloq != cbloq2
     assert cbloq.debug_text() == cbloq2.debug_text()
 
 

@@ -345,6 +345,53 @@ class CompositeBloq(Bloq):
         fsoqs = _map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
+    def dag(self) -> 'CompositeBloq':
+        """Build an automatically-inverted adjoint of this composite bloq.
+
+        This involves reversing the flow of quantum data (so it goes right-to-left)
+        and replacing each subbloq with its adjoint.
+
+        Raises:
+            NotImplementedError if a sub-bloq does not implement `Bloq.dag()`
+        """
+        # Note: this implementation is analogous to `cbloq.copy()` but with the order of things
+        # reversed. First, we reverse the registers to initialize the BloqBuilder.
+        new_registers = self.signature.dag()
+        old_i_soqs = [_reg_to_soq(RightDangle, reg) for reg in self.signature.rights()]
+        new_i_soqs = [_reg_to_soq(LeftDangle, reg) for reg in new_registers.lefts()]
+        soq_map: List[Tuple[SoquetT, SoquetT]] = list(zip(old_i_soqs, new_i_soqs))
+
+        # Then we reverse the order of subbloqs
+        bloqnections = reversed(list(self.iter_bloqnections()))
+        bb, _ = BloqBuilder.from_signature(new_registers)
+        for binst, preds, succs in bloqnections:
+            print(binst)
+            bloq = binst.bloq
+            # Instead of get_me returning the right element of a predecessor connection,
+            # it's the left element of a successor connection.
+            soqs = _cxn_to_soq_dict(
+                binst.bloq.signature.rights(),
+                succs,
+                get_me=lambda x: x.left,
+                get_assign=lambda x: x.right,
+            )
+            soqs = _map_soqs(soqs, soq_map)
+
+            old_o_soqs = tuple(_reg_to_soq(binst, reg) for reg in bloq.signature.lefts())
+            new_o_soqs = bb.add(binst.bloq.dag(), **soqs)
+            soq_map.extend(zip(old_o_soqs, new_o_soqs))
+
+        # Instead of finalizing with RightDangle predecessors, we use LeftDangle successors
+        _, init_succs = _binst_to_cxns(LeftDangle, binst_graph=self._binst_graph)
+        soqs = _cxn_to_soq_dict(
+            new_registers.rights(),
+            init_succs,
+            get_me=lambda x: x.left,
+            get_assign=lambda x: x.right,
+        )
+        soqs = _map_soqs(soqs, soq_map)
+        return bb.finalize(**soqs)
+
     def flatten(
         self, pred: Callable[[BloqInstance], bool], max_depth: int = 1_000
     ) -> 'CompositeBloq':

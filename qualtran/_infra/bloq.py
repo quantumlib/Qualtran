@@ -155,6 +155,10 @@ class Bloq(metaclass=abc.ABCMeta):
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         return bb.finalize(**bb.add_d(self, **initial_soqs))
 
+    def dag(self) -> 'Bloq':
+        # TODO: Return Adjoint(self)
+        raise NotImplementedError
+
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
