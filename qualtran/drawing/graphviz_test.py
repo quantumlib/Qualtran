@@ -20,7 +20,7 @@ import IPython.display
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, Soquet
+from qualtran import Bloq, BloqBuilder, DecomposeTypeError, Signature, Soquet
 from qualtran.drawing.graphviz import _assign_ids_to_bloqs_and_soqs, GraphDrawer, PrettyGraphDrawer
 from qualtran.testing import execute_notebook
 
@@ -30,6 +30,9 @@ class Atom(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(q=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
 
 class TestParallelBloq(Bloq):
