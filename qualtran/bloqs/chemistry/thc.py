@@ -18,14 +18,19 @@ from typing import Dict, Tuple
 import cirq
 import numpy as np
 from attrs import field, frozen
-from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 from cirq_ft.algos.multi_control_multi_target_pauli import MultiControlPauli
 from cirq_ft.algos.select_swap_qrom import SelectSwapQROM
 from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
-from qualtran.bloqs.arithmetic import EqualsAConstant, GreaterThanConstant, ToContiguousIndex
+from qualtran.bloqs.arithmetic import (
+    EqualsAConstant,
+    GreaterThanConstant,
+    LessThanConstant,
+    LessThanEqual,
+    ToContiguousIndex,
+)
 from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.swap_network import CSwapApprox
@@ -130,15 +135,11 @@ class UniformSuperpositionTHC(Bloq):
         angle = np.arccos(1 - 2 ** np.floor(np.log2(data_size)) / data_size)
         amp = bb.add(Ry(angle), q=amp)
         # 3. nu <= mu + 1 (zero indexing we use mu)
-        lt_gate = CirqGateAsBloq(LessThanGate(num_bits_mu, self.num_mu))
-        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
-            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
-        )
+        lt_gate = LessThanConstant(num_bits_mu, self.num_mu)
+        nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
         # 4. mu <= nu (upper triangular)
-        lte_gate = CirqGateAsBloq(LessThanEqualGate(num_bits_mu, num_bits_mu))
-        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
-            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
-        )
+        lte_gate = LessThanEqual(num_bits_mu, num_bits_mu)
+        mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
         # 5. nu == M (i.e. flag one-body contribution)
         nu, eq_nu_mp1 = bb.add(
             EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, target=eq_nu_mp1
@@ -158,12 +159,8 @@ class UniformSuperpositionTHC(Bloq):
         )
         (amp, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
-        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
-            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
-        )
-        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
-            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
-        )
+        nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
+        mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
         nu, eq_nu_mp1 = bb.add(
             EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, target=eq_nu_mp1
         )
@@ -185,12 +182,8 @@ class UniformSuperpositionTHC(Bloq):
         nu = bb.join(mu_nu[num_bits_mu:])
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
-        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
-            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
-        )
-        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
-            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
-        )
+        nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
+        mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
         nu, eq_nu_mp1 = bb.add(
             EqualsAConstant(num_bits_mu, self.num_mu + 1), x=nu, target=eq_nu_mp1
         )
@@ -206,12 +199,8 @@ class UniformSuperpositionTHC(Bloq):
         )
         lte_nu_mp1, lte_mu_nu, junk = bb.split(ctrls)
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
-        nu, lte_nu_mp1 = add_from_bloq_register_flat_qubits(
-            bb, lt_gate, nu=nu, lte_mu_mp1=lte_nu_mp1
-        )
-        mu, nu, lte_mu_nu = add_from_bloq_register_flat_qubits(
-            bb, lte_gate, mu=mu, nu=nu, lte_mu_nu=lte_mu_nu
-        )
+        nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
+        mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
         mu, gt_mu_n = bb.add(
             GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, target=gt_mu_n
         )
@@ -383,11 +372,9 @@ class PrepareTHC(Bloq):
         bb.free(s)
         sigma = bb.allocate(self.keep_bitsize)
         sigma = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=sigma)
-        lte_gate = CirqGateAsBloq(LessThanEqualGate(self.keep_bitsize, self.keep_bitsize))
+        lte_gate = LessThanEqual(self.keep_bitsize, self.keep_bitsize)
         less_than = bb.allocate(1)
-        keep, sigma, less_than = add_from_bloq_register_flat_qubits(
-            bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
-        )
+        keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z))
         alt_theta, less_than = add_from_bloq_register_flat_qubits(
             bb, cz, alt_theta=alt_theta, less_than=less_than
@@ -399,9 +386,7 @@ class PrepareTHC(Bloq):
         )
         less_than, alt_mu, mu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_mu, y=mu)
         less_than, alt_nu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_nu, y=nu)
-        keep, sigma, less_than = add_from_bloq_register_flat_qubits(
-            bb, lte_gate, keep=keep, sigma=sigma, less_than=less_than
-        )
+        keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)
         bb.free(keep)
         bb.free(alt_mu)
         bb.free(alt_nu)

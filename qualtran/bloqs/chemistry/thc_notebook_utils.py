@@ -24,6 +24,8 @@ from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
+    LessThanConstant,
+    LessThanEqual,
     ToContiguousIndex,
 )
 from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate
@@ -41,8 +43,13 @@ single_qubit_clifford = (
 )
 two_qubit_clifford = (cirq.ops.common_gates.CZPowGate, cirq.ops.common_gates.CXPowGate)
 rotation_bloqs = (Rx, Ry, Rz)
-bloq_comparators = (EqualsAConstant, GreaterThanConstant, GreaterThan)
-cirq_comparators = (LessThanEqualGate, LessThanGate)
+bloq_comparators = (
+    EqualsAConstant,
+    GreaterThanConstant,
+    GreaterThan,
+    LessThanConstant,
+    LessThanEqual,
+)
 
 ssa = SympySymbolAllocator()
 phi_sym = ssa.new_symbol('phi')
@@ -127,8 +134,6 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
                     bloq.gate.target_gate, cirq.ops.common_gates.ZPowGate
                 ):
                     classified_bloqs['reflections'] += num_calls * num_t
-                if isinstance(bloq.gate, cirq_comparators):
-                    classified_bloqs['comparator'] += num_calls * num_t
                 if isinstance(bloq.gate, (cirq_ft.SelectSwapQROM, cirq_ft.QROM)):
                     classified_bloqs['qrom'] += num_calls * num_t
             elif isinstance(bloq, CSwapApprox):
