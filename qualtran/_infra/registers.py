@@ -181,7 +181,7 @@ class Signature:
             registers: keyword arguments mapping register name to bitsize. All registers
                 will be 0-dimensional and THRU.
         """
-        return cls(Register(name=k, bitsize=v) for k, v in registers.items())
+        return cls(Register(name=k, bitsize=v) for k, v in registers.items() if v)
 
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
