@@ -129,7 +129,7 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
         if num_t is not None:
             if isinstance(bloq, bloq_comparators):
                 classified_bloqs['comparator'] += num_calls * num_t
-            if isinstance(bloq, MultiControlPauli):
+            elif isinstance(bloq, MultiControlPauli):
                 if isinstance(bloq.target_gate, cirq.ops.common_gates.ZPowGate):
                     classified_bloqs['reflections'] += num_calls * num_t
             elif isinstance(bloq, CirqGateAsBloq):
