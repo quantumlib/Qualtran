@@ -18,9 +18,8 @@ from typing import Any, Dict, Sequence
 import cirq
 import numpy as np
 from attrs import frozen
-from numpy.typing import NDArray
-
 from cirq_ft import GateWithRegisters, Register, Signature
+from numpy.typing import NDArray
 
 
 def _arbitrary_SU2_rotation(theta: float, phi: float, lambd: float):
