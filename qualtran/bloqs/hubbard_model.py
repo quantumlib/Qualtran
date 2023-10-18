@@ -65,16 +65,6 @@ from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
 
-# from cirq_ft import infra
-# from cirq_ft.algos import and_gate, apply_gate_to_lth_target, arithmetic_gates
-# from cirq_ft.algos import prepare_uniform_superposition as prep_u
-# from cirq_ft.algos import (
-#     qubitization_walk_operator,
-#     select_and_prepare,
-#     selected_majorana_fermion,
-#     swap_network,
-# )
-
 
 @attrs.frozen
 class SelectHubbard(SelectOracle):
