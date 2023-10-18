@@ -335,7 +335,7 @@ def cirq_optree_to_cbloq(
             raise ValueError(f"Only gate operations are supported, not {op}.")
 
         bloq = op.gate if isinstance(op.gate, Bloq) else CirqGateAsBloq(op.gate)
-        if cirq.num_qubits(bloq) == 0:
+        if cirq.num_qubits(op.gate) == 0:
             bb.add(bloq)
             continue
 
