@@ -152,22 +152,22 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         returns the decomposition of this Bloq represented as an explicit compute graph wrapped
         in a `CompositeBloq` object.
 
-        Bloq authors can the bloq's decomposition by overriding any of the two convenience methods:
+        Bloq authors can specify the bloq's decomposition by overriding any of the following two
+        methods:
 
         - `build_composite_bloq`: Override this method to define a bloq-style decomposition using a
             `BloqBuilder` builder class to construct the `CompositeBloq` directly.
         - `decompose_from_registers`: Override this method to define a cirq-style decomposition by
             yielding cirq style operations applied on qubits.
 
-        Irrespective of the choice of backend chosen by the Bloq authors to implement the
-        decomposition, Bloq users will be able to access both the Bloq-style and Cirq-style
-        interfaces, i.e. for a bloq that inherits from `GateWithRegisters`, usrs can do:
+        Irrespective of the bloq author's choice of backend to implement the
+        decomposition, bloq users will be able to access both the bloq-style and Cirq-style
+        interfaces. For example, users can call:
 
-        - `cirq.decompose_once(bloq.on_registers(**cirq_quregs))`: This will yield a cirq-style
-            `OPTREE` where only bloqs which do not inherit from `GateWithRegisters` will be wrapped
-            in a `BloqAsCirqGate` wrapper.
-        - `bloq.decompose_bloq()`: This will return a `CompositeBloq` where only cirq gates which do
-            not inherit from `GateWithRegisters` will be be wrapped in a `CirqGateAsBloq` wrapper.
+        - `cirq.decompose_once(bloq.on_registers(**cirq_quregs))`: This will yield a `cirq.OPTREE`.
+            Bloqs will be wrapped in `BloqAsCirqGate` as needed.
+        - `bloq.decompose_bloq()`: This will return a `CompositeBloq`.
+           Cirq gates will be be wrapped in `CirqGateAsBloq` as needed.
 
         Thus, `GateWithRegisters` class provides a convenient way of defining objects that can be used
         interchangeably with both `Cirq` and `Bloq` constructs.
