@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -22,7 +22,7 @@ import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -149,8 +149,10 @@ class TwoBitCSwap(Bloq):
 
 
 @frozen
-class CSwap(Bloq):
+class CSwap(GateWithRegisters):
     """Swap two registers controlled on a control bit.
+
+    Implements a multi-target controlled swap unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$.
 
     This decomposes into a qubitwise SWAP on the two target registers, and takes 14*n T-gates.
 
@@ -197,3 +199,20 @@ class CSwap(Bloq):
 
     def short_name(self) -> str:
         return 'swap'
+
+    @classmethod
+    def make_on(
+        cls, **quregs: Union[Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
+    ) -> cirq.Operation:
+        """Helper constructor to automatically deduce bitsize attributes."""
+        return cls(bitsize=len(quregs['x'])).on_registers(**quregs)
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if not args.use_unicode_characters:
+            return cirq.CircuitDiagramInfo(
+                ("@",) + ("swap_x",) * self.bitsize + ("swap_y",) * self.bitsize
+            )
+        return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
+
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
