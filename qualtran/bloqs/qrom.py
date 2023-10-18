@@ -100,15 +100,14 @@ class QROM(UnaryIterationGate):
 
     @cached_property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        if len(self.data[0].shape) == 1:
-            return (
-                SelectionRegister('selection', self.selection_bitsizes[0], self.data[0].shape[0]),
-            )
-        else:
-            return tuple(
-                SelectionRegister(f'selection{i}', sb, l)
-                for i, (l, sb) in enumerate(zip(self.data[0].shape, self.selection_bitsizes))
-            )
+        ret = tuple(
+            SelectionRegister(f'selection{i}', sb, l)
+            for i, (l, sb) in enumerate(zip(self.data[0].shape, self.selection_bitsizes))
+            if sb > 0
+        )
+        if len(self.data[0].shape) == 1 and len(ret) == 1:
+            ret = (SelectionRegister('selection', ret[0].bitsize, ret[0].iteration_length),)
+        return ret
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

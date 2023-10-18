@@ -41,7 +41,7 @@ def test_qrom_1d(data, num_controls):
 
     assert (
         len(inverse.all_qubits())
-        <= total_bits(g.r) + g.r.get_left('selection').total_bits() + num_controls
+        <= total_bits(g.r) + total_bits(qrom.selection_registers) + num_controls
     )
     assert inverse.all_qubits() == decomposed_circuit.all_qubits()
 
@@ -50,8 +50,8 @@ def test_qrom_1d(data, num_controls):
             qubit_vals = {x: 0 for x in g.all_qubits}
             qubit_vals.update(
                 zip(
-                    g.quregs['selection'],
-                    iter_bits(selection_integer, g.r.get_left('selection').total_bits()),
+                    g.quregs.get('selection', ()),
+                    iter_bits(selection_integer, total_bits(qrom.selection_registers)),
                 )
             )
             if num_controls:
