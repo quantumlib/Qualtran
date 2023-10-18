@@ -87,10 +87,11 @@ def get_qroam_cost(data_size: int, bitsize: int, adjoint=False) -> Tuple[int, in
 class QROAM(Bloq):
     """Placeholder bloq for QROAM.
 
-    Helpful for comparing costs to those quoted in literature and those from cirq_ft.
+    Helpful for comparing costs to those quoted in literature and those from qualtran.
     """
 
     data_size: int
+    selection_bitsize: int
     target_bitsize: int
     adjoint: bool = False
 
@@ -100,9 +101,8 @@ class QROAM(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(
-            sel=(int(np.ceil((self.data_size / self.k)) - 1).bit_length()), trg=self.target_bitsize
-        )
+        # this is not the correct signature.
+        return Signature.build(sel=self.data_size, trg=self.target_bitsize)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         cost = get_qroam_cost(self.data_size, self.target_bitsize, adjoint=self.adjoint)
@@ -110,62 +110,29 @@ class QROAM(Bloq):
 
 
 @frozen
-class QROAMTwoRegs(Bloq):
-    """Placeholder bloq for QROAM on two registers.
-
-    Helpful for comparing costs to those quoted in literature and those from cirq_ft.
-
-    Refererences:
-        [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://arxiv.org/abs/2011.03494)
-            Appendix B, page 44
-    """
-
-    data_size_a: int
-    data_size_b: int
-    target_bitsize_a: int
-    target_bitsize_b: int
-    ka: int
-    kb: int
-    adjoint = False
-
-    def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"QROAM{dag}"
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(
-            sel_a=(int(np.ceil((self.data_size_a / self.ka)) - 1).bit_length()),
-            sel_b=(int(np.ceil((self.data_size_b / self.kb)) - 1).bit_length()),
-            trg=self.target_bitsize_a + self.target_bitsize_b,  # ?
-        )
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        if self.adjoint:
-            fac_1 = int(np.ceil(self.data_size_a / self.ka))
-            fac_2 = int(np.ceil(self.data_size_b / self.kb))
-            fac_3 = (self.target_bitsize_a + self.target_bitsize_b) * (self.ka * self.kb - 1)
-        else:
-            fac_1 = int(np.ceil(self.data_size_a / self.ka))
-            fac_2 = int(np.ceil(self.data_size_b / self.kb))
-            fac_3 = self.ka * self.kb
-        return {(4 * (fac_1 + fac_2 + fac_3), TGate())}
-
-
-@frozen
 class ProgRotGateArray(Bloq):
     """Rotate to to/from MO basis so-as-to apply number operators in DF basis.
 
-    This is really a subclass of cirq_ft's ProgrammableRotationGateArray
+    This is really a subclass of qualtran's ProgrammableRotationGateArray
 
     Args:
+        num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Called L in Ref[1].
+        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
+        num_spin_orb: The number of spin orbitals. Typically called N.
+        num_bits_rot: Number of bits of precision for rotations
+            amplification in uniform state preparation. Called $\beth$ in Ref[1].
 
     Registers:
+        offset: Offset for p register.
+        p: Register for inner state preparation. This is of size $\ceil \log (L \Xi + N / 2)$.
+        rotatations: Data register storing rotations.
+        spin_sel: A single qubit register for spin.
+        sys_a: The system register for alpha electrons.
+        sys_b: The system register for beta electons.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305).
+            Hypercontraction](https://arxiv.org/abs/2011.03494).
             Step 4. Page 53.
     """
 
@@ -173,7 +140,6 @@ class ProgRotGateArray(Bloq):
     num_xi: int
     num_spin_orb: int
     num_bits_rot: int
-    num_bits_offset: int
     adjoint: bool = False
 
     def pretty_name(self) -> str:
@@ -184,7 +150,7 @@ class ProgRotGateArray(Bloq):
     def signature(self) -> Signature:
         num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         return Signature.build(
-            offset=self.num_bits_offset,
+            offset=num_bits_lxi,
             p=num_bits_lxi,
             rotations=(self.num_spin_orb // 2)
             * self.num_bits_rot,  # This assumes kr = 1 so we're dumping the N rotations in memory.
@@ -206,7 +172,7 @@ class ProgRotGateArray(Bloq):
 
 @frozen
 class InnerPrepare(Bloq):
-    """Inner prepare for DF block encoding.
+    r"""Inner prepare for DF block encoding.
 
     Prepare state over $p$ register controlled on outer $l$ register.
 
@@ -214,12 +180,23 @@ class InnerPrepare(Bloq):
 
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
+        num_spin_orb: The number of spin orbitals. Typically called N.
+        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
+        num_bits_rot_aa: Number of bits of precision for single qubit
+            rotation for amplitude amplification. Called $b_r$ in the reference.
+        num_bits_state_prep: The number of bits of precision for coherent alias
+            sampling. Called $\aleph$ in Ref[1].
+        adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
 
     Registers:
+        xi: data register for number storing $\Xi^{(l)}$.
+        rot: qubit for amplitude amplification.
+        succ_p: control to flag success for inner state preparation.
+        p: Register for inner state preparation. This is of size $\ceil \log (L \Xi + N / 2)$.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305).
+            Hypercontraction](https://arxiv.org/abs/2011.03494).
             Step 3. Page 52.
     """
 
@@ -227,7 +204,6 @@ class InnerPrepare(Bloq):
     num_spin_orb: int
     num_xi: int
     num_bits_rot_aa: int
-    num_bits_offset: int
     num_bits_state_prep: int
     adjoint: bool = False
 
@@ -237,12 +213,9 @@ class InnerPrepare(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
+        lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         return Signature.build(
-            xi=(self.num_xi - 1).bit_length(),
-            offset=self.num_bits_offset,
-            rot=self.num_bits_rot_aa,
-            succ_p=1,
-            p=get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb),
+            xi=(self.num_xi - 1).bit_length(), offset=lxi, rot=self.num_bits_rot_aa, succ_p=1, p=lxi
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
@@ -274,17 +247,30 @@ class DoubleFactorizationOneBody(BlockEncoding):
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
         num_spin_orb: The number of spin orbitals. Typically called N.
+        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
         num_bits_state_prep: The number of bits of precision for coherent alias
-            sampling. Called aleph (fancy N) in Ref[1].
+            sampling. Called $\aleph$ in Ref[1].
+        num_bits_rot_aa_outer: Number of bits of precision for single qubit
+            rotation for amplitude amplification. Called $b_r$ in the reference.
         num_bits_rot: Number of bits of precision for rotations for amplitude
-            amplification in uniform state preparation. Called b_r in Ref[1].
+            amplification in uniform state preparation. Called $\beth$ in Ref[1].
         adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
 
     Registers:
+        succ_l: control for success for outer state preparation.
+        l_ne_zero: control for one-body part of Hamiltonian.
+        l: Register for outer state preparation. This is of size $\ceil \log (L + 1)$.
+        p: Register for inner state preparation. This is of size $\ceil \log (L \Xi + N / 2)$.
+        spin: A single qubit register for spin.
+        rot: qubit for amplitude amplification.
+        state_prep: ancilla for state preparation.
+        xi: data register for number storing $\Xi^{(l)}$.
+        offset: Offset for p register.
+        sys: The system register.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/PRXQuantum.2.030305)
+            Hypercontraction](https://arxiv.org/abs/2011.03494)
     """
     num_aux: int
     num_spin_orb: int
@@ -331,7 +317,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
             num_bits_rot_aa=self.num_bits_rot_aa,
-            num_bits_offset=num_bits_lxi,
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=False,
         )
@@ -340,7 +325,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_spin_orb=self.num_spin_orb,
             num_xi=self.num_xi,
             num_bits_rot_aa=self.num_bits_rot_aa,
-            num_bits_offset=num_bits_lxi,
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=True,
         )
@@ -350,7 +334,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_xi=self.num_xi,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
-            num_bits_offset=num_bits_lxi,
             adjoint=False,
         )
         rot_dag = ProgRotGateArray(
@@ -358,7 +341,6 @@ class DoubleFactorizationOneBody(BlockEncoding):
             num_xi=self.num_xi,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
-            num_bits_offset=num_bits_lxi,
             adjoint=True,
         )
         # 2*In-prep_l, addition, Rotations, 2*H, 2*SWAPS, subtraction
@@ -387,12 +369,15 @@ class OuterPrepare(Bloq):
 
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
+        num_bits_state_prep: The number of bits of precision for coherent alias
+            sampling. Called $\aleph$ in Ref[1].
+        num_bits_rot_aa: Number of bits of precision for single qubit
+            rotation for amplitude amplification in inner state preparation.
+            Called $b_r$ in the reference.
         adjoint: Whether to dagger the bloq or not.
 
     Registers:
         l: register to store L values for auxiliary index.
-        p: spatial orbital index. range(0, num_spin_orb // 2)
-        q: spatial orbital index. range(0, num_spin_orb // 2)
         succ_l: flag for success of this state preparation.
 
     Refererences:
@@ -443,13 +428,19 @@ class OutputIndexedData(Bloq):
     index a contiguous register formed from $l$ and $k$.
 
     Args:
+        num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Called L in Ref[1].
+        num_spin_orb: The number of spin orbitals. Typically called N.
+        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
+        num_bits_rot_aa: Number of bits of precision for single qubit
+            rotation for amplitude amplification.  Called $b_r$ in the reference.
+        ajoint: Whether to dagger the bloq or note. Affects bloq counts.
 
     Registers:
         l: register to store L values for auxiliary index.
         l_ne_zero: flag for one-body term.
         xi: rank for each l
-        offset: offset for each DF factor.
         rot: rotation for amplitude amplification.
+        offset: offset for each DF factor.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
@@ -461,7 +452,6 @@ class OutputIndexedData(Bloq):
     num_spin_orb: int
     num_xi: int
     num_bits_rot_aa: int = 8
-    ko: int = 1
     adjoint: bool = False
 
     def pretty_name(self) -> str:
@@ -495,22 +485,29 @@ class DoubleFactorization(BlockEncoding):
     Args:
         num_spin_orb: The number of spin orbitals. Typically called N.
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Called L in Ref[1].
-        num_xi: Rank of second factorization. Full rank implies xi = num_spin_orb // 2.
+        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
         num_bits_state_prep: The number of bits of precision for coherent alias
-            sampling. Called aleph (fancy N) in Ref[1].
-        num_bits_rot: Number of bits of precision for rotations for amplitude
-            amplification in uniform state preparation. Called b_r in Ref[1].
-        qroam_k_factor: QROAM blocking factor for data prepared over l (auxiliary) index.
-            Defaults to 1 (i.e. use QROM).
+            sampling. Called $\aleph$ in Ref[1]. We assume this is the same for
+            both outer and inner state preparations.
+        num_bits_rot: Number of bits of precision for rotations
+            amplification in uniform state preparation. Called $\beth$ in Ref[1].
+        num_bits_rot_aa_outer: Number of bits of precision for single qubit
+            rotation for amplitude amplification in outer state preparation.
+            Called $b_r$ in the reference.
+        num_bits_rot_aa_inner: Number of bits of precision for single qubit
+            rotation for amplitude amplification in inner state preparation.
+            Called $b_r$ in the reference.
 
     Registers:
-        l: register to store L values for auxiliary index.
-        succ_pq: flag for success of this state preparation.
-        succ_l: flag for success of this state preparation.
+        ctrl: An optional control register. This bloq should just be controlled.
+        l: Register for outer state preparation. This is of size $\ceil \log (L + 1)$.
+        p: Register for inner state preparation. This is of size $\ceil \log (L \Xi + N / 2)$.
+        spin: A single qubit register for spin.
+        sys: The system register.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            hypercontraction](https://journals.aps.org/prxquantum/pdf/10.1103/prxquantum.2.030305)
+            hypercontraction](https://arxiv.org/abs/2011.03494)
     """
     num_spin_orb: int
     num_aux: int
@@ -529,7 +526,7 @@ class DoubleFactorization(BlockEncoding):
             factorized_two_body_ham: One body hamiltonian ($W^{(l)}_{pq}$).
 
         Returns:
-            SingleFactorization bloq with alt/keep values appropriately constructed.
+            Double factorized bloq with alt/keep values appropriately constructed.
 
         Refererences:
             [Even More Efficient Quantum Computations of Chemistry Through Tensor
@@ -556,11 +553,9 @@ class DoubleFactorization(BlockEncoding):
     def junk_registers(self) -> Iterable[Register]:
         return [Register("p", bitsize=(self.num_xi - 1).bit_length()), Register("spin", bitsize=1)]
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
-        l = regs['l']
-        sys = regs['sys']
-        p = regs['p']
-        spin = regs['spin']
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', ctrl: SoquetT, p: SoquetT, spin: SoquetT, sys: SoquetT, l: SoquetT
+    ) -> Dict[str, 'SoquetT']:
         succ_l, l_ne_zero, theta, succ_p = bb.split(bb.allocate(4))
         num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         num_bits_xi = (self.num_xi - 1).bit_length()
@@ -635,5 +630,5 @@ class DoubleFactorization(BlockEncoding):
         bb.free(succ_p)
         bb.free(l_ne_zero)
         bb.free(theta)
-        out_regs = {'l': l, 'sys': sys, 'p': p, 'spin': spin, 'ctrl': regs['ctrl']}
+        out_regs = {'l': l, 'sys': sys, 'p': p, 'spin': spin, 'ctrl': ctrl}
         return out_regs
