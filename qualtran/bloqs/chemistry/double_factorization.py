@@ -106,7 +106,6 @@ class QROAM(Bloq):
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         cost = get_qroam_cost(self.data_size, self.target_bitsize, adjoint=self.adjoint)
-        # print("QROM ", self.adjoint, cost)
         return {(4 * cost, TGate())}
 
 
@@ -297,11 +296,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
 
     @property
     def control_registers(self) -> Iterable[Register]:
-        return [
-            Register("succ_l", bitsize=1),
-            Register("succ_p", bitsize=1),
-            Register("l_ne_zero", bitsize=1),
-        ]
+        return [Register("succ_l", bitsize=1), Register("l_ne_zero", bitsize=1)]
 
     @property
     def junk_registers(self) -> Iterable[Register]:
@@ -371,7 +366,7 @@ class DoubleFactorizationOneBody(BlockEncoding):
             (1, in_prep),  # in-prep_l listing 3 page 52/53
             (1, in_prep_dag),  # in_prep_l^dag
             (1, rot),  # rotate into system basis  listing 4 pg 54
-            (4, TGate()),  # apply CCZ / CCCZ (this should be accounted for but is not currently)
+            (4, TGate()),  # apply CCZ first then CCCZ, the cost is 1 + 2 Toffolis (step 4e, and 7)
             (1, rot_dag),  # Undo rotations
             (2, CSwapApprox(self.num_spin_orb // 2)),  # Swaps for spins
             (2, ArbitraryClifford(n=1)),  # 2 Hadamards for spin superposition
@@ -479,7 +474,7 @@ class OutputIndexedData(Bloq):
             l=self.num_aux.bit_length(),
             l_ne_zero=1,
             xi=(self.num_xi - 1).bit_length(),
-            rot=self.num_bits_rot_aa,
+            rot_data=self.num_bits_rot_aa,
             offset=get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb),
         )
 
@@ -488,7 +483,6 @@ class OutputIndexedData(Bloq):
         num_bits_xi = (self.num_xi - 1).bit_length()
         num_bits_offset = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         bo = num_bits_xi + num_bits_offset + self.num_bits_rot_aa + 1
-        print("this: ", bo, num_bits_xi, num_bits_offset, self.num_bits_rot_aa)
         return {(1, QROAM(self.num_aux + 1, bo, adjoint=self.adjoint))}
 
 
@@ -572,7 +566,7 @@ class DoubleFactorization(BlockEncoding):
         num_bits_xi = (self.num_xi - 1).bit_length()
         xi = bb.allocate(num_bits_xi)
         offset = bb.allocate(num_bits_lxi)
-        rot = bb.allocate(self.num_bits_rot_aa_inner)
+        rot_data = bb.allocate(self.num_bits_rot_aa_inner)
 
         outer_prep = OuterPrepare(
             self.num_aux,
@@ -586,8 +580,8 @@ class DoubleFactorization(BlockEncoding):
             num_xi=self.num_xi,
             num_bits_rot_aa=self.num_bits_rot_aa_inner,
         )
-        l, l_ne_zero, xi, rot, offset = bb.add(
-            in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot=rot, offset=offset
+        l, l_ne_zero, xi, rot_data, offset = bb.add(
+            in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot_data=rot_data, offset=offset
         )
         one_body = DoubleFactorizationOneBody(
             self.num_aux,
@@ -599,10 +593,11 @@ class DoubleFactorization(BlockEncoding):
         )
         state_prep_anc = bb.allocate(self.num_bits_state_prep)
         one_body_sq = BlockEncodeChebyshevPolynomial(one_body, order=2)
-        succ_l, succ_p, l_ne_zero, p, spin, rot, state_prep_anc, sys, l, xi, offset = bb.add(
+        # ancilla for amplitude amplifcation
+        rot = bb.allocate(1)
+        succ_l, l_ne_zero, p, spin, rot, state_prep_anc, sys, l, xi, offset = bb.add(
             one_body_sq,
             succ_l=succ_l,
-            succ_p=succ_p,
             l_ne_zero=l_ne_zero,
             p=p,
             spin=spin,
@@ -613,6 +608,7 @@ class DoubleFactorization(BlockEncoding):
             xi=xi,
             offset=offset,
         )
+        bb.free(rot)
         bb.free(state_prep_anc)
         in_l_data_l = OutputIndexedData(
             num_aux=self.num_aux,
@@ -621,8 +617,8 @@ class DoubleFactorization(BlockEncoding):
             num_bits_rot_aa=self.num_bits_rot_aa_inner,
             adjoint=True,
         )
-        l, l_ne_zero, xi, rot, offset = bb.add(
-            in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot=rot, offset=offset
+        l, l_ne_zero, xi, rot_data, offset = bb.add(
+            in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot_data=rot_data, offset=offset
         )
         # prepare_l^dag
         outer_prep = OuterPrepare(
@@ -634,7 +630,7 @@ class DoubleFactorization(BlockEncoding):
         l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
         bb.free(xi)
         bb.free(offset)
-        bb.free(rot)
+        bb.free(rot_data)
         bb.free(succ_l)
         bb.free(succ_p)
         bb.free(l_ne_zero)

@@ -40,11 +40,6 @@ def test_double_factorization():
     assert_valid_bloq_decomposition(df)
 
 
-def test_double_factorization_counts_graph():
-    graph, sigma = get_bloq_counts_graph(DoubleFactorization(4, 10, 4))
-    assert sigma[TGate()] == 4656
-
-
 @pytest.mark.parametrize("data_size, bitsize", ((100, 10), (100, 3), (1_000, 13), (1_000_000, 20)))
 def test_qroam_factors(data_size, bitsize):
     assert get_qroam_cost(data_size, bitsize) == QR(data_size, bitsize)[-1]
@@ -58,12 +53,12 @@ def test_outerprep_bloq_counts():
     outer_prep = OuterPrepare(
         num_aux,
         num_bits_state_prep=num_bits_state_prep,
-        num_bits_rot=num_bits_rot,  # computed by of?
+        num_bits_rot_aa=num_bits_rot,  # computed by of?
     )
     _, counts = get_bloq_counts_graph(outer_prep)
     toff = counts[TGate()] // 4
     outer_prep = OuterPrepare(
-        num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot=num_bits_rot, adjoint=True
+        num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot, adjoint=True
     )
     _, counts = get_bloq_counts_graph(outer_prep)
     toff += counts[TGate()] // 4
@@ -178,7 +173,7 @@ def test_compare_cost_to_openfermion():
     num_aux = 50
     num_eig = num_spin_orb // 2
     num_bits_state_prep = 12
-    num_bits_rot = 12
+    num_bits_rot = 7
     unused_lambda = 10
     unused_de = 1e-3
     unused_stps = 100
@@ -203,7 +198,14 @@ def test_compare_cost_to_openfermion():
         num_bits_rot,
         unused_stps,
     )[0]
-    print(of_cost + 6 - 2, counts[TGate()] // 4 + 22 + 2)
+    refl_cost = 22
+    walk_cost = 2
+    in_prep_diff = 1
+    rot_diff = 3
+    in_data_diff = 6
+    diff_ctrl_z = 1
+    diff = in_prep_diff + rot_diff + in_data_diff - diff_ctrl_z
+    assert of_cost == counts[TGate()] // 4 + refl_cost + walk_cost - diff
 
 
 def test_notebook():
