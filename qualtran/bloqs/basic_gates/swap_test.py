@@ -20,6 +20,7 @@ import pytest
 import sympy
 
 from qualtran import Bloq, BloqBuilder
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import (
     OneEffect,
     OneState,
@@ -110,9 +111,38 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
     return bb.finalize(q1=q1, q2=q2)
 
 
-def test_cswap_decomp():
+def test_cswap_bloq_decomp():
     cswap = CSwap(16)
     assert_valid_bloq_decomposition(cswap)
+
+
+def test_cswap_cirq_decomp():
+    cswap = CSwap(3)
+    quregs = get_named_qubits(cswap.signature)
+    cswap_op = cswap.on_registers(**quregs)
+    circuit = cirq.Circuit(cswap_op, cirq.decompose_once(cswap_op))
+    cirq.testing.assert_has_diagram(
+        circuit,
+        r'''
+ctrl: ───@──────@───@───@───
+         │      │   │   │
+x0: ─────×(x)───×───┼───┼───
+         │      │   │   │
+x1: ─────×(x)───┼───×───┼───
+         │      │   │   │
+x2: ─────×(x)───┼───┼───×───
+         │      │   │   │
+y0: ─────×(y)───×───┼───┼───
+         │          │   │
+y1: ─────×(y)───────×───┼───
+         │              │
+y2: ─────×(y)───────────×───
+    ''',
+    )
+    expected_circuit = cirq.Circuit(
+        cswap_op, [cirq.CSWAP(*quregs['ctrl'], x, y) for (x, y) in zip(quregs['x'], quregs['y'])]
+    )
+    cirq.testing.assert_same_circuits(circuit, expected_circuit)
 
 
 def test_cswap_unitary():
@@ -144,7 +174,6 @@ def test_cswap_classical():
 
 
 def test_cswap_bloq_counts():
-
     bloq = CSwap(bitsize=8)
     counts1 = bloq.bloq_counts()
 
