@@ -156,9 +156,7 @@ class UniformSuperpositionTHC(Bloq):
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
         ctrls = bb.join(np.array([lte_nu_mp1, lte_mu_nu, junk]))
         ctrls, succ = bb.add(
-            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
-            controls=ctrls,
-            target=succ,
+            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X), controls=ctrls, target=succ
         )
         lte_nu_mp1, lte_mu_nu, junk = bb.split(ctrls)
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
@@ -360,9 +358,7 @@ class PrepareTHC(Bloq):
         junk = bb.allocate(1)
         ctrls = bb.join(np.array([eq_nu_mp1, plus_a]))
         ctrls, junk = bb.add(
-            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X),
-            controls=ctrls,
-            target=junk,
+            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X), controls=ctrls, target=junk
         )
         eq_nu_mp1, plus_a = bb.split(ctrls)
         junk, mu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=junk, x=mu, y=nu)

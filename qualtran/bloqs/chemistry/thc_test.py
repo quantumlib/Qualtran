@@ -14,13 +14,10 @@
 
 import numpy as np
 import pytest
-from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, Register
 from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
-from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.testing import execute_notebook
 
 
