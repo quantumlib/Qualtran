@@ -19,11 +19,7 @@ from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_s
 
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, Register
-from qualtran.bloqs.chemistry.thc import (
-    add_from_bloq_register_flat_qubits,
-    PrepareTHC,
-    UniformSuperpositionTHC,
-)
+from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.testing import execute_notebook
 
@@ -46,30 +42,6 @@ def _make_prepare():
     zeta = 0.5 * (zeta + zeta.T)
     eps = 1e-3
     return PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, probability_epsilon=eps)
-
-
-def test_split_join_arithmetic_gates():
-    bb = BloqBuilder()
-    bitsize = 9
-    val = bb.add_register(Register("val", bitsize=bitsize))
-    res = bb.add_register(Register("res", bitsize=1))
-    val, res = add_from_bloq_register_flat_qubits(
-        bb, CirqGateAsBloq(LessThanGate(bitsize, 7)), val=val, res=res
-    )
-    cbloq = bb.finalize(val=val, res=res)
-    assert cbloq.t_complexity().t == CirqGateAsBloq(LessThanGate(bitsize, 7)).t_complexity().t
-    bb = BloqBuilder()
-    x = bb.add_register(Register("x", bitsize=bitsize))
-    y = bb.add_register(Register("y", bitsize=bitsize))
-    res = bb.add_register(Register("res", bitsize=1))
-    x, y, res = add_from_bloq_register_flat_qubits(
-        bb, CirqGateAsBloq(LessThanEqualGate(bitsize, bitsize)), x=x, y=y, res=res
-    )
-    cbloq = bb.finalize(x=x, y=y, res=res)
-    assert (
-        cbloq.t_complexity().t
-        == CirqGateAsBloq(LessThanEqualGate(bitsize, bitsize)).t_complexity().t
-    )
 
 
 def test_uniform_superposition():

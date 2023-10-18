@@ -37,41 +37,6 @@ from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
 
 
-def add_from_bloq_register_flat_qubits(
-    bb: 'BloqBuilder', cirq_bloq: Bloq, **regs: SoquetT
-) -> Tuple[SoquetT, ...]:
-    """Helper function to split / join registers for cirq gates expecting single 'qubits' register.
-
-    Args:
-        bb: Bloq builder used during decompostion.
-        cirq_bloq: A CirqGateAsBloq wrapped arithmetic gate.
-        regs: bloq registers we wish to use as flat list of qubits for cirq gate.
-
-    Returns:
-        regs: bloq registers appropriately rejoined following split.
-    """
-    flat_regs = []
-    for _, v in regs.items():
-        if v.reg.bitsize == 1:
-            flat_regs.append([v])
-        else:
-            flat_regs.append(bb.split(v))
-    qubits = np.concatenate(flat_regs)
-    qubits = bb.add(cirq_bloq, qubits=qubits)
-    out_soqs = {}
-    start = 0
-    for _, v in regs.items():
-        if v.reg.bitsize == 1:
-            end = start + 1
-            out_soqs[v] = qubits[start:end][0]
-            start += 1
-        else:
-            end = start + v.reg.bitsize
-            out_soqs[v] = bb.join(qubits[start:end])
-            start += v.reg.bitsize
-    return tuple(s for _, s in out_soqs.items())
-
-
 @frozen
 class UniformSuperpositionTHC(Bloq):
     r"""Prepare uniform superposition state for THC.
