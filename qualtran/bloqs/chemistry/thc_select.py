@@ -112,13 +112,13 @@ class SelectTHC(Bloq):
             `num_bits_theta` fixed point approximation to the angle.
 
     Registers:
-     - mu: $\mu$ register.
-     - nu: $\nu$ register.
-     - theta: sign register.
-     - succ: success flag qubit from uniform state preparation
-     - eq_nu_mp1: flag for if $nu = M+1$
-     - plus_a / plus_b: plus state for controlled swaps on spins.
-     - sys_a / sys_b : System registers for (a)lpha/(b)eta orbitals.
+        mu: $\mu$ register.
+        nu: $\nu$ register.
+        theta: sign register.
+        succ: success flag qubit from uniform state preparation
+        eq_nu_mp1: flag for if $nu = M+1$
+        plus_a / plus_b: plus state for controlled swaps on spins.
+        sys_a / sys_b : System registers for (a)lpha/(b)eta orbitals.
 
     References:
         [Even more efficient quantum computations of chemistry through
