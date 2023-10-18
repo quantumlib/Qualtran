@@ -80,8 +80,12 @@ class CirqGateAsBloq(Bloq):
                     for reg in self.gate.signature
                 ]
             )
-        shape = cirq.num_qubits(self.gate)
-        return Signature([Register('qubits', shape=shape, bitsize=1)]) if shape else Signature([])
+        nqubits = cirq.num_qubits(self.gate)
+        return (
+            Signature([Register('qubits', shape=nqubits, bitsize=1)])
+            if nqubits > 0
+            else Signature([])
+        )
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_op(self, decompose_once=True)
