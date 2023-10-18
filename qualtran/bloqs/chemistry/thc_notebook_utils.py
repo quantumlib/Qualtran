@@ -129,6 +129,7 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
             continue
         num_t = get_bloq_counts_graph(bloq, generalizer=generalize)[1].get(TGate())
         if num_t is not None:
+            num_t = int(num_t)
             if isinstance(bloq, bloq_comparators):
                 classified_bloqs['comparator'] += num_calls * num_t
             elif isinstance(bloq, MultiControlPauli):
