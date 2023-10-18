@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class PrepareUniformSuperposition(Bloq):
+class PrepareUniformSuperpositionSparse(Bloq):
     r"""Prepare a uniform superposition over $d$ basis states.
 
     Before preparing the state in Eq. A11 of the reference we need to prepare a
@@ -141,13 +141,13 @@ class PrepareSparse(Bloq):
         qrom_cost = (4 * num_toff_qrom, TGate())
         if self.adjoint:
             return {
-                (1, PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa)),
+                (1, PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa)),
                 qrom_cost,
             }
         swap_cost_state_prep = (4 + 4, CSwapApprox(num_bits_spat))  # 2. pg 39
         ineq_cost_state_prep = (4 * (self.num_bits_state_prep + 1), TGate())  # 2. pg 39
         return {
-            (1, PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa)),
+            (1, PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa)),
             qrom_cost,
             swap_cost_state_prep,
             ineq_cost_state_prep,
