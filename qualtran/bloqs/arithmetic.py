@@ -1037,7 +1037,7 @@ class GreaterThanConstant(Bloq):
         return Signature.build(x=self.bitsize, target=1)
 
     def t_complexity(self) -> TComplexity:
-        return t_complexity(LessThanConstant(self.bitsize, val=self.val))
+        return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
