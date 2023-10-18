@@ -84,7 +84,7 @@ class CompositeBloq(Bloq):
 
     connections: Tuple[Connection, ...] = attrs.field(converter=tuple)
     signature: Signature
-    bloq_instances: FrozenSet[BloqInstance] = attrs.field()
+    bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=frozenset)
 
     @bloq_instances.default
     def _default_bloq_instances(self):
