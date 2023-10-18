@@ -34,6 +34,8 @@ from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, S
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting import get_bloq_counts_graph, SympySymbolAllocator
 
+# this code will be cleaned up post cirq_ft alignment:
+# https://github.com/quantumlib/Qualtran/issues/425
 single_qubit_clifford = (
     cirq.ops.common_gates.HPowGate,
     cirq.ops.common_gates.XPowGate,
