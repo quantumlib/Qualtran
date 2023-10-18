@@ -75,6 +75,8 @@ def generalize(bloq):
         return None
     if isinstance(bloq, (Rx, Ry, Rz)):
         return attrs.evolve(bloq, angle=phi_sym)
+    if isinstance(bloq, And):
+        return attrs.evolve(bloq, cv1=and_cv0, cv2=and_cv1)
     if isinstance(bloq, CirqGateAsBloq):
         if isinstance(bloq.gate, cirq_ft.algos.And) and (len(bloq.gate.cv) == 2):
             return And(cv1=and_cv0, cv2=and_cv1, adjoint=bloq.gate.adjoint)
