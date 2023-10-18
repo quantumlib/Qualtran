@@ -28,6 +28,7 @@ from qualtran import (
     Bloq,
     BloqBuilder,
     CompositeBloq,
+    DecomposeNotImplementedError,
     DecomposeTypeError,
     Register,
     Side,
@@ -397,7 +398,7 @@ def decompose_from_cirq_op(bloq: 'Bloq', *, decompose_once: bool = False) -> 'Co
     )
 
     if decomposed_optree is None:
-        raise ValueError(f"Cannot decompose from cirq op: {bloq} doesn't have a cirq op.")
+        raise DecomposeNotImplementedError(f"{bloq} does not have a decomposition.")
 
     return cirq_optree_to_cbloq(
         decomposed_optree, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
