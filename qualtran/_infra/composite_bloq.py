@@ -84,10 +84,10 @@ class CompositeBloq(Bloq):
 
     connections: Tuple[Connection, ...] = attrs.field(converter=tuple)
     signature: Signature
+    bloq_instances: FrozenSet[BloqInstance] = attrs.field()
 
-    @cached_property
-    def bloq_instances(self) -> Set[BloqInstance]:
-        """The set of `BloqInstance`s making up the nodes of the graph."""
+    @bloq_instances.default
+    def _default_bloq_instances(self):
         return {
             soq.binst
             for cxn in self.connections
@@ -717,6 +717,7 @@ class BloqBuilder:
         # To be appended to:
         self._cxns: List[Connection] = []
         self._regs: List[Register] = []
+        self._binsts: Set[BloqInstance] = set()
 
         # Initialize our BloqInstance counter
         self._i = 0
@@ -926,6 +927,8 @@ class BloqBuilder:
         Warning! Do not use this function externally! Untold bad things will happen if
         the provided `binst.i` is not unique.
         """
+        self._binsts.add(binst)
+
         bloq = binst.bloq
 
         def _add(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
@@ -1033,7 +1036,9 @@ class BloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(connections=self._cxns, signature=signature)
+        return CompositeBloq(
+            connections=self._cxns, signature=signature, bloq_instances=self._binsts
+        )
 
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
