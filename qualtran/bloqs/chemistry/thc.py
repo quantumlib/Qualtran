@@ -18,7 +18,6 @@ from typing import Dict, Tuple
 import cirq
 import numpy as np
 from attrs import field, frozen
-from cirq_ft.algos.multi_control_multi_target_pauli import MultiControlPauli
 from cirq_ft.algos.select_swap_qrom import SelectSwapQROM
 from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from numpy.typing import NDArray
@@ -32,6 +31,7 @@ from qualtran.bloqs.arithmetic import (
     ToContiguousIndex,
 )
 from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
@@ -135,7 +135,7 @@ class UniformSuperpositionTHC(Bloq):
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
         ctrls, amp = bb.add(
-            CirqGateAsBloq(MultiControlPauli(((1,) * num_bits_mu + (1,) * num_bits_mu), cirq.Z)),
+            MultiControlPauli(((1,) * num_bits_mu + (1,) * num_bits_mu), cirq.Z),
             controls=bb.join(np.concatenate([bb.split(mu), bb.split(nu)])),
             target=amp,
         )
@@ -156,7 +156,7 @@ class UniformSuperpositionTHC(Bloq):
         (eq_nu_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[eq_nu_mp1, gt_mu_n], target=junk)
         ctrls = bb.join(np.array([lte_nu_mp1, lte_mu_nu, junk]))
         ctrls, succ = bb.add(
-            CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X)),
+            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
             controls=ctrls,
             target=succ,
         )
@@ -360,7 +360,7 @@ class PrepareTHC(Bloq):
         junk = bb.allocate(1)
         ctrls = bb.join(np.array([eq_nu_mp1, plus_a]))
         ctrls, junk = bb.add(
-            CirqGateAsBloq(MultiControlPauli(cvs=(0, 1), target_gate=cirq.X)),
+            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X),
             controls=ctrls,
             target=junk,
         )
