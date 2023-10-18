@@ -118,9 +118,7 @@ class UniformSuperpositionTHC(Bloq):
         # 6. Reflect on comparitors, rotated qubit and |+>.
         ctrls = bb.join(np.array([amp, lte_nu_mp1, lte_mu_nu]))
         ctrls, junk = bb.add(
-            CirqGateAsBloq(MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z)),
-            controls=ctrls,
-            target=junk,
+            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z), controls=ctrls, target=junk
         )
         (amp, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
@@ -341,14 +339,10 @@ class PrepareTHC(Bloq):
         less_than = bb.allocate(1)
         keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z))
-        alt_theta, less_than = add_from_bloq_register_flat_qubits(
-            bb, cz, alt_theta=alt_theta, less_than=less_than
-        )
+        alt_theta, less_than = bb.add(cz, qubits=[alt_theta, less_than])
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z, control_values=(0,)))
         # negative control on the less_than register
-        less_than, theta = add_from_bloq_register_flat_qubits(
-            bb, cz, less_than=less_than, theta=theta
-        )
+        less_than, theta = bb.add(cz, qubits=[less_than, theta])
         less_than, alt_mu, mu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_mu, y=mu)
         less_than, alt_nu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_nu, y=nu)
         keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)
