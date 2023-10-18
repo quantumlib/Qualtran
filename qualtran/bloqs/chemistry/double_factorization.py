@@ -15,7 +15,7 @@ r"""Bloqs for the double-factorized chemistry Hamiltonian in second quantization
 
 Recall that for the single factorized Hamiltonian we have
 $$
-    H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l \left(\sum_{pq} 
+    H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l \left(\sum_{pq}
 W_{pq}^{(l)} a_p^\dagger a_q\right)^2.
 $$
 One arrives at the double factorized (DF) Hamiltonian by further factorizing the
@@ -25,8 +25,8 @@ $$
 $$
 so that
 $$
-    H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l U^{(l)}\left(\sum_{k}^{\Xi^{(l)}} 
-f_k^{(l)} n_k\right)^2 U^{(l)\dagger}
+    H = \sum_{pq}T'_{pq} a_p^\dagger a_q + \frac{1}{2} \sum_l U^{(l)}\left(\sum_{k}^{\Xi^{(l)}}
+        f_k^{(l)} n_k\right)^2 U^{(l)\dagger}
 $$
 where $\Xi^{(l)} $ is the rank of second factorization. In principle one can
 truncate the second factorization to reduce the amount of information required
@@ -57,7 +57,7 @@ def get_num_bits_lxi(num_aux, num_xi, num_spin_orb) -> int:
     return num_bits_lxi
 
 
-def get_qroam_cost(data_size: int, bitsize: int, adjoint=False) -> Tuple[int, int]:
+def get_qroam_cost(data_size: int, bitsize: int, adjoint: bool = False) -> Tuple[int, int]:
     """This gives the optimal k and minimum cost for a QROM over L values of
         size M.
 
@@ -66,6 +66,7 @@ def get_qroam_cost(data_size: int, bitsize: int, adjoint=False) -> Tuple[int, in
     Args:
         data_size: Amount of data we want to load.
         bitsize: the amount of bits of output we need.
+        adjoint: whether to get costs from inverse qrom (true) or not (false).
 
     Returns:
        val_opt: minimal (optimal) cost of QROM
@@ -111,7 +112,7 @@ class QROAM(Bloq):
 
 @frozen
 class ProgRotGateArray(Bloq):
-    """Rotate to to/from MO basis so-as-to apply number operators in DF basis.
+    r"""Rotate to to/from MO basis so-as-to apply number operators in DF basis.
 
     This is really a subclass of qualtran's ProgrammableRotationGateArray
 
