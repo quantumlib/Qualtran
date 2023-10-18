@@ -17,6 +17,7 @@ from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature, SoquetT
 
@@ -74,3 +75,6 @@ class Hadamard(Bloq):
 
         (q,) = q
         return cirq.H(q), {'q': np.array([q])}
+
+    def t_complexity(self):
+        return TComplexity(clifford=1)
