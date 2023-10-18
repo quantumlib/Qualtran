@@ -17,7 +17,6 @@ from typing import Dict
 import attrs
 import cirq
 import cirq_ft
-from cirq_ft.algos.arithmetic_gates import LessThanEqualGate, LessThanGate
 
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.arithmetic import (
@@ -29,6 +28,7 @@ from qualtran.bloqs.arithmetic import (
     ToContiguousIndex,
 )
 from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
@@ -129,11 +129,10 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
         if num_t is not None:
             if isinstance(bloq, bloq_comparators):
                 classified_bloqs['comparator'] += num_calls * num_t
-            elif isinstance(bloq, CirqGateAsBloq):
-                if isinstance(bloq.gate, cirq_ft.MultiControlPauli) and isinstance(
-                    bloq.gate.target_gate, cirq.ops.common_gates.ZPowGate
-                ):
+            if isinstance(bloq, MultiControlPauli):
+                if isinstance(bloq.target_gate, cirq.ops.common_gates.ZPowGate):
                     classified_bloqs['reflections'] += num_calls * num_t
+            elif isinstance(bloq, CirqGateAsBloq):
                 if isinstance(bloq.gate, (cirq_ft.SelectSwapQROM, cirq_ft.QROM)):
                     classified_bloqs['qrom'] += num_calls * num_t
             elif isinstance(bloq, CSwapApprox):
