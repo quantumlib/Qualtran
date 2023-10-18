@@ -123,6 +123,9 @@ def test_bloq_decompose_from_cirq_op():
 def test_cirq_circuit_to_cbloq():
     qubits = cirq.LineQubit.range(6)
     circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
+
+    circuit.append(cirq.global_phase_operation(-1j))
+
     cbloq = cirq_optree_to_cbloq(circuit)
 
     bloq_unitary = cbloq.tensor_contract()
