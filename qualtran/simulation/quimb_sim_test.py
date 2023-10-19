@@ -24,6 +24,7 @@ from numpy.typing import NDArray
 from qualtran import Bloq, BloqBuilder, DanglingT, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.composite_bloq import _get_dangling_soquets
 from qualtran.bloqs.basic_gates import CNOT, XGate, ZGate
+from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.simulation.quimb_sim import cbloq_to_quimb, get_right_and_left_inds
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -135,6 +136,23 @@ def test_cbloq_to_quimb():
     for oi in tn.outer_inds():
         assert isinstance(oi, Soquet)
         assert isinstance(oi.binst, DanglingT)
+
+
+def test_cbloq_to_quimb_with_no_ops_on_register():
+    # Multiple registers with no operation on the target.
+    signature = Signature.build(selection=2, target=1)
+    bb, soqs = BloqBuilder().from_signature(signature=signature)
+    selection, target = soqs['selection'], soqs['target']
+    selection = bb.add(Split(2), split=selection)
+    selection = bb.add(Join(2), join=selection)
+    cbloq = bb.finalize(selection=selection, target=soqs['target'])
+    np.testing.assert_allclose(cbloq.tensor_contract(), np.eye(2**3))
+
+    # Single qubit with no operation acting on it.
+    signature = Signature.build(target=1)
+    bb, soqs = BloqBuilder().from_signature(signature=signature)
+    cbloq = bb.finalize(**soqs)
+    np.testing.assert_allclose(cbloq.tensor_contract(), np.eye(2))
 
 
 @frozen

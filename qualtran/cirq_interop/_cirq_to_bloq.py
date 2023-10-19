@@ -24,7 +24,18 @@ import quimb.tensor as qtn
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    CompositeBloq,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran._infra.gate_with_registers import split_qubits
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -69,7 +80,12 @@ class CirqGateAsBloq(Bloq):
                     for reg in self.gate.signature
                 ]
             )
-        return Signature([Register('qubits', shape=cirq.num_qubits(self.gate), bitsize=1)])
+        nqubits = cirq.num_qubits(self.gate)
+        return (
+            Signature([Register('qubits', shape=nqubits, bitsize=1)])
+            if nqubits > 0
+            else Signature([])
+        )
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_op(self, decompose_once=True)
@@ -323,6 +339,10 @@ def cirq_optree_to_cbloq(
             raise ValueError(f"Only gate operations are supported, not {op}.")
 
         bloq = op.gate if isinstance(op.gate, Bloq) else CirqGateAsBloq(op.gate)
+        if cirq.num_qubits(op.gate) == 0:
+            bb.add(bloq)
+            continue
+
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
             k: np.apply_along_axis(_QReg, -1, v)
@@ -376,7 +396,7 @@ def decompose_from_cirq_op(bloq: 'Bloq', *, decompose_once: bool = False) -> 'Co
         cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
         for reg in bloq.signature
     ):
-        raise NotImplementedError(f"{bloq} does not support decomposition.")
+        raise DecomposeTypeError(f"Cannot decompose parameterized {bloq}.")
 
     qubit_manager = InteropQubitManager()
     in_quregs = get_cirq_quregs(bloq.signature, qubit_manager)
@@ -387,7 +407,7 @@ def decompose_from_cirq_op(bloq: 'Bloq', *, decompose_once: bool = False) -> 'Co
     )
 
     if decomposed_optree is None:
-        raise NotImplementedError(f"{bloq} does not support decomposition.")
+        raise DecomposeNotImplementedError(f"{bloq} does not have a decomposition.")
 
     return cirq_optree_to_cbloq(
         decomposed_optree, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
