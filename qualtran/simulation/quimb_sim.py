@@ -127,13 +127,10 @@ def cbloq_to_quimb(
         if pos is not None:
             fix[tuple([binst])] = pos[binst]
 
-    # Special case-1: Add all isolated Bloqs with no connections (eg: Global phase gates)
-    for binst in cbloq.bloq_instances:
-        print(f'DEBUG QUIMB: {binst=}')
-        if binst not in visited_bloqs:
-            binst.bloq.add_my_tensors(tn, binst, incoming={}, outgoing={})
-
-    # Special case-2: Add variables corresponding to all registers that don't connect to any Bloq.
+    # Special case: Add variables corresponding to all registers that don't connect to any Bloq.
+    # This is needed because `CompositeBloq.iter_bloqnections` ignores `LeftDangle/RightDangle`
+    # bloqs and therefore we never see connections the exist only b/w LeftDangle and
+    # RightDangle bloqs.
     for cxn in cbloq.connections:
         if cxn.left.binst is LeftDangle and cxn.right.binst is RightDangle:
             # This register has no Bloq acting  on it, and thus it would not have a variable in the

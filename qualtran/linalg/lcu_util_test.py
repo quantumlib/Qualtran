@@ -17,7 +17,7 @@
 import random
 import unittest
 
-from cirq_ft.linalg.lcu_util import (
+from qualtran.linalg.lcu_util import (
     _discretize_probability_distribution,
     _preprocess_for_efficient_roulette_selection,
     preprocess_lcu_coefficients_for_reversible_sampling,

@@ -16,9 +16,11 @@ from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 from attrs import frozen
+from cirq_ft import TComplexity
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
+from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
@@ -49,6 +51,9 @@ class Toffoli(Bloq):
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(4, TGate())}
+
+    def t_complexity(self):
+        return TComplexity(t=4)
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', target: 'ClassicalValT'

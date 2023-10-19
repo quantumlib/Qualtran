@@ -114,7 +114,7 @@ class CompositeBloq(Bloq):
         do not mutate the graph. It is cached for performance reasons. Use g.copy() to
         get a copy.
         """
-        return _create_binst_graph(self.connections)
+        return _create_binst_graph(self.connections, self.bloq_instances)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
@@ -419,7 +419,9 @@ class CompositeBloq(Bloq):
         return delimited_gens
 
 
-def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
+def _create_binst_graph(
+    cxns: Iterable[Connection], nodes: Iterable[BloqInstance] = ()
+) -> nx.DiGraph:
     """Helper function to create a NetworkX graph so we can topologically visit BloqInstances.
 
     `CompositeBloq` defines a directed acyclic graph, so we can iterate in (time) order.
@@ -435,6 +437,7 @@ def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
             binst_graph.edges[binst_edge]['cxns'].append(cxn)
         else:
             binst_graph.add_edge(*binst_edge, cxns=[cxn])
+    binst_graph.add_nodes_from(nodes)
     return binst_graph
 
 
