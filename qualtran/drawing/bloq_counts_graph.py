@@ -17,8 +17,8 @@
 import html
 from typing import Any, Dict, Iterable, Tuple, Union
 
-import IPython.display
 import attrs
+import IPython.display
 import networkx as nx
 import pydot
 import sympy
@@ -65,6 +65,7 @@ class GraphvizCounts:
 
         This is used by the default `get_node_details`.
         """
+
         def abbrev(x: str):
             if len(x) > max_field_val_len:
                 return x[: max_field_val_len - 4] + ' ...'
