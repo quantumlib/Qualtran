@@ -97,10 +97,10 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def short_name(self) -> str:
         name = self.pretty_name()
-        if len(name) <= 8:
+        if len(name) <= 10:
             return name
 
-        return name[:6] + '..'
+        return name[:8] + '..'
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
