@@ -59,6 +59,7 @@ import qualtran.bloqs.basic_gates.t_gate_test
 import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
+import qualtran.bloqs.chemistry.first_quantization_test
 import qualtran.bloqs.chemistry.thc_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
@@ -147,6 +148,14 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         gate_specs=[
             BloqNbSpec(qualtran.bloqs.chemistry.thc_test._make_uniform_superposition),
             BloqNbSpec(qualtran.bloqs.chemistry.thc_test._make_prepare),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry',
+    ),
+    NotebookSpec(
+        title='First Quantization',
+        module=qualtran.bloqs.chemistry.first_quantization,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_prepare_kinetic)
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry',
     ),
