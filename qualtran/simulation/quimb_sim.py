@@ -15,7 +15,7 @@
 """Functionality for the `Bloq.tensor_contract()` protocol."""
 
 import itertools
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import quimb.tensor as qtn
@@ -104,8 +104,10 @@ def cbloq_to_quimb(
             return cxn.right
         return cxn.left
 
+    visited_bloqs: Set[BloqInstance] = set()
     for binst, incoming, outgoing in cbloq.iter_bloqnections():
         bloq = binst.bloq
+        visited_bloqs.add(binst)
         assert isinstance(bloq, Bloq)
 
         inc_d = _cxn_to_soq_dict(
@@ -125,11 +127,10 @@ def cbloq_to_quimb(
         if pos is not None:
             fix[tuple([binst])] = pos[binst]
 
-    inds = get_right_and_left_inds(cbloq.signature)
-    if len(inds) != 2:
-        # In this case, the tensor network is a vector (bra/ket) instead of a unitary operation.
-        return tn, fix
-
+    # Special case: Add variables corresponding to all registers that don't connect to any Bloq.
+    # This is needed because `CompositeBloq.iter_bloqnections` ignores `LeftDangle/RightDangle`
+    # bloqs and therefore we never see connections the exist only b/w LeftDangle and
+    # RightDangle bloqs.
     for cxn in cbloq.connections:
         if cxn.left.binst is LeftDangle and cxn.right.binst is RightDangle:
             # This register has no Bloq acting  on it, and thus it would not have a variable in the

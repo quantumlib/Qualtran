@@ -80,7 +80,12 @@ class CirqGateAsBloq(Bloq):
                     for reg in self.gate.signature
                 ]
             )
-        return Signature([Register('qubits', shape=cirq.num_qubits(self.gate), bitsize=1)])
+        nqubits = cirq.num_qubits(self.gate)
+        return (
+            Signature([Register('qubits', shape=nqubits, bitsize=1)])
+            if nqubits > 0
+            else Signature([])
+        )
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_op(self, decompose_once=True)
@@ -334,6 +339,10 @@ def cirq_optree_to_cbloq(
             raise ValueError(f"Only gate operations are supported, not {op}.")
 
         bloq = op.gate if isinstance(op.gate, Bloq) else CirqGateAsBloq(op.gate)
+        if cirq.num_qubits(op.gate) == 0:
+            bb.add(bloq)
+            continue
+
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
             k: np.apply_along_axis(_QReg, -1, v)
