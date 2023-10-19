@@ -431,13 +431,13 @@ def _create_binst_graph(
         2. We use networkx so we can use their algorithms for topological sorting.
     """
     binst_graph = nx.DiGraph()
-    binst_graph.add_nodes_from(nodes)
     for cxn in cxns:
         binst_edge = (cxn.left.binst, cxn.right.binst)
         if binst_edge in binst_graph.edges:
             binst_graph.edges[binst_edge]['cxns'].append(cxn)
         else:
             binst_graph.add_edge(*binst_edge, cxns=[cxn])
+    binst_graph.add_nodes_from(nodes)
     return binst_graph
 
 
