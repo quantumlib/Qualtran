@@ -65,7 +65,7 @@ if TYPE_CHECKING:
 
 @frozen
 class UniformSuperPostionKineticFirstQuantization(Bloq):
-    r"""Uniform superposition over $\eta$ values of $i$ and $j$.
+    r"""Uniform superposition over $\eta$ values of $i$ and $j$ in unary.
 
     Args:
 
