@@ -68,8 +68,17 @@ class UniformSuperPostionKineticFirstQuantization(Bloq):
     r"""Uniform superposition over $\eta$ values of $i$ and $j$ in unary.
 
     Args:
+        num_pw_each_dim: The number of planewaves in each of the x, y and z
+            directions. In total, for a cubic box, there are N = num_pw_each_dim**3
+            planewaves. The number of bits required (in each dimension)
+            is thus $\log N^1/3 + 1$, where the + 1 is for the sign bit.
+        eta: The number of electrons.
+        num_bits_rot_aa: The number of bits of precision for the single qubit
+            rotation for amplitude amplification. Called $b_r$ in the reference.
 
     Registers:
+        i: a n_eta bit register for unary encoding of eta numbers.
+        j: a n_eta bit register for unary encoding of eta numbers.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
@@ -81,11 +90,12 @@ class UniformSuperPostionKineticFirstQuantization(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([])
+        n_eta = (self.eta - 1).bit_length()
+        return Signature.build(i=n_eta, j=n_eta)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n_eta = (self.eta - 1).bit_length()
-        return {(14 * n_eta + 8 * self.num_bits_rot_aa - 36, TGate())}
+        return {(7 * n_eta + 4 * self.num_bits_rot_aa - 18, TGate())}
 
 
 @frozen
@@ -131,4 +141,4 @@ class PrepareKineticFirstQuantization(Bloq):
         uni_prep = UniformSuperPostionKineticFirstQuantization(
             self.num_pw_each_dim, self.eta, self.num_bits_rot_aa
         )
-        return {(1, uni_prep), (2 * (2 * n_p + 9), TGate())}
+        return {(1, uni_prep), ((2 * n_p + 9), TGate())}
