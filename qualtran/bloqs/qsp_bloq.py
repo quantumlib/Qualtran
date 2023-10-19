@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Sequence
+from typing import Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -23,14 +23,16 @@ from numpy.typing import NDArray
 
 
 def _arbitrary_SU2_rotation(theta: float, phi: float, lambd: float):
-    r"""Implements an arbitrary SU(2) rotation defined by
+    r"""Implements an arbitrary SU(2) rotation.
 
-    .. math::
+    The rotation is represented by the matrix:
 
+        $$
         \begin{matrix}
         e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
         e^{i\phi} \sin(\theta) & - \cos(\theta)
         \end{matrix}
+        $$
 
     Returns:
         A 2x2 rotation matrix
@@ -47,13 +49,24 @@ def _arbitrary_SU2_rotation(theta: float, phi: float, lambd: float):
     )
 
 
-def qsp_phase_factors(P: Sequence[float], Q: Sequence[float]) -> Dict[str, Any]:
+def qsp_phase_factors(
+    P: Sequence[complex], Q: Sequence[complex]
+) -> Tuple[Sequence[float], Sequence[float], float]:
     """Computes the QSP signal rotations for a given pair of polynomials.
-    The QSP transformation is described in Theorem 3, and the algorithm for computing co-efficients is described in Algorithm 1.
+
+    The QSP transformation is described in Theorem 3, and the algorithm for computing
+    co-efficients is described in Algorithm 1.
 
     Args:
         P: Co-efficients of a complex polynomial.
         Q: Co-efficients of a complex polynomial.
+
+    Returns:
+        A tuple (theta, phi, lambda).
+        theta and phi have length degree(P) + 1.
+
+    Raises:
+        ValueError: when P and Q have different degrees.
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -82,22 +95,24 @@ def qsp_phase_factors(P: Sequence[float], Q: Sequence[float]) -> Dict[str, Any]:
             S = _arbitrary_SU2_rotation(theta[d], phi[d], 0) @ S
             S = np.array([S[0][1:d], S[1][0 : d - 1]])
 
-    return {'theta': theta, 'phi': phi, 'lambda': lambd}
+    return theta, phi, lambd
 
 
 @frozen
-class QEVTCircuit(GateWithRegisters):
-    r"""Applies a QSP sequence described by a pair of polynomials $P, Q$, to a unitary $U$ to obtain a block-encoding of $P(U)$.
-    The exact circuit is described in Figure 2.
+class GeneralizedQSP(GateWithRegisters):
+    r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
 
-    When $U$ encodes a Hermitian matrix $H$ as $U = e^{iH}$, then this bloq encodes the following unitary:
-        $\begin{matrix} P(U) & \cdot \\ Q(U) & \cdot \end{matrix}$.
+    Given a pair of QSP polynomials $P, Q$, this gate represents the following unitary:
+
+        $$ \begin{bmatrix} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix} $$
 
     The polynomials $P, Q$ must satisfy:
         $\abs{P(x)}^2 + \abs{Q(x)}^2 = 1$ for every $x \in \mathbb{C}$ such that $\abs{x} = 1$
 
+    The exact circuit is described in Figure 2.
+
     Args:
-        U: Unitary operation (encoding some Hermitian matrix $H$ as $e^{iH}$).
+        U: Unitary operation.
         P: Co-efficients of a complex polynomial.
         Q: Co-efficients of a complex polynomial.
 
@@ -107,28 +122,28 @@ class QEVTCircuit(GateWithRegisters):
     """
 
     U: GateWithRegisters
-    P: Sequence[float]
-    Q: Sequence[float]
+    P: Sequence[complex]
+    Q: Sequence[complex]
 
     @property
     def signature(self) -> Signature:
-        return Signature((Register(name='signal', bitsize=1),) + tuple(self.U.signature))
+        return Signature([Register(name='signal', bitsize=1), *self.U.signature])
 
     @cached_property
-    def _qsp_phases(self):
+    def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:
         return qsp_phase_factors(self.P, self.Q)
 
     @cached_property
-    def _theta(self):
-        return self._qsp_phases['theta']
+    def _theta(self) -> Sequence[float]:
+        return self._qsp_phases[0]
 
     @cached_property
-    def _phi(self):
-        return self._qsp_phases['phi']
+    def _phi(self) -> Sequence[float]:
+        return self._qsp_phases[1]
 
     @cached_property
-    def _lambda(self):
-        return self._qsp_phases['lambda']
+    def _lambda(self) -> float:
+        return self._qsp_phases[2]
 
     def _signal_gate(
         self, signal_qubit: cirq.Qid, theta: float, phi: float, lambd: float

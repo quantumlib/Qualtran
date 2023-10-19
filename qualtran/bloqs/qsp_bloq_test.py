@@ -18,7 +18,7 @@ from qualtran.bloqs.qsp_bloq import qsp_phase_factors
 
 
 def test_compute_qsp_phase_factors():
-    phases = qsp_phase_factors([0.5, 0.5], [0.5, -0.5])
-    assert (phases['theta'] == [0, np.pi / 4]).all()
-    assert (phases['phi'] == [0, np.pi]).all()
-    assert phases['lambda'] == 0
+    theta, phi, lambd = qsp_phase_factors([0.5, 0.5], [0.5, -0.5])
+    assert (theta == [0, np.pi / 4]).all()
+    assert (phi == [0, np.pi]).all()
+    assert lambd == 0
