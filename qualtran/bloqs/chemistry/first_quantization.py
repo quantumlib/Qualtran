@@ -1,9 +1,3 @@
-# ## System Register
-# The system Register is represented as signed integers for each Euler direction.
-# for $\eta$ electrons we use $n_{p}$ bits for each of the $xyz$-directions which means the system register is $3 \eta n_{p}$ bits wide.  We will need additional ancilla registers for PREPARE and SELECT.
-# We will be moving $i$ and $j$ electron registers into a working register which for $T$ $U$ and $V$ costs
-# $12 \eta n_{p} + 4\eta - 8$. This comes from the core $12 \eta n_{p}$ plus 4 factors of $\eta - 2$ unary iteration.
-# [1] $n_{\eta\zeta} + 2 n_{\eta} + 6 n_{p} + n_{\mathcal{M}} + 16$
 #  Copyright 2023 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +15,9 @@
 from functools import cached_property
 from typing import Optional, Set, Tuple, TYPE_CHECKING
 
-from attrs import field, frozen
+from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
 
 if TYPE_CHECKING:
@@ -62,7 +56,8 @@ class UniformSuperPostionIJFirstQuantization(Bloq):
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n_eta = (self.eta - 1).bit_length()
-        return {4 * (7 * n_eta + 4 * self.num_bits_rot_aa - 18, TGate())}
+        # Half of Eq. 62 which is the cost for prep and prep^\dagger
+        return {4 * (7 * n_eta + 4 * self.num_bits_rot_aa - 18), TGate())}
 
 
 @frozen
@@ -128,7 +123,7 @@ class SelectTFirstQuantization(Bloq):
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
-        (https://arxiv.org/abs/2105.12767) page 19, section B
+        (https://arxiv.org/abs/2105.12767) page 20, section B
     """
 
     num_pw_each_dim: int
@@ -139,7 +134,7 @@ class SelectTFirstQuantization(Bloq):
         n_p = (self.num_pw_each_dim - 1).bit_length() + 1
         return Signature(
             [
-                Register("sys", bitsize=n_p, shape=(self.eta,)),
+                Register("sys", bitsize=n_p, shape=(self.eta, 3)),
                 Register("plus", bitsize=1),
                 Register("flag_T", bitsize=1),
             ]
@@ -152,6 +147,7 @@ class SelectTFirstQuantization(Bloq):
         # ancilla $|+\rangle$ state. This requires $1$ Toffoli, Then erase which costs
         # only Cliffords. There is an additional control bit controlling the application
         # of $T$ thus we come to our total.
+        # Eq 73. page
         n_p = (self.num_pw_each_dim - 1).bit_length() + 1
         return {(4 * (5 * (n_p - 1) + 2), TGate())}
 
@@ -223,9 +219,6 @@ class PrepareUVFistQuantization(Bloq):
             cost += self.lambda_zeta * self.er_lambda_zeta  # Eq 92.
 
 
-# ## SELECT U + V
-# [1] Addition and subtraction of $\nu$ costs $24 n_{p}$
-# [2] phasing by the structure factor $-e^{i k_{\nu} \cdot R_{\ell}}$ costs $6 n_{p} n_{R}$
 @frozen
 class SelectUVFirstQuantization(Bloq):
     r"""SELECT for the kinetic energy operator for the first quantized chemistry Hamiltonian.
@@ -263,7 +256,7 @@ class SelectUVFirstQuantization(Bloq):
                 Register("plus", bitsize=1),
                 Register("ij", bitsize=n_eta, shape=(2,)),
                 Register("nu", bitsize=n_nu, shape=(3,)),
-                Register("sys", bitsize=n_p, shape=(self.eta,)),
+                Register("sys", bitsize=n_p, shape=(self.eta,3)),
                 # + some ancilla for the controlled swaps of system registers.
             ]
         )
