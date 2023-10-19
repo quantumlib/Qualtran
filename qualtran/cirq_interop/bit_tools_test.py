@@ -16,6 +16,7 @@ import math
 import random
 
 import pytest
+
 from qualtran.cirq_interop.bit_tools import (
     float_as_fixed_width_int,
     iter_bits,
