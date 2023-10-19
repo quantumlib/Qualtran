@@ -17,9 +17,6 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
-from cirq_ft import TComplexity
-from cirq_ft.algos.qrom import QROM
-from cirq_ft.infra.bit_tools import float_as_fixed_width_int
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
@@ -33,7 +30,10 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.basic_gates.rotation import RotationBloq
+from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator

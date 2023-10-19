@@ -16,7 +16,6 @@ from typing import Dict
 
 import attrs
 import cirq
-import cirq_ft
 
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.arithmetic import (
@@ -29,7 +28,9 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
+from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
+from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting import get_bloq_counts_graph, SympySymbolAllocator
@@ -62,13 +63,13 @@ mcp_cv0 = ssa.new_symbol('cv3')
 
 def custom_qroam_repr(self) -> str:
     target_repr = repr(self._target_bitsizes)
-    return f"cirq_ft.SelectSwapQROM(target_bitsizes={target_repr}, block_size={self.block_size})"
+    return f"SelectSwapQROM(target_bitsizes={target_repr}, block_size={self.block_size})"
 
 
 def custom_qrom_repr(self) -> str:
     target_repr = repr(self.target_bitsizes)
     selection_repr = repr(self.selection_bitsizes)
-    return f"cirq_ft.QROM(selection_bitsizes={selection_repr}, target_bitsizes={target_repr})"
+    return f"QROM(selection_bitsizes={selection_repr}, target_bitsizes={target_repr})"
 
 
 def generalize(bloq):
@@ -79,27 +80,11 @@ def generalize(bloq):
         return attrs.evolve(bloq, angle=phi_sym)
     if isinstance(bloq, And):
         return attrs.evolve(bloq, cv1=and_cv0, cv2=and_cv1)
+    if isinstance(bloq, SelectSwapQROM):
+        bloq.gate.__class__.__repr__ = custom_qroam_repr
+    if isinstance(bloq, QROM):
+        bloq.gate.__class__.__repr__ = custom_qrom_repr
     if isinstance(bloq, CirqGateAsBloq):
-        if isinstance(bloq.gate, cirq_ft.algos.And) and (len(bloq.gate.cv) == 2):
-            return And(cv1=and_cv0, cv2=and_cv1, adjoint=bloq.gate.adjoint)
-        if isinstance(bloq.gate, cirq_ft.algos.SwapWithZeroGate):
-            return SwapWithZero(
-                bloq.gate.selection_bitsize, bloq.gate.target_bitsize, bloq.gate.n_target_registers
-            )
-        # How to check type of cirg_gate**-1
-        if (
-            isinstance(bloq.gate, cirq.ops.raw_types._InverseCompositeGate)
-            and 'SwapWithZero' in bloq.pretty_name()
-        ):
-            return SwapWithZero(
-                (bloq.gate**-1).selection_bitsize,
-                (bloq.gate**-1).target_bitsize,
-                (bloq.gate**-1).n_target_registers,
-            )
-        if isinstance(bloq.gate, cirq_ft.algos.SelectSwapQROM):
-            bloq.gate.__class__.__repr__ = custom_qroam_repr
-        if isinstance(bloq.gate, cirq_ft.algos.QROM):
-            bloq.gate.__class__.__repr__ = custom_qrom_repr
         if isinstance(bloq.gate, single_qubit_clifford):
             return ArbitraryClifford(n=1)
         if isinstance(bloq.gate, two_qubit_clifford):
@@ -137,9 +122,8 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
             elif isinstance(bloq, MultiControlPauli):
                 if isinstance(bloq.target_gate, cirq.ops.common_gates.ZPowGate):
                     classified_bloqs['reflections'] += num_calls * num_t
-            elif isinstance(bloq, CirqGateAsBloq):
-                if isinstance(bloq.gate, (cirq_ft.SelectSwapQROM, cirq_ft.QROM)):
-                    classified_bloqs['qrom'] += num_calls * num_t
+            elif isinstance(bloq, (SelectSwapQROM, QROM)):
+                classified_bloqs['qrom'] += num_calls * num_t
             elif isinstance(bloq, CSwapApprox):
                 classified_bloqs['controlled_swaps'] += num_calls * num_t
             elif isinstance(bloq, rotation_bloqs):

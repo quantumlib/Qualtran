@@ -18,8 +18,6 @@ from typing import Dict, Tuple
 import cirq
 import numpy as np
 from attrs import field, frozen
-from cirq_ft.algos.select_swap_qrom import SelectSwapQROM
-from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
@@ -33,8 +31,10 @@ from qualtran.bloqs.arithmetic import (
 from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 
 @frozen

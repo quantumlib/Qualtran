@@ -18,9 +18,9 @@ from typing import Dict, Tuple, TYPE_CHECKING, Union
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
-from cirq_ft import TComplexity
 
 from qualtran import Bloq, Register, Side, Signature, SoquetT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
