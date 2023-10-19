@@ -60,7 +60,7 @@ class CirqGateAsBloq(Bloq):
     gate: cirq.Gate
 
     def pretty_name(self) -> str:
-        return f'cirq.{self.gate}'
+        return f'cirq.{self.gate.__class__.__name__}'
 
     def short_name(self) -> str:
         g = min(self.gate.__class__.__name__, str(self.gate), key=len)

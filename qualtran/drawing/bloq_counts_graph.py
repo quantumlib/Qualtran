@@ -14,9 +14,11 @@
 
 """Classes for drawing bloq counts graphs with Graphviz."""
 
-from typing import Dict, Union
+import html
+from typing import Any, Dict, Iterable, Tuple, Union
 
 import IPython.display
+import attrs
 import networkx as nx
 import pydot
 import sympy
@@ -36,6 +38,10 @@ class GraphvizCounts:
         self._ids: Dict[Bloq, str] = {}
         self._i = 0
 
+        self.max_detail_fields = 5
+        self.max_field_val_len = 12
+        self.max_detail_len = 200
+
     def get_id(self, b: Bloq) -> str:
         if b in self._ids:
             return self._ids[b]
@@ -44,19 +50,65 @@ class GraphvizCounts:
         self._ids[b] = new_id
         return new_id
 
+    def get_node_title(self, b: Bloq):
+        """Return text to use as a title of a node.
+
+        Override this method for complete control over the titles of nodes.
+        """
+        return b.pretty_name()
+
+    @staticmethod
+    def abbreviate_field_list(
+        name_vals: Iterable[Tuple[str, Any]], max_field_val_len: int = 12, max_detail_fields=5
+    ):
+        """Helper function for abbreviating a list of key=value representations.
+
+        This is used by the default `get_node_details`.
+        """
+        def abbrev(x: str):
+            if len(x) > max_field_val_len:
+                return x[: max_field_val_len - 4] + ' ...'
+            return x
+
+        details = [f'{name}={abbrev(repr(val))}' for name, val in name_vals]
+        if len(details) > max_detail_fields:
+            n = len(details) - max_detail_fields + 1
+            details = details[: max_detail_fields - 1] + [f'[{n} addtl fields].']
+
+        return ', '.join(details)
+
+    def get_node_details(self, b: Bloq):
+        """Return text to use as details for a node.
+
+        Override this method for complete control over the details attached to nodes.
+        """
+        if isinstance(b, CompositeBloq):
+            return f'{len(b.bloq_instances)} bloqs...'[: self.max_detail_len]
+
+        if not attrs.has(b.__class__):
+            return repr(b)[: self.max_detail_len]
+
+        return self.abbreviate_field_list(
+            ((field.name, getattr(b, field.name)) for field in attrs.fields(b.__class__)),
+            max_field_val_len=self.max_field_val_len,
+            max_detail_fields=self.max_detail_fields,
+        )[: self.max_detail_len]
+
     def get_node_properties(self, b: Bloq):
         """Get graphviz properties for a bloq node representing `b`."""
-        if isinstance(b, CompositeBloq):
-            details = f'{len(b.bloq_instances)} bloqs...'
-        else:
-            details = repr(b)
+        title = self.get_node_title(b)
+        details = self.get_node_details(b)
 
-        label = [
-            '<',
-            f'{b.pretty_name().replace("<", "&lt;").replace(">", "&gt;")}<br />',
-            f'<font face="monospace" point-size="10">{details}</font><br/>',
-            '>',
-        ]
+        title = html.escape(title)
+        details = html.escape(details)
+
+        label = ['<', f'{html.escape(title)}']
+        if details:
+            label += [
+                '<br />',
+                f'<font face="monospace" point-size="10">{html.escape(details)}</font><br/>',
+            ]
+        label += ['>']
         return {'label': ''.join(label), 'shape': 'rect'}
 
     def add_nodes(self, graph: pydot.Graph):
