@@ -1,5 +1,4 @@
-cirq-core==1.3.0.dev20231010175755
-cirq-ft==1.3.0.dev20231010175755
+cirq-core==1.3.0.dev20231018023458
 
 # drawing
 pydot
