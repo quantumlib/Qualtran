@@ -21,6 +21,30 @@ from qualtran.testing import execute_notebook
 def _make_prepare_kinetic():
     from qualtran.bloqs.chemistry.first_quantization import PrepareKineticFirstQuantization
 
+    num_pw = 2 * 10 + 1
+    eta = 10
+    return PrepareKineticFirstQuantization(num_pw, eta)
+
+
+def _make_select_kinetic():
+    from qualtran.bloqs.chemistry.first_quantization import SelectTFirstQuantization
+
+    num_pw = 2 * 10 + 1
+    eta = 10
+    return SelectTFirstQuantization(num_pw, eta)
+
+
+def _make_prepare_potential():
+    from qualtran.bloqs.chemistry.first_quantization import PrepareUVFistQuantization
+
+    num_pw = (2 * 10 + 1) ** 3
+    eta = 10
+    return PrepareUVFistQuantization(num_pw, eta, 2**8, ) 
+
+
+def _make_select_potential():
+    from qualtran.bloqs.chemistry.first_quantization import SelectUVFirstQuantization
+
     num_pw = (2 * 10 + 1) ** 3
     eta = 10
     return PrepareKineticFirstQuantization(num_pw, eta)

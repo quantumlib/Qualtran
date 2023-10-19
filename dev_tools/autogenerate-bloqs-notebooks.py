@@ -156,6 +156,9 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         module=qualtran.bloqs.chemistry.first_quantization,
         gate_specs=[
             BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_prepare_kinetic)
+            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_select_kinetic)
+            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_select_uv)
+            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_prepare_uv)
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry',
     ),

@@ -24,6 +24,10 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
 
 
+def cost_qrom_erasure(x: int) -> int:
+    return x
+
+
 @frozen
 class UniformSuperPostionIJFirstQuantization(Bloq):
     r"""Uniform superposition over $\eta$ values of $i$ and $j$ in unary.
@@ -172,8 +176,8 @@ class PrepareUVFistQuantization(Bloq):
             is thus $\log N^1/3 + 1$, where the + 1 is for the sign bit.
         eta: The number of electrons.
         m_param: $\mathcal{M}$ in the reference.
-        num_bits_rot_aa: The number of bits of precision for the single qubit
-            rotation for amplitude amplification. Called $b_r$ in the reference.
+        lambda_zeta: sum of nuclear charges.
+        er_lambda_zeta: eq 91 of the referce. Cost of erasing qrom.
 
     Registers:
 
@@ -185,8 +189,6 @@ class PrepareUVFistQuantization(Bloq):
     eta: int
     m_param: int
     lambda_zeta: int
-    er_lambda_zeta: int
-    num_bits_rot_aa: int = 8
     adjoint: bool = False
 
     @cached_property
@@ -214,9 +216,10 @@ class PrepareUVFistQuantization(Bloq):
         n_m = (self.m_param - 1).bit_length()
         if self.adjoint:
             cost = 14 * n_p - 8  # eq 90 - 89 page 23
+            cost += cost_qrom_erasure(self.lambda_zeta)
         else:
             cost = 3 * n_p**2 + n_p + 1 + 4 * n_m * (n_p + 1)  # eq 89, page 23
-            cost += self.lambda_zeta * self.er_lambda_zeta  # Eq 92.
+            cost += self.lambda_zeta # Eq 92.
 
 
 @frozen
@@ -233,7 +236,6 @@ class SelectUVFirstQuantization(Bloq):
             nuclear positions. $n_R$ in the reference.
 
     Registers:
-        sys:
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
