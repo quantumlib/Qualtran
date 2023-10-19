@@ -315,11 +315,9 @@ class PrepareTHC(Bloq):
         alt_mu = bb.allocate(alt_bitsize)
         alt_nu = bb.allocate(alt_bitsize)
         alt_theta = bb.allocate(1)
-        qroam = CirqGateAsBloq(
-            SelectSwapQROM(
-                *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
-                target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
-            )
+        qroam = SelectSwapQROM(
+            *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
+            target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
         )
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
             qroam,

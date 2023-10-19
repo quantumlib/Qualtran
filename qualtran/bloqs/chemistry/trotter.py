@@ -31,7 +31,6 @@ from qualtran.bloqs.arithmetic import (
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.basic_gates.rotation import RotationBloq
 from qualtran.bloqs.qrom import QROM
-from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -397,12 +396,11 @@ class PairPotential(Bloq):
         qrom_anc_c1 = bb.allocate(self.poly_bitsize)
         qrom_anc_c2 = bb.allocate(self.poly_bitsize)
         qrom_anc_c3 = bb.allocate(self.poly_bitsize)
-        qrom = QROM(
+        qrom_bloq = QROM(
             [np.array(d) for d in self.qrom_data],
             selection_bitsizes=(bitsize_rij_sq,),
             target_bitsizes=(self.poly_bitsize,) * 4,
         )
-        qrom_bloq = CirqGateAsBloq(qrom)
         sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3 = bb.add(
             qrom_bloq,
             selection=sos,

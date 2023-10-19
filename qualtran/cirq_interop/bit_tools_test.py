@@ -16,7 +16,7 @@ import math
 import random
 
 import pytest
-from cirq_ft.infra.bit_tools import (
+from qualtran.cirq_interop.bit_tools import (
     float_as_fixed_width_int,
     iter_bits,
     iter_bits_fixed_point,
