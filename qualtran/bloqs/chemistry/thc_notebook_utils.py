@@ -81,9 +81,9 @@ def generalize(bloq):
     if isinstance(bloq, And):
         return attrs.evolve(bloq, cv1=and_cv0, cv2=and_cv1)
     if isinstance(bloq, SelectSwapQROM):
-        bloq.gate.__class__.__repr__ = custom_qroam_repr
+        bloq.__class__.__repr__ = custom_qroam_repr
     if isinstance(bloq, QROM):
-        bloq.gate.__class__.__repr__ = custom_qrom_repr
+        bloq.__class__.__repr__ = custom_qrom_repr
     if isinstance(bloq, CirqGateAsBloq):
         if isinstance(bloq.gate, single_qubit_clifford):
             return ArbitraryClifford(n=1)
