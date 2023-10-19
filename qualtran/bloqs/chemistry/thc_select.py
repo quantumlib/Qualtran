@@ -36,7 +36,7 @@ class THCRotations(Bloq):
     This is accounting for In-data:rot and In-R in Fig. 7 of the THC paper (Ref.
     1). In practice this bloq is made up of a QROM load of the angles followed
     by controlled rotations. Equivalently it can be built from a modified
-    version of the ProgrammableRotationGateArray from implemented in cirq_ft
+    version of the ProgrammableRotationGateArray from implemented in qualtran
     from Ref. 2. This is a placeholder waiting for an actual implementation.
     See https://github.com/quantumlib/Qualtran/issues/386.
 

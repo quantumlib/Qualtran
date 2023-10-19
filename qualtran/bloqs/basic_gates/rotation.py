@@ -18,7 +18,6 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
-from cirq_ft import TComplexity
 
 from qualtran import Bloq, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
