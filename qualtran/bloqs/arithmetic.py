@@ -973,7 +973,7 @@ class GreaterThan(Bloq):
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
-    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    The bloq_counts and t_complexity are derived from equivalent qualtran gates
     assuming a clean decomposition which should yield identical costs.
 
     See: https://github.com/quantumlib/Qualtran/pull/381 and
@@ -1013,7 +1013,7 @@ class GreaterThan(Bloq):
 class GreaterThanConstant(Bloq):
     r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x > a)\rangle$
 
-    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    The bloq_counts and t_complexity are derived from equivalent qualtran gates
     assuming a clean decomposition which should yield identical costs.
 
     See: https://github.com/quantumlib/Qualtran/pull/381 and

@@ -11,18 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.protos import annotations_pb2
-
-
-def t_complexity_to_proto(t_complexity: TComplexity) -> annotations_pb2.TComplexity:
-    return annotations_pb2.TComplexity(
-        clifford=t_complexity.clifford, rotations=t_complexity.rotations, t=t_complexity.t
-    )
-
-
-def t_complexity_from_proto(t_complexity: annotations_pb2.TComplexity) -> TComplexity:
-    return TComplexity(
-        clifford=t_complexity.clifford, t=t_complexity.t, rotations=t_complexity.rotations
-    )

@@ -14,10 +14,10 @@
 
 import numpy as np
 import pytest
-from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
+from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.testing import execute_notebook
 
 

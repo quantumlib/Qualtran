@@ -13,7 +13,6 @@
 #  limitations under the License.
 import numpy as np
 import pytest
-from cirq_ft.infra.bit_tools import iter_bits, iter_bits_fixed_point
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.trotter import (
@@ -23,6 +22,7 @@ from qualtran.bloqs.chemistry.trotter import (
     PairPotential,
     PotentialEnergy,
 )
+from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_fixed_point
 
 
 @pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
