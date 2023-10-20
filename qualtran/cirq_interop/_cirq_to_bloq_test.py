@@ -85,11 +85,11 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert x.pretty_name() == 'cirq.X'
     assert x.short_name() == 'cirq.X'
 
-    assert rx.pretty_name() == 'cirq.Rx(0.123π)'
+    assert rx.pretty_name() == 'cirq.Rx'
     assert rx.short_name() == 'cirq.Rx'
 
     assert toffoli.pretty_name() == 'cirq.TOFFOLI'
-    assert toffoli.short_name() == 'cirq.TOFFOLI'
+    assert toffoli.short_name() == 'cirq.TOF..'
 
 
 def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():

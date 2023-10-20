@@ -54,8 +54,8 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
     def signature(self) -> Signature:
         return Signature.build(x=self.bitsize, target=1)
 
-    def pretty_name(self) -> str:
-        return f'x lt {self.less_than_val}'
+    def short_name(self) -> str:
+        return f'x<{self.less_than_val}'
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, self.less_than_val, [2]
@@ -490,8 +490,8 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         p, q = register_values
         return p, p + q
 
-    def pretty_name(self) -> str:
-        return "a + b"
+    def short_name(self) -> str:
+        return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.bitsize
@@ -575,7 +575,7 @@ class OutOfPlaceAdder(Bloq):
     def signature(self):
         return Signature.build(a=self.bitsize, b=self.bitsize, c=self.bitsize)
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "c = a + b"
 
     def t_complexity(self):
@@ -683,7 +683,7 @@ class Square(Bloq):
             [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=Side.RIGHT)]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a^2"
 
     def t_complexity(self):
@@ -790,7 +790,7 @@ class Product(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a*b"
 
     def t_complexity(self):
@@ -844,7 +844,7 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "r*i"
 
     def t_complexity(self):
@@ -898,7 +898,7 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a*b"
 
     def t_complexity(self):
@@ -953,7 +953,7 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a^2"
 
     def t_complexity(self):
@@ -993,8 +993,8 @@ class GreaterThan(Bloq):
     def signature(self):
         return Signature.build(a=self.bitsize, b=self.bitsize, target=1)
 
-    def pretty_name(self) -> str:
-        return "a gt b"
+    def short_name(self) -> str:
+        return "a>b"
 
     def t_complexity(self) -> 'TComplexity':
         return t_complexity(LessThanEqual(self.bitsize, self.bitsize))

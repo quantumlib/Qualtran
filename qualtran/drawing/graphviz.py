@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 """Classes for drawing bloqs with Graphviz."""
-
+import html
 import itertools
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -180,7 +180,10 @@ class GraphDrawer:
         This should have a `colspan="2"` to make sure there aren't separate left and right
         cells / soquets.
         """
-        return f'  <TR><TD colspan="2" port="{self.ids[thru]}">{self.soq_label(thru)}</TD></TR>\n'
+        return (
+            f'  <TR><TD colspan="2" port="{self.ids[thru]}">'
+            f'{html.escape(self.soq_label(thru))}</TD></TR>\n'
+        )
 
     def _register_td(self, soq: Optional[Soquet], *, with_empty_td: bool, rowspan: int = 1) -> str:
         """Return the html code for an individual <TD>.
@@ -207,7 +210,7 @@ class GraphDrawer:
         else:
             rowspan = ''
 
-        return f'<TD {rowspan} port="{self.ids[soq]}">{self.soq_label(soq)}</TD>'
+        return f'<TD {rowspan} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
 
     def _get_register_tr(
         self,
@@ -242,7 +245,7 @@ class GraphDrawer:
 
     def get_binst_header_text(self, binst: BloqInstance) -> str:
         """Overridable method returning the text used for the header cell of a bloq."""
-        return f'{binst.bloq.pretty_name()}'
+        return f'{html.escape(binst.bloq.pretty_name())}'
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         """Process and add a bloq instance to the Graph."""
@@ -371,7 +374,7 @@ class PrettyGraphDrawer(GraphDrawer):
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
-        return f'<font point-size="10">{binst.bloq.short_name()}</font>'
+        return f'<font point-size="10">{html.escape(binst.bloq.short_name())}</font>'
 
     def soq_label(self, soq: Soquet):
         from qualtran.bloqs.util_bloqs import Join, Split
