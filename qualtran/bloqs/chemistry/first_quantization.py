@@ -24,19 +24,12 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
 
 
-def cost_qrom_erasure(x: int) -> int:
-    return x
-
-
 @frozen
 class UniformSuperPostionIJFirstQuantization(Bloq):
-    r"""Uniform superposition over $\eta$ values of $i$ and $j$ in unary.
+    r"""Uniform superposition over $\eta$ values of $i$ and $j$ in unary such that $i \ne j$.
 
     Args:
-        num_pw_each_dim: The number of planewaves in each of the x, y and z
-            directions. In total, for a cubic box, there are N = num_pw_each_dim**3
-            planewaves. The number of bits required (in each dimension)
-            is thus $\log N^1/3 + 1$, where the + 1 is for the sign bit.
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
@@ -61,7 +54,39 @@ class UniformSuperPostionIJFirstQuantization(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n_eta = (self.eta - 1).bit_length()
         # Half of Eq. 62 which is the cost for prep and prep^\dagger
-        return {4 * (7 * n_eta + 4 * self.num_bits_rot_aa - 18), TGate())}
+        return {(4 * (7 * n_eta + 4 * self.num_bits_rot_aa - 18), TGate())}
+
+
+@frozen
+class PreparePowerTwoState(Bloq):
+    r"""Prepares the uniform superposition over $|r\rangle$ given by Eq. 69 in the reference.
+
+    This prepares the state
+
+    $$
+        2^{(-n_p -1)/2} \sum_r=0^{n_p-2} 2^{r/2} |r\rangle
+    $$
+
+    in one-hot unary.
+
+    Args:
+        bitsize: the number of bits $n_p$ for the $|r\rangle$ register.
+
+    Registers:
+        r: The register we want to prepare the state over.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
+        (https://arxiv.org/abs/2105.12767) Eq 66-69, pg 19-20
+    """
+    bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(r=self.bitsize)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        return {(4 * (self.bitsize - 2), TGate())}
 
 
 @frozen
@@ -76,11 +101,11 @@ class PrepareTFirstQuantization(Bloq):
         \sum_{s=0}^{n_{p}-2}2^{s/2}|s\rangle
     $$
 
+    We assume that the uniform superposition over $j$ has already occured via
+    UniformSuperPositionIJFirstQuantization.
+
     Args:
-        num_pw_each_dim: The number of planewaves in each of the x, y and z
-            directions. In total, for a cubic box, there are N = num_pw_each_dim**3
-            planewaves. The number of bits required (in each dimension)
-            is thus $\log N^1/3 + 1$, where the + 1 is for the sign bit.
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
@@ -92,23 +117,22 @@ class PrepareTFirstQuantization(Bloq):
         (https://arxiv.org/abs/2105.12767) page 19, section B
     """
 
-    num_pw_each_dim: int
+    num_bits_p: int
     eta: int
     num_bits_rot_aa: int = 8
+    adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
-        return Signature.build(plus=1, w=3, r=n_p - 2, s=n_p - 2)
+        return Signature.build(plus=1, w=2, r=self.num_bits_p - 2, s=self.num_bits_p - 2)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # The cost arises from an equal superposition  over $\eta$ values of $i$
-        # and $j$, followed by the uniform preparation over $w$, $r$ and $s$.
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
-        uni_prep = UniformSuperPostionIJFirstQuantization(
-            self.num_pw_each_dim, self.eta, self.num_bits_rot_aa
-        )
-        return {(1, uni_prep), (4 * (2 * n_p + 9), TGate())}
+        # there is a cost for the uniform state preparation for the $w$
+        # register. Adding a bloq is sort of overkill, should just tag the
+        # correct cost on cirq_ft bloq, 13 is from assuming 8 bits for the rotation, and n = 2.
+        uni_prep_w = (4 * 13, TGate())
+        # Factor of two for r and s registers.
+        return {uni_prep_w, (2, PreparePowerTwoState(bitsize=self.num_bits_p))}
 
 
 @frozen
@@ -116,29 +140,24 @@ class SelectTFirstQuantization(Bloq):
     r"""SELECT for the kinetic energy operator for the first quantized chemistry Hamiltonian.
 
     Args:
-        num_pw_each_dim: The number of planewaves in each of the x, y and z
-            directions. In total, for a cubic box, there are N = num_pw_each_dim**3
-            planewaves. The number of bits required (in each dimension)
-            is thus $\log N^1/3 + 1$, where the + 1 is for the sign bit.
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
 
     Registers:
-        sys:
+        sys: The system register.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
         (https://arxiv.org/abs/2105.12767) page 20, section B
     """
-
-    num_pw_each_dim: int
+    num_bits_p: int
     eta: int
 
     @cached_property
     def signature(self) -> Signature:
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
         return Signature(
             [
-                Register("sys", bitsize=n_p, shape=(self.eta, 3)),
+                Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
                 Register("plus", bitsize=1),
                 Register("flag_T", bitsize=1),
             ]
@@ -152,9 +171,105 @@ class SelectTFirstQuantization(Bloq):
         # only Cliffords. There is an additional control bit controlling the application
         # of $T$ thus we come to our total.
         # Eq 73. page
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
-        return {(4 * (5 * (n_p - 1) + 2), TGate())}
+        return {(4 * (5 * (self.num_bits_p - 1) + 2), TGate())}
 
+
+@frozen
+class PrepareUnaryEncodedOneHot(Bloq):
+    r"""Prepare a unary encoded one-hot superposition state.
+
+    Prepares the state in Eq. 77
+
+    $$
+        \frac{1}{\sqrt{2^{n_p + 2}}} \sum_{\mu=2}^{n_p+1} \sqrt{2^\mu}
+        |0\dots0\underbrace{1\dots1}{\mu}\rangle
+    $$
+    Args:
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
+
+    Registers:
+        mu: the register to prepare the superposition over.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
+        (https://arxiv.org/abs/2105.12767) page 21, Eq 77.
+    """
+    num_bits_p: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(mu=self.num_bits_p + 1)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        return {(4 * (self.num_bits_p - 1), TGate())}
+
+
+@frozen
+class PrepareNuSuperPositionState(Bloq):
+    r"""Prepare the superposition over $\nu$ following the creation of the $|\mu\rangle$ state.
+
+    Prepares the state in Eq. 78
+
+    $$
+        \frac{1}{\sqrt{2^{n_p + 2}}} \sum_{\mu=2}^{n_p+1}
+        \sum_{\nu_{x,y,z}=-(2^{\mu-1}-1)}^{2^{\mu-1}-1}
+        \frac{1}{2\mu}
+        |\mu\rangle|\nu_x\rangle|\nu_y\rangle|\nu_z\rangle
+    $$
+
+    Args:
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
+
+    Registers:
+        mu: the register one-hot encoded $\mu$ register from eq 77.
+        nu: the momentum transfer register.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
+        (https://arxiv.org/abs/2105.12767) page 21, Eq 78.
+    """
+    num_bits_p: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [Register("mu", self.num_bits_p + 1), Register("nu", self.num_bits_p + 1, shape=(3,))]
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        return {(4 * (3 * (self.num_bits_p - 1)), TGate())}
+
+
+@frozen
+class FlagZeroAsFailure(Bloq):
+    r"""Bloq to flag if minus zero appears in the $\nu$ state.
+
+    Args:
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
+
+    Registers:
+        nu: the momentum transfer register.
+        flag_minus_zero: a flag bit for failure of the state preparation.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
+        (https://arxiv.org/abs/2105.12767) page 21, Eq 80.
+    """
+    num_bits_p: int
+    adjoint: False
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [Register("nu", self.num_bits_p + 1, shape=(3,)), Register("flag_minus_zero", 1)]
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        if self.adjoint:
+            # This can be inverted with cliffords.
+            return {(0, TGate())}
+        else:
+            return {(4 * 3 * self.num_bits_p, TGate())}
 
 @frozen
 class PrepareUVFistQuantization(Bloq):
@@ -163,17 +278,14 @@ class PrepareUVFistQuantization(Bloq):
     Prepares a state of the form
 
     $$
-        \frac{1}{2\mathcal{M}2^{n_p +2 }}
-        \sum_{\mu=2}^{n_p+1}\sum_{\nu B_\mu}
+        \frac{1}{2\mathcal{M}2^{self.num_bits_p +2 }}
+        \sum_{\mu=2}^{self.num_bits_p+1}\sum_{\nu B_\mu}
         \sum_{m=0}^{\lceil \mathcal M(2^{\mu-2}/|\nu|)^2\rceil-1}
         \frac{1}{2^\mu}|\mu\rangle|\nu_x|rangle|\nu_y\rangle|\nu_z\rangle|m\rangle|0\rangle
     $$
 
     Args:
-        num_pw_each_dim: The number of planewaves in each of the x, y and z
-            directions. In total, for a cubic box, there are N = num_pw_each_dim**3
-            planewaves. The number of bits required (in each dimension)
-            is thus $\log N^1/3 + 1$, where the + 1 is for the sign bit.
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
         m_param: $\mathcal{M}$ in the reference.
         lambda_zeta: sum of nuclear charges.
@@ -185,19 +297,19 @@ class PrepareUVFistQuantization(Bloq):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
         (https://arxiv.org/abs/2105.12767) page 19, section B
     """
-    num_pw_each_dim: int
+    num_bits_p: int
     eta: int
     m_param: int
     lambda_zeta: int
+    num_bits_nuc_pos: int
     adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         # this is for the nu register which lives on a grid of twice the size
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
         # the nu grid is twice as large, so one more bit is needed
-        n_nu = (self.num_pw_each_dim - 1).bit_length() + 2
-        n_mu = n_p.bit_length()
+        n_nu = (self.num_bits_p - 1).bit_length() + 2
+        n_mu = self.num_bits_p.bit_length()
         #
         n_m = (self.m_param - 1).bit_length()
         return Signature(
@@ -205,21 +317,22 @@ class PrepareUVFistQuantization(Bloq):
                 Register("mu", bitsize=n_mu),
                 Register("nu", bitsize=n_nu, shape=(3,)),
                 Register("m", bitsize=n_m),
+                Register("l", bitsize=self.num_bits_nuc_pos),
                 Register("flag_nu", bitsize=1),
             ]
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # for $1/||\nu||$ preparation and inversion we have $3n_{p}^{2} + 15n_{p} − 7 +
-        # 4n_{\mathcal{M}}(n_{p}+1)$
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
+        # 1. Prepare unary encoded superposition state
         n_m = (self.m_param - 1).bit_length()
         if self.adjoint:
-            cost = 14 * n_p - 8  # eq 90 - 89 page 23
+            cost = 14 * self.num_bits_p - 8  # eq 90 - 89 page 23
             cost += cost_qrom_erasure(self.lambda_zeta)
         else:
-            cost = 3 * n_p**2 + n_p + 1 + 4 * n_m * (n_p + 1)  # eq 89, page 23
-            cost += self.lambda_zeta # Eq 92.
+            cost = (
+                3 * self.num_bits_p**2 + self.num_bits_p + 1 + 4 * n_m * (self.num_bits_p + 1)
+            )  # eq 89, page 23
+            cost += self.lambda_zeta  # Eq 92.
 
 
 @frozen
@@ -227,10 +340,7 @@ class SelectUVFirstQuantization(Bloq):
     r"""SELECT for the kinetic energy operator for the first quantized chemistry Hamiltonian.
 
     Args:
-        num_pw_each_dim: The number of planewaves in each of the x, y and z
-            directions. In total, for a cubic box, there are N = num_pw_each_dim**3
-            planewaves. The number of bits required (in each dimension)
-            is thus $\log N^1/3 + 1$, where the + 1 is for the sign bit.
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
         num_bits_nuc_pos: The number of bits to store each component of the
             nuclear positions. $n_R$ in the reference.
@@ -242,14 +352,13 @@ class SelectUVFirstQuantization(Bloq):
         (https://arxiv.org/abs/2105.12767) page 19, section B
     """
 
-    num_pw_each_dim: int
+    num_bits_p: int
     eta: int
     num_bits_nuc_pos: int
 
     @cached_property
     def signature(self) -> Signature:
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
-        n_nu = (self.num_pw_each_dim - 1).bit_length() + 2
+        n_nu = self.num_bits_p + 1
         n_eta = (self.eta - 1).bit_length()
         return Signature(
             [
@@ -257,16 +366,16 @@ class SelectUVFirstQuantization(Bloq):
                 Register("flag_UorV", bitsize=1),
                 Register("plus", bitsize=1),
                 Register("ij", bitsize=n_eta, shape=(2,)),
+                Register("l", bitsize=self.num_bits_nuc_pos),
                 Register("nu", bitsize=n_nu, shape=(3,)),
-                Register("sys", bitsize=n_p, shape=(self.eta,3)),
+                Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
                 # + some ancilla for the controlled swaps of system registers.
             ]
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # Addition and subtraction of $\nu$ to p and q.
-        n_p = (self.num_pw_each_dim - 1).bit_length() + 1
-        cost_add = 24 * n_p  # Eq 93.
+        cost_add = 24 * self.num_bits_p  # Eq 93.
         # phasing by the structure factor $-e^{i k_{\nu} \cdot R_{\ell}}$ costs $6 n_{p} n_{R}$
-        cost_phase = 6 * n_p * self.num_bits_nuc_pos  # Eq 97.
+        cost_phase = 6 * self.num_bits_p * self.num_bits_nuc_pos  # Eq 97.
         return {(4 * (cost_add + cost_phase), TGate())}
