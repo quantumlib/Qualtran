@@ -14,7 +14,7 @@
 
 import numpy as np
 
-from qualtran.bloqs.qsp_bloq import qsp_phase_factors
+from qualtran.bloqs.generalized_qsp import qsp_phase_factors
 
 
 def test_compute_qsp_phase_factors():
