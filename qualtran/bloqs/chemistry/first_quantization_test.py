@@ -19,9 +19,58 @@ from qualtran.bloqs.chemistry.first_quantization import (
     PrepareNuState,
     PrepareTFirstQuantization,
     PrepareUVFistQuantization,
+    SelectUVFirstQuantization,
     UniformSuperPostionIJFirstQuantization,
 )
 from qualtran.resource_counting import get_bloq_counts_graph
+from qualtran.testing import execute_notebook
+
+
+def _make_prepare_kinetic():
+    from qualtran.bloqs.chemistry.first_quantization import PrepareTFirstQuantization
+
+    num_bits_p = 6
+    eta = 10
+    return PrepareTFirstQuantization(num_bits_p, eta)
+
+
+def _make_select_kinetic():
+    from qualtran.bloqs.chemistry.first_quantization import SelectTFirstQuantization
+
+    num_bits_p = 6
+    eta = 10
+    return SelectTFirstQuantization(num_bits_p, eta)
+
+
+def _make_prepare_potential():
+    from qualtran.bloqs.chemistry.first_quantization import PrepareUVFistQuantization
+
+    num_bits_p = 6
+    num_atoms = 10
+    eta = 10
+    m_param = 2**8
+    lambda_zeta = 10
+    num_bits_nuc_pos = 4
+    prep = PrepareUVFistQuantization(
+        num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
+    )
+    return prep
+
+
+def _make_prepare_nu_state():
+    from qualtran.bloqs.chemistry.first_quantization import PrepareNuState
+
+    num_bits_p = 6
+    m_param = 2 ** (2 * num_bits_p + 3)
+    return PrepareNuState(num_bits_p, m_param)
+
+
+def _make_select_potential():
+    from qualtran.bloqs.chemistry.first_quantization import SelectUVFirstQuantization
+
+    num_bits_p = 6
+    eta = 10
+    return SelectUVFirstQuantization(num_bits_p, eta, 10)
 
 
 def test_prepare_kinetic_bloq_counts():
@@ -93,3 +142,22 @@ def test_prepare_bloq_counts():
     qual_cost //= 4
     comp_diff = 1
     assert qual_cost == expected_cost - comp_diff
+
+
+def test_select_uv_bloq_counts():
+    num_bits_p = 6
+    eta = 10
+    num_bits_nuc_pos = 8
+    m_param = 2 ** (2 * num_bits_p + 3)
+    expected_cost = 24 * num_bits_p + 3 * (
+        2 * num_bits_p * num_bits_nuc_pos - num_bits_p * (num_bits_p + 1) - 1
+    )
+    sel = SelectUVFirstQuantization(num_bits_p, eta, num_bits_nuc_pos)
+    _, counts = get_bloq_counts_graph(sel)
+    qual_cost = counts[TGate()] // 4
+    # + 6 as they cost additon as nbits not nbits - 1, there are 6 additions / subtractions.
+    assert qual_cost + 6 == expected_cost
+
+
+def test_notebook():
+    execute_notebook('first_quantization')

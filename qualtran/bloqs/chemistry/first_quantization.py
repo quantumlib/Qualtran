@@ -85,7 +85,13 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
+from qualtran.bloqs.arithmetic import (
+    Add,
+    GreaterThan,
+    Product,
+    SignedIntegerToTwosComplement,
+    SumOfSquares,
+)
 from qualtran.bloqs.basic_gates import TGate, Toffoli
 
 if TYPE_CHECKING:
@@ -572,3 +578,138 @@ class PrepareUVFistQuantization(Bloq):
                 ),
             ),
         }
+
+
+@frozen
+class SelectTFirstQuantization(Bloq):
+    r"""SELECT for the kinetic energy operator for the first quantized chemistry Hamiltonian.
+
+    Args:
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
+        eta: The number of electrons.
+
+    Registers:
+        sys: The system register.
+        plus: A $|+\rangle$ state.
+        flag_T: a flag to control on the success of the $T$ state preparation.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767) page 20, section B
+    """
+    num_bits_p: int
+    eta: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
+                Register("plus", bitsize=1),
+                Register("flag_T", bitsize=1),
+            ]
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
+        # into an ancilla register ($3(n_{p}-1)$), copying the $r$ and $s$ bit of into an
+        # ancilla ($2(n_{p}-1)$), controlling on both those bit perform phase flip on an
+        # ancilla $|+\rangle$ state. This requires $1$ Toffoli, Then erase which costs
+        # only Cliffords. There is an additional control bit controlling the application
+        # of $T$ thus we come to our total.
+        # Eq 73. page
+        return {(4 * (5 * (self.num_bits_p - 1) + 2), TGate())}
+
+
+@frozen
+class ApplyNuclearPhase(Bloq):
+    r"""Apply the phase factor $-e^{-ik_\nu\cdot R_\ell}$ to the state.
+
+    Args:
+        num_bits_p: Number of bits for the momentum register.
+        num_bits_nuc: Number of bits of precision for the nuclear positions.
+
+    Registers:
+        l: A register indexing the nuclear positions.
+        rl: A register storing the value of $R_\ell$.
+        nu: The momentum transfer register.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767) pg 25, paragraph 2.
+    """
+
+    num_bits_p: int
+    num_bits_nuc: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register("l", bitsize=self.num_bits_nuc),
+                Register("Rl", bitsize=self.num_bits_nuc),
+                Register("nu", bitsize=self.num_bits_p, shape=(3,)),
+            ]
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        n_p = self.num_bits_p
+        n_n = self.num_bits_nuc
+        # This is some complicated application of phase gradient gates.
+        # Eq. 97.
+        if n_n > n_p:
+            cost = 3 * (2 * n_p * n_n - n_p * (n_p + 1) - 1)
+        else:
+            cost = 3 * n_n * (n_n - 1)
+        return {(4 * cost, TGate())}
+
+
+@frozen
+class SelectUVFirstQuantization(Bloq):
+    r"""SELECT for the U and V operators for the first quantized chemistry Hamiltonian.
+
+    This does not include the controlled swaps from p_i and q_j into ancilla registers and back again.
+
+    Args:
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
+        eta: The number of electrons.
+        num_bits_nuc_pos: The number of bits to store each component of the
+            nuclear positions. $n_R$ in the reference.
+
+    Registers:
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767)
+    """
+
+    num_bits_p: int
+    eta: int
+    num_bits_nuc_pos: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        n_nu = self.num_bits_p + 1
+        n_eta = (self.eta - 1).bit_length()
+        return Signature(
+            [
+                Register("flag_UVT", bitsize=2),
+                Register("plus", bitsize=1),
+                # Register("ij", bitsize=n_eta, shape=(2,)),
+                Register("l", bitsize=self.num_bits_nuc_pos),
+                Register("Rl", bitsize=self.num_bits_nuc_pos),
+                Register("nu", bitsize=n_nu, shape=(3,)),
+                # Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
+                # + some ancilla for the controlled swaps of system registers.
+            ]
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        cost_tc = (6, SignedIntegerToTwosComplement(self.num_bits_p))
+        cost_add = (6, Add(self.num_bits_p + 1))  # + 2?
+        cost_ctrl_add = (6 * (self.num_bits_p + 1), Toffoli())
+        cost_inv_tc = (6, SignedIntegerToTwosComplement(self.num_bits_p + 2))
+        # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
+        cost_phase = (1, ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos))
+        return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc, cost_phase}
+        # return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc}
