@@ -83,7 +83,7 @@ def qsp_phase_factors(
     phi = np.zeros(n)
     lambd = 0
 
-    for d in range(n - 1, 0, -1):
+    for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
 
         a, b = S[:, d]
@@ -94,7 +94,7 @@ def qsp_phase_factors(
             lambd = np.angle(b)
         else:
             S = _arbitrary_SU2_rotation(theta[d], phi[d], 0) @ S
-            S = np.array([S[0][1:d], S[1][0 : d - 1]])
+            S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
 
