@@ -668,7 +668,8 @@ class ApplyNuclearPhase(Bloq):
 class SelectUVFirstQuantization(Bloq):
     r"""SELECT for the U and V operators for the first quantized chemistry Hamiltonian.
 
-    This does not include the controlled swaps from p_i and q_j into ancilla registers and back again.
+    This does not include the controlled swaps from p_i and q_j system registers
+    into ancilla registers and back again. Hence there is no system register.
 
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
@@ -690,16 +691,13 @@ class SelectUVFirstQuantization(Bloq):
     @cached_property
     def signature(self) -> Signature:
         n_nu = self.num_bits_p + 1
-        n_eta = (self.eta - 1).bit_length()
         return Signature(
             [
                 Register("flag_UVT", bitsize=2),
                 Register("plus", bitsize=1),
-                # Register("ij", bitsize=n_eta, shape=(2,)),
                 Register("l", bitsize=self.num_bits_nuc_pos),
                 Register("Rl", bitsize=self.num_bits_nuc_pos),
                 Register("nu", bitsize=n_nu, shape=(3,)),
-                # Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
                 # + some ancilla for the controlled swaps of system registers.
             ]
         )
@@ -708,8 +706,8 @@ class SelectUVFirstQuantization(Bloq):
         cost_tc = (6, SignedIntegerToTwosComplement(self.num_bits_p))
         cost_add = (6, Add(self.num_bits_p + 1))  # + 2?
         cost_ctrl_add = (6 * (self.num_bits_p + 1), Toffoli())
+        # + 2 as these numbers are larger from addition of $\nu$
         cost_inv_tc = (6, SignedIntegerToTwosComplement(self.num_bits_p + 2))
         # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
         cost_phase = (1, ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos))
         return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc, cost_phase}
-        # return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc}
