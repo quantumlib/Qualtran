@@ -72,7 +72,7 @@ def _make_product():
 def _make_greater_than():
     from qualtran.bloqs.arithmetic import GreaterThan
 
-    return GreaterThan(bitsize=4)
+    return GreaterThan(a_bitsize=4, b_bitsize=4)
 
 
 def _make_greater_than_constant():
@@ -476,7 +476,7 @@ def test_greater_than():
     q0 = bb.add_register('a', bitsize)
     q1 = bb.add_register('b', bitsize)
     anc = bb.add_register('result', 1)
-    q0, q1, anc = bb.add(GreaterThan(bitsize), a=q0, b=q1, target=anc)
+    q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
     cbloq.t_complexity()
 

@@ -968,7 +968,7 @@ class SquareRealNumber(Bloq):
 
 @frozen
 class GreaterThan(Bloq):
-    r"""Compare two n-bit integers.
+    r"""Compare two integers.
 
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
@@ -987,17 +987,18 @@ class GreaterThan(Bloq):
         b: n-bit-sized input registers.
         target: A single bit output register to store the result of A > B.
     """
-    bitsize: int
+    a_bitsize: int
+    b_bitsize: int
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, target=1)
+        return Signature.build(a=self.a_bitsize, b=self.b_bitsize, target=1)
 
     def short_name(self) -> str:
         return "a>b"
 
     def t_complexity(self) -> 'TComplexity':
-        return t_complexity(LessThanEqual(self.bitsize, self.bitsize))
+        return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
