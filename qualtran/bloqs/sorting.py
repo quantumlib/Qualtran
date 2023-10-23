@@ -62,7 +62,7 @@ class Comparator(Bloq):
         # complexity is from less than on two n qubit numbers + controlled swap
         # Hard code for now until CSwap-Bloq is merged.
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        t_complexity = GreaterThan(self.bitsize).t_complexity()
+        t_complexity = GreaterThan(self.bitsize, self.bitsize).t_complexity()
         t_complexity += TComplexity(t=14 * self.bitsize)
         return t_complexity
 
