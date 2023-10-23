@@ -55,7 +55,7 @@ def test_prepare_nu_bloq_counts():
     # factor of two for inverserse prepare, controlled hadamard + testing on nu.
     expected_cost += 2 * 4 * (num_bits_p - 1) + 6 * num_bits_p + 2
     eq_90 = 3 * num_bits_p**2 + 15 * num_bits_p - 7 + 4 * num_bits_m * (num_bits_p + 1)
-    assert expected_cost != eq_90
+    assert expected_cost == eq_90 + 5
     prep = PrepareNuState(num_bits_p, m_param)
     _, counts = get_bloq_counts_graph(prep)
     qual_cost = counts[TGate()]
