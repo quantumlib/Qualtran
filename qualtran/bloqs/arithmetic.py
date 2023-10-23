@@ -33,7 +33,7 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And, MultiAnd
-from qualtran.bloqs.basic_gates import TGate, Toffoli
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -1161,4 +1161,4 @@ class SignedIntegerToTwosComplement(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
-        return {(self.bitsize - 2, Toffoli())}
+        return {(4 * (self.bitsize - 2), TGate())}
