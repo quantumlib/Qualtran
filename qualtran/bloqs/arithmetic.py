@@ -33,7 +33,7 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And, MultiAnd
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import TGate, Toffoli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -1135,3 +1135,30 @@ class ToContiguousIndex(Bloq):
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
         return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}
+
+
+@frozen
+class SignedIntegerToTwosComplement(Bloq):
+    """Convert a register storing the signed integer representation to two's complement inplace.
+
+    Args:
+        bitsize: size of the register.
+
+    Regs:
+        x: input signed integer register to convert to two-complement.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767) page 24, 4th paragraph from the bottom.
+    """
+
+    bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(x=self.bitsize)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # Take the sign qubit as a control and cnot the remaining qubits, then
+        # add it to the remaining n-1 bits.
+        return {(self.bitsize - 2, Toffoli())}

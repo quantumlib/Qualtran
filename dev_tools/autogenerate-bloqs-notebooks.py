@@ -119,6 +119,7 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_scale_int_by_real),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_multiply_two_reals),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square_real_number),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_signed_to_twos_complement),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),

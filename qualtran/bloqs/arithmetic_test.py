@@ -31,6 +31,7 @@ from qualtran.bloqs.arithmetic import (
     OutOfPlaceAdder,
     Product,
     ScaleIntByReal,
+    SignedIntegerToTwosComplement,
     Square,
     SquareRealNumber,
     SumOfSquares,
@@ -108,6 +109,12 @@ def _make_square_real_number():
     from qualtran.bloqs.arithmetic import SquareRealNumber
 
     return SquareRealNumber(bitsize=10)
+
+
+def _make_signed_to_twos_complement():
+    from qualtran.bloqs.arithmetic import SignedIntegerToTwosComplement
+
+    return SignedIntegerToTwosComplement(bitsize=10)
 
 
 def identity_map(n: int):
@@ -503,6 +510,14 @@ def test_to_contiguous_index():
     q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2 * bitsize), mu=q0, nu=q1, s=out)
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
     cbloq.t_complexity()
+
+
+def test_signed_to_twos_complement():
+    bb = BloqBuilder()
+    bitsize = 5
+    q0 = bb.add_register('x', bitsize)
+    q0 = bb.add(SignedIntegerToTwosComplement(bitsize), x=q0)
+    cbloq = bb.finalize(x=q0)
 
 
 def test_arithmetic_notebook():
