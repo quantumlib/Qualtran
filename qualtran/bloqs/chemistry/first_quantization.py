@@ -11,7 +11,73 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
+r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian.
+
+Here we assume the Born-Oppenheimer Hamiltonian and seek to simulate a
+collection of $\eta$ electrons and $L$ static nuclei with a Hamiltonian given
+by:
+$$
+H_{BO} = T + U + V + \frac{1}{2}
+\sum_{\ell\ne\kappa=1}^L\frac{\zeta_\ell\zeta_\kappa}{\lVert R_\ell - R_\kappa \rVert}
+$$
+
+In the first quantized approach we assume periodic boundary conditions and use a
+plane wave Galerkin discretization.
+A plane wave basis function is given by
+$$
+\phi_p(r) = \frac{1}{\sqrt{\Omega}} e^{-i k_p\cdot r}
+$$
+where $r$ is a position vector in real space, $\Omega$ is the simulation cell
+volume and $k_p$ is a reciprocal lattice vector.
+In three dimensions we have
+$$
+k_p = \frac{2\pi p }{\Omega}
+$$
+for $p \in G$ and
+$$
+G = [-\frac{N^{1/3} -
+1}{2},{N^{1/3} - 1}{2}]^3 \subset \mathcal{Z}^3.
+$$
+and $N$ is the total number of planewaves.
+
+With these definitions we can write the components of the Hamiltonian as:
+$$
+T = \sum_{i}^\eta\sum_{p\in G}\frac{\lVert k_p\rVert^2}{2} |p\rangle\langle p|_i
+$$
+which defines the kinetic energy of the electrons,
+$$
+U = -\frac{4\pi}{\Omega}
+\sum_{\ell=1}^L \sum_{i}^\eta
+\sum_{p,q\in G, p\ne q}
+\left(
+    \zeta_{\ell}
+    \frac{e^{i k_{q-p}\cdot R_\ell}}{\lVert k_{p-q}\rVert^2}
+    |p\rangle\langle q|_i
+\right)
+$$
+describes the interaction of the electrons and the nuclei, and,
+$$
+V = \frac{2\pi}{\Omega}
+\sum_{i\nej=1}^\eta
+\sum_{p,q\in G, p\ne q}
+\sum_{\nu \in G_0}
+\left(
+    \frac{1}{\lVert k_{\nu}\rVert^2}
+    |p + \nu\rangle\langle p|_i
+    |q -\nu\rangle\langle q|_i
+\right)
+$$
+describes the electron-electron interaction. The notation $|p\rangle\langle p|i$ is shorthand for
+$I_1\otensor\cdots\otensor |p\rangle \langle q |_j \otensor \cdots \otensor I_\eta$.
+The system is represented using a set of $\eta$ signed integer registers each of
+size $3 n_p$ where $n_p =  \lceil \log (N^{1/3} + 1) \rceil$, with the factor of
+3 accounting for the 3 spatial dimensions.
+
+In the first quantized approach, fermion antisymmetry is encoded through initial
+state preparation. Spin labels are also absent and should be accounted for
+during state preparation. The cost of initial state preparation is typically
+ignored.
+"""
 from functools import cached_property
 from typing import Optional, Set, Tuple, TYPE_CHECKING
 
@@ -111,6 +177,7 @@ class PrepareTFirstQuantization(Bloq):
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
+        adjoint: whether to dagger the bloq or not.
 
     Registers:
         plus: A $|+\rangle$ state register.
@@ -167,7 +234,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(mu=self.num_bits_p + 1)
+        return Signature.build(mu=self.num_bits_p)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
@@ -203,7 +270,7 @@ class PrepareNuSuperPositionState(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("mu", self.num_bits_p + 1), Register("nu", self.num_bits_p + 1, shape=(3,))]
+            [Register("mu", self.num_bits_p), Register("nu", self.num_bits_p + 1, shape=(3,))]
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
@@ -267,7 +334,7 @@ class TestNuLessThanMu(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", self.num_bits_p + 1),
+                Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
                 Register("flag_nu_lt_mu", 1),
             ]
@@ -320,7 +387,7 @@ class TestNuInequality(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", self.num_bits_p + 1),
+                Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
                 Register("m", self.num_bits_m),
                 Register("flag_minus_zero", 1),
@@ -380,15 +447,11 @@ class PrepareNuState(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        # this is for the nu register which lives on a grid of twice the size
-        # the nu grid is twice as large, so one more bit is needed
-        n_nu = (self.num_bits_p - 1).bit_length() + 2
-        n_mu = self.num_bits_p.bit_length()  # is this correct?
         n_m = (self.m_param - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=n_mu),
-                Register("nu", bitsize=n_nu, shape=(3,)),
+                Register("mu", bitsize=self.num_bits_p),
+                Register("nu", bitsize=self.num_bits_p + 1, shape=(3,)),
                 Register("m", bitsize=n_m),
                 Register("flag_nu", bitsize=1),
             ]
