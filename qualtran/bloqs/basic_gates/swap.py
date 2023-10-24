@@ -151,7 +151,7 @@ class TwoBitCSwap(Bloq):
         return TComplexity(t=7, clifford=10)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(7, TGate()), (10, ArbitraryClifford(n=3))}
+        return {(TGate(), 7), (ArbitraryClifford(n=3), 10)}
 
 
 @frozen
@@ -192,7 +192,7 @@ class CSwap(GateWithRegisters):
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(self.bitsize, TwoBitCSwap())}
+        return {(TwoBitCSwap(), self.bitsize)}
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'

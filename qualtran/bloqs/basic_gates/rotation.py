@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import SympySymbolAllocator, BloqCountT
 
 
 @frozen
@@ -50,7 +50,7 @@ class RotationBloq(Bloq, metaclass=abc.ABCMeta):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
-        return {(num_t, TGate())}
+        return {(TGate(), num_t)}
 
 
 @frozen

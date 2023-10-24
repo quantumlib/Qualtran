@@ -69,9 +69,9 @@ class And(GateWithRegisters):
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
         if self.adjoint:
-            return {(4 + 2 * pre_post_cliffords, ArbitraryClifford(n=2))}
+            return {(ArbitraryClifford(n=2), 4 + 2 * pre_post_cliffords)}
 
-        return {(9 + 2 * pre_post_cliffords, ArbitraryClifford(n=2)), (4, TGate())}
+        return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''

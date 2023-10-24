@@ -163,8 +163,7 @@ class QuantumVariableRotation(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         theta = ssa.new_symbol('theta')
-        # need to update rotation bloq.
-        return {(self.phi_bitsize, RotationBloq(theta))}
+        return {(RotationBloq(theta), self.phi_bitsize)}
 
 
 @frozen
@@ -234,10 +233,10 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         # 4. multiply y^2 x by y
         # 5. add 3. and 4.
         return {
-            (1, SquareRealNumber(self.poly_bitsize)),
-            (1, ScaleIntByReal(self.target_bitsize, self.x_sq_bitsize)),
-            (2, MultiplyTwoReals(self.target_bitsize)),
-            (1, Add(self.target_bitsize)),
+            (SquareRealNumber(self.poly_bitsize), 1),
+            (ScaleIntByReal(self.target_bitsize, self.x_sq_bitsize), 1),
+            (MultiplyTwoReals(self.target_bitsize), 2),
+            (Add(self.target_bitsize), 1),
         }
 
 
@@ -286,7 +285,8 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(3, MultiplyTwoReals(self.poly_bitsize)), (3, Add(self.poly_bitsize))}
+        return {(MultiplyTwoReals(self.poly_bitsize), 3),
+                (Add(self.poly_bitsize), 3)}
 
 
 @frozen

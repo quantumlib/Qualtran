@@ -35,7 +35,7 @@ class BigBloq(Bloq):
         return Signature.build(x=self.bitsize)
 
     def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
-        return {(sympy.log(self.bitsize), SubBloq(unrelated_param=0.5))}
+        return {(SubBloq(unrelated_param=0.5), sympy.log(self.bitsize))}
 
 
 @frozen
@@ -63,7 +63,7 @@ class SubBloq(Bloq):
         return Signature.build(q=1)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(3, TGate())}
+        return {(TGate(), 3)}
 
 
 def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, int]]:

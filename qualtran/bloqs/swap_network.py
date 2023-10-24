@@ -125,9 +125,9 @@ class CSwapApprox(GateWithRegisters):
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
         return {
-            (4 * n, TGate()),
-            (16 * n, ArbitraryClifford(n=1)),
-            (6 * n - 1, ArbitraryClifford(n=2)),
+            (TGate(), 4 * n),
+            (ArbitraryClifford(n=1), 16 * n),
+            (ArbitraryClifford(n=2), 6 * n - 1),
         }
 
 
@@ -200,7 +200,7 @@ class SwapWithZero(GateWithRegisters):
         num_swaps = np.floor(
             sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
         )
-        return {(num_swaps, CSwapApprox(self.target_bitsize))}
+        return {(CSwapApprox(self.target_bitsize), num_swaps)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@(r⇋0)"] * self.selection_bitsize

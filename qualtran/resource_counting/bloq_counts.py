@@ -22,7 +22,7 @@ import sympy
 
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError
 
-BloqCountT = Tuple[Union[int, sympy.Expr], Bloq]
+BloqCountT = Tuple[Bloq,Union[int, sympy.Expr]]
 
 
 def big_O(expr) -> sympy.Order:
@@ -66,7 +66,7 @@ def _build_cbloq_counts_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
     for binst in cbloq.bloq_instances:
         counts[binst.bloq] += 1
 
-    return {(n, bloq) for bloq, n in counts.items()}
+    return {(bloq, n) for bloq, n in counts.items()}
 
 
 def _recurse_call_graph(
@@ -111,7 +111,7 @@ def _recurse_call_graph(
         return {parent: 1}
 
     sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
-    for n, child in count_decomp:
+    for child, n in count_decomp:
         child = generalizer(child)
         if child is None:
             continue

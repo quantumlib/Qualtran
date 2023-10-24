@@ -50,7 +50,7 @@ class Toffoli(Bloq):
         return Signature([Register('ctrl', 1, shape=(2,)), Register('target', 1)])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(4, TGate())}
+        return {(TGate(), 4)}
 
     def t_complexity(self):
         return TComplexity(t=4)

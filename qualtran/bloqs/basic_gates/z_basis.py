@@ -292,7 +292,7 @@ class _IntVector(Bloq):
         return TComplexity()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(big_O(1), ArbitraryClifford(self.bitsize))}
+        return {(ArbitraryClifford(self.bitsize), big_O(1))}
 
     def short_name(self) -> str:
         return f'{self.val}'
