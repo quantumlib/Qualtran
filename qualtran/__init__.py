@@ -41,7 +41,11 @@ from ._infra.composite_bloq import (
     DidNotFlattenAnythingError,
     SoquetT,
 )
-from ._infra.gate_with_registers import GateWithRegisters
+
+# Internal imports: none
+# External:
+#  - numpy: multiplying bitsizes, making cirq quregs
+from ._infra.registers import Register, SelectionRegister, Signature, Side
 
 # Internal imports: none
 # External imports: none
@@ -54,10 +58,7 @@ from ._infra.quantum_graph import (
     Soquet,
 )
 
-# Internal imports: none
-# External:
-#  - numpy: multiplying bitsizes, making cirq quregs
-from ._infra.registers import Register, SelectionRegister, Signature, Side
+from ._infra.gate_with_registers import GateWithRegisters
 
 from ._infra.bloq_example import BloqExample, bloq_example
 
