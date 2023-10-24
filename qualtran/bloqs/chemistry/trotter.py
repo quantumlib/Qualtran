@@ -35,7 +35,7 @@ from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
@@ -161,7 +161,7 @@ class QuantumVariableRotation(Bloq):
         # Upper bounding for the moment with just phi_bitsize * Rz rotation gates.
         return self.phi_bitsize * Rz(0.0).t_complexity()
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
         return {(self.phi_bitsize, RotationBloq(theta))}
@@ -226,7 +226,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             + Add(self.target_bitsize).t_complexity()
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # y * ((2 + b^2 + delta) + y^2 x)
         # 1. square y
         # 2. scale y^2 by x
@@ -283,7 +283,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             + MultiplyTwoReals(self.poly_bitsize).t_complexity()
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
         return {(3, MultiplyTwoReals(self.poly_bitsize)), (3, Add(self.poly_bitsize))}

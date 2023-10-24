@@ -1138,7 +1138,7 @@ class SignedIntegerToTwosComplement(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
         return {(4 * (self.bitsize - 2), TGate())}
