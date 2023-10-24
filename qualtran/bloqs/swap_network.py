@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Functionality for moving data between registers (swapping)."""
+
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
@@ -23,7 +25,9 @@ from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
+    bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     GateWithRegisters,
     Register,
     SelectionRegister,
@@ -48,7 +52,7 @@ if TYPE_CHECKING:
 
 @frozen
 class CSwapApprox(GateWithRegisters):
-    r"""Approximately implements a multi-target controlled swap unitary using only 4 * n T-gates.
+    r"""Approximately implements a multi-target controlled swap unitary using only $4n$ T-gates.
 
     Implements $\mathrm{CSWAP}_n = |0 \rangle\langle 0| I + |1 \rangle\langle 1| \mathrm{SWAP}_n$
     such that the output state is correct up to a global phase factor of +1 / -1.
@@ -137,6 +141,36 @@ class CSwapApprox(GateWithRegisters):
         }
 
 
+@bloq_example
+def _approx_cswap_symb() -> CSwapApprox:
+    # A symbolic version. The bitsize is the symbol 'n'.
+    from sympy import sympify
+
+    approx_cswap_symb = CSwapApprox(bitsize=sympify('n'))
+    return approx_cswap_symb
+
+
+@bloq_example
+def _approx_cswap_small() -> CSwapApprox:
+    # A small version on four bits.
+    approx_cswap_small = CSwapApprox(bitsize=4)
+    return approx_cswap_small
+
+
+@bloq_example
+def _approx_cswap_large() -> CSwapApprox:
+    # A large version that swaps 64-bit registers.
+    approx_cswap_large = CSwapApprox(bitsize=64)
+    return approx_cswap_large
+
+
+_APPROX_CSWAP_DOC = BloqDocSpec(
+    bloq_cls=CSwapApprox,
+    import_line='from qualtran.bloqs.swap_network import CSwapApprox',
+    examples=(_approx_cswap_symb, _approx_cswap_small, _approx_cswap_large),
+)
+
+
 @frozen
 class SwapWithZero(GateWithRegisters):
     """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.
@@ -215,3 +249,18 @@ class SwapWithZero(GateWithRegisters):
         for i in range(self.n_target_registers):
             wire_symbols += [f"swap_{i}"] * self.target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+
+
+@bloq_example
+def _swz_small() -> SwapWithZero:
+    # A small version on four bits.
+    swz_small = SwapWithZero(selection_bitsize=3, target_bitsize=2, n_target_registers=2)
+    return swz_small
+
+
+_SWZ_DOC = BloqDocSpec(
+    bloq_cls=SwapWithZero,
+    import_line='from qualtran.bloqs.swap_network import SwapWithZero',
+    examples=(_swz_small,),
+)
