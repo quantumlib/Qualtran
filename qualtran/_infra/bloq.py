@@ -254,14 +254,16 @@ class Bloq(metaclass=abc.ABCMeta):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         """Override this method to build the bloq call graph.
 
-        This method must return a set of `(n, bloq)` tuples where bloq is called `n` times in
-        the decomposition.
+        This method must return a set of `(bloq, n)` tuples where `bloq` is called `n` times in
+        the decomposition. This method defines one level of the call graph, specifically the
+        edges from this bloq to its immediate children. To get the full graph,
+        call `Bloq.call_graph()`.
 
-        By default, this method will use `self.decompose_bloq()` to count up bloqs.
-        However, you can provide specific callees directly by overriding this method if
-        1) you don't want to provide a complete decomposition, 2) you know symbolic expressions
-        for the counts, 3) or you need to "generalize" the subbloqs by overwriting bloq
-        attributes that do not affect its cost with generic sympy symbols using
+        By default, this method will use `self.decompose_bloq()` to count the bloqs called
+        in the decomposition. By overriding this method, you can provide explicit call counts.
+        This is appropriate if: 1) you can't or won't provide a complete decomposition, 2) you
+        know symbolic expressions for the counts, or 3) you need to "generalize" the subbloqs
+        by overwriting bloq attributes that do not affect its cost with generic sympy symbols using
         the provided `SympySymbolAllocator`.
         """
         return self.decompose_bloq().build_call_graph(ssa)
@@ -272,6 +274,27 @@ class Bloq(metaclass=abc.ABCMeta):
         keep: Optional[Sequence['Bloq']] = None,
         max_depth: Optional[int] = None,
     ) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]:
+        """Get the bloq call graph and call totals.
+
+        The call graph has edges from a parent bloq to each of the bloqs that it calls in
+        its decomposition. The number of times it is called is stored as an edge attribute.
+        To specify the bloq call counts for a specific node, override `Bloq.build_call_graph()`.
+
+        Args:
+            generalizer: If provided, run this function on each (sub)bloq to replace attributes
+                that do not affect resource estimates with generic sympy symbols. If the function
+                returns `None`, the bloq is omitted from the counts graph.
+            keep: If this function evaluates to True for the current bloq, keep the bloq as a leaf
+                node in the call graph instead of recursing into it.
+            max_depth: If provided, build a call graph with at most this many layers.
+
+        Returns:
+            g: A directed graph where nodes are (generalized) bloqs and edge attribute 'n' reports
+                the number of times successor bloq is called via its predecessor.
+            sigma: Call totals for "leaf" bloqs. We keep a bloq as a leaf in the call graph
+                according to `keep` and `max_depth` (if provided) or if a bloq cannot be
+                decomposed.
+        """
         from qualtran.resource_counting.bloq_counts import get_bloq_call_graph
 
         return get_bloq_call_graph(self, generalizer=generalizer, keep=keep, max_depth=max_depth)
@@ -279,6 +302,20 @@ class Bloq(metaclass=abc.ABCMeta):
     def bloq_counts(
         self, generalizer: Callable[['Bloq'], Optional['Bloq']] = None
     ) -> Dict['Bloq', Union[int, 'sympy.Expr']]:
+        """The number of subbloqs directly called by this bloq.
+
+        This corresponds to one level of the call graph, see `Bloq.call_graph()`.
+        To specify explicit values for a bloq, override `Bloq.build_call_graph(...)`, not this
+        method.
+
+        Args:
+            generalizer: If provided, run this function on each (sub)bloq to replace attributes
+                that do not affect resource estimates with generic sympy symbols. If the function
+                returns `None`, the bloq is omitted from the counts graph.
+
+        Returns:
+            A dictionary mapping subbloq to the number of times they appear in the decomposition.
+        """
         _, sigma = self.call_graph(generalizer=generalizer, max_depth=1)
         return sigma
 

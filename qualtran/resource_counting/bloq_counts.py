@@ -139,11 +139,9 @@ def get_bloq_call_graph(
     keep: Optional[Callable[[Bloq], bool]] = None,
     max_depth: Optional[int] = None,
 ) -> Tuple[nx.DiGraph, Dict[Bloq, Union[int, sympy.Expr]]]:
-    """Recursively build the bloq call graph.
+    """Recursively build the bloq call graph and call totals.
 
-    We stop recursing and keep a bloq as a leaf in the call graph if 1) `keep` is provided
-    and evaluates to True on the given bloq, 2) `max_depth` is provided and recursing would
-    exceed the maximum, or 3) if a bloq cannot be decomposed.
+    See `Bloq.call_graph()` as a convenient way of calling this function.
 
     Args:
         bloq: The bloq to count sub-bloqs.
@@ -154,15 +152,15 @@ def get_bloq_call_graph(
             your `generalizer` function closes over a `SympySymbolAllocator`, provide it here as
             well. Otherwise, we will create a new allocator.
         keep: If this function evaluates to True for the current bloq, keep the bloq as a leaf
-            node in the call graph and stop recursing.
-        max_depth: If provided, stop recursing after the given depth.
+            node in the call graph instead of recursing into it.
+        max_depth: If provided, build a call graph with at most this many layers.
 
     Returns:
-        g: A directed graph where nodes are (generalized) bloqs and edge attribute 'n' counts
-            how many of the successor bloqs are used in the decomposition of the predecessor
-            bloq(s).
-        sigma: A mapping from leaf bloqs to their total counts.
-
+        g: A directed graph where nodes are (generalized) bloqs and edge attribute 'n' reports
+            the number of times successor bloq is called via its predecessor.
+        sigma: Call totals for "leaf" bloqs. We keep a bloq as a leaf in the call graph
+            according to `keep` and `max_depth` (if provided) or if a bloq cannot be
+            decomposed.
     """
     if ssa is None:
         ssa = SympySymbolAllocator()
