@@ -57,3 +57,16 @@ def test_graphviz_counts():
         assert ma is not None, line
         i = int(ma.group(1))
         assert i in [5, 9, 4]
+
+
+def test_abbreviate_details():
+    namevals = [('x', 5), ('y', 100), ('s', 'a' * 100), ('x1', 1.2), ('x2', 1.3), ('x3', 1.4)]
+
+    assert (
+        GraphvizCounts.abbreviate_field_list(namevals)
+        == "x=5, y=100, s='aaaaaaa ..., x1=1.2, [2 addtl fields]."
+    )
+    assert (
+        GraphvizCounts.abbreviate_field_list(namevals[:5])
+        == "x=5, y=100, s='aaaaaaa ..., x1=1.2, x2=1.3"
+    )

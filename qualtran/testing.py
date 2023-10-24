@@ -14,9 +14,22 @@
 
 import itertools
 import traceback
+from enum import Enum
 from pathlib import Path
+from typing import Tuple
 
-from qualtran import Bloq, BloqError, CompositeBloq, DanglingT, LeftDangle, RightDangle, Side
+from qualtran import (
+    Bloq,
+    BloqError,
+    BloqExample,
+    CompositeBloq,
+    DanglingT,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
+    LeftDangle,
+    RightDangle,
+    Side,
+)
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 
 
@@ -204,3 +217,86 @@ def execute_notebook(name: str):
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
     ep.preprocess(nb)
+
+
+class BloqCheckResult(Enum):
+    """The status result of the `check_bloq_example_xxx` functions."""
+
+    PASS = 0
+    """The check passed and is an unqualified success."""
+
+    FAIL = 1
+    """The check failed with a broken assertion or invariant."""
+
+    MISSING = 2
+    """The check did not pass because the required functionality is missing."""
+
+    NA = 3
+    """The check is not applicable in the current context."""
+
+    UNVERIFIED = 4
+    """The bloq protocol has provided a value, but some functionality is missing so we can't
+    verify the result."""
+
+    ERROR = 5
+    """An unexpected error occurred during execution of the check."""
+
+
+def _check_bloq_example_make_impl(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Implementation for `check_bloq_example_make`.
+
+    This function may throw an uncaught exception, which is handled by the wrapping function.
+    """
+    bloq = bloq_ex.make()
+    if not isinstance(bloq, Bloq):
+        return BloqCheckResult.FAIL, f'{bloq} is not an instance of Bloq'
+    if not isinstance(bloq, bloq_ex.bloq_cls):
+        return BloqCheckResult.FAIL, f'{bloq} is not an instance of {bloq_ex.bloq_cls}'
+    return BloqCheckResult.PASS, ''
+
+
+def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample returns the desired bloq.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        return _check_bloq_example_make_impl(bloq_ex)
+    except Exception as e:
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+
+def _check_bloq_example_decompose_impl(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Implementation for `check_bloq_example_decompose`.
+
+    This function may throw an uncaught exception, which is handled by the wrapping function.
+    """
+    try:
+        bloq = bloq_ex.make()
+        assert_valid_bloq_decomposition(bloq)
+        return BloqCheckResult.PASS, ''
+    except DecomposeTypeError as e:
+        return BloqCheckResult.NA, str(e)
+    except DecomposeNotImplementedError as e:
+        return BloqCheckResult.MISSING, str(e)
+    except BloqError as e:
+        return BloqCheckResult.FAIL, str(e)
+
+
+def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample has a valid decomposition.
+
+    This will use `assert_valid_decomposition` which has a variety of sub-checks. A failure
+    in any of those checks will result in `FAIL`. `DecomposeTypeError` results in a
+    not-applicable `NA` status. `DecomposeNotImplementedError` results in a `MISSING` status.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        return _check_bloq_example_decompose_impl(bloq_ex)
+    except Exception as e:
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'

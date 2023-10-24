@@ -20,6 +20,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import Bloq, Register, Side, Signature, SoquetT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
@@ -177,3 +178,6 @@ class XGate(Bloq):
 
         (q,) = q
         return cirq.X(q), {'q': [q]}
+
+    def t_complexity(self):
+        return TComplexity(clifford=1)

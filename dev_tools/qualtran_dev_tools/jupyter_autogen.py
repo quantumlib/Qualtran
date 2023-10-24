@@ -22,11 +22,10 @@ from typing import Callable, Dict, List, Optional, Tuple, Type, TYPE_CHECKING, U
 
 import nbformat
 from attrs import frozen, mutable
-from cirq_ft import GateWithRegisters
 from sphinx.ext.napoleon import Config, GoogleDocstring
 
 if TYPE_CHECKING:
-    from qualtran import Bloq
+    from qualtran import Bloq, GateWithRegisters
 
 
 @frozen
@@ -40,7 +39,7 @@ class GateNbSpec:
             `display_gate_and_compilation`
     """
 
-    factory: Callable[[], GateWithRegisters]
+    factory: Callable[[], 'GateWithRegisters']
     draw_vertical: bool = False
 
     @property

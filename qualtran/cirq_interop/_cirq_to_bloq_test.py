@@ -15,14 +15,24 @@ from typing import Dict, Tuple
 
 import attr
 import cirq
-import cirq_ft
 import numpy as np
 import pytest
 import sympy
 from attrs import frozen
 
 import qualtran
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Side, Signature
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    CompositeBloq,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
+    GateWithRegisters,
+    Register,
+    Side,
+    Signature,
+)
+from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import OneState
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import (
@@ -75,15 +85,15 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert x.pretty_name() == 'cirq.X'
     assert x.short_name() == 'cirq.X'
 
-    assert rx.pretty_name() == 'cirq.Rx(0.123π)'
+    assert rx.pretty_name() == 'cirq.Rx'
     assert rx.short_name() == 'cirq.Rx'
 
     assert toffoli.pretty_name() == 'cirq.TOFFOLI'
-    assert toffoli.short_name() == 'cirq.TOFFOLI'
+    assert toffoli.short_name() == 'cirq.TOF..'
 
 
 def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
-    and_gate = cirq_ft.And()
+    and_gate = And()
     bb = BloqBuilder()
     ctrl = [bb.add(OneState()) for _ in range(2)]
     ctrl, target = bb.add(CirqGateAsBloq(and_gate), ctrl=ctrl)
@@ -92,7 +102,7 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
     assert np.isclose(state_vector[7], 1)
 
     with pytest.raises(NotImplementedError, match="supported only for unitary gates"):
-        _ = CirqGateAsBloq(cirq_ft.And(adjoint=True)).as_composite_bloq().tensor_contract()
+        _ = CirqGateAsBloq(And(adjoint=True)).as_composite_bloq().tensor_contract()
 
 
 def test_bloq_decompose_from_cirq_op():
@@ -108,13 +118,16 @@ def test_bloq_decompose_from_cirq_op():
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == TComplexity(clifford=1)
 
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(DecomposeTypeError):
         TestCNOTSymbolic().decompose_bloq()
 
 
 def test_cirq_circuit_to_cbloq():
     qubits = cirq.LineQubit.range(6)
     circuit = cirq.testing.random_circuit(qubits, n_moments=7, op_density=1.0, random_state=52)
+
+    circuit.append(cirq.global_phase_operation(-1j))
+
     cbloq = cirq_optree_to_cbloq(circuit)
 
     bloq_unitary = cbloq.tensor_contract()
@@ -142,16 +155,16 @@ def test_cbloq_to_cirq_circuit():
 
 def test_cirq_optree_to_cbloq():
     @attr.frozen
-    class CirqGateWithRegisters(cirq_ft.GateWithRegisters):
-        reg: cirq_ft.Register
+    class CirqGateWithRegisters(GateWithRegisters):
+        reg: Register
 
         @property
-        def signature(self) -> cirq_ft.Signature:
-            return cirq_ft.Signature([self.reg])
+        def signature(self) -> Signature:
+            return Signature([self.reg])
 
-    reg1 = cirq_ft.Register('x', shape=(3, 4), bitsize=2)
-    reg2 = cirq_ft.Register('y', shape=12, bitsize=2)
-    anc_reg = cirq_ft.Register('anc', shape=4, bitsize=2)
+    reg1 = Register('x', shape=(3, 4), bitsize=2)
+    reg2 = Register('y', shape=12, bitsize=2)
+    anc_reg = Register('anc', shape=4, bitsize=2)
     qubits = cirq.LineQubit.range(24)
     anc_qubits = cirq.NamedQubit.range(4, prefix='anc')
     circuit = cirq.Circuit(
@@ -167,15 +180,15 @@ def test_cirq_optree_to_cbloq():
     )
     bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
     assert all(bloq_instances[i].bloq == Join(2) for i in range(14))
-    assert bloq_instances[14].bloq == CirqGateAsBloq(CirqGateWithRegisters(reg1))
+    assert bloq_instances[14].bloq == CirqGateWithRegisters(reg1)
     assert bloq_instances[14].bloq.signature == qualtran.Signature(
         [qualtran.Register(name='x', bitsize=2, shape=(3, 4))]
     )
-    assert bloq_instances[15].bloq == CirqGateAsBloq(CirqGateWithRegisters(anc_reg))
+    assert bloq_instances[15].bloq == CirqGateWithRegisters(anc_reg)
     assert bloq_instances[15].bloq.signature == qualtran.Signature(
         [qualtran.Register(name='anc', bitsize=2, shape=(4,))]
     )
-    assert bloq_instances[16].bloq == CirqGateAsBloq(CirqGateWithRegisters(reg2))
+    assert bloq_instances[16].bloq == CirqGateWithRegisters(reg2)
     assert bloq_instances[16].bloq.signature == qualtran.Signature(
         [qualtran.Register(name='y', bitsize=2, shape=(12,))]
     )
@@ -205,10 +218,10 @@ def test_cirq_optree_to_cbloq():
 
 
 def test_cirq_gate_as_bloq_for_left_only_gates():
-    class LeftOnlyGate(cirq_ft.GateWithRegisters):
+    class LeftOnlyGate(GateWithRegisters):
         @property
         def signature(self):
-            return cirq_ft.Signature([cirq_ft.Register('junk', 2, side=cirq_ft.infra.Side.LEFT)])
+            return Signature([Register('junk', 2, side=Side.LEFT)])
 
         def decompose_from_registers(self, *, context, junk) -> cirq.OP_TREE:
             yield cirq.CNOT(*junk)
@@ -221,3 +234,9 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
     assert bloqs_list.count(Free(1)) == 2
     assert bloqs_list.count(CirqGateAsBloq(cirq.CNOT)) == 1
     assert bloqs_list.count(CirqGateAsBloq(cirq.ResetChannel())) == 2
+
+
+def test_cirq_gate_as_bloq_decompose_raises():
+    bloq = CirqGateAsBloq(cirq.X)
+    with pytest.raises(DecomposeNotImplementedError, match="does not have a decomposition"):
+        _ = bloq.decompose_bloq()

@@ -19,6 +19,8 @@ from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
@@ -49,6 +51,9 @@ class Toffoli(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(4, TGate())}
+
+    def t_complexity(self):
+        return TComplexity(t=4)
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', target: 'ClassicalValT'

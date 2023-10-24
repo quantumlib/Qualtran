@@ -41,6 +41,24 @@ def _decompose_from_build_composite_bloq(bloq: 'Bloq') -> 'CompositeBloq':
     return bb.finalize(**out_soqs)
 
 
+class DecomposeNotImplementedError(NotImplementedError):
+    """Raised if a decomposition is not yet provided.
+
+    In contrast to `DecomposeTypeError`, a decomposition is theoretically possible; just not
+    implemented yet.
+    """
+
+
+class DecomposeTypeError(TypeError):
+    """Raised if a decomposition does not make sense in this context.
+
+    In contrast to `DecomposeNotImplementedError`, a decomposition does not make sense
+    in this context. This can be raised if the bloq is "atomic" -- that is, considered part
+    of the compilation target gateset. This can be raised if certain bloq attributes do not
+    permit a decomposition, most commonly if an attribute is symbolic.
+    """
+
+
 class Bloq(metaclass=abc.ABCMeta):
     """Bloq is the primary abstract base class for all operations.
 
@@ -81,15 +99,15 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def short_name(self) -> str:
         name = self.pretty_name()
-        if len(name) <= 8:
+        if len(name) <= 10:
             return name
 
-        return name[:6] + '..'
+        return name[:8] + '..'
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         """Override this method to define a Bloq in terms of its constituent parts.
 
-        Bloq definers should override this method. If you already have an instance of a `Bloq`,
+        Bloq authors should override this method. If you already have an instance of a `Bloq`,
         consider calling `decompose_bloq()` which will set up the correct context for
         calling this function.
 
@@ -101,7 +119,7 @@ class Bloq(metaclass=abc.ABCMeta):
             The soquets corresponding to the outputs of the Bloq (keyed by name) or
             `NotImplemented` if there is no decomposition.
         """
-        raise NotImplementedError(f"{self} does not support decomposition.")
+        raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
 
     def decompose_bloq(self) -> 'CompositeBloq':
         """Decompose this Bloq into its constituent parts contained in a CompositeBloq.
