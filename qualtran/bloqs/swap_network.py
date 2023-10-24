@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -21,7 +21,6 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    Bloq,
     BloqBuilder,
     GateWithRegisters,
     Register,
@@ -36,8 +35,6 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
-    from qualtran import CompositeBloq
-    from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
