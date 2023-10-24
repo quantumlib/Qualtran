@@ -250,7 +250,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         )
 
     def short_name(self) -> str:
-        return r'Prep&mu'
+        return r'Prep$_\mu$'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
@@ -292,7 +292,10 @@ class PrepareNuSuperPositionState(Bloq):
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
-        return f'PrepSup&nu{dag}'
+        return f'PrepSupNu{dag}'
+
+    def short_name(self) -> str:
+        return r'Prep$_\nu$'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
@@ -329,6 +332,9 @@ class FlagZeroAsFailure(Bloq):
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
         return f'FlagZero{dag}'
+
+    def short_name(self) -> str:
+        return r'$\nu\ne -0$'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
@@ -367,6 +373,9 @@ class TestNuLessThanMu(Bloq):
                 Register("flag_nu_lt_mu", 1, side=Side.RIGHT),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$\nu < 2^{\mu-2}$'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
@@ -424,6 +433,9 @@ class TestNuInequality(Bloq):
                 Register("succ", 1),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$2^{\mu-2}\mathcal{M} > m \nu^2 $'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:

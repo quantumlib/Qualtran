@@ -454,9 +454,10 @@ def directional_text_box(text: str, side: Side) -> WireSymbol:
     if side is Side.THRU:
         return TextBox(text)
     elif side is Side.LEFT:
-        return RarrowTextBox(text)
+        #return RarrowTextBox(text)
+        return TextBox(text)
     elif side is Side.RIGHT:
-        return LarrowTextBox(text)
+        return TextBox(text)# LarrowTextBox(text)
     raise ValueError(f"Unknown side: {side}")
 
 
