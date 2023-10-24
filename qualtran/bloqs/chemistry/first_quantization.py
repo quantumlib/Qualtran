@@ -79,12 +79,12 @@ during state preparation. The cost of initial state preparation is typically
 ignored.
 """
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloqs.arithmetic import (
     Add,
     GreaterThan,
@@ -93,6 +93,7 @@ from qualtran.bloqs.arithmetic import (
     SumOfSquares,
 )
 from qualtran.bloqs.basic_gates import TGate, Toffoli
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
@@ -237,10 +238,19 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
             https://arxiv.org/abs/2105.12767) page 21, Eq 77.
     """
     num_bits_p: int
+    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(mu=self.num_bits_p)
+        return Signature(
+            [
+                Register("mu", bitsize=self.num_bits_p),
+                Register("flag_mu", bitsize=1, side=Side.RIGHT),
+            ]
+        )
+
+    def short_name(self) -> str:
+        return r'Prep&mu'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
@@ -272,12 +282,17 @@ class PrepareNuSuperPositionState(Bloq):
             https://arxiv.org/abs/2105.12767) page 21, Eq 78.
     """
     num_bits_p: int
+    adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [Register("mu", self.num_bits_p), Register("nu", self.num_bits_p + 1, shape=(3,))]
         )
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f'PrepSup&nu{dag}'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
@@ -305,8 +320,15 @@ class FlagZeroAsFailure(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("nu", self.num_bits_p + 1, shape=(3,)), Register("flag_minus_zero", 1)]
+            [
+                Register("nu", self.num_bits_p + 1, shape=(3,)),
+                Register("flag_minus_zero", 1, side=Side.RIGHT),
+            ]
         )
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f'FlagZero{dag}'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
@@ -342,7 +364,7 @@ class TestNuLessThanMu(Bloq):
             [
                 Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("flag_nu_lt_mu", 1),
+                Register("flag_nu_lt_mu", 1, side=Side.RIGHT),
             ]
         )
 
@@ -396,9 +418,9 @@ class TestNuInequality(Bloq):
                 Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
                 Register("m", self.num_bits_m),
-                Register("flag_minus_zero", 1),
-                Register("flag_nu_lt_mu", 1),
-                Register("flag_ineq", 1),
+                Register("flag_mu_prep", 1, side=Side.LEFT),
+                Register("flag_minus_zero", 1, side=Side.LEFT),
+                Register("flag_nu_lt_mu", 1, side=Side.LEFT),
                 Register("succ", 1),
             ]
         )
@@ -459,9 +481,36 @@ class PrepareNuState(Bloq):
                 Register("mu", bitsize=self.num_bits_p),
                 Register("nu", bitsize=self.num_bits_p + 1, shape=(3,)),
                 Register("m", bitsize=n_m),
-                Register("flag_nu", bitsize=1),
+                Register("succ_nu", bitsize=1),
             ]
         )
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, succ_nu: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        mu, flag_mu = bb.add(
+            PrepareMuUnaryEncodedOneHot(self.num_bits_p, adjoint=self.adjoint), mu=mu
+        )
+        mu, nu = bb.add(
+            PrepareNuSuperPositionState(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
+        )
+        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint), nu=nu)
+        mu, nu, flag_nu_lt_mu = bb.add(
+            TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
+        )
+        n_m = (self.m_param - 1).bit_length()
+        m = bb.add(PrepareUniformSuperposition(self.m_param), target=m)
+        mu, nu, m, succ_nu = bb.add(
+            TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint),
+            mu=mu,
+            nu=nu,
+            m=m,
+            flag_mu_prep=flag_mu,
+            flag_minus_zero=flag_zero,
+            flag_nu_lt_mu=flag_nu_lt_mu,
+            succ=succ_nu,
+        )
+        return {'mu': mu, 'nu': nu, 'm': m, 'succ_nu': succ_nu}
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # 1. Prepare unary encoded superposition state (Eq 77)

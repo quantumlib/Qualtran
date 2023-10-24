@@ -22,8 +22,8 @@ from qualtran.bloqs.chemistry.first_quantization import (
     SelectUVFirstQuantization,
     UniformSuperPostionIJFirstQuantization,
 )
-from qualtran.resource_counting import get_bloq_counts_graph
-from qualtran.testing import execute_notebook
+from qualtran.resource_counting import get_bloq_counts_graph, get_cbloq_bloq_counts
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def _make_prepare_kinetic():
@@ -95,6 +95,16 @@ def test_prepare_kinetic_bloq_counts():
     assert qual_cost == expected_cost
 
 
+def test_prepare_nu():
+    num_bits_p = 6
+    m_param = 2 ** (2 * num_bits_p + 3)
+    num_bits_m = (m_param - 1).bit_length()
+    prep = PrepareNuState(num_bits_p, m_param)
+    assert_valid_bloq_decomposition(prep)
+    prep = PrepareNuState(num_bits_p, m_param, adjoint=True)
+    assert_valid_bloq_decomposition(prep)
+
+
 def test_prepare_nu_bloq_counts():
     num_bits_p = 6
     m_param = 2 ** (2 * num_bits_p + 3)
@@ -106,7 +116,11 @@ def test_prepare_nu_bloq_counts():
     eq_90 = 3 * num_bits_p**2 + 15 * num_bits_p - 7 + 4 * num_bits_m * (num_bits_p + 1)
     assert expected_cost == eq_90 + 5
     prep = PrepareNuState(num_bits_p, m_param)
+    # The decomposition includes the uniform state preparation ignored in the bloq counts.
+    assert prep.bloq_counts() != get_cbloq_bloq_counts(prep.decompose_bloq())
     _, counts = get_bloq_counts_graph(prep)
+    # The uniform superposition adds zero TGates.
+    assert counts[TGate()] == get_bloq_counts_graph(prep.decompose_bloq())[1][TGate()]
     qual_cost = counts[TGate()]
     prep = PrepareNuState(num_bits_p, m_param, adjoint=True)
     _, counts = get_bloq_counts_graph(prep)
