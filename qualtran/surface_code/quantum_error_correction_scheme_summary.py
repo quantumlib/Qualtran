@@ -13,12 +13,9 @@
 #  limitations under the License.
 
 import abc
-import enum
 
 import numpy as np
 from attrs import field, frozen
-
-from qualtran.surface_code.physical_parameters import PhysicalParameters
 
 
 @frozen
@@ -43,9 +40,9 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
         reference: source of the estimates.
     """
 
-    error_rate_scaler: float = field(default=0.1, repr=lambda x: f'{x:g}')
-    error_rate_threshold: float = field(default=0.01, repr=lambda x: f'{x:g}')
-    reference: str | None = None
+    error_rate_scaler: float = field(repr=lambda x: f'{x:g}')
+    error_rate_threshold: float = field(repr=lambda x: f'{x:g}')
+    reference: str | None
 
     def logical_error_rate(
         self, code_distance: int, physical_error_rate: float | np.ndarray
@@ -67,7 +64,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
 class SurfaceCode(QuantumErrorCorrectionSchemeSummary):
     """A Surface Code Quantum Error Correction Scheme."""
 
-    def physical_qubits(self, code_distance: int) -> int | np.ndarray:
+    def physical_qubits(self, code_distance: int) -> int:
         return 2 * code_distance**2
 
 
