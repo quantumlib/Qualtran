@@ -86,7 +86,7 @@ from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
-from qualtran.bloqs.basic_gates import TGate, Toffoli
+from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
@@ -122,7 +122,7 @@ class UniformSuperPostionIJFirstQuantization(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n_eta = (self.eta - 1).bit_length()
         # Half of Eq. 62 which is the cost for prep and prep^\dagger
-        return {(4 * (7 * n_eta + 4 * self.num_bits_rot_aa - 18), TGate())}
+        return {((7 * n_eta + 4 * self.num_bits_rot_aa - 18), Toffoli())}
 
 
 @frozen
@@ -154,7 +154,7 @@ class PreparePowerTwoState(Bloq):
         return Signature.build(r=self.bitsize)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(4 * (self.bitsize - 2), TGate())}
+        return {((self.bitsize - 2), Toffoli())}
 
 
 @frozen
@@ -204,7 +204,7 @@ class PrepareTFirstQuantization(Bloq):
         # register. Adding a bloq is sort of overkill, should just tag the
         # correct cost on UniformSuperPosition bloq
         # 13 is from assuming 8 bits for the rotation, and n = 2.
-        uni_prep_w = (4 * 13, TGate())
+        uni_prep_w = (13, Toffoli())
         # Factor of two for r and s registers.
         return {uni_prep_w, (2, PreparePowerTwoState(bitsize=self.num_bits_p))}
 
@@ -238,7 +238,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
-        return {(4 * (self.num_bits_p - 1), TGate())}
+        return {((self.num_bits_p - 1), Toffoli())}
 
 
 @frozen
@@ -275,7 +275,7 @@ class PrepareNuSuperPositionState(Bloq):
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
-        return {(4 * (3 * (self.num_bits_p - 1)), TGate())}
+        return {((3 * (self.num_bits_p - 1)), Toffoli())}
 
 
 @frozen
@@ -305,11 +305,11 @@ class FlagZeroAsFailure(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
             # This can be inverted with cliffords.
-            return {(0, TGate())}
+            return {(0, Toffoli())}
         else:
             # Controlled Toffoli each having n_p + 1 controls and 2 Toffolis to
             # check the result of the Toffolis.
-            return {(4 * (3 * self.num_bits_p + 2), TGate())}
+            return {((3 * self.num_bits_p + 2), Toffoli())}
 
 
 @frozen
@@ -343,7 +343,7 @@ class TestNuLessThanMu(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
             # This can be inverted with cliffords.
-            return {(0, TGate())}
+            return {(0, Toffoli())}
         else:
             # n_p controlled Toffolis with four controls.
             return {(3 * self.num_bits_p, Toffoli())}
@@ -399,7 +399,7 @@ class TestNuInequality(Bloq):
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
-            return {(0, TGate())}
+            return {(0, Toffoli())}
         else:
             # 1. Compute $\nu_x^2 + \nu_y^2 + \nu_z^2$
             cost_1 = (1, SumOfSquares(self.num_bits_p, k=3))
@@ -506,9 +506,9 @@ class PrepareZetaState(Bloq):
         if self.adjoint:
             # Really Er(x), eq 91. In practice we will reaplce this with the
             # appropriate qrom call down the line.
-            return {(4 * int(np.ceil(self.lambda_zeta**0.5)), TGate())}
+            return {(int(np.ceil(self.lambda_zeta**0.5)), Toffoli())}
         else:
-            return {(4 * self.lambda_zeta, TGate())}
+            return {(self.lambda_zeta, Toffoli())}
 
 
 @frozen
