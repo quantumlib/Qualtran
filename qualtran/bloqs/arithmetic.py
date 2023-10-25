@@ -535,7 +535,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
-        return {(TGate(), num_t_gates), (ArbitraryClifford(n=1), num_clifford )}
+        return {(TGate(), num_t_gates), (ArbitraryClifford(n=1), num_clifford)}
 
 
 @frozen
@@ -790,7 +790,7 @@ class Product(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return {(Toffoli(),  num_toff)}
+        return {(Toffoli(), num_toff)}
 
 
 @frozen

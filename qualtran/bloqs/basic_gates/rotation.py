@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import SympySymbolAllocator, BloqCountT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen

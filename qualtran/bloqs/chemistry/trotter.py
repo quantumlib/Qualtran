@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -285,8 +285,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(MultiplyTwoReals(self.poly_bitsize), 3),
-                (Add(self.poly_bitsize), 3)}
+        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(self.poly_bitsize), 3)}
 
 
 @frozen

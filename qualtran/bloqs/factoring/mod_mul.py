@@ -85,8 +85,7 @@ class CtrlModMul(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
-        return {(self._Add(k=k), 2),
-                (CSwap(self.bitsize), 1)}
+        return {(self._Add(k=k), 2), (CSwap(self.bitsize), 1)}
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
         if ctrl == 0:

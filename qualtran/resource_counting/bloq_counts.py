@@ -22,7 +22,7 @@ import sympy
 
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError
 
-BloqCountT = Tuple[Bloq,Union[int, sympy.Expr]]
+BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
 
 
 def big_O(expr) -> sympy.Order:
