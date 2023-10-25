@@ -44,4 +44,3 @@ def test_mod_mult():
     bloq = ModMult(bitsize=8)
     assert bloq.short_name() == 'out = x * y mod p'
     assert bloq.bloq_counts() == {(216, Toffoli())}
-

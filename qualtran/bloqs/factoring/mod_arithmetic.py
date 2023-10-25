@@ -46,20 +46,25 @@ class ModAdd(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize),
-                          Register('y', bitsize=self.bitsize), 
-                          Register('p', bitsize=self.bitsize)])
+        return Signature(
+            [
+                Register('x', bitsize=self.bitsize),
+                Register('y', bitsize=self.bitsize),
+                Register('p', bitsize=self.bitsize),
+            ]
+        )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(4 * self.bitsize, Toffoli())}
-    
+
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT) -> Dict[str, 'SoquetT']:
+        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT
+    ) -> Dict[str, 'SoquetT']:
         return NotImplemented
 
     def short_name(self) -> str:
         return f'y = y + x mod p'
-    
+
 
 @frozen
 class ModSub(Bloq):
@@ -83,15 +88,20 @@ class ModSub(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize),
-                          Register('y', bitsize=self.bitsize),
-                          Register('p', bitsize=self.bitsize)])
+        return Signature(
+            [
+                Register('x', bitsize=self.bitsize),
+                Register('y', bitsize=self.bitsize),
+                Register('p', bitsize=self.bitsize),
+            ]
+        )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(6 * self.bitsize, Toffoli())}
-    
+
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT) -> Dict[str, 'SoquetT']:
+        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT
+    ) -> Dict[str, 'SoquetT']:
         return NotImplemented
 
     def short_name(self) -> str:
@@ -119,14 +129,14 @@ class ModNeg(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize),
-                          Register('p', bitsize=self.bitsize)])
+        return Signature([Register('x', bitsize=self.bitsize), Register('p', bitsize=self.bitsize)])
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(2 * self.bitsize, Toffoli())}
-    
+
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, p: SoquetT) -> Dict[str, 'SoquetT']:
+        self, bb: 'BloqBuilder', x: SoquetT, p: SoquetT
+    ) -> Dict[str, 'SoquetT']:
         return NotImplemented
 
     def short_name(self) -> str:
@@ -154,14 +164,14 @@ class ModDbl(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize),
-                          Register('p', bitsize=self.bitsize)])
+        return Signature([Register('x', bitsize=self.bitsize), Register('p', bitsize=self.bitsize)])
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(2 * self.bitsize, Toffoli())}
-    
+
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, p: SoquetT) -> Dict[str, 'SoquetT']:
+        self, bb: 'BloqBuilder', x: SoquetT, p: SoquetT
+    ) -> Dict[str, 'SoquetT']:
         return NotImplemented
 
     def short_name(self) -> str:
@@ -192,17 +202,22 @@ class ModMult(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize),
-                          Register('y', bitsize=self.bitsize),
-                          Register('p', bitsize=self.bitsize),
-                          Register('garbage', bitsize=self.bitsize),
-                          Register('out', bitsize=self.bitsize)])
+        return Signature(
+            [
+                Register('x', bitsize=self.bitsize),
+                Register('y', bitsize=self.bitsize),
+                Register('p', bitsize=self.bitsize),
+                Register('garbage', bitsize=self.bitsize),
+                Register('out', bitsize=self.bitsize),
+            ]
+        )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(2.25 * (self.bitsize ** 2) + 9 * self.bitsize, Toffoli())}
-    
+        return {(2.25 * (self.bitsize**2) + 9 * self.bitsize, Toffoli())}
+
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT, garbage: SoquetT, out: SoquetT) -> Dict[str, 'SoquetT']:
+        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT, garbage: SoquetT, out: SoquetT
+    ) -> Dict[str, 'SoquetT']:
         return NotImplemented
 
     def short_name(self) -> str:
