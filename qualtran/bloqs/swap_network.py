@@ -13,24 +13,41 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
+import numpy as np
+import sympy
 from attrs import frozen
-from cirq_ft import MultiTargetCSwapApprox
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
-from qualtran.cirq_interop import decompose_from_cirq_op
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    GateWithRegisters,
+    Register,
+    SelectionRegister,
+    Signature,
+    Soquet,
+    SoquetT,
+)
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.resource_counting import SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
+# TODO(gh/Qualtran/issues/398): Replace with `swap_network.py` from Cirq-FT
+
+
 @frozen
-class CSwapApprox(Bloq):
+class CSwapApprox(GateWithRegisters):
     r"""Approximately implements a multi-target controlled swap unitary using only 4 * n T-gates.
 
     Implements $\mathrm{CSWAP}_n = |0 \rangle\langle 0| I + |1 \rangle\langle 1| \mathrm{SWAP}_n$
@@ -58,19 +75,24 @@ class CSwapApprox(Bloq):
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        ctrl, target_x, target_y = quregs['ctrl'], quregs['x'], quregs['y']
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        (ctrl,) = cirq_quregs['ctrl']
-        x = cirq_quregs['x'].tolist()
-        y = cirq_quregs['y'].tolist()
-        return (
-            MultiTargetCSwapApprox(self.bitsize).on_registers(control=ctrl, target_x=x, target_y=y),
-            cirq_quregs,
-        )
+        def g(q: cirq.Qid, adjoint=False) -> cirq.ops.op_tree.OpTree:
+            yield [cirq.S(q), cirq.H(q)]
+            yield cirq.T(q) ** (1 - 2 * adjoint)
+            yield [cirq.H(q), cirq.S(q) ** -1]
+
+        cnot_x_to_y = [cirq.CNOT(x, y) for x, y in zip(target_x, target_y)]
+        cnot_y_to_x = [cirq.CNOT(y, x) for x, y in zip(target_x, target_y)]
+        g_inv_on_y = [list(g(q, True)) for q in target_y]  # Uses len(target_y) T-gates
+        g_on_y = [list(g(q)) for q in target_y]  # Uses len(target_y) T-gates
+
+        yield [cnot_y_to_x, g_inv_on_y, cnot_x_to_y, g_inv_on_y]
+        yield MultiTargetCNOT(len(target_y)).on(*ctrl, *target_y)
+        yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -84,21 +106,75 @@ class CSwapApprox(Bloq):
     def short_name(self) -> str:
         return '~swap'
 
+    def t_complexity(self) -> TComplexity:
+        """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
+        n = self.bitsize
+        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
+        # 4 * n: CNOTs
+        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
+        return TComplexity(t=4 * n, clifford=22 * n - 1)
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if not args.use_unicode_characters:
+            return cirq.CircuitDiagramInfo(
+                ("@(approx)",) + ("swap_x",) * self.bitsize + ("swap_y",) * self.bitsize
+            )
+        return cirq.CircuitDiagramInfo(
+            ("@(approx)",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize
+        )
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        n = self.bitsize
+        # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
+        # 4 * n: CNOTs
+        # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
+        return {
+            (4 * n, TGate()),
+            (16 * n, ArbitraryClifford(n=1)),
+            (6 * n - 1, ArbitraryClifford(n=2)),
+        }
+
 
 @frozen
-class SwapWithZero(Bloq):
+class SwapWithZero(GateWithRegisters):
+    """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.
+
+    Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_{n-1}> --> |x> |Psi_x> |Rest of Psi>.
+    Note that the state of `|Rest of Psi>` is allowed to be anything and should not be depended
+    upon.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
+        (https://arxiv.org/abs/1812.00954).
+            Low, Kliuchnikov, Schaeffer. 2018.
+    """
+
     selection_bitsize: int
     target_bitsize: int
     n_target_registers: int
 
+    def __attrs_post_init__(self):
+        assert self.n_target_registers <= 2**self.selection_bitsize
+
+    @cached_property
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (
+            SelectionRegister(
+                'selection',
+                bitsize=self.selection_bitsize,
+                iteration_length=self.n_target_registers,
+            ),
+        )
+
+    @cached_property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return (Register('targets', bitsize=self.target_bitsize, shape=self.n_target_registers),)
+
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('selection', self.selection_bitsize),
-                Register('targets', self.target_bitsize, shape=(self.n_target_registers,)),
-            ]
-        )
+        return Signature([*self.selection_registers, *self.target_registers])
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', selection: Soquet, targets: NDArray[Soquet]
@@ -125,3 +201,17 @@ class SwapWithZero(Bloq):
                 )
 
         return {'selection': bb.join(selection), 'targets': targets}
+
+    def bloq_counts(
+        self, ssa: Optional['SympySymbolAllocator'] = None
+    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+        num_swaps = np.floor(
+            sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
+        )
+        return {(num_swaps, CSwapApprox(self.target_bitsize))}
+
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["@(r⇋0)"] * self.selection_bitsize
+        for i in range(self.n_target_registers):
+            wire_symbols += [f"swap_{i}"] * self.target_bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

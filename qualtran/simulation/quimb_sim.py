@@ -15,8 +15,9 @@
 """Functionality for the `Bloq.tensor_contract()` protocol."""
 
 import itertools
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
+import numpy as np
 import quimb.tensor as qtn
 from numpy.typing import NDArray
 
@@ -26,6 +27,8 @@ from qualtran import (
     CompositeBloq,
     Connection,
     DanglingT,
+    LeftDangle,
+    RightDangle,
     Signature,
     Soquet,
     SoquetT,
@@ -42,7 +45,9 @@ def bloq_has_custom_tensors(bloq: Bloq) -> bool:
 
     This is a heuristic that checks that the method is overriden.
     """
-    return not bloq.add_my_tensors.__qualname__.startswith('Bloq.')
+    return not bloq.add_my_tensors.__qualname__.startswith(
+        'Bloq.'
+    ) and not bloq.add_my_tensors.__qualname__.startswith('GateWithRegisters.')
 
 
 def flatten_for_tensor_contraction(bloq: Bloq, max_depth: int = 1_000) -> CompositeBloq:
@@ -99,8 +104,10 @@ def cbloq_to_quimb(
             return cxn.right
         return cxn.left
 
+    visited_bloqs: Set[BloqInstance] = set()
     for binst, incoming, outgoing in cbloq.iter_bloqnections():
         bloq = binst.bloq
+        visited_bloqs.add(binst)
         assert isinstance(bloq, Bloq)
 
         inc_d = _cxn_to_soq_dict(
@@ -119,6 +126,17 @@ def cbloq_to_quimb(
         bloq.add_my_tensors(tn, binst, incoming=inc_d, outgoing=out_d)
         if pos is not None:
             fix[tuple([binst])] = pos[binst]
+
+    # Special case: Add variables corresponding to all registers that don't connect to any Bloq.
+    # This is needed because `CompositeBloq.iter_bloqnections` ignores `LeftDangle/RightDangle`
+    # bloqs and therefore we never see connections the exist only b/w LeftDangle and
+    # RightDangle bloqs.
+    for cxn in cbloq.connections:
+        if cxn.left.binst is LeftDangle and cxn.right.binst is RightDangle:
+            # This register has no Bloq acting  on it, and thus it would not have a variable in the
+            # the tensor network. Add an identity tensor acting on this register to make sure the
+            # tensor network has variables corresponding to all input / output registers.
+            tn.add(qtn.Tensor(data=np.eye(2**cxn.left.reg.bitsize), inds=[cxn.right, cxn.left]))
 
     return tn, fix
 

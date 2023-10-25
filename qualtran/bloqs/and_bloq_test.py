@@ -144,7 +144,7 @@ def test_multi_truth_table():
             # Tensor simulation
             vec = cbloq.tensor_contract()
             should_be = np.all(ctrl_string == cvs)
-            *junk_is, res_i = np.where(vec.reshape((2,) * (n - 1)))
+            *junk_is, res_i = np.where(abs(vec.reshape((2,) * (n - 1))) > 1e-10)
             assert res_i == should_be, ctrl_string
 
             # Classical simulation

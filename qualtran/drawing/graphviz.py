@@ -13,9 +13,9 @@
 #  limitations under the License.
 
 """Classes for drawing bloqs with Graphviz."""
-
+import html
 import itertools
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import IPython.display
 import pydot
@@ -32,9 +32,6 @@ from qualtran import (
     Signature,
     Soquet,
 )
-
-if TYPE_CHECKING:
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 def _assign_ids_to_bloqs_and_soqs(
@@ -183,7 +180,10 @@ class GraphDrawer:
         This should have a `colspan="2"` to make sure there aren't separate left and right
         cells / soquets.
         """
-        return f'  <TR><TD colspan="2" port="{self.ids[thru]}">{self.soq_label(thru)}</TD></TR>\n'
+        return (
+            f'  <TR><TD colspan="2" port="{self.ids[thru]}">'
+            f'{html.escape(self.soq_label(thru))}</TD></TR>\n'
+        )
 
     def _register_td(self, soq: Optional[Soquet], *, with_empty_td: bool, rowspan: int = 1) -> str:
         """Return the html code for an individual <TD>.
@@ -210,7 +210,7 @@ class GraphDrawer:
         else:
             rowspan = ''
 
-        return f'<TD {rowspan} port="{self.ids[soq]}">{self.soq_label(soq)}</TD>'
+        return f'<TD {rowspan} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
 
     def _get_register_tr(
         self,
@@ -245,7 +245,7 @@ class GraphDrawer:
 
     def get_binst_header_text(self, binst: BloqInstance) -> str:
         """Overridable method returning the text used for the header cell of a bloq."""
-        return f'{binst.bloq.pretty_name()}'
+        return f'{html.escape(binst.bloq.pretty_name())}'
 
     def add_binst(self, graph: pydot.Graph, binst: BloqInstance) -> pydot.Graph:
         """Process and add a bloq instance to the Graph."""
@@ -374,7 +374,7 @@ class PrettyGraphDrawer(GraphDrawer):
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
-        return f'<font point-size="10">{binst.bloq.short_name()}</font>'
+        return f'<font point-size="10">{html.escape(binst.bloq.short_name())}</font>'
 
     def soq_label(self, soq: Soquet):
         from qualtran.bloqs.util_bloqs import Join, Split
@@ -396,51 +396,6 @@ class PrettyGraphDrawer(GraphDrawer):
             label=self.cxn_label(cxn),
             labelfloat=True,
             fontsize=10,
-            arrowhead='dot',
-            arrowsize=0.25,
-        )
-
-
-def show_bloq(bloq: Bloq):
-    """Display a graph representation of the bloq in IPython."""
-    IPython.display.display(PrettyGraphDrawer(bloq).get_svg())
-
-
-class ClassicalSimGraphDrawer(PrettyGraphDrawer):
-    """A graph drawer that labels each edge with a classical value.
-
-    The (composite) bloq must be composed entirely of classically-simulable bloqs.
-
-    Args:
-        bloq: The (composite) bloq to draw.
-        vals: Input classical values to propogate through the composite bloq.
-    """
-
-    def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):
-        super().__init__(bloq=bloq)
-        from qualtran.simulation.classical_sim import _cbloq_call_classically
-
-        _, soq_assign = _cbloq_call_classically(
-            self._cbloq.signature, vals, self._cbloq._binst_graph
-        )
-        self.soq_assign = soq_assign
-
-    def cxn_label(self, cxn: Connection) -> str:
-        """Label the connection with its classical value."""
-        # Thru registers share the same soquet
-        # key in `soq_assign` for a bloq's left and right ports.
-        # The value in `soq_assign` will be for the right, output
-        # value. So we need `cxn.left` as the correct connection label.
-        return str(self.soq_assign[cxn.left])
-
-    def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
-        return pydot.Edge(
-            left_id,
-            right_id,
-            label=self.cxn_label(cxn),
-            labelfloat=True,
-            fontsize=10,
-            fontcolor='darkblue',
             arrowhead='dot',
             arrowsize=0.25,
         )

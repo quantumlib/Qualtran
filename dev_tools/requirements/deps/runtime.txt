@@ -1,5 +1,11 @@
-cirq-core==1.3.0.dev20230928195458
-cirq-ft==1.3.0.dev20230928195458
+cirq-core==1.3.0.dev20231018023458
+attrs
+cachetools>=5.3
+
+# docs
+ipywidgets
+nbconvert
+nbformat
 
 # drawing
 pydot

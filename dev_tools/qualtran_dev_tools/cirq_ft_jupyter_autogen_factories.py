@@ -17,11 +17,10 @@
 from typing import *
 
 import cirq
-import cirq_ft
-import cirq_ft.infra.testing as cq_testing
 import numpy as np
 
 import qualtran
+import qualtran.cirq_interop.testing as cq_testing
 
 # pylint: enable=unused-import,wildcard-import,unused-wildcard-import
 # !!!! Do not modify imports !!!!
@@ -39,7 +38,8 @@ import qualtran
 
 
 def _make_ApplyGateToLthQubit():
-    from cirq_ft import ApplyGateToLthQubit, Registers, SelectionRegisters
+    from qualtran import Register, SelectionRegister
+    from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit
 
     def _z_to_odd(n: int):
         if n % 2 == 1:
@@ -47,50 +47,50 @@ def _make_ApplyGateToLthQubit():
         return cirq.I
 
     apply_z_to_odd = ApplyGateToLthQubit(
-        SelectionRegisters.build(selection=(3, 4)),
+        SelectionRegister('selection', 3, 4),
         nth_gate=_z_to_odd,
-        control_regs=Registers.build(control=2),
+        control_regs=Register('control', 2),
     )
 
     return apply_z_to_odd
 
 
 def _make_QROM():
-    from cirq_ft import QROM
+    from qualtran.bloqs.qrom import QROM
 
     return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
 
 
 def _make_MultiTargetCSwap():
-    from cirq_ft import MultiTargetCSwap
+    from qualtran.bloqs.basic_gates import CSwap
 
-    return MultiTargetCSwap(3)
+    return CSwap(3)
 
 
 def _make_MultiTargetCSwapApprox():
-    from cirq_ft import MultiTargetCSwapApprox
+    from qualtran.bloqs.swap_network import CSwapApprox
 
-    return MultiTargetCSwapApprox(2)
+    return CSwapApprox(2)
 
 
 def _make_SwapWithZeroGate():
-    from cirq_ft import SwapWithZeroGate
+    from qualtran.bloqs.swap_network import SwapWithZero
 
-    return SwapWithZeroGate(selection_bitsize=2, target_bitsize=3, n_target_registers=4)
+    return SwapWithZero(selection_bitsize=2, target_bitsize=3, n_target_registers=4)
 
 
-def _make_GenericSelect():
-    from cirq_ft import GenericSelect
+def _make_SelectPauliLCU():
+    from qualtran.bloqs.select_pauli_lcu import SelectPauliLCU
 
     target_bitsize = 4
     us = ['XIXI', 'YIYI', 'ZZZZ', 'ZXYZ']
     us = [cirq.DensePauliString(u) for u in us]
     selection_bitsize = int(np.ceil(np.log2(len(us))))
-    return GenericSelect(selection_bitsize, target_bitsize, select_unitaries=us)
+    return SelectPauliLCU(selection_bitsize, target_bitsize, select_unitaries=us)
 
 
 def _make_StatePreparationAliasSampling():
-    from cirq_ft import StatePreparationAliasSampling
+    from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 
     coeffs = np.array([1.0, 1, 3, 2])
     mu = 3
@@ -102,6 +102,6 @@ def _make_StatePreparationAliasSampling():
 
 
 def _make_QubitizationWalkOperator():
-    from cirq_ft.algos.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
+    from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_Ising_model
 
-    return get_walk_operator_for_1d_ising_model(4, 2e-1)
+    return get_walk_operator_for_1d_Ising_model(4, 2e-1)
