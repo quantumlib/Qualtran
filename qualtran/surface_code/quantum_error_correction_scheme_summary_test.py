@@ -15,70 +15,24 @@
 import pytest
 
 from qualtran.surface_code import quantum_error_correction_scheme_summary as qecs
-from qualtran.surface_code.physical_parameters import PhysicalParameters
 
 
 @pytest.mark.parametrize(
-    'qec,want',
-    [
-        [qecs.GateBasedSurfaceCode(error_rate_scaler=0.03, error_rate_threshold=0.01), 3e-7],
-        [
-            qecs.MeasurementBasedSurfaceCode(error_rate_scaler=0.04, error_rate_threshold=0.09),
-            6.77e-12,
-        ],
-        [
-            qecs.MeasurementBasedHastingsHaahCode(
-                error_rate_scaler=0.05, error_rate_threshold=0.06
-            ),
-            6.43e-11,
-        ],
-    ],
+    'qec,want', [(qecs.Fowler, 3e-7), (qecs.BeverlandSuperConductingQubits, 0)]
 )
 def test_logical_error_rate(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
     assert qec.logical_error_rate(9, 1e-3) == pytest.approx(want)
 
 
 @pytest.mark.parametrize(
-    'qec,want',
-    [
-        [qecs.GateBasedSurfaceCode(error_rate_scaler=0.03, error_rate_threshold=0.01), 242],
-        [qecs.MeasurementBasedSurfaceCode(error_rate_scaler=0.04, error_rate_threshold=0.09), 242],
-        [
-            qecs.MeasurementBasedHastingsHaahCode(
-                error_rate_scaler=0.05, error_rate_threshold=0.06
-            ),
-            564,
-        ],
-    ],
+    'qec,want', [[qecs.BeverlandSuperConductingQubits, 242], [qecs.Fowler, 242]]
 )
 def test_physical_qubits(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: int):
     assert qec.physical_qubits(11) == want
 
 
 @pytest.mark.parametrize(
-    'qec,want',
-    [
-        [
-            qecs.GateBasedSurfaceCode(
-                error_rate_scaler=0.03,
-                error_rate_threshold=0.01,
-                source=qecs.GateBasedSurfaceCodeSource.arXiv221107629,
-            ),
-            4.8e-6,
-        ],
-        [
-            qecs.MeasurementBasedSurfaceCode(error_rate_scaler=0.04, error_rate_threshold=0.09),
-            2.4e-5,
-        ],
-        [
-            qecs.MeasurementBasedHastingsHaahCode(
-                error_rate_scaler=0.05, error_rate_threshold=0.06
-            ),
-            3.6e-6,
-        ],
-    ],
+    'qec,want', [[qecs.BeverlandSuperConductingQubits, 4.8e-6], [qecs.Fowler, 2.4e-5]]
 )
-def test_logical_time_step(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
-    assert qec.logical_time_step(
-        12, physical_parameters=PhysicalParameters(50e-9, 100e-9, 1e-4)
-    ) == pytest.approx(want)
+def test_error_detection_cycle_time(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
+    assert qec.error_detection_cycle_time(12) == pytest.approx(want)

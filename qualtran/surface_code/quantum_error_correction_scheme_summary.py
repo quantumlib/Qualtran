@@ -26,8 +26,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
     r"""QuantumErrorCorrectionSchemeSummary represents a high level view of a QEC scheme.
 
     QuantumErrorCorrectionSchemeSummary provides estimates for the logical error rate,
-    number of physical qubits and the logical time step given a code distance and
-    physical assumptions.
+    number of physical qubits and the time of an error detection cycle.
 
     The logical error rate as a function of code distance $d$ and physical error rate $p$
     is given by
@@ -49,66 +48,71 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
     reference: str | None = None
 
     def logical_error_rate(
-        self, code_distance: int | np.ndarray, physical_error_rate: float | np.ndarray
+        self, code_distance: int, physical_error_rate: float | np.ndarray
     ) -> float | np.ndarray:
-        """The logical error rate for the given code distance using this scheme."""
+        """The logical error rate given the physical error rate."""
         return self.error_rate_scaler * np.power(
             physical_error_rate / self.error_rate_threshold, (code_distance + 1) / 2
         )
 
     @abc.abstractmethod
-    def physical_qubits(self, code_distance: int | np.ndarray) -> int | np.ndarray:
-        """The number of physical qubits for the given code distance using this scheme."""
+    def physical_qubits(self, code_distance: int) -> int:
+        """The number of physical qubits used by the error correction circuit."""
 
     @abc.abstractmethod
-    def logical_time_step(
-        self, code_distance: int | np.ndarray, physical_parameters: PhysicalParameters
-    ) -> float | np.ndarray:
-        """The duration of a logical time step for the given code distance using this scheme."""
+    def error_detection_cycle_time(self, code_distance: int) -> float:
+        """The time of a quantum error correction cycle in seconds."""
 
 
-class GateBasedSurfaceCodeSource(enum.Enum):
-    arXiv12080928 = 0  # Folwer Model.
-    arXiv221107629 = 1  # Azure Model.
+class SurfaceCode(QuantumErrorCorrectionSchemeSummary):
+    """A Surface Code Quantum Error Correction Scheme."""
+
+    def physical_qubits(self, code_distance: int) -> int | np.ndarray:
+        return 2 * code_distance**2
 
 
 @frozen
-class GateBasedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
-    """Gate Based Surface Code."""
+class SimpliedSurfaceCode(SurfaceCode):
+    """SimpliedSurfaceCode assumes the error detection time is a linear function in code distance."""
 
-    source: GateBasedSurfaceCodeSource = GateBasedSurfaceCodeSource.arXiv12080928
+    error_detection_cycle_time_slope_us: float
+    error_detection_cycle_time_intercept_us: float
 
-    def physical_qubits(self, code_distance: int | np.ndarray) -> int | np.ndarray:
-        return 2 * code_distance**2
-
-    def logical_time_step(
-        self, code_distance: int | np.ndarray, physical_parameters: PhysicalParameters
-    ) -> float | np.ndarray:
-        measurement_coef = 1 if self.source is GateBasedSurfaceCodeSource.arXiv12080928 else 2
+    def error_detection_cycle_time(self, code_distance: int) -> float:
         return (
-            4 * physical_parameters.t_gate_ns + measurement_coef * physical_parameters.t_meas_ns
-        ) * code_distance
+            self.error_detection_cycle_time_slope_us * code_distance
+            + self.error_detection_cycle_time_intercept_us
+        ) * 1e-6
 
 
-class MeasurementBasedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
-    """Measurement Based Surface Code."""
+Fowler = SimpliedSurfaceCode(
+    error_rate_scaler=0.1,
+    error_rate_threshold=0.01,
+    # The Fowler model assumes an error detection time of 1us regardless of the code distance.
+    error_detection_cycle_time_slope_us=0,
+    error_detection_cycle_time_intercept_us=1,
+    reference='https://arxiv.org/pdf/1808.06709.pdf,https://arxiv.org/pdf/1208.0928.pdf',
+)
 
-    def physical_qubits(self, code_distance: int | np.ndarray) -> int | np.ndarray:
-        return 2 * code_distance**2
-
-    def logical_time_step(
-        self, code_distance: int | np.ndarray, physical_parameters: PhysicalParameters
-    ) -> float | np.ndarray:
-        return 20 * physical_parameters.t_meas_ns * code_distance
-
-
-class MeasurementBasedHastingsHaahCode(QuantumErrorCorrectionSchemeSummary):
-    """Measurement Based Hastings&Haah Code."""
-
-    def physical_qubits(self, code_distance: int | np.ndarray) -> int | np.ndarray:
-        return 4 * code_distance**2 + 8 * (code_distance - 1)
-
-    def logical_time_step(
-        self, code_distance: int | np.ndarray, physical_parameters: PhysicalParameters
-    ) -> float | np.ndarray:
-        return 3 * physical_parameters.t_meas_ns * code_distance
+# The Beverland model assumes an error detection time equal to a*d, where slope a depends only on the hardware.
+BeverlandTrappedIonQubits = SimpliedSurfaceCode(
+    error_rate_scaler=0.03,
+    error_rate_threshold=0.01,
+    error_detection_cycle_time_slope_us=600,
+    error_detection_cycle_time_intercept_us=0,
+    reference='https://arxiv.org/pdf/2211.07629.pdf',
+)
+BeverlandSuperConductingQubits = SimpliedSurfaceCode(
+    error_rate_scaler=0.03,
+    error_rate_threshold=0.01,
+    error_detection_cycle_time_slope_us=0.4,
+    error_detection_cycle_time_intercept_us=0,
+    reference='https://arxiv.org/pdf/2211.07629.pdf',
+)
+BeverlandMajoranaQubits = SimpliedSurfaceCode(
+    error_rate_scaler=0.03,
+    error_rate_threshold=0.01,
+    error_detection_cycle_time_slope_us=0.6,
+    error_detection_cycle_time_intercept_us=0,
+    reference='https://arxiv.org/pdf/2211.07629.pdf',
+)
