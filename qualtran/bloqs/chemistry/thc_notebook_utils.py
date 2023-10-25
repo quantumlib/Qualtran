@@ -111,10 +111,10 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
         classified_bloqs : Dataclass containing bloq counts for different types of bloqs.
     """
     classified_bloqs = defaultdict(int)
-    for num_calls, bloq in bloq.call_graph():
+    for bloq, num_calls in bloq.bloq_counts().items():
         if isinstance(bloq, (Split, Join, Allocate, Free)):
             continue
-        num_t = bloq.bloq_counts(generalizer=generalize).get(TGate())
+        num_t = bloq.call_graph(generalizer=generalize)[1].get(TGate())
         if num_t is not None:
             num_t = int(num_t)
             if isinstance(bloq, bloq_comparators):
