@@ -92,7 +92,7 @@ from qualtran.bloqs.arithmetic import (
     SignedIntegerToTwosComplement,
     SumOfSquares,
 )
-from qualtran.bloqs.basic_gates import TGate, Toffoli
+from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 if TYPE_CHECKING:
@@ -100,7 +100,44 @@ if TYPE_CHECKING:
 
 
 @frozen
-class UniformSuperPostionIJFirstQuantization(Bloq):
+class PrepareTUVSuperpositions(Bloq):
+    r"""Prepare the equal superposition on registers selecting between T U and V.
+
+    This will produce 3 qubits for flagging which term to apply. xx0 -> T, x0x -> U or V, 0xx -> V.
+
+    Args:
+        adjoint: whether to dagger the bloq or not.
+
+    Registers:
+        tuv: a single qubit rotated to appropriately weight T and U or V.
+        uv: a single qubit rotated to appropriately weight U or V.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
+        (https://arxiv.org/abs/2105.12767) page 15, section A
+    """
+    num_bits_t: int
+    eta: int
+    lambda_zeta: int
+    num_bits_rot_aa: int = 8
+    adjoint: bool = False
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(tuv=1, uv=1)
+
+    def short_name(self) -> str:
+        return 'PREP TUV'
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        n_eta_zeta = (self.eta + 2 * self.lambda_zeta - 1).bit_length()
+        # The cost arises from rotating a qubit, and uniform state preparation
+        # over eta + 2 lambda_zeta numbers along.
+        return {(self.num_bits_t + 4 * n_eta_zeta + 2 * self.num_bits_rot_aa - 12, Toffoli())}
+
+
+@frozen
+class PrepareIJSuperposition(Bloq):
     r"""Uniform superposition over $\eta$ values of $i$ and $j$ in unary such that $i \ne j$.
 
     Args:
@@ -124,12 +161,15 @@ class UniformSuperPostionIJFirstQuantization(Bloq):
     @cached_property
     def signature(self) -> Signature:
         n_eta = (self.eta - 1).bit_length()
-        return Signature.build(i=n_eta, j=n_eta)
+        return Signature([Register("ij", bitsize=n_eta, shape=(2,))])
+
+    def short_name(self) -> str:
+        return 'PREP ij'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n_eta = (self.eta - 1).bit_length()
         # Half of Eq. 62 which is the cost for prep and prep^\dagger
-        return {(4 * (7 * n_eta + 4 * self.num_bits_rot_aa - 18), TGate())}
+        return {((7 * n_eta + 4 * self.num_bits_rot_aa - 18), Toffoli())}
 
 
 @frozen
@@ -161,7 +201,7 @@ class PreparePowerTwoState(Bloq):
         return Signature.build(r=self.bitsize)
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(4 * (self.bitsize - 2), TGate())}
+        return {((self.bitsize - 2), Toffoli())}
 
 
 @frozen
@@ -177,7 +217,7 @@ class PrepareTFirstQuantization(Bloq):
     $$
 
     We assume that the uniform superposition over ($i$ and) $j$ has already occured via
-    UniformSuperPositionIJFirstQuantization.
+    PrepareIJSuperposition.
 
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
@@ -187,7 +227,6 @@ class PrepareTFirstQuantization(Bloq):
         adjoint: whether to dagger the bloq or not.
 
     Registers:
-        plus: A $|+\rangle$ state register.
         w: a register to index one of three components of the momenta.
         r: a register encoding bits for each component of the momenta.
         s: a register encoding bits for each component of the momenta.
@@ -204,14 +243,25 @@ class PrepareTFirstQuantization(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(plus=1, w=2, r=self.num_bits_p - 2, s=self.num_bits_p - 2)
+        return Signature.build(w=2, r=self.num_bits_p, s=self.num_bits_p)
+
+    def short_name(self) -> str:
+        return r'PREP $T$'
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        w = bb.add(PrepareUniformSuperposition(3), target=w)
+        r = bb.add(PreparePowerTwoState(self.num_bits_p), r=r)
+        s = bb.add(PreparePowerTwoState(self.num_bits_p), r=s)
+        return {'w': w, 'r': r, 's': s}
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # there is a cost for the uniform state preparation for the $w$
         # register. Adding a bloq is sort of overkill, should just tag the
         # correct cost on UniformSuperPosition bloq
         # 13 is from assuming 8 bits for the rotation, and n = 2.
-        uni_prep_w = (4 * 13, TGate())
+        uni_prep_w = (13, Toffoli())
         # Factor of two for r and s registers.
         return {uni_prep_w, (2, PreparePowerTwoState(bitsize=self.num_bits_p))}
 
@@ -250,11 +300,11 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         )
 
     def short_name(self) -> str:
-        return r'Prep$_\mu$'
+        return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
-        return {(4 * (self.num_bits_p - 1), TGate())}
+        return {((self.num_bits_p - 1), Toffoli())}
 
 
 @frozen
@@ -295,11 +345,11 @@ class PrepareNuSuperPositionState(Bloq):
         return f'PrepSupNu{dag}'
 
     def short_name(self) -> str:
-        return r'Prep$_\nu$'
+        return r'PREP $2^{-\mu}|\mu\rangle|\nu\rangle$'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
-        return {(4 * (3 * (self.num_bits_p - 1)), TGate())}
+        return {((3 * (self.num_bits_p - 1)), Toffoli())}
 
 
 @frozen
@@ -339,11 +389,11 @@ class FlagZeroAsFailure(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
             # This can be inverted with cliffords.
-            return {(0, TGate())}
+            return {(0, Toffoli())}
         else:
             # Controlled Toffoli each having n_p + 1 controls and 2 Toffolis to
             # check the result of the Toffolis.
-            return {(4 * (3 * self.num_bits_p + 2), TGate())}
+            return {((3 * self.num_bits_p + 2), Toffoli())}
 
 
 @frozen
@@ -380,7 +430,7 @@ class TestNuLessThanMu(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
             # This can be inverted with cliffords.
-            return {(0, TGate())}
+            return {(0, Toffoli())}
         else:
             # n_p controlled Toffolis with four controls.
             return {(3 * self.num_bits_p, Toffoli())}
@@ -435,11 +485,11 @@ class TestNuInequality(Bloq):
         )
 
     def short_name(self) -> str:
-        return r'$2^{\mu-2}\mathcal{M} > m \nu^2 $'
+        return r'$(2^{\mu-2})^2\mathcal{M} > m \nu^2 $'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
-            return {(0, TGate())}
+            return {(0, Toffoli())}
         else:
             # 1. Compute $\nu_x^2 + \nu_y^2 + \nu_z^2$
             cost_1 = (1, SumOfSquares(self.num_bits_p, k=3))
@@ -497,31 +547,34 @@ class PrepareNuState(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r"PREP $\frac{1}{\lVert \nu \rVert} |\nu\rangle $"
+
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, succ_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
-        mu, flag_mu = bb.add(
-            PrepareMuUnaryEncodedOneHot(self.num_bits_p, adjoint=self.adjoint), mu=mu
-        )
-        mu, nu = bb.add(
-            PrepareNuSuperPositionState(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
-        )
-        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint), nu=nu)
-        mu, nu, flag_nu_lt_mu = bb.add(
-            TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
-        )
-        n_m = (self.m_param - 1).bit_length()
-        m = bb.add(PrepareUniformSuperposition(self.m_param), target=m)
-        mu, nu, m, succ_nu = bb.add(
-            TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint),
-            mu=mu,
-            nu=nu,
-            m=m,
-            flag_mu_prep=flag_mu,
-            flag_minus_zero=flag_zero,
-            flag_nu_lt_mu=flag_nu_lt_mu,
-            succ=succ_nu,
-        )
+        # mu, flag_mu = bb.add(
+        #     PrepareMuUnaryEncodedOneHot(self.num_bits_p, adjoint=self.adjoint), mu=mu
+        # )
+        # mu, nu = bb.add(
+        #     PrepareNuSuperPositionState(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
+        # )
+        # nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint), nu=nu)
+        # mu, nu, flag_nu_lt_mu = bb.add(
+        #     TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
+        # )
+        # n_m = (self.m_param - 1).bit_length()
+        # m = bb.add(PrepareUniformSuperposition(self.m_param), target=m)
+        # mu, nu, m, succ_nu = bb.add(
+        #     TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint),
+        #     mu=mu,
+        #     nu=nu,
+        #     m=m,
+        #     flag_mu_prep=flag_mu,
+        #     flag_minus_zero=flag_zero,
+        #     flag_nu_lt_mu=flag_nu_lt_mu,
+        #     succ=succ_nu,
+        # )
         return {'mu': mu, 'nu': nu, 'm': m, 'succ_nu': succ_nu}
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
@@ -567,15 +620,18 @@ class PrepareZetaState(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("l", bitsize=(self.num_atoms - 1).bitsize())])
+        return Signature([Register("l", bitsize=(self.num_atoms - 1).bit_length())])
+
+    def short_name(self) -> str:
+        return r'PREP $\zeta_\ell |\ell\rangle$'
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
             # Really Er(x), eq 91. In practice we will reaplce this with the
             # appropriate qrom call down the line.
-            return {(4 * int(np.ceil(self.lambda_zeta**0.5)), TGate())}
+            return {(int(np.ceil(self.lambda_zeta**0.5)), Toffoli())}
         else:
-            return {(4 * self.lambda_zeta, TGate())}
+            return {(self.lambda_zeta, Toffoli())}
 
 
 @frozen
@@ -611,21 +667,21 @@ class PrepareUVFistQuantization(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        # this is for the nu register which lives on a grid of twice the size
-        # the nu grid is twice as large, so one more bit is needed
-        n_nu = (self.num_bits_p - 1).bit_length() + 2
-        n_mu = self.num_bits_p.bit_length()
-        #
+        n_nu = self.num_bits_p + 1
         n_m = (self.m_param - 1).bit_length()
+        n_at = (self.num_atoms - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=n_mu),
+                Register("mu", bitsize=self.num_bits_p),
                 Register("nu", bitsize=n_nu, shape=(3,)),
                 Register("m", bitsize=n_m),
-                Register("l", bitsize=self.num_bits_nuc_pos),
+                Register("l", bitsize=n_at),
                 Register("succ_nu", bitsize=1),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'PREP $UV$'
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, succ_nu: SoquetT
@@ -641,7 +697,7 @@ class PrepareUVFistQuantization(Bloq):
             PrepareZetaState(
                 self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, adjoint=self.adjoint
             ),
-            l=mu,
+            l=l,
         )
         return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'succ_nu': succ_nu}
 
@@ -689,6 +745,9 @@ class SelectTFirstQuantization(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r'SEL $T$'
+
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
         # into an ancilla register ($3(n_{p}-1)$), copying the $r$ and $s$ bit of into an
@@ -697,7 +756,7 @@ class SelectTFirstQuantization(Bloq):
         # only Cliffords. There is an additional control bit controlling the application
         # of $T$ thus we come to our total.
         # Eq 73. page
-        return {(4 * (5 * (self.num_bits_p - 1) + 2), TGate())}
+        return {((5 * (self.num_bits_p - 1) + 2), Toffoli())}
 
 
 @frozen
@@ -731,6 +790,9 @@ class ApplyNuclearPhase(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r'$-e^{-k_\nu\cdot R_l$'
+
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         n_p = self.num_bits_p
         n_n = self.num_bits_nuc
@@ -740,7 +802,7 @@ class ApplyNuclearPhase(Bloq):
             cost = 3 * (2 * n_p * n_n - n_p * (n_p + 1) - 1)
         else:
             cost = 3 * n_n * (n_n - 1)
-        return {(4 * cost, TGate())}
+        return {(cost, Toffoli())}
 
 
 @frozen
@@ -772,7 +834,7 @@ class SelectUVFirstQuantization(Bloq):
         n_nu = self.num_bits_p + 1
         return Signature(
             [
-                Register("flag_UVT", bitsize=2),
+                Register("flag_UVT", bitsize=3),
                 Register("plus", bitsize=1),
                 Register("l", bitsize=self.num_bits_nuc_pos),
                 Register("rl", bitsize=self.num_bits_nuc_pos),
@@ -781,6 +843,9 @@ class SelectUVFirstQuantization(Bloq):
                 Register("q", bitsize=n_nu, shape=(3,)),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'SEL $UV$'
 
     def build_composite_bloq(
         self,
@@ -793,21 +858,21 @@ class SelectUVFirstQuantization(Bloq):
         p: SoquetT,
         q: SoquetT,
     ) -> Dict[str, 'SoquetT']:
-        num_bits_nu = self.num_bits_p + 1
-        bb.allocate()
-        for i in range(3):
-            p[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=p[i])
-            # should be controlled on V only
-            p[i] = bb.add(Add(num_bits_nu), a=nu[i], b=p[i])
-            p[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=p[i])
-            q[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=q[i])
-            # should be controlled on U or V only
-            # flip bits and add one.
-            q[i] = bb.add(Add(num_bits_nu), a=nu[i], b=q[i])
-            q[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=q[i])
-        l, rl, nu = bb.add(
-            ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos), l=l, rl=rl, nu=nu
-        )
+        # num_bits_nu = self.num_bits_p + 1
+        # bb.allocate()
+        # for i in range(3):
+        #     p[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=p[i])
+        #     # should be controlled on V only
+        #     p[i] = bb.add(Add(num_bits_nu), a=nu[i], b=p[i])
+        #     p[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=p[i])
+        #     q[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=q[i])
+        #     # should be controlled on U or V only
+        #     # flip bits and add one.
+        #     q[i] = bb.add(Add(num_bits_nu), a=nu[i], b=q[i])
+        #     q[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=q[i])
+        # l, rl, nu = bb.add(
+        #     ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos), l=l, rl=rl, nu=nu
+        # )
         return {'flag_UVT': flag_UVT, 'plus': plus, 'l': l, 'rl': rl, 'nu': nu, 'p': p, 'q': q}
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
@@ -819,3 +884,113 @@ class SelectUVFirstQuantization(Bloq):
         # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
         cost_phase = (1, ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos))
         return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc, cost_phase}
+
+
+@frozen
+class PrepareFirstQuantization(Bloq):
+    """State preparation for the first quantized chemistry Hamiltonian."""
+
+    num_bits_p: int
+    eta: int
+    num_atoms: int
+    lambda_zeta: int
+    m_param: int = 2**8
+    num_bits_nuc_pos: int = 16
+    num_bits_t: int = 16
+    num_bits_rot_aa: int = 8
+    adjoint: bool = False
+
+    @cached_property
+    def signature(self) -> Signature:
+        n_nu = self.num_bits_p + 1
+        n_eta = (self.eta - 1).bit_length()
+        n_at = (self.num_atoms - 1).bit_length()
+        n_m = (self.m_param - 1).bit_length()
+        return Signature(
+            [
+                Register("tuv", bitsize=1),
+                Register("uv", bitsize=1),
+                Register("plus_t", bitsize=1),
+                Register("ij", bitsize=n_eta, shape=(2,)),
+                Register("w", bitsize=3),
+                Register("r", bitsize=self.num_bits_p),
+                Register("s", bitsize=self.num_bits_p),
+                Register("mu", bitsize=self.num_bits_p),
+                Register("nu", bitsize=n_nu, shape=(3,)),
+                Register("m", bitsize=n_m),
+                Register("succ_nu", bitsize=1),
+                Register("l", bitsize=n_at),
+            ]
+        )
+
+    def short_name(self) -> str:
+        return r'PREP'
+
+    def build_composite_bloq(
+        self,
+        bb: BloqBuilder,
+        tuv: SoquetT,
+        uv: SoquetT,
+        plus_t: SoquetT,
+        ij: SoquetT,
+        w: SoquetT,
+        r: SoquetT,
+        s: SoquetT,
+        mu: SoquetT,
+        nu: SoquetT,
+        m: SoquetT,
+        succ_nu: SoquetT,
+        l: SoquetT,
+    ) -> Dict[str, 'SoquetT']:
+        tuv, uv = bb.add(
+            PrepareTUVSuperpositions(
+                self.num_bits_t,
+                self.eta,
+                self.lambda_zeta,
+                self.num_bits_rot_aa,
+                adjoint=self.adjoint,
+            ),
+            tuv=tuv,
+            uv=uv,
+        )
+        ij = bb.add(PrepareIJSuperposition(self.eta, self.num_bits_rot_aa, self.adjoint), ij=ij)
+        # |+>
+        plus_t = bb.add(Hadamard(), q=plus_t)
+        w, r, s = bb.add(
+            PrepareTFirstQuantization(
+                self.num_bits_p, self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
+            ),
+            w=w,
+            r=r,
+            s=s,
+        )
+        mu, nu, m, l, succ_nu = bb.add(
+            PrepareUVFistQuantization(
+                self.num_bits_p,
+                self.eta,
+                self.num_atoms,
+                self.m_param,
+                self.lambda_zeta,
+                self.num_bits_nuc_pos,
+                adjoint=self.adjoint,
+            ),
+            mu=mu,
+            nu=nu,
+            m=m,
+            l=l,
+            succ_nu=succ_nu,
+        )
+        return {
+            'tuv': tuv,
+            'uv': uv,
+            'plus_t': plus_t,
+            'ij': ij,
+            'w': w,
+            'r': r,
+            's': s,
+            'mu': mu,
+            'nu': nu,
+            'm': m,
+            'l': l,
+            'succ_nu': succ_nu,
+        }
