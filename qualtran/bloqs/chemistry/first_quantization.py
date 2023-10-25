@@ -623,9 +623,27 @@ class PrepareUVFistQuantization(Bloq):
                 Register("nu", bitsize=n_nu, shape=(3,)),
                 Register("m", bitsize=n_m),
                 Register("l", bitsize=self.num_bits_nuc_pos),
-                Register("flag_nu", bitsize=1),
+                Register("succ_nu", bitsize=1),
             ]
         )
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, succ_nu: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        mu, nu, m, succ_nu = bb.add(
+            PrepareNuState(self.num_bits_p, self.m_param, adjoint=self.adjoint),
+            mu=mu,
+            nu=nu,
+            m=m,
+            succ_nu=succ_nu,
+        )
+        l = bb.add(
+            PrepareZetaState(
+                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, adjoint=self.adjoint
+            ),
+            l=mu,
+        )
+        return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'succ_nu': succ_nu}
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # 1. Prepare the nu state
@@ -708,7 +726,7 @@ class ApplyNuclearPhase(Bloq):
         return Signature(
             [
                 Register("l", bitsize=self.num_bits_nuc),
-                Register("Rl", bitsize=self.num_bits_nuc),
+                Register("rl", bitsize=self.num_bits_nuc),
                 Register("nu", bitsize=self.num_bits_p, shape=(3,)),
             ]
         )
@@ -757,11 +775,40 @@ class SelectUVFirstQuantization(Bloq):
                 Register("flag_UVT", bitsize=2),
                 Register("plus", bitsize=1),
                 Register("l", bitsize=self.num_bits_nuc_pos),
-                Register("Rl", bitsize=self.num_bits_nuc_pos),
+                Register("rl", bitsize=self.num_bits_nuc_pos),
                 Register("nu", bitsize=n_nu, shape=(3,)),
-                # + some ancilla for the controlled swaps of system registers.
+                Register("p", bitsize=n_nu, shape=(3,)),
+                Register("q", bitsize=n_nu, shape=(3,)),
             ]
         )
+
+    def build_composite_bloq(
+        self,
+        bb: BloqBuilder,
+        flag_UVT: SoquetT,
+        plus: SoquetT,
+        l: SoquetT,
+        rl: SoquetT,
+        nu: SoquetT,
+        p: SoquetT,
+        q: SoquetT,
+    ) -> Dict[str, 'SoquetT']:
+        num_bits_nu = self.num_bits_p + 1
+        bb.allocate()
+        for i in range(3):
+            p[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=p[i])
+            # should be controlled on V only
+            p[i] = bb.add(Add(num_bits_nu), a=nu[i], b=p[i])
+            p[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=p[i])
+            q[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=q[i])
+            # should be controlled on U or V only
+            # flip bits and add one.
+            q[i] = bb.add(Add(num_bits_nu), a=nu[i], b=q[i])
+            q[i] = bb.add(SignedIntegerToTwosComplement(num_bits_nu), x=q[i])
+        l, rl, nu = bb.add(
+            ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos), l=l, rl=rl, nu=nu
+        )
+        return {'flag_UVT': flag_UVT, 'plus': plus, 'l': l, 'rl': rl, 'nu': nu, 'p': p, 'q': q}
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         cost_tc = (6, SignedIntegerToTwosComplement(self.num_bits_p))
