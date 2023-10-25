@@ -70,7 +70,19 @@ class SurfaceCode(QuantumErrorCorrectionSchemeSummary):
 
 @frozen
 class SimpliedSurfaceCode(SurfaceCode):
-    """SimpliedSurfaceCode assumes the error detection time is a linear function in code distance."""
+    r"""SimpliedSurfaceCode assumes the error detection time is a linear function in code distance.
+
+    The error detection time $\tau(d)$ is assumed to be given by a linear function
+    $$
+        \tau(d) = a*d + b
+    $$
+    Where $a$ is the `error_detection_cycle_time_slope_us` and $b$ is `error_detection_cycle_time_intercept_us`
+    both of which depend only on the hardware.
+
+    Attributes:
+        error_detection_cycle_time_slope_us:
+        error_detection_cycle_time_intercept_us: float
+    """
 
     error_detection_cycle_time_slope_us: float
     error_detection_cycle_time_intercept_us: float
