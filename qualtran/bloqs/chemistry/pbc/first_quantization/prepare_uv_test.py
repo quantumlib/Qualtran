@@ -15,7 +15,7 @@
 import numpy as np
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.pbc.first_quantizationzation import PrepareUVFistQuantization
+from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFistQuantization
 from qualtran.resource_counting import get_bloq_counts_graph
 
 

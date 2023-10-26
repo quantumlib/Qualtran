@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.chemistry.pbc.first_quantizationzation.prepare import (
+from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
     UniformSuperPostionIJFirstQuantization,
 )
 

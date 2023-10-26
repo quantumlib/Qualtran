@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 import numpy as np
-from qualtra.bloqs.chemistry.pbc.first_quantization.prepare import (
-    UniformSuperPositionIJPrepareTFirstQuantization,
-)
 
 from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
+    UniformSuperPostionIJFirstQuantization,
+)
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
 from qualtran.resource_counting import get_bloq_counts_graph
 
