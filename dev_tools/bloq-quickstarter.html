@@ -1,0 +1,274 @@
+<!--
+  ~ Copyright 2023 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+
+
+  This simple one-page app will render a stub definition of a Bloq provided
+  some basic form inputs. We use highlight.js from a CDN for syntax highlighting.
+  Otherwise, this is vanilla javascript.
+  -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Bloq Quickstarter</title>
+</head>
+
+<style>
+  body {
+    max-width: 800px;
+    margin: 0 auto;
+    font-family: sans-serif;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    align-items: center;
+    justify-content: center;
+    max-width: 450px;
+    margin-top: 0.5em;
+  }
+
+  .with-labels {
+    grid-template-columns: auto 1fr;
+    max-width: 600px;
+  }
+
+  .grid>* {
+    margin: 0.2em;
+  }
+
+  .section {
+    margin-bottom: 2em;
+  }
+
+  .multicol {
+    grid-column: span 3;
+  }
+
+  .finalitem {
+    margin-bottom: 1em;
+  }
+
+  p.info {
+    max-width: 600px;
+    line-height: 1.15;
+  }
+</style>
+
+<body>
+  <h1>Bloq Quickstarter</h1>
+
+  <div id="basics" class="section">
+    <h3>Basics</h3>
+    <div class="grid with-labels">
+      <label for="bloq_name">Bloq Name</label>
+      <input type="text" id="bloq_name" value="MultiplyByTwo">
+
+      <label for="one_line_desc">One Line Description</label>
+      <input type="text" id="one_line_desc" value="Multiplies two quantum integers by two.">
+    </div>
+  </div>
+
+  <div id="registers" class="section">
+    <h3>Signature</h3>
+    <p class="info">Each bloq must specify its signature. A signature is a list of registers that declare
+      the quantum inputs and outputs for the bloq. Each register has a name and a bitsize (among other
+      optional attributes). The form also takes a short description of each for the docstring.
+    </p>
+    <button type="button" id="add-reg-box" onclick="addRegisterBoxes();">+ Reg</button>
+
+    <!-- addRegisterBoxes() adds here-->
+
+  </div>
+
+  <div>
+    <h3>Code</h3>
+    <pre><code id="template_code" class="language-python"></code></pre>
+    <button type="button" onclick="generateCode()">Force Re-generate</button>
+  </div>
+
+  <script>
+    function addRegisterBoxes(reg_name = "", bitsize = "", desc = "") {
+      /* shared text box set-up */
+      let tbs = [];
+      for (let i = 0; i < 3; i++) {
+        let tb = document.createElement("input");
+        tb.addEventListener('change', generateCode);
+        tb.addEventListener('keyup', generateCode);
+        tb.type = 'text';
+        tbs.push(tb);
+      }
+
+      /* reg_name */
+      tbs[0].name = "reg_name"
+      tbs[0].placeholder = "reg_name"
+      tbs[0].value = reg_name;
+
+      /* bitsize */
+      tbs[1].name = "bitsize"
+      tbs[1].placeholder = "bitsize=1"
+      tbs[1].value = bitsize;
+
+      /* side */
+      const sel = document.createElement("select");
+      sel.name = "side";
+      sel.addEventListener("change", generateCode);
+      sel.add(new Option('Thru'));
+      sel.add(new Option('Left'));
+      sel.add(new Option('Right'));
+
+      /* desc */
+      tbs[2].name = "desc";
+      tbs[2].classList.add("multicol")
+      tbs[2].classList.add("finalitem")
+      tbs[2].placeholder = "Register description text"
+      tbs[2].value = desc;
+
+      /* group and append */
+      const container = document.createElement("div");
+      container.classList.add("register")
+      container.classList.add("grid")
+      container.appendChild(tbs[0]);
+      container.appendChild(tbs[1]);
+      container.appendChild(sel);
+      container.appendChild(tbs[2]);
+      document.getElementById("registers").appendChild(container);
+    }
+
+    function getRegisterInputs() {
+      const values = [];
+
+      let groupContainer = document.getElementById('registers');
+      groupContainer.querySelectorAll('.register').forEach((group) => {
+        values.push({
+          'reg_name': group.querySelector('input[name="reg_name"]').value,
+          'bitsize': group.querySelector('input[name="bitsize"]').value,
+          'side': group.querySelector('select[name="side"]').value,
+          'desc': group.querySelector('input[name="desc"]').value,
+        });
+      });
+      return values;
+    }
+
+    function generateCode() {
+      const className = document.getElementById("bloq_name").value || "";
+      const oneLineDesc = document.getElementById("one_line_desc").value || "";
+
+      const registers = getRegisterInputs();
+
+      let reg_doc = "";
+      let signature = "return Signature([";
+      let build_sig = "";
+
+      /* build per-register text */
+      for (let i = 0; i < registers.length; i++) {
+        const reg = registers[i];
+
+        /* side stuff */
+        let side_doc = "";
+        let side_def = "";
+        console.log(reg.side);
+        switch (reg.side) {
+          case 'Thru':
+            break;
+          case 'Left':
+            side_doc = ' [left]';
+            side_def = ', side=Side.LEFT';
+            break;
+          case 'Right':
+            side_doc = ' [right]';
+            side_def = ', side=Side.RIGHT';
+            break;
+
+        }
+
+        /* docstring contents */
+        reg_doc += "\n";
+        reg_doc += "    ";
+        reg_doc += "    ";
+        reg_doc += reg.reg_name;
+        reg_doc += `${side_doc}: ${reg.desc}`
+
+        /* signature contents */
+        signature += "\n";
+        signature += "    ";
+        signature += "    ";
+        signature += "    ";
+        signature += `Register('${reg.reg_name}', bitsize=${reg.bitsize}${side_def}),`
+
+        /* argument for build_composite_bloq */
+        build_sig += `, ${reg.reg_name}: 'SoquetT'`
+      }
+      signature += "\n        ])"
+
+      const template = `from functools import cached_property
+from typing import Dict, Optional, Set, Union
+
+from attrs import frozen
+
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+
+@frozen
+class ${className}(Bloq):
+    """${oneLineDesc}
+
+    fill in the rest of the description here...
+
+    Args:
+        arg1: Description...
+
+    Registers:${reg_doc}
+    """
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        ${signature}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder'${build_sig}) -> Dict[str, 'SoquetT']:
+        raise NotImplementedError("Implement or delete.")
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        raise NotImplementedError("Implement or delete.")
+
+    def short_name(self) -> str:
+        return f'${className}'
+`;
+
+      document.getElementById("template_code").innerHTML = template;
+      hljs.highlightAll();
+    }
+  </script>
+
+  <!-- Syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+  <!-- Initialize everything -->
+  <script>
+    let inputs = document.querySelectorAll("input");
+    for (let i = 0; i < inputs.length; i++) {
+      inputs[i].addEventListener('change', generateCode);
+      inputs[i].addEventListener('keyup', generateCode);
+    };
+    addRegisterBoxes("reg_name", "1", "Description of register");
+    generateCode();
+
+  </script>
+</body>
+
+</html>
