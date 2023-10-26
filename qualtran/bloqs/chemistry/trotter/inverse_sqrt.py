@@ -12,20 +12,109 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
-
 from functools import cached_property
 from typing import Optional, Set, Tuple, TYPE_CHECKING
 
+import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import Bloq, Register, Signature
+from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
+from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
 
-from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
+def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
+    """Polynomial coefficients for approximating inverse square root.
+
+    This function returns the coefficients of a piecewise cubic polynomial
+    interpolation to the inverse square root, defined over two intervals [1, 3/2] (a) and
+    [3/2, 2] (b). The coefficients were provided by the reference below in the
+    context of computing the Coulomb potential.
+
+    References:
+        [Quantum computation of stopping power for inertial fusion target design]
+        (https://arxiv.org/abs/2308.12352) pg. 12 / 13.
+    """
+    poly_coeffs_a = np.array(
+        [
+            0.99994132489119882162,
+            0.49609891915903542303,
+            0.33261112772430493331,
+            0.14876762006038398086,
+        ]
+    )
+    poly_coeffs_b = np.array(
+        [
+            0.81648515205385221995,
+            0.27136515484240234115,
+            0.12756148214815175348,
+            0.044753028579153842218,
+        ]
+    )
+    return poly_coeffs_a, poly_coeffs_b
+
+
+def build_qrom_data_for_poly_fit(
+    selection_bitsize: int, target_bitsize: int, poly_coeffs: Tuple[NDArray, NDArray]
+) -> NDArray:
+    """Build QROM data from polynomial coefficients from the referenence.
+
+    Args:
+        selection_bitsize: Number of bits for QROM selection register. This is
+            determined in practice by the number of bits required to store
+            r_{ij}^2.
+        target_bitsize: Number of bits of precision for polynomial coefficients.
+        poly_coeffs: Coefficients for piecewise polynomial approximation to
+            inverse square root. These are provided by the function
+            get_inverse_square_root_poly_coeffs.
+
+    Returns:
+        qrom_data: An array of integers representing the appropriately
+            repeated scaled fixed-point representation of the polynomial
+            coefficients required for the variable spaced QROM.
+
+    References:
+        [Quantum computation of stopping power for inertial fusion target design]
+        (https://browse.arxiv.org/pdf/2308.12352.pdf) pg. 12.
+    """
+    poly_coeffs_a, poly_coeffs_b = poly_coeffs
+    # We compute the inverse square root of x^2 using variable spaced QROM,
+    # interpolation and newton-raphson Build data so QROM recognizes repeated
+    # entries so as to use the variable spaced QROM implementation.  The
+    # repeated ranges occur for l :-> l + 2^k, and are repeated twice for
+    # coeffs_a and coeffs_b. We need to scale the coefficients by 2^{-(k-1)} to
+    # correctly account for the selection range (r_{ij}^2). Our coefficients are
+    # initially defined in the range [1, 3/2] for "_a" and [3/2, 2] for "_b".
+    data = np.zeros((4, 2 ** (selection_bitsize)), dtype=np.int_)
+    for i, (a, b) in enumerate(zip(poly_coeffs_a, poly_coeffs_b)):
+        # In practice we should set x = 0 to some large constant, but we will just skip for now.
+        # x = 1
+        _, coeff = float_as_fixed_width_int(a, target_bitsize)
+        data[i, 1] = coeff
+        # x = 2
+        _, coeff = float_as_fixed_width_int(b, target_bitsize)
+        data[i, 2] = coeff
+        # x = 3
+        _, coeff = float_as_fixed_width_int(a / 2 ** (1 / 2), target_bitsize)
+        data[i, 3] = coeff
+        start = 4
+        for k in range(2, selection_bitsize):
+            _, coeff = float_as_fixed_width_int(a / 2 ** (k / 2), target_bitsize)
+            # Number of time to repeat the data.
+            data_size = max(1, 2 ** (k - 1))
+            end = start + data_size
+            data[i, start:end] = coeff
+            _, coeff = float_as_fixed_width_int(b / 2 ** (k / 2), target_bitsize)
+            start += data_size
+            end += data_size
+            data[i, start:end] = coeff
+            start = end
+    return data
 
 
 @frozen
