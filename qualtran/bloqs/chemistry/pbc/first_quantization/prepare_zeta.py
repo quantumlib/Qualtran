@@ -38,9 +38,9 @@ class PrepareZetaState(Bloq):
         eta: The number of electrons.
         m_param: $\mathcal{M}$ in the reference.
         lambda_zeta: sum of nuclear charges.
-        er_lambda_zeta: eq 91 of the referce. Cost of erasing qrom.
 
     Registers:
+        l: the register indexing the atomic number.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
@@ -53,11 +53,11 @@ class PrepareZetaState(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("l", bitsize=(self.num_atoms - 1).bitsize())])
+        return Signature([Register("l", bitsize=(self.num_atoms - 1).bit_length())])
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         if self.adjoint:
-            # Really Er(x), eq 91. In practice we will reaplce this with the
+            # Really Er(x), eq 91. In practice we will replace this with the
             # appropriate qrom call down the line.
             return {(int(np.ceil(self.lambda_zeta**0.5)), Toffoli())}
         else:
