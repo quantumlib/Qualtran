@@ -59,8 +59,10 @@ import qualtran.bloqs.basic_gates.t_gate_test
 import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
-import qualtran.bloqs.chemistry.first_quantization
-import qualtran.bloqs.chemistry.first_quantization_test
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t_test
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv_test
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_t_test
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv_test
 import qualtran.bloqs.chemistry.thc_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
@@ -155,15 +157,22 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
     ),
     NotebookSpec(
         title='First Quantization',
-        module=qualtran.bloqs.chemistry.first_quantization,
+        module=qualtran.bloqs.chemistry.pbc.first_quantization,
         gate_specs=[
-            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_prepare_kinetic),
-            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_select_kinetic),
-            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_select_potential),
-            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_prepare_potential),
-            BloqNbSpec(qualtran.bloqs.chemistry.first_quantization_test._make_prepare_nu_state),
+            BloqNbSpec(
+                qualtran.bloqs.chemistry.pbc.first_quantization.select_t_test._make_select_t
+            ),
+            BloqNbSpec(
+                qualtran.bloqs.chemistry.pbc.first_quantization.select_uv_test._make_select_uv
+            ),
+            BloqNbSpec(
+                qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t_test._make_prepare_t
+            ),
+            BloqNbSpec(
+                qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv_test._make_prepare_uv
+            ),
         ],
-        directory=f'{SOURCE_DIR}/bloqs/chemistry',
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization',
     ),
 ]
 
