@@ -85,6 +85,7 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.arithmetic import (
     Add,
     GreaterThan,
@@ -757,14 +758,21 @@ class SelectTFirstQuantization(Bloq):
     def build_composite_bloq(
         self,
         bb: BloqBuilder,
-        flag_tuv: SoquetT,
-        flag_uv: SoquetT,
-        l: SoquetT,
-        rl: SoquetT,
-        nu: SoquetT,
+        plus: SoquetT,
+        flag_T: SoquetT,
+        w: SoquetT,
+        r: SoquetT,
+        s: SoquetT,
         p: SoquetT,
-        q: SoquetT,
     ) -> Dict[str, 'SoquetT']:
+        # 1. Use w to control copying of component w of p into ancilla
+        junk_p = bb.split(bb.allocate(self.num_bits_p))
+        # 0 0 = x component
+        w, out0 = bb.add(And(0, 0), ctrl=w)
+        px = p[0].split()
+        for ibit in range(len(px)):
+            bb.add(Toffoli(), [out0, px[ibit]], junk_p[ibit])
+        return {'plus': plus, 'flag_t': flag_T, 'w': w, 'r': r, 's': s, 'p': p}
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
         # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
@@ -1024,7 +1032,7 @@ class PrepareFirstQuantization(Bloq):
 
 @frozen
 class SWAPIJ(Bloq):
-    """Placeholder for swap."""
+    """Placeholder for swap combined with unary iteration over i/j."""
 
     eta: int
     trg_bitsize: int
