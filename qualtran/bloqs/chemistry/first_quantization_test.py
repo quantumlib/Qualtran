@@ -16,11 +16,11 @@ import numpy as np
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.first_quantization import (
+    PrepareIJSuperposition,
     PrepareNuState,
     PrepareTFirstQuantization,
     PrepareUVFistQuantization,
     SelectUVFirstQuantization,
-    UniformSuperPostionIJFirstQuantization,
 )
 from qualtran.resource_counting import get_bloq_counts_graph, get_cbloq_bloq_counts
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -79,10 +79,10 @@ def test_prepare_kinetic_bloq_counts():
     b_r = 8
     n_eta = (eta - 1).bit_length()
     expected_cost = (14 * n_eta + 8 * b_r - 36) + 2 * (2 * num_bits_p + 9)
-    uni = UniformSuperPostionIJFirstQuantization(eta, num_bits_rot_aa=b_r)
+    uni = PrepareIJSuperposition(eta, num_bits_rot_aa=b_r)
     _, counts = get_bloq_counts_graph(uni)
     qual_cost = counts[TGate()]
-    uni = UniformSuperPostionIJFirstQuantization(eta, num_bits_rot_aa=b_r, adjoint=True)
+    uni = PrepareIJSuperposition(eta, num_bits_rot_aa=b_r, adjoint=True)
     _, counts = get_bloq_counts_graph(uni)
     qual_cost += counts[TGate()]
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r)
@@ -92,13 +92,16 @@ def test_prepare_kinetic_bloq_counts():
     _, counts = get_bloq_counts_graph(prep)
     qual_cost += counts[TGate()]
     qual_cost //= 4
+    prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r)
     assert qual_cost == expected_cost
+    print(prep.bloq_counts())
+    print(get_cbloq_bloq_counts(prep.decompose_bloq()))
+    assert prep.bloq_counts() != get_cbloq_bloq_counts(prep.decompose_bloq())
 
 
 def test_prepare_nu():
     num_bits_p = 6
     m_param = 2 ** (2 * num_bits_p + 3)
-    num_bits_m = (m_param - 1).bit_length()
     prep = PrepareNuState(num_bits_p, m_param)
     assert_valid_bloq_decomposition(prep)
     prep = PrepareNuState(num_bits_p, m_param, adjoint=True)
@@ -112,7 +115,7 @@ def test_prepare_t():
     assert_valid_bloq_decomposition(prep)
 
 
-def test_prepare_t():
+def test_prepare_uv():
     num_bits_p = 6
     m_param = 2 ** (2 * num_bits_p + 3)
     eta = 10
@@ -123,6 +126,19 @@ def test_prepare_t():
         num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
     )
     assert_valid_bloq_decomposition(prep)
+
+
+def test_prepare_uv_bloq_counts():
+    num_bits_p = 6
+    m_param = 2 ** (2 * num_bits_p + 3)
+    eta = 10
+    lambda_zeta = 10
+    num_atoms = 10
+    num_bits_nuc_pos = 18
+    prep = PrepareUVFistQuantization(
+        num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
+    )
+    assert prep.bloq_counts() == get_cbloq_bloq_counts(prep.decompose_bloq())
 
 
 def test_prepare_nu_bloq_counts():
