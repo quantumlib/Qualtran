@@ -11,18 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
 
 """Autogeneration of Jupyter notebooks.
 
@@ -59,23 +47,7 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
-import qualtran.bloqs.and_bloq
-import qualtran.bloqs.and_bloq_test
-import qualtran.bloqs.arithmetic
-import qualtran.bloqs.arithmetic_test
-import qualtran.bloqs.basic_gates.cnot_test
-import qualtran.bloqs.basic_gates.hadamard_test
-import qualtran.bloqs.basic_gates.rotation_test
-import qualtran.bloqs.basic_gates.swap_test
-import qualtran.bloqs.basic_gates.t_gate_test
-import qualtran.bloqs.basic_gates.toffoli_test
-import qualtran.bloqs.basic_gates.x_basis_test
-import qualtran.bloqs.basic_gates.z_basis_test
 import qualtran.bloqs.factoring.mod_exp
-import qualtran.bloqs.factoring.mod_exp_test
-import qualtran.bloqs.factoring.mod_mul_test
-import qualtran.bloqs.sorting
-import qualtran.bloqs.sorting_test
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
