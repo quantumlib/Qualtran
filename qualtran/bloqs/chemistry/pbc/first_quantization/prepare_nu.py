@@ -15,7 +15,6 @@ r"""Bloqs for preparation of the U and V parts of the first quantized chemistry 
 from functools import cached_property
 from typing import Optional, Set, Tuple, TYPE_CHECKING
 
-import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
