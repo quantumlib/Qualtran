@@ -20,11 +20,11 @@ import networkx as nx
 import sympy
 from attrs import frozen
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
 from qualtran.resource_counting import BloqCountT, get_bloq_call_graph, SympySymbolAllocator
-import qualtran.testing as qlt_testing
 
 
 @frozen
@@ -102,6 +102,7 @@ def test_bloq_counts_decomp():
     assert len(sigma) == 1
     expr = sigma[TGate()]
     assert str(expr) == '30'
+
 
 def test_notebook():
     qlt_testing.execute_notebook('bloq_counts')
