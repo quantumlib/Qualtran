@@ -67,8 +67,8 @@ V = \frac{2\pi}{\Omega}
     |q -\nu\rangle\langle q|_i
 \right)
 $$
-describes the electron-electron interaction. The notation $|p\rangle\langle p|i$ is shorthand for
-$I_1\otimes\cdots\otimes |p\rangle \langle q |_j \otimes \cdots \otimes I_\eta$.
+describes the electron-electron interaction. The notation $|p\rangle\langle p|_i$ is shorthand for
+$I_1\otimes\cdots\otimes |p\rangle \langle p |_j \otimes \cdots \otimes I_\eta$.
 The system is represented using a set of $\eta$ signed integer registers each of
 size $3 n_p$ where $n_p =  \lceil \log (N^{1/3} + 1) \rceil$, with the factor of
 3 accounting for the 3 spatial dimensions.
