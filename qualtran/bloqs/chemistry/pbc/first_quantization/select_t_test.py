@@ -16,6 +16,15 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirs
 from qualtran.resource_counting import get_bloq_counts_graph
 
 
+def _make_select_t():
+    from qualtran.bloqs.chemistry.pbc.first_quantization import SelectTFirstQuantization
+
+    num_bits_p = 5
+    eta = 10
+
+    return SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+
+
 def test_select_t_bloq_counts():
     num_bits_p = 6
     sel = SelectTFirstQuantization(num_bits_p, 10)
