@@ -24,6 +24,15 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
 
 
+def _make_select_t():
+    from qualtran.bloqs.chemistry.pbc.first_quantization import SelectTFirstQuantization
+
+    num_bits_p = 5
+    eta = 10
+
+    return SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+
+
 @frozen
 class SelectTFirstQuantization(Bloq):
     r"""SELECT for the kinetic energy operator for the first quantized chemistry Hamiltonian.

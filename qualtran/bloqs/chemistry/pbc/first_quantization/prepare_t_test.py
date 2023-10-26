@@ -20,6 +20,15 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFi
 from qualtran.resource_counting import get_bloq_counts_graph
 
 
+def _make_prepare_t():
+    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareTFirstQuantization
+
+    num_bits_p = 5
+    eta = 10
+
+    return PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+
+
 def test_prepare_kinetic_bloq_counts():
     num_bits_p = 6
     eta = 10

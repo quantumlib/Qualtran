@@ -16,6 +16,19 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFi
 from qualtran.resource_counting import get_bloq_counts_graph
 
 
+def _make_select_uv():
+    from qualtran.bloqs.chemistry.pbc.first_quantization import SelectUVFirstQuantization
+
+    num_bits_p = 5
+    eta = 10
+    num_bits_nuc_pos = 16
+
+    sel = SelectUVFirstQuantization(
+        num_bits_p=num_bits_p, eta=eta, num_bits_nuc_pos=num_bits_nuc_pos
+    )
+    return sel
+
+
 def test_select_uv_bloq_counts():
     num_bits_p = 6
     eta = 10
