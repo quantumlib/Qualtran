@@ -169,7 +169,7 @@ class CSwap(GateWithRegisters):
 
     Implements a multi-target controlled swap unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$.
 
-    This decomposes into a qubitwise SWAP on the two target registers, and takes $14*n$ T-gates.
+    This decomposes into a qubitwise SWAP on the two target registers, and takes $14n$ T-gates.
 
     Args:
         bitsize: The bitsize of each of the two registers being swapped.
