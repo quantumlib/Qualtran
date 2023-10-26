@@ -14,7 +14,7 @@
 """Bloqs for the Potential energy of a 3D grid based Hamiltonian."""
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Dict, Tuple
 
 import numpy as np
 from attrs import field, frozen
