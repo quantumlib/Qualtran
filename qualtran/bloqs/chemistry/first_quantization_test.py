@@ -105,6 +105,26 @@ def test_prepare_nu():
     assert_valid_bloq_decomposition(prep)
 
 
+def test_prepare_t():
+    num_bits_p = 6
+    eta = 10
+    prep = PrepareTFirstQuantization(num_bits_p, eta)
+    assert_valid_bloq_decomposition(prep)
+
+
+def test_prepare_t():
+    num_bits_p = 6
+    m_param = 2 ** (2 * num_bits_p + 3)
+    eta = 10
+    lambda_zeta = 10
+    num_atoms = 10
+    num_bits_nuc_pos = 18
+    prep = PrepareUVFistQuantization(
+        num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
+    )
+    assert_valid_bloq_decomposition(prep)
+
+
 def test_prepare_nu_bloq_counts():
     num_bits_p = 6
     m_param = 2 ** (2 * num_bits_p + 3)
