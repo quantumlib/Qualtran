@@ -13,26 +13,21 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
-from qualtran.bloqs.arithmetic import (
-    Add,
-    MultiplyTwoReals,
-    OutOfPlaceAdder,
-    ScaleIntByReal,
-    SquareRealNumber,
-    SumOfSquares,
+from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
+from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
+    NewtonRaphsonApproxInverseSquareRoot,
+    PolynmomialEvaluationInverseSquareRoot,
 )
-from qualtran.bloqs.basic_gates import Rz
-from qualtran.bloqs.basic_gates.rotation import RotationBloq
+from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import SympySymbolAllocator
@@ -125,214 +120,6 @@ def build_qrom_data_for_poly_fit(
             data[i, start:end] = coeff
             start = end
     return data
-
-
-@frozen
-class QuantumVariableRotation(Bloq):
-    r"""Bloq implementing Quantum Variable Rotation
-
-    $$
-        \sum_j c_j|\phi_j\rangle \rightarrow \sum_j e^{i \xi \phi_j}  c_j | \phi_j\rangle
-    $$
-
-    This is the basic implementation in Fig. 14 of the reference.
-
-    Args:
-        bitsize: The number of bits encoding the phase angle $\phi_j$.
-
-    Register:
-        phi: a bitsize size register storing the angle $\phi_j$.
-
-    References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
-            Fig 14.
-    """
-    phi_bitsize: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature([Register('phi', bitsize=self.phi_bitsize)])
-
-    def short_name(self) -> str:
-        return 'e^{i*phi}'
-
-    def t_complexity(self) -> 'TComplexity':
-        # Upper bounding for the moment with just phi_bitsize * Rz rotation gates.
-        return self.phi_bitsize * Rz(0.0).t_complexity()
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        theta = ssa.new_symbol('theta')
-        # need to update rotation bloq.
-        return {(self.phi_bitsize, RotationBloq(theta))}
-
-
-@frozen
-class NewtonRaphsonApproxInverseSquareRoot(Bloq):
-    r"""Bloq implementing a single Newton-Raphson step to approximate the inverse square root.
-
-    Given a (polynomial) approximation for $y_n = 1/sqrt{x}$ we can approximate
-    the inverse square root by
-
-    $$
-        y_{n+1} = \frac{1}{2}y_n\left(3-y_n^2 x\right)
-    $$
-
-    For the case of computing the Coulomb potential we want
-
-    $$
-        \frac{1}{|r_i-r_j|} = \frac{1}{\sqrt{\sum_k^3 (x^{k}_i-x^{k})^2}}
-    $$
-    where $x^k_i \in \{x, y, z}$. Thus the input register should store $\sum_k^3
-    (x^{k}_i-x^{k}_j)^2$.
-
-    Args:
-        x_sq_bitsize: The number of bits encoding the input (integer) register holding (x^2).
-        poly_bitsize: The number of bits encoding the input (fp-real) register
-            holding y0 (the output of PolynomialEvaluation).
-        output_bitsize: The number of bits to store the output of the NewtonRaphson step.
-
-    Register:
-        x_sq: an input_bitsize size register storing the value x^2.
-        poly: an poly_bitsize size register storing the value x^2.
-        target: a target_bitsize size register storing the output of the newton raphson step.
-
-    References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
-    """
-    x_sq_bitsize: int
-    poly_bitsize: int
-    target_bitsize: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('x_sq', bitsize=self.x_sq_bitsize),
-                Register('poly', bitsize=self.poly_bitsize),
-                Register('target', self.target_bitsize),
-            ]
-        )
-
-    def short_name(self) -> str:
-        return 'y = x^{-1/2}'
-
-    def t_complexity(self) -> 'TComplexity':
-        return (
-            SquareRealNumber(self.poly_bitsize).t_complexity()
-            + ScaleIntByReal(self.x_sq_bitsize, self.poly_bitsize).t_complexity()
-            + 2 * MultiplyTwoReals(self.target_bitsize).t_complexity()
-            + Add(self.target_bitsize).t_complexity()
-        )
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # y * ((2 + b^2 + delta) + y^2 x)
-        # 1. square y
-        # 2. scale y^2 by x
-        # 3. multiply y (2 + b^2 + delta)
-        # 4. multiply y^2 x by y
-        # 5. add 3. and 4.
-        return {
-            (1, SquareRealNumber(self.poly_bitsize)),
-            (1, ScaleIntByReal(self.target_bitsize, self.x_sq_bitsize)),
-            (2, MultiplyTwoReals(self.target_bitsize)),
-            (1, Add(self.target_bitsize)),
-        }
-
-
-@frozen
-class PolynmomialEvaluationInverseSquareRoot(Bloq):
-    r"""Bloq to evaluate a polynomial approximation to inverse Square root from QROM.
-
-    Args:
-        in_bitsize: The number of bits encoding the input registers.
-        out_bitsize: The number of bits encoding the input registers.
-
-    Register:
-        in_c{0,1,2,3}: QROM input containing the 4 polynomial coefficients.
-     - out: Output register to store polynomial approximation to inverse square root.
-
-    References:
-        (Quantum computation of stopping power for inertial fusion target design
-    )[https://arxiv.org/pdf/2308.12352.pdf]
-    """
-    x_sq_bitsize: int
-    poly_bitsize: int
-    out_bitsize: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('x_sq', bitsize=self.x_sq_bitsize),
-                Register('in_coeff', bitsize=self.poly_bitsize, shape=(4,)),
-                Register('out', bitsize=self.out_bitsize),
-            ]
-        )
-
-    def short_name(self) -> str:
-        return 'y ~ x^{-1/2}'
-
-    def t_complexity(self) -> 'TComplexity':
-        # There are 3 multiplications and subtractions, the shifts (-1, -3/2)
-        # are not included in Fusion estimates as these can be achieved with
-        # Clifford gates only.
-        return 3 * (
-            Add(self.poly_bitsize).t_complexity()
-            + MultiplyTwoReals(self.poly_bitsize).t_complexity()
-        )
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # This should probably be scale int by float rather than 3 real
-        # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(3, MultiplyTwoReals(self.poly_bitsize)), (3, Add(self.poly_bitsize))}
-
-
-@frozen
-class KineticEnergy(Bloq):
-    """Bloq for the Kinetic energy unitary defined in the reference.
-
-    Args:
-        num_elec: The number of electrons.
-        num_grid: The number of grid points in each of the x, y and z
-            directions. In total, for a cubic grid, there are N = num_grid**3
-            grid points. The number of bits required (in each spatial dimension)
-            is thus log N + 1, where the + 1 is for the sign bit.
-
-    Registers:
-     - system: The system register of size eta * 3 * nb
-
-    References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
-    """
-
-    num_elec: int
-    num_grid: int
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register(
-                    'system',
-                    shape=(self.num_elec, 3),
-                    bitsize=((self.num_grid - 1).bit_length() + 1),
-                )
-            ]
-        )
-
-    def short_name(self) -> str:
-        return 'U_T(dt)'
-
-    def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
-        bitsize = (self.num_grid - 1).bit_length() + 1
-        for i in range(self.num_elec):
-            system[i], sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=system[i])
-            sos = bb.add(QuantumVariableRotation(phi_bitsize=(2 * bitsize + 2)), phi=sos)
-            bb.free(sos)
-        return {'system': system}
 
 
 @frozen

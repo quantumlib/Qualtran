@@ -15,10 +15,9 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.trotter import (
+from qualtran.bloqs.chemistry.trotter.trotter import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
-    KineticEnergy,
     PairPotential,
     PotentialEnergy,
 )
@@ -39,13 +38,6 @@ def test_potential_bloq(nelec, nx):
     qlt_testing.assert_valid_bloq_decomposition(pp)
     fac = nelec * (nelec - 1) // 2
     assert fac * pp.t_complexity().t == pe.t_complexity().t
-
-
-@pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
-def test_kinetic_bloq(nelec, nx):
-    ngrid_x = 2 * nx + 1
-    ke = KineticEnergy(nelec, ngrid_x)
-    qlt_testing.assert_valid_bloq_decomposition(ke)
 
 
 def fixed_point_to_float(x: int, width: int) -> float:
