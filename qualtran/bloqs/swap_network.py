@@ -251,7 +251,6 @@ class SwapWithZero(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
 
-
 @bloq_example
 def _swz_small() -> SwapWithZero:
     # A small version on four bits.
