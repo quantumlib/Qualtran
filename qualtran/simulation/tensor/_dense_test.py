@@ -15,12 +15,12 @@
 from functools import cached_property
 from typing import Dict
 
+import cirq
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
-import cirq
 from qualtran import Bloq, BloqBuilder, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.composite_bloq import _get_dangling_soquets
 from qualtran.bloqs.basic_gates import CNOT, XGate, ZGate
