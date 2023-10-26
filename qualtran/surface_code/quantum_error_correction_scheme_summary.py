@@ -37,7 +37,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
     Attributes:
         error_rate_scaler: Logical error rate coefficient.
         error_rate_threshold: Logical error rate threshold.
-        reference: source of the estimates.
+        reference: source of the estimates in human readable format.
     """
 
     error_rate_scaler: float = field(repr=lambda x: f'{x:g}')
@@ -57,7 +57,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
         """The number of physical qubits used by the error correction circuit."""
 
     @abc.abstractmethod
-    def error_detection_cycle_time(self, code_distance: int) -> float:
+    def error_detection_cycle_time_us(self, code_distance: int) -> float:
         """The time of a quantum error correction cycle in seconds."""
 
 
@@ -70,7 +70,7 @@ class SurfaceCode(QuantumErrorCorrectionSchemeSummary):
 
 @frozen
 class SimpliedSurfaceCode(SurfaceCode):
-    r"""SimpliedSurfaceCode assumes the error detection time is a linear function in code distance.
+    r"""Assumes the error detection time is a linear function in code distance.
 
     The error detection time $\tau(d)$ is assumed to be given by a linear function
     $$
@@ -87,11 +87,11 @@ class SimpliedSurfaceCode(SurfaceCode):
     error_detection_cycle_time_slope_us: float
     error_detection_cycle_time_intercept_us: float
 
-    def error_detection_cycle_time(self, code_distance: int) -> float:
+    def error_detection_cycle_time_us(self, code_distance: int) -> float:
         return (
             self.error_detection_cycle_time_slope_us * code_distance
             + self.error_detection_cycle_time_intercept_us
-        ) * 1e-6
+        )
 
 
 Fowler = SimpliedSurfaceCode(
@@ -100,7 +100,7 @@ Fowler = SimpliedSurfaceCode(
     # The Fowler model assumes an error detection time of 1us regardless of the code distance.
     error_detection_cycle_time_slope_us=0,
     error_detection_cycle_time_intercept_us=1,
-    reference='https://arxiv.org/pdf/1808.06709.pdf,https://arxiv.org/pdf/1208.0928.pdf',
+    reference='https://arxiv.org/abs/1808.06709,https://arxiv.org/abs/1208.0928',
 )
 
 # The Beverland model assumes an error detection time equal to a*d, where slope a depends only on the hardware.
@@ -109,19 +109,19 @@ BeverlandTrappedIonQubits = SimpliedSurfaceCode(
     error_rate_threshold=0.01,
     error_detection_cycle_time_slope_us=600,
     error_detection_cycle_time_intercept_us=0,
-    reference='https://arxiv.org/pdf/2211.07629.pdf',
+    reference='https://arxiv.org/abs/2211.07629',
 )
 BeverlandSuperConductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     error_detection_cycle_time_slope_us=0.4,
     error_detection_cycle_time_intercept_us=0,
-    reference='https://arxiv.org/pdf/2211.07629.pdf',
+    reference='https://arxiv.org/abs/2211.07629',
 )
 BeverlandMajoranaQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     error_detection_cycle_time_slope_us=0.6,
     error_detection_cycle_time_intercept_us=0,
-    reference='https://arxiv.org/pdf/2211.07629.pdf',
+    reference='https://arxiv.org/abs/2211.07629',
 )

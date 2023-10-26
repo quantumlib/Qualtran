@@ -31,8 +31,6 @@ def test_physical_qubits(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: in
     assert qec.physical_qubits(11) == want
 
 
-@pytest.mark.parametrize(
-    'qec,want', [[qecs.BeverlandSuperConductingQubits, 4.8e-6], [qecs.Fowler, 1e-6]]
-)
+@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperConductingQubits, 4.8], [qecs.Fowler, 1]])
 def test_error_detection_cycle_time(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
-    assert qec.error_detection_cycle_time(12) == pytest.approx(want)
+    assert qec.error_detection_cycle_time_us(12) == pytest.approx(want)
