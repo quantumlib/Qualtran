@@ -18,13 +18,7 @@ from typing import Optional, Set, Tuple, TYPE_CHECKING
 from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.arithmetic import (
-    Add,
-    GreaterThan,
-    Product,
-    SignedIntegerToTwosComplement,
-    SumOfSquares,
-)
+from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
