@@ -148,7 +148,7 @@ def get_bloq_call_graph(
         generalizer: If provided, run this function on each (sub)bloq to replace attributes
             that do not affect resource estimates with generic sympy symbols. If the function
             returns `None`, the bloq is omitted from the counts graph.
-        ssa: a `SympySymbolAllocator` that will be passed to the `Bloq.bloq_counts` methods. If
+        ssa: a `SympySymbolAllocator` that will be passed to the `Bloq.build_call_graph` method. If
             your `generalizer` function closes over a `SympySymbolAllocator`, provide it here as
             well. Otherwise, we will create a new allocator.
         keep: If this function evaluates to True for the current bloq, keep the bloq as a leaf
