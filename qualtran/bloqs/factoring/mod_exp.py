@@ -24,6 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    DecomposeTypeError,
     Register,
     Side,
     Signature,
@@ -95,6 +96,8 @@ class ModExp(Bloq):
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if isinstance(self.exp_bitsize, sympy.Expr):
+            raise DecomposeTypeError("`exp_bitsize` must be a concrete value.")
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 

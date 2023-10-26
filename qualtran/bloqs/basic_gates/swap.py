@@ -190,7 +190,7 @@ class CSwap(GateWithRegisters):
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
-            raise DecomposeTypeError("`bitsize` must be a real value to support decomposition.")
+            raise DecomposeTypeError("`bitsize` must be a concrete value.")
 
         xs = bb.split(x)
         ys = bb.split(y)
