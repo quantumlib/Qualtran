@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import networkx as nx
 import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
+from qualtran.bloqs.chemistry.thc.notebook_utils import generalize as thc_generalize
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.testing import execute_notebook
 
@@ -85,13 +86,12 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
 
 
 def test_prepare_graph():
-    from qualtran.bloqs.chemistry.thc.notebook_utils import generalize
-    from qualtran.resource_counting import get_bloq_counts_graph
-
     num_mu = 10
     num_spin_orb = 4
     uniform_bloq = UniformSuperpositionTHC(num_mu=num_mu, num_spin_orb=num_spin_orb)
-    graph, sigma = get_bloq_counts_graph(uniform_bloq, generalizer=generalize)
+    graph, sigma = uniform_bloq.call_graph(generalizer=thc_generalize)
+    assert isinstance(graph, nx.DiGraph)
+    assert isinstance(sigma, dict)
 
 
 def test_notebook():

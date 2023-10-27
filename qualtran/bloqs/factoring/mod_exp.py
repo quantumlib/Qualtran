@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Set, Union
 
 import numpy as np
 import sympy
@@ -109,13 +109,11 @@ class ModExp(Bloq):
 
         return {'exponent': bb.join(exponent), 'x': x}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        if ssa is None:
-            raise ValueError(f"{self} requires a SympySymbolAllocator")
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
         return {
-            (1, IntState(val=1, bitsize=self.x_bitsize)),
-            (self.exp_bitsize, self._CtrlModMul(k=k)),
+            (IntState(val=1, bitsize=self.x_bitsize), 1),
+            (self._CtrlModMul(k=k), self.exp_bitsize),
         }
 
     def on_classical_vals(self, exponent: int):
