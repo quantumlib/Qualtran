@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
