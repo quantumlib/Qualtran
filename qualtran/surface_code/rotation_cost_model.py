@@ -76,7 +76,7 @@ class ConstantCostWithPreperation(RotationCostModel):
     reference: https://doi.org/10.1103/PRXQuantum.1.020312
 
     Attributes:
-        bitsize: Number of digits of accuracy for approximation a rotation.
+        bitsize: Number of digits of accuracy for approximating a rotation.
         slope: The coefficient of $log_2{budget}$.
         overhead: The overhead.
         gateset: A human-readable description of the gate set (e.g. 'Clifford+T').
