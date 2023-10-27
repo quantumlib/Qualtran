@@ -47,12 +47,12 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
+import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
-import qualtran.bloqs.basic_gates.swap
 
 NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     NotebookSpecV2(

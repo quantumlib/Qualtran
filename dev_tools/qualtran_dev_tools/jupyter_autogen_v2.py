@@ -17,12 +17,12 @@ import abc
 import inspect
 import textwrap
 from types import ModuleType
-from typing import Iterable, List, Optional, Tuple, Type
+from typing import List, Optional
 
 import nbformat
-from attrs import field, frozen
+from attrs import frozen
 
-from qualtran import Bloq, BloqDocSpec, BloqExample
+from qualtran import BloqDocSpec, BloqExample
 
 from .jupyter_autogen import (
     _code_nbnode,
