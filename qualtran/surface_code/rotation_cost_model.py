@@ -63,7 +63,7 @@ class LogarithmicModel(RotationCostModel):
 
 
 @frozen
-class ConstantCostWithPreperation(RotationCostModel):
+class ConstantCostWithPreparation(RotationCostModel):
     r"""A rotation cost of bitsize-2 toffoli per rotation independent of the error budget.
 
     This model assumes a state $\ket{\phi}$ has been prepared using a standard technique, then

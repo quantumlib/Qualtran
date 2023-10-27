@@ -22,7 +22,7 @@ from qualtran.surface_code.algorithm_summary import AlgorithmSummary
     'model,want',
     [
         (rcm.BeverlandEtAl, AlgorithmSummary(t_gates=7)),
-        (rcm.ConstantCostWithPreperation(13, 1, 1), AlgorithmSummary(toffoli_gates=11)),
+        (rcm.ConstantCostWithPreparation(13, 1, 1), AlgorithmSummary(toffoli_gates=11)),
     ],
 )
 def test_rotation_cost(model: rcm.RotationCostModel, want: float):
@@ -33,7 +33,7 @@ def test_rotation_cost(model: rcm.RotationCostModel, want: float):
     'model,want',
     [
         (rcm.BeverlandEtAl, AlgorithmSummary()),
-        (rcm.ConstantCostWithPreperation(13, 1, 1), AlgorithmSummary(t_gates=104)),
+        (rcm.ConstantCostWithPreparation(13, 1, 1), AlgorithmSummary(t_gates=104)),
     ],
 )
 def test_preparation_overhead(model: rcm.RotationCostModel, want: float):
