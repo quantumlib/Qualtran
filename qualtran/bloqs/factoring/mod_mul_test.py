@@ -20,7 +20,7 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.bloqs.factoring.mod_mul import CtrlModMul
+from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul
 from qualtran.bloqs.util_bloqs import Allocate, Free
 from qualtran.resource_counting import SympySymbolAllocator
 
@@ -93,7 +93,7 @@ def test_consistent_classical():
         assert ret1 == ret2
 
 
-def test_symbolic():
+def test_modmul_symb_manual():
     k, N, n_x = sympy.symbols('k N n_x')
     bloq = CtrlModMul(k=k, mod=N, bitsize=n_x)
     assert bloq.short_name() == 'x *= k % N'
@@ -128,3 +128,11 @@ def test_consistent_counts():
     counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
 
     assert counts1 == counts2
+
+
+def test_modul(bloq_autotester):
+    bloq_autotester(_modmul)
+
+
+def test_modul_symb(bloq_autotester):
+    bloq_autotester(_modmul_symb)

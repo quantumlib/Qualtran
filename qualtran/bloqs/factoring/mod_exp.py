@@ -19,7 +19,17 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    DecomposeTypeError,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -86,6 +96,8 @@ class ModExp(Bloq):
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if isinstance(self.exp_bitsize, sympy.Expr):
+            raise DecomposeTypeError("`exp_bitsize` must be a concrete value.")
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 
@@ -109,3 +121,31 @@ class ModExp(Bloq):
 
     def short_name(self) -> str:
         return f'{self.base}^e % {self.mod}'
+
+
+@bloq_example
+def _modexp_small() -> ModExp:
+    modexp_small = ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
+    return modexp_small
+
+
+@bloq_example
+def _modexp() -> ModExp:
+    modexp = ModExp(base=3, mod=15, exp_bitsize=8, x_bitsize=2048)
+    return modexp
+
+
+@bloq_example
+def _modexp_symb() -> ModExp:
+    import sympy
+
+    g, N = sympy.symbols('g N')
+    modexp_symb = ModExp.make_for_shor(big_n=N, g=g)
+    return modexp_symb
+
+
+_MODEXP_DOC = BloqDocSpec(
+    bloq_cls=ModExp,
+    import_line='from qualtran.bloqs.factoring.mod_exp import ModExp',
+    examples=(_modexp_small, _modexp, _modexp_symb),
+)
