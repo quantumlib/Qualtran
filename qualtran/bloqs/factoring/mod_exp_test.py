@@ -19,7 +19,7 @@ import numpy as np
 import sympy
 
 from qualtran import Bloq
-from qualtran.bloqs.factoring.mod_exp import ModExp
+from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
@@ -56,7 +56,7 @@ def test_mod_exp_consistent_classical():
         assert ret1 == ret2
 
 
-def test_mod_exp_symbolic():
+def test_modexp_symb_manual():
     g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
     modexp = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     assert modexp.short_name() == 'g^e % N'
@@ -89,6 +89,14 @@ def test_mod_exp_consistent_counts():
     counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
 
     assert counts1 == counts2
+
+
+def test_modexp(bloq_autotester):
+    bloq_autotester(_modexp)
+
+
+def test_modexp_symb(bloq_autotester):
+    bloq_autotester(_modexp_symb)
 
 
 def test_intro_notebook():

@@ -23,7 +23,14 @@ import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.basic_gates.z_basis import IntState
-from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
+from qualtran.bloqs.swap_network import (
+    _approx_cswap_large,
+    _approx_cswap_small,
+    _approx_cswap_symb,
+    _swz_small,
+    CSwapApprox,
+    SwapWithZero,
+)
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.simulation.quimb_sim import flatten_for_tensor_contraction
@@ -188,6 +195,22 @@ def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_
 def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers, want):
     gate = SwapWithZero(selection_bitsize, target_bitsize, n_target_registers)
     assert want == gate.t_complexity()
+
+
+def test_approx_cswap_small(bloq_autotester):
+    bloq_autotester(_approx_cswap_small)
+
+
+def test_approx_cswap_symb(bloq_autotester):
+    bloq_autotester(_approx_cswap_symb)
+
+
+def test_approx_cswap_large(bloq_autotester):
+    bloq_autotester(_approx_cswap_large)
+
+
+def test_swz_small(bloq_autotester):
+    bloq_autotester(_swz_small)
 
 
 def test_notebook():
