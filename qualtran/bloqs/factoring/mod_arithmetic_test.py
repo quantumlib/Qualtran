@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.mod_arithmetic import ModAdd, ModSub, ModNeg, ModDbl, ModMult
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.factoring.mod_arithmetic import ModAdd, ModDbl, ModMult, ModNeg, ModSub
 
 
 def test_mod_add():
@@ -43,4 +43,4 @@ def test_mod_dbl():
 def test_mod_mult():
     bloq = ModMult(bitsize=8)
     assert bloq.short_name() == 'out = x * y mod p'
-    assert bloq.bloq_counts() == {(216, Toffoli())}
+    assert bloq.bloq_counts() == {(200, Toffoli())}

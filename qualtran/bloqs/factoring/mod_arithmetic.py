@@ -13,14 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Optional, Set, Union
 
 import sympy
 from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran._infra.composite_bloq import BloqBuilder, SoquetT
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -28,7 +27,7 @@ from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 class ModAdd(Bloq):
     r"""An n-bit modular addition gate.
 
-    Implements $U|x\rangle|y\rangle|p\rangle \rightarrow |x\rangle|y + x mod p\rangle|p\rangle$ using $4n T$ gates.
+    Implements $U|x\rangle|y\rangle|p\rangle \rightarrow |x\rangle|y + x mod p\rangle|p\rangle$ using $4n Toffoli$ gates.
 
     Args:
         bitsize: Number of bits used to represent each integer.
@@ -39,7 +38,7 @@ class ModAdd(Bloq):
         p: A bitsize-sized input register (register p above).
 
     References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig. 6., 8.
     """
 
     bitsize: Union[int, sympy.Expr]
@@ -57,20 +56,15 @@ class ModAdd(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(4 * self.bitsize, Toffoli())}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        return NotImplemented
-
     def short_name(self) -> str:
-        return f'y = y + x mod p'
+        return 'y = y + x mod p'
 
 
 @frozen
 class ModSub(Bloq):
     r"""An n-bit modular subtraction gate.
 
-    Implements $U|x\rangle|y\rangle|p\rangle \rightarrow |x\rangle|y - x mod p\rangle|p\rangle$ using $6n T$ gates.
+    Implements $U|x\rangle|y\rangle|p\rangle \rightarrow |x\rangle|y - x mod p\rangle|p\rangle$ using $6n Toffoli$ gates.
 
     Args:
         bitsize: Number of bits used to represent each integer.
@@ -81,7 +75,7 @@ class ModSub(Bloq):
         p: A bitsize-sized input register (register p above).
 
     References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig. 6., 8.
     """
 
     bitsize: Union[int, sympy.Expr]
@@ -99,20 +93,15 @@ class ModSub(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(6 * self.bitsize, Toffoli())}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        return NotImplemented
-
     def short_name(self) -> str:
-        return f'y = y - x mod p'
+        return 'y = y - x mod p'
 
 
 @frozen
 class ModNeg(Bloq):
     r"""An n-bit modular negation gate.
 
-    Implements $U|x\rangle|p\rangle \rightarrow |-x mod p\rangle|p\rangle$ using $2n T$ gates.
+    Implements $U|x\rangle|p\rangle \rightarrow |-x mod p\rangle|p\rangle$ using $2n Toffoli$ gates.
 
     Args:
         bitsize: Number of bits used to represent each integer.
@@ -122,7 +111,7 @@ class ModNeg(Bloq):
         p: A bitsize-sized input register (register p above).
 
     References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig. 6., 8.
     """
 
     bitsize: Union[int, sympy.Expr]
@@ -134,20 +123,15 @@ class ModNeg(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(2 * self.bitsize, Toffoli())}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, p: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        return NotImplemented
-
     def short_name(self) -> str:
-        return f'x = -x mod p'
+        return 'x = -x mod p'
 
 
 @frozen
 class ModDbl(Bloq):
-    r"""An n-bit modular negation gate.
+    r"""An n-bit modular doubling gate.
 
-    Implements $U|x\rangle|p\rangle \rightarrow |2 * x mod p\rangle|p\rangle$ using $2n T$ gates.
+    Implements $U|x\rangle|p\rangle \rightarrow |2 * x mod p\rangle|p\rangle$ using $2n Toffoli$ gates.
 
     Args:
         bitsize: Number of bits used to represent each integer.
@@ -157,7 +141,7 @@ class ModDbl(Bloq):
         p: A bitsize-sized input register (register p above).
 
     References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig. 6., 8.
     """
 
     bitsize: Union[int, sympy.Expr]
@@ -169,20 +153,15 @@ class ModDbl(Bloq):
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
         return {(2 * self.bitsize, Toffoli())}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, p: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        return NotImplemented
-
     def short_name(self) -> str:
-        return f'x = 2 * x mod p'
+        return 'x = 2 * x mod p'
 
 
 @frozen
 class ModMult(Bloq):
     r"""An n-bit modular multiplication gate.
 
-    Implements $U|x\rangle|y\rangle|p\rangle|0\rangle|0\rangle \rightarrow |x\rangle|y\rangle|p\rangle|garbage\rangle|x * y mod p\rangle$ using $2.25n^2 + 9n T$ gates.
+    Implements $U|x\rangle|y\rangle|p\rangle|0\rangle \rightarrow |x\rangle|y\rangle|p\rangle|x * y mod p\rangle$ using $2.25n^2 + 9n Toffoli$ gates.
 
     Args:
         bitsize: Number of bits used to represent each integer.
@@ -191,11 +170,10 @@ class ModMult(Bloq):
         x: A bitsize-sized input register (register x above).
         y: A bitsize-sized input register (register y above).
         p: A bitsize-sized input register (register p above).
-        garbage: A bitsize-sized input register (register garbage above).
         out: A bitsize-sized input register holding the output of the modular multiplication.
 
     References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig. 6., 8.
     """
 
     bitsize: Union[int, sympy.Expr]
@@ -207,18 +185,13 @@ class ModMult(Bloq):
                 Register('x', bitsize=self.bitsize),
                 Register('y', bitsize=self.bitsize),
                 Register('p', bitsize=self.bitsize),
-                Register('garbage', bitsize=self.bitsize),
                 Register('out', bitsize=self.bitsize),
             ]
         )
 
     def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(2.25 * (self.bitsize**2) + 9 * self.bitsize, Toffoli())}
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT, p: SoquetT, garbage: SoquetT, out: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        return NotImplemented
+        # Upper bound is 2.25 * (n ** 2) + 9n. We truncate to 2 so that the return value is always an integer.
+        return {(2 * (self.bitsize**2) + 9 * self.bitsize, Toffoli())}
 
     def short_name(self) -> str:
-        return f'out = x * y mod p'
+        return 'out = x * y mod p'
