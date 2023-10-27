@@ -106,7 +106,7 @@ class CSwapApprox(GateWithRegisters):
     def short_name(self) -> str:
         return '~swap'
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
