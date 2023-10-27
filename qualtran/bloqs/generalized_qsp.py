@@ -23,31 +23,60 @@ from numpy.typing import NDArray
 from qualtran import GateWithRegisters, Register, Signature
 
 
-def _arbitrary_SU2_rotation(theta: float, phi: float, lambd: float):
-    r"""Implements an arbitrary SU(2) rotation.
+@frozen
+class SU2RotationGate(GateWithRegisters):
+    theta: float
+    phi: float
+    lambd: float
 
-    The rotation is represented by the matrix:
+    @property
+    def signature(self) -> Signature:
+        return Signature.build(q=1)
 
-        $$
-        \begin{matrix}
-        e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
-        e^{i\phi} \sin(\theta) & - \cos(\theta)
-        \end{matrix}
-        $$
+    @property
+    def rotation_matrix(self):
+        r"""Implements an arbitrary SU(2) rotation.
 
-    Returns:
-        A 2x2 rotation matrix
+        The rotation is represented by the matrix:
 
-    References:
-        [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-            Motlagh and Wiebe. (2023). Equation 7.
-    """
-    return np.array(
-        [
-            [np.exp(1j * (lambd + phi)) * np.cos(theta), np.exp(1j * phi) * np.sin(theta)],
-            [np.exp(1j * lambd) * np.sin(theta), -np.cos(theta)],
-        ]
-    )
+            $$
+            \begin{matrix}
+            e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
+            e^{i\lambda} \sin(\theta) & - \cos(\theta)
+            \end{matrix}
+            $$
+
+        Returns:
+            A 2x2 rotation matrix
+
+        References:
+            [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
+                Motlagh and Wiebe. (2023). Equation 7.
+        """
+        return np.array(
+            [
+                [
+                    np.exp(1j * (self.lambd + self.phi)) * np.cos(self.theta),
+                    np.exp(1j * self.phi) * np.sin(self.theta),
+                ],
+                [np.exp(1j * self.lambd) * np.sin(self.theta), -np.cos(self.theta)],
+            ]
+        )
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        qubit = q[0]
+
+        gates = cirq.single_qubit_matrix_to_gates(self.rotation_matrix)
+        matrix = np.eye(2)
+        for gate in gates:
+            yield gate.on(qubit)
+            matrix = cirq.unitary(gate) @ matrix
+
+        # `cirq.single_qubit_matrix_to_gates` does not preserve global phase
+        matrix = matrix @ self.rotation_matrix.conj().T
+        yield cirq.GlobalPhaseGate(matrix[0, 0].conj()).on()
 
 
 def qsp_phase_factors(
@@ -86,14 +115,14 @@ def qsp_phase_factors(
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
 
-        a, b = S[:, d]
-        theta[d] = np.arctan2(np.abs(a), np.abs(b))
-        phi[d] = np.angle(a / b)
+        a, b = np.around(S[:, d], decimals=10)
+        theta[d] = np.arctan2(np.abs(b), np.abs(a))
+        phi[d] = (np.angle(a) - np.angle(b)) % (2 * np.pi)
 
         if d == 0:
             lambd = np.angle(b)
         else:
-            S = _arbitrary_SU2_rotation(theta[d], phi[d], 0) @ S
+            S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix @ S
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
@@ -146,20 +175,13 @@ class GeneralizedQSP(GateWithRegisters):
     def _lambda(self) -> float:
         return self._qsp_phases[2]
 
-    def _signal_gate(
-        self, signal_qubit: cirq.Qid, theta: float, phi: float, lambd: float
-    ) -> cirq.OP_TREE:
-        gates = cirq.single_qubit_matrix_to_gates(_arbitrary_SU2_rotation(theta, phi, lambd))
-        for gate in gates:
-            yield gate.on(signal_qubit)
-
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         assert len(signal) == 1
         signal_qubit = signal[0]
 
-        yield from self._signal_gate(signal_qubit, self._theta[0], self._phi[0], self._lambda)
+        yield SU2RotationGate(self._theta[0], self._phi[0], self._lambda).on(signal_qubit)
         for theta, phi in zip(self._theta[1:], self._phi[1:]):
             yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
-            yield from self._signal_gate(signal_qubit, theta, phi, 0)
+            yield SU2RotationGate(theta, phi, 0).on(signal_qubit)
