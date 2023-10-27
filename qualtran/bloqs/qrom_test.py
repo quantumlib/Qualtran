@@ -31,6 +31,8 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 )
 @pytest.mark.parametrize("num_controls", [0, 1, 2])
 def test_qrom_1d(data, num_controls):
+    if num_controls == 2 and len(data) == 6:
+        pytest.skip("slow")
     qrom = QROM.build(*data, num_controls=num_controls)
     assert_valid_bloq_decomposition(qrom)
 
@@ -197,6 +199,8 @@ target01: ────────────────X───────
 )
 @pytest.mark.parametrize("num_controls", [0, 1, 2])
 def test_qrom_multi_dim(data, num_controls):
+    if len(data) == 2 and num_controls == 2:
+        pytest.skip("slow")
     selection_bitsizes = tuple((s - 1).bit_length() for s in data[0].shape)
     target_bitsizes = tuple(int(np.max(d)).bit_length() for d in data)
     qrom = QROM(

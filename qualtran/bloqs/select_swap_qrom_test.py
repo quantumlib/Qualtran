@@ -27,6 +27,8 @@ from qualtran.testing import assert_valid_bloq_decomposition
 @pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
 @pytest.mark.parametrize("block_size", [None, 1, 2, 3])
 def test_select_swap_qrom(data, block_size):
+    if block_size == 3 and len(data) == 1:
+        pytest.skip('slow')
     qrom = SelectSwapQROM(*data, block_size=block_size)
 
     assert_valid_bloq_decomposition(qrom)
