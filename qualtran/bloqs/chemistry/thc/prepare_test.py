@@ -17,7 +17,7 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
-from qualtran.bloqs.chemistry.thc_notebook_utils import generalize as thc_generalize
+from qualtran.bloqs.chemistry.thc.notebook_utils import generalize as thc_generalize
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.testing import execute_notebook
 

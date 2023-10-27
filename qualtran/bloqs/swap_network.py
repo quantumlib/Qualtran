@@ -23,7 +23,6 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,

@@ -39,7 +39,6 @@ from qualtran.bloqs.basic_gates.swap import (
     _swap_matrix,
 )
 from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def _make_CSwap():
