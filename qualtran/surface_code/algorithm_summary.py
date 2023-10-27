@@ -45,7 +45,7 @@ class AlgorithmSummary:
     def __mul__(self, other: int) -> 'AlgorithmSummary':
         if not isinstance(other, int):
             raise TypeError(
-                f'Multiplication isn\'t supported between AlgorithmSummary and not integer type {type(other)}'
+                f'Multiplication isn\'t supported between AlgorithmSummary and non integer type {type(other)}'
             )
 
         return AlgorithmSummary(
