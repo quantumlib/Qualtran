@@ -54,8 +54,8 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
     def signature(self) -> Signature:
         return Signature.build(x=self.bitsize, target=1)
 
-    def pretty_name(self) -> str:
-        return f'x lt {self.less_than_val}'
+    def short_name(self) -> str:
+        return f'x<{self.less_than_val}'
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, self.less_than_val, [2]
@@ -490,8 +490,8 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         p, q = register_values
         return p, p + q
 
-    def pretty_name(self) -> str:
-        return "a + b"
+    def short_name(self) -> str:
+        return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.bitsize
@@ -575,7 +575,7 @@ class OutOfPlaceAdder(Bloq):
     def signature(self):
         return Signature.build(a=self.bitsize, b=self.bitsize, c=self.bitsize)
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "c = a + b"
 
     def t_complexity(self):
@@ -683,7 +683,7 @@ class Square(Bloq):
             [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=Side.RIGHT)]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a^2"
 
     def t_complexity(self):
@@ -790,7 +790,7 @@ class Product(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a*b"
 
     def t_complexity(self):
@@ -844,7 +844,7 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "r*i"
 
     def t_complexity(self):
@@ -898,7 +898,7 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a*b"
 
     def t_complexity(self):
@@ -953,7 +953,7 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return "a^2"
 
     def t_complexity(self):
@@ -968,12 +968,12 @@ class SquareRealNumber(Bloq):
 
 @frozen
 class GreaterThan(Bloq):
-    r"""Compare two n-bit integers.
+    r"""Compare two integers.
 
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
-    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    The bloq_counts and t_complexity are derived from equivalent qualtran gates
     assuming a clean decomposition which should yield identical costs.
 
     See: https://github.com/quantumlib/Qualtran/pull/381 and
@@ -987,17 +987,18 @@ class GreaterThan(Bloq):
         b: n-bit-sized input registers.
         target: A single bit output register to store the result of A > B.
     """
-    bitsize: int
+    a_bitsize: int
+    b_bitsize: int
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, target=1)
+        return Signature.build(a=self.a_bitsize, b=self.b_bitsize, target=1)
 
-    def pretty_name(self) -> str:
-        return "a gt b"
+    def short_name(self) -> str:
+        return "a>b"
 
     def t_complexity(self) -> 'TComplexity':
-        return t_complexity(LessThanEqual(self.bitsize, self.bitsize))
+        return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def bloq_counts(
         self, ssa: Optional['SympySymbolAllocator'] = None
@@ -1013,7 +1014,7 @@ class GreaterThan(Bloq):
 class GreaterThanConstant(Bloq):
     r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x > a)\rangle$
 
-    The bloq_counts and t_complexity are derived from equivalent cirq_ft gates
+    The bloq_counts and t_complexity are derived from equivalent qualtran gates
     assuming a clean decomposition which should yield identical costs.
 
     See: https://github.com/quantumlib/Qualtran/pull/381 and
@@ -1134,3 +1135,30 @@ class ToContiguousIndex(Bloq):
         self, ssa: Optional['SympySymbolAllocator'] = None
     ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
         return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}
+
+
+@frozen
+class SignedIntegerToTwosComplement(Bloq):
+    """Convert a register storing the signed integer representation to two's complement inplace.
+
+    Args:
+        bitsize: size of the register.
+
+    Regs:
+        x: input signed integer register to convert to two-complement.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767) page 24, 4th paragraph from the bottom.
+    """
+
+    bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(x=self.bitsize)
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+        # Take the sign qubit as a control and cnot the remaining qubits, then
+        # add it to the remaining n-1 bits.
+        return {(4 * (self.bitsize - 2), TGate())}

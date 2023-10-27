@@ -14,10 +14,10 @@
 
 import numpy as np
 import pytest
-from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
+from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.testing import execute_notebook
 
 
@@ -85,7 +85,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
 
 
 def test_prepare_graph():
-    from qualtran.bloqs.chemistry.thc_notebook_utils import generalize
+    from qualtran.bloqs.chemistry.thc.notebook_utils import generalize
     from qualtran.resource_counting import get_bloq_counts_graph
 
     num_mu = 10

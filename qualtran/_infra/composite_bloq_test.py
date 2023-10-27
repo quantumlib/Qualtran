@@ -21,7 +21,6 @@ import networkx as nx
 import numpy as np
 import pytest
 from attrs import frozen
-from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 import qualtran.testing as qlt_testing
@@ -44,6 +43,7 @@ from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran.bloqs.basic_gates import IntEffect, ZeroEffect
 from qualtran.bloqs.util_bloqs import Join
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 def _manually_make_test_cbloq_cxns():

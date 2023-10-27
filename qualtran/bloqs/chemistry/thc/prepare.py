@@ -11,15 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""SELECT and PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
+"""PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
 from typing import Dict, Tuple
 
 import cirq
 import numpy as np
 from attrs import field, frozen
-from cirq_ft.algos.select_swap_qrom import SelectSwapQROM
-from cirq_ft.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
@@ -33,8 +31,10 @@ from qualtran.bloqs.arithmetic import (
 from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 
 @frozen
@@ -315,11 +315,9 @@ class PrepareTHC(Bloq):
         alt_mu = bb.allocate(alt_bitsize)
         alt_nu = bb.allocate(alt_bitsize)
         alt_theta = bb.allocate(1)
-        qroam = CirqGateAsBloq(
-            SelectSwapQROM(
-                *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
-                target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
-            )
+        qroam = SelectSwapQROM(
+            *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
+            target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
         )
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
             qroam,

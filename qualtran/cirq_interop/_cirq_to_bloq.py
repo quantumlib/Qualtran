@@ -60,9 +60,6 @@ class CirqGateAsBloq(Bloq):
     gate: cirq.Gate
 
     def pretty_name(self) -> str:
-        return f'cirq.{self.gate}'
-
-    def short_name(self) -> str:
         g = min(self.gate.__class__.__name__, str(self.gate), key=len)
         return f'cirq.{g}'
 
@@ -70,16 +67,6 @@ class CirqGateAsBloq(Bloq):
     def signature(self) -> 'Signature':
         if isinstance(self.gate, Bloq):
             return self.gate.signature
-        import cirq_ft
-
-        if isinstance(self.gate, cirq_ft.GateWithRegisters):
-            # TODO(gh/Qualtran/issues/398): Remove once `cirq_ft.GateWithRegisters` is deprecated.
-            return Signature(
-                [
-                    Register(reg.name, reg.bitsize, reg.shape, Side(reg.side.value))
-                    for reg in self.gate.signature
-                ]
-            )
         nqubits = cirq.num_qubits(self.gate)
         return (
             Signature([Register('qubits', shape=nqubits, bitsize=1)])
@@ -111,12 +98,10 @@ class CirqGateAsBloq(Bloq):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        import cirq_ft
-
         from qualtran import GateWithRegisters
         from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate
 
-        if not isinstance(self.gate, (cirq_ft.GateWithRegisters, GateWithRegisters)):
+        if not isinstance(self.gate, GateWithRegisters):
             return self.gate.on(*cirq_quregs['qubits'].flatten()), cirq_quregs
         return _construct_op_from_gate(
             self.gate,
@@ -206,7 +191,7 @@ def _add_my_tensors_from_gate(
 
 @frozen
 class _QReg:
-    """Used as a container for qubits that form a `cirq_ft.Register` of a given bitsize.
+    """Used as a container for qubits that form a `Register` of a given bitsize.
 
     Each instance of `_QReg` would correspond to a `Soquet` in Bloqs and represents an opaque collection
     of qubits that together form a quantum register.
