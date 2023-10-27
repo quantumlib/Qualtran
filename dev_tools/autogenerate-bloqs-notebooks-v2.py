@@ -47,6 +47,7 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
+import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.swap_network
@@ -79,6 +80,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         path_stem='mod_mul',
         bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
+    NotebookSpecV2(
+        title='Apply to Lth Target',
+        module=qualtran.bloqs.apply_gate_to_lth_target,
+        bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
 
