@@ -22,7 +22,7 @@ from qualtran import Bloq
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul
 from qualtran.bloqs.util_bloqs import Allocate, Free
-from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
+from qualtran.resource_counting import SympySymbolAllocator
 
 
 def _make_modmul():
@@ -99,7 +99,7 @@ def test_modmul_symb_manual():
     assert bloq.short_name() == 'x *= k % N'
 
     # it's all fixed constants, but check it works anyways
-    counts = bloq.bloq_counts(SympySymbolAllocator())
+    counts = bloq.bloq_counts()
     assert len(counts) > 0
 
     ctrl, x = bloq.call_classically(ctrl=1, x=sympy.Symbol('x'))
@@ -112,7 +112,7 @@ def test_modmul_symb_manual():
 def test_consistent_counts():
 
     bloq = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
-    counts1 = bloq.bloq_counts(SympySymbolAllocator())
+    counts1 = bloq.bloq_counts()
 
     ssa = SympySymbolAllocator()
     my_k = ssa.new_symbol('k')
@@ -125,7 +125,7 @@ def test_consistent_counts():
             return
         return b
 
-    counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
+    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
 
     assert counts1 == counts2
 

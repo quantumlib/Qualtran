@@ -15,16 +15,14 @@
 """Functionality for moving data between registers (swapping)."""
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
-import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
@@ -41,9 +39,7 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
-    from qualtran import CompositeBloq
-    from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -127,17 +123,15 @@ class CSwapApprox(GateWithRegisters):
             ("@(approx)",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize
         )
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
         # 4 * n: CNOTs
         # 2 * n - 1: CNOTs from 1 MultiTargetCNOT
         return {
-            (4 * n, TGate()),
-            (16 * n, ArbitraryClifford(n=1)),
-            (6 * n - 1, ArbitraryClifford(n=2)),
+            (TGate(), 4 * n),
+            (ArbitraryClifford(n=1), 16 * n),
+            (ArbitraryClifford(n=2), 6 * n - 1),
         }
 
 
@@ -236,13 +230,11 @@ class SwapWithZero(GateWithRegisters):
 
         return {'selection': bb.join(selection), 'targets': targets}
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_swaps = np.floor(
             sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
         )
-        return {(num_swaps, CSwapApprox(self.target_bitsize))}
+        return {(CSwapApprox(self.target_bitsize), num_swaps)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@(r⇋0)"] * self.selection_bitsize

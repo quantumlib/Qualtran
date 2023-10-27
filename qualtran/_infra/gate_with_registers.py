@@ -20,7 +20,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
-from qualtran._infra.composite_bloq import CompositeBloq, SoquetT
+from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register
 

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Set, Union
 
 import sympy
 from attrs import frozen
@@ -54,14 +54,12 @@ class CtrlScaleModAdd(Bloq):
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        if ssa is None:
-            raise ValueError(f"{self} requires a SympySymbolAllocator")
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
-        return {(self.bitsize, CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod))}
+        return {(CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod), self.bitsize)}
 
     def t_complexity(self) -> 'TComplexity':
-        ((n, bloq),) = self.bloq_counts(SympySymbolAllocator())
+        ((bloq, n),) = self.bloq_counts().items()
         return n * bloq.t_complexity()
 
     def on_classical_vals(
@@ -100,14 +98,12 @@ class CtrlModAddK(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        if ssa is None:
-            raise ValueError(f"{self} requires a SympySymbolAllocator")
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
-        return {(5, CtrlAddK(k=k, bitsize=self.bitsize))}
+        return {(CtrlAddK(k=k, bitsize=self.bitsize), 5)}
 
     def t_complexity(self) -> 'TComplexity':
-        ((n, bloq),) = self.bloq_counts(SympySymbolAllocator())
+        ((bloq, n),) = self.bloq_counts().items()
         return n * bloq.t_complexity()
 
     def short_name(self) -> str:
@@ -137,8 +133,8 @@ class CtrlAddK(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(2 * self.bitsize, TGate())}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TGate(), 2 * self.bitsize)}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=2 * self.bitsize)

@@ -14,7 +14,7 @@
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Set, Tuple
 
 import cirq
 import numpy as np
@@ -23,12 +23,12 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, Register, Side, Signature, Soquet, SoquetT
+from qualtran import GateWithRegisters, Register, Side, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
-from qualtran.resource_counting import big_O, SympySymbolAllocator
+from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -63,15 +63,15 @@ class And(GateWithRegisters):
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
             pre_post_cliffords = big_O(1)
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
         if self.adjoint:
-            return {(4 + 2 * pre_post_cliffords, ArbitraryClifford(n=2))}
+            return {(ArbitraryClifford(n=2), 4 + 2 * pre_post_cliffords)}
 
-        return {(9 + 2 * pre_post_cliffords, ArbitraryClifford(n=2)), (4, TGate())}
+        return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
 
     def pretty_name(self) -> str:
         dag = '†' if self.adjoint else ''
