@@ -181,7 +181,6 @@
         /* side stuff */
         let side_doc = "";
         let side_def = "";
-        console.log(reg.side);
         switch (reg.side) {
           case 'Thru':
             break;
@@ -249,7 +248,7 @@ class ${className}(Bloq):
         return f'${className}'
 `;
 
-      document.getElementById("template_code").innerHTML = hljs.highlight(template, {language: 'python'}).value;
+      document.getElementById("template_code").innerHTML = hljs.highlight(template, { language: 'python' }).value;
     }
   </script>
 
