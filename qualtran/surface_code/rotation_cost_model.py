@@ -71,6 +71,8 @@ class ConstantCostWithPreperation(RotationCostModel):
     $$
     \ket{\phi} = \frac{1}{\sqrt{2^{b}}} \sum_{k=0}^{2^b-1} e^{-2\pi i k/2^b} \ket{k}
     $$
+    Where $b$ is the bitsize/number of digits of accuracy.
+
     reference: https://doi.org/10.1103/PRXQuantum.1.020312
 
     Attributes:
