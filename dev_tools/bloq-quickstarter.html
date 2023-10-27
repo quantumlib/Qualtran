@@ -245,7 +245,7 @@ class ${className}(Bloq):
         raise NotImplementedError("Implement or delete.")
 
     def short_name(self) -> str:
-        return f'${className}'
+        return '${className}'
 `;
 
       document.getElementById("template_code").innerHTML = hljs.highlight(template, { language: 'python' }).value;
