@@ -22,7 +22,7 @@ H = \sum_\sigma \sum_{pq} T_{pq} a_{p\sigma}^\dagger a_{q\sigma}
 V_{pqrs} a_{p\sigma}^\dagger a_{r\beta}^\dagger a_{s\beta} a_{q\alpha},
 $$
 where $a_{p\sigma}$ ($a_{q\sigma}^\dagger$) annihilate (create) an electron in the
-$p$-th orbital of spin $\sigma$. 
+$p$-th orbital of spin $\sigma$.
 We can rewrite this expression using the Jordan-Wigner transformation as
 $$
 H = T' + V',
@@ -53,7 +53,7 @@ amount of data that is required to be loaded during state preparation as only
 non-zero symmetry inequivalent terms are required (the two electron integrals
 exhibit 8-fold permutational symmetry). Symmetries are restored by initially
 appropriately weighting these non-zero terms and then using $|+\rangle$ states
-to perform control swaps between the $pqrs$ registers. 
+to perform control swaps between the $pqrs$ registers.
 """
 
 from .prepare import PrepareSparse
