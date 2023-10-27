@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from qualtran.bloqs.chemistry.sparse import PrepareSparse
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def _make_sparse_prepare():
@@ -27,4 +26,5 @@ def test_sparse_prepare():
 
 
 def test_sparse_prepare_bloq_counts():
-    _, sigma = get_bloq_counts_graph(PrepareSparse(10, 1_000, 8))
+    bloq = PrepareSparse(10, 1_000, 8)
+    graph, sigma = bloq.call_graph()

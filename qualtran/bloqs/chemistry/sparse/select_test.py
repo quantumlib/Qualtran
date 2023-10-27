@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 from qualtran.bloqs.chemistry.sparse import SelectSparse
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def _make_sparse_select():
@@ -27,4 +26,6 @@ def test_sparse_select():
 
 
 def test_sparse_select_bloq_counts():
-    _, sigma = get_bloq_counts_graph(SelectSparse(10))
+    bloq = SelectSparse(10)
+    graph, sigma = bloq.call_graph()
+    assert isinstance(sigma, dict)

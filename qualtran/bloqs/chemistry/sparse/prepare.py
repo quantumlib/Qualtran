@@ -14,18 +14,18 @@
 """PREPARE for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 from sympy import factorint
 
 from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.swap_network import CSwapApprox
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -59,7 +59,7 @@ class PrepareUniformSuperpositionSparse(Bloq):
         regs = [Register('d', (self.num_non_zero - 1).bit_length())]
         return Signature(regs)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         factors = factorint(self.num_non_zero)
         eta = factors[min(list(sorted(factors.keys())))]
         if self.num_non_zero % 2 == 1:
@@ -67,7 +67,7 @@ class PrepareUniformSuperpositionSparse(Bloq):
         uniform_prep = (
             3 * (self.num_non_zero - 1).bit_length() - 3 * eta + 2 * self.num_bits_rot_aa - 9
         )
-        return {(4 * uniform_prep, TGate())}
+        return {(Toffoli(), uniform_prep)}
 
 
 @frozen
@@ -136,7 +136,7 @@ class PrepareSparse(Bloq):
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
         if self.adjoint:
             num_toff_qrom = int(np.ceil(self.num_non_zero / self.k)) + self.k  # A15
@@ -145,16 +145,16 @@ class PrepareSparse(Bloq):
             num_toff_qrom = int(np.ceil(self.num_non_zero / self.k)) + output_size * (
                 self.k - 1
             )  # A14
-        qrom_cost = (4 * num_toff_qrom, TGate())
+        qrom_cost = (Toffoli(), num_toff_qrom)
         if self.adjoint:
             return {
-                (1, PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa)),
+                (PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa), 1),
                 qrom_cost,
             }
-        swap_cost_state_prep = (4 + 4, CSwapApprox(num_bits_spat))  # 2. pg 39
-        ineq_cost_state_prep = (4 * (self.num_bits_state_prep + 1), TGate())  # 2. pg 39
+        swap_cost_state_prep = (CSwapApprox(num_bits_spat), 4 + 4)  # 2. pg 39
+        ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
         return {
-            (1, PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa)),
+            (PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa), 1),
             qrom_cost,
             swap_cost_state_prep,
             ineq_cost_state_prep,

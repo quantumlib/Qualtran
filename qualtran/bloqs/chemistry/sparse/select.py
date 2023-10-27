@@ -14,15 +14,15 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -69,11 +69,11 @@ class SelectSparse(Bloq):
             regs += [Register("control", 1)]
         return Signature(regs)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
         # which is not controlled (for the two body part of the Ham). The figure
         # is a bit misleading as applying that circuit twice would square the
         # value in the sign. In reality the Z to pick up the sign could be done
         # after prepare (but only once).
         # In practice we would apply the selected majoranas to (p, q, alpha) and then (r, s, beta).
-        return {(4 * (4 * self.num_spin_orb - 6), TGate())}
+        return {(Toffoli(), (4 * self.num_spin_orb - 6))}

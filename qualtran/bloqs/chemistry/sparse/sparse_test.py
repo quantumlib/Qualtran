@@ -18,7 +18,6 @@ from openfermion.resource_estimates.utils import QI
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
-from qualtran.resource_counting import get_bloq_counts_graph
 from qualtran.testing import execute_notebook
 
 
@@ -29,28 +28,27 @@ from qualtran.testing import execute_notebook
 def test_sparse_costs_against_openfermion(num_spin_orb, num_non_zero, num_bits_rot_aa):
     num_bits_state_prep = 12
     cost = 0
-    _, sigma = get_bloq_counts_graph(SelectSparse(num_spin_orb))
+    bloq = SelectSparse(num_spin_orb)
+    _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
-    _, sigma = get_bloq_counts_graph(
-        PrepareSparse(
-            num_spin_orb,
-            num_non_zero,
-            num_bits_rot_aa=num_bits_rot_aa,
-            num_bits_state_prep=num_bits_state_prep,
-            k=32,  # harcoded in openfermion
-        )
+    bloq = PrepareSparse(
+        num_spin_orb,
+        num_non_zero,
+        num_bits_rot_aa=num_bits_rot_aa,
+        num_bits_state_prep=num_bits_state_prep,
+        k=32,  # harcoded in openfermion
     )
+    _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
-    _, sigma = get_bloq_counts_graph(
-        PrepareSparse(
-            num_spin_orb,
-            num_non_zero,
-            num_bits_rot_aa=num_bits_rot_aa,
-            num_bits_state_prep=num_bits_state_prep,
-            adjoint=True,
-            k=2 ** QI(num_non_zero)[0],  # determined from QI in openfermion
-        )
+    bloq = PrepareSparse(
+        num_spin_orb,
+        num_non_zero,
+        num_bits_rot_aa=num_bits_rot_aa,
+        num_bits_state_prep=num_bits_state_prep,
+        adjoint=True,
+        k=2 ** QI(num_non_zero)[0],  # determined from QI in openfermion
     )
+    _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
     unused_lambda = 10
     unused_de = 1e-3
