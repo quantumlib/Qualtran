@@ -23,18 +23,17 @@ from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
     PolynmomialEvaluationInverseSquareRoot,
 )
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_fixed_point
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def test_newton_raphson_inverse_sqrt():
     bloq = NewtonRaphsonApproxInverseSquareRoot(7, 8, 12)
-    _, counts = get_bloq_counts_graph(bloq)
+    _, counts = bloq.call_graph()
     assert counts[TGate()] == 1632
 
 
 def test_poly_eval_inverse_sqrt():
     bloq = PolynmomialEvaluationInverseSquareRoot(7, 8, 12)
-    _, counts = get_bloq_counts_graph(bloq)
+    _, counts = bloq.call_graph()
     assert counts[TGate()] == 744
 
 

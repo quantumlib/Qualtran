@@ -15,11 +15,11 @@ import re
 
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.drawing import format_counts_graph_markdown, format_counts_sigma, GraphvizCounts
-from qualtran.resource_counting import get_bloq_counts_graph
+from qualtran.resource_counting import get_bloq_call_graph
 
 
 def test_format_counts_sigma():
-    graph, sigma = get_bloq_counts_graph(MultiAnd(cvs=(1,) * 6))
+    graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     ret = format_counts_sigma(sigma)
     assert (
         ret
@@ -31,7 +31,7 @@ def test_format_counts_sigma():
 
 
 def test_format_counts_graph_markdown():
-    graph, sigma = get_bloq_counts_graph(MultiAnd(cvs=(1,) * 6))
+    graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     ret = format_counts_graph_markdown(graph)
     assert (
         ret
@@ -45,7 +45,7 @@ def test_format_counts_graph_markdown():
 
 
 def test_graphviz_counts():
-    graph, sigma = get_bloq_counts_graph(MultiAnd(cvs=(1,) * 6))
+    graph, sigma = get_bloq_call_graph(MultiAnd(cvs=(1,) * 6))
     gvc = GraphvizCounts(graph)
 
     # The main test is in the drawing notebook, so please spot check that.

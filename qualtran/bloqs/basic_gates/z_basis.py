@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -291,8 +291,8 @@ class _IntVector(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(big_O(1), ArbitraryClifford(self.bitsize))}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(ArbitraryClifford(self.bitsize), big_O(1))}
 
     def short_name(self) -> str:
         return f'{self.val}'

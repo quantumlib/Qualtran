@@ -14,7 +14,7 @@
 
 import abc
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -48,9 +48,9 @@ class RotationBloq(Bloq, metaclass=abc.ABCMeta):
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
         return TComplexity(t=num_t)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
-        return {(num_t, TGate())}
+        return {(TGate(), num_t)}
 
 
 @frozen
