@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 _PAULIY = np.array([[0, -1j], [1j, 0]], dtype=np.complex128)
 

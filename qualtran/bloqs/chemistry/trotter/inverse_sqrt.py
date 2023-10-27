@@ -13,7 +13,7 @@
 #  limitations under the License.
 """Bloqs for computing the inverse Square root of a fixed point number."""
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -25,7 +25,7 @@ from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 def get_inverse_square_root_poly_coeffs() -> Tuple[NDArray, NDArray]:
@@ -176,7 +176,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             + Add(self.target_bitsize).t_complexity()
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # y * ((2 + b^2 + delta) + y^2 x)
         # 1. square y
         # 2. scale y^2 by x
@@ -184,10 +184,10 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         # 4. multiply y^2 x by y
         # 5. add 3. and 4.
         return {
-            (1, SquareRealNumber(self.poly_bitsize)),
-            (1, ScaleIntByReal(self.target_bitsize, self.x_sq_bitsize)),
-            (2, MultiplyTwoReals(self.target_bitsize)),
-            (1, Add(self.target_bitsize)),
+            (SquareRealNumber(self.poly_bitsize), 1),
+            (ScaleIntByReal(self.target_bitsize, self.x_sq_bitsize), 1),
+            (MultiplyTwoReals(self.target_bitsize), 2),
+            (Add(self.target_bitsize), 1),
         }
 
 
@@ -233,7 +233,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
             + MultiplyTwoReals(self.poly_bitsize).t_complexity()
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(3, MultiplyTwoReals(self.poly_bitsize)), (3, Add(self.poly_bitsize))}
+        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(self.poly_bitsize), 3)}
