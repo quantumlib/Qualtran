@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, Tuple
+from typing import Sequence
 
 import cirq
 import numpy as np
@@ -106,7 +106,7 @@ def test_generalized_qsp_on_random_unitaries(
 
 @frozen
 class SymbolicGQSP:
-    """Run the Generalized QSP algorithm on a symbolic input unitary
+    r"""Run the Generalized QSP algorithm on a symbolic input unitary
 
     Assuming the input unitary $U$ is symbolic, we construct the signal matrix $A$ as:
 
