@@ -1,0 +1,11 @@
+# Sphinx (stage 3) generation
+_build/
+
+# Generated reference toc
+reference/autotoc.rst
+
+# All the generated reference pages
+**/*.md
+
+# All the generated notebooks
+**/*.ipynb
