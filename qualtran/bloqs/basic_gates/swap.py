@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -159,8 +159,8 @@ class TwoBitCSwap(Bloq):
         # https://arxiv.org/abs/1308.4134
         return TComplexity(t=7, clifford=10)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(7, TGate()), (10, ArbitraryClifford(n=3))}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TGate(), 7), (ArbitraryClifford(n=3), 10)}
 
 
 @frozen
@@ -200,8 +200,8 @@ class CSwap(GateWithRegisters):
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(self.bitsize, TwoBitCSwap())}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TwoBitCSwap(), self.bitsize)}
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'

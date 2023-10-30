@@ -12,22 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd
+from qualtran.bloqs.chemistry.sparse import SelectSparse
 
 
-def test_ctrl_scale_mod_add():
-    bloq = CtrlScaleModAdd(k=123, mod=13 * 17, bitsize=8)
-    assert bloq.short_name() == 'y += x*123 % 221'
+def _make_sparse_select():
+    from qualtran.bloqs.chemistry.sparse import SelectSparse
 
-    counts = bloq.bloq_counts()
-    ((bloq, n),) = counts.items()
-    assert n == 8
+    return SelectSparse(10)
 
 
-def test_ctrl_mod_add_k():
-    bloq = CtrlModAddK(k=123, mod=13 * 17, bitsize=8)
-    assert bloq.short_name() == 'x += 123 % 221'
+def test_sparse_select():
+    sel = SelectSparse(10)
 
-    counts = bloq.bloq_counts()
-    ((bloq, n),) = counts.items()
-    assert n == 5
+
+def test_sparse_select_bloq_counts():
+    bloq = SelectSparse(10)
+    graph, sigma = bloq.call_graph()
+    assert isinstance(sigma, dict)

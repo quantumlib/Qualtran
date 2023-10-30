@@ -33,7 +33,7 @@ from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
-from qualtran.resource_counting import get_bloq_counts_graph, SympySymbolAllocator
+from qualtran.resource_counting import SympySymbolAllocator
 
 # this code will be cleaned up post cirq_ft alignment:
 # https://github.com/quantumlib/Qualtran/issues/425
@@ -111,10 +111,10 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
         classified_bloqs : Dataclass containing bloq counts for different types of bloqs.
     """
     classified_bloqs = defaultdict(int)
-    for num_calls, bloq in bloq.bloq_counts():
+    for bloq, num_calls in bloq.bloq_counts().items():
         if isinstance(bloq, (Split, Join, Allocate, Free)):
             continue
-        num_t = get_bloq_counts_graph(bloq, generalizer=generalize)[1].get(TGate())
+        num_t = bloq.call_graph(generalizer=generalize)[1].get(TGate())
         if num_t is not None:
             num_t = int(num_t)
             if isinstance(bloq, bloq_comparators):
