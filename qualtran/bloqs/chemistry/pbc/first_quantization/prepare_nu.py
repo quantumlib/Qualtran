@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""Bloqs for preparation of the U and V parts of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -23,7 +23,7 @@ from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -54,9 +54,8 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
     def signature(self) -> Signature:
         return Signature([Register("mu", self.num_bits_p), Register("flag", 1, side=Side.RIGHT)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        # controlled hadamards which cannot be inverted at zero Toffoli cost.
-        return {((self.num_bits_p - 1), Toffoli())}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(Toffoli(), (self.num_bits_p - 1))}
 
 
 @frozen
@@ -92,9 +91,9 @@ class PrepareNuSuperPositionState(Bloq):
             [Register("mu", self.num_bits_p), Register("nu", self.num_bits_p + 1, shape=(3,))]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
-        return {((3 * (self.num_bits_p - 1)), Toffoli())}
+        return {(Toffoli(), (3 * (self.num_bits_p - 1)))}
 
 
 @frozen
@@ -124,14 +123,14 @@ class FlagZeroAsFailure(Bloq):
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
             # This can be inverted with cliffords.
-            return {(0, Toffoli())}
+            return {(Toffoli(), 0)}
         else:
             # Controlled Toffoli each having n_p + 1 controls and 2 Toffolis to
             # check the result of the Toffolis.
-            return {((3 * self.num_bits_p + 2), Toffoli())}
+            return {(Toffoli(), (3 * self.num_bits_p + 2))}
 
 
 @frozen
@@ -162,13 +161,13 @@ class TestNuLessThanMu(Bloq):
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
             # This can be inverted with cliffords.
-            return {(0, Toffoli())}
+            return {(Toffoli(), 0)}
         else:
             # n_p controlled Toffolis with four controls.
-            return {(3 * self.num_bits_p, Toffoli())}
+            return {(Toffoli(), 3 * self.num_bits_p)}
 
 
 @frozen
@@ -219,18 +218,18 @@ class TestNuInequality(Bloq):
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
-            return {(0, Toffoli())}
+            return {(Toffoli(), 0)}
         else:
             # 1. Compute $\nu_x^2 + \nu_y^2 + \nu_z^2$
-            cost_1 = (1, SumOfSquares(self.num_bits_p, k=3))
+            cost_1 = (SumOfSquares(self.num_bits_p, k=3), 1)
             # 2. Compute $m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
-            cost_2 = (1, Product(2 * self.num_bits_p + 2, self.num_bits_m))
+            cost_2 = (Product(2 * self.num_bits_p + 2, self.num_bits_m), 1)
             # 3. Inequality test
-            cost_3 = (1, GreaterThan(self.num_bits_m, 2 * self.num_bits_p + 2))
+            cost_3 = (GreaterThan(self.num_bits_m, 2 * self.num_bits_p + 2), 1)
             # 4. 3 Toffoli for overall success
-            cost_4 = (3, Toffoli())
+            cost_4 = (Toffoli(), 3)
             return {cost_1, cost_2, cost_3, cost_4}
 
 
@@ -306,17 +305,17 @@ class PrepareNuState(Bloq):
         )
         return {'mu': mu, 'nu': nu, 'm': m, 'flag_nu': flag_nu}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1. Prepare unary encoded superposition state (Eq 77)
-        cost_1 = (1, PrepareMuUnaryEncodedOneHot(self.num_bits_p))
+        cost_1 = (PrepareMuUnaryEncodedOneHot(self.num_bits_p), 1)
         n_m = (self.m_param - 1).bit_length()
         # 2. Prepare mu-nu superposition (Eq 78)
-        cost_2 = (1, PrepareNuSuperPositionState(self.num_bits_p))
+        cost_2 = (PrepareNuSuperPositionState(self.num_bits_p), 1)
         # 3. Remove minus zero
-        cost_3 = (1, FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint))
+        cost_3 = (FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint), 1)
         # 4. Test $\nu < 2^{\mu-2}$
-        cost_4 = (1, TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint))
+        cost_4 = (TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint), 1)
         # 5. Prepare superposition over $m$ which is a power of two so only clifford.
         # 6. Test that $(2^{\mu-2})^2\mathcal{M} > m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
-        cost_6 = (1, TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint))
+        cost_6 = (TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint), 1)
         return {cost_1, cost_2, cost_3, cost_4, cost_6}

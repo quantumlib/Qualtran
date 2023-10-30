@@ -14,7 +14,7 @@
 r"""PREPARE the super position over nuclear weights for the first quantized chemistry Hamiltonian.
 """
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -23,7 +23,7 @@ from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -55,10 +55,10 @@ class PrepareZetaState(Bloq):
     def signature(self) -> Signature:
         return Signature([Register("l", bitsize=(self.num_atoms - 1).bit_length())])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
             # Really Er(x), eq 91. In practice we will replace this with the
             # appropriate qrom call down the line.
-            return {(int(np.ceil(self.lambda_zeta**0.5)), Toffoli())}
+            return {(Toffoli(), int(np.ceil(self.lambda_zeta**0.5)))}
         else:
-            return {(self.lambda_zeta, Toffoli())}
+            return {(Toffoli(), self.lambda_zeta)}

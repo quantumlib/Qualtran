@@ -63,7 +63,10 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t_test
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv_test
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t_test
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv_test
-import qualtran.bloqs.chemistry.thc_test
+import qualtran.bloqs.chemistry.sparse.prepare_test
+import qualtran.bloqs.chemistry.sparse.select_test
+import qualtran.bloqs.chemistry.thc.prepare_test
+import qualtran.bloqs.chemistry.thc.select_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
@@ -150,10 +153,20 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         title='Tensor Hypercontraction',
         module=qualtran.bloqs.chemistry.thc,
         gate_specs=[
-            BloqNbSpec(qualtran.bloqs.chemistry.thc_test._make_uniform_superposition),
-            BloqNbSpec(qualtran.bloqs.chemistry.thc_test._make_prepare),
+            BloqNbSpec(qualtran.bloqs.chemistry.thc.prepare_test._make_uniform_superposition),
+            BloqNbSpec(qualtran.bloqs.chemistry.thc.prepare_test._make_prepare),
+            BloqNbSpec(qualtran.bloqs.chemistry.thc.select_test._make_select),
         ],
-        directory=f'{SOURCE_DIR}/bloqs/chemistry',
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
+    ),
+    NotebookSpec(
+        title='Sparse Hamiltonian',
+        module=qualtran.bloqs.chemistry.sparse,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.chemistry.sparse.prepare_test._make_sparse_prepare),
+            BloqNbSpec(qualtran.bloqs.chemistry.sparse.select_test._make_sparse_select),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),
     NotebookSpec(
         title='First Quantization',

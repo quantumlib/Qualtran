@@ -19,9 +19,11 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import Bloq, BloqBuilder
+import qualtran.testing as qlt_testing
+from qualtran import Bloq, BloqBuilder, DecomposeTypeError
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import (
+    CSwap,
     OneEffect,
     OneState,
     TwoBitCSwap,
@@ -29,10 +31,14 @@ from qualtran.bloqs.basic_gates import (
     ZeroEffect,
     ZeroState,
 )
-from qualtran.bloqs.basic_gates.swap import _controlled_swap_matrix, _swap_matrix, CSwap
+from qualtran.bloqs.basic_gates.swap import (
+    _controlled_swap_matrix,
+    _cswap_large,
+    _cswap_small,
+    _cswap_symb,
+    _swap_matrix,
+)
 from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
-from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def _make_CSwap():
@@ -51,10 +57,13 @@ def test_cswap_matrix():
     np.testing.assert_array_equal(m, cirq.unitary(cirq.CSWAP))
 
 
-def test_two_bit_swap():
+def test_two_bit_swap_unitary_vs_cirq():
     swap = TwoBitSwap()
     np.testing.assert_array_equal(swap.tensor_contract(), cirq.unitary(cirq.SWAP))
 
+
+def test_two_bit_swap_call_classically():
+    swap = TwoBitSwap()
     x, y = swap.call_classically(x=0, y=1)
     assert x == 1
     assert y == 0
@@ -113,7 +122,7 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
 
 def test_cswap_bloq_decomp():
     cswap = CSwap(16)
-    assert_valid_bloq_decomposition(cswap)
+    qlt_testing.assert_valid_bloq_decomposition(cswap)
 
 
 def test_cswap_cirq_decomp():
@@ -183,16 +192,27 @@ def test_cswap_bloq_counts():
             return
         return b
 
-    counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
-
+    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
     assert counts1 == counts2
 
 
 def test_cswap_symbolic():
     n = sympy.symbols('n')
     cswap = CSwap(bitsize=n)
-    counts = cswap.bloq_counts(SympySymbolAllocator())
+    counts = cswap.bloq_counts()
     assert len(counts) == 1
-    assert counts.pop() == (n, TwoBitCSwap())
-    with pytest.raises(ValueError):
+    assert counts[TwoBitCSwap()] == n
+    with pytest.raises(DecomposeTypeError):
         cswap.decompose_bloq()
+
+
+def test_cswap_small(bloq_autotester):
+    bloq_autotester(_cswap_small)
+
+
+def test_cswap_large(bloq_autotester):
+    bloq_autotester(_cswap_large)
+
+
+def test_cswap_symb(bloq_autotester):
+    bloq_autotester(_cswap_symb)

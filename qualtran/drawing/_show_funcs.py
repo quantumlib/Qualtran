@@ -53,7 +53,7 @@ def show_bloqs(bloqs: Sequence['Bloq'], labels: Sequence[str] = None):
     IPython.display.display(box)
 
 
-def show_counts_graph(g: 'nx.DiGraph') -> None:
+def show_call_graph(g: 'nx.DiGraph') -> None:
     """Display a graph representation of the counts graph `g`."""
     IPython.display.display(GraphvizCounts(g).get_svg())
 

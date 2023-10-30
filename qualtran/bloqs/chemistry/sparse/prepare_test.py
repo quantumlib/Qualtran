@@ -12,23 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.thc_select import SelectTHC
+from qualtran.bloqs.chemistry.sparse import PrepareSparse
 
 
-def _make_select():
-    from qualtran.bloqs.chemistry.thc_select import SelectTHC
+def _make_sparse_prepare():
+    from qualtran.bloqs.chemistry.sparse import PrepareSparse
 
-    num_spat = 4
-    num_mu = 8
-    return SelectTHC(num_mu=num_mu, num_spat=num_spat)
+    return PrepareSparse(10, 1_000, 8)
 
 
-def test_select_thc():
-    num_mu = 10
-    num_spin_orb = 2 * 4
-    angles = ((0.5,) * (num_spin_orb // 2),) * num_mu
-    select = SelectTHC(
-        num_mu=num_mu, num_spin_orb=num_spin_orb, rotation_angles=angles, num_bits_theta=12
-    )
-    qlt_testing.assert_valid_bloq_decomposition(select)
+def test_sparse_prepare():
+    prep = PrepareSparse(10, 1_000, 8)
+
+
+def test_sparse_prepare_bloq_counts():
+    bloq = PrepareSparse(10, 1_000, 8)
+    graph, sigma = bloq.call_graph()
