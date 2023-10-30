@@ -19,6 +19,7 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, Signature, SoquetT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
@@ -74,3 +75,6 @@ class Hadamard(Bloq):
 
         (q,) = q
         return cirq.H(q), {'q': np.array([q])}
+
+    def t_complexity(self):
+        return TComplexity(clifford=1)

@@ -32,7 +32,7 @@ def _make_bitonic_sort():
 
 def test_comparator():
     bloq = Comparator(4)
-    assert bloq.t_complexity().t == 88
+    assert bloq.t_complexity().t == 88 - 4
     with pytest.raises(NotImplementedError):
         bloq.decompose_bloq()
 
@@ -41,7 +41,7 @@ def test_bitonic_sort():
     bitsize = 4
     k = 8
     bloq = BitonicSort(bitsize, k)
-    assert bloq.t_complexity().t == 8 * 9 * 88
+    assert bloq.t_complexity().t == 8 * 9 * (88 - 4)
     with pytest.raises(NotImplementedError):
         bloq.decompose_bloq()
 

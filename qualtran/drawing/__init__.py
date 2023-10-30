@@ -17,8 +17,7 @@
 isort:skip_file
 """
 
-
-from .graphviz import GraphDrawer, PrettyGraphDrawer, ClassicalSimGraphDrawer, show_bloq
+from .graphviz import GraphDrawer, PrettyGraphDrawer
 from .musical_score import (
     RegPosition,
     HLine,
@@ -37,3 +36,9 @@ from .musical_score import (
     draw_musical_score,
     dump_musical_score,
 )
+
+from .classical_sim_graph import ClassicalSimGraphDrawer
+
+from .bloq_counts_graph import GraphvizCounts, format_counts_sigma, format_counts_graph_markdown
+
+from ._show_funcs import show_bloq, show_bloqs, show_call_graph, show_counts_sigma

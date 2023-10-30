@@ -21,11 +21,6 @@ from .bloq_counts import (
     BloqCountT,
     big_O,
     SympySymbolAllocator,
-    get_cbloq_bloq_counts,
-    get_bloq_counts_graph,
+    get_bloq_call_graph,
     print_counts_graph,
-    markdown_bloq_expr,
-    markdown_counts_graph,
-    markdown_counts_sigma,
-    GraphvizCounts,
 )

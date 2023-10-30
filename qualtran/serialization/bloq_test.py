@@ -17,7 +17,6 @@ from typing import Union
 
 import attrs
 import cirq
-import cirq_ft
 import sympy
 
 from qualtran import Bloq, Signature
@@ -27,6 +26,7 @@ from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
 
@@ -74,8 +74,8 @@ class TestCSwap(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
-    def t_complexity(self) -> cirq_ft.TComplexity:
-        return cirq_ft.TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
+    def t_complexity(self) -> TComplexity:
+        return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
 
 @dataclasses.dataclass(frozen=True)

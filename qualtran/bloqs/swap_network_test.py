@@ -13,16 +13,27 @@
 #  limitations under the License.
 
 import random
+from typing import Dict, Tuple
 
 import cirq
-import cirq_ft
-import cirq_ft.infra.testing as cq_testing
 import numpy as np
 import pytest
+import sympy
 
-from qualtran import BloqBuilder
+import qualtran.cirq_interop.testing as cq_testing
+from qualtran import Bloq, BloqBuilder
+from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.basic_gates.z_basis import IntState
-from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
+from qualtran.bloqs.swap_network import (
+    _approx_cswap_large,
+    _approx_cswap_small,
+    _approx_cswap_symb,
+    _swz_small,
+    CSwapApprox,
+    SwapWithZero,
+)
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.simulation.quimb_sim import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -70,7 +81,6 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
     expected_state_vector = np.zeros(2**target_bitsize)
     # Iterate on every selection integer.
     for selection_integer in range(len(data)):
-
         bb = BloqBuilder()
         sel = bb.add(IntState(val=selection_integer, bitsize=selection_bitsize))
         trgs = []
@@ -79,8 +89,8 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
             trgs.append(trg)
         sel, trgs = bb.add(swz, selection=sel, targets=np.array(trgs))
         circuit = bb.finalize(sel=sel, trgs=trgs)
-        full_state_vector = flatten_for_tensor_contraction(circuit).tensor_contract()
-
+        flat_circuit = flatten_for_tensor_contraction(circuit)
+        full_state_vector = flat_circuit.tensor_contract()
         result_state_vector = cirq.sub_state_vector(
             full_state_vector,
             keep_indices=list(range(selection_bitsize, selection_bitsize + target_bitsize)),
@@ -92,6 +102,37 @@ def test_swap_with_zero_bloq(selection_bitsize, target_bitsize, n_target_registe
         expected_state_vector[data[selection_integer]] = 0
 
 
+def test_swap_with_zero_cirq_gate_diagram():
+    gate = SwapWithZero(3, 2, 4)
+    gh = cq_testing.GateHelper(gate)
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(gh.operation, cirq.decompose_once(gh.operation)),
+        """
+selection0: ──────@(r⇋0)───────────────────────────────────────
+                  │
+selection1: ──────@(r⇋0)───────────────────────────@(approx)───
+                  │                                │
+selection2: ──────@(r⇋0)───@(approx)───@(approx)───┼───────────
+                  │        │           │           │
+targets[0][0]: ───swap_0───×(x)────────┼───────────×(x)────────
+                  │        │           │           │
+targets[0][1]: ───swap_0───×(x)────────┼───────────×(x)────────
+                  │        │           │           │
+targets[1][0]: ───swap_1───×(y)────────┼───────────┼───────────
+                  │        │           │           │
+targets[1][1]: ───swap_1───×(y)────────┼───────────┼───────────
+                  │                    │           │
+targets[2][0]: ───swap_2───────────────×(x)────────×(y)────────
+                  │                    │           │
+targets[2][1]: ───swap_2───────────────×(x)────────×(y)────────
+                  │                    │
+targets[3][0]: ───swap_3───────────────×(y)────────────────────
+                  │                    │
+targets[3][1]: ───swap_3───────────────×(y)────────────────────
+""",
+    )
+
+
 def test_swap_with_zero_classically():
     data = np.array([131, 255, 92, 2])
     swz = SwapWithZero(selection_bitsize=2, target_bitsize=8, n_target_registers=4)
@@ -101,28 +142,83 @@ def test_swap_with_zero_classically():
         print(sel, out_data)
 
 
+def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
+    """Get the t count and clifford cost from bloq count."""
+    cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])
+    t_cost = sum([v for k, v in bc.items() if isinstance(k, TGate)])
+    return t_cost, cliff_cost
+
+
 @pytest.mark.parametrize("n", [*range(1, 6)])
 def test_t_complexity(n):
-    g = cirq_ft.MultiTargetCSwap(n)
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
 
-    g = cirq_ft.MultiTargetCSwapApprox(n)
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(g)
+    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwapApprox(n))
+
+
+@pytest.mark.parametrize("n", [*range(2, 6)])
+def test_cswap_approx_bloq_counts(n):
+    csa = CSwapApprox(n)
+    bc = csa.bloq_counts()
+    t_cost, cliff_cost = get_t_count_and_clifford(bc)
+    assert csa.t_complexity().clifford == cliff_cost
+    assert csa.t_complexity().t == t_cost
 
 
 @pytest.mark.parametrize(
     "selection_bitsize, target_bitsize, n_target_registers, want",
     [
-        [3, 5, 1, cirq_ft.TComplexity(t=0, clifford=0)],
-        [2, 2, 3, cirq_ft.TComplexity(t=16, clifford=86)],
-        [2, 3, 4, cirq_ft.TComplexity(t=36, clifford=195)],
-        [3, 2, 5, cirq_ft.TComplexity(t=32, clifford=172)],
-        [4, 1, 10, cirq_ft.TComplexity(t=36, clifford=189)],
+        [3, 5, 1, TComplexity(t=0, clifford=0)],
+        [2, 2, 3, TComplexity(t=16, clifford=86)],
+        [2, 3, 4, TComplexity(t=36, clifford=195)],
+        [3, 2, 5, TComplexity(t=32, clifford=172)],
+        [4, 1, 10, TComplexity(t=36, clifford=189)],
+    ],
+)
+def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_registers, want):
+    gate = SwapWithZero(selection_bitsize, target_bitsize, n_target_registers)
+
+    n = sympy.Symbol('n')
+
+    def _gen_clif(bloq: Bloq) -> Bloq:
+        if isinstance(bloq, ArbitraryClifford):
+            return ArbitraryClifford(n)
+        return bloq
+
+    _, sigma = gate.call_graph(generalizer=_gen_clif)
+    assert sigma[TGate()] == want.t
+    assert sigma[ArbitraryClifford(n)] == want.clifford
+
+
+@pytest.mark.parametrize(
+    "selection_bitsize, target_bitsize, n_target_registers, want",
+    [
+        [3, 5, 1, TComplexity(t=0, clifford=0)],
+        [2, 2, 3, TComplexity(t=16, clifford=86)],
+        [2, 3, 4, TComplexity(t=36, clifford=195)],
+        [3, 2, 5, TComplexity(t=32, clifford=172)],
+        [4, 1, 10, TComplexity(t=36, clifford=189)],
     ],
 )
 def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers, want):
-    gate = cirq_ft.SwapWithZeroGate(selection_bitsize, target_bitsize, n_target_registers)
-    assert want == cirq_ft.t_complexity(gate)
+    gate = SwapWithZero(selection_bitsize, target_bitsize, n_target_registers)
+    assert want == gate.t_complexity()
+
+
+def test_approx_cswap_small(bloq_autotester):
+    bloq_autotester(_approx_cswap_small)
+
+
+def test_approx_cswap_symb(bloq_autotester):
+    bloq_autotester(_approx_cswap_symb)
+
+
+def test_approx_cswap_large(bloq_autotester):
+    bloq_autotester(_approx_cswap_large)
+
+
+def test_swz_small(bloq_autotester):
+    bloq_autotester(_swz_small)
 
 
 def test_notebook():

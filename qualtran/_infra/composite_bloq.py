@@ -34,7 +34,6 @@ from typing import (
 import attrs
 import networkx as nx
 import numpy as np
-from cirq_ft import TComplexity
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -45,6 +44,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregInT, CirqQuregT
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -84,10 +84,10 @@ class CompositeBloq(Bloq):
 
     connections: Tuple[Connection, ...] = attrs.field(converter=tuple)
     signature: Signature
+    bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=frozenset)
 
-    @cached_property
-    def bloq_instances(self) -> Set[BloqInstance]:
-        """The set of `BloqInstance`s making up the nodes of the graph."""
+    @bloq_instances.default
+    def _default_bloq_instances(self):
         return {
             soq.binst
             for cxn in self.connections
@@ -114,7 +114,7 @@ class CompositeBloq(Bloq):
         do not mutate the graph. It is cached for performance reasons. Use g.copy() to
         get a copy.
         """
-        return _create_binst_graph(self.connections)
+        return _create_binst_graph(self.connections, self.bloq_instances)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
@@ -187,8 +187,10 @@ class CompositeBloq(Bloq):
         out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
         return tuple(out_vals[reg.name] for reg in self.signature.rights())
 
-    def t_complexity(self) -> TComplexity:
+    def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for a composite bloq is the sum of its components' counts."""
+        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+
         rc = TComplexity()
         for binst in self.bloq_instances:
             rc += binst.bloq.t_complexity()
@@ -201,11 +203,11 @@ class CompositeBloq(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise NotImplementedError("Come back later.")
 
-    def bloq_counts(self, _: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""
-        from qualtran.resource_counting import get_cbloq_bloq_counts
+        from qualtran.resource_counting.bloq_counts import _build_cbloq_counts_graph
 
-        return get_cbloq_bloq_counts(self)
+        return _build_cbloq_counts_graph(self)
 
     def iter_bloqnections(
         self,
@@ -268,6 +270,8 @@ class CompositeBloq(Bloq):
 
         This method is helpful for finalizing an "add from" operation, see `iter_bloqsoqs`.
         """
+        if RightDangle not in self._binst_graph:
+            return {}
         final_preds, _ = _binst_to_cxns(RightDangle, binst_graph=self._binst_graph)
         return _cxn_to_soq_dict(
             self.signature.rights(),
@@ -415,7 +419,9 @@ class CompositeBloq(Bloq):
         return delimited_gens
 
 
-def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
+def _create_binst_graph(
+    cxns: Iterable[Connection], nodes: Iterable[BloqInstance] = ()
+) -> nx.DiGraph:
     """Helper function to create a NetworkX graph so we can topologically visit BloqInstances.
 
     `CompositeBloq` defines a directed acyclic graph, so we can iterate in (time) order.
@@ -431,6 +437,7 @@ def _create_binst_graph(cxns: Iterable[Connection]) -> nx.DiGraph:
             binst_graph.edges[binst_edge]['cxns'].append(cxn)
         else:
             binst_graph.add_edge(*binst_edge, cxns=[cxn])
+    binst_graph.add_nodes_from(nodes)
     return binst_graph
 
 
@@ -713,6 +720,7 @@ class BloqBuilder:
         # To be appended to:
         self._cxns: List[Connection] = []
         self._regs: List[Register] = []
+        self._binsts: Set[BloqInstance] = set()
 
         # Initialize our BloqInstance counter
         self._i = 0
@@ -922,6 +930,8 @@ class BloqBuilder:
         Warning! Do not use this function externally! Untold bad things will happen if
         the provided `binst.i` is not unique.
         """
+        self._binsts.add(binst)
+
         bloq = binst.bloq
 
         def _add(idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]):
@@ -1029,7 +1039,9 @@ class BloqBuilder:
                 f"During finalization, {self._available} Soquets were not used."
             ) from None
 
-        return CompositeBloq(connections=self._cxns, signature=signature)
+        return CompositeBloq(
+            connections=self._cxns, signature=signature, bloq_instances=self._binsts
+        )
 
     def allocate(self, n: int = 1) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate

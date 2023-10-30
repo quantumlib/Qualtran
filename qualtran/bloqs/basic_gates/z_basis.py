@@ -13,17 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
 import quimb.tensor as qtn
 import sympy
 from attrs import frozen
-from cirq_ft import TComplexity
+from numpy.typing import NDArray
 
-from qualtran import Bloq, Register, Side, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O
 from qualtran.simulation.classical_sim import ints_to_bits
 
@@ -230,15 +231,35 @@ class _IntVector(Bloq):
         side = Side.RIGHT if self.state else Side.LEFT
         return Signature([Register('val', bitsize=self.bitsize, side=side)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+    @staticmethod
+    def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
         states = [ZeroState(), OneState()]
         xs = []
-        for bit in ints_to_bits(np.array([self.val]), w=self.bitsize)[0]:
+        for bit in bits:
             x = bb.add(states[bit])
             xs.append(x)
         xs = np.array(xs)
 
         return {'val': bb.join(xs)}
+
+    @staticmethod
+    def _build_composite_effect(
+        bb: 'BloqBuilder', val: 'SoquetT', bits: NDArray[np.uint8]
+    ) -> Dict[str, 'SoquetT']:
+        xs = bb.split(val)
+        effects = [ZeroEffect(), OneEffect()]
+        for i, bit in enumerate(bits):
+            bb.add(effects[bit], q=xs[i])
+        return {}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
+        bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
+        if self.state:
+            assert not val
+            return self._build_composite_state(bb, bits)
+        else:
+            val = val['val']
+            return self._build_composite_effect(bb, val, bits)
 
     def add_my_tensors(
         self,
@@ -270,8 +291,8 @@ class _IntVector(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(big_O(1), ArbitraryClifford(self.bitsize))}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(ArbitraryClifford(self.bitsize), big_O(1))}
 
     def short_name(self) -> str:
         return f'{self.val}'

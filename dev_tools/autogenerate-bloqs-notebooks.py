@@ -59,6 +59,10 @@ import qualtran.bloqs.basic_gates.t_gate_test
 import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
+import qualtran.bloqs.chemistry.sparse.prepare_test
+import qualtran.bloqs.chemistry.sparse.select_test
+import qualtran.bloqs.chemistry.thc.prepare_test
+import qualtran.bloqs.chemistry.thc.select_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
@@ -112,9 +116,13 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_sum_of_squares),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_greater_than),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_greater_than_constant),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_equals_a_constant),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_to_contiguous_index),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_scale_int_by_real),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_multiply_two_reals),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square_real_number),
+            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_signed_to_twos_complement),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),
@@ -136,6 +144,25 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.factoring.mod_mul_test._make_modmul),
         ],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
+    NotebookSpec(
+        title='Tensor Hypercontraction',
+        module=qualtran.bloqs.chemistry.thc,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.chemistry.thc.prepare_test._make_uniform_superposition),
+            BloqNbSpec(qualtran.bloqs.chemistry.thc.prepare_test._make_prepare),
+            BloqNbSpec(qualtran.bloqs.chemistry.thc.select_test._make_select),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
+    ),
+    NotebookSpec(
+        title='Sparse Hamiltonian',
+        module=qualtran.bloqs.chemistry.sparse,
+        gate_specs=[
+            BloqNbSpec(qualtran.bloqs.chemistry.sparse.prepare_test._make_sparse_prepare),
+            BloqNbSpec(qualtran.bloqs.chemistry.sparse.select_test._make_sparse_select),
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),
 ]
 
