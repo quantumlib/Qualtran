@@ -14,7 +14,7 @@
 r"""PREPARE the super position over nuclear weights for the first quantized chemistry Hamiltonian.
 """
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
