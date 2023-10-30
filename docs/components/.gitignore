@@ -1,5 +1,0 @@
-
-# Notebook source-of-truth is within the library source code.
-# `execute_notebooks.py` will execute all the notebooks and put the filled-in versions here
-# for inclusion into the sphinx docs.
-*.ipynb
