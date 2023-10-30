@@ -14,10 +14,9 @@
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import PrepareNuState
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
-def test_prepare_nu_bloq_counts():
+def test_prepare_nu_t_counts():
     num_bits_p = 6
     m_param = 2 ** (2 * num_bits_p + 3)
     num_bits_m = (m_param - 1).bit_length()
@@ -28,10 +27,10 @@ def test_prepare_nu_bloq_counts():
     eq_90 = 3 * num_bits_p**2 + 15 * num_bits_p - 7 + 4 * num_bits_m * (num_bits_p + 1)
     assert expected_cost == eq_90 + 5
     prep = PrepareNuState(num_bits_p, m_param)
-    _, counts = get_bloq_counts_graph(prep)
+    _, counts = prep.call_graph()
     qual_cost = counts[TGate()]
     prep = PrepareNuState(num_bits_p, m_param, adjoint=True)
-    _, counts = get_bloq_counts_graph(prep)
+    _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4
     comp_diff = 1

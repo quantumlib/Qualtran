@@ -17,7 +17,6 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
     UniformSuperPostionIJFirstQuantization,
 )
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def _make_prepare_t():
@@ -29,23 +28,23 @@ def _make_prepare_t():
     return PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
 
 
-def test_prepare_kinetic_bloq_counts():
+def test_prepare_kinetic_t_counts():
     num_bits_p = 6
     eta = 10
     b_r = 8
     n_eta = (eta - 1).bit_length()
     expected_cost = (14 * n_eta + 8 * b_r - 36) + 2 * (2 * num_bits_p + 9)
     uni = UniformSuperPostionIJFirstQuantization(eta, num_bits_rot_aa=b_r)
-    _, counts = get_bloq_counts_graph(uni)
+    _, counts = uni.call_graph()
     qual_cost = counts[TGate()]
     uni = UniformSuperPostionIJFirstQuantization(eta, num_bits_rot_aa=b_r, adjoint=True)
-    _, counts = get_bloq_counts_graph(uni)
+    _, counts = uni.call_graph()
     qual_cost += counts[TGate()]
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r)
-    _, counts = get_bloq_counts_graph(prep)
+    _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r, adjoint=True)
-    _, counts = get_bloq_counts_graph(prep)
+    _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4
     assert qual_cost == expected_cost

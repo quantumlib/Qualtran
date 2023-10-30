@@ -11,41 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+
 import numpy as np
 import pytest
 
-import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.trotter import (
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
-    KineticEnergy,
-    PairPotential,
-    PotentialEnergy,
+    NewtonRaphsonApproxInverseSquareRoot,
+    PolynmomialEvaluationInverseSquareRoot,
 )
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_fixed_point
 
 
-@pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
-def test_potential_bloq(nelec, nx):
-    ngrid_x = 2 * nx + 1
-    bitsize = (ngrid_x - 1).bit_length() + 1
-    poly_bitsize = 15
-    pe = PotentialEnergy(nelec, ngrid_x)
-    qlt_testing.assert_valid_bloq_decomposition(pe)
-    poly_coeffs = get_inverse_square_root_poly_coeffs()
-    qrom_data = build_qrom_data_for_poly_fit(2 * bitsize + 2, poly_bitsize, poly_coeffs)
-    qrom_data = tuple(tuple(int(k) for k in d) for d in qrom_data)
-    pp = PairPotential(bitsize=bitsize, qrom_data=qrom_data, poly_bitsize=pe.poly_bitsize)
-    qlt_testing.assert_valid_bloq_decomposition(pp)
-    fac = nelec * (nelec - 1) // 2
-    assert fac * pp.t_complexity().t == pe.t_complexity().t
+def test_newton_raphson_inverse_sqrt():
+    bloq = NewtonRaphsonApproxInverseSquareRoot(7, 8, 12)
+    _, counts = bloq.call_graph()
+    assert counts[TGate()] == 1632
 
 
-@pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
-def test_kinetic_bloq(nelec, nx):
-    ngrid_x = 2 * nx + 1
-    ke = KineticEnergy(nelec, ngrid_x)
-    qlt_testing.assert_valid_bloq_decomposition(ke)
+def test_poly_eval_inverse_sqrt():
+    bloq = PolynmomialEvaluationInverseSquareRoot(7, 8, 12)
+    _, counts = bloq.call_graph()
+    assert counts[TGate()] == 744
 
 
 def fixed_point_to_float(x: int, width: int) -> float:
@@ -119,7 +108,3 @@ def test_multiply_floats():
     fp_b = int(''.join(str(b) for b in bits), 2)
     result = multiply_fixed_point_floats(fp_a, fp_b, float_width)
     assert abs(result / 2**float_width - a * b) <= (float_width + 1) / 2**float_width
-
-
-def test_notebook():
-    qlt_testing.execute_notebook('trotter')

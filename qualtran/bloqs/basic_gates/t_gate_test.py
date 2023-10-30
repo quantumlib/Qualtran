@@ -15,7 +15,6 @@ import cirq
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import PlusState, TGate
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def _make_t_gate():
@@ -24,8 +23,8 @@ def _make_t_gate():
     return TGate()
 
 
-def test_bloq_counts():
-    g, simga = get_bloq_counts_graph(TGate())
+def test_call_graph():
+    g, simga = TGate().call_graph()
     assert simga == {TGate(): 1}
 
 

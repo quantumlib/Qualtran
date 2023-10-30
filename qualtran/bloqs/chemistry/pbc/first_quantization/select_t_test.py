@@ -13,7 +13,6 @@
 #  limitations under the License.
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def _make_select_t():
@@ -25,8 +24,8 @@ def _make_select_t():
     return SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
 
 
-def test_select_t_bloq_counts():
+def test_select_kinetic_t_counts():
     num_bits_p = 6
     sel = SelectTFirstQuantization(num_bits_p, 10)
-    _, counts = get_bloq_counts_graph(sel)
+    _, counts = sel.call_graph()
     assert counts[TGate()] == 4 * 5 * (num_bits_p - 1) + 4 * 2

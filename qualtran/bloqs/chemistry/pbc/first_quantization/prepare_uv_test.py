@@ -16,7 +16,6 @@ import numpy as np
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFistQuantization
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def _make_prepare_uv():
@@ -40,7 +39,7 @@ def _make_prepare_uv():
     return prep
 
 
-def test_prepare_bloq_counts():
+def test_prepare_uv_t_counts():
     num_bits_p = 6
     eta = 10
     num_atoms = 10
@@ -56,12 +55,12 @@ def test_prepare_bloq_counts():
     prep = PrepareUVFistQuantization(
         num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
     )
-    _, counts = get_bloq_counts_graph(prep)
+    _, counts = prep.call_graph()
     qual_cost = counts[TGate()]
     prep = PrepareUVFistQuantization(
         num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos, adjoint=True
     )
-    _, counts = get_bloq_counts_graph(prep)
+    _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4
     comp_diff = 1

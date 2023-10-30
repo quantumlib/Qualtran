@@ -17,7 +17,6 @@ import cirq
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import TGate, Toffoli, ZeroState
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
 def _make_Toffoli():
@@ -28,9 +27,9 @@ def _make_Toffoli():
 
 def test_toffoli_t_count():
     counts = Toffoli().bloq_counts()
-    assert counts == {(4, TGate())}
+    assert counts == {TGate(): 4}
 
-    _, sigma = get_bloq_counts_graph(Toffoli())
+    _, sigma = Toffoli().call_graph()
     assert sigma == {TGate(): 4}
 
 

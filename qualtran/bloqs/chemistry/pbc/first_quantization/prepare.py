@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -21,7 +21,7 @@ from qualtran import Bloq, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -51,7 +51,7 @@ class UniformSuperPostionIJFirstQuantization(Bloq):
         n_eta = (self.eta - 1).bit_length()
         return Signature.build(i=n_eta, j=n_eta)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n_eta = (self.eta - 1).bit_length()
         # Half of Eq. 62 which is the cost for prep and prep^\dagger
-        return {((7 * n_eta + 4 * self.num_bits_rot_aa - 18), Toffoli())}
+        return {(Toffoli(), (7 * n_eta + 4 * self.num_bits_rot_aa - 18))}
