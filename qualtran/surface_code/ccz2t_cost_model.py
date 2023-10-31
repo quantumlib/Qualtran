@@ -13,7 +13,6 @@
 #  limitations under the License.
 
 import math
-from typing import Optional
 
 from attrs import frozen
 
@@ -150,17 +149,20 @@ class CCZ2TFactory(MagicStateFactory):
 
         return math.ceil((n_ccz_states * ccz_depth + catalyzations) * distillation_d)
 
+    def spacetime_footprint(self) -> float:
+        return NotImplemented
+
 
 def get_ccz2t_costs(
     *,
     n_magic: AlgorithmSummary,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
-    error_budget: Optional[float] = 1e-2,
+    error_budget: float = 1e-2,
     cycle_time_us: float = 1.0,
-    routing_overhead: Optional[float] = 0.5,
-    factory: MagicStateFactory = None,
-    data_block: DataBlock = None,
+    routing_overhead: float = 0.5,
+    factory: MagicStateFactory | None = None,
+    data_block: DataBlock | None = None,
 ) -> PhysicalCost:
     """Physical costs using the model from catalyzed CCZ to 2T paper.
 

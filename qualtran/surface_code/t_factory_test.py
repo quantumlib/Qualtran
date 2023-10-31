@@ -12,26 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import numpy as np
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.ccz2t_cost_model import CCZ2TFactory, get_ccz2t_costs
+from qualtran.surface_code.t_factory import TFactory
 
 
-def test_vs_spreadsheet():
-    re = get_ccz2t_costs(
-        n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
-        n_algo_qubits=100,
-        error_budget=0.01,
-        phys_err=1e-3,
-        cycle_time_us=1,
+def test_footprint():
+    factory = TFactory(
+        num_qubits=5, generation_cycle_duration_ns=3, num_t_per_cycle=0.1, error_rate=1e-9
     )
-
-    np.testing.assert_allclose(re.failure_prob, 0.0084, rtol=1e-3)
-    np.testing.assert_allclose(re.footprint, 4.00e5, rtol=1e-3)
-    np.testing.assert_allclose(re.duration_hr, 7.53, rtol=1e-3)
-
-
-def test_factory():
-    factory = CCZ2TFactory()
-    assert factory.spacetime_footprint() is NotImplemented
+    magic_count = AlgorithmSummary(t_gates=1, toffoli_gates=1)
+    assert factory.footprint() == 5
+    assert factory.n_cycles(magic_count) == 50
+    assert factory.spacetime_footprint() == 150
+    assert factory.distillation_error(magic_count, 1e-3) is NotImplemented

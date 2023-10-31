@@ -28,6 +28,7 @@ class DataBlock(metaclass=abc.ABCMeta):
     called the data block, and we provide its costs here.
     """
 
+    @abc.abstractmethod
     def footprint(self, n_algo_qubits: int) -> int:
         """The number of physical qubits used by the data block.
 
@@ -36,6 +37,7 @@ class DataBlock(metaclass=abc.ABCMeta):
                 accessed.
         """
 
+    @abc.abstractmethod
     def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
 

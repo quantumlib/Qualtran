@@ -36,3 +36,7 @@ class MagicStateFactory(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
         """The total error expected from distilling magic states with a given physical error rate."""
+
+    @abc.abstractmethod
+    def spacetime_footprint(self) -> float:
+        """The spacetime cost of producing a single magic state."""
