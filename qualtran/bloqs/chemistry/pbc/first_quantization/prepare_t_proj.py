@@ -19,10 +19,59 @@ from attrs import frozen
 
 from qualtran import Bloq, Signature
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PreparePowerTwoState
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+
+
+@frozen
+class PreparePowerTwoStateWithProj(Bloq):
+    r"""Prepares the uniform superposition over $|r\rangle$ given by Eq. 69 in the reference.
+
+    This prepares the state
+
+    $$
+        2^{(-n_p -1)/2} \sum_r=0^{n_p-2} 2^{r/2} |r\rangle
+    $$
+
+    in one-hot unary.
+
+    To account for the conditional preparation of weight for the projectile we
+    add additional controls to the Hadamards for $p > n_p$.
+
+    Args:
+        bitsize_n: the number of bits for the projectiles momentum $n_n$.
+        bitsize_p: the number of bits for the electron's momentum $n_p$
+
+    Registers:
+        r: The register we want to prepare the state over.
+
+    References:
+        [Quantum computation of stopping power for inertial fusion target design](
+            https://arxiv.org/abs/2308.12352) page 11, C3 also page 31 App A. Sec 2 b.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767) page 19, section B
+    """
+    bitsize_n: int
+    bitsize_p: int
+    adjoint: bool = False
+
+    def __attrs_post_init__(self):
+        if self.bitsize_n < self.bitsize_p:
+            raise ValueError(f"bitsize_n < bitsize_p : {self.bitsize_n} < {self.bitsize_p}.")
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(r=self.bitsize_n)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self.adjoint:
+            return {(Toffoli(), (self.bitsize_n - 2))}
+        else:
+            # The doubly controlled hadamard can be converted to and And and a
+            # controlled Hadamard, with the And gate being inverted at zero
+            # Toffoli cost.
+            return {(Toffoli(), (self.bitsize_n - 2) + self.bitsize_n - self.bitsize_p)}
 
 
 @frozen
@@ -66,7 +115,7 @@ class PrepareTProjFirstQuantization(Bloq):
     num_bits_n: int
     eta: int
     num_bits_rot_aa: int = 8
-    adjoint: int = False
+    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -79,20 +128,22 @@ class PrepareTProjFirstQuantization(Bloq):
         # 13 is from assuming 8 bits for the rotation, and n = 2.
         uni_prep_w = (Toffoli(), 13)
         # Factor of two for r and s registers.
-        ctrl_mom = (PreparePowerTwoState(bitsize=self.num_bits_n), 2)
+        ctrl_mom = (
+            PreparePowerTwoStateWithProj(
+                bitsize_n=self.num_bits_n, bitsize_p=self.num_bits_p, adjoint=self.adjoint
+            ),
+            2,
+        )
         # Inequality test can be inverted at zero cost
         if self.adjoint:
             # pg 31 (Appendix A. Sec 2 c)
             k_k_proj = (Toffoli(), 0)
-            ctrl_had = (Toffoli(), 0)
         else:
             # Cost for preparing a state for selecting the components of k_p^w k_proj^w
             # Prepare a uniform superposition over 8 states and do 2 inequality
             # tests to select between x, y and z.
             # built on w_proj above
             k_k_proj = (Toffoli(), 16)
-            # controlled Hadmards for preparing T_proj or T_elec, factor of 2 for r and s registers.
-            ctrl_had = (Toffoli(), 2 * (self.num_bits_n - self.num_bits_p))
         # pg 31 (Appendix A. Sec 2 c)
         ctrl_swap = (Toffoli(), 2)
-        return {uni_prep_w, ctrl_had, ctrl_mom, k_k_proj, ctrl_swap}
+        return {uni_prep_w, ctrl_mom, k_k_proj, ctrl_swap}

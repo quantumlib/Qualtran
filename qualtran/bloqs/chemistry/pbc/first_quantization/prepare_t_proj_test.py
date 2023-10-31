@@ -12,8 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import pytest
+
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t_proj import (
+    PreparePowerTwoStateWithProj,
     PrepareTProjFirstQuantization,
 )
 
@@ -35,3 +38,8 @@ def test_prepare_kinetic_t_proj_counts():
     qual_cost += counts[TGate()]
     qual_cost //= 4
     assert qual_cost == expected_cost
+
+
+def test_t_proj_attrs_post_init():
+    with pytest.raises(ValueError):
+        PreparePowerTwoStateWithProj(6, 8)
