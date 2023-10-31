@@ -23,5 +23,4 @@ def get_git_root() -> Path:
     )
     path = Path(cp.stdout.strip()).absolute()
     assert path.exists()
-    print('git root', path)
     return path
