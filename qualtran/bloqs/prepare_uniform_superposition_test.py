@@ -16,10 +16,26 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.prepare_uniform_superposition import (
+    _c_prep_uniform,
+    _prep_uniform,
+    PrepareUniformSuperposition,
+)
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
-from qualtran.testing import assert_valid_bloq_decomposition
+
+
+def test_prep_uniform(bloq_autotester):
+    bloq_autotester(_prep_uniform)
+
+
+def test_c_prep_uniform(bloq_autotester):
+    bloq_autotester(_c_prep_uniform)
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('prepare_uniform_superposition')
 
 
 @pytest.mark.parametrize("n", [*range(3, 20), 25, 41])
@@ -40,7 +56,7 @@ def test_prepare_uniform_superposition(n, num_controls):
     cirq.testing.assert_allclose_up_to_global_phase(
         expected_target_state, final_target_state, atol=1e-6
     )
-    assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
 
 
 @pytest.mark.parametrize("n", [*range(3, 41, 3)])
