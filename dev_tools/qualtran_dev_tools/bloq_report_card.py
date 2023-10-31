@@ -15,11 +15,12 @@ from typing import Any, Dict, Iterable, Set, Type
 
 import pandas as pd
 import pandas.io.formats.style
+from IPython.display import HTML
 
-from qualtran import Bloq, BloqExample
+from qualtran import Bloq, BloqDocSpec, BloqExample
 from qualtran.testing import BloqCheckResult, check_bloq_example_decompose, check_bloq_example_make
 
-from .bloq_finder import get_bloq_classes, get_bloq_examples
+from .bloq_finder import get_bloq_classes, get_bloq_examples, get_bloqdoc_specs
 
 
 def _get_package(bloq_cls: Type[Bloq]) -> str:
@@ -74,7 +75,7 @@ def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
     }
 
 
-def records_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
+def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
     return {
         'bloq_cls': be.bloq_cls.__name__,
         'package': _get_package(be.bloq_cls),
@@ -100,6 +101,45 @@ def get_bloq_report_card(
     records = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
-    records.extend(records_for_bloq_example(be) for be in bexamples)
+    records.extend(record_for_bloq_example(be) for be in bexamples)
 
     return pd.DataFrame(records).sort_values(by=IDCOLS).loc[:, IDCOLS + CHECKCOLS]
+
+
+def bloq_examples_with_no_docs(
+    bexamples: Iterable[BloqExample] | None = None, bloqdocs: Iterable[BloqDocSpec] | None = None
+) -> Set[BloqExample]:
+    """Return all the `BloqExample`s that do not belong to at least one `BloqDocSpec`."""
+    if bexamples is None:
+        bexamples = get_bloq_examples()
+    if bloqdocs is None:
+        bloqdocs = get_bloqdoc_specs()
+
+    bes = set(bexamples)
+    for bd in bloqdocs:
+        for be in bd.examples:
+            try:
+                bes.remove(be)
+            except KeyError:
+                pass
+    return bes
+
+
+def check_bloq_examples_with_no_docs(
+    bexamples: Iterable[BloqExample] | None = None, bloqdocs: Iterable[BloqDocSpec] | None = None
+) -> HTML:
+    """Display the check result that all `BloqExample`s belong to at least one `BloqDocSpec`."""
+    untethered_examples = bloq_examples_with_no_docs(bexamples=bexamples, bloqdocs=bloqdocs)
+    s = ''
+    if not untethered_examples:
+        s += f'<span style="{color_status(BloqCheckResult.PASS)}">Pass.</span>\n'
+        s += 'All bloq examples are members of a BloqDocSpec.\n'
+        return HTML(s)
+
+    s += f'<span style="{color_status(BloqCheckResult.FAIL)}">Fail.</span>\n'
+    s += 'The following bloq examples are not members of a BloqDocSpec:\n'
+    s += '<ul>\n'
+    for ute in untethered_examples:
+        s += f'<li><code>{ute.name}: {ute.bloq_cls.__name__}</code></li>\n'
+    s += '</ul>\n'
+    return HTML(s)
