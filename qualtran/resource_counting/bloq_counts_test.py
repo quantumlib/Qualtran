@@ -20,10 +20,11 @@ import networkx as nx
 import sympy
 from attrs import frozen
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
-from qualtran.resource_counting import BloqCountT, get_bloq_counts_graph, SympySymbolAllocator
+from qualtran.resource_counting import BloqCountT, get_bloq_call_graph, SympySymbolAllocator
 
 
 @frozen
@@ -34,8 +35,8 @@ class BigBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(sympy.log(self.bitsize), SubBloq(unrelated_param=0.5))}
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
+        return {(SubBloq(unrelated_param=0.5), sympy.log(self.bitsize))}
 
 
 @frozen
@@ -62,8 +63,8 @@ class SubBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(3, TGate())}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TGate(), 3)}
 
 
 def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, int]]:
@@ -76,7 +77,7 @@ def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, int]
 
         return bloq
 
-    return get_bloq_counts_graph(bloq, generalize, ss)
+    return get_bloq_call_graph(bloq, generalize, ss)
 
 
 def test_bloq_counts_method():
@@ -87,7 +88,7 @@ def test_bloq_counts_method():
 
 
 def test_bloq_counts_decomp():
-    graph, sigma = get_bloq_counts_graph(DecompBloq(10))
+    graph, sigma = get_bloq_call_graph(DecompBloq(10))
     assert len(sigma) == 3  # includes split and join
     expr = sigma[TGate()]
     assert str(expr) == '30'
@@ -97,7 +98,11 @@ def test_bloq_counts_decomp():
             return None
         return bloq
 
-    graph, sigma = get_bloq_counts_graph(DecompBloq(10), generalize)
+    graph, sigma = get_bloq_call_graph(DecompBloq(10), generalize)
     assert len(sigma) == 1
     expr = sigma[TGate()]
     assert str(expr) == '30'
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('bloq_counts')

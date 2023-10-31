@@ -191,11 +191,11 @@ class CompositeBloq(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError("CompositeBloq cannot be decomposed.")
 
-    def bloq_counts(self, _: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""
-        from qualtran.resource_counting import get_cbloq_bloq_counts
+        from qualtran.resource_counting.bloq_counts import _build_cbloq_counts_graph
 
-        return get_cbloq_bloq_counts(self)
+        return _build_cbloq_counts_graph(self)
 
     def iter_bloqnections(
         self,

@@ -13,17 +13,25 @@
 #  limitations under the License.
 
 import random
-from typing import Set, Tuple
+from typing import Dict, Tuple
 
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.basic_gates.z_basis import IntState
-from qualtran.bloqs.swap_network import CSwapApprox, SwapWithZero
+from qualtran.bloqs.swap_network import (
+    _approx_cswap_large,
+    _approx_cswap_small,
+    _approx_cswap_symb,
+    _swz_small,
+    CSwapApprox,
+    SwapWithZero,
+)
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.simulation.tensor import flatten_for_tensor_contraction
@@ -134,10 +142,10 @@ def test_swap_with_zero_classically():
         print(sel, out_data)
 
 
-def get_t_count_and_clifford(bc: Set[Tuple[int, Bloq]]) -> Tuple[int, int]:
+def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
     """Get the t count and clifford cost from bloq count."""
-    cliff_cost = sum([x[0] for x in bc if isinstance(x[1], ArbitraryClifford)])
-    t_cost = sum([x[0] for x in bc if isinstance(x[1], TGate)])
+    cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])
+    t_cost = sum([v for k, v in bc.items() if isinstance(k, TGate)])
     return t_cost, cliff_cost
 
 
@@ -169,10 +177,17 @@ def test_cswap_approx_bloq_counts(n):
 )
 def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_registers, want):
     gate = SwapWithZero(selection_bitsize, target_bitsize, n_target_registers)
-    bc = list(gate.bloq_counts())[0]
-    t_cost, cliff_cost = get_t_count_and_clifford(bc[1].bloq_counts())
-    assert bc[0] * t_cost == want.t
-    assert bc[0] * cliff_cost == want.clifford
+
+    n = sympy.Symbol('n')
+
+    def _gen_clif(bloq: Bloq) -> Bloq:
+        if isinstance(bloq, ArbitraryClifford):
+            return ArbitraryClifford(n)
+        return bloq
+
+    _, sigma = gate.call_graph(generalizer=_gen_clif)
+    assert sigma[TGate()] == want.t
+    assert sigma[ArbitraryClifford(n)] == want.clifford
 
 
 @pytest.mark.parametrize(
@@ -188,6 +203,22 @@ def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_
 def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target_registers, want):
     gate = SwapWithZero(selection_bitsize, target_bitsize, n_target_registers)
     assert want == gate.t_complexity()
+
+
+def test_approx_cswap_small(bloq_autotester):
+    bloq_autotester(_approx_cswap_small)
+
+
+def test_approx_cswap_symb(bloq_autotester):
+    bloq_autotester(_approx_cswap_symb)
+
+
+def test_approx_cswap_large(bloq_autotester):
+    bloq_autotester(_approx_cswap_large)
+
+
+def test_swz_small(bloq_autotester):
+    bloq_autotester(_swz_small)
 
 
 def test_notebook():

@@ -19,10 +19,10 @@ import numpy as np
 import sympy
 
 from qualtran import Bloq
-from qualtran.bloqs.factoring.mod_exp import ModExp
+from qualtran.bloqs.factoring.mod_exp import _modexp, _modexp_symb, ModExp
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
+from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import execute_notebook
 
 
@@ -56,12 +56,12 @@ def test_mod_exp_consistent_classical():
         assert ret1 == ret2
 
 
-def test_mod_exp_symbolic():
+def test_modexp_symb_manual():
     g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
     modexp = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     assert modexp.short_name() == 'g^e % N'
-    counts = modexp.bloq_counts(SympySymbolAllocator())
-    counts_by_bloq = {bloq.pretty_name(): n for n, bloq in counts}
+    counts = modexp.bloq_counts()
+    counts_by_bloq = {bloq.pretty_name(): n for bloq, n in counts.items()}
     assert counts_by_bloq['|1>'] == 1
     assert counts_by_bloq['CtrlModMul'] == n_e
 
@@ -72,7 +72,7 @@ def test_mod_exp_symbolic():
 def test_mod_exp_consistent_counts():
 
     bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
-    counts1 = bloq.bloq_counts(SympySymbolAllocator())
+    counts1 = bloq.bloq_counts()
 
     ssa = SympySymbolAllocator()
     my_k = ssa.new_symbol('k')
@@ -86,9 +86,17 @@ def test_mod_exp_consistent_counts():
             return
         return b
 
-    counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
+    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
 
     assert counts1 == counts2
+
+
+def test_modexp(bloq_autotester):
+    bloq_autotester(_modexp)
+
+
+def test_modexp_symb(bloq_autotester):
+    bloq_autotester(_modexp_symb)
 
 
 def test_intro_notebook():
