@@ -49,7 +49,8 @@ Specifically, we use the `docs` branch to commit the latest stage-2 outputs.
     cd ../docs
     git add .
     # .. verify the staged diff looks good ..
-    git commit && git push
+    git commit -m 'Generate docs'
+    git push
     
     
     

@@ -49,6 +49,7 @@ def main():
     autotoc = docs / 'reference/autotoc.rst'
     if autotoc.exists():
         print("Removing", autotoc)
+        autotoc.unlink()
 
 
 if __name__ == '__main__':
