@@ -224,6 +224,7 @@ target01: ────────────────X───────
 )
 def test_qrom_multi_dim(data, num_controls):
     if len(data) == 2 and num_controls == 2:
+        assert False
         pytest.skip("slow")
     selection_bitsizes = tuple((s - 1).bit_length() for s in data[0].shape)
     target_bitsizes = tuple(int(np.max(d)).bit_length() for d in data)

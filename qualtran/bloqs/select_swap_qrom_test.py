@@ -39,6 +39,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 )
 def test_select_swap_qrom(data, block_size):
     if block_size == 3 and len(data) == 1:
+        assert False
         pytest.skip('slow')
     qrom = SelectSwapQROM(*data, block_size=block_size)
 
