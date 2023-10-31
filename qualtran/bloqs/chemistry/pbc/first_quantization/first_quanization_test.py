@@ -12,15 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import subprocess
-from pathlib import Path
+from qualtran.testing import execute_notebook
 
 
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, universal_newlines=True
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    return path
+def test_notebook():
+    execute_notebook('first_quantization')

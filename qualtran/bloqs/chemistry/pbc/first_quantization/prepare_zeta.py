@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""PREPARE the super position over nuclear weights for the first quantized chemistry Hamiltonian.
+r"""PREPARE the superposition over nuclear weights for the first quantized chemistry Hamiltonian.
 """
 from functools import cached_property
 from typing import Set, TYPE_CHECKING
@@ -30,9 +30,7 @@ if TYPE_CHECKING:
 class PrepareZetaState(Bloq):
     r"""PREPARE the superpostion over $l$ weighted by $\zeta_l$.
 
-    This is apparently NOT just generic state preparation and there are some
-    tricks I don't understand.
-
+    See https://github.com/quantumlib/Qualtran/issues/473.
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.

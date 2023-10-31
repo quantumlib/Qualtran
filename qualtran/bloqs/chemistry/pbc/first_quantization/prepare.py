@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class UniformSuperPostionIJFirstQuantization(Bloq):
+class UniformSuperpostionIJFirstQuantization(Bloq):
     r"""Uniform superposition over $\eta$ values of $i$ and $j$ in unary such that $i \ne j$.
 
     Args:
