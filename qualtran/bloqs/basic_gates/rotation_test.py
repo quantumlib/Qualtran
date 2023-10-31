@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 from cirq.ops import SimpleQubitManager
 
-from qualtran.bloqs.basic_gates import Rx, Ry, Rz
+from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 
 
 def _make_Rx():
@@ -61,3 +61,24 @@ def test_as_cirq_op():
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.Rz(rads=bloq.angle).on(cirq.NamedQubit("q")))
+    bloq = XPowGate(exponent=1 / 5, global_shift=-0.5)
+    quregs = bloq.signature.get_cirq_quregs()
+    op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
+    circuit = cirq.Circuit(op)
+    assert circuit == cirq.Circuit(
+        cirq.XPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
+    )
+    bloq = YPowGate(exponent=1 / 5, global_shift=-0.5)
+    quregs = bloq.signature.get_cirq_quregs()
+    op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
+    circuit = cirq.Circuit(op)
+    assert circuit == cirq.Circuit(
+        cirq.YPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
+    )
+    bloq = ZPowGate(exponent=1 / 5, global_shift=-0.5)
+    quregs = bloq.signature.get_cirq_quregs()
+    op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
+    circuit = cirq.Circuit(op)
+    assert circuit == cirq.Circuit(
+        cirq.ZPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
+    )
