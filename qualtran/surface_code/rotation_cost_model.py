@@ -79,7 +79,9 @@ class ConstantWithOverheadRotationCost(RotationCostModel):
 
     Attributes:
         bitsize: Number of digits of accuracy for approximating a rotation.
-        overhead: The overhead.
+        overhead_rotation_cost: The overhead.
+        reference: A human-readable description of the source of the model
+            (e.g. 'https://arxiv.org/abs/1404.5320').
     """
 
     bitsize: int
