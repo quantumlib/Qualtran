@@ -120,7 +120,7 @@ class FlagZeroAsFailure(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
             # This can be inverted with cliffords.
-            return {(Toffoli(), 0)}
+            return {}
         else:
             # Controlled Toffoli each having n_p + 1 controls and 2 Toffolis to
             # check the result of the Toffolis.

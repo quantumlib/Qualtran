@@ -14,7 +14,7 @@
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian."""
 
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -30,9 +30,7 @@ if TYPE_CHECKING:
 class PrepareZetaState(Bloq):
     r"""PREPARE the superpostion over $l$ weighted by $\zeta_l$.
 
-    This is apparently NOT just generic state preparation and there are some
-    tricks I don't understand.
-
+    See https://github.com/quantumlib/Qualtran/issues/473.
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
