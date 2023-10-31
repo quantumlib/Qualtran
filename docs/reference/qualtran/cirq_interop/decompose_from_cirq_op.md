@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L353-L380">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L371-L399">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -17,7 +17,7 @@ Returns a CompositeBloq constructed using Cirq operations obtained via `bloq.as_
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.cirq_interop.decompose_from_cirq_op(
-    bloq: 'Bloq'
+    bloq: 'Bloq', *, decompose_once: bool = False
 ) -> 'CompositeBloq'
 </code></pre>
 

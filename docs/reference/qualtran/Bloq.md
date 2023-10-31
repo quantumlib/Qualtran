@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L42-L295">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L62-L372">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -58,7 +58,7 @@ encode more information about the bloq.
 
 <h3 id="pretty_name"><code>pretty_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L77-L78">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L97-L98">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>pretty_name() -> str
@@ -69,7 +69,7 @@ encode more information about the bloq.
 
 <h3 id="short_name"><code>short_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L80-L85">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L100-L105">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>short_name() -> str
@@ -80,7 +80,7 @@ encode more information about the bloq.
 
 <h3 id="build_composite_bloq"><code>build_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L87-L102">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L107-L122">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_composite_bloq(
@@ -90,7 +90,7 @@ encode more information about the bloq.
 
 Override this method to define a Bloq in terms of its constituent parts.
 
-Bloq definers should override this method. If you already have an instance of a `Bloq`,
+Bloq authors should override this method. If you already have an instance of a `Bloq`,
 consider calling `decompose_bloq()` which will set up the correct context for
 calling this function.
 
@@ -112,7 +112,7 @@ Returns
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L104-L118">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L124-L138">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -140,7 +140,7 @@ Raises
 
 <h3 id="supports_decompose_bloq"><code>supports_decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L120-L127">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L140-L147">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>supports_decompose_bloq() -> bool
@@ -154,7 +154,7 @@ return an accurate value.
 
 <h3 id="as_composite_bloq"><code>as_composite_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L129-L138">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L149-L158">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_composite_bloq() -> 'CompositeBloq'
@@ -167,7 +167,7 @@ be returned.
 
 <h3 id="on_classical_vals"><code>on_classical_vals</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L140-L164">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L160-L184">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_classical_vals(
@@ -204,7 +204,7 @@ Returns
 
 <h3 id="call_classically"><code>call_classically</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L166-L186">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L186-L206">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>call_classically(
@@ -238,7 +238,7 @@ Returns
 
 <h3 id="tensor_contract"><code>tensor_contract</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L188-L196">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L208-L216">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>tensor_contract() -> 'NDArray'
@@ -253,7 +253,7 @@ of (right, left) indices.
 
 <h3 id="add_my_tensors"><code>add_my_tensors</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L198-L232">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L218-L252">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_my_tensors(
@@ -294,27 +294,113 @@ Args
 
 
 
-<h3 id="bloq_counts"><code>bloq_counts</code></h3>
+<h3 id="build_call_graph"><code>build_call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L234-L243">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L254-L269">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>bloq_counts(
-    ssa: Optional['SympySymbolAllocator'] = None
+<code>build_call_graph(
+    ssa: 'SympySymbolAllocator'
 ) -> Set['BloqCountT']
 </code></pre>
 
-Return a set of `(n, bloq)` tuples where bloq is used `n` times in the decomposition.
+Override this method to build the bloq call graph.
 
-By default, this method will use `self.decompose_bloq()` to count up bloqs.
-However, you can override this if you don't want to provide a complete decomposition,
-if you know symbolic expressions for the counts, or if you need to "generalize"
-the subbloqs by overwriting bloq attributes that do not affect its cost with generic
-sympy symbols (perhaps with the aid of the provided `SympySymbolAllocator`).
+This method must return a set of `(bloq, n)` tuples where `bloq` is called `n` times in
+the decomposition. This method defines one level of the call graph, specifically the
+edges from this bloq to its immediate children. To get the full graph,
+call <a href="../qualtran/Bloq.html#call_graph"><code>Bloq.call_graph()</code></a>.
+
+By default, this method will use `self.decompose_bloq()` to count the bloqs called
+in the decomposition. By overriding this method, you can provide explicit call counts.
+This is appropriate if: 1) you can't or won't provide a complete decomposition, 2) you
+know symbolic expressions for the counts, or 3) you need to "generalize" the subbloqs
+by overwriting bloq attributes that do not affect its cost with generic sympy symbols using
+the provided `SympySymbolAllocator`.
+
+<h3 id="call_graph"><code>call_graph</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L271-L300">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>call_graph(
+    generalizer: Callable[['Bloq'], Optional['Bloq']] = None,
+    keep: Optional[Sequence['Bloq']] = None,
+    max_depth: Optional[int] = None
+) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]
+</code></pre>
+
+Get the bloq call graph and call totals.
+
+The call graph has edges from a parent bloq to each of the bloqs that it calls in
+its decomposition. The number of times it is called is stored as an edge attribute.
+To specify the bloq call counts for a specific node, override <a href="../qualtran/Bloq.html#build_call_graph"><code>Bloq.build_call_graph()</code></a>.
+
+Args
+
+`generalizer`
+: If provided, run this function on each (sub)bloq to replace attributes
+  that do not affect resource estimates with generic sympy symbols. If the function
+  returns `None`, the bloq is omitted from the counts graph.
+
+`keep`
+: If this function evaluates to True for the current bloq, keep the bloq as a leaf
+  node in the call graph instead of recursing into it.
+
+`max_depth`
+: If provided, build a call graph with at most this many layers.
+
+
+
+
+Returns
+
+`g`
+: A directed graph where nodes are (generalized) bloqs and edge attribute 'n' reports
+  the number of times successor bloq is called via its predecessor.
+
+`sigma`
+: Call totals for "leaf" bloqs. We keep a bloq as a leaf in the call graph
+  according to `keep` and `max_depth` (if provided) or if a bloq cannot be
+  decomposed.
+
+
+
+
+<h3 id="bloq_counts"><code>bloq_counts</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L302-L320">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>bloq_counts(
+    generalizer: Callable[['Bloq'], Optional['Bloq']] = None
+) -> Dict['Bloq', Union[int, 'sympy.Expr']]
+</code></pre>
+
+The number of subbloqs directly called by this bloq.
+
+This corresponds to one level of the call graph, see <a href="../qualtran/Bloq.html#call_graph"><code>Bloq.call_graph()</code></a>.
+To specify explicit values for a bloq, override <a href="../qualtran/Bloq.html#build_call_graph"><code>Bloq.build_call_graph(...)</code></a>, not this
+method.
+
+Args
+
+`generalizer`
+: If provided, run this function on each (sub)bloq to replace attributes
+  that do not affect resource estimates with generic sympy symbols. If the function
+  returns `None`, the bloq is omitted from the counts graph.
+
+
+
+
+Returns
+
+
+
 
 <h3 id="t_complexity"><code>t_complexity</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L245-L251">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L322-L328">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>t_complexity() -> 'TComplexity'
@@ -327,7 +413,7 @@ method can be overriden with a known value.
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L253-L280">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L330-L357">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
@@ -371,7 +457,7 @@ Returns
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L282-L295">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/bloq.py#L359-L372">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(

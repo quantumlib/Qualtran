@@ -21,6 +21,10 @@ isort:skip_file
 
 [`class Bloq`](./qualtran/Bloq.md): Bloq is the primary abstract base class for all operations.
 
+[`class DecomposeTypeError`](./qualtran/DecomposeTypeError.md): Raised if a decomposition does not make sense in this context.
+
+[`class DecomposeNotImplementedError`](./qualtran/DecomposeNotImplementedError.md): Raised if a decomposition is not yet provided.
+
 [`class BloqError`](./qualtran/BloqError.md): A value error raised when CompositeBloq conditions are violated.
 
 [`class CompositeBloq`](./qualtran/CompositeBloq.md): A bloq defined by a collection of sub-bloqs and dataflows between them
@@ -30,6 +34,8 @@ isort:skip_file
 [`class DidNotFlattenAnythingError`](./qualtran/DidNotFlattenAnythingError.md): An exception raised if `flatten_once()` did not find anything to flatten.
 
 [`class Register`](./qualtran/Register.md): A data type describing a register of qubits.
+
+[`class SelectionRegister`](./qualtran/SelectionRegister.md): Register used to represent SELECT register for various LCU methods.
 
 [`class Signature`](./qualtran/Signature.md): An ordered sequence of `Register`s that follow the rules for a bloq signature.
 
@@ -42,6 +48,16 @@ isort:skip_file
 [`class DanglingT`](./qualtran/DanglingT.md): The type of the singleton objects `LeftDangle` and `RightDangle`.
 
 [`class Soquet`](./qualtran/Soquet.md): One half of a connection.
+
+[`class GateWithRegisters`](./qualtran/GateWithRegisters.md): `cirq.Gate`s extension with support for composite gates acting on multiple qubit registers.
+
+[`class BloqExample`](./qualtran/BloqExample.md): An instantiation of a bloq and its metadata.
+
+[`class BloqDocSpec`](./qualtran/BloqDocSpec.md): A collection of bloq examples and specifications for documenting a bloq class.
+
+## Functions
+
+[`bloq_example(...)`](./qualtran/bloq_example.md): Decorator to turn a function into a `BloqExample`.
 
 
 

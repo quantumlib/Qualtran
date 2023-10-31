@@ -6,16 +6,23 @@
 
    qualtran/Bloq.md
    qualtran/BloqBuilder.md
+   qualtran/BloqDocSpec.md
    qualtran/BloqError.md
+   qualtran/BloqExample.md
    qualtran/BloqInstance.md
    qualtran/CompositeBloq.md
    qualtran/Connection.md
    qualtran/DanglingT.md
+   qualtran/DecomposeNotImplementedError.md
+   qualtran/DecomposeTypeError.md
    qualtran/DidNotFlattenAnythingError.md
+   qualtran/GateWithRegisters.md
    qualtran/Register.md
+   qualtran/SelectionRegister.md
    qualtran/Side.md
    qualtran/Signature.md
    qualtran/Soquet.md
+   qualtran/bloq_example.md
    qualtran/cirq_interop.md
    qualtran/drawing.md
    qualtran/resource_counting.md
@@ -28,6 +35,7 @@
    qualtran/drawing/Circle.md
    qualtran/drawing/ClassicalSimGraphDrawer.md
    qualtran/drawing/GraphDrawer.md
+   qualtran/drawing/GraphvizCounts.md
    qualtran/drawing/HLine.md
    qualtran/drawing/LarrowTextBox.md
    qualtran/drawing/LineManager.md
@@ -40,13 +48,20 @@
    qualtran/drawing/TextBox.md
    qualtran/drawing/VLine.md
    qualtran/drawing/WireSymbol.md
+   qualtran/drawing/bloq_counts_graph.md
+   qualtran/drawing/classical_sim_graph.md
    qualtran/drawing/directional_text_box.md
    qualtran/drawing/draw_musical_score.md
    qualtran/drawing/dump_musical_score.md
+   qualtran/drawing/format_counts_graph_markdown.md
+   qualtran/drawing/format_counts_sigma.md
    qualtran/drawing/get_musical_score_data.md
    qualtran/drawing/graphviz.md
    qualtran/drawing/musical_score.md
    qualtran/drawing/show_bloq.md
+   qualtran/drawing/show_bloqs.md
+   qualtran/drawing/show_call_graph.md
+   qualtran/drawing/show_counts_sigma.md
 
 .. toctree::
    :hidden:
@@ -56,6 +71,8 @@
    qualtran/cirq_interop/CirqGateAsBloq.md
    qualtran/cirq_interop/cirq_optree_to_cbloq.md
    qualtran/cirq_interop/decompose_from_cirq_op.md
+   qualtran/cirq_interop/decompose_protocol.md
+   qualtran/cirq_interop/t_complexity_protocol.md
 
 .. toctree::
    :hidden:
@@ -69,15 +86,10 @@
    :caption: resource_counting
 
    qualtran/resource_counting/BloqCountT.md
-   qualtran/resource_counting/GraphvizCounts.md
    qualtran/resource_counting/SympySymbolAllocator.md
    qualtran/resource_counting/big_O.md
    qualtran/resource_counting/bloq_counts.md
-   qualtran/resource_counting/get_bloq_counts_graph.md
-   qualtran/resource_counting/get_cbloq_bloq_counts.md
-   qualtran/resource_counting/markdown_bloq_expr.md
-   qualtran/resource_counting/markdown_counts_graph.md
-   qualtran/resource_counting/markdown_counts_sigma.md
+   qualtran/resource_counting/get_bloq_call_graph.md
    qualtran/resource_counting/print_counts_graph.md
 
 .. toctree::
@@ -87,6 +99,20 @@
    qualtran/drawing/musical_score/MusicalScoreEncoder.md
    qualtran/drawing/musical_score/SoqData.md
    qualtran/drawing/musical_score/frozen.md
+
+.. toctree::
+   :hidden:
+   :caption: decompose_protocol
+
+   qualtran/cirq_interop/decompose_protocol/DecomposeResult.md
+
+.. toctree::
+   :hidden:
+   :caption: t_complexity_protocol
+
+   qualtran/cirq_interop/t_complexity_protocol/SupportsTComplexity.md
+   qualtran/cirq_interop/t_complexity_protocol/TComplexity.md
+   qualtran/cirq_interop/t_complexity_protocol/t_complexity.md
 
 .. toctree::
    :hidden:

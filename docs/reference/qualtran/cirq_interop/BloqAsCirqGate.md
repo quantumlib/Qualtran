@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L30-L158">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L39-L157">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -14,6 +14,8 @@
 
 
 A shim for using bloqs in a Cirq circuit.
+
+Inherits From: [`GateWithRegisters`](../../qualtran/GateWithRegisters.md), [`Bloq`](../../qualtran/Bloq.md)
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.cirq_interop.BloqAsCirqGate(
@@ -47,7 +49,7 @@ A shim for using bloqs in a Cirq circuit.
 : The bloq we're wrapping.
 
 `signature`<a id="signature"></a>
-: `cirq_ft.GateWithRegisters` registers.
+: `GateWithRegisters` registers.
 
 
 
@@ -56,7 +58,7 @@ A shim for using bloqs in a Cirq circuit.
 
 <h3 id="bloq_on"><code>bloq_on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L69-L90">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L68-L89">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -100,7 +102,7 @@ Returns
 
 <h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L92-L119">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L91-L118">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_from_registers(
@@ -132,7 +134,7 @@ Returns
 
 <h3 id="__eq__"><code>__eq__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L146-L149">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L145-L148">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__eq__(

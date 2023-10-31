@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L409-L446">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/classical_sim_graph.py#L29-L66">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -21,7 +21,7 @@ Inherits From: [`PrettyGraphDrawer`](../../qualtran/drawing/PrettyGraphDrawer.md
   <h4 class="showalways">View aliases</h4>
   <p>
 <b>Main aliases</b>
-<p>`qualtran.drawing.graphviz.ClassicalSimGraphDrawer`</p>
+<p>`qualtran.drawing.classical_sim_graph.ClassicalSimGraphDrawer`</p>
 </p>
 </section>
 
@@ -53,7 +53,7 @@ The (composite) bloq must be composed entirely of classically-simulable bloqs.
 
 <h3 id="cxn_label"><code>cxn_label</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L428-L434">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/classical_sim_graph.py#L48-L54">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>cxn_label(
@@ -66,7 +66,7 @@ Label the connection with its classical value.
 
 <h3 id="cxn_edge"><code>cxn_edge</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L436-L446">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/classical_sim_graph.py#L56-L66">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>cxn_edge(

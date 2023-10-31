@@ -15,3 +15,14 @@ Functionality for the <a href="../../qualtran/Bloq.html#tensor_contract"><code>B
 
 [`get_right_and_left_inds(...)`](../../qualtran/simulation/quimb_sim/get_right_and_left_inds.md): Return right and left indices.
 
+
+
+<h2 class="add-link">Other Members</h2>
+
+LeftDangle<a id="LeftDangle"></a>
+: Instance of <a href="../../qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>
+
+RightDangle<a id="RightDangle"></a>
+: Instance of <a href="../../qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>
+
+

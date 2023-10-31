@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L121-L365">
+  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L118-L365">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -62,7 +62,7 @@ To display a graph in a jupyter notebook consider using the SVG utilities:
 
 <h3 id="get_dangle_node"><code>get_dangle_node</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L151-L153">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L148-L150">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_dangle_node(
@@ -75,7 +75,7 @@ Overridable method to create a Node representing dangling Soquets.
 
 <h3 id="add_dangles"><code>add_dangles</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L155-L174">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L152-L171">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>add_dangles(
@@ -91,7 +91,7 @@ We wrap this in a subgraph to align (rank=same) the 'nodes'
 
 <h3 id="soq_label"><code>soq_label</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L176-L178">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L173-L175">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>soq_label(
@@ -104,7 +104,7 @@ Overridable method for getting label text for a Soquet.
 
 <h3 id="get_thru_register"><code>get_thru_register</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L180-L186">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/drawing/graphviz.py#L177-L186">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_thru_register(

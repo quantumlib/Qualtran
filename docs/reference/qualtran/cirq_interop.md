@@ -6,6 +6,12 @@ Bi-directional interop between Qualtran & Cirq using Cirq-FT.
 
 
 isort:skip_file
+## Modules
+
+[`decompose_protocol`](../qualtran/cirq_interop/decompose_protocol.md) module
+
+[`t_complexity_protocol`](../qualtran/cirq_interop/t_complexity_protocol.md) module
+
 ## Classes
 
 [`class CirqGateAsBloq`](../qualtran/cirq_interop/CirqGateAsBloq.md): A Bloq wrapper around a `cirq.Gate`, preserving signature if gate is a `GateWithRegisters`.
