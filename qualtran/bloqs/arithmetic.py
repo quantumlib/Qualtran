@@ -13,33 +13,21 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import (
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Dict, Iterable, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
-import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And, MultiAnd
-from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates import TGate, Toffoli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -544,10 +532,10 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
-        return {(num_t_gates, TGate()), (num_clifford, ArbitraryClifford(n=1))}
+        return {(TGate(), num_t_gates), (ArbitraryClifford(n=1), num_clifford)}
 
 
 @frozen
@@ -586,8 +574,8 @@ class OutOfPlaceAdder(Bloq):
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
-        return {(1, Add(self.bitsize)), (self.bitsize, ArbitraryClifford(n=2))}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(Add(self.bitsize), 1), (ArbitraryClifford(n=2), self.bitsize)}
 
 
 @frozen(auto_attribs=True)
@@ -693,9 +681,9 @@ class Square(Bloq):
         num_toff = self.bitsize * (self.bitsize - 1)
         return TComplexity(t=4 * num_toff)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = self.bitsize * (self.bitsize - 1)
-        return {(4 * num_toff, TGate())}
+        return {(Toffoli(), num_toff)}
 
 
 @frozen
@@ -748,11 +736,11 @@ class SumOfSquares(Bloq):
             num_toff -= 1
         return TComplexity(t=4 * num_toff)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
-        return {(4 * num_toff, TGate())}
+        return {(Toffoli(), num_toff)}
 
 
 @frozen
@@ -800,9 +788,9 @@ class Product(Bloq):
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
         return TComplexity(t=4 * num_toff)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
-        return {(4 * num_toff, TGate())}
+        return {(Toffoli(), num_toff)}
 
 
 @frozen
@@ -853,12 +841,12 @@ class ScaleIntByReal(Bloq):
         num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
         return TComplexity(t=4 * num_toff)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Eq. D8, we are assuming dA(r_bitsize) and dB(i_bitsize) are inputs and
         # the user has ensured these are large enough for their desired
         # precision.
         num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
-        return {(4 * num_toff, TGate())}
+        return {(Toffoli(), num_toff)}
 
 
 @frozen
@@ -906,10 +894,10 @@ class MultiplyTwoReals(Bloq):
         num_toff = self.bitsize**2 - self.bitsize - 1
         return TComplexity(t=4 * num_toff)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
         num_toff = self.bitsize**2 - self.bitsize - 1
-        return {(4 * num_toff, TGate())}
+        return {(Toffoli(), num_toff)}
 
 
 @frozen
@@ -960,10 +948,10 @@ class SquareRealNumber(Bloq):
         num_toff = self.bitsize**2 // 2 - 4
         return TComplexity(t=4 * num_toff)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Bottom of page 74
         num_toff = self.bitsize**2 // 2 - 4
-        return {(4 * num_toff, TGate())}
+        return {(Toffoli(), num_toff)}
 
 
 @frozen
@@ -1000,14 +988,12 @@ class GreaterThan(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         t_complexity = self.t_complexity()
-        return {(t_complexity.t, TGate())}
+        return {(TGate(), t_complexity.t)}
 
 
 @frozen
@@ -1040,14 +1026,12 @@ class GreaterThanConstant(Bloq):
     def t_complexity(self) -> TComplexity:
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
         t_complexity = self.t_complexity()
-        return {(t_complexity.t, TGate())}
+        return {(TGate(), t_complexity.t)}
 
 
 @frozen
@@ -1076,12 +1060,10 @@ class EqualsAConstant(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # See: https://github.com/quantumlib/cirq-qubitization/issues/219
         # See: https://github.com/quantumlib/cirq-qubitization/issues/217
-        return {(4 * (self.bitsize - 1), TGate())}
+        return {(TGate(), 4 * (self.bitsize - 1))}
 
 
 @frozen
@@ -1131,10 +1113,9 @@ class ToContiguousIndex(Bloq):
         num_toffoli = self.bitsize**2 + self.bitsize - 1
         return TComplexity(t=4 * num_toffoli)
 
-    def bloq_counts(
-        self, ssa: Optional['SympySymbolAllocator'] = None
-    ) -> Set[Tuple[Union[int, sympy.Expr], Bloq]]:
-        return {(4 * (self.bitsize**2 + self.bitsize - 1), TGate())}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        num_toffoli = self.bitsize**2 + self.bitsize - 1
+        return {(Toffoli(), num_toffoli)}
 
 
 @frozen
@@ -1158,7 +1139,7 @@ class SignedIntegerToTwosComplement(Bloq):
     def signature(self) -> Signature:
         return Signature.build(x=self.bitsize)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
-        return {(4 * (self.bitsize - 2), TGate())}
+        return {(TGate(), 4 * (self.bitsize - 2))}
