@@ -240,6 +240,22 @@ class PrepareNuState(Bloq):
         \frac{1}{2^\mu}|\mu\rangle|\nu_x\rangle|\nu_y\rangle|\nu_z\rangle|m\rangle|0\rangle
     $$
 
+    Note the costs differ from those listed in the reference by 5 Toffolis.
+
+    The cost for the arithmetic is
+    $$
+    3 n_p^2 + n_p + 1 + 4 n_\mathcal{M}(n_p + 1) \hspace{1em} (90)
+    $$
+    We also need to add 3 Toffolis which can be inverted at zero Toffoli cost
+    for flagging success.
+
+    The other costs are 4(np-1) controlled hadamards (not inverted at zero cost)
+    and 6np + 2 Toffolis (free inversion).  So focusing on the n_p terms and
+    constants
+    $n_p + 2 . 4 n_p + 6 n_p = 15 n_p$ (consistent)
+    and the constants
+    $ 4 - 2.4 + 2 = -2$ (not -7).
+
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
         m_param: $\mathcal{M}$ in the reference.
