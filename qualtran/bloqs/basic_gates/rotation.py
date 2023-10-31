@@ -19,7 +19,7 @@ from typing import Dict, Set, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, bloq_example, CompositeBloq, DecomposeTypeError, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -38,6 +38,9 @@ class RotationBloq(Bloq, metaclass=abc.ABCMeta):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     def t_complexity(self):
         # TODO Determine precise clifford count and/or ignore.
@@ -100,3 +103,21 @@ class Ry(RotationBloq):
 
         (q,) = q
         return cirq.ry(self.angle).on(q), {'q': np.array([q])}
+
+
+@bloq_example
+def _rx() -> Rx:
+    rx = Rx(angle=np.pi / 4.0)
+    return rx
+
+
+@bloq_example
+def _ry() -> Ry:
+    ry = Ry(angle=np.pi / 4.0)
+    return ry
+
+
+@bloq_example
+def _rz() -> Rz:
+    rz = Rz(angle=np.pi / 4.0)
+    return rz

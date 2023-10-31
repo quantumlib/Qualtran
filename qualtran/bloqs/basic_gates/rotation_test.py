@@ -17,6 +17,7 @@ import numpy as np
 from cirq.ops import SimpleQubitManager
 
 from qualtran.bloqs.basic_gates import Rx, Ry, Rz
+from qualtran.bloqs.basic_gates.rotation import _rx, _ry, _rz
 
 
 def _make_Rx():
@@ -61,3 +62,15 @@ def test_as_cirq_op():
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.Rz(rads=bloq.angle).on(cirq.NamedQubit("q")))
+
+
+def test_rx(bloq_autotester):
+    bloq_autotester(_rx)
+
+
+def test_ry(bloq_autotester):
+    bloq_autotester(_ry)
+
+
+def test_rz(bloq_autotester):
+    bloq_autotester(_rz)
