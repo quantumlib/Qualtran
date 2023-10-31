@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import functools
 import importlib
 import inspect
 import subprocess
 from pathlib import Path
-from typing import Callable, Iterable, List, Tuple, Type
+from typing import Callable, Iterable, List, Optional, Tuple, Type
 
-from qualtran import Bloq, BloqExample
+from qualtran import Bloq, BloqDocSpec, BloqExample
 
 from .git_tools import get_git_root
 
@@ -34,6 +35,7 @@ def _get_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> List[Pa
     return paths
 
 
+@functools.lru_cache()
 def get_bloq_module_paths(bloqs_root: Path) -> List[Path]:
     """Get *.py files for non-test, non-init modules under `bloqs_root`."""
 
@@ -84,18 +86,37 @@ def modpath_to_bloqs(path: Path) -> Iterable[Type[Bloq]]:
         yield cls
 
 
-def modpath_to_bloq_exs(path: Path) -> Iterable[Tuple[str, str, BloqExample]]:
+def modpath_to_bloq_exs(path: Path) -> Iterable[BloqExample]:
     """Given a module path, return all the `BloqExample`s defined within."""
     modname = _bloq_modpath_to_modname(path)
     mod = importlib.import_module(modname)
 
     for name, obj in inspect.getmembers(mod, lambda x: isinstance(x, BloqExample)):
-        yield modname, name, obj
+        yield obj
 
 
-def get_bloq_classes() -> List[Type[Bloq]]:
+def modpath_to_bloqdoc(path: Path) -> Iterable[BloqDocSpec]:
+    """Given a module path, return all the `BloqExample`s defined within."""
+    modname = _bloq_modpath_to_modname(path)
+    mod = importlib.import_module(modname)
+
+    for name, obj in inspect.getmembers(mod, lambda x: isinstance(x, BloqDocSpec)):
+        yield obj
+
+
+@functools.lru_cache()
+def _get_bloqs_root(bloqs_root: Optional[Path] = None) -> Path:
+    """Return the default bloqs_root if not provided."""
+    if bloqs_root is not None:
+        return bloqs_root
+
     reporoot = get_git_root()
-    bloqs_root = reporoot / 'qualtran/bloqs'
+    return reporoot / 'qualtran/bloqs'
+
+
+def get_bloq_classes(bloqs_root: Optional[Path] = None) -> List[Type[Bloq]]:
+    """Get all the `Bloq` subclasses we can find under `bloqs_root`"""
+    bloqs_root = _get_bloqs_root(bloqs_root)
     paths = get_bloq_module_paths(bloqs_root)
     bloq_clss: List[Type[Bloq]] = []
     for path in paths:
@@ -103,14 +124,23 @@ def get_bloq_classes() -> List[Type[Bloq]]:
     return bloq_clss
 
 
-def get_bloq_examples() -> List[BloqExample]:
-    reporoot = get_git_root()
-    bloqs_root = reporoot / 'qualtran/bloqs'
+def get_bloq_examples(bloqs_root: Optional[Path] = None) -> List[BloqExample]:
+    """Get all the `BloqExample`s we can find under `bloqs_root`"""
+    bloqs_root = _get_bloqs_root(bloqs_root)
     paths = get_bloq_module_paths(bloqs_root)
 
     bexamples: List[BloqExample] = []
     for path in paths:
-        for modname, name, be in modpath_to_bloq_exs(path):
-            bexamples.append(be)
-
+        bexamples.extend(modpath_to_bloq_exs(path))
     return bexamples
+
+
+def get_bloqdoc_specs(bloqs_root: Optional[Path] = None) -> List[BloqDocSpec]:
+    """Get all the `BloqDocSpec`s we can find under `bloqs_root`"""
+    bloqs_root = _get_bloqs_root(bloqs_root)
+    paths = get_bloq_module_paths(bloqs_root)
+
+    bloqdocs: List[BloqDocSpec] = []
+    for path in paths:
+        bloqdocs.extend(modpath_to_bloqdoc(path))
+    return bloqdocs
