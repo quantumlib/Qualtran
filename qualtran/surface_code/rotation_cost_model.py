@@ -33,19 +33,21 @@ class RotationCostModel(abc.ABC):
 
 
 @frozen
-class LogarithmicModel(RotationCostModel):
+class RotationLogarithmicModel(RotationCostModel):
     r"""A linear model in the log of the error budget with no preparation cost.
 
     $$
-    \#T = -\textit{slope} \log_2{\textit{budget}} + \textit{overhead}
+    \#T = -\textrm{slope} \log_2{\textrm{budget}} + \textrm{overhead}
     $$
 
     Attributes:
         slope: The coefficient of $log_2{budget}$.
         overhead: The overhead.
         gateset: A human-readable description of the gate set (e.g. 'Clifford+T').
-        approximation_protocol: A description or reference to the approximation protocol (e.g. `Diagonal:https://arxiv.org/abs/1403.2975`)
-        reference: A human-readable description of the source of the model (e.g. 'https://arxiv.org/abs/1404.5320')
+        approximation_protocol: A description or reference to the approximation protocol
+            (e.g. `Diagonal: https://arxiv.org/abs/1403.2975`)
+        reference: A human-readable description of the source of the model
+            (e.g. 'https://arxiv.org/abs/1404.5320').
     """
     slope: float
     overhead: float
@@ -63,11 +65,11 @@ class LogarithmicModel(RotationCostModel):
 
 
 @frozen
-class ConstantCostWithPreparation(RotationCostModel):
-    r"""A rotation cost of bitsize-2 toffoli per rotation independent of the error budget.
+class ConstantWithOverheadRotationCost(RotationCostModel):
+    r"""A rotation cost of bitsize - 2 toffoli per rotation independent of the error budget.
 
     This model assumes a state $\ket{\phi}$ has been prepared using a standard technique, then
-    each rotation is applied with bitsize digits of accuracy using bitsize-2 Toffoli gates.
+    each rotation is applied with bitsize digits of accuracy using bitsize - 2 Toffoli gates.
     $$
     \ket{\phi} = \frac{1}{\sqrt{2^{b}}} \sum_{k=0}^{2^b-1} e^{-2\pi i k/2^b} \ket{k}
     $$
@@ -77,30 +79,21 @@ class ConstantCostWithPreparation(RotationCostModel):
 
     Attributes:
         bitsize: Number of digits of accuracy for approximating a rotation.
-        slope: The coefficient of $log_2{budget}$.
         overhead: The overhead.
-        gateset: A human-readable description of the gate set (e.g. 'Clifford+T').
-        approximation_protocol: A description or reference to the approximation protocol (e.g. `Diagonal:https://arxiv.org/abs/1403.2975`)
-        reference: A human-readable description of the source of the model (e.g. 'https://arxiv.org/abs/1404.5320')
     """
 
     bitsize: int
-    slope: float
-    overhead: float
-    gateset: str | None = None
-    approximation_protocol: str | None = None
+    overhead_rotation_cost: RotationCostModel
     reference: str | None = None
 
     def rotation_cost(self, error_budget: float) -> AlgorithmSummary:
         return AlgorithmSummary(toffoli_gates=max(self.bitsize - 2, 0))
 
     def prepartion_overhead(self, error_budget) -> AlgorithmSummary:
-        return self.bitsize * AlgorithmSummary(
-            t_gates=math.ceil(-self.slope * math.log2(error_budget / self.bitsize) + self.overhead)
-        )
+        return self.bitsize * self.overhead_rotation_cost.rotation_cost(error_budget / self.bitsize)
 
 
-BeverlandEtAl = LogarithmicModel(
+BeverlandEtAlRotationCost = RotationLogarithmicModel(
     slope=0.53,
     overhead=5.3,
     gateset='Clifford+T',

@@ -45,7 +45,7 @@ class AlgorithmSummary:
     def __mul__(self, other: int) -> 'AlgorithmSummary':
         if not isinstance(other, int):
             raise TypeError(
-                f'Multiplication isn\'t supported between AlgorithmSummary and non integer type {type(other)}'
+                f"Multiplication isn't supported between AlgorithmSummary and non integer type {type(other)}"
             )
 
         return AlgorithmSummary(
@@ -59,3 +59,31 @@ class AlgorithmSummary:
 
     def __rmul__(self, other: int) -> 'AlgorithmSummary':
         return self.__mul__(other)
+
+    def __add__(self, other: 'AlgorithmSummary') -> 'AlgorithmSummary':
+        if not isinstance(other, AlgorithmSummary):
+            raise TypeError(
+                f"Addition isn't supported between AlgorithmSummary and type {type(other)}"
+            )
+        return AlgorithmSummary(
+            algorithm_qubits=self.algorithm_qubits + other.algorithm_qubits,
+            measurements=self.measurements + other.measurements,
+            t_gates=self.t_gates + other.t_gates,
+            toffoli_gates=self.toffoli_gates + other.toffoli_gates,
+            rotation_gates=self.rotation_gates + other.rotation_gates,
+            rotation_circuit_depth=self.rotation_circuit_depth + other.rotation_circuit_depth,
+        )
+
+    def __sub__(self, other: 'AlgorithmSummary') -> 'AlgorithmSummary':
+        if not isinstance(other, AlgorithmSummary):
+            raise TypeError(
+                f"Subtraction isn't supported between AlgorithmSummary and type {type(other)}"
+            )
+        return AlgorithmSummary(
+            algorithm_qubits=self.algorithm_qubits - other.algorithm_qubits,
+            measurements=self.measurements - other.measurements,
+            t_gates=self.t_gates - other.t_gates,
+            toffoli_gates=self.toffoli_gates - other.toffoli_gates,
+            rotation_gates=self.rotation_gates - other.rotation_gates,
+            rotation_circuit_depth=self.rotation_circuit_depth - other.rotation_circuit_depth,
+        )

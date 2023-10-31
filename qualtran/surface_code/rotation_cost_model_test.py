@@ -21,8 +21,13 @@ from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 @pytest.mark.parametrize(
     'model,want',
     [
-        (rcm.BeverlandEtAl, AlgorithmSummary(t_gates=7)),
-        (rcm.ConstantCostWithPreparation(13, 1, 1), AlgorithmSummary(toffoli_gates=11)),
+        (rcm.BeverlandEtAlRotationCost, AlgorithmSummary(t_gates=7)),
+        (
+            rcm.ConstantWithOverheadRotationCost(
+                bitsize=13, overhead_rotation_cost=rcm.RotationLogarithmicModel(1, 1)
+            ),
+            AlgorithmSummary(toffoli_gates=11),
+        ),
     ],
 )
 def test_rotation_cost(model: rcm.RotationCostModel, want: float):
@@ -32,8 +37,13 @@ def test_rotation_cost(model: rcm.RotationCostModel, want: float):
 @pytest.mark.parametrize(
     'model,want',
     [
-        (rcm.BeverlandEtAl, AlgorithmSummary()),
-        (rcm.ConstantCostWithPreparation(13, 1, 1), AlgorithmSummary(t_gates=104)),
+        (rcm.BeverlandEtAlRotationCost, AlgorithmSummary()),
+        (
+            rcm.ConstantWithOverheadRotationCost(
+                bitsize=13, overhead_rotation_cost=rcm.RotationLogarithmicModel(1, 1)
+            ),
+            AlgorithmSummary(t_gates=104),
+        ),
     ],
 )
 def test_preparation_overhead(model: rcm.RotationCostModel, want: float):
