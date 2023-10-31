@@ -14,5 +14,5 @@
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
 
 
-def test_uniform_super_position_ij():
+def test_uniform_superposition_ij():
     prep = PrepareZetaState(num_atoms=10, lambda_zeta=20, num_bits_nuc_pos=8)
