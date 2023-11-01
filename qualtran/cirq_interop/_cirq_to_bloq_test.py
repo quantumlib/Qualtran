@@ -32,15 +32,11 @@ from qualtran import (
     Side,
     Signature,
 )
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import OneState
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
-from qualtran.cirq_interop import (
-    cirq_optree_to_cbloq,
-    CirqGateAsBloq,
-    CirqQuregT,
-    decompose_from_cirq_op,
-)
+from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
@@ -51,7 +47,9 @@ class TestCNOT(Bloq):
         return Signature.build(control=1, target=1)
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self)
+        return cirq_optree_to_cbloq(
+            self.as_cirq_op(cirq.ops.SimpleQubitManager(), **get_named_qubits(self.signature))
+        )
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
@@ -105,7 +103,7 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
         _ = CirqGateAsBloq(And(adjoint=True)).as_composite_bloq().tensor_contract()
 
 
-def test_bloq_decompose_from_cirq_op():
+def test_bloq_decompose():
     tb = TestCNOT()
     assert len(tb.signature) == 2
     ctrl, trg = tb.signature
@@ -113,7 +111,7 @@ def test_bloq_decompose_from_cirq_op():
     assert ctrl.side == Side.THRU
     assert tb.pretty_name() == 'TestCNOT'
 
-    cirq_quregs = tb.signature.get_cirq_quregs()
+    cirq_quregs = get_named_qubits(tb.signature.lefts())
     circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == TComplexity(clifford=1)
@@ -238,5 +236,5 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
 
 def test_cirq_gate_as_bloq_decompose_raises():
     bloq = CirqGateAsBloq(cirq.X)
-    with pytest.raises(DecomposeNotImplementedError, match="does not have a decomposition"):
+    with pytest.raises(DecomposeNotImplementedError, match="does not declare a decomposition"):
         _ = bloq.decompose_bloq()
