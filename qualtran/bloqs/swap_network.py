@@ -34,6 +34,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
