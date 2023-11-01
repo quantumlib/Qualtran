@@ -14,11 +14,13 @@
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+import numpy as np
 
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT, SelectionRegister
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
@@ -145,6 +147,12 @@ class PrepareFirstQuantization(PrepareOracle):
         n_eta = (self.eta - 1).bit_length()
         n_at = (self.num_atoms - 1).bit_length()
         n_m = (self.m_param - 1).bit_length()
+        # Note actual reflections costs:
+        # uv: should be really n_{eta zeta} + 1 qubits, we're abstracting this to a single qubit.
+        # ij: + 2 for rotated qubits during AA.
+        # w: missing one for rotated qubit.
+        # overflow: 3 * 2 qubits are missing.
+        # l: should not be reflected on.
         return (
             SelectionRegister('tuv', bitsize=1, 2),
             SelectionRegister('uv', bitize=1, 2),
@@ -155,31 +163,14 @@ class PrepareFirstQuantization(PrepareOracle):
             SelectionRegister("mu", bitsize=self.num_bits_p),
             SelectionRegister("nu", bitsize=n_nu, shape=(3,)),
             SelectionRegister("m", bitsize=n_m),
-            SelectionRegister("succ_nu", bitsize=1),
             SelectionRegister("l", bitsize=n_at),
             )
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return ()
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("tuv", bitsize=1),
-                Register("uv", bitsize=1),
-                Register("plus_t", bitsize=1),
-                Register("ij", bitsize=n_eta, shape=(2,)),
-                Register("w", bitsize=3),
-                Register("r", bitsize=self.num_bits_p),
-                Register("s", bitsize=self.num_bits_p),
-                Register("mu", bitsize=self.num_bits_p),
-                Register("nu", bitsize=n_nu, shape=(3,)),
-                Register("m", bitsize=n_m),
-                Register("succ_nu", bitsize=1),
-                Register("l", bitsize=n_at),
-            ]
+        return (
+            Register("succ_nu", bitsize=1),
+            Register("plus_t", bitsize=1),
         )
 
     def short_name(self) -> str:
@@ -212,7 +203,7 @@ class PrepareFirstQuantization(PrepareOracle):
             tuv=tuv,
             uv=uv,
         )
-        ij = bb.add(PrepareIJSuperposition(self.eta, self.num_bits_rot_aa, self.adjoint), ij=ij)
+        ij = bb.add(UniformSuperpostionIJFirstQuantization(self.eta, self.num_bits_rot_aa, self.adjoint), ij=ij)
         # |+>
         plus_t = bb.add(Hadamard(), q=plus_t)
         w, r, s = bb.add(
@@ -224,7 +215,7 @@ class PrepareFirstQuantization(PrepareOracle):
             s=s,
         )
         mu, nu, m, l, succ_nu = bb.add(
-            PrepareUVFistQuantization(
+            PrepareUVFirstQuantization(
                 self.num_bits_p,
                 self.eta,
                 self.num_atoms,
@@ -255,109 +246,127 @@ class PrepareFirstQuantization(PrepareOracle):
         }
 
 
-# @frozen
-# class SelectFirstQuantization(Bloq):
-#     """State preparation for the first quantized chemistry Hamiltonian."""
+def allocate_shaped(bb, shape, bitsize):
+    size = bb.prod(shape)
+    anc = bb.allocate(size * bitsize)
+    anc = bb.split(anc)
+    anc = [bb.join(anc[s*bitsize:(s+1)*bitsize] for s in range(size))]
+    return np.reshape(anc, shape)
 
-#     num_bits_p: int
-#     eta: int
-#     num_atoms: int
-#     lambda_zeta: int
-#     m_param: int = 2**8
-#     num_bits_nuc_pos: int = 16
-#     num_bits_t: int = 16
-#     num_bits_rot_aa: int = 8
-#     adjoint: bool = False
 
-#     @cached_property
-#     def signature(self) -> Signature:
-#         n_nu = self.num_bits_p + 1
-#         n_eta = (self.eta - 1).bit_length()
-#         n_at = (self.num_atoms - 1).bit_length()
-#         n_m = (self.m_param - 1).bit_length()
-#         return Signature(
-#             [
-#                 Register("tuv", bitsize=1),
-#                 Register("uv", bitsize=1),
-#                 Register("plus_t", bitsize=1),
-#                 Register("ij", bitsize=n_eta, shape=(2,)),
-#                 Register("w", bitsize=3),
-#                 Register("r", bitsize=self.num_bits_p),
-#                 Register("s", bitsize=self.num_bits_p),
-#                 Register("mu", bitsize=self.num_bits_p),
-#                 Register("nu", bitsize=n_nu, shape=(3,)),
-#                 Register("m", bitsize=n_m),
-#                 Register("succ_nu", bitsize=1),
-#                 Register("l", bitsize=n_at),
-#                 Register("rl", bitsize=self.num_bits_nuc_pos),
-#                 Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
-#                 Register("pq", bitsize=self.num_bits_p, shape=(2, 3)),
-#             ]
-#         )
+@frozen
+class SelectFirstQuantization(SelectOracle):
+    """State preparation for the first quantized chemistry Hamiltonian."""
 
-#     def short_name(self) -> str:
-#         return r'SELECT'
+    num_bits_p: int
+    eta: int
+    num_atoms: int
+    lambda_zeta: int
+    m_param: int = 2**8
+    num_bits_nuc_pos: int = 16
+    num_bits_t: int = 16
+    num_bits_rot_aa: int = 8
+    adjoint: bool = False
 
-#     def build_composite_bloq(
-#         self,
-#         bb: BloqBuilder,
-#         tuv: SoquetT,
-#         uv: SoquetT,
-#         plus_t: SoquetT,
-#         ij: SoquetT,
-#         w: SoquetT,
-#         r: SoquetT,
-#         s: SoquetT,
-#         mu: SoquetT,
-#         nu: SoquetT,
-#         m: SoquetT,
-#         succ_nu: SoquetT,
-#         l: SoquetT,
-#         rl: SoquetT,
-#         sys: SoquetT,
-#         pq: SoquetT,
-#     ) -> Dict[str, 'SoquetT']:
-#         p, q = pq
-#         i, j = ij
-#         i, sys, p = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=i, sys=sys, anc=p)
-#         j, sys, q = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=j, sys=sys, anc=q)
-#         p, plus_t, tuv, w, r, s = bb.add(
-#             SelectTFirstQuantization(self.num_bits_p, self.eta),
-#             p=p,
-#             plus=plus_t,
-#             flag_T=tuv,
-#             w=w,
-#             r=r,
-#             s=s,
-#         )
-#         tuv, uv, l, rl, nu, p, q = bb.add(
-#             SelectUVFirstQuantization(self.num_bits_nuc_pos, self.eta, self.num_bits_nuc_pos),
-#             flag_tuv=tuv,
-#             flag_uv=uv,
-#             l=l,
-#             rl=rl,
-#             nu=nu,
-#             p=p,
-#             q=q,
-#         )
-#         i, sys, p = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=i, sys=sys, anc=p)
-#         j, sys, q = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=j, sys=sys, anc=q)
-#         pq = [p, q]
-#         ij = [i, j]
-#         return {
-#             'tuv': tuv,
-#             'uv': uv,
-#             'plus_t': plus_t,
-#             'ij': ij,
-#             'w': w,
-#             'r': r,
-#             's': s,
-#             'mu': mu,
-#             'nu': nu,
-#             'm': m,
-#             'l': l,
-#             'rl': rl,
-#             'succ_nu': succ_nu,
-#             'sys': sys,
-#             'pq': pq,
-#         }
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return (Register("tuv", bitsize=1),
+                Register("uv", bitsize=1), 
+                Register("succ_nu", bitsize=1),
+                Register("plus_t", bitsize=1),
+                )
+
+    @cached_property
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        n_nu = self.num_bits_p + 1
+        n_eta = (self.eta - 1).bit_length()
+        n_at = (self.num_atoms - 1).bit_length()
+        n_m = (self.m_param - 1).bit_length()
+        return (
+            SelectionRegister('ij', bitsize=n_eta, shape=(2,)),
+            SelectionRegister("w", bitsize=3),
+            SelectionRegister("r", bitsize=self.num_bits_p),
+            SelectionRegister("s", bitsize=self.num_bits_p),
+            SelectionRegister("mu", bitsize=self.num_bits_p),
+            SelectionRegister("nu", bitsize=n_nu, shape=(3,)),
+            SelectionRegister("m", bitsize=n_m),
+            SelectionRegister("l", bitsize=n_at),
+            )
+
+    @cached_property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return (Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),)
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [*self.control_registers, *self.selection_registers, *self.target_registers]
+        )
+
+    def short_name(self) -> str:
+        return r'SELECT'
+
+    def build_composite_bloq(
+        self,
+        bb: BloqBuilder,
+        tuv: SoquetT,
+        uv: SoquetT,
+        plus_t: SoquetT,
+        ij: SoquetT,
+        w: SoquetT,
+        r: SoquetT,
+        s: SoquetT,
+        mu: SoquetT,
+        nu: SoquetT,
+        m: SoquetT,
+        succ_nu: SoquetT,
+        l: SoquetT,
+        sys: SoquetT,
+        pq: SoquetT,
+    ) -> Dict[str, 'SoquetT']:
+        p = allocate_shaped(bb, (3,), self.num_bits_p + 1) 
+        q = allocate_shaped(bb, (3,), self.num_bits_p + 1) 
+        rl = bb.allocate(self.num_bits_nuc_pos)
+        i, j = ij
+        i, sys, p = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=i, sys=sys, anc=p)
+        j, sys, q = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=j, sys=sys, anc=q)
+        p, plus_t, tuv, w, r, s = bb.add(
+            SelectTFirstQuantization(self.num_bits_p, self.eta),
+            p=p,
+            plus=plus_t,
+            flag_T=tuv,
+            w=w,
+            r=r,
+            s=s,
+        )
+        tuv, uv, l, rl, nu, p, q = bb.add(
+            SelectUVFirstQuantization(self.num_bits_nuc_pos, self.eta, self.num_bits_nuc_pos),
+            flag_tuv=tuv,
+            flag_uv=uv,
+            l=l,
+            rl=rl,
+            nu=nu,
+            p=p,
+            q=q,
+        )
+        i, sys, p = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=i, sys=sys, anc=p)
+        j, sys, q = bb.add(SWAPIJ(self.eta, self.num_bits_p + 1), sel=j, sys=sys, anc=q)
+        bb.free(bb.join(p.ravel()))
+        bb.free(bb.join(q.ravel()))
+        bb.free(rl)
+        ij = [i, j]
+        return {
+            'tuv': tuv,
+            'uv': uv,
+            'plus_t': plus_t,
+            'ij': ij,
+            'w': w,
+            'r': r,
+            's': s,
+            'mu': mu,
+            'nu': nu,
+            'm': m,
+            'l': l,
+            'succ_nu': succ_nu,
+            'sys': sys,
+        }
