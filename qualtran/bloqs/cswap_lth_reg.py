@@ -27,23 +27,42 @@ from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 
 @attr.frozen
 class ApplyCSwapToLthReg(UnaryIterationGate):
-    r"""Swaps the $l$-th register into an ancilla using cswaps and unary iteration.
+    r"""Swaps $l$-th register into an ancilla using unary iteration.
+
+    Applies the unitary which peforms
+    $$
+        U |l\rangle|\psi_0\rangle\cdots|\psi_l\rangle|\psi_n\rangle|\mathrm{junk}\rangle
+        \rightarrow
+        |l\rangle|\psi_0\rangle\cdots|\mathrm{junk}|\psi_n\rangle|\psi_l\rangle \rangle
+    $$
+    through a combination of unary iteration and CSwaps.
+
+    The cost should be bitsize * iteration_length + iteration_length - 2 + num_controls
 
     Args:
-        bitsize: The size of the registers we want to swap.
         selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
             It also contains information about the iteration length of each selection register.
+        bitsize: The size of the registers we want to swap.
         nth_gate: A function mapping the composite selection index to a single-qubit gate.
 
+    Registers:
+        control_registers: Control registers
+        selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
+            It also contains information about the iteration length of each selection register.
+        target_registers: Target registers to swap. We swap FROM registers
+            labelled x`i`, where i is an integer and TO a single register called y
+
     References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767) page 20 paragraph 2.
     """
-    bitsize: int
     selection_regs: Tuple[SelectionRegister, ...] = attr.field(
         converter=lambda v: (v,) if isinstance(v, SelectionRegister) else tuple(v)
     )
+    bitsize: int
     control_regs: Tuple[Register, ...] = attr.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
-        default=(Register('control', 0),),
+        default=(Register('ctrl', 0),),
     )
 
     @cached_property
@@ -56,7 +75,6 @@ class ApplyCSwapToLthReg(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        # only one selection register
         iteration_length = self.selection_registers[0].iteration_length
         regs = [Register(f'x{i}', bitsize=self.bitsize) for i in range(iteration_length)]
         regs += [Register('y', bitsize=self.bitsize)]
