@@ -72,6 +72,9 @@ class PrepareUVFistQuantization(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r'PREP $UV$'
+
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:

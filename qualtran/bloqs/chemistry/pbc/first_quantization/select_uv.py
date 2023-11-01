@@ -56,6 +56,9 @@ class ApplyNuclearPhase(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r'$-e^{-k_\nu\cdot R_l$'
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n_p = self.num_bits_p
         n_n = self.num_bits_nuc

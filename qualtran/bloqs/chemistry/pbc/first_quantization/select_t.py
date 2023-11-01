@@ -54,6 +54,9 @@ class SelectTFirstQuantization(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r'SEL $T$'
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
         # into an ancilla register ($3(n_{p}-1)$), copying the $r$ and $s$ bit of into an
