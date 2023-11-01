@@ -37,7 +37,7 @@ from qualtran.bloqs.arithmetic import (
     SumOfSquares,
     ToContiguousIndex,
 )
-from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates import OneEffect, OneState, TGate, ZeroEffect, ZeroState
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
@@ -572,6 +572,8 @@ def test_signed_to_twos_complement():
     q0 = bb.add_register('x', bitsize)
     q0 = bb.add(SignedIntegerToTwosComplement(bitsize), x=q0)
     cbloq = bb.finalize(x=q0)
+    _, sigma = cbloq.call_graph()
+    assert sigma[TGate()] == 4 * (5 - 2)
 
 
 def test_arithmetic_notebook():

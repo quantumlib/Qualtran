@@ -1162,4 +1162,4 @@ class SignedIntegerToTwosComplement(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
-        return {(TGate(), 4 * (self.bitsize - 2))}
+        return {(Toffoli(), (self.bitsize - 2))}
