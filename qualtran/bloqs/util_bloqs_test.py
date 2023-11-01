@@ -35,9 +35,9 @@ def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
             continue
 
         lefts = [reg for reg in group_regs if reg.side & Side.LEFT]
-        left_size = np.product([l.total_bits() for l in lefts])
+        left_size = np.prod([l.total_bits() for l in lefts])
         rights = [reg for reg in group_regs if reg.side & Side.RIGHT]
-        right_size = np.product([r.total_bits() for r in rights])
+        right_size = np.prod([r.total_bits() for r in rights])
 
         assert left_size > 0
         assert left_size == right_size
