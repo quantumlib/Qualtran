@@ -241,7 +241,9 @@ def test_cswap_lth_reg(selection_bitsize, iteration_length, target_bitsize):
 @pytest.mark.parametrize(
     "selection_bitsize,iteration_length,target_bitsize", [[2, 3, 2], [3, 2, 3]]
 )
-def test_bloq_has_consistent_decomposition(selection_bitsize, iteration_length, target_bitsize):
+def test_multiplexed_cswap_bloq_has_consistent_decomposition(
+    selection_bitsize, iteration_length, target_bitsize
+):
     bloq = MultiplexedCSwap(
         SelectionRegister('selection', selection_bitsize, iteration_length),
         target_bitsize=target_bitsize,
@@ -252,7 +254,7 @@ def test_bloq_has_consistent_decomposition(selection_bitsize, iteration_length, 
 @pytest.mark.parametrize(
     "selection_bitsize,iteration_length,target_bitsize", [[3, 8, 2], [4, 9, 3]]
 )
-def test_t_counts(selection_bitsize, iteration_length, target_bitsize):
+def test_multiplexed_cswap_t_counts(selection_bitsize, iteration_length, target_bitsize):
     bloq = MultiplexedCSwap(
         SelectionRegister('selection', selection_bitsize, iteration_length),
         target_bitsize=target_bitsize,
