@@ -18,7 +18,7 @@ import attr
 import cirq
 from cirq._compat import cached_property
 
-from qualtran import bloq_example, BloqDocSpec, Register, SelectionRegister
+from qualtran import bloq_example, BloqDocSpec, Register, SelectionRegister, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
@@ -60,10 +60,9 @@ class ApplyCSwapToLthReg(UnaryIterationGate):
     selection_regs: Tuple[SelectionRegister, ...] = attr.field(
         converter=lambda v: (v,) if isinstance(v, SelectionRegister) else tuple(v)
     )
-    bitsize: int
+    target_bitsize: int
     control_regs: Tuple[Register, ...] = attr.field(
-        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
-        default=(Register('ctrl', 0),),
+        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v), default=()
     )
 
     @cached_property
@@ -76,10 +75,13 @@ class ApplyCSwapToLthReg(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        iteration_length = self.selection_registers[0].iteration_length
-        regs = [Register(f'x{i}', bitsize=self.bitsize) for i in range(iteration_length)]
-        regs += [Register('y', bitsize=self.bitsize)]
-        return tuple(regs)
+        target_shape = tuple(sreg.iteration_length for sreg in self.selection_registers)
+        return tuple(
+            [
+                Register('targets', bitsize=self.target_bitsize, shape=target_shape),
+                Register('output', bitsize=self.target_bitsize),
+            ]
+        )
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * total_bits(self.control_registers)
@@ -94,10 +96,11 @@ class ApplyCSwapToLthReg(UnaryIterationGate):
     def nth_operation(
         self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
     ) -> cirq.OP_TREE:
-        selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)[0]
-        target_regs = {reg.name: kwargs[reg.name] for reg in self.target_registers}
-        return CSwap(self.bitsize).make_on(
-            ctrl=control, x=target_regs[f'x{selection_idx}'], y=target_regs['y']
+        selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
+        target_regs = kwargs['targets']
+        output_reg = kwargs['output']
+        return CSwap(self.target_bitsize).make_on(
+            ctrl=control, x=target_regs[selection_idx], y=output_reg
         )
 
 
@@ -109,7 +112,8 @@ def _apply_cswap_to_l() -> ApplyCSwapToLthReg:
     iteration_length = 5
     target_bitsize = 2
     apply_cswap_to_l = ApplyCSwapToLthReg(
-        SelectionRegister('selection', selection_bitsize, iteration_length), bitsize=target_bitsize
+        SelectionRegister('selection', selection_bitsize, iteration_length),
+        target_bitsize=target_bitsize,
     )
 
     return apply_cswap_to_l
