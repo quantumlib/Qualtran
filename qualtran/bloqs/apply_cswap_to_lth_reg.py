@@ -86,9 +86,9 @@ class ApplyCSwapToLthReg(UnaryIterationGate):
         wire_symbols += ["In"] * total_bits(self.selection_registers)
         for i, target in enumerate(self.target_registers):
             if i == len(self.target_registers) - 1:
-                wire_symbols += [f"×(y)"] * target.total_bits()
+                wire_symbols += ["×(y)"] * target.total_bits()
             else:
-                wire_symbols += [f"×(x)"] * target.total_bits()
+                wire_symbols += ["×(x)"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def nth_operation(
@@ -115,8 +115,8 @@ def _apply_cswap_to_l() -> ApplyCSwapToLthReg:
     return apply_cswap_to_l
 
 
-_APPLYLTH_DOC = BloqDocSpec(
+_APPLY_CSWAP_LTH_DOC = BloqDocSpec(
     bloq_cls=ApplyCSwapToLthReg,
-    import_line='from qualtran.bloqs.cswap_lth_reg import ApplyCSwapToLthReg',
+    import_line='from qualtran.bloqs.apply_cswap_to_lth_reg import ApplyCSwapToLthReg',
     examples=(_apply_cswap_to_l,),
 )

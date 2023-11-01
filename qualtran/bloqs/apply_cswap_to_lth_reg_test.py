@@ -15,13 +15,12 @@
 import cirq
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import SelectionRegister
-from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import TGate, Toffoli
-from qualtran.bloqs.cswap_lth_reg import ApplyCSwapToLthReg
+from qualtran.bloqs.apply_cswap_to_lth_reg import _apply_cswap_to_l, ApplyCSwapToLthReg
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 @pytest.mark.parametrize(
@@ -62,7 +61,7 @@ def test_bloq_has_consistent_decomposition(selection_bitsize, iteration_length, 
     bloq = ApplyCSwapToLthReg(
         SelectionRegister('selection', selection_bitsize, iteration_length), bitsize=target_bitsize
     )
-    assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize(
@@ -75,3 +74,11 @@ def test_t_counts(selection_bitsize, iteration_length, target_bitsize):
     expected = 4 * (iteration_length - 2) + 7 * (iteration_length * target_bitsize)
     assert bloq.t_complexity().t == expected
     assert bloq.call_graph()[1][TGate()] == expected
+
+
+def test_apply_z_to_odd(bloq_autotester):
+    bloq_autotester(_apply_cswap_to_l)
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('apply_cswap_to_lth_reg')
