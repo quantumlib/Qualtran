@@ -12,15 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import subprocess
-from pathlib import Path
+from qualtran.bloqs.chemistry.sparse import PrepareSparse
 
 
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, universal_newlines=True
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    return path
+def _make_sparse_prepare():
+    from qualtran.bloqs.chemistry.sparse import PrepareSparse
+
+    return PrepareSparse(10, 1_000, 8)
+
+
+def test_sparse_prepare():
+    prep = PrepareSparse(10, 1_000, 8)
+
+
+def test_sparse_prepare_bloq_counts():
+    bloq = PrepareSparse(10, 1_000, 8)
+    graph, sigma = bloq.call_graph()

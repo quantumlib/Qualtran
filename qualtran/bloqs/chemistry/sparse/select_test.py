@@ -12,15 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import subprocess
-from pathlib import Path
+from qualtran.bloqs.chemistry.sparse import SelectSparse
 
 
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, universal_newlines=True
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    return path
+def _make_sparse_select():
+    from qualtran.bloqs.chemistry.sparse import SelectSparse
+
+    return SelectSparse(10)
+
+
+def test_sparse_select():
+    sel = SelectSparse(10)
+
+
+def test_sparse_select_bloq_counts():
+    bloq = SelectSparse(10)
+    graph, sigma = bloq.call_graph()
+    assert isinstance(sigma, dict)
