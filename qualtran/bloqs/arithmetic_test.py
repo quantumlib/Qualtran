@@ -17,7 +17,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import BloqBuilder, Register
+from qualtran import BloqBuilder, Register, Side
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic import (
     Add,
@@ -37,6 +37,7 @@ from qualtran.bloqs.arithmetic import (
     SumOfSquares,
     ToContiguousIndex,
 )
+from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
@@ -404,13 +405,66 @@ def test_add_mod_n_protocols():
 
 def test_out_of_place_adder():
     bb = BloqBuilder()
-    bitsize = 4
-    q0 = bb.add_register('a', bitsize)
-    q1 = bb.add_register('b', bitsize)
-    q2 = bb.add_register('c', bitsize)
-    a, b, c = bb.add(OutOfPlaceAdder(bitsize), a=q0, b=q1, c=q2)
-    cbloq = bb.finalize(a=a, b=b, c=c)
-    cbloq.t_complexity()
+    qa = bb.add_register('a', 1)
+    qb = bb.add_register('b', 1)
+    qc = bb.add_register('c', 1)
+    a, b, c, co = bb.add(OutOfPlaceAdder(), a=qa, b=qb, c=qc)
+    cbloq = bb.finalize(a=a, b=b, c=c, co=co)
+    assert cbloq.t_complexity().t == 4
+    assert cbloq.t_complexity().rotations == 0
+    assert cbloq.t_complexity().clifford == 5
+
+    # tensor network simulation of the truth table
+    abc_inputs = list(itertools.product(range(2), repeat=3))
+    for a, b, c in abc_inputs:
+        # sum the input bits and convert to binary
+        summed_abc = sum([a, b, c])
+        binary_repr = np.binary_repr(summed_abc, width=2)
+
+        # build bloq and evaluate correct amplitude is equal to one
+        bb = BloqBuilder()
+        qa = bb.add(ZeroState()) if a == 0 else bb.add(OneState())
+        qb = bb.add(ZeroState()) if b == 0 else bb.add(OneState())
+        qc = bb.add(ZeroState()) if c == 0 else bb.add(OneState())
+        qa, qb, qc, co = bb.add(OutOfPlaceAdder(), a=qa, b=qb, c=qc)
+        qa = bb.add(ZeroEffect(), q=qa) if a == 0 else bb.add(OneEffect(), q=qa)
+        qb = bb.add(ZeroEffect(), q=qb) if b == 0 else bb.add(OneEffect(), q=qb)
+        qc = bb.add(ZeroEffect(), q=qc) if binary_repr[1] == '0' else bb.add(OneEffect(), q=qc)
+        co = bb.add(ZeroEffect(), q=co) if binary_repr[0] == '0' else bb.add(OneEffect(), q=co)
+        cbloq = bb.finalize()
+        contracted_circuit_value = cbloq.tensor_contract() ** 2
+        assert np.isclose(contracted_circuit_value, 1.0)
+
+    # now test the inverse complexities
+    bb = BloqBuilder()
+    qa = bb.add_register('a', 1)
+    qb = bb.add_register('b', 1)
+    qc = bb.add_register('c', 1)
+    reg_qco = Register('co', bitsize=1, side=Side.LEFT)
+    qco = bb.add_register(reg_qco)
+    qa, qb, qc = bb.add(OutOfPlaceAdder(adjoint=True), a=qa, b=qb, c=qc, co=qco)
+    cbloq = bb.finalize(a=qa, b=qb, c=qc)
+    assert cbloq.t_complexity().clifford == 7
+
+    # build truth table
+    for a, b, c in abc_inputs:
+        # sum the input bits and convert to binary
+        summed_abc = sum([a, b, c])
+        binary_repr = np.binary_repr(summed_abc, width=2)
+        output_bits = [a, b, c]
+        input_bits = [a, b, int(binary_repr[1]), int(binary_repr[0])]
+        bb = BloqBuilder()
+        qa = bb.add(ZeroState()) if input_bits[0] == 0 else bb.add(OneState())
+        qb = bb.add(ZeroState()) if input_bits[1] == 0 else bb.add(OneState())
+        qc = bb.add(ZeroState()) if input_bits[2] == 0 else bb.add(OneState())
+        qco = bb.add(ZeroState()) if input_bits[3] == 0 else bb.add(OneState())
+        qa, qb, qc = bb.add(OutOfPlaceAdder(adjoint=True), a=qa, b=qb, c=qc, co=qco)
+        qa = bb.add(ZeroEffect(), q=qa) if output_bits[0] == 0 else bb.add(OneEffect(), q=qa)
+        qb = bb.add(ZeroEffect(), q=qb) if output_bits[1] == 0 else bb.add(OneEffect(), q=qb)
+        qc = bb.add(ZeroEffect(), q=qc) if output_bits[2] == 0 else bb.add(OneEffect(), q=qc)
+        cbloq = bb.finalize()
+        contracted_circuit_value = cbloq.tensor_contract() ** 2
+        assert np.isclose(contracted_circuit_value, 1.0)
 
 
 def test_square():

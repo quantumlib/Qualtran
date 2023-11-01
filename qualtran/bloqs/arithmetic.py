@@ -19,9 +19,9 @@ import cirq
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And, MultiAnd
-from qualtran.bloqs.basic_gates import TGate, Toffoli
+from qualtran.bloqs.basic_gates import CNOT, TGate, Toffoli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -540,42 +540,64 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
 
 @frozen
 class OutOfPlaceAdder(Bloq):
-    r"""An n-bit addition gate.
+    r"""A 3-bit addition gate.
 
-    Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$
-    using $4n - 4 T$ gates.
-
-    Args:
-        bitsize: Number of bits used to represent each integer. Must be large
-            enough to hold the result in the output register of a + b.
+    Implements $U|a\rangle|b\rangle|c\rangle \rightarrow |a\rangle|b\rangle|(a+b+c)_{0}\rangle|(a+b+c)_{1}\rangle$
+    using one Toffoli gate. The output bits store the sum (in binary) of $a,b,c$.  $(a+b+c)_{0}$ corresponds
+    to the $2^{0}$ bit and $(a+b+c)_{1}$ corresponds to the $2^{1}$ bit.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input/output register (register b above).
+     - a: A single-bit-sized input register (register a above).
+     - b: A single-bit-sized input register (register b above).
+     - c: A single-bit-sized input register (register c above).
+     - result: four bits the last two of which represent the
+               sum of the input in binary.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
-
-    bitsize: int
+    adjoint: bool = False
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, c=self.bitsize)
+        return Signature(
+            [
+                Register(name='a', bitsize=1, side=Side.THRU),
+                Register(name='b', bitsize=1, side=Side.THRU),
+                Register(name='c', bitsize=1, side=Side.THRU),
+                Register(name='co', bitsize=1, side=Side.LEFT if self.adjoint else Side.RIGHT),
+            ]
+        )
 
     def short_name(self) -> str:
-        return "c = a + b"
+        dag = '†' if self.adjoint else ''
+        return f"(a + b + c){dag}"
 
     def t_complexity(self):
-        # extra bitsize cliffords comes from CNOTs before adding:
-        # yield CNOT.on_each(zip(b, c))
-        # yield Add(a, c)
-        num_clifford = (self.bitsize - 2) * 19 + 16 + self.bitsize
-        num_t_gates = 4 * self.bitsize - 4
+        if self.adjoint:
+            return TComplexity(t=0, clifford=7)
+        num_clifford = 5
+        num_t_gates = 4  # one Toffoli from logical-AND
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Add(self.bitsize), 1), (ArbitraryClifford(n=2), self.bitsize)}
+    def build_composite_bloq(self, bb: BloqBuilder, *, a, b, c, co=None):
+        if self.adjoint:
+            b, c = bb.add(CNOT(), ctrl=b, target=c)
+            a, co = bb.add(CNOT(), ctrl=a, target=co)
+            a, b = bb.add(CNOT(), ctrl=a, target=b)
+            (b, c) = bb.add(And(adjoint=True), ctrl=[b, c], target=co)
+            a, c = bb.add(CNOT(), ctrl=a, target=c)
+            a, b = bb.add(CNOT(), ctrl=a, target=b)
+            return {'a': a, 'b': b, 'c': c}
+
+        assert co is None
+        a, b = bb.add(CNOT(), ctrl=a, target=b)
+        a, c = bb.add(CNOT(), ctrl=a, target=c)
+        (b, c), co = bb.add(And(), ctrl=[b, c])
+        a, b = bb.add(CNOT(), ctrl=a, target=b)
+        a, co = bb.add(CNOT(), ctrl=a, target=co)
+        b, c = bb.add(CNOT(), ctrl=b, target=c)
+        return {'a': a, 'b': b, 'c': c, 'co': co}
 
 
 @frozen(auto_attribs=True)
