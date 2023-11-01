@@ -71,7 +71,7 @@ class Register:
 
         This is the product of bitsize and each of the dimensions in `shape`.
         """
-        return self.bitsize * int(np.product(self.shape))
+        return self.bitsize * int(np.prod(self.shape))
 
 
 @frozen
