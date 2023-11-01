@@ -29,6 +29,7 @@ from qualtran.bloqs.arithmetic import (
     LessThanEqual,
     MultiplyTwoReals,
     OutOfPlaceAdder,
+    OutOfPlaceAdderBuildingBlock,
     Product,
     ScaleIntByReal,
     SignedIntegerToTwosComplement,
@@ -405,10 +406,21 @@ def test_add_mod_n_protocols():
 
 def test_out_of_place_adder():
     bb = BloqBuilder()
+    bitsize = 4
+    q0 = bb.add_register('a', bitsize)
+    q1 = bb.add_register('b', bitsize)
+    q2 = bb.add_register('c', bitsize)
+    a, b, c = bb.add(OutOfPlaceAdder(bitsize), a=q0, b=q1, c=q2)
+    cbloq = bb.finalize(a=a, b=b, c=c)
+    cbloq.t_complexity()
+
+
+def test_out_of_place_adder_building_block():
+    bb = BloqBuilder()
     qa = bb.add_register('a', 1)
     qb = bb.add_register('b', 1)
     qc = bb.add_register('c', 1)
-    a, b, c, co = bb.add(OutOfPlaceAdder(), a=qa, b=qb, c=qc)
+    a, b, c, co = bb.add(OutOfPlaceAdderBuildingBlock(), a=qa, b=qb, c=qc)
     cbloq = bb.finalize(a=a, b=b, c=c, co=co)
     assert cbloq.t_complexity().t == 4
     assert cbloq.t_complexity().rotations == 0
@@ -426,7 +438,7 @@ def test_out_of_place_adder():
         qa = bb.add(ZeroState()) if a == 0 else bb.add(OneState())
         qb = bb.add(ZeroState()) if b == 0 else bb.add(OneState())
         qc = bb.add(ZeroState()) if c == 0 else bb.add(OneState())
-        qa, qb, qc, co = bb.add(OutOfPlaceAdder(), a=qa, b=qb, c=qc)
+        qa, qb, qc, co = bb.add(OutOfPlaceAdderBuildingBlock(), a=qa, b=qb, c=qc)
         qa = bb.add(ZeroEffect(), q=qa) if a == 0 else bb.add(OneEffect(), q=qa)
         qb = bb.add(ZeroEffect(), q=qb) if b == 0 else bb.add(OneEffect(), q=qb)
         qc = bb.add(ZeroEffect(), q=qc) if binary_repr[1] == '0' else bb.add(OneEffect(), q=qc)
@@ -442,7 +454,7 @@ def test_out_of_place_adder():
     qc = bb.add_register('c', 1)
     reg_qco = Register('co', bitsize=1, side=Side.LEFT)
     qco = bb.add_register(reg_qco)
-    qa, qb, qc = bb.add(OutOfPlaceAdder(adjoint=True), a=qa, b=qb, c=qc, co=qco)
+    qa, qb, qc = bb.add(OutOfPlaceAdderBuildingBlock(adjoint=True), a=qa, b=qb, c=qc, co=qco)
     cbloq = bb.finalize(a=qa, b=qb, c=qc)
     assert cbloq.t_complexity().clifford == 7
 
@@ -458,7 +470,7 @@ def test_out_of_place_adder():
         qb = bb.add(ZeroState()) if input_bits[1] == 0 else bb.add(OneState())
         qc = bb.add(ZeroState()) if input_bits[2] == 0 else bb.add(OneState())
         qco = bb.add(ZeroState()) if input_bits[3] == 0 else bb.add(OneState())
-        qa, qb, qc = bb.add(OutOfPlaceAdder(adjoint=True), a=qa, b=qb, c=qc, co=qco)
+        qa, qb, qc = bb.add(OutOfPlaceAdderBuildingBlock(adjoint=True), a=qa, b=qb, c=qc, co=qco)
         qa = bb.add(ZeroEffect(), q=qa) if output_bits[0] == 0 else bb.add(OneEffect(), q=qa)
         qb = bb.add(ZeroEffect(), q=qb) if output_bits[1] == 0 else bb.add(OneEffect(), q=qb)
         qc = bb.add(ZeroEffect(), q=qc) if output_bits[2] == 0 else bb.add(OneEffect(), q=qc)
