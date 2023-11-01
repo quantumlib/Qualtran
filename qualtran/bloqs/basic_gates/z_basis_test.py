@@ -90,7 +90,7 @@ def test_multiq_zero_state():
         _ = ZeroState(n=10)
 
 
-def test_one_state():
+def test_one_state_manual():
     bloq = OneState()
     assert bloq.bit
     assert bloq.state
