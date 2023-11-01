@@ -12,14 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import itertools
 from typing import Tuple
 
 import attr
 import cirq
 from cirq._compat import cached_property
 
-from qualtran import Register, SelectionRegister
+from qualtran import bloq_example, BloqDocSpec, Register, SelectionRegister
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
@@ -27,17 +26,19 @@ from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 
 @attr.frozen
 class ApplyCSwapToLthReg(UnaryIterationGate):
-    r"""Swaps $l$-th register into an ancilla using unary iteration.
+    r"""Swaps the $l$-th register into an ancilla using unary iteration.
 
     Applies the unitary which peforms
     $$
-        U |l\rangle|\psi_0\rangle\cdots|\psi_l\rangle|\psi_n\rangle|\mathrm{junk}\rangle
+        U |l\rangle|\psi_0\rangle\cdots|\psi_l\rangle\cdots|\psi_n\rangle|\mathrm{junk}\rangle
         \rightarrow
-        |l\rangle|\psi_0\rangle\cdots|\mathrm{junk}|\psi_n\rangle|\psi_l\rangle \rangle
+        |l\rangle|\psi_0\rangle\cdots|\mathrm{junk}\rangle\cdots|\psi_n\rangle|\psi_l\rangle
     $$
     through a combination of unary iteration and CSwaps.
 
-    The cost should be bitsize * iteration_length + iteration_length - 2 + num_controls
+    The cost should be $L n_b + L - 2 + n_c$, where $L$ is the
+    iteration length, $n_b$ is the bitsize of
+    the registers to swap, and $n_c$ is the number of controls.
 
     Args:
         selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
@@ -98,3 +99,24 @@ class ApplyCSwapToLthReg(UnaryIterationGate):
         return CSwap(self.bitsize).make_on(
             ctrl=control, x=target_regs[f'x{selection_idx}'], y=target_regs['y']
         )
+
+
+@bloq_example
+def _apply_cswap_to_l() -> ApplyCSwapToLthReg:
+    from qualtran import SelectionRegister
+
+    selection_bitsize = 3
+    iteration_length = 5
+    target_bitsize = 2
+    apply_cswap_to_l = ApplyCSwapToLthReg(
+        SelectionRegister('selection', selection_bitsize, iteration_length), bitsize=target_bitsize
+    )
+
+    return apply_cswap_to_l
+
+
+_APPLYLTH_DOC = BloqDocSpec(
+    bloq_cls=ApplyCSwapToLthReg,
+    import_line='from qualtran.bloqs.cswap_lth_reg import ApplyCSwapToLthReg',
+    examples=(_apply_cswap_to_l,),
+)
