@@ -576,9 +576,7 @@ class OutOfPlaceAdder(Bloq):
     def t_complexity(self):
         if self.adjoint:
             return TComplexity(t=0, clifford=7)
-        num_clifford = 5
-        num_t_gates = 4  # one Toffoli from logical-AND
-        return TComplexity(t=num_t_gates, clifford=num_clifford)
+        return TComplexity(t=4, clifford=5)
 
     def build_composite_bloq(self, bb: BloqBuilder, *, a, b, c, co=None):
         if self.adjoint:
