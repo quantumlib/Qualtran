@@ -406,11 +406,11 @@ def test_add_mod_n_protocols():
 
 def test_out_of_place_adder():
     basis_map = {}
+    gate = OutOfPlaceAdder(bitsize=3)
     for x in range(2**3):
         for y in range(2**3):
             basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(f'0b_{x:03b}_{y:03b}_{x+y:04b}', 2)
-    gate = OutOfPlaceAdder(bitsize=3)
-    # ops = GateHelper(gate).operation
+            assert gate.call_classically(a=x, b=y, c=0) == (x, y, x + y)
     op = GateHelper(gate).operation
     op_inv = cirq.inverse(op)
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, cirq.Circuit(op))
@@ -425,7 +425,6 @@ def test_out_of_place_adder():
         assert_circuit_inp_out_cirqsim(circuit, qubit_order, bits, bits)
     assert gate.t_complexity().t == 3 * 4
     assert (gate**-1).t_complexity().t == 0
-    # gate.t_complexity() == cirq.Circuit(cirq.decompse_once(op))
     assert_decompose_is_consistent_with_t_complexity(gate**-1)
     assert_valid_bloq_decomposition(gate)
     assert_valid_bloq_decomposition(gate**-1)

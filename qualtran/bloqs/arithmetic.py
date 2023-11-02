@@ -575,8 +575,13 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, [2] * self.bitsize, [2] * (self.bitsize + 1)
 
-    def apply(self, a: int, b: int, c: int) -> Union[int, Iterable[int]]:
+    def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
         return a, b, c + a + b
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return dict(zip('abc', (a, b, a + b)))
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
