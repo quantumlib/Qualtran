@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
+import abc
 import itertools
 from collections import defaultdict
 from functools import cached_property
@@ -53,34 +54,36 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-@frozen
-class CirqGateAsBloq(GateWithRegisters):
+class CirqGateAsBloqBase(GateWithRegisters):
     """A Bloq wrapper around a `cirq.Gate`"""
 
-    gate: cirq.Gate
+    @property
+    @abc.abstractmethod
+    def cirq_gate(self) -> cirq.Gate:
+        ...
 
     def pretty_name(self) -> str:
-        g = min(self.gate.__class__.__name__, str(self.gate), key=len)
+        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
         return f'cirq.{g}'
 
     @cached_property
     def signature(self) -> 'Signature':
-        if isinstance(self.gate, Bloq):
-            return self.gate.signature
-        nqubits = cirq.num_qubits(self.gate)
+        if isinstance(self.cirq_gate, Bloq):
+            return self.cirq_gate.signature
+        nqubits = cirq.num_qubits(self.cirq_gate)
         return (
-            Signature([Register('qubits', shape=nqubits, bitsize=1)])
-            if nqubits > 0
-            else Signature([])
+            Signature([Register('q', shape=nqubits, bitsize=1)])
+            if nqubits > 1
+            else Signature.build(q=nqubits)
         )
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         op = (
-            self.gate.on_registers(**quregs)
-            if isinstance(self.gate, GateWithRegisters)
-            else self.gate.on(*quregs.get('qubits', np.array(())).flatten())
+            self.cirq_gate.on_registers(**quregs)
+            if isinstance(self.cirq_gate, GateWithRegisters)
+            else self.cirq_gate.on(*quregs.get('q', np.array(())).flatten())
         )
         try:
             return cirq.decompose_once(op)
@@ -96,7 +99,7 @@ class CirqGateAsBloq(GateWithRegisters):
         outgoing: Dict[str, 'SoquetT'],
     ):
         _add_my_tensors_from_gate(
-            self.gate,
+            self.cirq_gate,
             self.signature,
             self.short_name(),
             tn=tn,
@@ -106,15 +109,24 @@ class CirqGateAsBloq(GateWithRegisters):
         )
 
     def t_complexity(self) -> 'TComplexity':
-        return t_complexity(self.gate)
+        return t_complexity(self.cirq_gate)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        if isinstance(self.gate, GateWithRegisters):
-            return self.gate.as_cirq_op(qubit_manager, **in_quregs)
-        qubits = in_quregs.get('qubits', ()).flatten()
-        return self.gate.on(*qubits), in_quregs
+        if isinstance(self.cirq_gate, GateWithRegisters):
+            return self.cirq_gate.as_cirq_op(qubit_manager, **in_quregs)
+        qubits = in_quregs.get('q', ()).flatten()
+        return self.cirq_gate.on(*qubits), in_quregs
+
+
+@frozen
+class CirqGateAsBloq(CirqGateAsBloqBase):
+    gate: cirq.Gate
+
+    @property
+    def cirq_gate(self) -> cirq.Gate:
+        return self.gate
 
 
 def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet') -> 'WireSymbol':

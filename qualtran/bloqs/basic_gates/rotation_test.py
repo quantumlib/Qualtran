@@ -16,8 +16,8 @@ import cirq
 import numpy as np
 from cirq.ops import SimpleQubitManager
 
-from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 
 
 def _make_Rx():

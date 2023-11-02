@@ -14,20 +14,17 @@
 
 import abc
 from functools import cached_property
-from typing import Dict, Protocol, Set, Tuple, TYPE_CHECKING
+from typing import Protocol, Set, TYPE_CHECKING
 
 import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
-    import cirq
-
-    from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -37,11 +34,7 @@ class _HasEps(Protocol):
     eps: float
 
 
-class RotationBloq(GateWithRegisters, metaclass=abc.ABCMeta):
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature.build(q=1)
-
+class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
     def t_complexity(self: _HasEps):
         # TODO Determine precise clifford count and/or ignore.
         # This is an improvement over Ref. 2 from the docstring which provides
@@ -52,12 +45,12 @@ class RotationBloq(GateWithRegisters, metaclass=abc.ABCMeta):
         return TComplexity(t=num_t)
 
     def build_call_graph(self: _HasEps, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_t = RotationBloq.t_complexity(self).t
+        num_t = _RotationBloq.t_complexity(self).t
         return {(TGate(), num_t)}
 
 
 @frozen
-class ZPowGate(RotationBloq):
+class ZPowGate(_RotationBloq):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
 
     The unitary matrix of `ZPowGate(exponent=t, global_shift=s)` is:
@@ -88,7 +81,7 @@ class ZPowGate(RotationBloq):
         eps: precision for implementation of rotation.
 
     Registers:
-        q: One-bit register.
+        qubits: One-bit register.
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
@@ -101,17 +94,13 @@ class ZPowGate(RotationBloq):
     global_shift: float = 0.0
     eps: float = 1e-11
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        (q,) = q
-        return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift).on(q), {
-            'q': np.array([q])
-        }
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
 
 @frozen
-class XPowGate(RotationBloq):
+class XPowGate(_RotationBloq):
     r"""A gate that rotates around the X axis of the Bloch sphere.
 
     The unitary matrix of `XPowGate(exponent=t, global_shift=s)` is:
@@ -138,7 +127,6 @@ class XPowGate(RotationBloq):
         global_shift: Offsets the eigenvalues of the gate at exponent=1.
             In effect, this controls a global phase factor on the gate's
             unitary matrix. The factor for global_shift=s is:
-
                 exp(i * pi * s * t)
         eps: precision for implementation of rotation.
 
@@ -155,17 +143,13 @@ class XPowGate(RotationBloq):
     global_shift: float = 0.0
     eps: float = 1e-11
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        (q,) = q
-        return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift).on(q), {
-            'q': np.array([q])
-        }
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
 
 @frozen
-class YPowGate(RotationBloq):
+class YPowGate(_RotationBloq):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
 
     The unitary matrix of `YPowGate(exponent=t)` is:
@@ -192,7 +176,6 @@ class YPowGate(RotationBloq):
         global_shift: Offsets the eigenvalues of the gate at exponent=1.
             In effect, this controls a global phase factor on the gate's
             unitary matrix. The factor for global_shift=s is:
-
                 exp(i * pi * s * t)
         eps: precision for implementation of rotation.
 
@@ -209,17 +192,13 @@ class YPowGate(RotationBloq):
     global_shift: float = 0.0
     eps: float = 1e-11
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        (q,) = q
-        return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift).on(q), {
-            'q': np.array([q])
-        }
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
 
 @frozen
-class Rz(RotationBloq):
+class Rz(_RotationBloq):
     """Single-qubit Rz gate.
 
     Args:
@@ -239,36 +218,26 @@ class Rz(RotationBloq):
     angle: float
     eps: float = 1e-11
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        (q,) = q
-        return cirq.rz(self.angle).on(q), {'q': np.array([q])}
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.rz(self.angle)
 
 
 @frozen
-class Rx(RotationBloq):
+class Rx(_RotationBloq):
     angle: float
     eps: float = 1e-11
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        import cirq
-
-        (q,) = q
-        return cirq.rx(self.angle).on(q), {'q': np.array([q])}
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.rx(self.angle)
 
 
 @frozen
-class Ry(RotationBloq):
+class Ry(_RotationBloq):
     angle: float
     eps: float = 1e-11
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        import cirq
-
-        (q,) = q
-        return cirq.ry(self.angle).on(q), {'q': np.array([q])}
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.ry(self.angle)

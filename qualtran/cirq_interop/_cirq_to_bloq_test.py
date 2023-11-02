@@ -45,7 +45,7 @@ class TestCNOT(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         ctrl, target = soqs['control'], soqs['target']
-        ctrl, target = bb.add(CirqGateAsBloq(cirq.CNOT), qubits=[ctrl, target])
+        ctrl, target = bb.add(CirqGateAsBloq(cirq.CNOT), q=[ctrl, target])
         return {'control': ctrl, 'target': target}
 
     def as_cirq_op(
@@ -65,7 +65,7 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
         assert len(b.signature) == 1
         assert b.signature[0].side == Side.THRU
 
-    assert x.signature[0].shape == (1,)
+    assert x.signature[0].shape == ()
     assert toffoli.signature[0].shape == (3,)
 
     assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
