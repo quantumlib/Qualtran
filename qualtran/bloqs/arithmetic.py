@@ -578,6 +578,109 @@ class OutOfPlaceAdder(Bloq):
         return {(Add(self.bitsize), 1), (ArbitraryClifford(n=2), self.bitsize)}
 
 
+@frozen
+class HammingWeightCompute(GateWithRegisters):
+    r"""A gate to compute the hamming weight of n-bit register in a new log_{n} bit register.
+
+    Implements $U|x\rangle |0\rangle \rightarrow |x\rangle|hamming_weight(x)\rangle$
+    using $4nT$ gates. Uncomputation requires 0 T-gates.
+
+    Args:
+        bitsize: Number of bits in the input register. The allocated output register
+            is of size `log_2(bitsize)` so it has enough space to hold the hamming weight of x.
+
+    Registers:
+     - x: A bitsize-sized input register (register a above).
+     - junk: A temporary ancilla register of size bitsize.
+     - out: A log2(bitize)-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
+    """
+
+    bitsize: int
+    adjoint: bool = False
+
+    @cached_property
+    def signature(self):
+        side = Side.LEFT if self.adjoint else Side.RIGHT
+        return Signature(
+            [
+                Register('x', self.bitsize),
+                Register('junk', sum(self._junk_sizes), side=side),
+                Register('out', self.bitsize.bit_length(), side=side),
+            ]
+        )
+
+    @cached_property
+    def _junk_sizes(self):
+        bitsize = self.bitsize
+        ret = []
+        while bitsize > 0:
+            bitsize = bitsize // 2
+            ret.append(bitsize)
+        return ret
+
+    def short_name(self) -> str:
+        return "out = x.bit_count()"
+
+    def _three_to_two_adder(self, a, b, c, out) -> cirq.OP_TREE:
+        return [
+            [cirq.CX(a, b), cirq.CX(a, c)],
+            And().on(b, c, out),
+            [cirq.CX(a, b), cirq.CX(a, out), cirq.CX(b, c)],
+        ]
+
+    def _decompose_using_three_to_two_adders(
+        self, x: List[cirq.Qid], junk: List[cirq.Qid], out: List[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        for out_idx in range(len(out)):
+            y = []
+            for in_idx in range(0, len(x) - 2, 2):
+                a, b, c = x[in_idx], x[in_idx + 1], x[in_idx + 2]
+                anc = junk.pop()
+                y.append(anc)
+                yield self._three_to_two_adder(a, b, c, anc)
+            if len(x) % 2 == 1:
+                yield cirq.CNOT(x[-1], out[out_idx])
+            else:
+                anc = junk.pop()
+                yield self._three_to_two_adder(x[-2], x[-1], out[out_idx], anc)
+                y.append(anc)
+            x = [*y]
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        x: List[cirq.Qid] = [*quregs['x'][::-1]]
+        junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
+        out: List[cirq.Qid] = [*quregs['out'][::-1]]
+        optree = self._decompose_using_three_to_two_adders(x, junk, out)
+        return cirq.inverse(optree) if self.adjoint else optree
+
+    def t_complexity(self) -> TComplexity:
+        and_t = And(adjoint=self.adjoint).t_complexity()
+        junk_bitsize = sum(self._junk_sizes)
+        num_clifford = junk_bitsize * (5 + and_t.clifford) + sum(  # For AND gates
+            1 for x in [self.bitsize, *self._junk_sizes] if x & 1
+        )  # For CNOTs
+        num_t = junk_bitsize * and_t.t
+        return TComplexity(t=num_t, clifford=num_clifford)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (And(adjoint=self.adjoint), self.bitsize),
+            (ArbitraryClifford(n=2), 5 * self.bitsize),
+        }
+
+    def __pow__(self, power: int):
+        if power == 1:
+            return self
+        if power == -1:
+            return HammingWeightCompute(self.bitsize, adjoint=not self.adjoint)
+        raise NotImplementedError("HammingWeightCompute.__pow__ defined only for +1/-1.")
+
+
 @frozen(auto_attribs=True)
 class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.

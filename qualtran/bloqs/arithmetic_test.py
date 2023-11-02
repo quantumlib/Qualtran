@@ -25,6 +25,7 @@ from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
+    HammingWeightCompute,
     LessThanConstant,
     LessThanEqual,
     MultiplyTwoReals,
@@ -42,6 +43,7 @@ from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
+    GateHelper,
 )
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -529,3 +531,28 @@ def test_arithmetic_notebook():
 
 def test_comparison_gates_notebook():
     execute_notebook('comparison_gates')
+
+
+@pytest.mark.parametrize('bitsize', [3, 4, 5])
+def test_hamming_weight_compute(bitsize: int):
+    gate = HammingWeightCompute(bitsize=bitsize)
+    gate_inv = gate**-1
+
+    assert_decompose_is_consistent_with_t_complexity(gate)
+    assert_decompose_is_consistent_with_t_complexity(gate_inv)
+    assert_valid_bloq_decomposition(gate)
+    assert_valid_bloq_decomposition(gate_inv)
+
+    junk_bitsize = sum(gate._junk_sizes)
+    out_bitsize = bitsize.bit_length()
+    sim = cirq.Simulator()
+    op = GateHelper(gate).operation
+    circuit = cirq.Circuit(cirq.decompose_once(op))
+    circuit_with_inv = circuit + cirq.Circuit(cirq.decompose_once(op**-1))
+    qubit_order = sorted(circuit_with_inv.all_qubits())
+    for inp in range(2**bitsize):
+        input_state = [0] * (junk_bitsize + out_bitsize) + list(iter_bits(inp, bitsize))
+        result = sim.simulate(circuit, initial_state=input_state).dirac_notation()
+        actual_bits = result[1 + junk_bitsize : 1 + junk_bitsize + out_bitsize]
+        assert actual_bits == f'{inp.bit_count():0{out_bitsize}b}'
+        assert_circuit_inp_out_cirqsim(circuit_with_inv, qubit_order, input_state, input_state)
