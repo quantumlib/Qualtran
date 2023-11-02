@@ -14,11 +14,11 @@
 
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.t_factory import TFactory
+from qualtran.surface_code.t_factory import SimpleTFactory
 
 
 def test_footprint():
-    factory = TFactory(
+    factory = SimpleTFactory(
         num_qubits=5, generation_cycle_duration_ns=3, num_t_per_cycle=0.1, error_rate=1e-9
     )
     magic_count = AlgorithmSummary(t_gates=1, toffoli_gates=1)

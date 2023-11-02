@@ -30,8 +30,3 @@ def test_vs_spreadsheet():
     np.testing.assert_allclose(re.failure_prob, 0.0084, rtol=1e-3)
     np.testing.assert_allclose(re.footprint, 4.00e5, rtol=1e-3)
     np.testing.assert_allclose(re.duration_hr, 7.53, rtol=1e-3)
-
-
-def test_factory():
-    factory = CCZ2TFactory()
-    assert factory.spacetime_footprint() is NotImplemented

@@ -150,7 +150,7 @@ class CCZ2TFactory(MagicStateFactory):
         return math.ceil((n_ccz_states * ccz_depth + catalyzations) * distillation_d)
 
     def spacetime_footprint(self) -> float:
-        return NotImplemented
+        raise NotImplementedError
 
 
 def get_ccz2t_costs(
