@@ -88,6 +88,13 @@ class BloqAsCirqGate(GateWithRegisters):
         return BloqAsCirqGate(bloq=bloq).as_cirq_op(qubit_manager=qubit_manager, **cirq_quregs)
 
     def decompose_bloq(self) -> 'CompositeBloq':
+        """Delegate decomposition to wrapped Bloq's decomposition.
+
+        Since `BloqAsCirqGate` derives from `GateWithRegisters`, it is sufficient to override either
+        Bloq-style `decompose_bloq` or Cirq-style `decompose_from_registers` to obtain the other one
+        for free. Thus, a cirq-style `_decompose_` is auto generated here using the bloq-style
+        `decompose_bloq`.
+        """
         return self.bloq.decompose_bloq()
 
     def _t_complexity_(self):

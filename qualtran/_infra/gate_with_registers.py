@@ -103,6 +103,30 @@ def _get_all_and_output_quregs_from_input(
     qubit_manager: cirq.QubitManager,
     in_quregs: Dict[str, 'CirqQuregT'],
 ) -> Tuple[Dict[str, 'CirqQuregT'], Dict[str, 'CirqQuregT']]:
+    """Takes care of necessary (de-/)allocations to obtain output & all qubit registers from input.
+
+    For every register `reg` in `registers`, this method checks:
+    - If `reg.side == Side.LEFT`:
+        - Ensure that `in_quregs` has a an entry corresponding to `reg`
+        - Deallocate the corresponding qubits using `qubit_manager.deallocate`.
+        - These qubits are part of `all_quregs` but not `out_quregs`.
+    - If `reg.side == Side.RIGHT`:
+        - Ensure that `in_quregs` does not have an entry corresponding to `reg`.
+        - Allocate new multi-dimensional qubit array of shape `(*reg.shape, reg.bitsize)`.
+        - These qubits are part of `all_quregs` and `out_quregs`.
+    - If `reg.side == Side.THRU`:
+        - Ensure that `in_quregs` has a an entry corresponding to `reg`
+        - These qubits are part of `all_quregs` and `out_quregs`.
+
+    Args:
+        registers: An iterable of `Register` objects specifying the signature of a Bloq.
+        qubit_manager: An instance of `cirq.QubitManager` to allocate/deallocate qubits.
+        in_quregs: A dictionary mapping LEFT register names from `registers` to corresponding
+            cirq-style multidimensional qubit array of shape `(*left_reg.shape, left_reg.bitsize)`.
+
+    Returns:
+        A tuple of `(all_quregs, out_quregs)`
+    """
     all_quregs: Dict[str, 'CirqQuregT'] = {}
     out_quregs: Dict[str, 'CirqQuregT'] = {}
     for reg in registers:
