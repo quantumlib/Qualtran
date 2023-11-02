@@ -39,4 +39,7 @@ class MagicStateFactory(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def spacetime_footprint(self) -> float:
-        """The spacetime cost of producing a single magic state."""
+        """The spacetime cost of producing a single magic state.
+        
+        Equals the number of qubits times the time needed to produce a correct magic state.
+        """
