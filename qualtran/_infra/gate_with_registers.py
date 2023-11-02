@@ -26,6 +26,8 @@ from qualtran._infra.registers import Register
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+    from qualtran.drawing import WireSymbol
 
 
 def total_bits(registers: Iterable[Register]) -> int:
