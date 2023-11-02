@@ -29,7 +29,6 @@ from qualtran import (
     BloqBuilder,
     CompositeBloq,
     DecomposeNotImplementedError,
-    DecomposeTypeError,
     GateWithRegisters,
     Register,
     Side,

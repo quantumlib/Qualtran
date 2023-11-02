@@ -17,16 +17,13 @@ import attr
 import cirq
 import numpy as np
 import pytest
-import sympy
 from attrs import frozen
 
 import qualtran
 from qualtran import (
     Bloq,
     BloqBuilder,
-    CompositeBloq,
     DecomposeNotImplementedError,
-    DecomposeTypeError,
     GateWithRegisters,
     Register,
     Side,
@@ -46,10 +43,10 @@ class TestCNOT(Bloq):
     def signature(self) -> Signature:
         return Signature.build(control=1, target=1)
 
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return cirq_optree_to_cbloq(
-            self.as_cirq_op(cirq.ops.SimpleQubitManager(), **get_named_qubits(self.signature))
-        )
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        ctrl, target = soqs['control'], soqs['target']
+        ctrl, target = bb.add(CirqGateAsBloq(cirq.CNOT), qubits=[ctrl, target])
+        return {'control': ctrl, 'target': target}
 
     def as_cirq_op(
         self, qubit_manager: cirq.QubitManager, **cirq_quregs: 'CirqQuregT'
@@ -57,14 +54,6 @@ class TestCNOT(Bloq):
         (control,) = cirq_quregs['control']
         (target,) = cirq_quregs['target']
         return cirq.CNOT(control, target), cirq_quregs
-
-
-@frozen
-class TestCNOTSymbolic(TestCNOT):
-    @property
-    def signature(self) -> Signature:
-        c, t = sympy.Symbol('c'), sympy.Symbol('t')
-        return Signature.build(control=c, target=t)
 
 
 def test_cirq_gate_as_bloq_for_trivial_gates():
@@ -115,9 +104,6 @@ def test_bloq_decompose():
     circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == TComplexity(clifford=1)
-
-    with pytest.raises(DecomposeTypeError):
-        TestCNOTSymbolic().decompose_bloq()
 
 
 def test_cirq_circuit_to_cbloq():

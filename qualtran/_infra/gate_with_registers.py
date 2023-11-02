@@ -13,13 +13,14 @@
 #  limitations under the License.
 
 import abc
+import itertools
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
+from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
@@ -211,9 +212,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 - `build_composite_bloq` raises a `DecomposeNotImplementedError` and
                 - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
-        import itertools
 
-        from qualtran._infra.bloq import DecomposeTypeError
         from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq, InteropQubitManager
 
         try:
