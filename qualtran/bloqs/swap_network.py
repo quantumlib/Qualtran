@@ -278,8 +278,8 @@ class MultiplexedCSwap(UnaryIterationGate):
     Args:
         selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
             It also contains information about the iteration length of each selection register.
-        bitsize: The size of the registers we want to swap.
-        nth_gate: A function mapping the composite selection index to a single-qubit gate.
+        target_bitsize: The size of the registers we want to swap.
+        control_regs: Control registers for constructing a controlled version of the gate.
 
     Registers:
         control_registers: Control registers
