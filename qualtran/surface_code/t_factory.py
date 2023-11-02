@@ -23,12 +23,14 @@ from qualtran.surface_code.magic_state_factory import MagicStateFactory
 @frozen
 class SimpleTFactory(MagicStateFactory):
     """A summary of properties of a T-states factory.
-        A summary of T-states factories as described in Appendix E of https://arxiv.org/abs/2211.07629
+
+    A summary of T-state factories as described in Appendix E of https://arxiv.org/abs/2211.07629
 
     Attributes:
         num_qubits: Number of physical qubits used by the factory.
         generation_time_ns: Time to generate a single T-state.
-        distillation_error_:   
+        distillation_error_: Probability of not accepting a magic state
+            (= 1/(average number of generation to produce a single T-state)).
         reference: Source of these estimates.
     """
 
@@ -42,10 +44,13 @@ class SimpleTFactory(MagicStateFactory):
 
     def n_cycles(self, n_magic: AlgorithmSummary) -> int:
         t_states = n_magic.t_gates + 4 * n_magic.toffoli_gates
-        return math.ceil(t_states  * self.generation_time_us)
+        expected_cycle_per_t_state = 1 / self.distillation_error_
+        return math.ceil(t_states * expected_cycle_per_t_state)
 
     def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
-        return self.distillation_error_
+        t_states = n_magic.t_gates + 4 * n_magic.toffoli_gates
+        return t_states * self.distillation_error_
 
     def spacetime_footprint(self) -> float:
-        return self.generation_time_us*self.footprint() / self.distillation_error()
+        expected_cycle_per_t_state = 1 / self.distillation_error_
+        return self.generation_time_us * self.num_qubits * expected_cycle_per_t_state

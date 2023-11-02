@@ -18,11 +18,9 @@ from qualtran.surface_code.t_factory import SimpleTFactory
 
 
 def test_footprint():
-    factory = SimpleTFactory(
-        num_qubits=5, generation_cycle_duration_ns=3, num_t_per_cycle=0.1, error_rate=1e-9
-    )
+    factory = SimpleTFactory(num_qubits=5, generation_time_us=42, distillation_error_=1e-3)
     magic_count = AlgorithmSummary(t_gates=1, toffoli_gates=1)
     assert factory.footprint() == 5
-    assert factory.n_cycles(magic_count) == 50
-    assert factory.spacetime_footprint() == 150
-    assert factory.distillation_error(magic_count, 1e-3) is NotImplemented
+    assert factory.n_cycles(magic_count) == 5000
+    assert factory.spacetime_footprint() == 5 * 42 * 1000
+    assert factory.distillation_error(magic_count, 1e-3) == 5e-3
