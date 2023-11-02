@@ -79,14 +79,21 @@ class PairPotential(Bloq):
     ) -> Dict[str, SoquetT]:
         # compute r_i - r_j
         # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
-        diff_ij = np.array([bb.allocate(self.bitsize) for _ in range(3)])
+        diff_ij = [0, 0, 0]
         for xyz in range(3):
             system_i[xyz], system_j[xyz], diff_ij[xyz] = bb.add(
-                OutOfPlaceAdder(self.bitsize), a=system_i[xyz], b=system_j[xyz], c=diff_ij[xyz]
+                OutOfPlaceAdder(self.bitsize), a=system_i[xyz], b=system_j[xyz]
             )
         # Compute r_{ij}^2 = (x_i-x_j)^2 + ...
-        bitsize_rij_sq = 2 * self.bitsize + 2
-        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize, k=3), input=diff_ij)
+        bitsize_rij_sq = 2 * (self.bitsize + 1) + 2
+        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize + 1, k=3), input=diff_ij)
+        for xyz in range(3):
+            system_i[xyz], system_j[xyz] = bb.add(
+                OutOfPlaceAdder(self.bitsize, adjoint=True),
+                a=system_i[xyz],
+                b=system_j[xyz],
+                c=diff_ij[xyz],
+            )
         # Use rij^2 as the selection register for QROM to output a polynomial approximation to r_{ij}^{-1}.
         qrom_anc_c0 = bb.allocate(self.poly_bitsize)
         qrom_anc_c1 = bb.allocate(self.poly_bitsize)
@@ -140,8 +147,6 @@ class PairPotential(Bloq):
         bb.free(qrom_anc_c2)
         bb.free(qrom_anc_c3)
         bb.free(poly_out)
-        for x in diff_ij:
-            bb.free(x)
         return {'system_i': system_i, "system_j": system_j}
 
 
