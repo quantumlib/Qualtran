@@ -271,7 +271,7 @@ class MultiplexedCSwap(UnaryIterationGate):
     $$
     through a combination of unary iteration and CSwaps.
 
-    The cost should be $L n_b + L - 2 + n_c$, where $L$ is the
+    The toffoli cost should be $L n_b + L - 2 + n_c$, where $L$ is the
     iteration length, $n_b$ is the bitsize of
     the registers to swap, and $n_c$ is the number of controls.
 
