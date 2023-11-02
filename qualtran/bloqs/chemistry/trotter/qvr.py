@@ -20,7 +20,6 @@ from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
-from qualtran.bloqs.basic_gates.rotation import RotationBloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -64,4 +63,4 @@ class QuantumVariableRotation(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
-        return {(RotationBloq(theta), self.phi_bitsize)}
+        return {(Rz(theta), self.phi_bitsize)}
