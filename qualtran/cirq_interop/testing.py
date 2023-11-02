@@ -129,8 +129,8 @@ def assert_decompose_is_consistent_with_t_complexity(val: Any):
     for method in ['_t_complexity_', 't_complexity']:
         t_complexity_method = getattr(val, method, None)
         expected = NotImplemented if t_complexity_method is None else t_complexity_method()
-        if expected is NotImplemented or expected is None:
-            continue
+        if not (expected is NotImplemented or expected is None):
+            break
     if expected is NotImplemented or expected is None:
         return
     decomposition = _decompose_once_considering_known_decomposition(val)
