@@ -15,7 +15,7 @@
 import numpy as np
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.ccz2t_cost_model import CCZ2TFactory, get_ccz2t_costs
+from qualtran.surface_code.ccz2t_cost_model import get_ccz2t_costs
 
 
 def test_vs_spreadsheet():
