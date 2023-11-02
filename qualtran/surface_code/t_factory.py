@@ -43,8 +43,8 @@ class SimpleTFactory(MagicStateFactory):
 
     def n_cycles(self, n_magic: AlgorithmSummary) -> int:
         t_states = n_magic.t_gates + 4 * n_magic.toffoli_gates
-        expected_cycle_per_t_state = 1 / (1 - self.distillation_error_)
-        return math.ceil(t_states * expected_cycle_per_t_state)
+        expected_cycles_per_t_state = 1 / (1 - self.distillation_error_)
+        return math.ceil(t_states * expected_cycles_per_t_state)
 
     def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
         t_states = n_magic.t_gates + 4 * n_magic.toffoli_gates
