@@ -20,6 +20,7 @@ import pytest
 from attrs import frozen
 
 from qualtran import Bloq, CompositeBloq, Side, Signature
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.cirq_interop import CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.testing import execute_notebook
@@ -50,7 +51,7 @@ def test_bloq():
     assert ctrl.side == Side.THRU
     assert tb.pretty_name() == 'TestCNOT'
 
-    quregs = tb.signature.get_cirq_quregs()
+    quregs = get_named_qubits(tb.signature.lefts())
     op, _ = tb.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.CNOT(cirq.NamedQubit('control'), cirq.NamedQubit('target')))

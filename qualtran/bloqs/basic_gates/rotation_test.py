@@ -16,6 +16,7 @@ import cirq
 import numpy as np
 from cirq.ops import SimpleQubitManager
 
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import Rx, Ry, Rz
 
 
@@ -47,17 +48,17 @@ def test_rotation_gates():
 
 def test_as_cirq_op():
     bloq = Rx(angle=np.pi / 4.0, eps=1e-8)
-    quregs = bloq.signature.get_cirq_quregs()
+    quregs = get_named_qubits(bloq.signature.lefts())
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.Rx(rads=bloq.angle).on(cirq.NamedQubit("q")))
     bloq = Ry(angle=np.pi / 4.0, eps=1e-8)
-    quregs = bloq.signature.get_cirq_quregs()
+    quregs = get_named_qubits(bloq.signature.lefts())
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.Ry(rads=bloq.angle).on(cirq.NamedQubit("q")))
     bloq = Rz(angle=np.pi / 4.0, eps=1e-8)
-    quregs = bloq.signature.get_cirq_quregs()
+    quregs = get_named_qubits(bloq.signature.lefts())
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.Rz(rads=bloq.angle).on(cirq.NamedQubit("q")))
