@@ -45,9 +45,6 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-# TODO(gh/Qualtran/issues/398): Replace with `swap_network.py` from Cirq-FT
-
-
 @frozen
 class CSwapApprox(GateWithRegisters):
     r"""Approximately implements a multi-target controlled swap unitary using only $4n$ T-gates.
