@@ -558,7 +558,7 @@ def test_hamming_weight_compute(bitsize: int):
     assert_valid_bloq_decomposition(gate)
     assert_valid_bloq_decomposition(gate_inv)
 
-    junk_bitsize = sum(gate._junk_sizes)
+    junk_bitsize = bitsize - bitsize.bit_count()
     out_bitsize = bitsize.bit_length()
     sim = cirq.Simulator()
     op = GateHelper(gate).operation

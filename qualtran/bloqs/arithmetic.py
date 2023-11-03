@@ -625,22 +625,26 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
 
 @frozen
 class HammingWeightCompute(GateWithRegisters):
-    r"""A gate to compute the hamming weight of n-bit register in a new log_{n} bit register.
+    r"""A gate to compute the hamming weight of an n-bit register in a new log_{n} bit register.
 
-    Implements $U|x\rangle |0\rangle \rightarrow |x\rangle|hamming_weight(x)\rangle$
-    using $4nT$ gates. Uncomputation requires 0 T-gates.
+    Implements $U|x\rangle |0\rangle \rightarrow |x\rangle|\text{hamming\_weight}(x)\rangle$
+    using $\alpha$ Toffoli gates and $\alpha$ ancilla qubits, where
+    $\alpha = n - \text{hamming\_weight}(n)$ for an n-bit input register.
 
     Args:
         bitsize: Number of bits in the input register. The allocated output register
-            is of size `log_2(bitsize)` so it has enough space to hold the hamming weight of x.
+            is of size $\log_2(\text{bitsize})$ so it has enough space to hold the hamming weight
+            of x.
 
     Registers:
-     - x: A bitsize-sized input register (register a above).
-     - junk: A temporary ancilla register of size bitsize.
-     - out: A log2(bitize)-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
+     - x: A $\text{bitsize}$-sized input register (register x above).
+     - junk: A LEFT/RIGHT ancilla register, depending on whether gate is adjoint or not,
+        of size $\text{bitsize} - \text{hamming\_weight(bitsize)}$.
+     - out: A LEFT/RIGHT output register, depending on whether the gate is adjoint or not,
+        of size $\log_2(\text{bitize})$.
 
     References:
-        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648), Page-4
     """
 
     bitsize: int
@@ -652,19 +656,10 @@ class HammingWeightCompute(GateWithRegisters):
         return Signature(
             [
                 Register('x', self.bitsize),
-                Register('junk', sum(self._junk_sizes), side=side),
+                Register('junk', self.bitsize - self.bitsize.bit_count(), side=side),
                 Register('out', self.bitsize.bit_length(), side=side),
             ]
         )
-
-    @cached_property
-    def _junk_sizes(self):
-        bitsize = self.bitsize
-        ret = []
-        while bitsize > 0:
-            bitsize = bitsize // 2
-            ret.append(bitsize)
-        return ret
 
     def short_name(self) -> str:
         return "out = x.bit_count()"
@@ -697,6 +692,8 @@ class HammingWeightCompute(GateWithRegisters):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
+        # Qubit order needs to be reversed because the registers store Big Endian representation
+        # of integers.
         x: List[cirq.Qid] = [*quregs['x'][::-1]]
         junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
         out: List[cirq.Qid] = [*quregs['out'][::-1]]
@@ -705,10 +702,8 @@ class HammingWeightCompute(GateWithRegisters):
 
     def t_complexity(self) -> TComplexity:
         and_t = And(adjoint=self.adjoint).t_complexity()
-        junk_bitsize = sum(self._junk_sizes)
-        num_clifford = junk_bitsize * (5 + and_t.clifford) + sum(  # For AND gates
-            1 for x in [self.bitsize, *self._junk_sizes] if x & 1
-        )  # For CNOTs
+        junk_bitsize = self.bitsize - self.bitsize.bit_count()
+        num_clifford = junk_bitsize * (5 + and_t.clifford) + self.bitsize.bit_count()
         num_t = junk_bitsize * and_t.t
         return TComplexity(t=num_t, clifford=num_clifford)
 
