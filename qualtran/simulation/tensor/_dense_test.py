@@ -21,11 +21,10 @@ import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, DanglingT, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.composite_bloq import _get_dangling_soquets
 from qualtran.bloqs.basic_gates import CNOT, XGate, ZGate
-from qualtran.bloqs.util_bloqs import Join, Split
-from qualtran.simulation.quimb_sim import cbloq_to_quimb, get_right_and_left_inds
+from qualtran.simulation.tensor import bloq_to_dense, get_right_and_left_inds
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -91,7 +90,7 @@ def _old_bloq_to_dense(bloq: Bloq) -> NDArray:
 
 def test_bloq_to_dense():
     mat1 = _old_bloq_to_dense(TensorAdderTester())
-    mat2 = TensorAdderTester().tensor_contract()
+    mat2 = bloq_to_dense(TensorAdderTester())
     np.testing.assert_allclose(mat1, mat2, atol=1e-8)
 
     # Right inds: qubits=(1,0), y=0
@@ -101,58 +100,6 @@ def test_bloq_to_dense():
     left = 3 * 2**2 + 0 * 2**1 + 1 * 2**0
 
     assert np.where(mat2) == (right, left)
-
-
-@frozen
-class TensorAdderSimple(Bloq):
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature.build(x=1)
-
-    def add_my_tensors(
-        self,
-        tn: qtn.TensorNetwork,
-        tag,
-        *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
-    ):
-        assert list(incoming.keys()) == ['x']
-        assert list(outgoing.keys()) == ['x']
-        tn.add(qtn.Tensor(data=np.eye(2), inds=(incoming['x'], outgoing['x']), tags=[tag]))
-
-
-def test_cbloq_to_quimb():
-    bb = BloqBuilder()
-    x = bb.add_register('x', 1)
-    x = bb.add(TensorAdderSimple(), x=x)
-    x = bb.add(TensorAdderSimple(), x=x)
-    x = bb.add(TensorAdderSimple(), x=x)
-    x = bb.add(TensorAdderSimple(), x=x)
-    cbloq = bb.finalize(x=x)
-
-    tn, _ = cbloq_to_quimb(cbloq)
-    assert len(tn.tensors) == 4
-    for oi in tn.outer_inds():
-        assert isinstance(oi, Soquet)
-        assert isinstance(oi.binst, DanglingT)
-
-
-def test_cbloq_to_quimb_with_no_ops_on_register():
-    # Multiple registers with no operation on the target.
-    signature = Signature.build(selection=2, target=1)
-    bb, soqs = BloqBuilder().from_signature(signature=signature)
-    selection, target = soqs['selection'], soqs['target']
-    selection = bb.add(Split(2), split=selection)
-    selection = bb.add(Join(2), join=selection)
-    cbloq = bb.finalize(selection=selection, target=soqs['target'])
-    np.testing.assert_allclose(cbloq.tensor_contract(), np.eye(2**3))
-
-    # Single qubit with no operation acting on it.
-    signature = Signature.build(target=1)
-    bb, soqs = BloqBuilder().from_signature(signature=signature)
-    cbloq = bb.finalize(**soqs)
-    np.testing.assert_allclose(cbloq.tensor_contract(), np.eye(2))
 
 
 @frozen
@@ -192,7 +139,7 @@ def test_double_nest():
 
 
 @frozen
-class ComplexBloq(Bloq):
+class BloqWithNonTrivialInds(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('q0', 1), Register('q1', 1)])
@@ -206,33 +153,12 @@ class ComplexBloq(Bloq):
         return {'q0': q0, 'q1': q1}
 
 
-def test_complex_bloq_decomp():
-    bloq = ComplexBloq()
+def test_bloq_with_non_trivial_inds():
+    bloq = BloqWithNonTrivialInds()
     assert_valid_bloq_decomposition(bloq)
-
-
-def test_complex_bloq():
-    cb = ComplexBloq()
-    assert (
-        cb.decompose_bloq().debug_text()
-        == """\
-XGate()<0>
-  LeftDangle.q0 -> q
-  q -> CNOT()<1>.ctrl
---------------------
-CNOT()<1>
-  XGate()<0>.q -> ctrl
-  LeftDangle.q1 -> target
-  target -> ZGate()<2>.q
-  ctrl -> RightDangle.q0
---------------------
-ZGate()<2>
-  CNOT()<1>.target -> q
-  q -> RightDangle.q1"""
-    )
     cirq_qubits = cirq.LineQubit.range(2)
     cirq_quregs = {'q0': [cirq_qubits[0]], 'q1': [cirq_qubits[1]]}
-    cirq_circuit, _ = cb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
+    cirq_circuit, _ = bloq.decompose_bloq().to_cirq_circuit(**cirq_quregs)
     cirq_unitary = cirq_circuit.unitary(qubit_order=cirq_qubits)
-    np.testing.assert_allclose(cirq_unitary, cb.decompose_bloq().tensor_contract())
-    np.testing.assert_allclose(cirq_unitary, cb.tensor_contract())
+    np.testing.assert_allclose(cirq_unitary, bloq.decompose_bloq().tensor_contract())
+    np.testing.assert_allclose(cirq_unitary, bloq.tensor_contract())

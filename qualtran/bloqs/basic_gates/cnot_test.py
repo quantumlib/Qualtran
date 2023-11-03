@@ -20,6 +20,7 @@ import pytest
 
 from qualtran import BloqBuilder, Signature
 from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
+from qualtran.bloqs.basic_gates.cnot import _cnot
 from qualtran.drawing import get_musical_score_data
 
 
@@ -29,7 +30,7 @@ def _make_CNOT():
     return CNOT()
 
 
-def test_cnot():
+def test_cnot_tensor():
     bloq = CNOT()
     matrix = bloq.tensor_contract()
     # fmt: off
@@ -42,7 +43,7 @@ def test_cnot():
     np.testing.assert_allclose(should_be, matrix)
 
 
-def test_cnot_cbloq():
+def test_cnot_cbloq_tensor_vs_cirq():
     bb, soqs = BloqBuilder.from_signature(Signature.build(c=1, t=1))
     c, t = bb.add(CNOT(), ctrl=soqs['c'], target=soqs['t'])
     cbloq = bb.finalize(c=c, t=t)
@@ -55,7 +56,7 @@ def test_cnot_cbloq():
     np.testing.assert_allclose(c_matrix, matrix)
 
 
-def test_bell_state():
+def test_bell_statevector():
     bb = BloqBuilder()
 
     q0 = bb.add(PlusState())
@@ -88,3 +89,7 @@ def test_cnot_musical_score():
     # soq[0] and [1] are the dangling symbols
     assert msd.soqs[2].json_dict()['symb_cls'] == 'Circle'
     assert msd.soqs[3].json_dict()['symb_cls'] == 'ModPlus'
+
+
+def test_cnot(bloq_autotester):
+    bloq_autotester(_cnot)

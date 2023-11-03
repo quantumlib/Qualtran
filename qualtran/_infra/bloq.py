@@ -213,7 +213,9 @@ class Bloq(metaclass=abc.ABCMeta):
         a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
         of (right, left) indices.
         """
-        return self.as_composite_bloq().tensor_contract()
+        from qualtran.simulation.tensor import bloq_to_dense
+
+        return bloq_to_dense(self)
 
     def add_my_tensors(
         self,
@@ -241,15 +243,10 @@ class Bloq(metaclass=abc.ABCMeta):
             outgoing: A mapping from register name to SoquetT to order right indices for
                 the tensor network.
         """
-        import quimb.tensor as qtn
-
-        from qualtran.simulation.quimb_sim import _cbloq_as_contracted_tensor_data_and_inds
+        from qualtran.simulation.tensor import cbloq_as_contracted_tensor
 
         cbloq = self.decompose_bloq()
-        data, inds = _cbloq_as_contracted_tensor_data_and_inds(
-            cbloq=cbloq, signature=self.signature, incoming=incoming, outgoing=outgoing
-        )
-        tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
+        tn.add(cbloq_as_contracted_tensor(cbloq, incoming, outgoing, tags=[self.short_name(), tag]))
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         """Override this method to build the bloq call graph.

@@ -132,9 +132,9 @@ def assert_decompose_is_consistent_with_t_complexity(val: Any):
         if not (expected is NotImplemented or expected is None):
             break
     if expected is NotImplemented or expected is None:
-        return
+        raise AssertionError("No consistent t_complexity: no _t_complexity_.")
     decomposition = _decompose_once_considering_known_decomposition(val)
     if decomposition is None:
-        return
+        raise AssertionError("No consistent t_complexity: no decomposition.")
     from_decomposition = t_complexity(decomposition, fail_quietly=False)
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'

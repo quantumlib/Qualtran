@@ -20,7 +20,15 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    CompositeBloq,
+    DecomposeTypeError,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.drawing import Circle, ModPlus, WireSymbol
 
 if TYPE_CHECKING:
@@ -50,6 +58,9 @@ class CNOT(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, target=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     def add_my_tensors(
         self,
@@ -97,3 +108,9 @@ class CNOT(Bloq):
         elif soq.reg.name == 'target':
             return ModPlus()
         raise ValueError(f'Bad wire symbol soquet: {soq}')
+
+
+@bloq_example
+def _cnot() -> CNOT:
+    cnot = CNOT()
+    return cnot
