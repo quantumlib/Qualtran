@@ -11,12 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.and_bloq import MultiAnd
+from qualtran.bloqs.basic_gates import CNOT
+from qualtran.simulation.tensor import bloq_has_custom_tensors
 
-"""Bi-directional interop between Qualtran & Cirq using Cirq-FT.
 
-isort:skip_file
-"""
-
-from ._cirq_to_bloq import CirqQuregT, CirqGateAsBloq, CirqGateAsBloqBase, cirq_optree_to_cbloq
-
-from ._bloq_to_cirq import BloqAsCirqGate
+def test_bloq_has_custom_tensors():
+    assert bloq_has_custom_tensors(CNOT())
+    assert not bloq_has_custom_tensors(MultiAnd((1,) * 5))

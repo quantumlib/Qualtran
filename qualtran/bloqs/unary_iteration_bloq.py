@@ -116,6 +116,11 @@ def _unary_iteration_zero_control(
 ) -> Iterator[Tuple[cirq.OP_TREE, cirq.Qid, int]]:
     sl, l, r = 0, 0, 2 ** len(selection)
     m = (l + r) >> 1
+    if r_iter <= m:
+        yield from _unary_iteration_zero_control(
+            ops, selection[1:], ancilla, l_iter, r_iter, break_early
+        )
+        return
     ops.append(cirq.X(selection[0]))
     yield from _unary_iteration_segtree(
         ops, selection[0], selection[1:], ancilla, sl, l, m, l_iter, r_iter, break_early
