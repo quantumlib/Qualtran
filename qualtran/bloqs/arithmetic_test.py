@@ -406,14 +406,29 @@ def test_add_mod_n_protocols():
 
 
 def test_out_of_place_adder():
-    bb = BloqBuilder()
-    bitsize = 4
-    q0 = bb.add_register('a', bitsize)
-    q1 = bb.add_register('b', bitsize)
-    q2 = bb.add_register('c', bitsize)
-    a, b, c = bb.add(OutOfPlaceAdder(bitsize), a=q0, b=q1, c=q2)
-    cbloq = bb.finalize(a=a, b=b, c=c)
-    cbloq.t_complexity()
+    basis_map = {}
+    gate = OutOfPlaceAdder(bitsize=3)
+    for x in range(2**3):
+        for y in range(2**3):
+            basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(f'0b_{x:03b}_{y:03b}_{x+y:04b}', 2)
+            assert gate.call_classically(a=x, b=y, c=0) == (x, y, x + y)
+    op = GateHelper(gate).operation
+    op_inv = cirq.inverse(op)
+    cirq.testing.assert_equivalent_computational_basis_map(basis_map, cirq.Circuit(op))
+    cirq.testing.assert_equivalent_computational_basis_map(
+        basis_map, cirq.Circuit(cirq.decompose_once(op))
+    )
+    # Check that inverse un-computes correctly
+    qubit_order = op.qubits
+    circuit = cirq.Circuit(cirq.decompose_once(op), cirq.decompose_once(op_inv))
+    for x in range(2**6):
+        bits = [*iter_bits(x, 10)][::-1]
+        assert_circuit_inp_out_cirqsim(circuit, qubit_order, bits, bits)
+    assert gate.t_complexity().t == 3 * 4
+    assert (gate**-1).t_complexity().t == 0
+    assert_decompose_is_consistent_with_t_complexity(gate**-1)
+    assert_valid_bloq_decomposition(gate)
+    assert_valid_bloq_decomposition(gate**-1)
 
 
 def test_square():

@@ -12,11 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Bi-directional interop between Qualtran & Cirq using Cirq-FT.
 
-isort:skip_file
-"""
-
-from ._cirq_to_bloq import CirqQuregT, CirqGateAsBloq, CirqGateAsBloqBase, cirq_optree_to_cbloq
-
-from ._bloq_to_cirq import BloqAsCirqGate
+from ._dense import bloq_to_dense, get_right_and_left_inds
+from ._flattening import bloq_has_custom_tensors, flatten_for_tensor_contraction
+from ._quimb import cbloq_as_contracted_tensor, cbloq_to_quimb
