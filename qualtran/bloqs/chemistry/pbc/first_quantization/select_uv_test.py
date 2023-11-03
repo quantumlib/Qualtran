@@ -37,7 +37,6 @@ def test_select_uv_t_counts():
     )
     sel = SelectUVFirstQuantization(num_bits_p, eta, num_bits_nuc_pos)
     _, counts = sel.call_graph()
-    print(counts)
     qual_cost = counts[TGate()] // 4
     # + 6 as they cost additon as nbits not nbits - 1, there are 6 additions / subtractions.
     assert qual_cost + 6 == expected_cost

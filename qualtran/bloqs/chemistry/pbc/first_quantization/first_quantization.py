@@ -34,7 +34,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUV
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.bloqs.swap_network import MultiplexedCSwap, MultiplexedCSwapMod
+from qualtran.bloqs.swap_network import MultiplexedCSwap
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
