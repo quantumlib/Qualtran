@@ -16,7 +16,6 @@ from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
 import attrs
-import cirq
 
 from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
 
 @attrs.frozen
 class HammingWeightPhasing(GateWithRegisters):
-    """Applies $Z^{\theta}$ to every qubit of input register of size `bitsize`.
+    r"""Applies $Z^{\theta}$ to every qubit of input register of size `bitsize`.
 
     Hamming weight phasing reduces the number of rotations to be synthesized from $n$ (where
     $n=bitsize$ is the size of the input register) to $\log_2(n)$ via the following steps:
