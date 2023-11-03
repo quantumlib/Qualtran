@@ -11,16 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-import subprocess
-from pathlib import Path
-
-
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, universal_newlines=True
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    return path

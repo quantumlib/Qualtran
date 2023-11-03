@@ -20,7 +20,7 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.arithmetic import LessThanConstant
 
@@ -35,8 +35,8 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
     However, the current T-complexity is $12 * log(L)$ T-gates and $2 + 2 * (K + log(L))$ rotations
     because of two open issues:
-        - https://github.com/quantumlib/cirq-qubitization/issues/233 and
-        - https://github.com/quantumlib/cirq-qubitization/issues/235
+     - https://github.com/quantumlib/Qualtran/issues/233 and
+     - https://github.com/quantumlib/Qualtran/issues/235
 
     Args:
         n: The gate prepares a uniform superposition over first $n$ basis states.
@@ -108,3 +108,25 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
         yield cirq.H.on_each(*logL_qubits)
         context.qubit_manager.qfree([*and_target, *and_ancilla])
+
+    def short_name(self) -> str:
+        return 'uniform'
+
+
+@bloq_example
+def _prep_uniform() -> PrepareUniformSuperposition:
+    prep_uniform = PrepareUniformSuperposition(n=5)
+    return prep_uniform
+
+
+@bloq_example
+def _c_prep_uniform() -> PrepareUniformSuperposition:
+    c_prep_uniform = PrepareUniformSuperposition(n=5, cvs=[1])
+    return c_prep_uniform
+
+
+_PREP_UNIFORM_DOC = BloqDocSpec(
+    bloq_cls=PrepareUniformSuperposition,
+    import_line='from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition',
+    examples=(_prep_uniform, _c_prep_uniform),
+)

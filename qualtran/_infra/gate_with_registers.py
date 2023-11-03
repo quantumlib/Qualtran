@@ -13,19 +13,22 @@
 #  limitations under the License.
 
 import abc
+import itertools
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
+from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran._infra.quantum_graph import Soquet
-from qualtran._infra.registers import Register
+from qualtran._infra.registers import Register, Side
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+    from qualtran.drawing import WireSymbol
 
 
 def total_bits(registers: Iterable[Register]) -> int:
@@ -93,6 +96,61 @@ def get_named_qubits(registers: Iterable[Register]) -> Dict[str, NDArray[cirq.Qi
         )
 
     return {reg.name: _qubits_for_reg(reg) for reg in registers}
+
+
+def _get_all_and_output_quregs_from_input(
+    registers: Iterable[Register],
+    qubit_manager: cirq.QubitManager,
+    in_quregs: Dict[str, 'CirqQuregT'],
+) -> Tuple[Dict[str, 'CirqQuregT'], Dict[str, 'CirqQuregT']]:
+    """Takes care of necessary (de-/)allocations to obtain output & all qubit registers from input.
+
+    For every register `reg` in `registers`, this method checks:
+    - If `reg.side == Side.LEFT`:
+        - Ensure that `in_quregs` has a an entry corresponding to `reg`
+        - Deallocate the corresponding qubits using `qubit_manager.deallocate`.
+        - These qubits are part of `all_quregs` but not `out_quregs`.
+    - If `reg.side == Side.RIGHT`:
+        - Ensure that `in_quregs` does not have an entry corresponding to `reg`.
+        - Allocate new multi-dimensional qubit array of shape `(*reg.shape, reg.bitsize)`.
+        - These qubits are part of `all_quregs` and `out_quregs`.
+    - If `reg.side == Side.THRU`:
+        - Ensure that `in_quregs` has a an entry corresponding to `reg`
+        - These qubits are part of `all_quregs` and `out_quregs`.
+
+    Args:
+        registers: An iterable of `Register` objects specifying the signature of a Bloq.
+        qubit_manager: An instance of `cirq.QubitManager` to allocate/deallocate qubits.
+        in_quregs: A dictionary mapping LEFT register names from `registers` to corresponding
+            cirq-style multidimensional qubit array of shape `(*left_reg.shape, left_reg.bitsize)`.
+
+    Returns:
+        A tuple of `(all_quregs, out_quregs)`
+    """
+    all_quregs: Dict[str, 'CirqQuregT'] = {}
+    out_quregs: Dict[str, 'CirqQuregT'] = {}
+    for reg in registers:
+        full_shape = reg.shape + (reg.bitsize,)
+        if reg.side & Side.LEFT:
+            if reg.name not in in_quregs or in_quregs[reg.name].shape != full_shape:
+                # Left registers should exist as input to `as_cirq_op`.
+                raise ValueError(f'Compatible {reg=} must exist in {in_quregs=}')
+            all_quregs[reg.name] = in_quregs[reg.name]
+        if reg.side == Side.RIGHT:
+            # Right only registers will get allocated as part of `as_cirq_op`.
+            if reg.name in in_quregs:
+                raise ValueError(f"RIGHT register {reg=} shouldn't exist in {in_quregs=}.")
+            all_quregs[reg.name] = np.array(qubit_manager.qalloc(reg.total_bits())).reshape(
+                full_shape
+            )
+        if reg.side == Side.LEFT:
+            # LEFT only registers should be de-allocated and not be part of output.
+            qubit_manager.qfree(in_quregs[reg.name].flatten())
+
+        if reg.side & Side.RIGHT:
+            # Right registers should be part of the output.
+            out_quregs[reg.name] = all_quregs[reg.name]
+    return all_quregs, out_quregs
 
 
 class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
@@ -180,23 +238,52 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 - `build_composite_bloq` raises a `DecomposeNotImplementedError` and
                 - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
-        from qualtran.cirq_interop._cirq_to_bloq import decompose_from_cirq_op
+
+        from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq, InteropQubitManager
 
         try:
             return Bloq.decompose_bloq(self)
         except DecomposeNotImplementedError:
-            return decompose_from_cirq_op(self, decompose_once=True)
+            if any(
+                cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
+                for reg in self.signature
+            ):
+                raise DecomposeTypeError(f"Cannot decompose parameterized {self}.")
+
+            qm = InteropQubitManager()
+            in_quregs = get_named_qubits(self.signature.lefts())
+            qm.manage_qubits(
+                itertools.chain.from_iterable(qreg.flatten() for qreg in in_quregs.values())
+            )
+            all_quregs, out_quregs = _get_all_and_output_quregs_from_input(
+                self.signature, qm, in_quregs
+            )
+            context = cirq.DecompositionContext(qubit_manager=qm)
+            decomposed_optree = self.decompose_from_registers(context=context, **all_quregs)
+            return cirq_optree_to_cbloq(
+                decomposed_optree,
+                signature=self.signature,
+                in_quregs=in_quregs,
+                out_quregs=out_quregs,
+            )
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate
+        """Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
 
-        return _construct_op_from_gate(
-            self,
-            in_quregs={k: np.array(v) for k, v in cirq_quregs.items()},
-            qubit_manager=qubit_manager,
+        Args:
+            qubit_manager: For allocating/deallocating qubits for RIGHT/LEFT only registers.
+            in_quregs: Mapping from LEFT register names to corresponding cirq qubits.
+
+        Returns:
+            A cirq operation constructed using `self` and a mapping from RIGHT register names to
+            corresponding Cirq qubits.
+        """
+        all_quregs, out_quregs = _get_all_and_output_quregs_from_input(
+            self.signature, qubit_manager, in_quregs
         )
+        return self.on_registers(**all_quregs), out_quregs
 
     def t_complexity(self) -> 'TComplexity':
         from qualtran.cirq_interop.t_complexity_protocol import t_complexity
@@ -221,16 +308,27 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
     ) -> cirq.OP_TREE:
-        qubit_regs = split_qubits(self.signature, qubits)
+        quregs = split_qubits(self.signature, qubits)
         if context is None:
             context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
         try:
-            return self.decompose_from_registers(context=context, **qubit_regs)
+            return self.decompose_from_registers(context=context, **quregs)
         except DecomposeNotImplementedError as e:
             pass
         try:
             qm = context.qubit_manager
-            return Bloq.decompose_bloq(self).to_cirq_circuit(qubit_manager=qm, **qubit_regs)[0]
+            cbloq = self.decompose_bloq()
+            circuit, out_quregs = cbloq.to_cirq_circuit(qubit_manager=qm, **quregs)
+            qubit_map = {q: q for q in circuit.all_qubits()}
+            for reg in self.signature.rights():
+                if reg.side == Side.RIGHT:
+                    # Right only registers can get mapped to newly allocated output qubits in `out_regs`.
+                    # Map them back to the original system qubits and deallocate newly allocated qubits.
+                    assert reg.name in quregs and reg.name in out_quregs
+                    assert quregs[reg.name].shape == out_quregs[reg.name].shape
+                    qm.qfree([q for q in out_quregs[reg.name].flatten()])
+                    qubit_map |= zip(out_quregs[reg.name].flatten(), quregs[reg.name].flatten())
+            return circuit.unfreeze(copy=False).transform_qubits(qubit_map)
         except DecomposeNotImplementedError as e:
             pass
         return NotImplemented

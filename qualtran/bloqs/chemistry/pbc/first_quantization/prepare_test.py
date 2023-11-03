@@ -11,16 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
+    UniformSuperpostionIJFirstQuantization,
+)
 
-import subprocess
-from pathlib import Path
 
-
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'], capture_output=True, universal_newlines=True
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    return path
+def test_uniform_super_position_ij():
+    prep = UniformSuperpostionIJFirstQuantization(eta=10, num_bits_rot_aa=8)
