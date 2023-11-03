@@ -15,12 +15,12 @@
 import numpy as np
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFistQuantization
+from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFirstQuantization
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def _make_prepare_uv():
-    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareUVFistQuantization
+    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareUVFirstQuantization
 
     num_bits_p = 5
     eta = 10
@@ -29,7 +29,7 @@ def _make_prepare_uv():
     m_param = 2**8
     num_bits_nuc_pos = 16
 
-    prep = PrepareUVFistQuantization(
+    prep = PrepareUVFirstQuantization(
         num_bits_p=num_bits_p,
         eta=eta,
         num_atoms=num_atoms,
@@ -47,7 +47,7 @@ def test_prepare_uv():
     lambda_zeta = 10
     num_atoms = 10
     num_bits_nuc_pos = 18
-    prep = PrepareUVFistQuantization(
+    prep = PrepareUVFirstQuantization(
         num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
     )
     assert_valid_bloq_decomposition(prep)
@@ -66,12 +66,12 @@ def test_prepare_uv_t_counts():
     # factor of two for inverserse prepare, controlled hadamard + testing on nu.
     expected_cost += 2 * 4 * (num_bits_p - 1) + 6 * num_bits_p + 2
     expected_cost += lambda_zeta + int(np.ceil(lambda_zeta**0.5))
-    prep = PrepareUVFistQuantization(
+    prep = PrepareUVFirstQuantization(
         num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
     )
     _, counts = prep.call_graph()
     qual_cost = counts[TGate()]
-    prep = PrepareUVFistQuantization(
+    prep = PrepareUVFirstQuantization(
         num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos, adjoint=True
     )
     _, counts = prep.call_graph()

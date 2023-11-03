@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class PrepareUVFistQuantization(Bloq):
+class PrepareUVFirstQuantization(Bloq):
     r"""PREPARE the U and V parts of the Hamiltonian.
 
     Args:

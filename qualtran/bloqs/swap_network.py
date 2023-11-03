@@ -359,3 +359,86 @@ _MULTIPLEXED_CSWAP_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.swap_network import MultiplexedCSwap',
     examples=(_multiplexed_cswap,),
 )
+
+
+@frozen
+class MultiplexedCSwapMod(UnaryIterationGate):
+    r"""Swaps the $l$-th register into an ancilla using unary iteration.
+
+    Applies the unitary which peforms
+    $$
+        U |l\rangle|\psi_0\rangle\cdots|\psi_l\rangle\cdots|\psi_n\rangle|\mathrm{junk}\rangle
+        \rightarrow
+        |l\rangle|\psi_0\rangle\cdots|\mathrm{junk}\rangle\cdots|\psi_n\rangle|\psi_l\rangle
+    $$
+    through a combination of unary iteration and CSwaps.
+
+    The cost should be $L n_b + L - 2 + n_c$, where $L$ is the
+    iteration length, $n_b$ is the bitsize of
+    the registers to swap, and $n_c$ is the number of controls.
+
+    Args:
+        selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
+            It also contains information about the iteration length of each selection register.
+        bitsize: The size of the registers we want to swap.
+        nth_gate: A function mapping the composite selection index to a single-qubit gate.
+
+    Registers:
+        control_registers: Control registers
+        selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
+            It also contains information about the iteration length of each selection register.
+        target_registers: Target registers to swap. We swap FROM registers
+            labelled x`i`, where i is an integer and TO a single register called y
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767) page 20 paragraph 2.
+    """
+    selection_bitsize: int
+    iteration_length: int
+    target_bitsize: int
+    control_regs: Tuple[Register, ...] = field(
+        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v), default=()
+    )
+
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return self.control_regs
+
+    @cached_property
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (
+            SelectionRegister(
+                "selection", self.selection_bitsize, iteration_length=self.iteration_length
+            ),
+        )
+
+    @cached_property
+    def target_registers(self) -> Tuple[Register, ...]:
+        target_shape = tuple(sreg.iteration_length for sreg in self.selection_registers)
+        return tuple(
+            [
+                Register('targets', bitsize=self.target_bitsize, shape=target_shape),
+                Register('output', bitsize=self.target_bitsize),
+            ]
+        )
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["@"] * total_bits(self.control_registers)
+        wire_symbols += ["In"] * total_bits(self.selection_registers)
+        for i, target in enumerate(self.target_registers):
+            if i == len(self.target_registers) - 1:
+                wire_symbols += ["×(y)"] * target.total_bits()
+            else:
+                wire_symbols += ["×(x)"] * target.total_bits()
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def nth_operation(
+        self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
+    ) -> cirq.OP_TREE:
+        selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
+        target_regs = kwargs['targets']
+        output_reg = kwargs['output']
+        return CSwap(self.target_bitsize).make_on(
+            ctrl=control, x=target_regs[selection_idx], y=output_reg
+        )

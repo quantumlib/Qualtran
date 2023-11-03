@@ -81,6 +81,7 @@ class SelectUVFirstQuantization(Bloq):
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
+        num_atoms: The number of atoms.
         num_bits_nuc_pos: The number of bits to store each component of the
             nuclear positions. $n_R$ in the reference.
 
@@ -93,6 +94,7 @@ class SelectUVFirstQuantization(Bloq):
 
     num_bits_p: int
     eta: int
+    num_atoms: int
     num_bits_nuc_pos: int
 
     @cached_property
@@ -100,12 +102,13 @@ class SelectUVFirstQuantization(Bloq):
         n_nu = self.num_bits_p + 1
         return Signature(
             [
-                Register("flag_UVT", bitsize=2),
-                Register("plus", bitsize=1),
-                Register("l", bitsize=self.num_bits_nuc_pos),
-                Register("Rl", bitsize=self.num_bits_nuc_pos),
+                Register("flag_tuv", bitsize=1),
+                Register("flag_uv", bitsize=1),
+                Register("l", bitsize=(self.num_atoms - 1).bit_length()),
+                Register("rl", bitsize=self.num_bits_nuc_pos),
                 Register("nu", bitsize=n_nu, shape=(3,)),
-                # + some ancilla for the controlled swaps of system registers.
+                Register("p", bitsize=n_nu, shape=(3,)),
+                Register("q", bitsize=n_nu, shape=(3,)),
             ]
         )
 
