@@ -42,8 +42,6 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
     ],
 )
 def test_qrom_1d(data, num_controls):
-    if num_controls == 2 and len(data) == 6:
-        pytest.skip("slow")
     qrom = QROM.build(*data, num_controls=num_controls)
     assert_valid_bloq_decomposition(qrom)
 
