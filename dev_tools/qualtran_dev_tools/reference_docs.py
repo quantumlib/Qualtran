@@ -232,11 +232,29 @@ def generate_ref_docs(reporoot: Path):
     # them all here.
 
     import qualtran
-    from qualtran import cirq_interop, drawing, resource_counting
-    from qualtran.simulation import classical_sim, quimb_sim
+    from qualtran import (
+        cirq_interop,
+        drawing,
+        linalg,
+        resource_counting,
+        serialization,
+        surface_code,
+        testing,
+    )
+    from qualtran.simulation import classical_sim, tensor
 
     # prevent unused warnings:
-    assert [drawing, resource_counting, cirq_interop, quimb_sim, classical_sim]
+    assert [
+        cirq_interop,
+        drawing,
+        linalg,
+        resource_counting,
+        serialization,
+        surface_code,
+        testing,
+        classical_sim,
+        tensor,
+    ]
 
     output_dir = reporoot / 'docs/reference'
     doc_generator = DocGenerator(
