@@ -95,7 +95,7 @@ def _build_call_graph_inner(
     max_depth: Optional[int],
     g: nx.DiGraph,
     depth: int,
-) -> Dict[Bloq, Union[int, sympy.Expr]]:
+) -> None:
     """The inner logic of the recursive `_build_call_graph`.
 
     This raises `DecomposeTypeError` if we're not supposed to be recursing on `bloq`.
@@ -120,26 +120,19 @@ def _build_call_graph_inner(
     if not callee_counts:
         raise DecomposeTypeError("Empty list of callees.")
 
-    sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
     for callee, n in callee_counts:
         # Quite important: we do the recursive call first before adding in the edges.
         # Otherwise, adding the edge would mark the callee node as already-visited by
         # virtue of it being added to the graph with the `g.add_edge` call.
 
         # Do the recursive step, which will continue to mutate `g`
-        callee_sigma = _build_call_graph(callee, generalizer, ssa, keep, max_depth, g, depth + 1)
+        _build_call_graph(callee, generalizer, ssa, keep, max_depth, g, depth + 1)
 
         # Update edge in `g`
         if (bloq, callee) in g.edges:
             g.edges[bloq, callee]['n'] += n
         else:
             g.add_edge(bloq, callee, n=n)
-
-        # Update `sigma` with the recursion results.
-        for k in callee_sigma.keys():
-            sigma[k] += callee_sigma[k] * n
-
-    return dict(sigma)
 
 
 def _build_call_graph(
@@ -150,15 +143,15 @@ def _build_call_graph(
     max_depth: Optional[int],
     g: nx.DiGraph,
     depth: int,
-) -> Dict[Bloq, Union[int, sympy.Expr]]:
-    """Recursive counting function.
+) -> None:
+    """Recursively build the call graph.
 
     Arguments are the same as `get_bloq_call_graph`, except `g` is the graph we're building
     (i.e. it is mutated by this function) and `depth` is the current recursion depth.
     """
     if bloq in g:
         # We already visited this node.
-        return {}
+        return
 
     # Make sure this node is present in the graph. You could annotate
     # additional node properties here, too.
@@ -167,7 +160,31 @@ def _build_call_graph(
     try:
         return _build_call_graph_inner(bloq, generalizer, ssa, keep, max_depth, g, depth)
     except (DecomposeNotImplementedError, DecomposeTypeError):
+        # We don't do anything bespoke for leaf nodes, but we could...
+        return
+
+
+def _compute_sigma(bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, sympy.Expr]]:
+    """Do a separate recursion to add up the counts of leaf bloqs.
+
+    In contrast to building the call graph, we want to visit a node as many times
+    as it has incident edges.
+
+    The fact that this is a separate step will likely be made explicit in future generalizations
+    of 'resource counting'.
+    """
+    callees = list(g.successors(bloq))
+    if not callees:
         return {bloq: 1}
+
+    sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
+    for callee in callees:
+        callee_sigma = _compute_sigma(callee, g)
+        n = g.edges[bloq, callee]['n']
+        # Update `sigma` with the recursion results.
+        for k in callee_sigma.keys():
+            sigma[k] += callee_sigma[k] * n
+    return dict(sigma)
 
 
 def get_bloq_call_graph(
@@ -211,7 +228,8 @@ def get_bloq_call_graph(
     bloq = generalizer(bloq)
     if bloq is None:
         raise ValueError("You can't generalize away the root bloq.")
-    sigma = _build_call_graph(bloq, generalizer, ssa, keep, max_depth, g=g, depth=0)
+    _build_call_graph(bloq, generalizer, ssa, keep, max_depth, g=g, depth=0)
+    sigma = _compute_sigma(bloq, g)
     return g, sigma
 
 
