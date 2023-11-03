@@ -93,6 +93,9 @@ def _recurse_call_graph(
     Returns:
         sigma: A dictionary keyed by bloqs whose value is the running sum.
     """
+    if parent in g.nodes:
+        return {}
+
     g.add_node(parent)
 
     # Base case 1: This node is requested by the user to be a leaf node via the `keep` parameter.
@@ -110,20 +113,25 @@ def _recurse_call_graph(
         #              leaf node.
         return {parent: 1}
 
+    if not count_decomp:
+        # Note: this still won't fix things if generalizer gets rid of all the children.
+        return {parent: 1}
+
     sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
     for child, n in count_decomp:
         child = generalizer(child)
         if child is None:
             continue
 
+        # Do the recursive step, which will continue to mutate `g`
+        # Do this first so we don't accidentally mark `child` as visited prematurely.
+        child_counts = _recurse_call_graph(child, g, ssa, generalizer, keep, max_depth, depth + 1)
+
         # Update edge in `g`
         if (parent, child) in g.edges:
             g.edges[parent, child]['n'] += n
         else:
             g.add_edge(parent, child, n=n)
-
-        # Do the recursive step, which will continue to mutate `g`
-        child_counts = _recurse_call_graph(child, g, ssa, generalizer, keep, max_depth, depth + 1)
 
         # Update `sigma` with the recursion results.
         for k in child_counts.keys():
