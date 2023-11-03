@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, CompositeBloq, DecomposeTypeError, Signature
+from qualtran import bloq_example
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
