@@ -18,6 +18,7 @@ from cirq.ops import SimpleQubitManager
 
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+from qualtran.bloqs.basic_gates.rotation import _rx, _ry, _rz
 
 
 def _make_Rx():
@@ -83,3 +84,15 @@ def test_as_cirq_op():
     assert circuit == cirq.Circuit(
         cirq.ZPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
     )
+
+
+def test_rx(bloq_autotester):
+    bloq_autotester(_rx)
+
+
+def test_ry(bloq_autotester):
+    bloq_autotester(_ry)
+
+
+def test_rz(bloq_autotester):
+    bloq_autotester(_rz)

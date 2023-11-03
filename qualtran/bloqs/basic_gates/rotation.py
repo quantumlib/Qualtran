@@ -20,6 +20,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
+from qualtran import bloq_example
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -241,3 +242,21 @@ class Ry(_RotationBloq):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
+
+
+@bloq_example
+def _rx() -> Rx:
+    rx = Rx(angle=np.pi / 4.0)
+    return rx
+
+
+@bloq_example
+def _ry() -> Ry:
+    ry = Ry(angle=np.pi / 4.0)
+    return ry
+
+
+@bloq_example
+def _rz() -> Rz:
+    rz = Rz(angle=np.pi / 4.0)
+    return rz
