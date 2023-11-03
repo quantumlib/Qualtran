@@ -107,8 +107,8 @@ class SelectUVFirstQuantization(Bloq):
                 Register("l", bitsize=(self.num_atoms - 1).bit_length()),
                 Register("rl", bitsize=self.num_bits_nuc_pos),
                 Register("nu", bitsize=n_nu, shape=(3,)),
-                Register("p", bitsize=n_nu, shape=(3,)),
-                Register("q", bitsize=n_nu, shape=(3,)),
+                Register("p", bitsize=self.num_bits_p, shape=(3,)),
+                Register("q", bitsize=self.num_bits_p, shape=(3,)),
             ]
         )
 

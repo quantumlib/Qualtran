@@ -328,8 +328,8 @@ class SelectFirstQuantization(SelectOracle):
         sys: SoquetT,
     ) -> Dict[str, 'SoquetT']:
         # ancilla for swaps from electronic registers
-        p = bb.allocate(3 * (self.num_bits_p))
-        q = bb.allocate(3 * (self.num_bits_p))
+        p = bb.split(bb.allocate(3 * (self.num_bits_p)))
+        q = bb.split(bb.allocate(3 * (self.num_bits_p)))
         rl = bb.allocate(self.num_bits_nuc_pos)
         n_p = self.num_bits_p
         flat_sys = [bb.join(np.concatenate([bb.split(s[xyz]) for xyz in range(3)])) for s in sys]
@@ -381,19 +381,28 @@ class SelectFirstQuantization(SelectOracle):
             p=p,
             q=q,
         )
-        # for xyz in range(3):
-        #     i, sys[:, xyz], p = bb.add(
-        #         MultiplexedCSwap(selection_regs=i, target_bitsize=self.num_bits_p),
-        #         i=i,
-        #         target=sys[:, xyz],
-        #         output=p,
-        #     )
-        #     j, sys[:, xyz], q = bb.add(
-        #         MultiplexedCSwap(selection_regs=j, target_bitsize=self.num_bits_p),
-        #         i=j,
-        #         target=sys[:, xyz],
-        #         output=q,
-        #     )
+        p = reshape_reg(bb, p, (1,), 3 * n_p)
+        i, flat_sys, p = bb.add(
+            MultiplexedCSwapMod(
+                selection_bitsize=n_eta,
+                iteration_length=self.eta,
+                target_bitsize=3 * self.num_bits_p,
+            ),
+            selection=i,
+            targets=flat_sys,
+            output=p,
+        )
+        # TODO: Should control on i != j
+        # j, flat_sys, q = bb.add(
+        #     MultiplexedCSwapMod(
+        #         selection_bitsize=n_eta,
+        #         iteration_length=self.eta,
+        #         target_bitsize=3 * self.num_bits_p,
+        #     ),
+        #     selection=j,
+        #     targets=flat_sys,
+        #     output=q,
+        # )
         for xyz in range(3):
             bb.free(p[xyz])
             bb.free(q[xyz])
