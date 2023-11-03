@@ -27,7 +27,7 @@ def test_hamming_weight_phasing(n: int, theta: float):
     assert_valid_bloq_decomposition(gate)
 
     assert gate.t_complexity().rotations == n.bit_length()
-    assert gate.t_complexity().t <= 4 * (n - 1)
+    assert gate.t_complexity().t == 4 * (n - n.bit_count())
 
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)
