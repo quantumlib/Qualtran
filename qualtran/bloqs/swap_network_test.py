@@ -38,7 +38,7 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.simulation.quimb_sim import flatten_for_tensor_contraction
+from qualtran.simulation.tensor import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 random.seed(12345)
