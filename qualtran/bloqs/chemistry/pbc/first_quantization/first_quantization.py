@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, List, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -241,16 +241,6 @@ class PrepareFirstQuantization(PrepareOracle):
         }
 
 
-def reshape_reg(bb, in_reg, out_shape, bitsize):
-    """reshape a flat register of size prod(shape)*bitsize to an array."""
-    size = np.prod(out_shape)
-    split_qubits = bb.split(in_reg)
-    merged_qubits = np.array(
-        [bb.join(split_qubits[i * bitsize : (i + 1) * bitsize]) for i in range(size)]
-    )
-    return merged_qubits.reshape(out_shape)
-
-
 @frozen
 class SelectFirstQuantization(SelectOracle):
     """State preparation for the first quantized chemistry Hamiltonian."""
@@ -307,6 +297,44 @@ class SelectFirstQuantization(SelectOracle):
     def short_name(self) -> str:
         return r'SELECT'
 
+    def _flatten_sys(self, bb: BloqBuilder, sys: SoquetT) -> List[SoquetT]:
+        """Convert from sys[ieta, xyz] to sys[ieta] = concat((reg_x,reg_y,reg_z)_ieta))"""
+        return [bb.join(np.concatenate([bb.split(s[xyz]) for xyz in range(3)])) for s in sys]
+
+    def _unpack_sys(self, bb: BloqBuilder, flat_sys: List[SoquetT], sys: SoquetT):
+        """Go back from concat((reg_x,reg_y,reg_z)_ieta)) to sys[ieta, xyz]"""
+        n_p = self.num_bits_p
+        for iel in range(self.eta):
+            split_i = bb.split(flat_sys[iel])
+            sys[iel] = [bb.join(split_i[xyz * n_p : (xyz + 1) * n_p]) for xyz in range(3)]
+
+    @staticmethod
+    def _reshape_reg(
+        bb: BloqBuilder, in_reg: SoquetT, out_shape: Tuple[int, ...], bitsize: int
+    ) -> SoquetT:
+        """Reshape registers allocated as a big register.
+
+        Example:
+            >>> xdim, ydim, bitsize = 2, 3, 8
+            >>> junk = bb.allocate(xdim*ydim*bitsize)
+            >>> out = _reshape_reg(junk, (xdim, ydim), bitsize)
+            >>> assert out.shape == (xdim, ydim)
+            >>> assert out[0,0].bitsize == bitsize
+            >>> big_reg = _reshape_reg(out, (), xdim*ydim*bitsize)
+            >>> assert out.bitsize == xdim*ydim*bitsize
+        """
+        # np.prod(()) returns a float (1.0), so take int
+        size = int(np.prod(out_shape))
+        if isinstance(in_reg, np.ndarray):
+            # split an array of bitsize qubits into flat list of qubits
+            split_qubits = bb.split(bb.join(np.concatenate([bb.split(x) for x in in_reg.ravel()])))
+        else:
+            split_qubits = bb.split(in_reg)
+        merged_qubits = np.array(
+            [bb.join(split_qubits[i * bitsize : (i + 1) * bitsize]) for i in range(size)]
+        )
+        return merged_qubits.reshape(out_shape)
+
     def build_composite_bloq(
         self,
         bb: BloqBuilder,
@@ -327,38 +355,28 @@ class SelectFirstQuantization(SelectOracle):
         l: SoquetT,
         sys: SoquetT,
     ) -> Dict[str, 'SoquetT']:
-        # ancilla for swaps from electronic registers
-        p = bb.split(bb.allocate(3 * (self.num_bits_p)))
-        q = bb.split(bb.allocate(3 * (self.num_bits_p)))
+        # ancilla for swaps from electronic system registers.
+        # we assume the SELECT operations leave these in a clean state
+        p = bb.allocate(3 * (self.num_bits_p))
+        q = bb.allocate(3 * (self.num_bits_p))
         rl = bb.allocate(self.num_bits_nuc_pos)
         n_p = self.num_bits_p
-        flat_sys = [bb.join(np.concatenate([bb.split(s[xyz]) for xyz in range(3)])) for s in sys]
+        flat_sys = self._flatten_sys(bb, sys)
         n_eta = (self.eta - 1).bit_length()
         i, flat_sys, p = bb.add(
-            MultiplexedCSwapMod(
-                selection_bitsize=n_eta,
-                iteration_length=self.eta,
-                target_bitsize=3 * self.num_bits_p,
-            ),
-            selection=i,
+            MultiplexedCSwap(self.signature.get_left('i'), target_bitsize=3 * self.num_bits_p),
+            i=i,
             targets=flat_sys,
             output=p,
         )
         # TODO: Should control on i != j
         j, flat_sys, q = bb.add(
-            MultiplexedCSwapMod(
-                selection_bitsize=n_eta,
-                iteration_length=self.eta,
-                target_bitsize=3 * self.num_bits_p,
-            ),
-            selection=j,
+            MultiplexedCSwap(self.signature.get_left('j'), target_bitsize=3 * self.num_bits_p),
+            j=j,
             targets=flat_sys,
             output=q,
         )
-        for iel in range(self.eta):
-            split_i = bb.split(flat_sys[iel])
-            sys[iel] = [bb.join(split_i[xyz * n_p : (xyz + 1) * n_p]) for xyz in range(3)]
-        p = reshape_reg(bb, p, (3,), n_p)
+        p = self._reshape_reg(bb, p, (3,), n_p)
         tuv, plus_t, w, r, s, p = bb.add(
             SelectTFirstQuantization(self.num_bits_p, self.eta),
             plus=plus_t,
@@ -368,7 +386,7 @@ class SelectFirstQuantization(SelectOracle):
             s=s,
             p=p,
         )
-        q = reshape_reg(bb, q, (3,), n_p)
+        q = self._reshape_reg(bb, q, (3,), n_p)
         tuv, uv, l, rl, [nu_x, nu_y, nu_z], p, q = bb.add(
             SelectUVFirstQuantization(
                 self.num_bits_p, self.eta, self.num_atoms, self.num_bits_nuc_pos
@@ -381,31 +399,24 @@ class SelectFirstQuantization(SelectOracle):
             p=p,
             q=q,
         )
-        p = reshape_reg(bb, p, (1,), 3 * n_p)
+        p = self._reshape_reg(bb, p, (), 3 * n_p)
         i, flat_sys, p = bb.add(
-            MultiplexedCSwapMod(
-                selection_bitsize=n_eta,
-                iteration_length=self.eta,
-                target_bitsize=3 * self.num_bits_p,
-            ),
-            selection=i,
+            MultiplexedCSwap(self.signature.get_left('i'), target_bitsize=3 * self.num_bits_p),
+            i=i,
             targets=flat_sys,
             output=p,
         )
         # TODO: Should control on i != j
-        # j, flat_sys, q = bb.add(
-        #     MultiplexedCSwapMod(
-        #         selection_bitsize=n_eta,
-        #         iteration_length=self.eta,
-        #         target_bitsize=3 * self.num_bits_p,
-        #     ),
-        #     selection=j,
-        #     targets=flat_sys,
-        #     output=q,
-        # )
-        for xyz in range(3):
-            bb.free(p[xyz])
-            bb.free(q[xyz])
+        q = self._reshape_reg(bb, q, (), 3 * n_p)
+        j, flat_sys, q = bb.add(
+            MultiplexedCSwap(self.signature.get_left('j'), target_bitsize=3 * self.num_bits_p),
+            j=j,
+            targets=flat_sys,
+            output=q,
+        )
+        self._unpack_sys(bb, flat_sys, sys)
+        bb.free(p)
+        bb.free(q)
         bb.free(rl)
         return {
             'tuv': tuv,
