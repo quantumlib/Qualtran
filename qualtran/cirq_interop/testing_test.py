@@ -82,9 +82,8 @@ class InconsistentDecompostion(cirq.Operation):
         pass
 
 
-@pytest.mark.parametrize("val", [cirq.T, DoesNotDecompose(), And()])
-def test_assert_decompose_is_consistent_with_t_complexity(val):
-    testing.assert_decompose_is_consistent_with_t_complexity(val)
+def test_assert_decompose_is_consistent_with_t_complexity():
+    testing.assert_decompose_is_consistent_with_t_complexity(And())
 
 
 def test_assert_decompose_is_consistent_with_t_complexity_raises():

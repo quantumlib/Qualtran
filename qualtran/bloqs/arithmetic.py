@@ -527,7 +527,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         yield cirq.CX(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
