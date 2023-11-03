@@ -28,20 +28,21 @@ if TYPE_CHECKING:
 
 @attrs.frozen
 class HammingWeightPhasing(GateWithRegisters):
-    r"""Applies $Z^{\theta}$ to every qubit of input register of size `bitsize`.
+    r"""Applies $Z^{\text{exponent}}$ to every qubit of an input register of size `bitsize`.
 
     Hamming weight phasing reduces the number of rotations to be synthesized from $n$ (where
-    $n=bitsize$ is the size of the input register) to $\log_2(n)$ via the following steps:
-        1. Compute hamming weight (HW) of input register in using (at-most) $n-1$ ancillas and
-            Toffoli's in a newly allocated output register if size $\log_2(n)$.
+    $n=\text{bitsize}$ is the size of the input register) to $\log_2(n)$ via the following steps:
+        1. Compute the hamming weight (HW) of the input register in using (at-most) $n-1$ ancilla
+            and Toffolis in a newly allocated output register of size $\log_2(n)$.
             $HW|x\rangle -> |x\rangle |\text{HW}(x)\rangle$
-        2. Apply $Z^{2^{k}\theta}$ to the k'th qubit of newly allocated hamming weight register.
+        2. Apply $Z^{2^{k}\text{exponent}}$ to the k'th qubit of newly allocated hamming weight
+             register.
         3. Uncompute the hamming weight register and ancillas allocated in Step-1 with 0 Toffoli
             cost.
 
     Overall, for an input register of size $n$, the procedure uses $n - \alpha$ Toffoli's and
-    $n - \alpha + \log_2(n)$ ancilla to reduce $n$ rotation synthesis into $\log_2(n)$  rotation
-    synthesis.
+    $n - \alpha + \log_2(n)$ ancilla to reduce $n$ rotation syntheses into $\log_2(n)$  rotation
+    synthesis. Here $\alpha = \text{hamming\_weight}(n)$.
 
     Args:
         bitsize: Size of input register to apply `Z ** exponent` to.

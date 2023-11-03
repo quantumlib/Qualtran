@@ -26,7 +26,6 @@ def test_hamming_weight_phasing(n: int, theta: float):
     gate = HammingWeightPhasing(n, theta)
     assert_valid_bloq_decomposition(gate)
 
-    print(gate.t_complexity())
     assert gate.t_complexity().rotations == n.bit_length()
     assert gate.t_complexity().t <= 4 * (n - 1)
 
