@@ -45,9 +45,6 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-# TODO(gh/Qualtran/issues/398): Replace with `swap_network.py` from Cirq-FT
-
-
 @frozen
 class CSwapApprox(GateWithRegisters):
     r"""Approximately implements a multi-target controlled swap unitary using only $4n$ T-gates.
@@ -108,7 +105,7 @@ class CSwapApprox(GateWithRegisters):
     def short_name(self) -> str:
         return '~swap'
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
@@ -271,15 +268,15 @@ class MultiplexedCSwap(UnaryIterationGate):
     $$
     through a combination of unary iteration and CSwaps.
 
-    The cost should be $L n_b + L - 2 + n_c$, where $L$ is the
+    The toffoli cost should be $L n_b + L - 2 + n_c$, where $L$ is the
     iteration length, $n_b$ is the bitsize of
     the registers to swap, and $n_c$ is the number of controls.
 
     Args:
         selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
             It also contains information about the iteration length of each selection register.
-        bitsize: The size of the registers we want to swap.
-        nth_gate: A function mapping the composite selection index to a single-qubit gate.
+        target_bitsize: The size of the registers we want to swap.
+        control_regs: Control registers for constructing a controlled version of the gate.
 
     Registers:
         control_registers: Control registers

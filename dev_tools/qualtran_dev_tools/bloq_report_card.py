@@ -14,6 +14,7 @@
 from typing import Any, Dict, Iterable, Set, Type
 
 import pandas as pd
+import pandas.io.formats.style
 
 from qualtran import Bloq, BloqExample
 from qualtran.testing import BloqCheckResult, check_bloq_example_decompose, check_bloq_example_make
@@ -84,6 +85,10 @@ def records_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
     }
 
 
+def show_bloq_report_card(df: pd.DataFrame) -> pandas.io.formats.style.Styler:
+    return df.style.applymap(color_status, CHECKCOLS).format(format_status, CHECKCOLS)
+
+
 def get_bloq_report_card(
     bclasses: Iterable[Type[Bloq]] | None = None, bexamples: Iterable[BloqExample] | None = None
 ) -> pd.DataFrame:
@@ -97,6 +102,4 @@ def get_bloq_report_card(
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
     records.extend(records_for_bloq_example(be) for be in bexamples)
 
-    df = pd.DataFrame(records).sort_values(by=IDCOLS).loc[:, IDCOLS + CHECKCOLS]
-    df = df.style.applymap(color_status, CHECKCOLS).format(format_status, CHECKCOLS)
-    return df
+    return pd.DataFrame(records).sort_values(by=IDCOLS).loc[:, IDCOLS + CHECKCOLS]

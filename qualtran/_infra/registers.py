@@ -16,14 +16,10 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Iterator, List, overload, Tuple
 
 import numpy as np
 from attrs import field, frozen
-from numpy.typing import NDArray
-
-if TYPE_CHECKING:
-    import cirq
 
 
 class Side(enum.Flag):
@@ -75,7 +71,7 @@ class Register:
 
         This is the product of bitsize and each of the dimensions in `shape`.
         """
-        return self.bitsize * int(np.product(self.shape))
+        return self.bitsize * int(np.prod(self.shape))
 
 
 @frozen
@@ -232,13 +228,6 @@ class Signature:
 
     def __len__(self) -> int:
         return len(self._registers)
-
-    def get_cirq_quregs(self) -> Dict[str, 'NDArray[cirq.Qid]']:
-        """Get arrays of cirq qubits for these registers."""
-        # TODO(gh/Qualtran/issues/398): Make `get_cirq_quregs` an independent method.
-        from qualtran._infra.gate_with_registers import get_named_qubits
-
-        return get_named_qubits(self.lefts())
 
     def __hash__(self):
         return hash(self._registers)
