@@ -11,16 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-FROM python:3.10
-
-WORKDIR /pip-compile
-
-# Step 0: install pip-tools
-COPY envs/pip-tools.env.txt ./
-RUN pip install -r pip-tools.env.txt
-
-# Step 1: compile a complete & consistent environment with all dependencies
-COPY deps/ ./deps/
-COPY re-pip-compile.sh ./
-RUN bash re-pip-compile.sh

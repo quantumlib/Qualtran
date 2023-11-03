@@ -20,7 +20,7 @@ from typing import Callable, Dict, Optional, Set, Tuple, Union
 import networkx as nx
 import sympy
 
-from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError
+from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
 
@@ -105,7 +105,7 @@ def _recurse_call_graph(
 
     try:
         count_decomp = parent.build_call_graph(ssa)
-    except DecomposeNotImplementedError:
+    except (DecomposeNotImplementedError, DecomposeTypeError):
         # Base case 3: Decomposition (or `bloq_counts`) is not implemented. This is left as a
         #              leaf node.
         return {parent: 1}
