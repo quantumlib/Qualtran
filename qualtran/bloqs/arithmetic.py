@@ -534,48 +534,93 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_clifford = (self.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.bitsize - 4
-        return {(TGate(), num_t_gates), (ArbitraryClifford(n=1), num_clifford)}
+        num_toffoli = self.bitsize - 1
+        return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
 
 
 @frozen
-class OutOfPlaceAdder(Bloq):
+class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
     r"""An n-bit addition gate.
 
     Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$
-    using $4n - 4 T$ gates.
+    using $4n - 4 T$ gates. Uncomputation requires 0 T-gates.
 
     Args:
-        bitsize: Number of bits used to represent each integer. Must be large
-            enough to hold the result in the output register of a + b.
+        bitsize: Number of bits used to represent each input integer. The allocated output register
+            is of size `bitsize+1` so it has enough space to hold the sum of `a+b`.
 
     Registers:
      - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input/output register (register b above).
+     - b: A bitsize-sized input register (register b above).
+     - c: A bitize+1-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
     bitsize: int
+    adjoint: bool = False
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, c=self.bitsize)
+        side = Side.LEFT if self.adjoint else Side.RIGHT
+        return Signature(
+            [
+                Register('a', self.bitsize),
+                Register('b', self.bitsize),
+                Register('c', self.bitsize + 1, side=side),
+            ]
+        )
+
+    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        return [2] * self.bitsize, [2] * self.bitsize, [2] * (self.bitsize + 1)
+
+    def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
+        return a, b, c + a + b
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return dict(zip('abc', (a, b, a + b)))
+
+    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
+        raise NotImplementedError("no need to implement with_registers.")
 
     def short_name(self) -> str:
         return "c = a + b"
 
-    def t_complexity(self):
-        # extra bitsize cliffords comes from CNOTs before adding:
-        # yield CNOT.on_each(zip(b, c))
-        # yield Add(a, c)
-        num_clifford = (self.bitsize - 2) * 19 + 16 + self.bitsize
-        num_t_gates = 4 * self.bitsize - 4
-        return TComplexity(t=num_t_gates, clifford=num_clifford)
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        a, b, c = quregs['a'][::-1], quregs['b'][::-1], quregs['c'][::-1]
+        optree = [
+            [
+                [cirq.CX(a[i], b[i]), cirq.CX(a[i], c[i])],
+                And().on(b[i], c[i], c[i + 1]),
+                [cirq.CX(a[i], b[i]), cirq.CX(a[i], c[i + 1]), cirq.CX(b[i], c[i])],
+            ]
+            for i in range(self.bitsize)
+        ]
+        return cirq.inverse(optree) if self.adjoint else optree
+
+    def t_complexity(self) -> TComplexity:
+        and_t = And(adjoint=self.adjoint).t_complexity()
+        num_clifford = self.bitsize * (5 + and_t.clifford)
+        num_t = self.bitsize * and_t.t
+        return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Add(self.bitsize), 1), (ArbitraryClifford(n=2), self.bitsize)}
+        return {
+            (And(adjoint=self.adjoint), self.bitsize),
+            (ArbitraryClifford(n=2), 5 * self.bitsize),
+        }
+
+    def __pow__(self, power: int):
+        if power == 1:
+            return self
+        if power == -1:
+            return OutOfPlaceAdder(self.bitsize, adjoint=not self.adjoint)
+        raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
 
 @frozen(auto_attribs=True)
@@ -1142,4 +1187,4 @@ class SignedIntegerToTwosComplement(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
-        return {(TGate(), 4 * (self.bitsize - 2))}
+        return {(Toffoli(), (self.bitsize - 2))}

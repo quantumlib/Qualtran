@@ -25,7 +25,7 @@ from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.swap_network import SwapWithZero
-from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate, BloqAsCirqGate, CirqQuregT
+from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
 
@@ -110,7 +110,7 @@ def test_swap():
 
 def test_multi_and_allocates():
     multi_and = MultiAnd(cvs=(1, 1, 1, 1))
-    cirq_quregs = multi_and.signature.get_cirq_quregs()
+    cirq_quregs = get_named_qubits(multi_and.signature.lefts())
     assert sorted(cirq_quregs.keys()) == ['ctrl']
     multi_and_circuit, out_quregs = multi_and.decompose_bloq().to_cirq_circuit(
         **cirq_quregs, qubit_manager=cirq.ops.SimpleQubitManager()
@@ -123,12 +123,12 @@ def test_contruct_op_from_gate():
     in_quregs = {'ctrl': np.array([*cirq.LineQubit.range(2)]).reshape(2, 1)}
     qm = cirq.ops.SimpleQubitManager()
     # Allocates new qubits for RIGHT only registers.
-    op, out_quregs = _construct_op_from_gate(and_gate, in_quregs, qm)
+    op, out_quregs = and_gate.as_cirq_op(qm, **in_quregs)
     assert len(out_quregs['target']) == 1
     assert op == and_gate.on_registers(**out_quregs)
     # Deallocates qubits for LEFT only registers.
     and_inv = And(adjoint=True)
-    op, inv_out_quregs = _construct_op_from_gate(and_inv, out_quregs, qm)
+    op, inv_out_quregs = and_inv.as_cirq_op(qm, **out_quregs)
     assert inv_out_quregs == in_quregs
     assert op == and_inv.on_registers(**out_quregs)
 
@@ -139,15 +139,15 @@ def test_construct_op_from_gate_raises():
     q = [*cirq.LineQubit.range(2)]
     in_quregs = {}
     with pytest.raises(ValueError, match='Compatible reg.*must exist'):
-        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+        _ = and_gate.as_cirq_op(qm, **in_quregs)
 
     in_quregs = {'ctrl': np.array(q)}
     with pytest.raises(ValueError, match='Compatible reg.*must exist'):
-        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+        _ = and_gate.as_cirq_op(qm, **in_quregs)
 
     in_quregs = {'ctrl': np.array(q).reshape(2, 1), 'target': np.array([cirq.q('t')])}
     with pytest.raises(ValueError, match='RIGHT register.*shouldn\'t exist in'):
-        _ = _construct_op_from_gate(and_gate, in_quregs, qm)
+        _ = and_gate.as_cirq_op(qm, **in_quregs)
 
 
 def test_bloq_as_cirq_gate_left_register():
@@ -162,7 +162,7 @@ def test_bloq_as_cirq_gate_left_register():
 
 def test_bloq_as_cirq_gate_multi_dimensional_signature():
     bloq = SwapWithZero(2, 3, 4)
-    cirq_quregs = bloq.signature.get_cirq_quregs()
+    cirq_quregs = get_named_qubits(bloq.signature.lefts())
     op = BloqAsCirqGate(bloq).on_registers(**cirq_quregs)
     cirq.testing.assert_has_diagram(
         cirq.Circuit(op),

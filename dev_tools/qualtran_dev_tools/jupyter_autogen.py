@@ -190,7 +190,8 @@ _IMPORTS = """\
 from qualtran import Bloq, CompositeBloq, BloqBuilder, Signature, Register
 from qualtran.drawing import show_bloq
 from typing import *
-import numpy as np\
+import numpy as np
+import cirq\
 """
 
 _GATE_DISPLAY = """\

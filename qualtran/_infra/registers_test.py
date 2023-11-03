@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from qualtran import Register, SelectionRegister, Side, Signature
+from qualtran._infra.gate_with_registers import get_named_qubits
 
 
 def test_register():
@@ -99,15 +100,19 @@ def test_signature():
         "r2": cirq.NamedQubit.range(2, prefix="r2"),
         "r3": [cirq.NamedQubit("r3")],
     }
-    assert list(signature.get_cirq_quregs().keys()) == list(expected_named_qubits.keys())
+    assert list(get_named_qubits(signature.lefts())) == list(expected_named_qubits.keys())
     assert all(
         (a == b).all()
-        for a, b in zip(signature.get_cirq_quregs().values(), expected_named_qubits.values())
+        for a, b in zip(
+            get_named_qubits(signature.lefts()).values(), expected_named_qubits.values()
+        )
     )
     # Python dictionaries preserve insertion order, which should be same as insertion order of
     # initial registers.
     for reg_order in [[r1, r2, r3], [r2, r3, r1]]:
-        flat_named_qubits = [q for v in Signature(reg_order).get_cirq_quregs().values() for q in v]
+        flat_named_qubits = [
+            q for v in get_named_qubits(Signature(reg_order).lefts()).values() for q in v
+        ]
         expected_qubits = [q for r in reg_order for q in expected_named_qubits[r.name]]
         assert flat_named_qubits == expected_qubits
 
@@ -144,7 +149,7 @@ def test_agg_split():
 
 def test_get_named_qubits_multidim():
     regs = Signature([Register('q', shape=(2, 3), bitsize=4)])
-    quregs = regs.get_cirq_quregs()
+    quregs = get_named_qubits(regs.lefts())
     assert quregs['q'].shape == (2, 3, 4)
     assert quregs['q'][1, 2, 3] == cirq.NamedQubit('q[1, 2][3]')
 
