@@ -43,6 +43,17 @@ class HammingWeightPhasing(GateWithRegisters):
     Overall, for an input register of size $n$, the procedure uses $n - \alpha$ Toffoli's and
     $n - \alpha + \log_2(n)$ ancilla to reduce $n$ rotation synthesis into $\log_2(n)$  rotation
     synthesis.
+
+    Args:
+        bitsize: Size of input register to apply `Z ** exponent` to.
+        exponent: The exponent of `Z ** exponent` to be applied to each qubit in the input register.
+        eps: Accuracy of synthesizing the Z rotations.
+
+    Registers:
+        A single THRU register of size `bitsize`.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648), Page-4
     """
 
     bitsize: int
