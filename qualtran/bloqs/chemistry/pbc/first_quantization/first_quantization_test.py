@@ -39,24 +39,18 @@ def test_select_costs():
     num_atoms = 10
     lambda_zeta = 10
     num_bits_nuc_pos = 41
-    m_param = 2**8
     cost = 0
 
-    def keeper(bloq):
-        if isinstance(bloq, Toffoli):
-            return True
-        if isinstance(bloq, TGate):
-            return True
-        return False
-
-    sel_first_quant = SelectFirstQuantization(num_bits_p, eta, num_atoms, lambda_zeta)
-    cost += sel_first_quant.call_graph(keep=keeper)[1][Toffoli()]
-    cost += sel_first_quant.call_graph(keep=keeper)[1][TGate()] // 7
-    from .ft_pw_resource_estimates import pw_qubitization_costs
-
-    print(
-        pw_qubitization_costs(
-            num_bits_p, eta, 10, 1e-3, (m_param - 1).bit_length(), num_bits_nuc_pos, num_atoms
-        )
+    sel_first_quant = SelectFirstQuantization(
+        num_bits_p, eta, num_atoms, lambda_zeta, num_bits_nuc_pos=num_bits_nuc_pos
     )
-    print(cost)
+    cost += sel_first_quant.call_graph()[1][TGate()]
+
+    expected_cost = 7 * (12 * eta * num_bits_p) + 4 * (4 * eta - 8)
+    expected_cost += 4 * (5 * (num_bits_p - 1) + 2)
+    expected_cost += 4 * (24 * num_bits_p)
+    expected_cost += 4 * (
+        3 * (2 * num_bits_p * num_bits_nuc_pos - num_bits_p * (num_bits_p + 1) - 1)
+    )
+    cost += 4 * 6
+    assert cost == expected_cost

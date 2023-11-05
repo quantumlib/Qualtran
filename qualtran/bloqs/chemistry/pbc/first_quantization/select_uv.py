@@ -66,7 +66,6 @@ class ApplyNuclearPhase(Bloq):
         # Eq. 97.
         if n_n > n_p:
             cost = 3 * (2 * n_p * n_n - n_p * (n_p + 1) - 1)
-            print("this cost", cost, n_p, n_n)
         else:
             cost = 3 * n_n * (n_n - 1)
         return {(Toffoli(), cost)}

@@ -260,7 +260,7 @@ class SelectFirstQuantization(SelectOracle):
         return (
             Register("tuv", bitsize=1),
             Register("uv", bitsize=1),
-            Register("succ_nu", bitsize=1),
+            Register("i_ne_j", bitsize=1),
             Register("plus_t", bitsize=1),
         )
 
@@ -340,6 +340,7 @@ class SelectFirstQuantization(SelectOracle):
         bb: BloqBuilder,
         tuv: SoquetT,
         uv: SoquetT,
+        i_ne_j: SoquetT,
         plus_t: SoquetT,
         i: SoquetT,
         j: SoquetT,
@@ -351,7 +352,6 @@ class SelectFirstQuantization(SelectOracle):
         nu_y: SoquetT,
         nu_z: SoquetT,
         m: SoquetT,
-        succ_nu: SoquetT,
         l: SoquetT,
         sys: SoquetT,
     ) -> Dict[str, 'SoquetT']:
@@ -369,7 +369,11 @@ class SelectFirstQuantization(SelectOracle):
             targets=flat_sys,
             output=p,
         )
-        # TODO: Should control on i != j
+        swap = MultiplexedCSwap(
+            self.signature.get_left('j'),
+            target_bitsize=3 * self.num_bits_p,
+            control_regs=self.signature.get_left('i_ne_j'),
+        )
         j, flat_sys, q = bb.add(
             MultiplexedCSwap(self.signature.get_left('j'), target_bitsize=3 * self.num_bits_p),
             j=j,
@@ -406,7 +410,6 @@ class SelectFirstQuantization(SelectOracle):
             targets=flat_sys,
             output=p,
         )
-        # TODO: Should control on i != j
         q = self._reshape_reg(bb, q, (), 3 * n_p)
         j, flat_sys, q = bb.add(
             MultiplexedCSwap(self.signature.get_left('j'), target_bitsize=3 * self.num_bits_p),
@@ -422,6 +425,7 @@ class SelectFirstQuantization(SelectOracle):
             'tuv': tuv,
             'uv': uv,
             'plus_t': plus_t,
+            'i_ne_j': i_ne_j,
             'i': i,
             'j': j,
             'w': w,
@@ -433,7 +437,6 @@ class SelectFirstQuantization(SelectOracle):
             'nu_z': nu_z,
             'm': m,
             'l': l,
-            'succ_nu': succ_nu,
             'sys': sys,
         }
 
