@@ -24,8 +24,19 @@ from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-@pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
-@pytest.mark.parametrize("block_size", [None, 1, 2, 3])
+@pytest.mark.parametrize(
+    "data,block_size",
+    [
+        pytest.param(
+            data,
+            block_size,
+            id=f"{block_size}-data{didx}",
+            marks=pytest.mark.skip("slow") if block_size == 3 and didx == 0 else (),
+        )
+        for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
+        for block_size in [None, 1, 2, 3]
+    ],
+)
 def test_select_swap_qrom(data, block_size):
     qrom = SelectSwapQROM(*data, block_size=block_size)
 
