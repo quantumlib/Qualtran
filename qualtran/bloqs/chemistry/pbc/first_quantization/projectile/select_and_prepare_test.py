@@ -31,8 +31,8 @@ def test_prepare(bloq_autotester):
     bloq_autotester(_prep_first_quant)
 
 
-# def test_select(bloq_autotester):
-#     bloq_autotester(_sel_first_quant)
+def test_select(bloq_autotester):
+    bloq_autotester(_sel_first_quant)
 
 
 # def test_select_t_costs():

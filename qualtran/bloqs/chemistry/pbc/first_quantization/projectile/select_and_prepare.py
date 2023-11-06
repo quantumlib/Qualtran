@@ -34,11 +34,16 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import (
     PrepareUVFirstQuantizationWithProj,
 )
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_t import (
+    SelectTFirstQuantizationWithProj,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_uv import (
+    SelectUVFirstQuantizationWithProj,
+)
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
+    MultiplexedCSwap3D,
     UniformSuperpostionIJFirstQuantization,
 )
-from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
-from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 
 if TYPE_CHECKING:
@@ -321,6 +326,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         return (
             Register("tuv", bitsize=1),
             Register("uv", bitsize=1),
+            Register("t_mean", bitsize=1),
             Register("i_ne_j", bitsize=1),
             Register("plus_t", bitsize=1),
         )
@@ -347,7 +353,10 @@ class SelectFirstQuantizationWithProj(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),)
+        return (
+            Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
+            Register('proj', bitsize=self.num_bits_n, shape=(3,)),
+        )
 
     @cached_property
     def signature(self) -> Signature:
@@ -363,6 +372,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         bb: BloqBuilder,
         tuv: SoquetT,
         uv: SoquetT,
+        t_mean: SoquetT,
         i_ne_j: SoquetT,
         plus_t: SoquetT,
         i: SoquetT,
@@ -380,7 +390,8 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     ) -> Dict[str, 'SoquetT']:
         # ancilla for swaps from electronic system registers.
         # we assume these are left in a clean state after SELECT operations
-        p = [bb.allocate(self.num_bits_p) for _ in range(3)]
+        # We only need one of the ancilla to be of the size of the projectile's register.
+        p = [bb.allocate(self.num_bits_n) for _ in range(3)]
         q = [bb.allocate(self.num_bits_p) for _ in range(3)]
         rl = bb.allocate(self.num_bits_nuc_pos)
         i, sys, p = bb.add(
@@ -389,17 +400,19 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
-        tuv, plus_t, w, r, s, p = bb.add(
-            SelectTFirstQuantization(self.num_bits_p, self.eta),
-            plus=plus_t,
+        tuv, t_mean, plus_t, w, w_mean, r, s, p = bb.add(
+            SelectTFirstQuantizationWithProj(self.num_bits_p, self.eta),
             flag_T=tuv,
+            flag_mean=t_mean,
+            plus=plus_t,
             w=w,
+            w_mean=w_mean,
             r=r,
             s=s,
             p=p,
         )
         tuv, uv, l, rl, [nu_x, nu_y, nu_z], p, q = bb.add(
-            SelectUVFirstQuantization(
+            SelectUVFirstQuantizationWithProj(
                 self.num_bits_p, self.eta, self.num_atoms, self.num_bits_nuc_pos
             ),
             flag_tuv=tuv,
@@ -467,13 +480,13 @@ def _sel_first_quant() -> SelectFirstQuantizationWithProj:
     return sel_first_quant
 
 
-_FIRST_QUANTIZED_PREPARE_DOC = BloqDocSpec(
+_FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC = BloqDocSpec(
     bloq_cls=PrepareFirstQuantizationWithProj,
     import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import FirstQuantizedPrepare',
     examples=(_prep_first_quant,),
 )
 
-_FIRST_QUANTIZED_PREPARE_DOC = BloqDocSpec(
+_FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC = BloqDocSpec(
     bloq_cls=SelectFirstQuantizationWithProj,
     import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import FirstQuantizedSelect',
     examples=(_sel_first_quant,),
