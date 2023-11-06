@@ -79,4 +79,4 @@ during state preparation. The cost of initial state preparation is typically
 ignored.
 """
 
-from .first_quantization import PrepareFirstQuantization, SelectFirstQuantization
+from .select_and_prepare import PrepareFirstQuantization, SelectFirstQuantization
