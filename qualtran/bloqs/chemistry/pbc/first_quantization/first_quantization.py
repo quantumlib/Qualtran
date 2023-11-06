@@ -114,7 +114,46 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
 
 @frozen
 class PrepareFirstQuantization(PrepareOracle):
-    """State preparation for the first quantized chemistry Hamiltonian."""
+    r"""State preparation for the first quantized chemistry Hamiltonian.
+
+    Prepares the state in Eq. 48 of the reference.
+
+    Args:
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
+        eta: The number of electrons.
+        num_atoms: The number of atoms. $L$ in the reference.
+        lambda_zeta: sum of nuclear charges.
+        m_param: $\mathcal{M}$ in the reference.
+        num_bits_nuc_pos: The number of bits of precision for representing the nuclear coordinates.
+        num_bits_t: The number of bits of precision for the state preparation
+            over the register selecting between the different components of the
+            Hamiltonian.
+        num_bits_rot_aa: The number of bits of precision for the rotation for
+            amplitude amplification.
+        adjoint: Whether to dagger the bloq or not.
+
+    Registers:
+        tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
+        uv: Flag register for selecting between the different potential
+            components of the Hamiltonian.
+        i: A register for selecting electronic registers.
+        j: A register for selecting electronic registers.
+        w: A register for selecting x, y and z components of the momentum register.
+        r: A register for controlling elements of the momentum register. Used
+            for block encodiding kinetic energy operator.
+        s: A register for controlling elements of the momentum register. Used
+            for block encodiding kinetic energy operator.
+        mu: A register used for implementing nested boxes for the momentum state preparation.
+        nu_x: x component of the momentum register for Coulomb potential.
+        nu_y: y component of the momentum register for Coulomb potential.
+        nu_z: z component of the momentum register for Coulomb potential.
+        m: an ancilla register in a uniform superposition.
+        l: The register for selecting the nuclei.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767)
+    """
 
     num_bits_p: int
     eta: int
@@ -127,7 +166,7 @@ class PrepareFirstQuantization(PrepareOracle):
     adjoint: bool = False
 
     @property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[...]:
         n_nu = self.num_bits_p + 1
         n_eta = (self.eta - 1).bit_length()
         n_at = (self.num_atoms - 1).bit_length()
@@ -245,7 +284,48 @@ class PrepareFirstQuantization(PrepareOracle):
 
 @frozen
 class SelectFirstQuantization(SelectOracle):
-    """State preparation for the first quantized chemistry Hamiltonian."""
+    r"""SELECT operation for the first quantized chemistry Hamiltonian.
+
+    Args:
+        num_bits_p: The number of bits to represent each dimension of the momentum register.
+        eta: The number of electrons.
+        num_atoms: The number of atoms. $L$ in the reference.
+        lambda_zeta: sum of nuclear charges.
+        m_param: $\mathcal{M}$ in the reference.
+        num_bits_nuc_pos: The number of bits of precision for representing the nuclear coordinates.
+        num_bits_t: The number of bits of precision for the state preparation
+            over the register selecting between the different components of the
+            Hamiltonian.
+        num_bits_rot_aa: The number of bits of precision for the rotation for
+            amplitude amplification.
+        adjoint: Whether to dagger the bloq or not.
+
+    Registers:
+        tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
+        uv: Flag register for selecting between the different potential
+            components of the Hamiltonian.
+        i_ne_j: Register flagging $i \ne j$
+        plus_t: A register prepared in the $|+\rangle$ state.
+        i: A register for selecting electronic registers.
+        j: A register for selecting electronic registers.
+        w: A register for selecting x, y and z components of the momentum register.
+        r: A register for controlling elements of the momentum register. Used
+            for block encodiding kinetic energy operator.
+        s: A register for controlling elements of the momentum register. Used
+            for block encodiding kinetic energy operator.
+        mu: A register used for implementing nested boxes for the momentum state preparation.
+        nu_x: x component of the momentum register for Coulomb potential.
+        nu_y: y component of the momentum register for Coulomb potential.
+        nu_z: z component of the momentum register for Coulomb potential.
+        m: an ancilla register in a uniform superposition.
+        l: The register for selecting the nuclei.
+        sys: The system register. Will store $\eta$ registers (x, y and z)
+            compents of size num_bits_p.
+
+    References:
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
+            https://arxiv.org/abs/2105.12767)
+    """
 
     num_bits_p: int
     eta: int
@@ -364,17 +444,11 @@ class SelectFirstQuantization(SelectOracle):
         rl = bb.allocate(self.num_bits_nuc_pos)
         n_p = self.num_bits_p
         flat_sys = self._flatten_sys(bb, sys)
-        n_eta = (self.eta - 1).bit_length()
         i, flat_sys, p = bb.add(
             MultiplexedCSwap(self.signature.get_left('i'), target_bitsize=3 * self.num_bits_p),
             i=i,
             targets=flat_sys,
             output=p,
-        )
-        swap = MultiplexedCSwap(
-            self.signature.get_left('j'),
-            target_bitsize=3 * self.num_bits_p,
-            control_regs=self.signature.get_left('i_ne_j'),
         )
         j, flat_sys, q = bb.add(
             MultiplexedCSwap(self.signature.get_left('j'), target_bitsize=3 * self.num_bits_p),
