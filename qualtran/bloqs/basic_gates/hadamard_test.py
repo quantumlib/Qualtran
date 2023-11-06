@@ -16,6 +16,7 @@ import numpy as np
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import Hadamard, OneState
+from qualtran.bloqs.basic_gates.hadamard import _hadamard
 
 
 def _make_Hadamard():
@@ -34,3 +35,7 @@ def test_to_cirq():
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)
     np.testing.assert_allclose(vec1, vec2)
+
+
+def test_hadamard(bloq_autotester):
+    bloq_autotester(_hadamard)

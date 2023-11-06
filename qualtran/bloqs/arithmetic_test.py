@@ -25,6 +25,7 @@ from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
+    HammingWeightCompute,
     LessThanConstant,
     LessThanEqual,
     MultiplyTwoReals,
@@ -37,10 +38,12 @@ from qualtran.bloqs.arithmetic import (
     SumOfSquares,
     ToContiguousIndex,
 )
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
+    GateHelper,
 )
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -403,14 +406,29 @@ def test_add_mod_n_protocols():
 
 
 def test_out_of_place_adder():
-    bb = BloqBuilder()
-    bitsize = 4
-    q0 = bb.add_register('a', bitsize)
-    q1 = bb.add_register('b', bitsize)
-    q2 = bb.add_register('c', bitsize)
-    a, b, c = bb.add(OutOfPlaceAdder(bitsize), a=q0, b=q1, c=q2)
-    cbloq = bb.finalize(a=a, b=b, c=c)
-    cbloq.t_complexity()
+    basis_map = {}
+    gate = OutOfPlaceAdder(bitsize=3)
+    for x in range(2**3):
+        for y in range(2**3):
+            basis_map[int(f'0b_{x:03b}_{y:03b}_0000', 2)] = int(f'0b_{x:03b}_{y:03b}_{x+y:04b}', 2)
+            assert gate.call_classically(a=x, b=y, c=0) == (x, y, x + y)
+    op = GateHelper(gate).operation
+    op_inv = cirq.inverse(op)
+    cirq.testing.assert_equivalent_computational_basis_map(basis_map, cirq.Circuit(op))
+    cirq.testing.assert_equivalent_computational_basis_map(
+        basis_map, cirq.Circuit(cirq.decompose_once(op))
+    )
+    # Check that inverse un-computes correctly
+    qubit_order = op.qubits
+    circuit = cirq.Circuit(cirq.decompose_once(op), cirq.decompose_once(op_inv))
+    for x in range(2**6):
+        bits = [*iter_bits(x, 10)][::-1]
+        assert_circuit_inp_out_cirqsim(circuit, qubit_order, bits, bits)
+    assert gate.t_complexity().t == 3 * 4
+    assert (gate**-1).t_complexity().t == 0
+    assert_decompose_is_consistent_with_t_complexity(gate**-1)
+    assert_valid_bloq_decomposition(gate)
+    assert_valid_bloq_decomposition(gate**-1)
 
 
 def test_square():
@@ -518,6 +536,8 @@ def test_signed_to_twos_complement():
     q0 = bb.add_register('x', bitsize)
     q0 = bb.add(SignedIntegerToTwosComplement(bitsize), x=q0)
     cbloq = bb.finalize(x=q0)
+    _, sigma = cbloq.call_graph()
+    assert sigma[TGate()] == 4 * (5 - 2)
 
 
 def test_arithmetic_notebook():
@@ -526,3 +546,28 @@ def test_arithmetic_notebook():
 
 def test_comparison_gates_notebook():
     execute_notebook('comparison_gates')
+
+
+@pytest.mark.parametrize('bitsize', [3, 4, 5])
+def test_hamming_weight_compute(bitsize: int):
+    gate = HammingWeightCompute(bitsize=bitsize)
+    gate_inv = gate**-1
+
+    assert_decompose_is_consistent_with_t_complexity(gate)
+    assert_decompose_is_consistent_with_t_complexity(gate_inv)
+    assert_valid_bloq_decomposition(gate)
+    assert_valid_bloq_decomposition(gate_inv)
+
+    junk_bitsize = bitsize - bitsize.bit_count()
+    out_bitsize = bitsize.bit_length()
+    sim = cirq.Simulator()
+    op = GateHelper(gate).operation
+    circuit = cirq.Circuit(cirq.decompose_once(op))
+    circuit_with_inv = circuit + cirq.Circuit(cirq.decompose_once(op**-1))
+    qubit_order = sorted(circuit_with_inv.all_qubits())
+    for inp in range(2**bitsize):
+        input_state = [0] * (junk_bitsize + out_bitsize) + list(iter_bits(inp, bitsize))
+        result = sim.simulate(circuit, initial_state=input_state).dirac_notation()
+        actual_bits = result[1 + junk_bitsize : 1 + junk_bitsize + out_bitsize]
+        assert actual_bits == f'{inp.bit_count():0{out_bitsize}b}'
+        assert_circuit_inp_out_cirqsim(circuit_with_inv, qubit_order, input_state, input_state)

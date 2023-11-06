@@ -183,7 +183,7 @@ class SelectTHC(Bloq):
         )
         # Controlled Z_0
         split_sys = bb.split(sys_a)
-        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), qubits=[succ, split_sys[0]])
+        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
         sys_a = bb.join(split_sys)
         # Undo rotations
         eq_nu_mp1, data, mu, sys_a = bb.add(
@@ -235,7 +235,7 @@ class SelectTHC(Bloq):
         )
         # Controlled Z_0
         split_sys = bb.split(sys_a)
-        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), qubits=[succ, split_sys[0]])
+        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
         sys_a = bb.join(split_sys)
         # Undo rotations
         eq_nu_mp1, data, nu, sys_a = bb.add(

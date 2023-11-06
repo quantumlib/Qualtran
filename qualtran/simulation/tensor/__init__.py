@@ -12,15 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-FROM python:3.10
 
-WORKDIR /pip-compile
-
-# Step 0: install pip-tools
-COPY envs/pip-tools.env.txt ./
-RUN pip install -r pip-tools.env.txt
-
-# Step 1: compile a complete & consistent environment with all dependencies
-COPY deps/ ./deps/
-COPY re-pip-compile.sh ./
-RUN bash re-pip-compile.sh
+from ._dense import bloq_to_dense, get_right_and_left_inds
+from ._flattening import bloq_has_custom_tensors, flatten_for_tensor_contraction
+from ._quimb import cbloq_as_contracted_tensor, cbloq_to_quimb
