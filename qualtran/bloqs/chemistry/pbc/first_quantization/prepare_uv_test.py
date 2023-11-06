@@ -20,7 +20,9 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def _make_prepare_uv():
-    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareUVFirstQuantization
+    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import (
+        PrepareUVFirstQuantization,
+    )
 
     num_bits_p = 5
     eta = 10
@@ -51,27 +53,6 @@ def test_prepare_uv():
         num_bits_p, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
     )
     assert_valid_bloq_decomposition(prep)
-
-
-def _make_prepare_uv():
-    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareUVFistQuantization
-
-    num_bits_p = 5
-    eta = 10
-    num_atoms = 10
-    lambda_zeta = 10
-    m_param = 2**8
-    num_bits_nuc_pos = 16
-
-    prep = PrepareUVFistQuantization(
-        num_bits_p=num_bits_p,
-        eta=eta,
-        num_atoms=num_atoms,
-        m_param=m_param,
-        lambda_zeta=lambda_zeta,
-        num_bits_nuc_pos=num_bits_nuc_pos,
-    )
-    return prep
 
 
 def test_prepare_uv_t_counts():

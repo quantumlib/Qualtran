@@ -16,7 +16,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirs
 
 
 def _make_select_t():
-    from qualtran.bloqs.chemistry.pbc.first_quantization import SelectTFirstQuantization
+    from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
 
     num_bits_p = 5
     eta = 10
