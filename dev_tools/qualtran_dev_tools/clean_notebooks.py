@@ -44,7 +44,7 @@ def clean_notebook(nb_path: Path, do_clean: bool = True):
     pp = ClearMetadataPreprocessor(preserve_cell_metadata_mask={'cq.autogen'})
     nb, resources = pp.preprocess(nb, resources={})
 
-    with NamedTemporaryFile('w', delete=not do_clean) as f:
+    with NamedTemporaryFile('w', delete=False) as f:
         nbformat.write(nb, f, version=4)
 
     res = subprocess.run(['diff', nb_path, f.name], capture_output=True)
@@ -54,17 +54,22 @@ def clean_notebook(nb_path: Path, do_clean: bool = True):
         print(res.stdout.decode())
     if dirty and do_clean:
         os.rename(f.name, nb_path)
+    if not do_clean:
+        os.unlink(f.name)
 
     return dirty
 
 
-def clean_notebooks(sourceroot: Path) -> int:
-    """Find, and strip metadata from all checked-in ipynbs."""
+def clean_notebooks(sourceroot: Path, do_clean: bool = True) -> int:
+    """Find, and strip metadata from all checked-in ipynbs.
+
+    If `do_clean` is true, modify the notebook. Otherwise, just print a diff.
+    """
     nb_rel_paths = get_nb_rel_paths(rootdir=sourceroot)
     bad_nbs = []
     for nb_rel_path in nb_rel_paths:
         nbpath = sourceroot / nb_rel_path
-        dirty = clean_notebook(nbpath)
+        dirty = clean_notebook(nbpath, do_clean=do_clean)
         if dirty:
             bad_nbs.append(nb_rel_path)
 
