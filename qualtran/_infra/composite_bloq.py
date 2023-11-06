@@ -36,7 +36,7 @@ import networkx as nx
 import numpy as np
 from numpy.typing import NDArray
 
-from .bloq import Bloq
+from .bloq import Bloq, DecomposeTypeError
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
 from .registers import Register, Side, Signature
 
@@ -161,18 +161,6 @@ class CompositeBloq(Bloq):
 
         return cirq_optree_to_cbloq(circuit)
 
-    def tensor_contract(self) -> NDArray:
-        """Return a contracted, dense ndarray representing this composite bloq.
-
-        This constructs a tensor network and then contracts it according to our registers,
-        i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
-        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
-        of (right, left) indices.
-        """
-        from qualtran.simulation.quimb_sim import _cbloq_to_dense
-
-        return _cbloq_to_dense(self)
-
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """Support classical data by recursing into the composite bloq."""
         from qualtran.simulation.classical_sim import _cbloq_call_classically
@@ -201,7 +189,7 @@ class CompositeBloq(Bloq):
         return self
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        raise NotImplementedError("Come back later.")
+        raise DecomposeTypeError("CompositeBloq cannot be decomposed.")
 
     def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""

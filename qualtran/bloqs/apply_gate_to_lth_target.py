@@ -15,7 +15,7 @@
 import itertools
 from typing import Callable, Sequence, Tuple
 
-import attr
+import attrs
 import cirq
 import numpy as np
 from cirq._compat import cached_property
@@ -25,7 +25,7 @@ from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 
 
-@attr.frozen
+@attrs.frozen
 class ApplyGateToLthQubit(UnaryIterationGate):
     r"""A controlled SELECT operation for single-qubit gates.
 
@@ -48,11 +48,11 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.A. and Figure 7.
     """
-    selection_regs: Tuple[SelectionRegister, ...] = attr.field(
+    selection_regs: Tuple[SelectionRegister, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, SelectionRegister) else tuple(v)
     )
     nth_gate: Callable[..., cirq.Gate]
-    control_regs: Tuple[Register, ...] = attr.field(
+    control_regs: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
         default=(Register('control', 1),),
     )

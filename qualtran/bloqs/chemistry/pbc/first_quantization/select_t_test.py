@@ -11,16 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
 
-FROM python:3.10
 
-WORKDIR /pip-compile
+def _make_select_t():
+    from qualtran.bloqs.chemistry.pbc.first_quantization import SelectTFirstQuantization
 
-# Step 0: install pip-tools
-COPY envs/pip-tools.env.txt ./
-RUN pip install -r pip-tools.env.txt
+    num_bits_p = 5
+    eta = 10
 
-# Step 1: compile a complete & consistent environment with all dependencies
-COPY deps/ ./deps/
-COPY re-pip-compile.sh ./
-RUN bash re-pip-compile.sh
+    return SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+
+
+def test_select_kinetic_t_counts():
+    num_bits_p = 6
+    sel = SelectTFirstQuantization(num_bits_p, 10)
+    _, counts = sel.call_graph()
+    assert counts[TGate()] == 4 * 5 * (num_bits_p - 1) + 4 * 2
