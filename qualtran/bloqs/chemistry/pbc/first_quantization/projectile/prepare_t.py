@@ -75,7 +75,7 @@ class PreparePowerTwoStateWithProj(Bloq):
 
 
 @frozen
-class PrepareTProjFirstQuantization(Bloq):
+class PrepareTFirstQuantizationWithProj(Bloq):
     r"""PREPARE for the kinetic energy operator for the first quantized chemistry Hamiltonian.
 
     This prepares the state
@@ -119,7 +119,7 @@ class PrepareTProjFirstQuantization(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(w=2, w_mean=2, r=self.num_bits_p, s=self.num_bits_p)
+        return Signature.build(w=2, w_mean=2, r=self.num_bits_n, s=self.num_bits_n)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # there is a cost for the uniform state preparation for the $w$

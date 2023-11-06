@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
+r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
 from typing import Dict, Set, Tuple, TYPE_CHECKING
 
@@ -28,10 +28,16 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFirstQuantization
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
+    PrepareTFirstQuantizationWithProj,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import (
+    PrepareUVFirstQuantizationWithProj,
+)
+from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
+    UniformSuperpostionIJFirstQuantization,
+)
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
-from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 
@@ -62,16 +68,17 @@ class PrepareTUVSuperpositions(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(tuv=1, tabc=2, uv=1, uabc=2)
+        return Signature.build(tuv=1, uv=1)
 
     def short_name(self) -> str:
         return 'PREP TUV'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        n_eta_zeta = (self.eta + 2 * self.lambda_zeta - 1).bit_length()
-        # The cost arises from rotating a qubit, and uniform state preparation
-        # over eta + 2 lambda_zeta numbers along.
-        return {(Toffoli(), self.num_bits_t + 4 * n_eta_zeta + 2 * self.num_bits_rot_aa - 12)}
+        if self.adjoint:
+            # inverting inequality tests at zero Toffoli.
+            return {}
+        else:
+            return {(Toffoli(), 6 * self.num_bits_t + 2)}
 
 
 @frozen
@@ -146,6 +153,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             SelectionRegister('i', bitsize=n_eta, iteration_length=self.eta),
             SelectionRegister('j', bitsize=n_eta, iteration_length=self.eta),
             SelectionRegister("w", iteration_length=3, bitsize=2),
+            SelectionRegister("w_mean", iteration_length=3, bitsize=2),
             SelectionRegister("r", bitsize=self.num_bits_n),
             SelectionRegister("s", bitsize=self.num_bits_n),
             SelectionRegister("mu", bitsize=self.num_bits_n),
@@ -172,6 +180,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         i: SoquetT,
         j: SoquetT,
         w: SoquetT,
+        w_mean: SoquetT,
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
@@ -202,17 +211,23 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         )
         # # |+>
         # plus_t = bb.add(Hadamard(), q=plus_t)
-        w, r, s = bb.add(
-            PrepareTFirstQuantization(
-                self.num_bits_p, self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
+        w, w_mean, r, s = bb.add(
+            PrepareTFirstQuantizationWithProj(
+                self.num_bits_p,
+                self.num_bits_n,
+                self.eta,
+                self.num_bits_rot_aa,
+                adjoint=self.adjoint,
             ),
             w=w,
+            w_mean=w_mean,
             r=r,
             s=s,
         )
         mu, [nu_x, nu_y, nu_z], m, l, succ_nu = bb.add(
-            PrepareUVFirstQuantization(
+            PrepareUVFirstQuantizationWithProj(
                 self.num_bits_p,
+                self.num_bits_n,
                 self.eta,
                 self.num_atoms,
                 self.m_param,
@@ -233,6 +248,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             'i': i,
             'j': j,
             'w': w,
+            'w_mean': w_mean,
             'r': r,
             's': s,
             'mu': mu,
