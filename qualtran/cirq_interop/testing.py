@@ -92,7 +92,7 @@ def assert_circuit_inp_out_cirqsim(
             that are 0 or 1.
     """
     actual, should_be = get_circuit_inp_out_cirqsim(circuit, qubit_order, inputs, outputs, decimals)
-    assert actual == should_be
+    assert actual == should_be, f'\n{actual=}\n{should_be=}'
 
 
 def get_circuit_inp_out_cirqsim(
@@ -126,12 +126,15 @@ def get_circuit_inp_out_cirqsim(
 
 
 def assert_decompose_is_consistent_with_t_complexity(val: Any):
-    t_complexity_method = getattr(val, '_t_complexity_', None)
-    expected = NotImplemented if t_complexity_method is None else t_complexity_method()
+    for method in ['_t_complexity_', 't_complexity']:
+        t_complexity_method = getattr(val, method, None)
+        expected = NotImplemented if t_complexity_method is None else t_complexity_method()
+        if not (expected is NotImplemented or expected is None):
+            break
     if expected is NotImplemented or expected is None:
-        return
+        raise AssertionError("No consistent t_complexity: no _t_complexity_.")
     decomposition = _decompose_once_considering_known_decomposition(val)
     if decomposition is None:
-        return
+        raise AssertionError("No consistent t_complexity: no decomposition.")
     from_decomposition = t_complexity(decomposition, fail_quietly=False)
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'

@@ -5,3 +5,5 @@
 -r pylint.txt
 -r docs.txt
 -r packaging.txt
+
+notebook

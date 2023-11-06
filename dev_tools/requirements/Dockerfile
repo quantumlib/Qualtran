@@ -22,5 +22,5 @@ RUN pip install -r pip-tools.env.txt
 
 # Step 1: compile a complete & consistent environment with all dependencies
 COPY deps/ ./deps/
-COPY constrain.txt re-pip-compile.sh ./
+COPY re-pip-compile.sh ./
 RUN bash re-pip-compile.sh

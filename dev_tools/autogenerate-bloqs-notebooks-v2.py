@@ -64,6 +64,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
             qualtran.bloqs.swap_network._APPROX_CSWAP_DOC,
             qualtran.bloqs.swap_network._SWZ_DOC,
+            qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs',
         path_stem='swap_network_2',
