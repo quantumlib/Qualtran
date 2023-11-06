@@ -12,14 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.basic_gates import TGate, Toffoli
+import numpy as np
+
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.first_quantization import (
     _prep_first_quant,
     _sel_first_quant,
     PrepareFirstQuantization,
     SelectFirstQuantization,
 )
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 # def test_notebook():
 #     execute_notebook('first_quantization')
@@ -33,7 +34,7 @@ def test_select(bloq_autotester):
     bloq_autotester(_sel_first_quant)
 
 
-def test_select_costs():
+def test_select_t_costs():
     num_bits_p = 6
     eta = 10
     num_atoms = 10
@@ -53,4 +54,48 @@ def test_select_costs():
         3 * (2 * num_bits_p * num_bits_nuc_pos - num_bits_p * (num_bits_p + 1) - 1)
     )
     cost += 4 * 6
+    assert cost == expected_cost
+
+
+def test_prepare_t_costs():
+    num_bits_p = 6
+    eta = 10
+    num_atoms = 10
+    lambda_zeta = 10
+    num_bits_nuc_pos = 16
+    b_r = 8
+    num_bits_m = 15
+    num_bits_t = 16
+    cost = 0
+    prep_first_quant = PrepareFirstQuantization(
+        num_bits_p,
+        eta,
+        num_atoms,
+        lambda_zeta,
+        m_param=2**num_bits_m,
+        num_bits_nuc_pos=num_bits_nuc_pos,
+        num_bits_rot_aa=b_r,
+        num_bits_t=num_bits_t,
+    )
+    cost += prep_first_quant.call_graph()[1][TGate()] // 4
+    prep_first_quant = PrepareFirstQuantization(
+        num_bits_p,
+        eta,
+        num_atoms,
+        lambda_zeta,
+        num_bits_nuc_pos=num_bits_nuc_pos,
+        m_param=2**num_bits_m,
+        num_bits_rot_aa=b_r,
+        num_bits_t=num_bits_t,
+        adjoint=True,
+    )
+    cost += prep_first_quant.call_graph()[1][TGate()] // 4
+    n_eta = (eta - 1).bit_length()
+    expected_cost = (14 * n_eta + 8 * b_r - 36) + 2 * (2 * num_bits_p + 9)
+    expected_cost += 3 * num_bits_p**2 + num_bits_p + 4 * num_bits_m * (num_bits_p + 1) + 4
+    expected_cost += 2 * 4 * (num_bits_p - 1) + 6 * num_bits_p + 2
+    expected_cost += lambda_zeta + int(np.ceil(lambda_zeta**0.5))
+    n_eta_zeta = (eta + 2 * lambda_zeta - 1).bit_length()
+    expected_cost += 2 * (num_bits_t + 4 * n_eta_zeta + 2 * b_r - 12)
+    cost += 1
     assert cost == expected_cost

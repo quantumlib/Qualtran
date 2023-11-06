@@ -192,12 +192,14 @@ class PrepareFirstQuantization(PrepareOracle):
             uv=uv,
         )
         i, j = bb.add(
-            UniformSuperpostionIJFirstQuantization(self.eta, self.num_bits_rot_aa, self.adjoint),
+            UniformSuperpostionIJFirstQuantization(
+                self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
+            ),
             i=i,
             j=j,
         )
-        # |+>
-        plus_t = bb.add(Hadamard(), q=plus_t)
+        # # |+>
+        # plus_t = bb.add(Hadamard(), q=plus_t)
         w, r, s = bb.add(
             PrepareTFirstQuantization(
                 self.num_bits_p, self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
