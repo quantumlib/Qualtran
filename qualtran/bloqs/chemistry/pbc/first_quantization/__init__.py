@@ -36,7 +36,7 @@ $$
 for $p \in G$ and
 $$
 G = [-\frac{N^{1/3} -
-1}{2},{N^{1/3} - 1}{2}]^3 \subset \mathcal{Z}^3.
+1}{2},\frac{N^{1/3} - 1}{2}]^3 \subset \mathcal{Z}^3.
 $$
 and $N$ is the total number of planewaves.
 
@@ -58,7 +58,7 @@ $$
 describes the interaction of the electrons and the nuclei, and,
 $$
 V = \frac{2\pi}{\Omega}
-\sum_{i\nej=1}^\eta
+\sum_{i\ne j=1}^\eta
 \sum_{p,q\in G, p\ne q}
 \sum_{\nu \in G_0}
 \left(
@@ -67,8 +67,8 @@ V = \frac{2\pi}{\Omega}
     |q -\nu\rangle\langle q|_i
 \right)
 $$
-describes the electron-electron interaction. The notation $|p\rangle\langle p|i$ is shorthand for
-$I_1\otensor\cdots\otensor |p\rangle \langle q |_j \otensor \cdots \otensor I_\eta$.
+describes the electron-electron interaction. The notation $|p\rangle\langle p|_i$ is shorthand for
+$I_1\otimes\cdots\otimes |p\rangle \langle p |_j \otimes \cdots \otimes I_\eta$.
 The system is represented using a set of $\eta$ signed integer registers each of
 size $3 n_p$ where $n_p =  \lceil \log (N^{1/3} + 1) \rceil$, with the factor of
 3 accounting for the 3 spatial dimensions.
@@ -78,3 +78,8 @@ state preparation. Spin labels are also absent and should be accounted for
 during state preparation. The cost of initial state preparation is typically
 ignored.
 """
+
+from .prepare_t import PrepareTFirstQuantization
+from .prepare_uv import PrepareUVFistQuantization
+from .select_t import SelectTFirstQuantization
+from .select_uv import SelectUVFirstQuantization

@@ -11,12 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""PREPARE the superposition over nuclear weights for the first quantized chemistry Hamiltonian.
-"""
+r"""Bloqs for SELECT T for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
 from typing import Set, TYPE_CHECKING
 
-import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
@@ -27,36 +25,41 @@ if TYPE_CHECKING:
 
 
 @frozen
-class PrepareZetaState(Bloq):
-    r"""PREPARE the superpostion over $l$ weighted by $\zeta_l$.
+class SelectTFirstQuantization(Bloq):
+    r"""SELECT for the kinetic energy operator for the first quantized chemistry Hamiltonian.
 
-    See https://github.com/quantumlib/Qualtran/issues/473.
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
-        m_param: $\mathcal{M}$ in the reference.
-        lambda_zeta: sum of nuclear charges.
 
     Registers:
-        l: the register indexing the atomic number.
+        sys: The system register.
+        plus: A $|+\rangle$ state.
+        flag_T: a flag to control on the success of the $T$ state preparation.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 23-24, last 3 paragraphs.
+            https://arxiv.org/abs/2105.12767) page 20, section B
     """
-    num_atoms: int
-    lambda_zeta: int
-    num_bits_nuc_pos: int
-    adjoint: bool = False
+    num_bits_p: int
+    eta: int
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("l", bitsize=(self.num_atoms - 1).bit_length())])
+        return Signature(
+            [
+                Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
+                Register("plus", bitsize=1),
+                Register("flag_T", bitsize=1),
+            ]
+        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
-            # Really Er(x), eq 91. In practice we will replace this with the
-            # appropriate qrom call down the line.
-            return {(Toffoli(), int(np.ceil(self.lambda_zeta**0.5)))}
-        else:
-            return {(Toffoli(), self.lambda_zeta)}
+        # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
+        # into an ancilla register ($3(n_{p}-1)$), copying the $r$ and $s$ bit of into an
+        # ancilla ($2(n_{p}-1)$), controlling on both those bit perform phase flip on an
+        # ancilla $|+\rangle$ state. This requires $1$ Toffoli, Then erase which costs
+        # only Cliffords. There is an additional control bit controlling the application
+        # of $T$ thus we come to our total.
+        # Eq 73. page
+        return {(Toffoli(), (5 * (self.num_bits_p - 1) + 2))}
