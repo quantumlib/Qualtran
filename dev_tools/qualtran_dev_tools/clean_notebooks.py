@@ -18,6 +18,9 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import List
 
+import nbformat
+from nbconvert.preprocessors import ClearMetadataPreprocessor
+
 
 def get_nb_rel_paths(rootdir) -> List[Path]:
     """List all checked-in *.ipynb files within `rootdir`."""
@@ -35,24 +38,20 @@ def clean_notebook(nb_path: Path, do_clean: bool = True):
 
     If `do_clean` is true, modify the notebook. Otherwise, just print a diff.
     """
-    jq_code = '\n'.join(
-        [
-            '(.cells[] | select(has("outputs")) | .outputs) = []',
-            '| (.cells[] | select(has("execution_count")) | .execution_count) = null',
-            '| .metadata = {"language_info": {"name":"python", "pygments_lexer": "ipython3"}}',
-        ]
-    )
-    cmd = ['jq', '--indent', '1', jq_code, nb_path]
-    cp = subprocess.run(cmd, capture_output=True, universal_newlines=True, check=True)
+    with nb_path.open() as f:
+        nb = nbformat.read(f, as_version=4)
 
-    with NamedTemporaryFile('w', delete=False) as f:
-        f.write(cp.stdout)
+    pp = ClearMetadataPreprocessor(preserve_cell_metadata_mask={'cq.autogen'})
+    nb, resources = pp.preprocess(nb, resources={})
 
-    cp = subprocess.run(['diff', nb_path, f.name], capture_output=True)
-    dirty = len(cp.stdout) > 0
+    with NamedTemporaryFile('w', delete=not do_clean) as f:
+        nbformat.write(nb, f, version=4)
+
+    res = subprocess.run(['diff', nb_path, f.name], capture_output=True)
+    dirty = len(res.stdout) > 0
     print(str(nb_path))
     if dirty:
-        print(cp.stdout.decode())
+        print(res.stdout.decode())
     if dirty and do_clean:
         os.rename(f.name, nb_path)
 
