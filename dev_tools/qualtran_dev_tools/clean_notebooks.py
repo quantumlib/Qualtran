@@ -13,7 +13,6 @@
 #  limitations under the License.
 import os
 import subprocess
-import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import List
