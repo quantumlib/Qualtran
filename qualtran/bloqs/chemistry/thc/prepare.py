@@ -335,10 +335,10 @@ class PrepareTHC(Bloq):
         less_than = bb.allocate(1)
         keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z))
-        alt_theta, less_than = bb.add(cz, qubits=[alt_theta, less_than])
+        alt_theta, less_than = bb.add(cz, q=[alt_theta, less_than])
         cz = CirqGateAsBloq(cirq.ControlledGate(cirq.Z, control_values=(0,)))
         # negative control on the less_than register
-        less_than, theta = bb.add(cz, qubits=[less_than, theta])
+        less_than, theta = bb.add(cz, q=[less_than, theta])
         less_than, alt_mu, mu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_mu, y=mu)
         less_than, alt_nu, nu = bb.add(CSwapApprox(bitsize=log_mu), ctrl=less_than, x=alt_nu, y=nu)
         keep, sigma, less_than = bb.add(lte_gate, x=keep, y=sigma, target=less_than)

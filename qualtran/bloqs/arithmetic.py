@@ -527,55 +527,198 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         yield cirq.CX(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         num_clifford = (self.bitsize - 2) * 19 + 16
         num_t_gates = 4 * self.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_clifford = (self.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.bitsize - 4
-        return {(TGate(), num_t_gates), (ArbitraryClifford(n=1), num_clifford)}
+        num_toffoli = self.bitsize - 1
+        return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
 
 
 @frozen
-class OutOfPlaceAdder(Bloq):
+class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
     r"""An n-bit addition gate.
 
     Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$
-    using $4n - 4 T$ gates.
+    using $4n - 4 T$ gates. Uncomputation requires 0 T-gates.
 
     Args:
-        bitsize: Number of bits used to represent each integer. Must be large
-            enough to hold the result in the output register of a + b.
+        bitsize: Number of bits used to represent each input integer. The allocated output register
+            is of size `bitsize+1` so it has enough space to hold the sum of `a+b`.
 
     Registers:
      - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input/output register (register b above).
+     - b: A bitsize-sized input register (register b above).
+     - c: A bitize+1-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
     bitsize: int
+    adjoint: bool = False
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, c=self.bitsize)
+        side = Side.LEFT if self.adjoint else Side.RIGHT
+        return Signature(
+            [
+                Register('a', self.bitsize),
+                Register('b', self.bitsize),
+                Register('c', self.bitsize + 1, side=side),
+            ]
+        )
+
+    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        return [2] * self.bitsize, [2] * self.bitsize, [2] * (self.bitsize + 1)
+
+    def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
+        return a, b, c + a + b
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return dict(zip('abc', (a, b, a + b)))
+
+    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
+        raise NotImplementedError("no need to implement with_registers.")
 
     def short_name(self) -> str:
         return "c = a + b"
 
-    def t_complexity(self):
-        # extra bitsize cliffords comes from CNOTs before adding:
-        # yield CNOT.on_each(zip(b, c))
-        # yield Add(a, c)
-        num_clifford = (self.bitsize - 2) * 19 + 16 + self.bitsize
-        num_t_gates = 4 * self.bitsize - 4
-        return TComplexity(t=num_t_gates, clifford=num_clifford)
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        a, b, c = quregs['a'][::-1], quregs['b'][::-1], quregs['c'][::-1]
+        optree = [
+            [
+                [cirq.CX(a[i], b[i]), cirq.CX(a[i], c[i])],
+                And().on(b[i], c[i], c[i + 1]),
+                [cirq.CX(a[i], b[i]), cirq.CX(a[i], c[i + 1]), cirq.CX(b[i], c[i])],
+            ]
+            for i in range(self.bitsize)
+        ]
+        return cirq.inverse(optree) if self.adjoint else optree
+
+    def t_complexity(self) -> TComplexity:
+        and_t = And(adjoint=self.adjoint).t_complexity()
+        num_clifford = self.bitsize * (5 + and_t.clifford)
+        num_t = self.bitsize * and_t.t
+        return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Add(self.bitsize), 1), (ArbitraryClifford(n=2), self.bitsize)}
+        return {
+            (And(adjoint=self.adjoint), self.bitsize),
+            (ArbitraryClifford(n=2), 5 * self.bitsize),
+        }
+
+    def __pow__(self, power: int):
+        if power == 1:
+            return self
+        if power == -1:
+            return OutOfPlaceAdder(self.bitsize, adjoint=not self.adjoint)
+        raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
+
+
+@frozen
+class HammingWeightCompute(GateWithRegisters):
+    r"""A gate to compute the hamming weight of an n-bit register in a new log_{n} bit register.
+
+    Implements $U|x\rangle |0\rangle \rightarrow |x\rangle|\text{hamming\_weight}(x)\rangle$
+    using $\alpha$ Toffoli gates and $\alpha$ ancilla qubits, where
+    $\alpha = n - \text{hamming\_weight}(n)$ for an n-bit input register.
+
+    Args:
+        bitsize: Number of bits in the input register. The allocated output register
+            is of size $\log_2(\text{bitsize})$ so it has enough space to hold the hamming weight
+            of x.
+
+    Registers:
+     - x: A $\text{bitsize}$-sized input register (register x above).
+     - junk: A LEFT/RIGHT ancilla register, depending on whether gate is adjoint or not,
+        of size $\text{bitsize} - \text{hamming\_weight(bitsize)}$.
+     - out: A LEFT/RIGHT output register, depending on whether the gate is adjoint or not,
+        of size $\log_2(\text{bitize})$.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648), Page-4
+    """
+
+    bitsize: int
+    adjoint: bool = False
+
+    @cached_property
+    def signature(self):
+        side = Side.LEFT if self.adjoint else Side.RIGHT
+        return Signature(
+            [
+                Register('x', self.bitsize),
+                Register('junk', self.bitsize - self.bitsize.bit_count(), side=side),
+                Register('out', self.bitsize.bit_length(), side=side),
+            ]
+        )
+
+    def short_name(self) -> str:
+        return "out = x.bit_count()"
+
+    def _three_to_two_adder(self, a, b, c, out) -> cirq.OP_TREE:
+        return [
+            [cirq.CX(a, b), cirq.CX(a, c)],
+            And().on(b, c, out),
+            [cirq.CX(a, b), cirq.CX(a, out), cirq.CX(b, c)],
+        ]
+
+    def _decompose_using_three_to_two_adders(
+        self, x: List[cirq.Qid], junk: List[cirq.Qid], out: List[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        for out_idx in range(len(out)):
+            y = []
+            for in_idx in range(0, len(x) - 2, 2):
+                a, b, c = x[in_idx], x[in_idx + 1], x[in_idx + 2]
+                anc = junk.pop()
+                y.append(anc)
+                yield self._three_to_two_adder(a, b, c, anc)
+            if len(x) % 2 == 1:
+                yield cirq.CNOT(x[-1], out[out_idx])
+            else:
+                anc = junk.pop()
+                yield self._three_to_two_adder(x[-2], x[-1], out[out_idx], anc)
+                y.append(anc)
+            x = [*y]
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        # Qubit order needs to be reversed because the registers store Big Endian representation
+        # of integers.
+        x: List[cirq.Qid] = [*quregs['x'][::-1]]
+        junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
+        out: List[cirq.Qid] = [*quregs['out'][::-1]]
+        optree = self._decompose_using_three_to_two_adders(x, junk, out)
+        return cirq.inverse(optree) if self.adjoint else optree
+
+    def t_complexity(self) -> TComplexity:
+        and_t = And(adjoint=self.adjoint).t_complexity()
+        junk_bitsize = self.bitsize - self.bitsize.bit_count()
+        num_clifford = junk_bitsize * (5 + and_t.clifford) + self.bitsize.bit_count()
+        num_t = junk_bitsize * and_t.t
+        return TComplexity(t=num_t, clifford=num_clifford)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (And(adjoint=self.adjoint), self.bitsize),
+            (ArbitraryClifford(n=2), 5 * self.bitsize),
+        }
+
+    def __pow__(self, power: int):
+        if power == 1:
+            return self
+        if power == -1:
+            return HammingWeightCompute(self.bitsize, adjoint=not self.adjoint)
+        raise NotImplementedError("HammingWeightCompute.__pow__ defined only for +1/-1.")
 
 
 @frozen(auto_attribs=True)
@@ -1142,4 +1285,4 @@ class SignedIntegerToTwosComplement(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
-        return {(TGate(), 4 * (self.bitsize - 2))}
+        return {(Toffoli(), (self.bitsize - 2))}

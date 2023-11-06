@@ -37,24 +37,6 @@ import qualtran.cirq_interop.testing as cq_testing
 # a notebook template.
 
 
-def _make_ApplyGateToLthQubit():
-    from qualtran import Register, SelectionRegister
-    from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit
-
-    def _z_to_odd(n: int):
-        if n % 2 == 1:
-            return cirq.Z
-        return cirq.I
-
-    apply_z_to_odd = ApplyGateToLthQubit(
-        SelectionRegister('selection', 3, 4),
-        nth_gate=_z_to_odd,
-        control_regs=Register('control', 2),
-    )
-
-    return apply_z_to_odd
-
-
 def _make_QROM():
     from qualtran.bloqs.qrom import QROM
 

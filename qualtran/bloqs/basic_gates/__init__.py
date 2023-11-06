@@ -23,7 +23,7 @@ requirements.
 
 from .cnot import CNOT
 from .hadamard import Hadamard
-from .rotation import Rx, Ry, Rz
+from .rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from .swap import CSwap, TwoBitCSwap, TwoBitSwap
 from .t_gate import TGate
 from .toffoli import Toffoli
