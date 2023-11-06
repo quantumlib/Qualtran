@@ -112,6 +112,9 @@ class SelectUVFirstQuantization(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r'SEL UV'
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost_tc = (SignedIntegerToTwosComplement(self.num_bits_p), 6)
         cost_add = (Add(self.num_bits_p + 1), 6)  # + 2?
