@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, List, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -35,7 +35,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirs
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
