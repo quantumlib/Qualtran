@@ -13,13 +13,14 @@
 #  limitations under the License.
 r"""Bloqs for preparation of the U and V parts of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -47,10 +48,11 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
             https://arxiv.org/abs/2105.12767) page 21, Eq 77.
     """
     num_bits_p: int
+    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(mu=self.num_bits_p)
+        return Signature([Register("mu", self.num_bits_p), Register("flag", 1, side=Side.RIGHT)])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Toffoli(), (self.num_bits_p - 1))}
@@ -81,6 +83,7 @@ class PrepareNuSuperPositionState(Bloq):
             https://arxiv.org/abs/2105.12767) page 21, Eq 78.
     """
     num_bits_p: int
+    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -114,7 +117,10 @@ class FlagZeroAsFailure(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("nu", self.num_bits_p + 1, shape=(3,)), Register("flag_minus_zero", 1)]
+            [
+                Register("nu", self.num_bits_p + 1, shape=(3,)),
+                Register("flag_minus_zero", 1, side=Side.RIGHT),
+            ]
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -151,7 +157,7 @@ class TestNuLessThanMu(Bloq):
             [
                 Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("flag_nu_lt_mu", 1),
+                Register("flag_nu_lt_mu", 1, side=Side.RIGHT),
             ]
         )
 
@@ -185,9 +191,9 @@ class TestNuInequality(Bloq):
         mu: the one-hot unary superposition register.
         nu: the momentum transfer register.
         m: the ancilla register in unfiform superposition.
+        flag_mu_prep: A flag checking the success of the $mu$ state prep.
         flag_minus_zero: A flag from checking for negative zero.
-        flag_nu_lt_mu: A flag from checking $\nu \lt 2^{\mu -2}$.
-        flag_ineq: A flag qubit from the inequality test.
+        flag_ineq: A flag from checking $\nu \lt 2^{\mu -2}$.
         succ: a flag bit for failure of the state preparation.
 
     References:
@@ -205,9 +211,9 @@ class TestNuInequality(Bloq):
                 Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
                 Register("m", self.num_bits_m),
-                Register("flag_minus_zero", 1),
-                Register("flag_nu_lt_mu", 1),
-                Register("flag_ineq", 1),
+                Register("flag_minus_zero", 1, side=Side.LEFT),
+                Register("flag_mu_prep", 1, side=Side.LEFT),
+                Register("flag_ineq", 1, side=Side.LEFT),
                 Register("succ", 1),
             ]
         )
@@ -287,6 +293,33 @@ class PrepareNuState(Bloq):
                 Register("flag_nu", bitsize=1),
             ]
         )
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        mu, flag_mu = bb.add(
+            PrepareMuUnaryEncodedOneHot(self.num_bits_p, adjoint=self.adjoint), mu=mu
+        )
+        mu, nu = bb.add(
+            PrepareNuSuperPositionState(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
+        )
+        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint), nu=nu)
+        mu, nu, flag_nu_lt_mu = bb.add(
+            TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
+        )
+        n_m = (self.m_param - 1).bit_length()
+        m = bb.add(PrepareUniformSuperposition(self.m_param), target=m)
+        mu, nu, m, flag_nu = bb.add(
+            TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint),
+            mu=mu,
+            nu=nu,
+            m=m,
+            flag_mu_prep=flag_mu,
+            flag_minus_zero=flag_zero,
+            flag_ineq=flag_nu_lt_mu,
+            succ=flag_nu,
+        )
+        return {'mu': mu, 'nu': nu, 'm': m, 'flag_nu': flag_nu}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1. Prepare unary encoded superposition state (Eq 77)

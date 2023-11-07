@@ -13,12 +13,13 @@
 #  limitations under the License.
 r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -79,7 +80,6 @@ class PrepareTFirstQuantization(Bloq):
         adjoint: whether to dagger the bloq or not.
 
     Registers:
-        plus: A $|+\rangle$ state register.
         w: a register to index one of three components of the momenta.
         r: a register encoding bits for each component of the momenta.
         s: a register encoding bits for each component of the momenta.
@@ -96,7 +96,15 @@ class PrepareTFirstQuantization(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(plus=1, w=2, r=self.num_bits_p - 2, s=self.num_bits_p - 2)
+        return Signature.build(w=2, r=self.num_bits_p, s=self.num_bits_p)
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        w = bb.add(PrepareUniformSuperposition(3), target=w)
+        r = bb.add(PreparePowerTwoState(self.num_bits_p), r=r)
+        s = bb.add(PreparePowerTwoState(self.num_bits_p), r=s)
+        return {'w': w, 'r': r, 's': s}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # there is a cost for the uniform state preparation for the $w$
