@@ -18,14 +18,13 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu impor
     _prep_nu_proj,
     PrepareNuStateWithProj,
 )
-from qualtran.testing import assert_valid_bloq_decomposition
 
 
-def test_prepare(bloq_autotester):
+def test_prepare_num(bloq_autotester):
     bloq_autotester(_prep_nu_proj)
 
 
-def test_prepare(bloq_autotester):
+def test_prepare_mu(bloq_autotester):
     bloq_autotester(_prep_mu_proj)
 
 
