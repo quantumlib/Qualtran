@@ -35,27 +35,33 @@ def test_select(bloq_autotester):
     bloq_autotester(_sel_first_quant)
 
 
-# def test_select_t_costs():
-#     num_bits_p = 6
-#     eta = 10
-#     num_atoms = 10
-#     lambda_zeta = 10
-#     num_bits_nuc_pos = 41
-#     cost = 0
+def test_select_t_costs():
+    num_bits_p = 6
+    num_bits_n = 9
+    eta = 10
+    num_atoms = 10
+    lambda_zeta = 10
+    num_bits_nuc_pos = 41
+    cost = 0
 
-#     sel_first_quant = SelectFirstQuantization(
-#         num_bits_p, eta, num_atoms, lambda_zeta, num_bits_nuc_pos=num_bits_nuc_pos
-#     )
-#     cost += sel_first_quant.call_graph()[1][TGate()]
+    sel_first_quant = SelectFirstQuantizationWithProj(
+        num_bits_p, num_bits_n, eta, num_atoms, lambda_zeta, num_bits_nuc_pos=num_bits_nuc_pos
+    )
+    cost += sel_first_quant.call_graph()[1][TGate()]
 
-#     expected_cost = 7 * (12 * eta * num_bits_p) + 4 * (4 * eta - 8)
-#     expected_cost += 4 * (5 * (num_bits_p - 1) + 2)
-#     expected_cost += 4 * (24 * num_bits_p)
-#     expected_cost += 4 * (
-#         3 * (2 * num_bits_p * num_bits_nuc_pos - num_bits_p * (num_bits_p + 1) - 1)
-#     )
-#     cost += 4 * 6
-#     assert cost == expected_cost
+    # Swaps
+    expected_cost = 7 * (12 * eta * num_bits_p + 6 * num_bits_n) + 4 * (4 * eta - 6)  #
+    # SELT
+    expected_cost += 4 * (5 * (num_bits_n - 1) + 2 + 1)
+    # SELUV
+    expected_cost += 4 * (3 * (num_bits_p - 2) + 3 * (num_bits_n - 2))
+    expected_cost += 4 * (6 * (num_bits_p + 1) + 6 * (num_bits_n + 1))
+    expected_cost += 4 * (3 * num_bits_p + 3 * num_bits_n)
+    expected_cost += 4 * (
+        3 * (2 * num_bits_n * num_bits_nuc_pos - num_bits_n * (num_bits_n + 1) - 1)
+    )
+    cost += 4 * 6
+    assert cost == expected_cost
 
 
 def test_prepare_t_costs():

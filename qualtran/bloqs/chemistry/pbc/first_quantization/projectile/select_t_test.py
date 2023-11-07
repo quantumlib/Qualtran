@@ -12,20 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
-
-
-def _make_select_t():
-    from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
-
-    num_bits_p = 5
-    eta = 10
-
-    return SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_t import (
+    SelectTFirstQuantizationWithProj,
+)
 
 
 def test_select_kinetic_t_counts():
-    num_bits_p = 6
-    sel = SelectTFirstQuantization(num_bits_p, 10)
+    num_bits_n = 6
+    sel = SelectTFirstQuantizationWithProj(num_bits_n, 10)
     _, counts = sel.call_graph()
-    assert counts[TGate()] == 4 * 5 * (num_bits_p - 1) + 4 * 2
+    assert counts[TGate()] // 4 == 5 * (num_bits_n - 1) + 2 + 1

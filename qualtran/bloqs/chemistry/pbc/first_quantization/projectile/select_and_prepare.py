@@ -15,7 +15,8 @@ r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quan
 from functools import cached_property
 from typing import Dict, Set, Tuple, TYPE_CHECKING
 
-from attrs import frozen
+import numpy as np
+from attrs import field, frozen
 
 from qualtran import (
     Bloq,
@@ -27,7 +28,7 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import CSwap, Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
     PrepareTFirstQuantizationWithProj,
 )
@@ -45,6 +46,8 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
     UniformSuperpostionIJFirstQuantization,
 )
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.swap_network import MultiplexedCSwap
+from qualtran.drawing import Circle, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -84,6 +87,76 @@ class PrepareTUVSuperpositions(Bloq):
             return {}
         else:
             return {(Toffoli(), 6 * self.num_bits_t + 2)}
+
+
+@frozen
+class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
+    """Controlled Multiplexed swap network.
+
+    Handles case of 3D registers and padding this register with zeros.
+    """
+
+    num_bits_p: int
+    num_bits_n: int
+    eta: int
+    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
+
+    @cached_property
+    def signature(self) -> Signature:
+        n_eta = (self.eta - 1).bit_length()
+        return Signature(
+            [
+                Register('ctrl', bitsize=1, shape=(len(self.cvs),)),
+                SelectionRegister('sel', bitsize=n_eta, iteration_length=self.eta),
+                Register('targets', bitsize=self.num_bits_p, shape=(self.eta, 3)),
+                Register('junk', bitsize=self.num_bits_n, shape=(3,)),
+            ]
+        )
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'sel':
+            return TextBox('In')
+        elif soq.reg.name == 'targets':
+            return TextBox('×(x)')
+        elif soq.reg.name == 'junk':
+            return TextBox('×(y)')
+        elif soq.reg.name == 'ctrl':
+            (c_idx,) = soq.idx
+            filled = bool(self.cvs[c_idx])
+            return Circle(filled)
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, ctrl: SoquetT, sel: SoquetT, targets: SoquetT, junk: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        flat_sys = self._reshape_reg(bb, targets, (self.eta,), bitsize=3 * self.num_bits_p)
+        # we need to extract first n_p bits of each n_n sized ancilla register (i.e. pad with zeros).
+        # This is not a contiguous chunk of qubits so we need to first flatten,
+        # extract and reshape to swap into these qubits.
+        # (3,), n_n ->  (3, n_n), 1
+        junk = self._reshape_reg(bb, junk, (3, self.num_bits_n), bitsize=1)
+        elec_reg = []
+        # (3,n_n), 1 ->  (3,), n_p
+        for xyz in range(3):
+            elec_reg.append(bb.join(junk[xyz][: self.num_bits_p]))
+        # (3,), n_p ->  (,), 3 * n_p
+        flat_p = self._reshape_reg(bb, np.array(elec_reg), (), bitsize=3 * self.num_bits_p)
+        ctrl, sel, flat_sys, flat_p = bb.add(
+            MultiplexedCSwap(
+                self.signature.get_left('sel'),
+                target_bitsize=3 * self.num_bits_p,
+                control_regs=self.signature.get_left('ctrl'),
+            ),
+            ctrl=ctrl,
+            sel=sel,
+            targets=flat_sys,
+            output=flat_p,
+        )
+        elec_reg = self._reshape_reg(bb, flat_p, (3,), bitsize=self.num_bits_p)
+        for xyz in range(3):
+            junk[xyz, : self.num_bits_p] = bb.split(elec_reg[xyz])
+        targets = self._reshape_reg(bb, flat_sys, (self.eta, 3), bitsize=self.num_bits_p)
+        junk = self._reshape_reg(bb, junk, (3,), bitsize=self.num_bits_n)
+        return {'ctrl': ctrl, 'sel': sel, 'targets': targets, 'junk': junk}
 
 
 @frozen
@@ -214,7 +287,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             i=i,
             j=j,
         )
-        # # |+>
+        # |+>
         # plus_t = bb.add(Hadamard(), q=plus_t)
         w, w_mean, r, s = bb.add(
             PrepareTFirstQuantizationWithProj(
@@ -312,6 +385,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     """
 
     num_bits_p: int
+    num_bits_n: int
     eta: int
     num_atoms: int
     lambda_zeta: int
@@ -324,16 +398,15 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("tuv", bitsize=1),
-            Register("uv", bitsize=1),
-            Register("t_mean", bitsize=1),
+            # flags for which component of Hamiltonian to apply.
+            Register("ham_ctrl", bitsize=1, shape=(4,)),
             Register("i_ne_j", bitsize=1),
             Register("plus_t", bitsize=1),
         )
 
     @cached_property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        n_nu = self.num_bits_p + 1
+        n_nu = self.num_bits_n + 1
         n_eta = (self.eta - 1).bit_length()
         n_at = (self.num_atoms - 1).bit_length()
         n_m = (self.m_param - 1).bit_length()
@@ -341,9 +414,10 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             SelectionRegister('i', bitsize=n_eta, iteration_length=self.eta),
             SelectionRegister('j', bitsize=n_eta, iteration_length=self.eta),
             SelectionRegister("w", bitsize=3),
-            SelectionRegister("r", bitsize=self.num_bits_p),
-            SelectionRegister("s", bitsize=self.num_bits_p),
-            SelectionRegister("mu", bitsize=self.num_bits_p),
+            SelectionRegister("w_mean", bitsize=3),
+            SelectionRegister("r", bitsize=self.num_bits_n),
+            SelectionRegister("s", bitsize=self.num_bits_n),
+            SelectionRegister("mu", bitsize=self.num_bits_n),
             SelectionRegister("nu_x", bitsize=n_nu),
             SelectionRegister("nu_y", bitsize=n_nu),
             SelectionRegister("nu_z", bitsize=n_nu),
@@ -370,14 +444,13 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     def build_composite_bloq(
         self,
         bb: BloqBuilder,
-        tuv: SoquetT,
-        uv: SoquetT,
-        t_mean: SoquetT,
+        ham_ctrl: SoquetT,
         i_ne_j: SoquetT,
         plus_t: SoquetT,
         i: SoquetT,
         j: SoquetT,
         w: SoquetT,
+        w_mean: SoquetT,
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
@@ -387,21 +460,36 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         m: SoquetT,
         l: SoquetT,
         sys: SoquetT,
+        proj: SoquetT,
     ) -> Dict[str, 'SoquetT']:
-        # ancilla for swaps from electronic system registers.
+        # ancilla for swaps from electronic and projectile system registers.
         # we assume these are left in a clean state after SELECT operations
-        # We only need one of the ancilla to be of the size of the projectile's register.
+        # We only need one of the ancilla registers to be of the size of the projectile's register.
         p = [bb.allocate(self.num_bits_n) for _ in range(3)]
         q = [bb.allocate(self.num_bits_p) for _ in range(3)]
         rl = bb.allocate(self.num_bits_nuc_pos)
-        i, sys, p = bb.add(
-            MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=i, targets=sys, junk=p
+        # flags for selecting different components of the Hamiltonian.
+        # TODO: this is not a complete picture.
+        tuv, uv, t_mean, h_proj = ham_ctrl
+        # negative control on h_proj control (i.e. swap electronic registers if h_proj is off.)
+        [h_proj], i, sys, p = bb.add(
+            ControlledMultiplexedCSwap3D(self.num_bits_p, self.num_bits_n, self.eta, cvs=(0,)),
+            ctrl=[h_proj],
+            sel=i,
+            targets=sys,
+            junk=p,
         )
+        # swap projectile register if h_proj is on
+        for xyz in range(3):
+            h_proj, proj[xyz], p[xyz] = bb.add(
+                CSwap(self.num_bits_n), ctrl=h_proj, x=proj[xyz], y=p[xyz]
+            )
+        # Always swap electron j to ancilla
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
         tuv, t_mean, plus_t, w, w_mean, r, s, p = bb.add(
-            SelectTFirstQuantizationWithProj(self.num_bits_p, self.eta),
+            SelectTFirstQuantizationWithProj(self.num_bits_n, self.eta),
             flag_T=tuv,
             flag_mean=t_mean,
             plus=plus_t,
@@ -413,7 +501,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         )
         tuv, uv, l, rl, [nu_x, nu_y, nu_z], p, q = bb.add(
             SelectUVFirstQuantizationWithProj(
-                self.num_bits_p, self.eta, self.num_atoms, self.num_bits_nuc_pos
+                self.num_bits_p, self.num_bits_n, self.eta, self.num_atoms, self.num_bits_nuc_pos
             ),
             flag_tuv=tuv,
             flag_uv=uv,
@@ -423,23 +511,32 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             p=p,
             q=q,
         )
-        i, sys, p = bb.add(
-            MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=i, targets=sys, junk=p
+        [h_proj], i, sys, p = bb.add(
+            ControlledMultiplexedCSwap3D(self.num_bits_p, self.num_bits_p, self.eta, cvs=(0,)),
+            ctrl=[h_proj],
+            sel=i,
+            targets=sys,
+            junk=p,
         )
+        for xyz in range(3):
+            h_proj, proj[xyz], p[xyz] = bb.add(
+                CSwap(self.num_bits_n), ctrl=h_proj, x=proj[xyz], y=p[xyz]
+            )
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
         _ = [bb.free(pi) for pi in p]
         _ = [bb.free(qi) for qi in q]
+        ham_ctrl = [tuv, uv, t_mean, h_proj]
         bb.free(rl)
         return {
-            'tuv': tuv,
-            'uv': uv,
-            'plus_t': plus_t,
+            'ham_ctrl': ham_ctrl,
             'i_ne_j': i_ne_j,
+            'plus_t': plus_t,
             'i': i,
             'j': j,
             'w': w,
+            'w_mean': w_mean,
             'r': r,
             's': s,
             'mu': mu,
@@ -449,6 +546,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             'm': m,
             'l': l,
             'sys': sys,
+            'proj': proj,
         }
 
 

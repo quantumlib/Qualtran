@@ -15,9 +15,9 @@
 import pytest
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t_proj import (
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
     PreparePowerTwoStateWithProj,
-    PrepareTProjFirstQuantization,
+    PrepareTFirstQuantizationWithProj,
 )
 
 
@@ -28,10 +28,10 @@ def test_prepare_kinetic_t_proj_counts():
     b_r = 8
     expected_cost = 2 * (2 * num_bits_n + 9) + 2 * (num_bits_n - num_bits_p) + 20
     qual_cost = 0
-    prep = PrepareTProjFirstQuantization(num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r)
+    prep = PrepareTFirstQuantizationWithProj(num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r)
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
-    prep = PrepareTProjFirstQuantization(
+    prep = PrepareTFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r, adjoint=True
     )
     _, counts = prep.call_graph()

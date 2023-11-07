@@ -13,7 +13,9 @@
 #  limitations under the License.
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu_proj import PrepareNuStateWithProj
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
+    PrepareNuStateWithProj,
+)
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
