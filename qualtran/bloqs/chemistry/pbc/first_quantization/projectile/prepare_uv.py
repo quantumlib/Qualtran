@@ -18,7 +18,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, Register, Signature, SoquetT
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
     PrepareNuStateWithProj,
@@ -83,7 +83,9 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
         mu, nu, m, flag_nu = bb.add(
-            PrepareNuStateWithProj(self.num_bits_p, self.m_param, adjoint=self.adjoint),
+            PrepareNuStateWithProj(
+                self.num_bits_p, self.num_bits_n, self.m_param, adjoint=self.adjoint
+            ),
             mu=mu,
             nu=nu,
             m=m,
@@ -114,3 +116,19 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
                 1,
             ),
         }
+
+
+@bloq_example
+def _prep_uv_proj() -> PrepareUVFirstQuantizationWithProj:
+    num_bits_p = 6
+    num_bits_n = 9
+    eta = 10
+    num_atoms = 10
+    lambda_zeta = 10
+    lambda_zeta = 10
+    num_bits_nuc_pos = 8
+    m_param = 2**19
+    prep_uv_proj = PrepareUVFirstQuantizationWithProj(
+        num_bits_p, num_bits_n, eta, num_atoms, m_param, lambda_zeta, num_bits_nuc_pos
+    )
+    return prep_uv_proj

@@ -16,8 +16,13 @@ import numpy as np
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import (
+    _prep_uv_proj,
     PrepareUVFirstQuantizationWithProj,
 )
+
+
+def test_prep_uv_proj(bloq_autotester):
+    bloq_autotester(_prep_uv_proj)
 
 
 def test_prepare_uv_t_counts():
