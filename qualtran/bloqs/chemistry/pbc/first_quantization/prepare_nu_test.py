@@ -14,6 +14,16 @@
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import PrepareNuState
+from qualtran.testing import assert_valid_bloq_decomposition
+
+
+def test_prepare_nu():
+    num_bits_p = 6
+    m_param = 2 ** (2 * num_bits_p + 3)
+    prep = PrepareNuState(num_bits_p, m_param)
+    assert_valid_bloq_decomposition(prep)
+    prep = PrepareNuState(num_bits_p, m_param, adjoint=True)
+    assert_valid_bloq_decomposition(prep)
 
 
 def test_prepare_nu_t_counts():
