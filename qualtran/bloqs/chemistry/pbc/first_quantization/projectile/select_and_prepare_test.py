@@ -21,10 +21,11 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepa
     PrepareFirstQuantizationWithProj,
     SelectFirstQuantizationWithProj,
 )
-from qualtran.testing import execute_notebook
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
-# def test_notebook():
-#     execute_notebook('first_quantization')
+
+def test_notebook():
+    execute_notebook('projectile')
 
 
 def test_prepare(bloq_autotester):
@@ -47,6 +48,7 @@ def test_select_t_costs():
     sel_first_quant = SelectFirstQuantizationWithProj(
         num_bits_p, num_bits_n, eta, num_atoms, lambda_zeta, num_bits_nuc_pos=num_bits_nuc_pos
     )
+    assert_valid_bloq_decomposition(sel_first_quant)
     cost += sel_first_quant.call_graph()[1][TGate()]
 
     # Swaps

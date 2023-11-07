@@ -61,7 +61,7 @@ class SelectUVFirstQuantizationWithProj(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        n_nu = self.num_bits_p + 1
+        n_nu = self.num_bits_n + 1
         return Signature(
             [
                 Register("flag_tuv", bitsize=1),

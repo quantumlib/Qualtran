@@ -512,7 +512,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             q=q,
         )
         [h_proj], i, sys, p = bb.add(
-            ControlledMultiplexedCSwap3D(self.num_bits_p, self.num_bits_p, self.eta, cvs=(0,)),
+            ControlledMultiplexedCSwap3D(self.num_bits_p, self.num_bits_n, self.eta, cvs=(0,)),
             ctrl=[h_proj],
             sel=i,
             targets=sys,
@@ -580,12 +580,12 @@ def _sel_first_quant() -> SelectFirstQuantizationWithProj:
 
 _FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC = BloqDocSpec(
     bloq_cls=PrepareFirstQuantizationWithProj,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import FirstQuantizedPrepare',
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import PrepareFirstQuantizationWithProj',
     examples=(_prep_first_quant,),
 )
 
-_FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC = BloqDocSpec(
+_FIRST_QUANTIZED_WITH_PROJ_SELECT_DOC = BloqDocSpec(
     bloq_cls=SelectFirstQuantizationWithProj,
-    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import FirstQuantizedSelect',
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.projectile import SelectFirstQuantizationWithProj',
     examples=(_sel_first_quant,),
 )
