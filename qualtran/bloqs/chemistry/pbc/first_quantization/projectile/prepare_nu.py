@@ -17,7 +17,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
     FlagZeroAsFailure,
@@ -174,3 +174,20 @@ class PrepareNuStateWithProj(Bloq):
         # 6. Test that $(2^{\mu-2})^2\mathcal{M} > m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
         cost_6 = (TestNuInequality(self.num_bits_n, n_m, adjoint=self.adjoint), 1)
         return {cost_1, cost_2, cost_3, cost_4, cost_6}
+
+
+@bloq_example
+def _prep_mu_proj() -> PrepareMuUnaryEncodedOneHotWithProj:
+    num_bits_p = 6
+    num_bits_n = 8
+    prep_mu_proj = PrepareMuUnaryEncodedOneHotWithProj(num_bits_n, num_bits_p)
+    return prep_mu_proj
+
+
+@bloq_example
+def _prep_nu_proj() -> PrepareNuStateWithProj:
+    num_bits_p = 6
+    num_bits_n = 8
+    m_param = 2 ** (2 * num_bits_n + 3)
+    prep_nu_proj = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param)
+    return prep_nu_proj

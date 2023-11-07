@@ -14,19 +14,19 @@
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
+    _prep_mu_proj,
+    _prep_nu_proj,
     PrepareNuStateWithProj,
 )
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-def test_prepare_nu_proj():
-    num_bits_p = 6
-    num_bits_n = 8
-    m_param = 2 ** (2 * num_bits_n + 3)
-    prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param)
-    assert_valid_bloq_decomposition(prep)
-    prep = PrepareNuStateWithProj(num_bits_p, num_bits_n, m_param, adjoint=True)
-    assert_valid_bloq_decomposition(prep)
+def test_prepare(bloq_autotester):
+    bloq_autotester(_prep_nu_proj)
+
+
+def test_prepare(bloq_autotester):
+    bloq_autotester(_prep_mu_proj)
 
 
 def test_prepare_nu_with_proj_t_counts():
@@ -52,5 +52,4 @@ def test_prepare_nu_with_proj_t_counts():
     qual_cost += counts[TGate()]
     qual_cost //= 4
     comp_diff = 1
-    print(expected_cost, num_bits_p, num_bits_n, num_bits_m)
     assert qual_cost == expected_cost - comp_diff
