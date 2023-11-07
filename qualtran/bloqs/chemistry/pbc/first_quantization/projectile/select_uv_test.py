@@ -13,8 +13,13 @@
 #  limitations under the License.
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_uv import (
+    _sel_uv_proj,
     SelectUVFirstQuantizationWithProj,
 )
+
+
+def test_sel_uv_proj(bloq_autotester):
+    bloq_autotester(_sel_uv_proj)
 
 
 def test_select_uv_t_counts():

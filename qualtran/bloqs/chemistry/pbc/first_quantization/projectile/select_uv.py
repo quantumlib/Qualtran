@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import ApplyNuclearPhase
@@ -103,3 +103,16 @@ class SelectUVFirstQuantizationWithProj(Bloq):
             cost_inv_tc_n,
             cost_phase,
         }
+
+
+@bloq_example
+def _sel_uv_proj() -> SelectUVFirstQuantizationWithProj:
+    num_bits_n = 8
+    num_bits_p = 6
+    num_atoms = 8
+    eta = 32
+    num_bits_nuc_pos = 32
+    sel_uv_proj = SelectUVFirstQuantizationWithProj(
+        num_bits_p, num_bits_n, eta, num_atoms, num_bits_nuc_pos
+    )
+    return sel_uv_proj
