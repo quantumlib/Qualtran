@@ -13,8 +13,13 @@
 #  limitations under the License.
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_t import (
+    _sel_t_proj,
     SelectTFirstQuantizationWithProj,
 )
+
+
+def test_sel_t_proj(bloq_autotester):
+    bloq_autotester(_sel_t_proj)
 
 
 def test_select_kinetic_t_counts():

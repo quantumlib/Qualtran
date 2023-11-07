@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -77,3 +77,11 @@ class SelectTFirstQuantizationWithProj(Bloq):
         # The + 1 is from an additional Toffoli for the selection between the
         # square and the product of the momentum offset of the projectile.
         return {(Toffoli(), (5 * (self.num_bits_n - 1) + 2 + 1))}
+
+
+@bloq_example
+def _sel_t_proj() -> SelectTFirstQuantizationWithProj:
+    num_bits_n = 8
+    eta = 32
+    sel_t_proj = SelectTFirstQuantizationWithProj(num_bits_n, eta)
+    return sel_t_proj
