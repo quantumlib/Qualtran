@@ -17,6 +17,23 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
     UniformSuperpostionIJFirstQuantization,
 )
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
+from qualtran.testing import assert_valid_bloq_decomposition
+
+
+def _make_prepare_t():
+    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareTFirstQuantization
+
+    num_bits_p = 5
+    eta = 10
+
+    return PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+
+
+def test_prepare_t():
+    num_bits_p = 6
+    eta = 10
+    prep = PrepareTFirstQuantization(num_bits_p, eta)
+    assert_valid_bloq_decomposition(prep)
 
 
 def _make_prepare_t():

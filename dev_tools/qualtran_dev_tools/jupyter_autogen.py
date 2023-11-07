@@ -188,7 +188,7 @@ def _get_lines_for_constructing_an_object(func: Callable):
 
 _IMPORTS = """\
 from qualtran import Bloq, CompositeBloq, BloqBuilder, Signature, Register
-from qualtran.drawing import show_bloq
+from qualtran.drawing import show_bloq, show_call_graph, show_counts_sigma
 from typing import *
 import numpy as np
 import cirq\
