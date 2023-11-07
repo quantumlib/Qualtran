@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -25,6 +25,7 @@ from qualtran import (
     BloqDocSpec,
     Register,
     SelectionRegister,
+    Side,
     Signature,
     SoquetT,
 )
@@ -61,8 +62,12 @@ class PrepareTUVSuperpositions(Bloq):
         adjoint: whether to dagger the bloq or not.
 
     Registers:
-        tuv: a single qubit rotated to appropriately weight T and U or V.
-        uv: a single qubit rotated to appropriately weight U or V.
+        tuv: Register to prepare to select between T or UV.
+        tepm: Register to prepare to select between (e)lectron, (p)rojectile, or (m)ean terms.
+        uv: Register to prepare to select between coulombic terms.
+        flags: Flag register signalling which of the terms to apply. This is not
+            a complete picture and we only produce 4 flag qubits to flag
+            kinetic, kinetic (mean-projectile), UV, and projectile only.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
@@ -76,7 +81,16 @@ class PrepareTUVSuperpositions(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(tuv=1, uv=1)
+        return Signature(
+            [
+                Register('tuv', bitsize=1),
+                Register('tepm', bitsize=2),
+                Register('uv', bitsize=2),
+                Register(
+                    'flags', bitsize=1, shape=(4,), side=Side.LEFT if self.adjoint else Side.RIGHT
+                ),
+            ]
+        )
 
     def short_name(self) -> str:
         return 'PREP TUV'
@@ -180,9 +194,10 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         adjoint: Whether to dagger the bloq or not.
 
     Registers:
-        tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
-        uv: Flag register for selecting between the different potential
-            components of the Hamiltonian.
+        tuv: Register for preparing superposition for selecting between kinetic
+            and potential terms in the Hamiltonian.
+        tepm: Register to prepare to select between (e)lectron, (p)rojectile, or (m)ean terms.
+        uv: Register to prepare to select between coulombic terms.
         i: A register for selecting electronic registers.
         j: A register for selecting electronic registers.
         w: A register for selecting x, y and z components of the momentum register.
@@ -196,6 +211,9 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         nu_z: z component of the momentum register for Coulomb potential.
         m: an ancilla register in a uniform superposition.
         l: The register for selecting the nuclei.
+        succ_nu: A flag to indiciate the success of the $\nu$ state preparation.
+        plus_t: A flag qubit prepared in the $|+\rangle$ state.
+        flags: A 4 qubit flag register indicating which component of the Hamiltonian to apply.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
@@ -227,7 +245,8 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         # l: should not be reflected on.
         return (
             SelectionRegister('tuv', bitsize=1, iteration_length=2),
-            SelectionRegister('uv', bitsize=1, iteration_length=2),
+            SelectionRegister('tepm', bitsize=2, iteration_length=3),
+            SelectionRegister('uv', bitsize=2, iteration_length=4),
             SelectionRegister('i', bitsize=n_eta, iteration_length=self.eta),
             SelectionRegister('j', bitsize=n_eta, iteration_length=self.eta),
             SelectionRegister("w", iteration_length=3, bitsize=2),
@@ -244,7 +263,12 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (Register("succ_nu", bitsize=1), Register("plus_t", bitsize=1))
+        left_right = Side.LEFT if self.adjoint else Side.RIGHT
+        return (
+            Register("succ_nu", bitsize=1),
+            Register("plus_t", bitsize=1),
+            Register('flags', bitsize=1, shape=(4,), side=left_right),
+        )
 
     def short_name(self) -> str:
         return r'PREP'
@@ -253,6 +277,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         self,
         bb: BloqBuilder,
         tuv: SoquetT,
+        tepm: SoquetT,
         uv: SoquetT,
         plus_t: SoquetT,
         i: SoquetT,
@@ -268,18 +293,15 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         m: SoquetT,
         succ_nu: SoquetT,
         l: SoquetT,
+        flags: Optional[SoquetT] = None,
     ) -> Dict[str, 'SoquetT']:
-        tuv, uv = bb.add(
-            PrepareTUVSuperpositions(
-                self.num_bits_t,
-                self.eta,
-                self.lambda_zeta,
-                self.num_bits_rot_aa,
-                adjoint=self.adjoint,
-            ),
-            tuv=tuv,
-            uv=uv,
+        prep_tuv = PrepareTUVSuperpositions(
+            self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa, adjoint=self.adjoint
         )
+        if self.adjoint:
+            tuv, tepm, uv = bb.add(prep_tuv, tuv=tuv, tepm=tepm, uv=uv, flags=flags)
+        else:
+            tuv, tepm, uv, flags = bb.add(prep_tuv, tuv=tuv, tepm=tepm, uv=uv)
         i, j = bb.add(
             UniformSuperpostionIJFirstQuantization(
                 self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
@@ -319,8 +341,9 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             l=l,
             flag_nu=succ_nu,
         )
-        return {
+        out_flags = {
             'tuv': tuv,
+            'tepm': tepm,
             'uv': uv,
             'plus_t': plus_t,
             'i': i,
@@ -337,6 +360,9 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             'l': l,
             'succ_nu': succ_nu,
         }
+        if not self.adjoint:
+            out_flags['flags'] = flags
+        return out_flags
 
 
 @frozen
@@ -358,9 +384,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         adjoint: Whether to dagger the bloq or not.
 
     Registers:
-        tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
-        uv: Flag register for selecting between the different potential
-            components of the Hamiltonian.
+        ham_ctrl: Control bits flagging which component of the Hamiltonian to apply.
         i_ne_j: Register flagging $i \ne j$
         plus_t: A register prepared in the $|+\rangle$ state.
         i: A register for selecting electronic registers.
@@ -377,7 +401,9 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         m: an ancilla register in a uniform superposition.
         l: The register for selecting the nuclei.
         sys: The system register. Will store $\eta$ registers (x, y and z)
-            compents of size num_bits_p.
+            components of size num_bits_p.
+        proj: The system register. Will store a single register (x, y and z)
+            components of size num_bits_n.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
@@ -469,29 +495,29 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         q = [bb.allocate(self.num_bits_p) for _ in range(3)]
         rl = bb.allocate(self.num_bits_nuc_pos)
         # flags for selecting different components of the Hamiltonian.
-        # TODO: this is not a complete picture.
-        tuv, uv, t_mean, h_proj = ham_ctrl
+        # TODO: This is not very pretty, maybe just add as we need
+        flag_t, flag_t_mean, flag_uv, flag_proj = ham_ctrl
         # negative control on h_proj control (i.e. swap electronic registers if h_proj is off.)
-        [h_proj], i, sys, p = bb.add(
+        [flag_proj], i, sys, p = bb.add(
             ControlledMultiplexedCSwap3D(self.num_bits_p, self.num_bits_n, self.eta, cvs=(0,)),
-            ctrl=[h_proj],
+            ctrl=[flag_proj],
             sel=i,
             targets=sys,
             junk=p,
         )
         # swap projectile register if h_proj is on
         for xyz in range(3):
-            h_proj, proj[xyz], p[xyz] = bb.add(
-                CSwap(self.num_bits_n), ctrl=h_proj, x=proj[xyz], y=p[xyz]
+            flag_proj, proj[xyz], p[xyz] = bb.add(
+                CSwap(self.num_bits_n), ctrl=flag_proj, x=proj[xyz], y=p[xyz]
             )
         # Always swap electron j to ancilla
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
-        tuv, t_mean, plus_t, w, w_mean, r, s, p = bb.add(
+        flag_t, flag_t_mean, plus_t, w, w_mean, r, s, p = bb.add(
             SelectTFirstQuantizationWithProj(self.num_bits_n, self.eta),
-            flag_T=tuv,
-            flag_mean=t_mean,
+            flag_T=flag_t,
+            flag_mean=flag_t_mean,
             plus=plus_t,
             w=w,
             w_mean=w_mean,
@@ -499,35 +525,35 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             s=s,
             p=p,
         )
-        tuv, uv, l, rl, [nu_x, nu_y, nu_z], p, q = bb.add(
+        flag_t, flag_uv, l, rl, [nu_x, nu_y, nu_z], p, q = bb.add(
             SelectUVFirstQuantizationWithProj(
                 self.num_bits_p, self.num_bits_n, self.eta, self.num_atoms, self.num_bits_nuc_pos
             ),
-            flag_tuv=tuv,
-            flag_uv=uv,
+            flag_tuv=flag_t,
+            flag_uv=flag_uv,
             l=l,
             rl=rl,
             nu=[nu_x, nu_y, nu_z],
             p=p,
             q=q,
         )
-        [h_proj], i, sys, p = bb.add(
+        [flag_proj], i, sys, p = bb.add(
             ControlledMultiplexedCSwap3D(self.num_bits_p, self.num_bits_n, self.eta, cvs=(0,)),
-            ctrl=[h_proj],
+            ctrl=[flag_proj],
             sel=i,
             targets=sys,
             junk=p,
         )
         for xyz in range(3):
-            h_proj, proj[xyz], p[xyz] = bb.add(
-                CSwap(self.num_bits_n), ctrl=h_proj, x=proj[xyz], y=p[xyz]
+            flag_proj, proj[xyz], p[xyz] = bb.add(
+                CSwap(self.num_bits_n), ctrl=flag_proj, x=proj[xyz], y=p[xyz]
             )
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
         _ = [bb.free(pi) for pi in p]
         _ = [bb.free(qi) for qi in q]
-        ham_ctrl = [tuv, uv, t_mean, h_proj]
+        ham_ctrl[:] = flag_t, flag_t_mean, flag_uv, flag_proj
         bb.free(rl)
         return {
             'ham_ctrl': ham_ctrl,
