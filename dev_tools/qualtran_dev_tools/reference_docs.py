@@ -224,7 +224,7 @@ tensorflow_docs.api_generator.parser.TABLE_TEMPLATE = MY_TABLE_TEMPLATE
 tensorflow_docs.api_generator.parser.ITEMS_TEMPLATE = MyItemTemplate
 
 
-def generate_ref_docs():
+def generate_ref_docs(reporoot: Path):
     """Use `tensorflow_docs` to generate markdown reference docs."""
 
     # Important: we currently do not import submodules in our module's `__init__` methods,
@@ -238,7 +238,6 @@ def generate_ref_docs():
     # prevent unused warnings:
     assert [drawing, resource_counting, cirq_interop, quimb_sim, classical_sim]
 
-    reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
     doc_generator = DocGenerator(
         root_title="Qualtran",
@@ -328,14 +327,23 @@ def fixup_all_symbols_page(path: Path) -> bool:
     return False
 
 
-def apply_fixups():
+def remove_extra_files(output_dir: Path):
+    """Remove metadata files that we don't use."""
+    (output_dir / 'qualtran/_toc.yaml').unlink(missing_ok=True)
+    (output_dir / 'qualtran/_redirects.yaml').unlink(missing_ok=True)
+    (output_dir / 'qualtran/_api_cache.json').unlink(missing_ok=True)
+    (output_dir / 'qualtran/api_report.pb').unlink(missing_ok=True)
+
+
+def apply_fixups(reporoot: Path):
     """For each generated markdown file, apply fixups.
 
     - `fixup_all_symbols_page`
     - `fixup_suffix`
     """
-    reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
+    remove_extra_files(output_dir)
+
     page_paths = output_dir.glob('qualtran/**/*.md')
     for path in page_paths:
         if fixup_all_symbols_page(path):
@@ -350,9 +358,8 @@ def apply_fixups():
             f.write(content)
 
 
-def generate_ref_toc():
+def generate_ref_toc(reporoot: Path):
     """Generate a sphinx-style table of contents (TOC) from generated markdown files."""
-    reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
     page_paths = output_dir.glob('qualtran/**/*.md')
 
@@ -366,6 +373,7 @@ def generate_ref_toc():
 
 
 def build_reference_docs():
-    generate_ref_docs()
-    apply_fixups()
-    generate_ref_toc()
+    reporoot = get_git_root()
+    generate_ref_docs(reporoot)
+    apply_fixups(reporoot)
+    generate_ref_toc(reporoot)

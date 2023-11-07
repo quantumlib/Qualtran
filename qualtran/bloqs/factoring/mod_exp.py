@@ -131,7 +131,7 @@ def _modexp_small() -> ModExp:
 
 @bloq_example
 def _modexp() -> ModExp:
-    modexp = ModExp(base=3, mod=15, exp_bitsize=8, x_bitsize=2048)
+    modexp = ModExp.make_for_shor(big_n=15 * 17, g=9)
     return modexp
 
 
@@ -139,13 +139,13 @@ def _modexp() -> ModExp:
 def _modexp_symb() -> ModExp:
     import sympy
 
-    g, N = sympy.symbols('g N')
-    modexp_symb = ModExp.make_for_shor(big_n=N, g=g)
+    g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
+    modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     return modexp_symb
 
 
 _MODEXP_DOC = BloqDocSpec(
     bloq_cls=ModExp,
     import_line='from qualtran.bloqs.factoring.mod_exp import ModExp',
-    examples=(_modexp_small, _modexp, _modexp_symb),
+    examples=(_modexp_symb, _modexp_small, _modexp),
 )
