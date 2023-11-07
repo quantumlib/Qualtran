@@ -110,6 +110,6 @@ def test_prepare_t_costs():
     expected_cost += (
         2 * 4 * (num_bits_n - 1) + (num_bits_n - num_bits_p - 1) + 6 * num_bits_n + 2 + 2
     )  # C4
-    cost += 1  # comparator off by one
     expected_cost += lambda_zeta + int(np.ceil(lambda_zeta**0.5))
+    cost += 1  # comparator off by one
     assert cost == expected_cost

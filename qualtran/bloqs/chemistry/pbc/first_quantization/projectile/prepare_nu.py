@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""Bloqs for preparation of the U and V parts of the first quantized chemistry Hamiltonian."""
+r"""Bloqs for preparing the $\nu$ state for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
@@ -92,6 +92,8 @@ class PrepareNuStateWithProj(Bloq):
 
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
+        num_bits_n: The number of bits to represent each dimension of the
+            momentum for the projectile.
         m_param: $\mathcal{M}$ in the reference.
         lambda_zeta: sum of nuclear charges.
         er_lambda_zeta: eq 91 of the referce. Cost of erasing qrom.

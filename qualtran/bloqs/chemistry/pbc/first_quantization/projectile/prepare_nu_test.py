@@ -52,4 +52,5 @@ def test_prepare_nu_with_proj_t_counts():
     qual_cost += counts[TGate()]
     qual_cost //= 4
     comp_diff = 1
+    print(expected_cost, num_bits_p, num_bits_n, num_bits_m)
     assert qual_cost == expected_cost - comp_diff
