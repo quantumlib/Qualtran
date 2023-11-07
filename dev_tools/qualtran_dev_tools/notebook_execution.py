@@ -141,7 +141,7 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
     linkify(nb)
 
     # Run it
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3", record_timing=False)
     try:
         nb, resources = ep.preprocess(nb)
     except Exception as e:

@@ -29,6 +29,7 @@ from qualtran.bloqs.swap_network import (
     _approx_cswap_small,
     _approx_cswap_symb,
     _multiplexed_cswap,
+    _swz,
     _swz_small,
     CSwapApprox,
     MultiplexedCSwap,
@@ -281,6 +282,10 @@ def test_approx_cswap_large(bloq_autotester):
 
 def test_swz_small(bloq_autotester):
     bloq_autotester(_swz_small)
+
+
+def test_swz(bloq_autotester):
+    bloq_autotester(_swz)
 
 
 def test_notebook():

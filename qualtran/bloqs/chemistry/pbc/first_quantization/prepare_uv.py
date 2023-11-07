@@ -13,11 +13,11 @@
 #  limitations under the License.
 r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import PrepareNuState
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
 
@@ -61,15 +61,34 @@ class PrepareUVFistQuantization(Bloq):
         # this is for the nu register which lives on a grid of twice the size
         # the nu grid is twice as large, so one more bit is needed
         n_m = (self.m_param - 1).bit_length()
+        n_atom = (self.num_atoms - 1).bit_length()
         return Signature(
             [
                 Register("mu", bitsize=self.num_bits_p),
                 Register("nu", bitsize=self.num_bits_p + 1, shape=(3,)),
                 Register("m", bitsize=n_m),
-                Register("l", bitsize=self.num_bits_nuc_pos),
+                Register("l", bitsize=n_atom),
                 Register("flag_nu", bitsize=1),
             ]
         )
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+        mu, nu, m, flag_nu = bb.add(
+            PrepareNuState(self.num_bits_p, self.m_param, adjoint=self.adjoint),
+            mu=mu,
+            nu=nu,
+            m=m,
+            flag_nu=flag_nu,
+        )
+        l = bb.add(
+            PrepareZetaState(
+                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, adjoint=self.adjoint
+            ),
+            l=l,
+        )
+        return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'flag_nu': flag_nu}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1. Prepare the nu state
