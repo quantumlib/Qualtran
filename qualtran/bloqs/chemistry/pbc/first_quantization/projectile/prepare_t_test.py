@@ -16,9 +16,19 @@ import pytest
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_t import (
+    _prep_power_two_proj,
+    _prep_t_proj,
     PreparePowerTwoStateWithProj,
     PrepareTFirstQuantizationWithProj,
 )
+
+
+def test_prep_t_proj(bloq_autotester):
+    bloq_autotester(_prep_t_proj)
+
+
+def test_prep_power_two_proj(bloq_autotester):
+    bloq_autotester(_prep_power_two_proj)
 
 
 def test_prepare_kinetic_t_proj_counts():

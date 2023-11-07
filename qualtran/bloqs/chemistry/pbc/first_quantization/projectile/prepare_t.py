@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -147,3 +147,20 @@ class PrepareTFirstQuantizationWithProj(Bloq):
         # pg 31 (Appendix A. Sec 2 c)
         ctrl_swap = (Toffoli(), 2)
         return {uni_prep_w, ctrl_mom, k_k_proj, ctrl_swap}
+
+
+@bloq_example
+def _prep_power_two_proj() -> PreparePowerTwoStateWithProj:
+    num_bits_p = 6
+    num_bits_n = 8
+    prep_power_two_proj = PreparePowerTwoStateWithProj(num_bits_n, num_bits_p)
+    return prep_power_two_proj
+
+
+@bloq_example
+def _prep_t_proj() -> PrepareTFirstQuantizationWithProj:
+    num_bits_p = 6
+    num_bits_n = 8
+    eta = 32
+    prep_t_proj = PrepareTFirstQuantizationWithProj(num_bits_p, num_bits_n, eta)
+    return prep_t_proj
