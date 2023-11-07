@@ -70,8 +70,6 @@ import qualtran.bloqs.chemistry.thc.select_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
-import qualtran.bloqs.sorting
-import qualtran.bloqs.sorting_test
 import qualtran.bloqs.swap_network
 import qualtran.bloqs.swap_network_test
 
@@ -127,15 +125,6 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_multiply_two_reals),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square_real_number),
             BloqNbSpec(qualtran.bloqs.arithmetic_test._make_signed_to_twos_complement),
-        ],
-        directory=f'{SOURCE_DIR}/bloqs',
-    ),
-    NotebookSpec(
-        title='Sorting',
-        module=qualtran.bloqs.sorting,
-        gate_specs=[
-            BloqNbSpec(qualtran.bloqs.sorting_test._make_comparator),
-            BloqNbSpec(qualtran.bloqs.sorting_test._make_bitonic_sort),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),

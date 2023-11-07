@@ -52,6 +52,7 @@ import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
@@ -102,6 +103,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_SELECT_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization/projectile',
+    ),
+    NotebookSpecV2(
+        title='Sorting',
+        module=qualtran.bloqs.sorting,
+        bloq_specs=[
+            qualtran.bloqs.sorting._COMPARATOR_DOC,
+            qualtran.bloqs.sorting._BITONIC_SORT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
 

@@ -31,7 +31,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
             data,
             block_size,
             id=f"{block_size}-data{didx}",
-            marks=pytest.mark.skip("slow") if block_size == 3 and didx == 0 else (),
+            marks=pytest.mark.slow if block_size == 3 and didx == 0 else (),
         )
         for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
         for block_size in [None, 1, 2, 3]
