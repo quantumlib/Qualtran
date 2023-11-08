@@ -20,7 +20,7 @@ import pytest
 from qualtran import Bloq, BloqBuilder, Side, Soquet
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
-from qualtran.simulation.classical_sim import _cbloq_call_classically
+from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.testing import execute_notebook
 
 
@@ -29,7 +29,6 @@ from qualtran.testing import execute_notebook
 def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
     bloq = bloq_cls(n)
     for name, group_regs in bloq.signature.groups():
-
         if any(reg.side is Side.THRU for reg in group_regs):
             assert not any(reg.side != Side.THRU for reg in group_regs)
             continue
@@ -64,7 +63,7 @@ def test_classical_sim():
     y = bb.join(xs)
     cbloq = bb.finalize(y=y)
 
-    ret, assign = _cbloq_call_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
+    ret, assign = call_cbloq_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
     assert assign[x] == 0
 
     assert assign[xs[0]] == 0
