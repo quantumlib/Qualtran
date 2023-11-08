@@ -45,6 +45,8 @@ class BlockEncoding(Bloq, metaclass=abc.ABCMeta):
         a_\langle 0| \mathcal{B}[V] |0\rangle_a |\psi\rangle_s = V|\psi\rangle_s
     $$
     where the subscripts $a$ and $s$ signify ancilla and system registers respectively.
+
+    Registers:
     """
 
     @property
@@ -60,3 +62,11 @@ class BlockEncoding(Bloq, metaclass=abc.ABCMeta):
     @cached_property
     def signature(self) -> Signature:
         return Signature([*self.junk_registers, *self.system_registers])
+
+
+@frozen
+class BlackBoxBlockEncoding(Bloq):
+    """Standard block encoding using SELECT and PREPARE to a LCU"""
+
+    select: Bloq
+    prepare: Bloq
