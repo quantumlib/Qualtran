@@ -170,9 +170,6 @@ class Partition(Bloq):
     def dagger(self):
         return attrs.evolve(self, partition=not self.partition)
 
-    def __str__(self):
-        return 'Partition(...)'
-
 
 @frozen
 class Allocate(Bloq):

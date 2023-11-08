@@ -67,15 +67,17 @@ class TestPartition(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(regs=self.bitsize)
+        return Signature.build(test_regs=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', regs: 'SoquetT') -> Dict[str, 'Soquet']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', test_regs: 'SoquetT') -> Dict[str, 'Soquet']:
         bloq_regs = self.test_bloq.signature
         partition = Partition(self.bitsize, bloq_regs)
-        out_regs = bb.add(partition, x=regs)
+        out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
-        regs = bb.add(partition.dagger(), **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
-        return {'regs': regs}
+        test_regs = bb.add(
+            partition.dagger(), **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)}
+        )
+        return {'test_regs': test_regs}
 
 
 def test_partition():
