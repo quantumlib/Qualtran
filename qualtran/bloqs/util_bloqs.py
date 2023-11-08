@@ -17,6 +17,7 @@
 from functools import cached_property
 from typing import Dict, Tuple, TYPE_CHECKING, Union
 
+import attrs
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
@@ -136,6 +137,41 @@ class Join(Bloq):
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
         return directional_text_box(' ', side=soq.reg.side)
+
+
+@frozen
+class Partition(Bloq):
+    """Partition a generic index into multiple registers.
+
+    Args:
+        n: The total bitsize of the un-partitioned register
+        regs: Registers to partition into. The `side` attribute is ignored.
+        partition: `False` means un-partition instead.
+
+    Registers:
+        x: the un-partitioned register. LEFT by default.
+        [user spec]: The registers provided by the `regs` argument. RIGHT by default.
+    """
+
+    n: int
+    regs: Tuple[Register, ...]
+    partition: bool = True
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        lumped = Side.LEFT if self.partition else Side.RIGHT
+        partitioned = Side.RIGHT if self.partition else Side.LEFT
+
+        return Signature(
+            [Register('x', bitsize=self.n, side=lumped)]
+            + [attrs.evolve(reg, side=partitioned) for reg in self.regs]
+        )
+
+    def dagger(self):
+        return attrs.evolve(self, partition=not self.partition)
+
+    def __str__(self):
+        return 'Partition(...)'
 
 
 @frozen

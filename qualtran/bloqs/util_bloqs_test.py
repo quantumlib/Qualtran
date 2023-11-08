@@ -12,16 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Type
+from functools import cached_property
+from typing import Dict, Type
 
 import numpy as np
 import pytest
+from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Side, Soquet
+from qualtran import Bloq, BloqBuilder, Side, Signature, Soquet, SoquetT
+from qualtran._infra.bloq_test import TestCNOT
 from qualtran.bloqs.basic_gates import XGate
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
+from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
 from qualtran.simulation.classical_sim import _cbloq_call_classically
-from qualtran.testing import execute_notebook
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 @pytest.mark.parametrize('n', [5, 123])
@@ -29,7 +32,6 @@ from qualtran.testing import execute_notebook
 def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
     bloq = bloq_cls(n)
     for name, group_regs in bloq.signature.groups():
-
         if any(reg.side is Side.THRU for reg in group_regs):
             assert not any(reg.side != Side.THRU for reg in group_regs)
             continue
@@ -53,6 +55,32 @@ def test_util_bloqs():
     assert isinstance(qs3, Soquet)
     no_return = bb.add(Free(10), free=qs3)
     assert no_return is None
+
+
+@frozen
+class TestPartition(Bloq):
+    test_bloq: Bloq
+
+    @cached_property
+    def bitsize(self):
+        return sum(reg.total_bits() for reg in self.test_bloq.signature)
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(regs=self.bitsize)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', regs: 'SoquetT') -> Dict[str, 'Soquet']:
+        bloq_regs = self.test_bloq.signature
+        partition = Partition(self.bitsize, bloq_regs)
+        out_regs = bb.add(partition, x=regs)
+        out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
+        regs = bb.add(partition.dagger(), **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
+        return {'regs': regs}
+
+
+def test_partition():
+    bloq = TestPartition(test_bloq=TestCNOT())
+    assert_valid_bloq_decomposition(bloq)
 
 
 def test_classical_sim():
