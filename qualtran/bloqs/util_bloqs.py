@@ -14,7 +14,6 @@
 
 """Bloqs for virtual operations and register reshaping."""
 
-from collections import defaultdict
 from functools import cached_property
 from typing import Dict, Tuple, TYPE_CHECKING, Union
 

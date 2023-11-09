@@ -25,7 +25,7 @@ from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, XGate
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
-from qualtran.simulation.classical_sim import _cbloq_call_classically, bits_to_ints, ints_to_bits
+from qualtran.simulation.classical_sim import _cbloq_call_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
