@@ -116,7 +116,7 @@ def test_partition():
 def test_partition_tensor_contract():
     bloq = TestPartition(test_bloq=ComplicatedBloq())
     tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
-    assert len(tn.tensors) == 2
+    assert len(tn.tensors) == 3
     assert bloq_to_dense(bloq).shape == (2048, 2048)
 
 
