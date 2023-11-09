@@ -15,15 +15,18 @@
 from functools import cached_property
 from typing import Dict, Type
 
+import cirq
 import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.bloq_test import TestCNOT
-from qualtran.bloqs.basic_gates import XGate
+from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, XGate
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
-from qualtran.simulation.classical_sim import _cbloq_call_classically
+from qualtran.simulation.classical_sim import _cbloq_call_classically, bits_to_ints, ints_to_bits
+from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
@@ -58,6 +61,29 @@ def test_util_bloqs():
 
 
 @frozen
+class ComplicatedBloq(Bloq):
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature([Register('xx', 3), Register('yy', 2, shape=(2, 2))])
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT'
+    ) -> Dict[str, 'Soquet']:
+        xs = bb.split(xx)
+        xs[0] = bb.add(Hadamard(), q=xs[0])
+        xx = bb.join(xs)
+        for i in range(2):
+            for j in range(2):
+                a, b = bb.split(yy[i, j])
+                a, b = bb.add(CNOT(), ctrl=a, target=b)
+                yy[i, j] = bb.join(np.array([a, b]))
+        return {'xx': xx, 'yy': yy}
+
+    def short_name(self) -> str:
+        return 'CB'
+
+
+@frozen
 class TestPartition(Bloq):
     test_bloq: Bloq
 
@@ -83,6 +109,40 @@ class TestPartition(Bloq):
 def test_partition():
     bloq = TestPartition(test_bloq=TestCNOT())
     assert_valid_bloq_decomposition(bloq)
+    bloq = TestPartition(test_bloq=ComplicatedBloq())
+    assert_valid_bloq_decomposition(bloq)
+
+
+def test_partition_tensor_contract():
+    bloq = TestPartition(test_bloq=ComplicatedBloq())
+    tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
+    assert len(tn.tensors) == 2
+    assert bloq_to_dense(bloq).shape == (2048, 2048)
+
+
+def test_partition_as_cirq_op():
+    bloq = TestPartition(test_bloq=TestCNOT())
+    quregs = get_named_qubits(bloq.signature.lefts())
+    op, quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
+    unitary = cirq.unitary(cirq.Circuit(op))
+    assert np.allclose(unitary, bloq_to_dense(CNOT()))
+    bloq = TestPartition(test_bloq=ComplicatedBloq())
+    quregs = get_named_qubits(bloq.signature.lefts())
+    op, quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
+    unitary = cirq.unitary(cirq.Circuit(op))
+    assert np.allclose(unitary, bloq_to_dense(bloq))
+
+
+def test_partition_call_classically():
+    regs = (Register('xx', 2, shape=(2, 2)), Register('yy', 3))
+    bitsize = sum(reg.total_bits() for reg in regs)
+    bloq = Partition(n=bitsize, regs=regs)
+    out = bloq.call_classically(x=64)
+    flat_out = np.concatenate([v.ravel() if isinstance(v, np.ndarray) else [v] for v in out])
+    # 6th set bit == 64
+    assert flat_out[2] == 2
+    out = bloq.dagger().call_classically(**{reg.name: val for (reg, val) in zip(regs, out)})
+    assert out[0] == 64
 
 
 def test_classical_sim():
