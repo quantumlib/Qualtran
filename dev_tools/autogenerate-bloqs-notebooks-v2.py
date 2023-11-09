@@ -49,6 +49,7 @@ from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_noteboo
 
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
+import qualtran.bloqs.block_encoding
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
@@ -101,6 +102,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.sorting._COMPARATOR_DOC,
             qualtran.bloqs.sorting._BITONIC_SORT_DOC,
         ],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Block Encoding',
+        module=qualtran.bloqs.block_encoding,
+        bloq_specs=[qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
