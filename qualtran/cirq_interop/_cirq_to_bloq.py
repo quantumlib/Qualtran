@@ -119,6 +119,19 @@ class CirqGateAsBloqBase(GateWithRegisters):
         qubits = in_quregs.get('q', ()).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
 
+    # Delegate all cirq-style protocols to underlying gate
+    def _unitary_(self):
+        return cirq.unitary(self.cirq_gate, default=None)
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        return cirq.circuit_diagram_info(self.cirq_gate)
+
+    def __str__(self):
+        return str(self.cirq_gate)
+
+    def __pow__(self, power):
+        return CirqGateAsBloq(self.cirq_gate**power)
+
 
 @frozen
 class CirqGateAsBloq(CirqGateAsBloqBase):
