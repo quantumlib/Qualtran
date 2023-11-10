@@ -34,12 +34,10 @@ class InnerPrepareDoubleFactorization(Bloq):
 
     Prepare state over $p$ register controlled on outer $l$ register.
 
-    Currently we only provide costs as listed in Ref[1] without their corresponding decompositions.
-
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
         num_spin_orb: The number of spin orbitals. Typically called N.
-        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
+        num_xi: Rank of second factorization. Full rank implies $Xi$ = num_spin_orb // 2.
         num_bits_rot_aa: Number of bits of precision for single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
         num_bits_state_prep: The number of bits of precision for coherent alias
