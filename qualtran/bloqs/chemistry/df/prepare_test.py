@@ -13,12 +13,26 @@
 #  limitations under the License.
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.df.common_bitsize import get_num_bits_lxi
 from qualtran.bloqs.chemistry.df.prepare import (
+    _indexed_data,
+    _prep_inner,
+    _prep_outer,
     InnerPrepareDoubleFactorization,
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
+
+
+def test_prep_inner(bloq_autotester):
+    bloq_autotester(_prep_inner)
+
+
+def test_prep_outer(bloq_autotester):
+    bloq_autotester(_prep_outer)
+
+
+def test_indexed_data(bloq_autotester):
+    bloq_autotester(_indexed_data)
 
 
 def test_outerprep_t_counts():

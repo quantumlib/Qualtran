@@ -18,7 +18,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition, QROAM
@@ -206,3 +206,46 @@ class OutputIndexedData(Bloq):
         num_bits_offset = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         bo = num_bits_xi + num_bits_offset + self.num_bits_rot_aa + 1
         return {(QROAM(self.num_aux + 1, bo, adjoint=self.adjoint), 1)}
+
+
+@bloq_example
+def _prep_inner() -> InnerPrepareDoubleFactorization:
+    num_aux = 50
+    num_bits_state_prep = 12
+    num_bits_rot = 7
+    num_spin_orb = 10
+    num_aux = 50
+    num_eig = num_spin_orb // 2
+    prep_inner = InnerPrepareDoubleFactorization(
+        num_aux=num_aux,
+        num_spin_orb=num_spin_orb,
+        num_xi=num_eig,
+        num_bits_rot_aa=num_bits_rot,
+        num_bits_state_prep=num_bits_state_prep,
+        adjoint=False,
+    )
+    return prep_inner
+
+
+@bloq_example
+def _prep_outer() -> OuterPrepareDoubleFactorization:
+    num_aux = 50
+    num_bits_state_prep = 12
+    num_bits_rot = 18
+    prep_outer = OuterPrepareDoubleFactorization(
+        num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot
+    )
+    return prep_outer
+
+
+@bloq_example
+def _indexed_data() -> OutputIndexedData:
+    num_aux = 50
+    num_bits_rot = 18
+    num_spin_orb = 10
+    num_aux = 50
+    num_eig = num_spin_orb // 2
+    indexed_data = OutputIndexedData(
+        num_aux=num_aux, num_spin_orb=num_spin_orb, num_xi=num_eig, num_bits_rot_aa=num_bits_rot
+    )
+    return indexed_data
