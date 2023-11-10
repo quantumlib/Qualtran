@@ -37,7 +37,7 @@ class PrepareUniformSuperposition(Bloq):
     Uses quoted literature costs which relies on phase gradient for rotations.
 
     Args:
-        num_non_zero: The number of non-zero matrix elements.
+        d: The number of coefficients to prepare.
         num_bits_rot_aa: The number of bits of precision for the single-qubit
             rotation for amplitude amplification during the uniform state
             preparataion. Default 8.
@@ -49,7 +49,7 @@ class PrepareUniformSuperposition(Bloq):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Page 39.
     """
-    num_non_zero: int
+    d: int
     num_bits_rot_aa: int = 8
 
     @cached_property
@@ -60,11 +60,9 @@ class PrepareUniformSuperposition(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         factors = factorint(self.num_non_zero)
         eta = factors[min(list(sorted(factors.keys())))]
-        if self.num_non_zero % 2 == 1:
+        if self.d % 2 == 1:
             eta = 0
-        uniform_prep = (
-            3 * (self.num_non_zero - 1).bit_length() - 3 * eta + 2 * self.num_bits_rot_aa - 9
-        )
+        uniform_prep = 3 * (self.d - 1).bit_length() - 3 * eta + 2 * self.num_bits_rot_aa - 9
         return {(Toffoli(), uniform_prep)}
 
 
