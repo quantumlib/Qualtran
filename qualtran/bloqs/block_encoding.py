@@ -147,13 +147,13 @@ class BlackBoxPrepare(Bloq):
         return sum(reg.total_bits() for reg in self.prepare.selection_registers)
 
     @cached_property
-    def work_bitsize(self):
+    def junk_bitsize(self):
         return sum(reg.total_bits() for reg in self.prepare.selection_registers)
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register('selection', self.selection_bitsize), Register('junk', self.work_bitsize)]
+            [Register('selection', self.selection_bitsize), Register('junk', self.junk_bitsize)]
         )
 
     def build_composite_bloq(
@@ -163,7 +163,7 @@ class BlackBoxPrepare(Bloq):
         sel_part = Partition(self.selection_bitsize, regs=sel_regs)
         sel_out_regs = bb.add_t(sel_part, x=selection)
         jnk_regs = tuple(self.prepare.junk_registers)
-        jnk_part = Partition(self.work_bitsize, regs=jnk_regs)
+        jnk_part = Partition(self.junk_bitsize, regs=jnk_regs)
         jnk_out_regs = bb.add_t(jnk_part, x=junk)
         out_regs = bb.add(
             self.prepare,
@@ -216,7 +216,7 @@ class BlackBoxBlockEncoding(BlockEncoding):
 
     @property
     def junk_register(self) -> Register:
-        return Register('junk', bitsize=self.prepare.work_bitsize)
+        return Register('junk', bitsize=self.prepare.junk_bitsize)
 
     @property
     def system_register(self) -> Register:
@@ -234,6 +234,24 @@ class BlackBoxBlockEncoding(BlockEncoding):
         selection, system = bb.add(self.select, selection=selection, system=system)
         selection, junk = bb.add(self.prepare.dagger(), selection=selection, junk=junk)
         return {'selection': selection, 'junk': junk, 'system': system}
+
+
+@bloq_example
+def _black_box_prepare() -> BlackBoxPrepare:
+    from qualtran.bloqs.hubbard_model import PrepareHubbard
+
+    prepare = PrepareHubbard(2, 2, 1, 4)
+    black_box_prepare = BlackBoxPrepare(prepare=prepare)
+    return black_box_prepare
+
+
+@bloq_example
+def _black_box_select() -> BlackBoxSelect:
+    from qualtran.bloqs.hubbard_model import SelectHubbard
+
+    select = SelectHubbard(2, 2)
+    black_box_select = BlackBoxSelect(select=select)
+    return black_box_select
 
 
 @bloq_example
