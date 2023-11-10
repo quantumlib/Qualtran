@@ -96,7 +96,9 @@ def get_qroam_cost(data_size: int, bitsize: int, adjoint: bool = False) -> Tuple
 
 @frozen
 class QROAM(Bloq):
-    """Placeholder bloq for QROAM.
+    """Placeholder bloq for QROAM with costs matching literature values.
+
+    https://github.com/quantumlib/Qualtran/issues/368
 
     Args:
         data_size: Amount of data we want to load.
