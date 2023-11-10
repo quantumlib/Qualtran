@@ -28,7 +28,7 @@ where the subscripts $a$ and $s$ signify ancilla and system registers
 respectively, and $\lambda = \sum_l w_l$. The ancilla register is at least of size $\log L$. In our
 implementations we typically split the ancilla registers into selection registers (i.e.
 the $l$ registers above) and junk registers which are extra qubits needed by
-state preparation but not controlled upon during SELECT. 
+state preparation but not controlled upon during SELECT.
 """
 
 import abc
