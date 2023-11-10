@@ -19,10 +19,9 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
-from qualtran.resource_counting import get_bloq_counts_graph
 
 
-def test_outerprep_bloq_counts():
+def test_outerprep_t_counts():
     num_aux = 50
     num_bits_state_prep = 12
     num_bits_rot = 1
@@ -31,19 +30,19 @@ def test_outerprep_bloq_counts():
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa=num_bits_rot,  # computed by of?
     )
-    _, counts = get_bloq_counts_graph(outer_prep)
+    _, counts = outer_prep.call_graph()
     toff = counts[TGate()] // 4
     outer_prep = OuterPrepareDoubleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot, adjoint=True
     )
-    _, counts = get_bloq_counts_graph(outer_prep)
+    _, counts = outer_prep.call_graph()
     toff += counts[TGate()] // 4
+    # captured from cost1 in openfermion df.compute_cost
     assert toff == 117
 
 
-def test_indexed_data_bloq_counts():
+def test_indexed_data_t_counts():
     num_aux = 50
-    num_bits_state_prep = 12
     num_bits_rot = 1  # decided by OF
     num_spin_orb = 10
     num_aux = 50
@@ -51,7 +50,7 @@ def test_indexed_data_bloq_counts():
     in_l_data_l = OutputIndexedData(
         num_aux=num_aux, num_spin_orb=num_spin_orb, num_xi=num_eig, num_bits_rot_aa=num_bits_rot
     )
-    _, counts = get_bloq_counts_graph(in_l_data_l)
+    _, counts = in_l_data_l.call_graph()
     toff = counts[TGate()] // 4
     in_l_data_l = OutputIndexedData(
         num_aux=num_aux,
@@ -60,42 +59,41 @@ def test_indexed_data_bloq_counts():
         num_bits_rot_aa=num_bits_rot,
         adjoint=True,
     )
-    _, counts = get_bloq_counts_graph(in_l_data_l)
+    _, counts = in_l_data_l.call_graph()
     toff += counts[TGate()] // 4
+    # captured from cost2 in openfermion df.compute_cost
     assert toff == 54
 
 
-def test_inner_prepare():
+def test_inner_prepare_t_counts():
     num_aux = 50
     num_bits_state_prep = 12
     num_bits_rot = 7  # decided by OF
     num_spin_orb = 10
     num_aux = 50
     num_eig = num_spin_orb // 2
-    num_bits_lxi = get_num_bits_lxi(num_aux, num_eig, num_spin_orb)
     in_prep = InnerPrepareDoubleFactorization(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,
         num_xi=num_eig,
         num_bits_rot_aa=num_bits_rot,
-        num_bits_offset=num_bits_lxi,
         num_bits_state_prep=num_bits_state_prep,
         adjoint=False,
     )
-    _, counts = get_bloq_counts_graph(in_prep)
+    _, counts = in_prep.call_graph()
     toff = counts[TGate()] // 4
     in_prep = InnerPrepareDoubleFactorization(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,
         num_xi=num_eig,
         num_bits_rot_aa=num_bits_rot,
-        num_bits_offset=num_bits_lxi,
         num_bits_state_prep=num_bits_state_prep,
         adjoint=True,
     )
-    _, counts = get_bloq_counts_graph(in_prep)
+    _, counts = in_prep.call_graph()
     toff += counts[TGate()] // 4
     toff *= 2  # cost is for the two applications of the in-prep, in-prep^
     # + 1 for accounting for openfermion not outputting one-body ham for second
     # application of ciruit.
+    # captured from cost3 in openfermion df.compute_cost
     assert toff == 497 + 1

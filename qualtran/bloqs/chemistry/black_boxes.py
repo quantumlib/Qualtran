@@ -58,7 +58,7 @@ class PrepareUniformSuperposition(Bloq):
         return Signature(regs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        factors = factorint(self.num_non_zero)
+        factors = factorint(self.d)
         eta = factors[min(list(sorted(factors.keys())))]
         if self.d % 2 == 1:
             eta = 0
@@ -108,7 +108,6 @@ class QROAM(Bloq):
     """
 
     data_size: int
-    selection_bitsize: int
     target_bitsize: int
     adjoint: bool = False
 
@@ -118,8 +117,9 @@ class QROAM(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
+        selection_bitsize = (self.data_size - 1).bit_length()
         return Signature.build(sel=self.data_size, trg=self.target_bitsize)
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost = get_qroam_cost(self.data_size, self.target_bitsize, adjoint=self.adjoint)
         return {(Toffoli(), cost)}
