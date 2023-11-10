@@ -190,7 +190,7 @@ class BlackBoxPrepare(Bloq):
 
 @attrs.frozen
 class BlackBoxBlockEncoding(BlockEncoding):
-    r"""Standard block encoding using SELECT and PREPARE to a LCU
+    r"""Standard block encoding using SELECT and PREPARE.
 
     Builds the block encoding via
     $$
@@ -208,6 +208,7 @@ class BlackBoxBlockEncoding(BlockEncoding):
 
     select: BlackBoxSelect
     prepare: BlackBoxPrepare
+    adjoint: bool = False
 
     @property
     def selection_register(self) -> Register:
@@ -222,7 +223,8 @@ class BlackBoxBlockEncoding(BlockEncoding):
         return Register('system', bitsize=self.select.system_bitsize)
 
     def short_name(self) -> str:
-        return 'B[V]'
+        dag = '†' if self.adjoint else ''
+        return 'B[V]{dag}'
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT', system: 'SoquetT'
