@@ -13,8 +13,7 @@
 #  limitations under the License.
 """Common Chemistry bloqs which have costs that differ from those currently implemented in qualtran.
 
-These are for temporary convenience to lock-in the quoted literature costs
-before they can be safely replaced by actual implementations.
+These are for temporary convenience to lock-in the quoted literature costs.
 """
 from functools import cached_property
 from typing import Set, Tuple, TYPE_CHECKING
