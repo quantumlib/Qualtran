@@ -18,7 +18,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import QROAM
 from qualtran.bloqs.chemistry.df.common_bitsize import get_num_bits_lxi
@@ -45,8 +45,7 @@ class ProgRotGateArray(Bloq):
         p: Register for inner state preparation. This is of size $\ceil \log (L \Xi + N / 2)$.
         rotatations: Data register storing rotations.
         spin_sel: A single qubit register for spin.
-        sys_a: The system register for alpha electrons.
-        sys_b: The system register for beta electons.
+        sys: The system register.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
@@ -59,20 +58,21 @@ class ProgRotGateArray(Bloq):
     num_bits_rot: int
     adjoint: bool = False
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         dag = '†' if self.adjoint else ''
         return f"Rotations{dag}"
 
     @cached_property
     def signature(self) -> Signature:
         num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
-        return Signature.build(
-            offset=num_bits_lxi,
-            p=(self.num_xi - 1).bit_length(),
-            rotations=(self.num_spin_orb // 2) * self.num_bits_rot,
-            spin_sel=1,
-            sys_a=self.num_spin_orb // 2,
-            sys_b=self.num_spin_orb // 2,
+        return Signature(
+            [
+                Register('offset', num_bits_lxi),
+                Register('p', (self.num_xi - 1).bit_length()),
+                Register('rotations', bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
+                Register('spin', bitsize=1),
+                Register('sys', bitsize=self.num_spin_orb // 2, shape=(2,)),
+            ]
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -85,3 +85,37 @@ class ProgRotGateArray(Bloq):
             (Toffoli(), (cost_a + cost_c)),
             (QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2, adjoint=self.adjoint), 1),
         }
+
+
+@frozen
+class ApplyControlledZs(Bloq):
+    """Apply controlled Z operation for SELECT
+
+    This is either a CCZ or CCCZ operation. Wrap it as a bloq to hide the split / joins.
+
+    Args:
+        num_controls: The number of controls
+
+    Registers:
+        ctrls: control registers
+        system: system register
+    """
+
+    num_controls: int
+    num_spinorb: int
+
+    def short_name(self) -> str:
+        return "C" * self.num_controls + "Z"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register("ctrls", bitsize=1, shape=(self.num_controls,)),
+                Register("system", bitsize=self.num_spinorb, shape=(2,)),
+            ]
+        )
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # Step 4 in the reference.
+        return {(Toffoli(), self.num_controls - 1)}

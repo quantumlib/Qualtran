@@ -38,14 +38,14 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
-from qualtran.bloqs.basic_gates import CSwap, Toffoli
+from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.chemistry.df.common_bitsize import get_num_bits_lxi
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
-from qualtran.bloqs.chemistry.df.select import ProgRotGateArray
+from qualtran.bloqs.chemistry.df.select import ApplyControlledZs, ProgRotGateArray
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
@@ -61,8 +61,6 @@ class DoubleFactorizationOneBody(Bloq):
     applied twice (with a reflection around the inner state preparation
     registers) to implement (roughly) the square of this one-body operator.
 
-    Note succ_pq will be allocated as an ancilla during decomposition and it is not relected on.
-
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
         num_spin_orb: The number of spin orbitals. Typically called $N$.
@@ -77,6 +75,8 @@ class DoubleFactorizationOneBody(Bloq):
 
     Registers:
         succ_l: control for success for outer state preparation.
+        succ_p: control for success for inner state preparation, this is reused
+            in second application.
         l_ne_zero: control for one-body part of Hamiltonian.
         xi: data register for number storing $\Xi^{(l)}$.
         p: Register for inner state preparation.
@@ -102,7 +102,11 @@ class DoubleFactorizationOneBody(Bloq):
 
     @property
     def control_registers(self) -> Iterable[Register]:
-        return (Register("succ_l", bitsize=1), Register("l_ne_zero", bitsize=1))
+        return (
+            Register("succ_l", bitsize=1),
+            Register("l_ne_zero", bitsize=1),
+            Register("succ_p", bitsize=1),
+        )
 
     @property
     def selection_registers(self) -> Iterable[Register]:
@@ -125,7 +129,7 @@ class DoubleFactorizationOneBody(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", bitsize=self.num_spin_orb),)
+        return (Register("sys", bitsize=self.num_spin_orb // 2, shape=(2,)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -138,6 +142,91 @@ class DoubleFactorizationOneBody(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return '$B[H_1]$'
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        succ_l: SoquetT,
+        l_ne_zero: SoquetT,
+        succ_p: SoquetT,
+        p: SoquetT,
+        rot_aa: SoquetT,
+        spin: SoquetT,
+        xi: SoquetT,
+        offset: SoquetT,
+        rot: SoquetT,
+        rotations: SoquetT,
+        sys: SoquetT,
+    ) -> Dict[str, 'SoquetT']:
+        # 1st half
+        in_prep = InnerPrepareDoubleFactorization(
+            num_aux=self.num_aux,
+            num_spin_orb=self.num_spin_orb,
+            num_xi=self.num_xi,
+            num_bits_rot_aa=self.num_bits_rot_aa,
+            num_bits_state_prep=self.num_bits_state_prep,
+            adjoint=False,
+        )
+        xi, offset, rot, succ_p, p = bb.add(
+            in_prep, xi=xi, offset=offset, rot=rot, succ_p=succ_p, p=p
+        )
+        spin = bb.add(Hadamard(), q=spin)
+        spin, sys[0], sys[1] = bb.add(CSwap(self.num_spin_orb // 2), ctrl=spin, x=sys[0], y=sys[1])
+        prot = ProgRotGateArray(
+            num_aux=self.num_aux,
+            num_xi=self.num_xi,
+            num_spin_orb=self.num_spin_orb,
+            num_bits_rot=self.num_bits_rot,
+            adjoint=False,
+        )
+        offset, p, rotations, spin, sys = bb.add(
+            prot, offset=offset, p=p, rotations=rotations, spin=spin, sys=sys
+        )
+        # missing l_ne_zero
+        [succ_l, succ_p], sys = bb.add(
+            ApplyControlledZs(2, self.num_spin_orb // 2), ctrls=[succ_l, succ_p], system=sys
+        )
+        # 2nd half (invert preparation / swaps)
+        prot = ProgRotGateArray(
+            num_aux=self.num_aux,
+            num_xi=self.num_xi,
+            num_spin_orb=self.num_spin_orb,
+            num_bits_rot=self.num_bits_rot,
+            adjoint=True,
+        )
+        offset, p, rotations, spin, sys = bb.add(
+            prot, offset=offset, p=p, rotations=rotations, spin=spin, sys=sys
+        )
+        spin, sys[0], sys[1] = bb.add(CSwap(self.num_spin_orb // 2), ctrl=spin, x=sys[0], y=sys[1])
+        in_prep_dag = InnerPrepareDoubleFactorization(
+            num_aux=self.num_aux,
+            num_spin_orb=self.num_spin_orb,
+            num_xi=self.num_xi,
+            num_bits_rot_aa=self.num_bits_rot_aa,
+            num_bits_state_prep=self.num_bits_state_prep,
+            adjoint=True,
+        )
+        xi, offset, rot, succ_p, p = bb.add(
+            in_prep_dag, xi=xi, offset=offset, rot=rot, succ_p=succ_p, p=p
+        )
+        spin = bb.add(Hadamard(), q=spin)
+
+        return {
+            'succ_l': succ_l,
+            'l_ne_zero': l_ne_zero,
+            'succ_p': succ_p,
+            'p': p,
+            'spin': spin,
+            'rot_aa': rot_aa,
+            'xi': xi,
+            'offset': offset,
+            'rot': rot,
+            'rotations': rotations,
+            'sys': sys,
+        }
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         in_prep = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
@@ -147,6 +236,13 @@ class DoubleFactorizationOneBody(Bloq):
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=False,
         )
+        rot = ProgRotGateArray(
+            num_aux=self.num_aux,
+            num_xi=self.num_xi,
+            num_spin_orb=self.num_spin_orb,
+            num_bits_rot=self.num_bits_rot,
+            adjoint=False,
+        )
         in_prep_dag = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
@@ -154,13 +250,6 @@ class DoubleFactorizationOneBody(Bloq):
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=True,
-        )
-        rot = ProgRotGateArray(
-            num_aux=self.num_aux,
-            num_xi=self.num_xi,
-            num_spin_orb=self.num_spin_orb,
-            num_bits_rot=self.num_bits_rot,
-            adjoint=False,
         )
         rot_dag = ProgRotGateArray(
             num_aux=self.num_aux,
@@ -191,9 +280,10 @@ class DoubleFactorizationBlockEncoding(Bloq):
     Implements Fig. 15 in the reference.
 
     Args:
-        num_spin_orb: The number of spin orbitals. Typically called N.
-        num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Called L in Ref[1].
-        num_xi: Rank of second factorization. Full rank implies $Xi$ = num_spin_orb // 2.
+        num_spin_orb: The number of spin orbitals. Typically called $N$.
+        num_aux: Dimension of auxiliary index for double factorized Hamiltonian.
+            Typically called $L$.
+        num_xi: Rank of second factorization. Full rank implies $\Xi$ = num_spin_orb // 2.
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called $\aleph$ in Ref[1]. We assume this is the same for
             both outer and inner state preparations.
@@ -232,11 +322,13 @@ class DoubleFactorizationBlockEncoding(Bloq):
     num_bits_rot_aa_inner: int = 8
 
     @classmethod
-    def build_from_coeffs(cls, one_body_ham, factorized_two_body_ham) -> 'DoubleFactorization':
+    def build_from_coeffs(
+        cls, one_body_ham, factorized_two_body_ham
+    ) -> 'DoubleFactorizationBlockEncoding':
         """Factory method to build double factorization block encoding given Hamiltonian inputs.
 
         Args:
-            one_body_ham: One body hamiltonian ($T_{pq}$') matrix elements. (includes exchange terms).
+            one_body_ham: One body hamiltonian ($T_{pq}$') matrix elements.
             factorized_two_body_ham: One body hamiltonian ($W^{(l)}_{pq}$).
 
         Returns:
@@ -253,16 +345,16 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
     @property
     def control_registers(self) -> Iterable[Register]:
-        return [Register('ctrl', bitsize=1, shape=(4,))]
+        return (Register('ctrl', bitsize=1, shape=(4,)),)
 
     @property
     def selection_registers(self) -> Iterable[Register]:
-        return [
+        return (
             Register("l", bitsize=self.num_aux.bit_length()),
             Register("p", bitsize=(self.num_xi - 1).bit_length()),
             Register("spin", bitsize=1),
             Register('rot_aa', bitsize=1),
-        ]
+        )
 
     @property
     def junk_registers(self) -> Iterable[Register]:
@@ -277,7 +369,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return [Register("sys", bitsize=self.num_spin_orb)]
+        return (Register("sys", bitsize=self.num_spin_orb // 2, shape=(2,)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -329,10 +421,11 @@ class DoubleFactorizationBlockEncoding(Bloq):
             num_bits_rot_aa=self.num_bits_rot_aa_inner,
             num_bits_rot=self.num_bits_rot,
         )
-        succ_l, l_ne_zero, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
+        succ_l, l_ne_zero, succ_p, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
             one_body,
             succ_l=succ_l,
             l_ne_zero=l_ne_zero,
+            succ_p=succ_p,
             p=p,
             rot_aa=rot_aa,
             spin=spin,
@@ -350,10 +443,11 @@ class DoubleFactorizationBlockEncoding(Bloq):
         ctrls = bb.split(ctrls)
         succ_l, l_ne_zero = ctrls[:2]
         p = bb.join(ctrls[2:])
-        succ_l, l_ne_zero, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
+        succ_l, l_ne_zero, succ_p, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
             one_body,
             succ_l=succ_l,
             l_ne_zero=l_ne_zero,
+            succ_p=succ_p,
             p=p,
             rot_aa=rot_aa,
             spin=spin,

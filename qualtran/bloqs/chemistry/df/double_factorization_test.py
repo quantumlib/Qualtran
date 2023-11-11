@@ -23,11 +23,11 @@ from qualtran.bloqs.chemistry.df.double_factorization import (
 from qualtran.testing import execute_notebook
 
 
-def test_prep_inner(bloq_autotester):
+def test_df_block_encoding(bloq_autotester):
     bloq_autotester(_df_block_encoding)
 
 
-def test_prep_outer(bloq_autotester):
+def test_one_body_block_encoding(bloq_autotester):
     bloq_autotester(_df_one_body)
 
 
@@ -55,6 +55,26 @@ def test_compare_cost_one_body():
     of_cost += 7 * 4 * (num_spin_orb // 2)  # Note swaps cost 7 Ts if using basic controlled swaps.
     of_cost += 3 * 4
     assert qual_costs == of_cost
+    j
+
+
+def test_compare_cost_one_body_decomp():
+    num_spin_orb = 10
+    num_aux = 50
+    num_eig = num_spin_orb // 2
+    num_bits_state_prep = 12
+    num_bits_rot = 7
+    bloq = DoubleFactorizationOneBody(
+        num_spin_orb=num_spin_orb,
+        num_aux=num_aux,
+        num_xi=num_eig,
+        num_bits_state_prep=num_bits_state_prep,
+        num_bits_rot_aa=7,
+        num_bits_rot=num_bits_rot,
+    )
+    costs = bloq.call_graph()[1]
+    cbloq_costs = bloq.decompose_bloq().call_graph()[1]
+    assert costs[TGate()] == cbloq_costs[TGate()]
 
 
 def test_compare_cost_to_openfermion():
