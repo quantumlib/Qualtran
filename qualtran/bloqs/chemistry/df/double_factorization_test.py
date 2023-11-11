@@ -17,7 +17,7 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.df.double_factorization import (
     _df_block_encoding,
     _df_one_body,
-    DoubleFactorization,
+    DoubleFactorizationBlockEncoding,
     DoubleFactorizationOneBody,
 )
 from qualtran.testing import execute_notebook
@@ -105,5 +105,5 @@ def test_compare_cost_to_openfermion():
     assert of_cost == qual_cost
 
 
-# def test_notebook():
-#     execute_notebook("double_factorization")
+def test_notebook():
+    execute_notebook("double_factorization")

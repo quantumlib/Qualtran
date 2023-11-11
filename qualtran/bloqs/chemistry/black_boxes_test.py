@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import pytest
-from openfermion.resource_estimates.df.compute_cost_df import compute_cost
 from openfermion.resource_estimates.utils import QI, QR
 
 from qualtran.bloqs.chemistry.black_boxes import get_qroam_cost
@@ -22,4 +21,3 @@ from qualtran.bloqs.chemistry.black_boxes import get_qroam_cost
 def test_qroam_factors(data_size, bitsize):
     assert get_qroam_cost(data_size, bitsize) == QR(data_size, bitsize)[-1]
     assert get_qroam_cost(data_size, bitsize, adjoint=True) == QI(data_size)[-1]
-

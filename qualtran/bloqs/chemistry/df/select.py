@@ -68,7 +68,7 @@ class ProgRotGateArray(Bloq):
         num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         return Signature.build(
             offset=num_bits_lxi,
-            p=(self.num_xi-1).bit_length(),
+            p=(self.num_xi - 1).bit_length(),
             rotations=(self.num_spin_orb // 2) * self.num_bits_rot,
             spin_sel=1,
             sys_a=self.num_spin_orb // 2,

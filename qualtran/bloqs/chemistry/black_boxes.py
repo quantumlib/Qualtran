@@ -14,18 +14,16 @@
 """Common Chemistry bloqs which have costs that differ from those currently implemented in qualtran.
 
 These are for temporary convenience to lock-in the quoted literature costs
-before they can be safely replaced by actual implementations. 
+before they can be safely replaced by actual implementations.
 """
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING, Tuple, Dict
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from typing import Set, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import frozen
 from sympy import factorint
 
-from qualtran import Bloq, Register, Signature, SoquetT, BloqBuilder
+from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -119,7 +117,6 @@ class QROAM(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        selection_bitsize = (self.data_size - 1).bit_length()
         return Signature.build(sel=self.data_size, trg=self.target_bitsize)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
