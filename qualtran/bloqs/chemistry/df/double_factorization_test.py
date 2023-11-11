@@ -55,7 +55,6 @@ def test_compare_cost_one_body():
     of_cost += 7 * 4 * (num_spin_orb // 2)  # Note swaps cost 7 Ts if using basic controlled swaps.
     of_cost += 3 * 4
     assert qual_costs == of_cost
-    j
 
 
 def test_compare_cost_one_body_decomp():
