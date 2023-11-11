@@ -49,6 +49,7 @@ from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_noteboo
 
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
+import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
@@ -102,6 +103,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.sorting._BITONIC_SORT_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Double Factorization',
+        module=qualtran.bloqs.chemistry.df.double_factorization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.df.double_factorization._DF_ONE_BODY,
+            qualtran.bloqs.chemistry.df.double_factorization._DF_BLOCK_ENCODING,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/df',
     ),
 ]
 

@@ -17,13 +17,15 @@ These are for temporary convenience to lock-in the quoted literature costs
 before they can be safely replaced by actual implementations. 
 """
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, Tuple, TYPE_CHECKING, Tuple, Dict
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 
+import cirq
 import numpy as np
 from attrs import frozen
 from sympy import factorint
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, Register, Signature, SoquetT, BloqBuilder
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
