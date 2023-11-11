@@ -48,7 +48,7 @@ class InnerPrepareDoubleFactorization(Bloq):
         xi: data register for number storing $\Xi^{(l)}$.
         rot: qubit for amplitude amplification.
         succ_p: control to flag success for inner state preparation.
-        p: Register for inner state preparation. This is of size $\ceil \log (L \Xi + N / 2)$.
+        p: Register for inner state preparation.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
@@ -70,7 +70,11 @@ class InnerPrepareDoubleFactorization(Bloq):
     def signature(self) -> Signature:
         lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         return Signature.build(
-            xi=(self.num_xi - 1).bit_length(), offset=lxi, rot=self.num_bits_rot_aa, succ_p=1, p=lxi
+            xi=(self.num_xi - 1).bit_length(),
+            offset=lxi,
+            rot=self.num_bits_rot_aa,
+            succ_p=1,
+            p=(self.num_xi - 1).bit_length(),
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
