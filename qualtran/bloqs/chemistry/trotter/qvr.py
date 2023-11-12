@@ -14,17 +14,16 @@
 """Quantum Variable Rotation."""
 
 from functools import cached_property
-from typing import Optional, Set, Tuple, TYPE_CHECKING
+from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
-from qualtran.bloqs.basic_gates.rotation import RotationBloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -61,7 +60,7 @@ class QuantumVariableRotation(Bloq):
         # Upper bounding for the moment with just phi_bitsize * Rz rotation gates.
         return self.phi_bitsize * Rz(0.0).t_complexity()
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
-        return {(self.phi_bitsize, RotationBloq(theta))}
+        return {(Rz(theta), self.phi_bitsize)}

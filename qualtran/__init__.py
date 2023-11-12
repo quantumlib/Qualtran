@@ -60,6 +60,6 @@ from ._infra.quantum_graph import (
 
 from ._infra.gate_with_registers import GateWithRegisters
 
-from ._infra.bloq_example import BloqExample, bloq_example
+from ._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
 
 # --------------------------------------------------------------------------------------------------

@@ -13,13 +13,23 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Set, Union
 
 import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    DecomposeTypeError,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -86,6 +96,8 @@ class ModExp(Bloq):
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if isinstance(self.exp_bitsize, sympy.Expr):
+            raise DecomposeTypeError("`exp_bitsize` must be a concrete value.")
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))
         exponent = bb.split(exponent)
 
@@ -97,13 +109,11 @@ class ModExp(Bloq):
 
         return {'exponent': bb.join(exponent), 'x': x}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        if ssa is None:
-            raise ValueError(f"{self} requires a SympySymbolAllocator")
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
         return {
-            (1, IntState(val=1, bitsize=self.x_bitsize)),
-            (self.exp_bitsize, self._CtrlModMul(k=k)),
+            (IntState(val=1, bitsize=self.x_bitsize), 1),
+            (self._CtrlModMul(k=k), self.exp_bitsize),
         }
 
     def on_classical_vals(self, exponent: int):
@@ -111,3 +121,31 @@ class ModExp(Bloq):
 
     def short_name(self) -> str:
         return f'{self.base}^e % {self.mod}'
+
+
+@bloq_example
+def _modexp_small() -> ModExp:
+    modexp_small = ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
+    return modexp_small
+
+
+@bloq_example
+def _modexp() -> ModExp:
+    modexp = ModExp.make_for_shor(big_n=15 * 17, g=9)
+    return modexp
+
+
+@bloq_example
+def _modexp_symb() -> ModExp:
+    import sympy
+
+    g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
+    modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
+    return modexp_symb
+
+
+_MODEXP_DOC = BloqDocSpec(
+    bloq_cls=ModExp,
+    import_line='from qualtran.bloqs.factoring.mod_exp import ModExp',
+    examples=(_modexp_symb, _modexp_small, _modexp),
+)

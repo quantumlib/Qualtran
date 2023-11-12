@@ -56,7 +56,8 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
 
 @pytest.mark.parametrize(
-    "selection_bitsize, target_bitsize, control_bitsize", [(3, 5, 1), (2, 4, 2), (1, 2, 3)]
+    "selection_bitsize, target_bitsize, control_bitsize",
+    [(3, 5, 1), (2, 4, 2), (1, 2, 3), (3, 4, 0)],
 )
 def test_unary_iteration_gate(selection_bitsize, target_bitsize, control_bitsize):
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -188,11 +189,13 @@ def test_unary_iteration_loop_empty_range():
 
 
 @pytest.mark.parametrize(
-    "selection_bitsize, target_bitsize, control_bitsize", [(3, 5, 1), (2, 4, 2), (1, 2, 3)]
+    "selection_bitsize, target_bitsize, control_bitsize",
+    [(3, 5, 1), (2, 4, 2), (1, 2, 3), (3, 4, 0)],
 )
 def test_bloq_has_consistent_decomposition(selection_bitsize, target_bitsize, control_bitsize):
     bloq = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
     assert_valid_bloq_decomposition(bloq)
+    assert bloq.t_complexity().t == 4 * (target_bitsize - 2 + control_bitsize)
 
 
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])

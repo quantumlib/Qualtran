@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Set, Union
 
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT, Register
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet, SoquetT, Register
 from qualtran.bloqs.basic_gates import CSwap, Toffoli
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
@@ -83,11 +83,9 @@ class CtrlModMul(Bloq):
         bb.free(y)
         return {'ctrl': ctrl, 'x': x}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        if ssa is None:
-            raise ValueError(f"{self} requires a SympySymbolAllocator")
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
-        return {(2, self._Add(k=k)), (1, CSwap(self.bitsize))}
+        return {(self._Add(k=k), 2), (CSwap(self.bitsize), 1)}
 
     def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
         if ctrl == 0:
@@ -178,3 +176,25 @@ class ModDbl(Bloq):
 
     def short_name(self) -> str:
         return f'x = 2 * x mod {self.p}'
+
+
+@bloq_example
+def _modmul() -> CtrlModMul:
+    modmul = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
+    return modmul
+
+
+@bloq_example
+def _modmul_symb() -> CtrlModMul:
+    import sympy
+
+    k, N, n_x = sympy.symbols('k N n_x')
+    modmul_symb = CtrlModMul(k=k, mod=N, bitsize=n_x)
+    return modmul_symb
+
+
+_MODMUL_DOC = BloqDocSpec(
+    bloq_cls=CtrlModMul,
+    import_line='from qualtran.bloqs.factoring.mod_mul import CtrlModMul',
+    examples=(_modmul_symb, _modmul),
+)

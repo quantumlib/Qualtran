@@ -21,8 +21,8 @@ def test_ctrl_scale_mod_add():
     bloq = CtrlScaleModAdd(k=123, mod=13 * 17, bitsize=8)
     assert bloq.short_name() == 'y += x*123 % 221'
 
-    counts = bloq.bloq_counts(SympySymbolAllocator())
-    ((n, bloq),) = counts
+    counts = bloq.bloq_counts()
+    ((bloq, n),) = counts.items()
     assert n == 8
 
 
@@ -30,8 +30,8 @@ def test_ctrl_mod_add_k():
     bloq = CtrlModAddK(k=123, mod=13 * 17, bitsize=8)
     assert bloq.short_name() == 'x += 123 % 221'
 
-    counts = bloq.bloq_counts(SympySymbolAllocator())
-    ((n, bloq),) = counts
+    counts = bloq.bloq_counts()
+    ((bloq, n),) = counts.items()
     assert n == 5
 
 

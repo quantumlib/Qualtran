@@ -12,17 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Functionality for the `Bloq.bloq_counts()` protocol."""
+"""Functionality for the `Bloq.call_graph()` protocol."""
 
 from collections import defaultdict
-from typing import Callable, Dict, Optional, Sequence, Set, Tuple, Union
+from typing import Callable, Dict, Optional, Set, Tuple, Union
 
 import networkx as nx
 import sympy
 
-from qualtran import Bloq, CompositeBloq
+from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
-BloqCountT = Tuple[Union[int, sympy.Expr], Bloq]
+BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
 
 
 def big_O(expr) -> sympy.Order:
@@ -51,9 +51,7 @@ class SympySymbolAllocator:
         return s
 
 
-def get_cbloq_bloq_counts(
-    cbloq: CompositeBloq, generalizer: Callable[[Bloq], Optional[Bloq]] = None
-) -> Set[BloqCountT]:
+def _build_cbloq_counts_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
     """Count all the subbloqs in a composite bloq.
 
     `CompositeBloq.resource_counting` calls this with no generalizer.
@@ -63,27 +61,22 @@ def get_cbloq_bloq_counts(
         generalizer: A function that replaces bloq attributes that do not affect resource costs
             with sympy placeholders.
     """
-    if generalizer is None:
-        generalizer = lambda b: b
 
     counts: Dict[Bloq, int] = defaultdict(lambda: 0)
     for binst in cbloq.bloq_instances:
-        bloq = binst.bloq
-        bloq = generalizer(bloq)
-        if bloq is None:
-            continue
+        counts[binst.bloq] += 1
 
-        counts[bloq] += 1
-
-    return {(n, bloq) for bloq, n in counts.items()}
+    return {(bloq, n) for bloq, n in counts.items()}
 
 
-def _descend_counts(
+def _recurse_call_graph(
     parent: Bloq,
     g: nx.DiGraph,
     ssa: SympySymbolAllocator,
     generalizer: Callable[[Bloq], Optional[Bloq]],
-    keep: Sequence[Bloq],
+    keep: Callable[[Bloq], bool],
+    max_depth: Optional[int],
+    depth: int,
 ) -> Dict[Bloq, Union[int, sympy.Expr]]:
     """Recursive counting function.
 
@@ -103,17 +96,22 @@ def _descend_counts(
     g.add_node(parent)
 
     # Base case 1: This node is requested by the user to be a leaf node via the `keep` parameter.
-    if parent in keep:
+    if keep(parent):
         return {parent: 1}
+
+    # Base case 2: Max depth exceeded
+    if max_depth is not None and depth >= max_depth:
+        return {parent: 1}
+
     try:
-        count_decomp = parent.bloq_counts(ssa)
-    except NotImplementedError:
-        # Base case 2: Decomposition (or `bloq_counts`) is not implemented. This is left as a
+        count_decomp = parent.build_call_graph(ssa)
+    except (DecomposeNotImplementedError, DecomposeTypeError):
+        # Base case 3: Decomposition (or `bloq_counts`) is not implemented. This is left as a
         #              leaf node.
         return {parent: 1}
 
     sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
-    for n, child in count_decomp:
+    for child, n in count_decomp:
         child = generalizer(child)
         if child is None:
             continue
@@ -125,7 +123,7 @@ def _descend_counts(
             g.add_edge(parent, child, n=n)
 
         # Do the recursive step, which will continue to mutate `g`
-        child_counts = _descend_counts(child, g, ssa, generalizer, keep)
+        child_counts = _recurse_call_graph(child, g, ssa, generalizer, keep, max_depth, depth + 1)
 
         # Update `sigma` with the recursion results.
         for k in child_counts.keys():
@@ -134,36 +132,40 @@ def _descend_counts(
     return dict(sigma)
 
 
-def get_bloq_counts_graph(
+def get_bloq_call_graph(
     bloq: Bloq,
     generalizer: Callable[[Bloq], Optional[Bloq]] = None,
     ssa: Optional[SympySymbolAllocator] = None,
-    keep: Optional[Sequence[Bloq]] = None,
+    keep: Optional[Callable[[Bloq], bool]] = None,
+    max_depth: Optional[int] = None,
 ) -> Tuple[nx.DiGraph, Dict[Bloq, Union[int, sympy.Expr]]]:
-    """Recursively gather bloq counts.
+    """Recursively build the bloq call graph and call totals.
+
+    See `Bloq.call_graph()` as a convenient way of calling this function.
 
     Args:
         bloq: The bloq to count sub-bloqs.
         generalizer: If provided, run this function on each (sub)bloq to replace attributes
-            that do not affect resource estimates with generic sympy symbols. If this function
-            returns `None`, the bloq is ommitted from the counts graph.
-        ssa: a `SympySymbolAllocator` that will be passed to the `Bloq.bloq_counts` methods. If
+            that do not affect resource estimates with generic sympy symbols. If the function
+            returns `None`, the bloq is omitted from the counts graph.
+        ssa: a `SympySymbolAllocator` that will be passed to the `Bloq.build_call_graph` method. If
             your `generalizer` function closes over a `SympySymbolAllocator`, provide it here as
             well. Otherwise, we will create a new allocator.
-        keep: Stop recursing and keep these bloqs as leaf nodes in the counts graph. Otherwise,
-            leaf nodes are those without a decomposition.
+        keep: If this function evaluates to True for the current bloq, keep the bloq as a leaf
+            node in the call graph instead of recursing into it.
+        max_depth: If provided, build a call graph with at most this many layers.
 
     Returns:
-        g: A directed graph where nodes are (generalized) bloqs and edge attribute 'n' counts
-            how many of the successor bloqs are used in the decomposition of the predecessor
-            bloq(s).
-        sigma: A mapping from leaf bloqs to their total counts.
-
+        g: A directed graph where nodes are (generalized) bloqs and edge attribute 'n' reports
+            the number of times successor bloq is called via its predecessor.
+        sigma: Call totals for "leaf" bloqs. We keep a bloq as a leaf in the call graph
+            according to `keep` and `max_depth` (if provided) or if a bloq cannot be
+            decomposed.
     """
     if ssa is None:
         ssa = SympySymbolAllocator()
     if keep is None:
-        keep = []
+        keep = lambda b: False
     if generalizer is None:
         generalizer = lambda b: b
 
@@ -171,7 +173,7 @@ def get_bloq_counts_graph(
     bloq = generalizer(bloq)
     if bloq is None:
         raise ValueError("You can't generalize away the root bloq.")
-    sigma = _descend_counts(bloq, g, ssa, generalizer, keep)
+    sigma = _recurse_call_graph(bloq, g, ssa, generalizer, keep, max_depth, depth=0)
     return g, sigma
 
 

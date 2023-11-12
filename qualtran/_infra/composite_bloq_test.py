@@ -41,6 +41,7 @@ from qualtran import (
 )
 from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import IntEffect, ZeroEffect
 from qualtran.bloqs.util_bloqs import Join
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -342,7 +343,7 @@ def test_complicated_target_register():
     # note: this includes the two `Dangling` generations.
     assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
 
-    circuit, _ = cbloq.to_cirq_circuit(**bloq.signature.get_cirq_quregs())
+    circuit, _ = cbloq.to_cirq_circuit(**get_named_qubits(bloq.signature.lefts()))
     cirq.testing.assert_has_diagram(
         circuit,
         """\

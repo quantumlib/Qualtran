@@ -26,6 +26,43 @@ from qualtran.bloqs.basic_gates import (
     ZeroState,
     ZGate,
 )
+from qualtran.bloqs.basic_gates.z_basis import (
+    _int_effect,
+    _int_state,
+    _one_effect,
+    _one_state,
+    _zero_effect,
+    _zero_state,
+    _zgate,
+)
+
+
+def test_zero_state(bloq_autotester):
+    bloq_autotester(_zero_state)
+
+
+def test_zero_effect(bloq_autotester):
+    bloq_autotester(_zero_effect)
+
+
+def test_one_state(bloq_autotester):
+    bloq_autotester(_one_state)
+
+
+def test_one_effect(bloq_autotester):
+    bloq_autotester(_one_effect)
+
+
+def test_zgate(bloq_autotester):
+    bloq_autotester(_zgate)
+
+
+def test_int_state(bloq_autotester):
+    bloq_autotester(_int_state)
+
+
+def test_int_effect(bloq_autotester):
+    bloq_autotester(_int_effect)
 
 
 def _make_zero_state():
@@ -34,7 +71,7 @@ def _make_zero_state():
     return ZeroState()
 
 
-def test_zero_state():
+def test_zero_state_manual():
     bloq = ZeroState()
     assert str(bloq) == 'ZeroState(n=1)'
     assert not bloq.bit
@@ -53,7 +90,7 @@ def test_multiq_zero_state():
         _ = ZeroState(n=10)
 
 
-def test_one_state():
+def test_one_state_manual():
     bloq = OneState()
     assert bloq.bit
     assert bloq.state
@@ -65,7 +102,7 @@ def test_one_state():
     assert x == 1
 
 
-def test_zero_effect():
+def test_zero_effect_manual():
     bloq = ZeroEffect()
     vector = bloq.tensor_contract()
 
@@ -84,7 +121,7 @@ def test_zero_effect():
         bloq.call_classically(q=[0, 0, 0])
 
 
-def test_one_effect():
+def test_one_effect_manual():
     bloq = OneEffect()
     vector = bloq.tensor_contract()
 
@@ -123,7 +160,7 @@ def test_zero_state_effect(bit):
     assert res == ()
 
 
-def test_int_state():
+def test_int_state_manual():
     k = IntState(255, bitsize=8)
     assert k.short_name() == '255'
     assert k.pretty_name() == '|255>'
@@ -138,7 +175,7 @@ def test_int_state():
     np.testing.assert_allclose(k.tensor_contract(), k.decompose_bloq().tensor_contract())
 
 
-def test_int_effect():
+def test_int_effect_manual():
     k = IntEffect(255, bitsize=8)
     assert k.short_name() == '255'
     assert k.pretty_name() == '<255|'

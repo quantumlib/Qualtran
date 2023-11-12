@@ -29,19 +29,21 @@ types (``Register``), and algorithms (``CompositeBloq``). :ref:`Read more... <bl
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    bloq_infra.rst
 
 
 
-:ref:`bloq_algos`
+:ref:`bloqs_library`
 ------------------------------
 
 ``qualtran.bloqs`` contains implementations of primitive operations, quantum subroutines,
-and high-level quantum programs. :ref:`Read more... <bloq_algos>`
+and high-level quantum programs. :ref:`Read more... <bloqs_library>`
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    bloqs/index.rst
 

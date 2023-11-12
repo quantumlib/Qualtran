@@ -13,7 +13,7 @@
 #  limitations under the License.
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Sequence, Set, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -26,7 +26,7 @@ from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -76,7 +76,7 @@ class THCRotations(Bloq):
         dag = '†' if self.adjoint else ''
         return f"In_mu-R{dag}"
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, Bloq]]:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # from listings on page 17 of Ref. [1]
         num_data_sets = self.num_mu + self.num_spin_orb // 2
         if self.adjoint:
@@ -97,7 +97,7 @@ class THCRotations(Bloq):
         # xref https://github.com/quantumlib/Qualtran/issues/370, the cost below
         # assume a phase gradient.
         rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
-        return {(4 * (rot_cost + toff_cost_qrom), TGate())}
+        return {(TGate(), 4 * (rot_cost + toff_cost_qrom))}
 
 
 @frozen
@@ -183,7 +183,7 @@ class SelectTHC(Bloq):
         )
         # Controlled Z_0
         split_sys = bb.split(sys_a)
-        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), qubits=[succ, split_sys[0]])
+        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
         sys_a = bb.join(split_sys)
         # Undo rotations
         eq_nu_mp1, data, mu, sys_a = bb.add(
@@ -235,7 +235,7 @@ class SelectTHC(Bloq):
         )
         # Controlled Z_0
         split_sys = bb.split(sys_a)
-        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), qubits=[succ, split_sys[0]])
+        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
         sys_a = bb.join(split_sys)
         # Undo rotations
         eq_nu_mp1, data, nu, sys_a = bb.add(
