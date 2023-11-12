@@ -85,7 +85,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
 
 
 def test_prepare_graph():
-    from qualtran.bloqs.chemistry.thc_notebook_utils import generalize
+    from qualtran.bloqs.chemistry.thc.notebook_utils import generalize
     from qualtran.resource_counting import get_bloq_counts_graph
 
     num_mu = 10
