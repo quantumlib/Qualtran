@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd
+from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd, ModAdd
 from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.bloqs.basic_gates import Toffoli
 
 
 def test_ctrl_scale_mod_add():
@@ -32,3 +33,9 @@ def test_ctrl_mod_add_k():
     counts = bloq.bloq_counts(SympySymbolAllocator())
     ((n, bloq),) = counts
     assert n == 5
+
+
+def test_mod_add():
+    bloq = ModAdd(bitsize=8, p=3)
+    assert bloq.short_name() == 'y = y + x mod 3'
+    assert bloq.bloq_counts() == {(32, Toffoli())}

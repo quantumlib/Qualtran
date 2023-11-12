@@ -20,8 +20,9 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.bloqs.factoring.mod_mul import CtrlModMul
+from qualtran.bloqs.factoring.mod_mul import CtrlModMul, ModMul, ModDbl
 from qualtran.bloqs.util_bloqs import Allocate, Free
+from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
 
 
@@ -128,3 +129,15 @@ def test_consistent_counts():
     counts2 = get_cbloq_bloq_counts(bloq.decompose_bloq(), generalizer=generalize)
 
     assert counts1 == counts2
+
+
+def test_mod_mul():
+    bloq = ModMul(bitsize=8, p=3)
+    assert bloq.short_name() == 'out = x * y mod 3'
+    assert bloq.bloq_counts() == {(216, Toffoli())}
+
+
+def test_mod_dbl():
+    bloq = ModDbl(bitsize=8, p=3)
+    assert bloq.short_name() == 'x = 2 * x mod 3'
+    assert bloq.bloq_counts() == {(16, Toffoli())}

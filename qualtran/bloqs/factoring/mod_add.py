@@ -23,6 +23,7 @@ from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.bloqs.basic_gates import Toffoli
 
 
 @frozen
@@ -142,3 +143,36 @@ class CtrlAddK(Bloq):
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=2 * self.bitsize)
+
+
+@frozen
+class ModAdd(Bloq):
+    r"""An n-bit modular addition gate.
+
+    Implements $U|x\rangle|y\rangle \rightarrow |x\rangle|y + x \mod p\rangle$ using $4n$ Toffoli
+    gates.
+
+    Args:
+        bitsize: Number of bits used to represent each integer.
+        p: The modulus for the addition.
+
+    Registers:
+        x: A bitsize-sized input register (register x above).
+        y: A bitsize-sized input/output register (register y above).
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig 6 and 8
+    """
+
+    bitsize: Union[int, sympy.Expr]
+    p: Union[int, sympy.Expr]
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(4 * self.bitsize, Toffoli())}
+
+    def short_name(self) -> str:
+        return f'y = y + x mod {self.p}'

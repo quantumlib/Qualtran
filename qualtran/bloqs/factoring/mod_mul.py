@@ -18,8 +18,8 @@ from typing import Dict, Optional, Set, Union
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
-from qualtran.bloqs.basic_gates import CSwap
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT, Register
+from qualtran.bloqs.basic_gates import CSwap, Toffoli
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -104,3 +104,77 @@ class CtrlModMul(Bloq):
             return Circle(filled=True)
         if soq.reg.name == 'x':
             return directional_text_box(f'*={self.k}', side=soq.reg.side)
+
+
+@frozen
+class ModMul(Bloq):
+    r"""An n-bit modular multiplication gate.
+
+    Implements $U|x\rangle|y\rangle|0\rangle \rightarrow |x\rangle|y\rangle|x * y \mod p\rangle$
+    using $2.25n^2 + 9n$ Toffoli gates.
+
+    Args:
+        bitsize: Number of bits used to represent each integer.
+        p: The modulus for the multiplication.
+
+    Registers:
+        x: A bitsize-sized input register (register x above).
+        y: A bitsize-sized input register (register y above).
+        out: A bitsize-sized input register holding the output of the modular multiplication.
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6 and 8
+    """
+
+    bitsize: Union[int, sympy.Expr]
+    p: Union[int, sympy.Expr]
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(
+            [
+                Register('x', bitsize=self.bitsize),
+                Register('y', bitsize=self.bitsize),
+                Register('out', bitsize=self.bitsize),
+            ]
+        )
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        # Upper bound is 2.25 * (n ** 2) + 9n.
+        return {(2.25 * (self.bitsize**2) + 9 * self.bitsize, Toffoli())}
+
+    def short_name(self) -> str:
+        return f'out = x * y mod {self.p}'
+
+
+@frozen
+class ModDbl(Bloq):
+    r"""An n-bit modular doubling gate.
+
+    Implements $U|x\rangle \rightarrow |2 * x \mod p\rangle$ using $2n$ Toffoli gates.
+
+    Args:
+        bitsize: Number of bits used to represent each integer.
+        p: The modulus for the doubling.
+
+    Registers:
+        x: A bitsize-sized input register (register x above).
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6 and 8
+    """
+
+    bitsize: Union[int, sympy.Expr]
+    p: Union[int, sympy.Expr]
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', bitsize=self.bitsize)])
+
+    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+        return {(2 * self.bitsize, Toffoli())}
+
+    def short_name(self) -> str:
+        return f'x = 2 * x mod {self.p}'

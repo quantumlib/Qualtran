@@ -13,34 +13,16 @@
 #  limitations under the License.
 
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.factoring.mod_arithmetic import ModAdd, ModDbl, ModMult, ModNeg, ModSub
-
-
-def test_mod_add():
-    bloq = ModAdd(bitsize=8)
-    assert bloq.short_name() == 'y = y + x mod p'
-    assert bloq.bloq_counts() == {(32, Toffoli())}
+from qualtran.bloqs.factoring.mod_sub import ModNeg, ModSub
 
 
 def test_mod_sub():
-    bloq = ModSub(bitsize=8)
-    assert bloq.short_name() == 'y = y - x mod p'
+    bloq = ModSub(bitsize=8, p=3)
+    assert bloq.short_name() == 'y = y - x mod 3'
     assert bloq.bloq_counts() == {(48, Toffoli())}
 
 
 def test_mod_neg():
-    bloq = ModNeg(bitsize=8)
-    assert bloq.short_name() == 'x = -x mod p'
+    bloq = ModNeg(bitsize=8, p=3)
+    assert bloq.short_name() == 'x = -x mod 3'
     assert bloq.bloq_counts() == {(16, Toffoli())}
-
-
-def test_mod_dbl():
-    bloq = ModDbl(bitsize=8)
-    assert bloq.short_name() == 'x = 2 * x mod p'
-    assert bloq.bloq_counts() == {(16, Toffoli())}
-
-
-def test_mod_mult():
-    bloq = ModMult(bitsize=8)
-    assert bloq.short_name() == 'out = x * y mod p'
-    assert bloq.bloq_counts() == {(200, Toffoli())}
