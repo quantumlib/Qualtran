@@ -21,7 +21,6 @@ from attrs import frozen
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import QROAM
-from qualtran.bloqs.chemistry.df.common_bitsize import get_num_bits_lxi
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -35,8 +34,8 @@ class ProgRotGateArray(Bloq):
 
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Called L in Ref[1].
-        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
         num_spin_orb: The number of spin orbitals. Typically called N.
+        num_eig: The total number of eigenvalues.
         num_bits_rot: Number of bits of precision for rotations
             amplification in uniform state preparation. Called $\beth$ in Ref[1].
 
@@ -53,8 +52,8 @@ class ProgRotGateArray(Bloq):
     """
 
     num_aux: int
-    num_xi: int
     num_spin_orb: int
+    num_eig: int
     num_bits_rot: int
     adjoint: bool = False
 
@@ -64,11 +63,12 @@ class ProgRotGateArray(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
+        nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
+        nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature(
             [
-                Register('offset', num_bits_lxi),
-                Register('p', (self.num_xi - 1).bit_length()),
+                Register('offset', nlxi),
+                Register('p', nxi),
                 Register('rotations', bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
                 Register('spin', bitsize=1),
                 Register('sys', bitsize=self.num_spin_orb // 2, shape=(2,)),
@@ -77,9 +77,10 @@ class ProgRotGateArray(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Step 4 in the reference.
-        num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
-        cost_a = num_bits_lxi - 1  # contiguous register
-        data_size = self.num_aux * self.num_xi + self.num_spin_orb // 2
+        nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
+        nxi = (self.num_spin_orb // 2 - 1).bit_length()
+        cost_a = nlxi - 1  # contiguous register
+        data_size = self.num_eig + self.num_spin_orb // 2
         cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations
         return {
             (Toffoli(), (cost_a + cost_c)),

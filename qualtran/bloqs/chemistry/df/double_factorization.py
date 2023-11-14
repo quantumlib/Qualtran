@@ -39,7 +39,6 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
-from qualtran.bloqs.chemistry.df.common_bitsize import get_num_bits_lxi
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
     OuterPrepareDoubleFactorization,
@@ -64,7 +63,7 @@ class DoubleFactorizationOneBody(Bloq):
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
         num_spin_orb: The number of spin orbitals. Typically called $N$.
-        num_xi: Rank of second factorization. Full rank implies $\Xi$ = num_spin_orb // 2.
+        num_eig: The total number of eigenvalues.
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called $\aleph$ in the reference.
         num_bits_rot_aa_outer: Number of bits of precision for single qubit
@@ -94,7 +93,7 @@ class DoubleFactorizationOneBody(Bloq):
     """
     num_aux: int
     num_spin_orb: int
-    num_xi: int
+    num_eig: int
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
     num_bits_rot: int = 24
@@ -111,15 +110,15 @@ class DoubleFactorizationOneBody(Bloq):
     @property
     def selection_registers(self) -> Iterable[Register]:
         return (
-            Register("p", bitsize=(self.num_xi - 1).bit_length()),
+            Register("p", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
             Register("rot_aa", bitsize=1),
             Register("spin", bitsize=1),
         )
 
     @property
     def junk_registers(self) -> Iterable[Register]:
-        nlxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
-        nxi = (self.num_xi - 1).bit_length()  # C14
+        nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
+        nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return (
             Register("xi", bitsize=nxi),
             Register("offset", bitsize=nlxi),
@@ -164,7 +163,7 @@ class DoubleFactorizationOneBody(Bloq):
         in_prep = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=False,
@@ -176,7 +175,7 @@ class DoubleFactorizationOneBody(Bloq):
         spin, sys[0], sys[1] = bb.add(CSwap(self.num_spin_orb // 2), ctrl=spin, x=sys[0], y=sys[1])
         prot = ProgRotGateArray(
             num_aux=self.num_aux,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
             adjoint=False,
@@ -191,7 +190,7 @@ class DoubleFactorizationOneBody(Bloq):
         # 2nd half (invert preparation / swaps)
         prot = ProgRotGateArray(
             num_aux=self.num_aux,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
             adjoint=True,
@@ -203,7 +202,7 @@ class DoubleFactorizationOneBody(Bloq):
         in_prep_dag = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=True,
@@ -231,14 +230,14 @@ class DoubleFactorizationOneBody(Bloq):
         in_prep = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=False,
         )
         rot = ProgRotGateArray(
             num_aux=self.num_aux,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
             adjoint=False,
@@ -246,14 +245,14 @@ class DoubleFactorizationOneBody(Bloq):
         in_prep_dag = InnerPrepareDoubleFactorization(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
             adjoint=True,
         )
         rot_dag = ProgRotGateArray(
             num_aux=self.num_aux,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
             adjoint=True,
@@ -283,7 +282,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         num_spin_orb: The number of spin orbitals. Typically called $N$.
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian.
             Typically called $L$.
-        num_xi: Rank of second factorization. Full rank implies $\Xi$ = num_spin_orb // 2.
+        num_eig: The total number of eigenvalues.
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called $\aleph$ in Ref[1]. We assume this is the same for
             both outer and inner state preparations.
@@ -315,7 +314,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
     """
     num_spin_orb: int
     num_aux: int
-    num_xi: int
+    num_eig: int
     num_bits_state_prep: int = 8
     num_bits_rot: int = 24
     num_bits_rot_aa_outer: int = 8
@@ -351,15 +350,15 @@ class DoubleFactorizationBlockEncoding(Bloq):
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register("l", bitsize=self.num_aux.bit_length()),
-            Register("p", bitsize=(self.num_xi - 1).bit_length()),
+            Register("p", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
             Register("spin", bitsize=1),
             Register('rot_aa', bitsize=1),
         )
 
     @property
     def junk_registers(self) -> Iterable[Register]:
-        nlxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
-        nxi = (self.num_xi - 1).bit_length()  # C14
+        nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
+        nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return (
             Register("xi", bitsize=nxi),
             Register("offset", bitsize=nlxi),
@@ -397,7 +396,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         sys: SoquetT,
     ) -> Dict[str, 'SoquetT']:
         succ_l, l_ne_zero, theta, succ_p = ctrl
-        num_bits_xi = (self.num_xi - 1).bit_length()  # C14
+        num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()  # C14
         outer_prep = OuterPrepareDoubleFactorization(
             self.num_aux,
             num_bits_state_prep=self.num_bits_state_prep,
@@ -407,7 +406,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         in_l_data_l = OutputIndexedData(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa_inner,
         )
         l, l_ne_zero, xi, rot, offset = bb.add(
@@ -416,7 +415,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         one_body = DoubleFactorizationOneBody(
             self.num_aux,
             self.num_spin_orb,
-            self.num_xi,
+            self.num_eig,
             self.num_bits_state_prep,
             num_bits_rot_aa=self.num_bits_rot_aa_inner,
             num_bits_rot=self.num_bits_rot,
@@ -461,7 +460,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         in_l_data_l = OutputIndexedData(
             num_aux=self.num_aux,
             num_spin_orb=self.num_spin_orb,
-            num_xi=self.num_xi,
+            num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa_inner,
             adjoint=True,
         )
@@ -498,11 +497,11 @@ def _df_one_body() -> DoubleFactorizationOneBody:
     num_bits_rot = 7
     num_spin_orb = 10
     num_aux = 50
-    num_eig = num_spin_orb // 2
+    num_eig = num_aux * (num_spin_orb // 2)
     df_one_body = DoubleFactorizationOneBody(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,
-        num_xi=num_eig,
+        num_eig=num_eig,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot=num_bits_rot,
         adjoint=False,
@@ -514,13 +513,13 @@ def _df_one_body() -> DoubleFactorizationOneBody:
 def _df_block_encoding() -> DoubleFactorizationBlockEncoding:
     num_spin_orb = 10
     num_aux = 50
-    num_eig = num_spin_orb // 2
+    num_eig = num_aux * (num_spin_orb // 2)
     num_bits_state_prep = 12
     num_bits_rot = 7
     df_block_encoding = DoubleFactorizationBlockEncoding(
         num_spin_orb=num_spin_orb,
         num_aux=num_aux,
-        num_xi=num_eig,
+        num_eig=num_eig,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa_outer=1,
         num_bits_rot_aa_inner=7,

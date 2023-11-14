@@ -31,42 +31,16 @@ def test_one_body_block_encoding(bloq_autotester):
     bloq_autotester(_df_one_body)
 
 
-def test_compare_cost_one_body():
-    num_spin_orb = 10
-    num_aux = 50
-    num_eig = num_spin_orb // 2
-    num_bits_state_prep = 12
-    num_bits_rot = 7
-    bloq = DoubleFactorizationOneBody(
-        num_spin_orb=num_spin_orb,
-        num_aux=num_aux,
-        num_xi=num_eig,
-        num_bits_state_prep=num_bits_state_prep,
-        num_bits_rot_aa=7,
-        num_bits_rot=num_bits_rot,
-    )
-    _, costs = bloq.call_graph()
-    qual_costs = 2 * costs[TGate()]
-    qual_costs += 4
-    # inner prepare
-    of_cost = 4 * (497 + 1)
-    # rotations
-    of_cost += 4 * (615 + 3)
-    of_cost += 7 * 4 * (num_spin_orb // 2)  # Note swaps cost 7 Ts if using basic controlled swaps.
-    of_cost += 3 * 4
-    assert qual_costs == of_cost
-
-
 def test_compare_cost_one_body_decomp():
     num_spin_orb = 10
     num_aux = 50
-    num_eig = num_spin_orb // 2
+    num_eig = num_aux * num_spin_orb // 2
     num_bits_state_prep = 12
     num_bits_rot = 7
     bloq = DoubleFactorizationOneBody(
         num_spin_orb=num_spin_orb,
         num_aux=num_aux,
-        num_xi=num_eig,
+        num_eig=num_eig,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa=7,
         num_bits_rot=num_bits_rot,
@@ -77,50 +51,41 @@ def test_compare_cost_one_body_decomp():
 
 
 def test_compare_cost_to_openfermion():
-    num_spin_orb = 10
-    num_aux = 50
-    num_eig = num_spin_orb // 2
-    num_bits_state_prep = 12
-    num_bits_rot = 7
-    unused_lambda = 10
-    unused_de = 1e-3
-    unused_stps = 100
+    num_spin_orb = 108
+    num_aux = 360
+    num_bits_rot = 16
+    num_eig = 13031
+    num_bits_state_prep = 10
+    lambd = 294.8
     bloq = DoubleFactorizationBlockEncoding(
         num_spin_orb=num_spin_orb,
         num_aux=num_aux,
-        num_xi=num_eig,
+        num_eig=num_eig,
         num_bits_state_prep=num_bits_state_prep,
-        num_bits_rot_aa_outer=1,
+        num_bits_rot_aa_outer=7,
         num_bits_rot_aa_inner=7,
         num_bits_rot=num_bits_rot,
     )
     _, counts = bloq.call_graph()
     # https://github.com/quantumlib/OpenFermion/issues/839
     of_cost = compute_cost(
-        num_spin_orb,
-        unused_lambda,
-        unused_de,
-        num_aux,
-        num_eig * num_aux,
-        num_bits_state_prep,
-        num_bits_rot,
-        unused_stps,
+        num_spin_orb, lambd, 1e-3, num_aux, num_eig, num_bits_state_prep, num_bits_rot, 10_000
     )[0]
     # included in OF estimates
-    refl_cost = 22
-    walk_cost = 2
-    # discrepencies with implementation
-    in_prep_diff = 1  # shouldn't output one-body second time around
-    rot_diff = 3  # Difference from not loading one-body
-    in_data_diff = 6  # Hardcoded problem in OF
-    diff_ctrl_z = 1  # 1 additional Toffoli from controlling l_ne_zero
-    # reflection on ancilla for state prepation (alias sampling) + 1 (they cost it
-    # as n_bits not n_bits - 1)
-    inner_refl_diff = num_bits_state_prep + 1
-    diff = in_prep_diff + rot_diff + in_data_diff - diff_ctrl_z - inner_refl_diff
-    qual_cost = counts[TGate()] + 4 * (refl_cost + walk_cost - diff)
+    nxi = (num_spin_orb // 2 - 1).bit_length()
+    nl = num_aux.bit_length()
+    inner_prep_qrom_diff = 8
+    prog_rot_qrom_diff = 60
+    missing_toffoli = 4  # need one more toffoli for second application of CZ
+    swap_cost = 4 * (7 - 4) * num_spin_orb // 2
+    qual_cost = (
+        counts[TGate()] - inner_prep_qrom_diff - prog_rot_qrom_diff + missing_toffoli - swap_cost
+    )
+    inner_refl = num_bits_state_prep + 1
+    walk_refl = nl + nxi + num_bits_state_prep + 1
+    qpe_toff = 2
+    of_cost = of_cost - inner_refl - walk_refl - qpe_toff
     of_cost *= 4
-    of_cost += 60
     assert of_cost == qual_cost
 
 

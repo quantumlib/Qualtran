@@ -22,7 +22,6 @@ from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition, QROAM
-from qualtran.bloqs.chemistry.df.common_bitsize import get_num_bits_lxi
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -37,7 +36,7 @@ class InnerPrepareDoubleFactorization(Bloq):
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Call L in Ref[1].
         num_spin_orb: The number of spin orbitals. Typically called N.
-        num_xi: Rank of second factorization. Full rank implies $Xi$ = num_spin_orb // 2.
+        num_eig: Total number of eigenvalues.
         num_bits_rot_aa: Number of bits of precision for single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
         num_bits_state_prep: The number of bits of precision for coherent alias
@@ -57,7 +56,7 @@ class InnerPrepareDoubleFactorization(Bloq):
 
     num_aux: int
     num_spin_orb: int
-    num_xi: int
+    num_eig: int
     num_bits_rot_aa: int
     num_bits_state_prep: int
     adjoint: bool = False
@@ -68,27 +67,22 @@ class InnerPrepareDoubleFactorization(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
-        return Signature.build(
-            xi=(self.num_xi - 1).bit_length(),
-            offset=lxi,
-            rot=self.num_bits_rot_aa,
-            succ_p=1,
-            p=(self.num_xi - 1).bit_length(),
-        )
+        nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
+        nxi = (self.num_spin_orb // 2 - 1).bit_length()
+        return Signature.build(xi=nxi, offset=nlxi, rot=self.num_bits_rot_aa, succ_p=1, p=nxi)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Step 3.
-        num_bits_xi = (self.num_xi - 1).bit_length()
+        num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
         # uniform superposition state, requires controlled hadamards
         # https://github.com/quantumlib/Qualtran/issues/237
         cost_a = (Toffoli(), 7 * num_bits_xi + 2 * self.num_bits_rot_aa - 6)
-        num_bits_lxi = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
         # add offset to get correct bit of QROM from [l + offset^l, l+offset^l+Xi^l]
+        num_bits_lxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         cost_b = (Add(num_bits_lxi), 1)
         # QROAM for alt/keep values
         bp = num_bits_xi + self.num_bits_state_prep + 2  # C31
-        cost_c = (QROAM(self.num_aux * self.num_xi + self.num_spin_orb // 2, bp, self.adjoint), 1)
+        cost_c = (QROAM(self.num_eig + self.num_spin_orb // 2, bp, self.adjoint), 1)
         # inequality tests + CSWAP
         cost_d = (Toffoli(), self.num_bits_state_prep + num_bits_xi)
         return {cost_a, cost_b, cost_c, cost_d}
@@ -164,7 +158,7 @@ class OutputIndexedData(Bloq):
     Args:
         num_aux: Dimension of auxiliary index for double factorized Hamiltonian. Called L in Ref[1].
         num_spin_orb: The number of spin orbitals. Typically called N.
-        num_xi: Rank of second factorization. Full rank implies $Xi = num_spin_orb // 2$.
+        num_eig: Total number of eigenvalues.
         num_bits_rot_aa: Number of bits of precision for single qubit
             rotation for amplitude amplification.  Called $b_r$ in the reference.
         ajoint: Whether to dagger the bloq or note. Affects bloq counts.
@@ -184,7 +178,7 @@ class OutputIndexedData(Bloq):
 
     num_aux: int
     num_spin_orb: int
-    num_xi: int
+    num_eig: int
     num_bits_rot_aa: int = 8
     adjoint: bool = False
 
@@ -194,34 +188,35 @@ class OutputIndexedData(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
+        nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
+        nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature.build(
             l=self.num_aux.bit_length(),
             l_ne_zero=1,
-            xi=(self.num_xi - 1).bit_length(),
+            xi=nxi,
             rot_data=self.num_bits_rot_aa,
-            offset=get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb),
+            offset=nlxi,
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # listing 2 C29/30 page 52
-        num_bits_xi = (self.num_xi - 1).bit_length()
-        num_bits_offset = get_num_bits_lxi(self.num_aux, self.num_xi, self.num_spin_orb)
-        bo = num_bits_xi + num_bits_offset + self.num_bits_rot_aa + 1
+        num_bits_lxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
+        num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
+        bo = num_bits_xi + num_bits_lxi + self.num_bits_rot_aa + 1
         return {(QROAM(self.num_aux + 1, bo, adjoint=self.adjoint), 1)}
 
 
 @bloq_example
 def _prep_inner() -> InnerPrepareDoubleFactorization:
-    num_aux = 50
     num_bits_state_prep = 12
     num_bits_rot = 7
     num_spin_orb = 10
     num_aux = 50
-    num_eig = num_spin_orb // 2
+    num_eig = num_aux * (num_spin_orb // 2)
     prep_inner = InnerPrepareDoubleFactorization(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,
-        num_xi=num_eig,
+        num_eig=num_eig,
         num_bits_rot_aa=num_bits_rot,
         num_bits_state_prep=num_bits_state_prep,
         adjoint=False,
@@ -246,8 +241,8 @@ def _indexed_data() -> OutputIndexedData:
     num_bits_rot = 18
     num_spin_orb = 10
     num_aux = 50
-    num_eig = num_spin_orb // 2
+    num_eig = num_aux * num_spin_orb // 2
     indexed_data = OutputIndexedData(
-        num_aux=num_aux, num_spin_orb=num_spin_orb, num_xi=num_eig, num_bits_rot_aa=num_bits_rot
+        num_aux=num_aux, num_spin_orb=num_spin_orb, num_eig=num_eig, num_bits_rot_aa=num_bits_rot
     )
     return indexed_data
