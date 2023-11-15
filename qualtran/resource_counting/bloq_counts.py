@@ -144,27 +144,27 @@ def _build_call_graph(
             g.add_edge(bloq, callee, n=n)
 
 
-def _compute_sigma(bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, sympy.Expr]]:
-    """Do a separate recursion to add up the counts of leaf bloqs.
+def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, sympy.Expr]]:
+    """Iterate over nodes to sum up the counts of leaf bloqs."""
+    bloq_sigmas: Dict[Bloq, Dict[Bloq, Union[int, sympy.Expr]]] = defaultdict(
+        lambda: defaultdict(lambda: 0)
+    )
+    for bloq in reversed(list(nx.topological_sort(g))):
+        callees = list(g.successors(bloq))
+        sigma = bloq_sigmas[bloq]
+        if not callees:
+            # 1. `bloq` is a leaf node. Its count is one of itself.
+            sigma[bloq] = 1
+            continue
 
-    In contrast to building the call graph, we want to visit a node as many times
-    as it has incident edges.
+        for callee in callees:
+            callee_sigma = bloq_sigmas[callee]
+            # 2. Otherwise, sigma of the caller is sum(n * sigma of callee) for all the callees.
+            n = g.edges[bloq, callee]['n']
+            for k in callee_sigma.keys():
+                sigma[k] += callee_sigma[k] * n
 
-    The fact that this is a separate step will likely be made explicit in future generalizations
-    of 'resource counting'.
-    """
-    callees = list(g.successors(bloq))
-    if not callees:
-        return {bloq: 1}
-
-    sigma: Dict[Bloq, Union[int, sympy.Expr]] = defaultdict(lambda: 0)
-    for callee in callees:
-        callee_sigma = _compute_sigma(callee, g)
-        n = g.edges[bloq, callee]['n']
-        # Update `sigma` with the recursion results.
-        for k in callee_sigma.keys():
-            sigma[k] += callee_sigma[k] * n
-    return dict(sigma)
+    return bloq_sigmas[root_bloq]
 
 
 def get_bloq_call_graph(
