@@ -87,54 +87,6 @@ def _generalize_callees(
     return callee_counts
 
 
-def _build_call_graph_inner(
-    bloq: Bloq,
-    generalizer: Callable[[Bloq], Optional[Bloq]],
-    ssa: SympySymbolAllocator,
-    keep: Callable[[Bloq], bool],
-    max_depth: Optional[int],
-    g: nx.DiGraph,
-    depth: int,
-) -> None:
-    """The inner logic of the recursive `_build_call_graph`.
-
-    This raises `DecomposeTypeError` if we're not supposed to be recursing on `bloq`.
-    This may also raise `DecomposeNotImplementedError` if the call to `bloq.build_call_graph`
-    uses its default fallback (based on decomposition), and a decomposition is not implemented.
-
-    The outer `_build_call_graph` function handles these exceptions with a universal
-    "we're a leaf node" code path.
-    """
-    # Base case 1: This node is requested by the user to be a leaf node via the `keep` parameter.
-    if keep(bloq):
-        raise DecomposeTypeError("Requested via `keep`.")
-
-    # Base case 2: Max depth exceeded
-    if max_depth is not None and depth >= max_depth:
-        raise DecomposeTypeError("Max depth exceeded.")
-
-    # Prep for recursion: get the callees and modify them according to `generalizer`.
-    callee_counts = _generalize_callees(bloq.build_call_graph(ssa), generalizer)
-
-    # Base case 3: Empty list of callees
-    if not callee_counts:
-        raise DecomposeTypeError("Empty list of callees.")
-
-    for callee, n in callee_counts:
-        # Quite important: we do the recursive call first before adding in the edges.
-        # Otherwise, adding the edge would mark the callee node as already-visited by
-        # virtue of it being added to the graph with the `g.add_edge` call.
-
-        # Do the recursive step, which will continue to mutate `g`
-        _build_call_graph(callee, generalizer, ssa, keep, max_depth, g, depth + 1)
-
-        # Update edge in `g`
-        if (bloq, callee) in g.edges:
-            g.edges[bloq, callee]['n'] += n
-        else:
-            g.add_edge(bloq, callee, n=n)
-
-
 def _build_call_graph(
     bloq: Bloq,
     generalizer: Callable[[Bloq], Optional[Bloq]],
@@ -157,11 +109,39 @@ def _build_call_graph(
     # additional node properties here, too.
     g.add_node(bloq)
 
-    try:
-        return _build_call_graph_inner(bloq, generalizer, ssa, keep, max_depth, g, depth)
-    except (DecomposeNotImplementedError, DecomposeTypeError):
-        # We don't do anything bespoke for leaf nodes, but we could...
+    # Base case 1: This node is requested by the user to be a leaf node via the `keep` parameter.
+    if keep(bloq):
         return
+
+    # Base case 2: Max depth exceeded
+    if max_depth is not None and depth >= max_depth:
+        return
+
+    # Prep for recursion: get the callees and modify them according to `generalizer`.
+    try:
+        callee_counts = _generalize_callees(bloq.build_call_graph(ssa), generalizer)
+    except (DecomposeNotImplementedError, DecomposeTypeError):
+        # Base case 3: Decomposition (or `bloq_counts`) is not implemented. This is left as a
+        #              leaf node.
+        return
+
+    # Base case 3: Empty list of callees
+    if not callee_counts:
+        return
+
+    for callee, n in callee_counts:
+        # Quite important: we do the recursive call first before adding in the edges.
+        # Otherwise, adding the edge would mark the callee node as already-visited by
+        # virtue of it being added to the graph with the `g.add_edge` call.
+
+        # Do the recursive step, which will continue to mutate `g`
+        _build_call_graph(callee, generalizer, ssa, keep, max_depth, g, depth + 1)
+
+        # Update edge in `g`
+        if (bloq, callee) in g.edges:
+            g.edges[bloq, callee]['n'] += n
+        else:
+            g.add_edge(bloq, callee, n=n)
 
 
 def _compute_sigma(bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, sympy.Expr]]:
