@@ -33,7 +33,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
             data,
             num_controls,
             id=f"{num_controls}-data{idx}",
-            marks=pytest.mark.skip("slow") if num_controls == 2 and idx == 2 else (),
+            marks=pytest.mark.slow if num_controls == 2 and idx == 2 else (),
         )
         for idx, data in enumerate(
             [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]], [[1], [2], [3], [4], [5], [6]]]
@@ -209,7 +209,7 @@ target01: ────────────────X───────
             data,
             num_controls,
             id=f"{num_controls}-data{idx}",
-            marks=pytest.mark.skip("slow") if num_controls == 2 and idx == 0 else (),
+            marks=pytest.mark.slow if num_controls == 2 and idx == 0 else (),
         )
         for idx, data in enumerate(
             [
