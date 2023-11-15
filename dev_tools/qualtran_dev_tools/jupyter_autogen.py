@@ -127,11 +127,8 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
 
     def _parse_references_section(self, section: str) -> List[str]:
         """Sphinx method to emit a 'References' section."""
-        return [
-            '#### References',
-            ' '.join(line.strip() for line in self._consume_to_next_section()),
-            '',
-        ]
+        lines = self._dedent(self._consume_to_next_section())
+        return ['#### References', '\n'.join(line for line in lines), '']
 
     def _parse_registers_section(self, section: str) -> List[str]:
         def _template(name, desc_lines):

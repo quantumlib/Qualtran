@@ -47,8 +47,6 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import BloqNbSpec, NotebookSpec, render_notebook
 
-import qualtran.bloqs.and_bloq
-import qualtran.bloqs.and_bloq_test
 import qualtran.bloqs.arithmetic
 import qualtran.bloqs.arithmetic.addition_test
 import qualtran.bloqs.arithmetic.comparison_test
@@ -100,15 +98,6 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.basic_gates.rotation_test._make_Rz),
             BloqNbSpec(qualtran.bloqs.basic_gates.toffoli_test._make_Toffoli),
             BloqNbSpec(qualtran.bloqs.basic_gates.hadamard_test._make_Hadamard),
-        ],
-        directory=f'{SOURCE_DIR}/bloqs',
-    ),
-    NotebookSpec(
-        title='And',
-        module=qualtran.bloqs.and_bloq,
-        gate_specs=[
-            BloqNbSpec(qualtran.bloqs.and_bloq_test._make_and),
-            BloqNbSpec(qualtran.bloqs.and_bloq_test._make_multi_and),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),
