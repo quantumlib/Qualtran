@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Sequence, Set, Tuple
 
 import attrs
 import networkx as nx
 import sympy
-from attrs import frozen
+from attrs import field, frozen
 
 import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
@@ -106,3 +106,94 @@ def test_bloq_counts_decomp():
 
 def test_notebook():
     qlt_testing.execute_notebook('bloq_counts')
+
+
+@frozen
+class OnlyCallGraphBloqShim(Bloq):
+    name: str
+    callees: Sequence[BloqCountT] = field(converter=tuple, factory=tuple)
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([])
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return set(self.callees)
+
+    def pretty_name(self):
+        return self.name
+
+
+def make_diamond_graph():
+    c = OnlyCallGraphBloqShim('c')
+    b1 = OnlyCallGraphBloqShim('b1', callees=[(c, 1)])
+    b2 = OnlyCallGraphBloqShim('b2', callees=[(c, 1)])
+    a = OnlyCallGraphBloqShim('a', callees=[(b1, 1), (b2, 1)])
+
+    def combine_bs(bloq):
+        if bloq.name.startswith('b'):
+            return OnlyCallGraphBloqShim('b', callees=[(c, 1)])
+        return bloq
+
+    return a, combine_bs
+
+
+def test_diamond_graph():
+    bloq, _ = make_diamond_graph()
+    graph, sigma = bloq.call_graph()
+    edgeset = {(n1.name, n2.name, graph.edges[n1, n2]['n']) for n1, n2 in graph.edges}
+    sigma = {bloq.name: val for bloq, val in sigma.items()}
+
+    assert edgeset == {('a', 'b1', 1), ('a', 'b2', 1), ('b1', 'c', 1), ('b2', 'c', 1)}
+    assert sigma == {'c': 2}
+
+
+def test_diamond_graph_generalize():
+    bloq, combine_bs = make_diamond_graph()
+    graph, sigma = bloq.call_graph(generalizer=combine_bs)
+    edgeset = {(n1.name, n2.name, graph.edges[n1, n2]['n']) for n1, n2 in graph.edges}
+    sigma = {bloq.name: val for bloq, val in sigma.items()}
+
+    assert edgeset == {('a', 'b', 2), ('b', 'c', 1)}
+    assert sigma == {'c': 2}
+
+
+def make_funnel_graph():
+    c = OnlyCallGraphBloqShim('c')
+    b = OnlyCallGraphBloqShim('b', callees=[(c, 1)])
+    a1 = OnlyCallGraphBloqShim('a1', callees=[(b, 1)])
+    a2 = OnlyCallGraphBloqShim('a2', callees=[(b, 1)])
+    x = OnlyCallGraphBloqShim('x', callees=[(a1, 1), (a2, 1)])
+
+    def combine_as(bloq):
+        if bloq.name.startswith('a'):
+            return OnlyCallGraphBloqShim('a', callees=[(b, 1)])
+        return bloq
+
+    return x, combine_as
+
+
+def test_funnel_graph():
+    bloq, _ = make_funnel_graph()
+    graph, sigma = bloq.call_graph()
+    edgeset = {(n1.name, n2.name, graph.edges[n1, n2]['n']) for n1, n2 in graph.edges}
+    sigma = {bloq.name: val for bloq, val in sigma.items()}
+
+    assert edgeset == {
+        ('x', 'a1', 1),
+        ('x', 'a2', 1),
+        ('a1', 'b', 1),
+        ('a2', 'b', 1),
+        ('b', 'c', 1),
+    }
+    assert sigma == {'c': 2}
+
+
+def test_funnel_graph_generalize():
+    bloq, combine_as = make_funnel_graph()
+    graph, sigma = bloq.call_graph(generalizer=combine_as)
+    edgeset = {(n1.name, n2.name, graph.edges[n1, n2]['n']) for n1, n2 in graph.edges}
+    sigma = {bloq.name: val for bloq, val in sigma.items()}
+
+    assert edgeset == {('x', 'a', 2), ('a', 'b', 1), ('b', 'c', 1)}
+    assert sigma == {'c': 2}
