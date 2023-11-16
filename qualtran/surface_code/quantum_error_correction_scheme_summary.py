@@ -57,49 +57,32 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
         """The number of physical qubits used by the error correction circuit."""
 
     @abc.abstractmethod
-    def error_detection_cycle_time_us(self, code_distance: int) -> float:
+    def syndrome_detection_time_us(self, code_distance: int) -> float:
         """The time of a quantum error correction cycle in seconds."""
 
 
-class SurfaceCode(QuantumErrorCorrectionSchemeSummary):
-    """A Surface Code Quantum Error Correction Scheme."""
+@frozen
+class SimpliedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
+    """A Surface Code Quantum Error Correction Scheme.
+
+    Attributes:
+        single_stabilizer_measurement_time_us: Max time of a single X or Z stabilizer measurement.
+    """
+
+    single_stabilizer_measurement_time_us: float
 
     def physical_qubits(self, code_distance: int) -> int:
         return 2 * code_distance**2
 
-
-@frozen
-class SimpliedSurfaceCode(SurfaceCode):
-    r"""Assumes the error detection time is a linear function in code distance.
-
-    The error detection time $\tau(d)$ is assumed to be given by a linear function
-    $$
-        \tau(d) = a*d + b
-    $$
-    Where $a$ is the `error_detection_cycle_time_slope_us` and $b$ is `error_detection_cycle_time_intercept_us`
-    both of which depend only on the hardware.
-
-    Attributes:
-        error_detection_cycle_time_slope_us:
-        error_detection_cycle_time_intercept_us: float
-    """
-
-    error_detection_cycle_time_slope_us: float
-    error_detection_cycle_time_intercept_us: float
-
-    def error_detection_cycle_time_us(self, code_distance: int) -> float:
-        return (
-            self.error_detection_cycle_time_slope_us * code_distance
-            + self.error_detection_cycle_time_intercept_us
-        )
+    def syndrome_detection_time_us(self, code_distance: int) -> float:
+        """Equals the time to measure a stabilizer times the depth of the circuit."""
+        return self.single_stabilizer_measurement_time_us * code_distance
 
 
 Fowler = SimpliedSurfaceCode(
     error_rate_scaler=0.1,
     error_rate_threshold=0.01,
-    # The Fowler model assumes an error detection time of 1us regardless of the code distance.
-    error_detection_cycle_time_slope_us=0,
-    error_detection_cycle_time_intercept_us=1,
+    single_stabilizer_measurement_time_us=1,
     reference='https://arxiv.org/abs/1808.06709,https://arxiv.org/abs/1208.0928',
 )
 
@@ -107,21 +90,18 @@ Fowler = SimpliedSurfaceCode(
 BeverlandTrappedIonQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
-    error_detection_cycle_time_slope_us=600,
-    error_detection_cycle_time_intercept_us=0,
+    single_stabilizer_measurement_time_us=600,
     reference='https://arxiv.org/abs/2211.07629',
 )
 BeverlandSuperConductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
-    error_detection_cycle_time_slope_us=0.4,
-    error_detection_cycle_time_intercept_us=0,
+    single_stabilizer_measurement_time_us=0.4,
     reference='https://arxiv.org/abs/2211.07629',
 )
 BeverlandMajoranaQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
-    error_detection_cycle_time_slope_us=0.6,
-    error_detection_cycle_time_intercept_us=0,
+    single_stabilizer_measurement_time_us=0.6,
     reference='https://arxiv.org/abs/2211.07629',
 )
