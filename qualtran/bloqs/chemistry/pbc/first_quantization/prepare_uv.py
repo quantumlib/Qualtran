@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class PrepareUVFistQuantization(Bloq):
+class PrepareUVFirstQuantization(Bloq):
     r"""PREPARE the U and V parts of the Hamiltonian.
 
     Args:
@@ -71,6 +71,9 @@ class PrepareUVFistQuantization(Bloq):
                 Register("flag_nu", bitsize=1),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'PREP $UV$'
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
