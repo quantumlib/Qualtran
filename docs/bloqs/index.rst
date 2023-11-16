@@ -46,6 +46,7 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/arithmetic.ipynb
+    arithmetic/addition.ipynb
     arithmetic/comparison_gates.ipynb
 
 .. toctree::
