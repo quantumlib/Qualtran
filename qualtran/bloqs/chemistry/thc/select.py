@@ -13,16 +13,15 @@
 #  limitations under the License.
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Sequence, Set, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
-from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import TGate, XGate
-from qualtran.bloqs.swap_network import CSwapApprox
+from qualtran import Bloq, BloqBuilder, Register, SelectionRegister, Signature, SoquetT
+from qualtran.bloqs.basic_gates import CSwap, TGate, XGate
+from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import CirqGateAsBloq
 
 if TYPE_CHECKING:
@@ -41,23 +40,28 @@ class THCRotations(Bloq):
     See https://github.com/quantumlib/Qualtran/issues/386.
 
     Args:
-        num_bits_theta: Number of bits of precision for the rotation angles.
-        rotation_angles: A list of rotation angles
+        num_mu: THC auxiliary index dimension $M$
+        num_spin_orb: number of spin orbitals $N$
+        num_bits_theta: Number of bits of precision for the rotations. Called
+            $\beth$ in the reference.
+        kr1: block sizes for QROM erasure for outputting rotation angles. See Eq 34.
+        kr2: block sizes for QROM erasure for outputting rotation angles. This
+            is for the second QROM (eq 35)
+        two_body_only: Whether to only apply the two body Hamiltonian. This reduces the QROM size.
+        adjoint: Whether to dagger this bloq or not.
 
     References:
         [Even more efficient quantum computations of chemistry through
             tensor hypercontraction](https://arxiv.org/pdf/2011.03494.pdf) Fig. 7.
-        [Quantum computing enhanced computational catalysis]
-        (https://arxiv.org/abs/2007.14460).
+        [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
             Burg, Low et. al. 2021. Eq. 73
     """
 
     num_mu: int
     num_spin_orb: int
     num_bits_theta: int
-    rotation_angles: Sequence[Sequence[int]]
-    optimal_kr1: int = 1
-    optimal_kr2: int = 1
+    kr1: int = 1
+    kr2: int = 1
     two_body_only: bool = False
     adjoint: bool = False
 
@@ -65,7 +69,7 @@ class THCRotations(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("eq_nu_mp1", bitsize=1),
+                Register("nu_eq_mp1", bitsize=1),
                 Register("data", bitsize=self.num_bits_theta),
                 Register("sel", bitsize=self.num_mu.bit_length()),
                 Register("trg", bitsize=self.num_spin_orb // 2),
@@ -82,12 +86,12 @@ class THCRotations(Bloq):
         if self.adjoint:
             if self.two_body_only:
                 toff_cost_qrom = (
-                    int(np.ceil(self.num_mu / self.optimal_kr1))
-                    + int(np.ceil(self.num_spin_orb / (2 * self.optimal_kr1)))
-                    + self.optimal_kr1
+                    int(np.ceil(self.num_mu / self.kr1))
+                    + int(np.ceil(self.num_spin_orb / (2 * self.kr1)))
+                    + self.kr1
                 )
             else:
-                toff_cost_qrom = int(np.ceil(self.num_mu / self.optimal_kr2)) + self.optimal_kr2
+                toff_cost_qrom = int(np.ceil(self.num_mu / self.kr2)) + self.kr2
         else:
             toff_cost_qrom = num_data_sets - 2
             if self.two_body_only:
@@ -97,26 +101,32 @@ class THCRotations(Bloq):
         # xref https://github.com/quantumlib/Qualtran/issues/370, the cost below
         # assume a phase gradient.
         rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
+        print(rot_cost, toff_cost_qrom)
         return {(TGate(), 4 * (rot_cost + toff_cost_qrom))}
 
 
 @frozen
-class SelectTHC(Bloq):
-    r"""SELECT for THC Hamilontian.
+class SelectTHC(SelectOracle):
+    r"""SELECT for THC Hamiltonian.
 
     Args:
         num_mu: THC auxiliary index dimension $M$
         num_spin_orb: number of spin orbitals $N$
-        angles: list of num_mu + num_spin_orb / 2 lists of rotation angles each
-            of length num_spin_orb//2. Each rotation angle should be a
-            `num_bits_theta` fixed point approximation to the angle.
+        num_bits_theta: Number of bits of precision for the rotations. Called
+            $\beth$ in the reference.
+        kr1: block sizes for QROM erasure for outputting rotation angles. See Eq 34.
+        kr2: block sizes for QROM erasure for outputting rotation angles. This
+            is for the second QROM (eq 35)
 
     Registers:
+        succ: success flag qubit from uniform state preparation
+        nu_eq_mp1: flag for if $nu = M+1$
         mu: $\mu$ register.
         nu: $\nu$ register.
         theta: sign register.
-        succ: success flag qubit from uniform state preparation
-        eq_nu_mp1: flag for if $nu = M+1$
+        plus_mn: Flag controlling swaps between mu and nu. Note that as per the
+            Reference, the swaps are NOT performed as part of SELECT as they're
+            acounted for during Prepare.
         plus_a / plus_b: plus state for controlled swaps on spins.
         sys_a / sys_b : System registers for (a)lpha/(b)eta orbitals.
 
@@ -128,55 +138,61 @@ class SelectTHC(Bloq):
     num_mu: int
     num_spin_orb: int
     num_bits_theta: int
-    rotation_angles: Sequence[Sequence[int]]
+    kr1: int = 1
+    kr2: int = 1
 
     @cached_property
-    def signature(self) -> Signature:
-        # Note we really need a range of num_mu + 1  for the mu register to
-        # store the one-body hamiltonian too. Hence its num_mu.bit_length() not
-        # (num_mu - 1).bit_length().
-        return Signature(
-            [
-                Register("mu", bitsize=(self.num_mu).bit_length()),
-                Register("nu", bitsize=(self.num_mu).bit_length()),
-                Register("theta", bitsize=1),
-                Register("succ", bitsize=1),
-                Register("eq_nu_mp1", bitsize=1),
-                Register("plus_a", bitsize=1),
-                Register("plus_b", bitsize=1),
-                Register("sys_a", bitsize=self.num_spin_orb // 2),
-                Register("sys_b", bitsize=self.num_spin_orb // 2),
-            ]
+    def control_registers(self) -> Tuple[Register, ...]:
+        return (Register("succ", bitsize=1), Register("nu_eq_mp1", bitsize=1))
+
+    @cached_property
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (
+            SelectionRegister(
+                "mu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            ),
+            SelectionRegister(
+                "nu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            ),
+            SelectionRegister("plus_mn", bitsize=1),
+            SelectionRegister("plus_a", bitsize=1),
+            SelectionRegister("plus_b", bitsize=1),
         )
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
-        # ancilla for and operation on |nu=M+1> and the |+> registers
-        plus_anc = bb.allocate(1)
-        eq_nu_mp1 = regs['eq_nu_mp1']
-        mu, nu = regs['mu'], regs['nu']
-        theta, succ = regs['theta'], regs['succ']
-        plus_a, plus_b = regs['plus_a'], regs['plus_b']
-        sys_a, sys_b = regs['sys_a'], regs['sys_b']
-        # Decompose off-on-CSwap into And + CSwap
-        [eq_nu_mp1, plus_anc], and_anc = bb.add(And(0, 1), ctrl=[eq_nu_mp1, plus_anc])
-        num_bits_mu = self.signature[0].bitsize
-        and_anc, mu, nu = bb.add(CSwapApprox(num_bits_mu), ctrl=and_anc, x=mu, y=nu)
-
-        # System register spin swaps
-        plus_b, sys_a, sys_b = bb.add(
-            CSwapApprox(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b
+    @cached_property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return (
+            Register("sys_a", bitsize=self.num_spin_orb // 2),
+            Register("sys_b", bitsize=self.num_spin_orb // 2),
         )
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        succ: SoquetT,
+        nu_eq_mp1: SoquetT,
+        mu: SoquetT,
+        nu: SoquetT,
+        plus_mn: SoquetT,
+        plus_a: SoquetT,
+        plus_b: SoquetT,
+        sys_a: SoquetT,
+        sys_b: SoquetT,
+    ) -> Dict[str, 'SoquetT']:
+
+        plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         # Rotations
         data = bb.allocate(self.num_bits_theta)
-        eq_nu_mp1, data, mu, sys_a = bb.add(
+        nu_eq_mp1, data, mu, sys_a = bb.add(
             THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
                 num_bits_theta=self.num_bits_theta,
-                rotation_angles=self.rotation_angles,
+                kr1=self.kr1,
+                kr2=self.kr2,
             ),
-            eq_nu_mp1=eq_nu_mp1,
+            nu_eq_mp1=nu_eq_mp1,
             data=data,
             sel=mu,
             trg=sys_a,
@@ -186,49 +202,44 @@ class SelectTHC(Bloq):
         succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
         sys_a = bb.join(split_sys)
         # Undo rotations
-        eq_nu_mp1, data, mu, sys_a = bb.add(
+        nu_eq_mp1, data, mu, sys_a = bb.add(
             THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
                 num_bits_theta=self.num_bits_theta,
-                rotation_angles=self.rotation_angles,
+                kr1=self.kr1,
+                kr2=self.kr2,
                 adjoint=True,
             ),
-            eq_nu_mp1=eq_nu_mp1,
+            nu_eq_mp1=nu_eq_mp1,
             data=data,
             sel=mu,
             trg=sys_a,
         )
 
         # Clean up
-        plus_b, sys_a, sys_b = bb.add(
-            CSwapApprox(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b
-        )
+        plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
-        plus_anc = bb.add(XGate(), q=plus_anc)
+        plus_mn = bb.add(XGate(), q=plus_mn)
 
         # Swap spins
         # Should be a negative control..
-        eq_nu_mp1, plus_a, plus_b = bb.add(CSwapApprox(1), ctrl=eq_nu_mp1, x=plus_a, y=plus_b)
-
-        # Swap mu-nu
-        eq_nu_mp1, mu, nu = bb.add(CSwapApprox(num_bits_mu), ctrl=eq_nu_mp1, x=mu, y=nu)
+        nu_eq_mp1, plus_a, plus_b = bb.add(CSwap(1), ctrl=nu_eq_mp1, x=plus_a, y=plus_b)
 
         # System register spin swaps
-        plus_b, sys_a, sys_b = bb.add(
-            CSwapApprox(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b
-        )
+        plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         # Rotations
-        eq_nu_mp1, data, nu, sys_a = bb.add(
+        nu_eq_mp1, data, nu, sys_a = bb.add(
             THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
                 num_bits_theta=self.num_bits_theta,
-                rotation_angles=self.rotation_angles,
+                kr1=self.kr1,
+                kr2=self.kr2,
                 two_body_only=True,
             ),
-            eq_nu_mp1=eq_nu_mp1,
+            nu_eq_mp1=nu_eq_mp1,
             data=data,
             sel=nu,
             trg=sys_a,
@@ -238,39 +249,33 @@ class SelectTHC(Bloq):
         succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
         sys_a = bb.join(split_sys)
         # Undo rotations
-        eq_nu_mp1, data, nu, sys_a = bb.add(
+        nu_eq_mp1, data, nu, sys_a = bb.add(
             THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
                 num_bits_theta=self.num_bits_theta,
-                rotation_angles=self.rotation_angles,
+                kr1=self.kr1,
+                kr2=self.kr2,
                 two_body_only=True,
                 adjoint=True,
             ),
-            eq_nu_mp1=eq_nu_mp1,
+            nu_eq_mp1=nu_eq_mp1,
             data=data,
             sel=nu,
             trg=sys_a,
         )
 
         # Clean up
-        plus_b, sys_a, sys_b = bb.add(
-            CSwapApprox(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b
-        )
+        plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         # Undo the mu-nu swaps
-        and_anc, mu, nu = bb.add(CSwapApprox(num_bits_mu), ctrl=and_anc, x=mu, y=nu)
-        [eq_nu_mp1, plus_anc] = bb.add(
-            And(0, 1, adjoint=True), ctrl=[eq_nu_mp1, plus_anc], target=and_anc
-        )
         bb.free(data)
-        bb.free(plus_anc)
         return {
+            'succ': succ,
+            'nu_eq_mp1': nu_eq_mp1,
             'mu': mu,
             'nu': nu,
-            'theta': theta,
-            'succ': succ,
-            'eq_nu_mp1': eq_nu_mp1,
+            'plus_mn': plus_mn,
             'plus_a': plus_a,
             'plus_b': plus_b,
             'sys_a': sys_a,
