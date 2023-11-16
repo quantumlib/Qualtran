@@ -30,6 +30,7 @@ Bloqs Library
     chemistry/sparse/sparse.ipynb
     chemistry/thc/thc.ipynb
     chemistry/trotter/trotter.ipynb
+    chemistry/pbc/first_quantization/first_quantization.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -42,11 +43,16 @@ Bloqs Library
 
 .. toctree::
     :maxdepth: 2
+    :caption: Arithmetic:
+
+    arithmetic/arithmetic.ipynb
+    arithmetic/comparison_gates.ipynb
+
+.. toctree::
+    :maxdepth: 2
     :caption: Other:
 
     apply_gate_to_lth_target.ipynb
-    arithmetic.ipynb
-    comparison_gates.ipynb
     hubbard_model.ipynb
     phase_estimation_of_quantum_walk.ipynb
     prepare_uniform_superposition.ipynb
@@ -57,3 +63,4 @@ Bloqs Library
     state_preparation.ipynb
     unary_iteration.ipynb
     util_bloqs.ipynb
+    generalized_qsp.ipynb

@@ -47,6 +47,7 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
+import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -112,6 +113,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.df.double_factorization._DF_BLOCK_ENCODING,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/df',
+    ),
+    NotebookSpecV2(
+        title='And',
+        module=qualtran.bloqs.and_bloq,
+        bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
 
