@@ -13,7 +13,7 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Tuple
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -28,13 +28,18 @@ from qualtran.bloqs.arithmetic import (
     LessThanEqual,
     ToContiguousIndex,
 )
-from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
+from qualtran.bloqs.basic_gates import Hadamard, Ry, TGate, Toffoli, XGate
+from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.chemistry.black_boxes import QROAM
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -99,7 +104,7 @@ class UniformSuperpositionTHC(Bloq):
         data_size = self.num_mu * (self.num_mu + 1) // 2 + self.num_spin_orb // 2
         angle = np.arccos(1 - 2 ** np.floor(np.log2(data_size)) / data_size)
         amp = bb.add(Ry(angle), q=amp)
-        # 3. nu <= mu + 1 (zero indexing we use mu)
+        # 3. nu <= mu + 1 (zero injdexing we use mu)
         lt_gate = LessThanConstant(num_bits_mu, self.num_mu)
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
         # 4. mu <= nu (upper triangular)
@@ -218,6 +223,7 @@ class PrepareTHC(Bloq):
     theta: Tuple[int, ...] = field(repr=False)
     keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
+    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -371,3 +377,17 @@ class PrepareTHC(Bloq):
             'eq_nu_mp1': eq_nu_mp1,
         }
         return out_regs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        cost_1 = (UniformSuperpositionTHC(self.num_mu, self.num_spin_orb), 1)
+        nmu = self.num_mu.bit_length()
+        data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
+        nd = (data_size - 1).bit_length()
+        cost_2 = (ToContiguousIndex(nmu, nd), 1)
+        m = 2 * nmu + 2 + self.keep_bitsize
+        cost_3 = (QROAM(data_size, m, self.adjoint), 1)
+        cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
+        cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
+        cost_6 = (CSwap(nmu), 3)
+        cost_7 = (Toffoli(), 1)
+        return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7}
