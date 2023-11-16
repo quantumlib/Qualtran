@@ -14,30 +14,26 @@
 
 import pytest
 
-from qualtran.bloqs.sorting import BitonicSort, Comparator
-from qualtran.testing import execute_notebook
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.sorting import _bitonic_sort, _cmp_symb, BitonicSort, Comparator
 
 
-def _make_comparator():
-    from qualtran.bloqs.sorting import Comparator
-
-    return Comparator(bitsize=4)
+def test_cmp_symb(bloq_autotester):
+    bloq_autotester(_cmp_symb)
 
 
-def _make_bitonic_sort():
-    from qualtran.bloqs.sorting import BitonicSort
-
-    return BitonicSort(bitsize=8, k=8)
+def test_bitonic_sort(bloq_autotester):
+    bloq_autotester(_bitonic_sort)
 
 
-def test_comparator():
+def test_comparator_manual():
     bloq = Comparator(4)
     assert bloq.t_complexity().t == 88 - 4
     with pytest.raises(NotImplementedError):
         bloq.decompose_bloq()
 
 
-def test_bitonic_sort():
+def test_bitonic_sort_manual():
     bitsize = 4
     k = 8
     bloq = BitonicSort(bitsize, k)
@@ -47,4 +43,4 @@ def test_bitonic_sort():
 
 
 def test_notebook():
-    execute_notebook('sorting')
+    qlt_testing.execute_notebook('sorting')

@@ -11,3 +11,16 @@ order_by_type = false
 line_length = 100
 remove_redundant_aliases = true
 skip_glob = ["qualtran/protos/*"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    'ignore::DeprecationWarning:quimb.linalg.approx_spectral:',
+    'ignore:.*standard platformdirs.*:DeprecationWarning:jupyter_client.*'
+]
+# we define classes like TestBloq etc. which pytest tries to collect,
+# so if you really want to collect a class as a test use '*TestSuite'.
+# (but please stick to the convention of test_* functions)
+python_classes = '*TestSuite'
+markers = [
+    "slow: slow tests that should be skipped by default.",
+]

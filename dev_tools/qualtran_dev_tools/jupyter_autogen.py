@@ -127,11 +127,8 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
 
     def _parse_references_section(self, section: str) -> List[str]:
         """Sphinx method to emit a 'References' section."""
-        return [
-            '#### References',
-            ' '.join(line.strip() for line in self._consume_to_next_section()),
-            '',
-        ]
+        lines = self._dedent(self._consume_to_next_section())
+        return ['#### References', '\n'.join(line for line in lines), '']
 
     def _parse_registers_section(self, section: str) -> List[str]:
         def _template(name, desc_lines):
@@ -146,7 +143,7 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
 
 
 def get_markdown_docstring_lines(cls: Type) -> List[str]:
-    """From a class `cls`, return its docstring as Markdown."""
+    """From a class `cls`, return its docstring as Markdown lines."""
 
     # 1. Sphinx incantation
     config = Config()
@@ -188,9 +185,10 @@ def _get_lines_for_constructing_an_object(func: Callable):
 
 _IMPORTS = """\
 from qualtran import Bloq, CompositeBloq, BloqBuilder, Signature, Register
-from qualtran.drawing import show_bloq
+from qualtran.drawing import show_bloq, show_call_graph, show_counts_sigma
 from typing import *
-import numpy as np\
+import numpy as np
+import cirq\
 """
 
 _GATE_DISPLAY = """\
@@ -242,18 +240,19 @@ def _get_code_for_demoing(spec: Union[GateNbSpec, BloqNbSpec]) -> str:
         return _get_code_for_demoing_a_bloq(bloq_func=spec.factory)
 
 
-def _get_title_cell_with_module_docstring(title: str, mod: ModuleType) -> str:
-    """Return markdown text for the title cell.
+def _get_title_lines(title: str, mod: ModuleType) -> List[str]:
+    """Return markdown lines for the title cell.
 
     This consists of the specified title as well as the associated module's docstring.
     """
-    lines = [f'# {title}', '']
+    lines = [f'# {title}']
 
     if mod.__doc__ is None:
-        return lines[0]
+        return lines
 
+    lines.append('')
     lines += inspect.cleandoc(mod.__doc__).splitlines()
-    return '\n'.join(lines)
+    return lines
 
 
 _K_CQ_AUTOGEN = 'cq.autogen'
@@ -263,12 +262,12 @@ We use the letters "cq" for historical reasons.
 """
 
 
-def _md_cell(source: str, cqid: str) -> nbformat.NotebookNode:
+def _md_nbnode(source: str, cqid: str) -> nbformat.NotebookNode:
     """Helper function to return a markdown cell with correct metadata"""
     return nbformat.v4.new_markdown_cell(source, metadata={_K_CQ_AUTOGEN: cqid})
 
 
-def _code_cell(source: str, cqid: str) -> nbformat.NotebookNode:
+def _code_nbnode(source: str, cqid: str) -> nbformat.NotebookNode:
     """Helper function to return a code cell with correct metadata"""
     return nbformat.v4.new_code_cell(source, metadata={_K_CQ_AUTOGEN: cqid})
 
@@ -325,18 +324,17 @@ def render_notebook_cells(nbspec: NotebookSpec) -> NbCells:
     """Generate cells for a given notebook."""
 
     return NbCells(
-        title_cell=_md_cell(
-            _get_title_cell_with_module_docstring(title=nbspec.title, mod=nbspec.module),
-            cqid='title_cell',
+        title_cell=_md_nbnode(
+            '\n'.join(_get_title_lines(title=nbspec.title, mod=nbspec.module)), cqid='title_cell'
         ),
-        top_imports=_code_cell(_IMPORTS, cqid='top_imports'),
+        top_imports=_code_nbnode(_IMPORTS, cqid='top_imports'),
         gate_cells={
             gspec.cqid: _GateCells(
-                md=_md_cell(
+                md=_md_nbnode(
                     '\n'.join(get_markdown_docstring_lines(cls=gspec.gate_cls)),
                     cqid=f'{gspec.cqid}.md',
                 ),
-                py=_code_cell(_get_code_for_demoing(gspec), cqid=f'{gspec.cqid}.py'),
+                py=_code_nbnode(_get_code_for_demoing(gspec), cqid=f'{gspec.cqid}.py'),
             )
             for gspec in nbspec.gate_specs
         },
