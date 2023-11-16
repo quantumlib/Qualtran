@@ -13,14 +13,14 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, SelectionRegister, Side, Signature, SoquetT
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThanConstant,
@@ -33,6 +33,7 @@ from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.chemistry.black_boxes import QROAM
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.cirq_interop import CirqGateAsBloq
@@ -78,6 +79,7 @@ class UniformSuperpositionTHC(Bloq):
 
     num_mu: int
     num_spin_orb: int
+    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -85,8 +87,8 @@ class UniformSuperpositionTHC(Bloq):
             [
                 Register("mu", bitsize=self.num_mu.bit_length()),
                 Register("nu", bitsize=self.num_mu.bit_length()),
-                Register("succ", bitsize=1),
-                Register("eq_nu_mp1", bitsize=1),
+                Register("nu_eq_mp1"),
+                Register("succ"),
             ]
         )
 
@@ -177,7 +179,7 @@ class UniformSuperpositionTHC(Bloq):
 
 
 @frozen
-class PrepareTHC(Bloq):
+class PrepareTHC(PrepareOracle):
     r"""State Preparation for THC Hamilontian.
 
     Prepares the state
@@ -226,29 +228,34 @@ class PrepareTHC(Bloq):
     adjoint: bool = False
 
     @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("mu", bitsize=(self.num_mu).bit_length()),
-                Register("nu", bitsize=(self.num_mu).bit_length()),
-                Register("theta", bitsize=1),
-                Register("succ", bitsize=1),
-                Register("eq_nu_mp1", bitsize=1),
-                Register("plus_a", bitsize=1),
-                Register("plus_b", bitsize=1),
-            ]
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (
+            SelectionRegister(
+                "mu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            ),
+            SelectionRegister(
+                "nu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            ),
+            SelectionRegister("plus_mn", bitsize=1),
+            SelectionRegister("plus_a", bitsize=1),
+            SelectionRegister("plus_b", bitsize=1),
+            SelectionRegister("keep", bitsize=self.keep_bitsize),
         )
+
+    @cached_property
+    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (Register('succ', bitsize=1), Register('nu_eq_mp1', bitsize=1), Register('theta'))
 
     @classmethod
     def from_hamiltonian_coeffs(
-        cls, t_l: NDArray[np.float64], zeta: NDArray[np.float64], probability_epsilon: float = 1e-8
+        cls, t_l: NDArray[np.float64], zeta: NDArray[np.float64], num_bits_state_prep: int = 8
     ) -> 'PrepareTHC':
         """Factory method to build PrepareTHC from Hamiltonian coefficients.
 
         Args:
             t_l: One body hamiltonian eigenvalues.
             zeta: THC central tensor.
-            probability_epsilon: precision for state preparation via coherence alias sampling.
+            num_bits_state_prep: The number of bits for the state prepared during alias sampling.
 
         Returns:
             Constructed PrepareTHC object.
@@ -262,7 +269,7 @@ class PrepareTHC(Bloq):
         flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
         alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            flat_data, epsilon=probability_epsilon
+            flat_data, epsilon=2**-num_bits_state_prep
         )
         num_up_t = len(triu_indices[0])
         alt_mu = []
@@ -294,11 +301,12 @@ class PrepareTHC(Bloq):
         bb: 'BloqBuilder',
         mu: SoquetT,
         nu: SoquetT,
-        theta: SoquetT,
-        succ: SoquetT,
-        eq_nu_mp1: SoquetT,
         plus_a: SoquetT,
         plus_b: SoquetT,
+        keep: SoquetT,
+        succ: SoquetT,
+        eq_nu_mp1: SoquetT,
+        theta: SoquetT,
     ) -> Dict[str, 'SoquetT']:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = (self.num_mu).bit_length()
@@ -317,7 +325,6 @@ class PrepareTHC(Bloq):
         s = bb.allocate(log_d)
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
         # 3. Load alt / keep values
-        keep = bb.allocate(self.keep_bitsize)
         alt_mu = bb.allocate(alt_bitsize)
         alt_nu = bb.allocate(alt_bitsize)
         alt_theta = bb.allocate(1)
@@ -370,11 +377,12 @@ class PrepareTHC(Bloq):
         out_regs = {
             'mu': mu,
             'nu': nu,
-            'theta': theta,
             'plus_a': plus_a,
             'plus_b': plus_b,
+            'keep': keep,
             'succ': succ,
             'eq_nu_mp1': eq_nu_mp1,
+            'theta': theta,
         }
         return out_regs
 
