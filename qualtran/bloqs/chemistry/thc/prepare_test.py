@@ -38,8 +38,7 @@ def _make_prepare():
     t_l = np.random.normal(0, 1, size=num_spat)
     zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
-    eps = 1e-3
-    return PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, probability_epsilon=eps)
+    return PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
 
 
 def test_uniform_superposition():
@@ -49,13 +48,13 @@ def test_uniform_superposition():
     qlt_testing.assert_valid_bloq_decomposition(usup)
 
 
-@pytest.mark.parametrize("num_mu, num_spat, eps", ((10, 4, 1e-3), (40, 10, 1e-5), (72, 31, 1e-8)))
-def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
+@pytest.mark.parametrize("num_mu, num_spat, mu", ((10, 4, 10), (40, 10, 17), (72, 31, 27)))
+def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
     np.random.seed(7)
     t_l = np.random.normal(0, 1, size=num_spat)
     zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
     zeta = 0.5 * (zeta + zeta.T)
-    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, probability_epsilon=eps)
+    prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=mu)
     qlt_testing.assert_valid_bloq_decomposition(prep)
     # Test that the alt / keep values are correct
     qlt_testing.assert_valid_bloq_decomposition(prep)
@@ -65,6 +64,8 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, eps):
     enlarged_matrix[:num_mu, :num_mu] = np.abs(zeta)
     enlarged_matrix[:num_spat, num_mu] = np.abs(t_l)
     flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
+    eps = 2**-mu
+    print(eps)
     alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
         flat_data, eps
     )
