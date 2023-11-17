@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 
 ################################################################################
-# Runs pytest on the repository.
+# Runs pytest on the dev_tools/ folder.
 #
 # Usage:
-#     check/pytest [--flags for pytest] [file-paths-relative-to-repo-root]
+#     check/pytest-dev-tools [--flags for pytest]
 #
-# You may specify pytest flags and specific files to test. The file paths
-# must be relative to the repository root. If no files are specified, everything
-# is tested.
 ################################################################################
 
 # Get the working directory to the repo root.
