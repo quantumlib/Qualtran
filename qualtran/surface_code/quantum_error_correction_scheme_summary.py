@@ -54,11 +54,11 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
 
     @abc.abstractmethod
     def physical_qubits(self, code_distance: int) -> int:
-        """The number of physical qubits used by the error correction circuit."""
+        """The number of physical qubits used by the error detection circuit."""
 
     @abc.abstractmethod
     def error_detection_circuit_time_us(self, code_distance: int) -> float:
-        """The time of a quantum error correction cycle in seconds."""
+        """The time of a quantum error detection cycle in seconds."""
 
 
 @frozen
