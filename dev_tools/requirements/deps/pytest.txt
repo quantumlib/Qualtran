@@ -5,12 +5,7 @@ pytest-cov
 pytest-xdist
 
 # test executing notebooks
-nbformat
-nbconvert
 ipykernel
-
-# test doc autogen
-sphinx
 
 # chemistry resource estimates
 openfermion[resources]
