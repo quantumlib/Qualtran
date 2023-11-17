@@ -1,3 +1,4 @@
+# core dependencies
 attrs
 cachetools>=5.3
 networkx

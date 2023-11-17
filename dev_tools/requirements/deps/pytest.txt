@@ -1,5 +1,4 @@
 # dependencies to run pytest
-
 pytest
 pytest-asyncio
 pytest-cov
@@ -9,6 +8,9 @@ pytest-xdist
 nbformat
 nbconvert
 ipykernel
+
+# test doc autogen
+sphinx
 
 # chemistry resource estimates
 openfermion[resources]
