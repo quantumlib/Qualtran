@@ -20,7 +20,7 @@ cd "${topdir}" || exit $?
 # (the last `-n` option wins)
 PYTEST_ARGS=( "-n=auto" "$@" )
 
-pytest "${PYTEST_ARGS[@]}" qualtran/
+pytest "${PYTEST_ARGS[@]}" dev_tools/
 RESULT=$?
 
 exit "$RESULT"
