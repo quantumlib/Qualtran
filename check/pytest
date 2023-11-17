@@ -23,9 +23,4 @@ PYTEST_ARGS=( "-n=auto" "$@" )
 pytest "${PYTEST_ARGS[@]}"
 RESULT=$?
 
-if [ "$RESULT" = 5 ]; then
-  echo "[exit 5] No tests collected, but ignored."
-  exit 0
-fi
-
 exit "$RESULT"
