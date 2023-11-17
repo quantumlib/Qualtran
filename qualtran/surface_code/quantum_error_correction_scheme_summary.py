@@ -57,7 +57,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
         """The number of physical qubits used by the error correction circuit."""
 
     @abc.abstractmethod
-    def syndrome_detection_time_us(self, code_distance: int) -> float:
+    def error_detection_circuit_time_us(self, code_distance: int) -> float:
         """The time of a quantum error correction cycle in seconds."""
 
 
@@ -66,42 +66,22 @@ class SimpliedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
     """A Surface Code Quantum Error Correction Scheme.
 
     Attributes:
-        single_stabilizer_measurement_time_us: Max time of a single X or Z stabilizer measurement.
+        single_stabilizer_time_us: Max time of a single X or Z stabilizer measurement.
     """
 
-    single_stabilizer_measurement_time_us: float
+    single_stabilizer_time_us: float
 
     def physical_qubits(self, code_distance: int) -> int:
         return 2 * code_distance**2
 
-    def syndrome_detection_time_us(self, code_distance: int) -> float:
+    def error_detection_circuit_time_us(self, code_distance: int) -> float:
         """Equals the time to measure a stabilizer times the depth of the circuit."""
-        return self.single_stabilizer_measurement_time_us * code_distance
+        return self.single_stabilizer_time_us * code_distance
 
 
-Fowler = SimpliedSurfaceCode(
-    error_rate_scaler=0.1,
-    error_rate_threshold=0.01,
-    single_stabilizer_measurement_time_us=1,
-    reference='https://arxiv.org/abs/1808.06709,https://arxiv.org/abs/1208.0928',
-)
-
-# The Beverland model assumes an error detection time equal to a*d, where slope a depends only on the hardware.
-BeverlandTrappedIonQubits = SimpliedSurfaceCode(
-    error_rate_scaler=0.03,
-    error_rate_threshold=0.01,
-    single_stabilizer_measurement_time_us=600,
-    reference='https://arxiv.org/abs/2211.07629',
-)
 BeverlandSuperConductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
-    single_stabilizer_measurement_time_us=0.4,
-    reference='https://arxiv.org/abs/2211.07629',
-)
-BeverlandMajoranaQubits = SimpliedSurfaceCode(
-    error_rate_scaler=0.03,
-    error_rate_threshold=0.01,
-    single_stabilizer_measurement_time_us=0.6,
+    single_stabilizer_time_us=0.4,  # Equals 4*t_gate+2*t_meas where t_gate=50ns and t_meas=100ns.
     reference='https://arxiv.org/abs/2211.07629',
 )

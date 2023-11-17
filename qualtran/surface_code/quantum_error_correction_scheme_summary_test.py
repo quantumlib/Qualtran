@@ -17,20 +17,16 @@ import pytest
 from qualtran.surface_code import quantum_error_correction_scheme_summary as qecs
 
 
-@pytest.mark.parametrize(
-    'qec,want', [(qecs.Fowler, 1e-3), (qecs.BeverlandSuperConductingQubits, 3e-4)]
-)
+@pytest.mark.parametrize('qec,want', [(qecs.BeverlandSuperConductingQubits, 3e-4)])
 def test_logical_error_rate(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
     assert qec.logical_error_rate(3, 1e-3) == pytest.approx(want)
 
 
-@pytest.mark.parametrize(
-    'qec,want', [[qecs.BeverlandSuperConductingQubits, 242], [qecs.Fowler, 242]]
-)
+@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperConductingQubits, 242]])
 def test_physical_qubits(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: int):
     assert qec.physical_qubits(11) == want
 
 
-@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperConductingQubits, 4.8], [qecs.Fowler, 1]])
+@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperConductingQubits, 4.8]])
 def test_error_detection_cycle_time(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
-    assert qec.syndrome_detection_time_us(12) == pytest.approx(want)
+    assert qec.error_detection_circuit_time_us(12) == pytest.approx(want)
