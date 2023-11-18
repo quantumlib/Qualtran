@@ -148,7 +148,7 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3", record_timing=False)
     try:
         nb, resources = ep.preprocess(nb)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         print(f'{paths.nb_in} failed!')
         print(e)
         return e

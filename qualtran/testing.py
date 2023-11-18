@@ -264,7 +264,7 @@ def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]
     """
     try:
         return _check_bloq_example_make_impl(bloq_ex)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
 
@@ -298,5 +298,5 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
     """
     try:
         return _check_bloq_example_decompose_impl(bloq_ex)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'

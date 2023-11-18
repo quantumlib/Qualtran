@@ -51,7 +51,7 @@ def test_display_gate_and_compilation(monkeypatch):
     g = cq_testing.GateHelper(MultiAnd(cvs=(1, 1, 1)))
     display_gate_and_compilation(g)
 
-    (display_arg,) = call_args
+    (display_arg,) = call_args  # pylint: disable=unbalanced-tuple-unpacking
     assert isinstance(display_arg, ipywidgets.HBox)
     assert len(display_arg.children) == 2
 
