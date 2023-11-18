@@ -17,6 +17,7 @@ from typing import Dict
 import attrs
 import cirq
 
+from qualtran import Bloq
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
@@ -98,7 +99,7 @@ def generalize(bloq):
     return bloq
 
 
-def bin_bloq_counts(bloq) -> Dict[str, int]:
+def bin_bloq_counts(bloq: Bloq) -> Dict[str, int]:
     """Classify bloq counts.
 
     It's helpful to classify bloqs by their type (comparators, reflections, swaps, ...)

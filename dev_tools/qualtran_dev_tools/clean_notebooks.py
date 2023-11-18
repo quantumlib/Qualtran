@@ -24,7 +24,11 @@ from nbconvert.preprocessors import ClearMetadataPreprocessor
 def get_nb_rel_paths(rootdir) -> List[Path]:
     """List all checked-in *.ipynb files within `rootdir`."""
     cp = subprocess.run(
-        ['git', 'ls-files', '*.ipynb'], capture_output=True, universal_newlines=True, cwd=rootdir
+        ['git', 'ls-files', '*.ipynb'],
+        capture_output=True,
+        universal_newlines=True,
+        cwd=rootdir,
+        check=True,
     )
     outs = cp.stdout.splitlines()
     nb_rel_paths = [Path(out) for out in outs]
@@ -46,7 +50,7 @@ def clean_notebook(nb_path: Path, do_clean: bool = True):
     with NamedTemporaryFile('w', delete=False) as f:
         nbformat.write(nb, f, version=4)
 
-    res = subprocess.run(['diff', nb_path, f.name], capture_output=True)
+    res = subprocess.run(['diff', nb_path, f.name], capture_output=True, check=True)
     dirty = len(res.stdout) > 0
     print(str(nb_path))
     if dirty:

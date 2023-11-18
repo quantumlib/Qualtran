@@ -28,7 +28,9 @@ from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.cirq_interop import t_complexity_protocol
 
 
-def display_gate_and_compilation(g: cq_testing.GateHelper, vertical=False, include_costs=True):
+def display_gate_and_compilation(
+    g: cq_testing.GateHelper, vertical: bool = False, include_costs: bool = True
+):
     """Use ipywidgets to display SVG circuits for a `GateHelper` next to each other.
 
     Args:

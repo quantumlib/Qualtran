@@ -29,7 +29,11 @@ from .git_tools import get_git_root
 def get_nb_rel_paths(sourceroot: Path) -> List[Path]:
     """List all checked-in *.ipynb files within `sourceroot`."""
     cp = subprocess.run(
-        ['git', 'ls-files', '*.ipynb'], capture_output=True, universal_newlines=True, cwd=sourceroot
+        ['git', 'ls-files', '*.ipynb'],
+        capture_output=True,
+        universal_newlines=True,
+        cwd=sourceroot,
+        check=True,
     )
     outs = cp.stdout.splitlines()
     nb_rel_paths = [Path(out) for out in outs]
