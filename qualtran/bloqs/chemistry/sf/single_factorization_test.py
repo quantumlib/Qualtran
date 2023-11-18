@@ -49,11 +49,11 @@ def test_compare_cost_one_body_decomp():
 
 
 def test_compare_cost_to_openfermion():
-    num_spin_orb = 10
-    num_aux = 50
-    num_bits_state_prep = 12
-    num_bits_rot_aa_outer = 1  # captured from OF.
-    num_bits_rot_aa_inner = 4  # OF
+    num_spin_orb = 108
+    num_aux = 200
+    num_bits_state_prep = 10
+    num_bits_rot_aa_outer = 7  # captured from OF.
+    num_bits_rot_aa_inner = 7  # OF
     unused_lambda = 10
     unused_de = 1e-3
     unused_stps = 100
@@ -68,9 +68,9 @@ def test_compare_cost_to_openfermion():
         num_bits_rot_aa_outer,
         num_bits_rot_aa_inner,
         kp1=4,
-        kp2=2,
-        kp1_inv=8,
-        kp2_inv=4,
+        kp2=2**5,
+        kp1_inv=2**2,
+        kp2_inv=2**5,
     )
     _, counts = bloq.call_graph()
     nl = num_aux.bit_length()
