@@ -152,11 +152,13 @@ class SelectTHC(SelectOracle):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return (Register("succ", bitsize=1), Register("nu_eq_mp1", bitsize=1))
+        return ()
 
     @cached_property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
         return (
+            SelectionRegister("succ", bitsize=1),
+            SelectionRegister("nu_eq_mp1", bitsize=1),
             SelectionRegister(
                 "mu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
             ),
