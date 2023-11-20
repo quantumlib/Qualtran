@@ -100,17 +100,22 @@ def test_inner_prepare_t_counts():
     # Number of coefficients for first state preparation on p & q.
     # correct the data size here: https://github.com/quantumlib/OpenFermion/issues/838
     nprime = int(num_spin_orb**2 // 8 + num_spin_orb // 2)
+    nprime_err = int(num_spin_orb**2 // 8 + num_spin_orb // 4)
     bp = int(2 * nN + num_bits_state_prep + 2)
     cost2c = (
+        QR2(num_aux + 1, nprime_err, bp)[-1]
+        + QI((num_aux + 1) * nprime_err)[-1]
+        + QR2(num_aux, nprime_err, bp)[-1]
+        + QI(num_aux * nprime_err)[-1]
+    )
+    our_qrom_cost = (
         QR2(num_aux + 1, nprime, bp)[-1]
         + QI2(num_aux + 1, nprime)[-1]
-        + QR2(num_aux, nprime, bp)[-1]
-        + QI2(num_aux, nprime)[-1]
+        + QR2(num_aux + 1, nprime, bp)[-1]
+        + QI2(num_aux + 1, nprime)[-1]
     )
     # See https://github.com/quantumlib/Qualtran/issues/526
-    delta_qrom = (QR2(num_aux + 1, nprime, bp)[-1] - QR2(num_aux, nprime, bp)[-1]) + (
-        QI2(num_aux + 1, nprime)[-1] - QI2(num_aux, nprime)[-1]
-    )
+    delta_qrom = our_qrom_cost - cost2c
     cost2de = 4 * (num_bits_state_prep + 2 * nN)
     of_cost = cost2a + cost2b + cost2c + cost2de + delta_qrom
     assert toff == of_cost

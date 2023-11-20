@@ -233,7 +233,6 @@ class SingleFactorizationOneBody(Bloq):
             kp2=self.kp2_inv,
         )
         n = (self.num_spin_orb // 2 - 1).bit_length()
-        # print("HERE")
         return {
             (iprep, 1),
             (iprep_dag, 1),
