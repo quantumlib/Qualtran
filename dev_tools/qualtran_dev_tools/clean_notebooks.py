@@ -18,7 +18,7 @@ from tempfile import NamedTemporaryFile
 from typing import List
 
 import nbformat
-from nbconvert.preprocessors import ClearMetadataPreprocessor
+from nbconvert.preprocessors import ClearMetadataPreprocessor, ClearOutputPreprocessor
 
 
 def get_nb_rel_paths(rootdir) -> List[Path]:
@@ -40,8 +40,11 @@ def clean_notebook(nb_path: Path, do_clean: bool = True):
     with nb_path.open() as f:
         nb = nbformat.read(f, as_version=4)
 
-    pp = ClearMetadataPreprocessor(preserve_cell_metadata_mask={'cq.autogen'})
-    nb, resources = pp.preprocess(nb, resources={})
+    pp1 = ClearOutputPreprocessor()
+    pp2 = ClearMetadataPreprocessor(preserve_cell_metadata_mask={'cq.autogen'})
+    resources = {}
+    nb, resources = pp1.preprocess(nb, resources=resources)
+    nb, resources = pp2.preprocess(nb, resources=resources)
 
     with NamedTemporaryFile('w', delete=False) as f:
         nbformat.write(nb, f, version=4)
