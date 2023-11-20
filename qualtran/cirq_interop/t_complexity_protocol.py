@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Callable, Hashable, Iterable, Optional, overload, Union
+from typing import Any, Callable, Hashable, Iterable, Literal, Optional, overload, Protocol, Union
 
 import attrs
 import cachetools
 import cirq
-from typing_extensions import Literal, Protocol
 
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
 
