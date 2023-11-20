@@ -54,6 +54,9 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
     def signature(self) -> Signature:
         return Signature([Register("mu", self.num_bits_p), Register("flag", 1, side=Side.RIGHT)])
 
+    def short_name(self) -> str:
+        return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Toffoli(), (self.num_bits_p - 1))}
 
@@ -91,6 +94,9 @@ class PrepareNuSuperPositionState(Bloq):
             [Register("mu", self.num_bits_p), Register("nu", self.num_bits_p + 1, shape=(3,))]
         )
 
+    def short_name(self) -> str:
+        return r'PREP $2^{-\mu}|\mu\rangle|\nu\rangle$'
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
         return {(Toffoli(), (3 * (self.num_bits_p - 1)))}
@@ -122,6 +128,9 @@ class FlagZeroAsFailure(Bloq):
                 Register("flag_minus_zero", 1, side=Side.RIGHT),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$\nu\ne -0$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
@@ -160,6 +169,9 @@ class TestNuLessThanMu(Bloq):
                 Register("flag_nu_lt_mu", 1, side=Side.RIGHT),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$\nu < 2^{\mu-2}$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
@@ -217,6 +229,9 @@ class TestNuInequality(Bloq):
                 Register("succ", 1),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$(2^{\mu-2})^2\mathcal{M} > m \nu^2 $'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
@@ -293,6 +308,9 @@ class PrepareNuState(Bloq):
                 Register("flag_nu", bitsize=1),
             ]
         )
+
+    def short_name(self) -> str:
+        return r"PREP $\frac{1}{\lVert \nu \rVert} |\nu\rangle $"
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
