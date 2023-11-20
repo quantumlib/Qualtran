@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-r"""PREPARE the potential energy terms of the first quantized chemistry Hamiltonian."""
-
+r"""PREPARE the superposition over nuclear weights for the first quantized chemistry Hamiltonian.
+"""
 from functools import cached_property
 from typing import Set, TYPE_CHECKING
 

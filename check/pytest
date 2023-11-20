@@ -4,11 +4,8 @@
 # Runs pytest on the repository.
 #
 # Usage:
-#     check/pytest [--flags for pytest] [file-paths-relative-to-repo-root]
+#     check/pytest [--flags for pytest]
 #
-# You may specify pytest flags and specific files to test. The file paths
-# must be relative to the repository root. If no files are specified, everything
-# is tested.
 ################################################################################
 
 # Get the working directory to the repo root.
@@ -20,12 +17,7 @@ cd "${topdir}" || exit $?
 # (the last `-n` option wins)
 PYTEST_ARGS=( "-n=auto" "$@" )
 
-pytest "${PYTEST_ARGS[@]}"
+pytest "${PYTEST_ARGS[@]}" qualtran/
 RESULT=$?
-
-if [ "$RESULT" = 5 ]; then
-  echo "[exit 5] No tests collected, but ignored."
-  exit 0
-fi
 
 exit "$RESULT"

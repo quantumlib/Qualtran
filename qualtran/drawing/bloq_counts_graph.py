@@ -103,12 +103,9 @@ class GraphvizCounts:
         title = html.escape(title)
         details = html.escape(details)
 
-        label = ['<', f'{html.escape(title)}']
+        label = ['<', title]
         if details:
-            label += [
-                '<br />',
-                f'<font face="monospace" point-size="10">{html.escape(details)}</font><br/>',
-            ]
+            label += ['<br />', f'<font face="monospace" point-size="10">{details}</font><br/>']
         label += ['>']
         return {'label': ''.join(label), 'shape': 'rect'}
 

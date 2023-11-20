@@ -29,6 +29,7 @@ from qualtran.bloqs.swap_network import (
     _approx_cswap_small,
     _approx_cswap_symb,
     _multiplexed_cswap,
+    _swz,
     _swz_small,
     CSwapApprox,
     MultiplexedCSwap,
@@ -38,7 +39,7 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.simulation.quimb_sim import flatten_for_tensor_contraction
+from qualtran.simulation.tensor import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 random.seed(12345)
@@ -156,7 +157,6 @@ def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
 @pytest.mark.parametrize("n", [*range(1, 6)])
 def test_t_complexity(n):
     cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
-
     cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwapApprox(n))
 
 
@@ -282,6 +282,10 @@ def test_approx_cswap_large(bloq_autotester):
 
 def test_swz_small(bloq_autotester):
     bloq_autotester(_swz_small)
+
+
+def test_swz(bloq_autotester):
+    bloq_autotester(_swz)
 
 
 def test_notebook():

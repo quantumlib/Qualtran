@@ -17,7 +17,8 @@ import numpy as np
 from cirq.ops import SimpleQubitManager
 
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import Rx, Ry, Rz
+from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+from qualtran.bloqs.basic_gates.rotation import _rx, _ry, _rz
 
 
 def _make_Rx():
@@ -62,3 +63,36 @@ def test_as_cirq_op():
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
     assert circuit == cirq.Circuit(cirq.Rz(rads=bloq.angle).on(cirq.NamedQubit("q")))
+    bloq = XPowGate(exponent=1 / 5, global_shift=-0.5)
+    quregs = get_named_qubits(bloq.signature)
+    op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
+    circuit = cirq.Circuit(op)
+    assert circuit == cirq.Circuit(
+        cirq.XPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
+    )
+    bloq = YPowGate(exponent=1 / 5, global_shift=-0.5)
+    quregs = get_named_qubits(bloq.signature)
+    op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
+    circuit = cirq.Circuit(op)
+    assert circuit == cirq.Circuit(
+        cirq.YPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
+    )
+    bloq = ZPowGate(exponent=1 / 5, global_shift=-0.5)
+    quregs = get_named_qubits(bloq.signature)
+    op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
+    circuit = cirq.Circuit(op)
+    assert circuit == cirq.Circuit(
+        cirq.ZPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
+    )
+
+
+def test_rx(bloq_autotester):
+    bloq_autotester(_rx)
+
+
+def test_ry(bloq_autotester):
+    bloq_autotester(_ry)
+
+
+def test_rz(bloq_autotester):
+    bloq_autotester(_rz)

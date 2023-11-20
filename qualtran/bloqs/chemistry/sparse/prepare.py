@@ -18,56 +18,14 @@ from typing import Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
-from sympy import factorint
 
 from qualtran import Bloq, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition
 from qualtran.bloqs.swap_network import CSwapApprox
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-
-
-@frozen
-class PrepareUniformSuperpositionSparse(Bloq):
-    r"""Prepare a uniform superposition over $d$ basis states.
-
-    Before preparing the state in Eq. A11 of the reference we need to prepare a
-    uniform superposition over $d$ basis states, where $d$ is the number of
-    non-zero entries in our Hamiltonian. We will use this state to ultimately
-    output the non-zero (p,q)_j and (p,q,r,s)_j tuples of non-zero symmetry
-    inequivalent matrix element indicies.
-
-    Args:
-        num_non_zero: The number of non-zero matrix elements.
-        num_bits_rot_aa: The number of bits of precision for the single-qubit
-            rotation for amplitude amplification during the uniform state
-            preparataion. Default 8.
-
-    Registers:
-        d: the register to prepare the uniform superposition on.
-
-    Refererences:
-        [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            hypercontraction](https://arxiv.org/abs/2011.03494) Page 39.
-    """
-    num_non_zero: int
-    num_bits_rot_aa: int = 8
-
-    @cached_property
-    def signature(self) -> Signature:
-        regs = [Register('d', (self.num_non_zero - 1).bit_length())]
-        return Signature(regs)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        factors = factorint(self.num_non_zero)
-        eta = factors[min(list(sorted(factors.keys())))]
-        if self.num_non_zero % 2 == 1:
-            eta = 0
-        uniform_prep = (
-            3 * (self.num_non_zero - 1).bit_length() - 3 * eta + 2 * self.num_bits_rot_aa - 9
-        )
-        return {(Toffoli(), uniform_prep)}
 
 
 @frozen
@@ -148,13 +106,13 @@ class PrepareSparse(Bloq):
         qrom_cost = (Toffoli(), num_toff_qrom)
         if self.adjoint:
             return {
-                (PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa), 1),
+                (PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
                 qrom_cost,
             }
         swap_cost_state_prep = (CSwapApprox(num_bits_spat), 4 + 4)  # 2. pg 39
         ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
         return {
-            (PrepareUniformSuperpositionSparse(self.num_non_zero, self.num_bits_rot_aa), 1),
+            (PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
             qrom_cost,
             swap_cost_state_prep,
             ineq_cost_state_prep,

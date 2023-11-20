@@ -20,28 +20,19 @@ import numpy as np
 import pytest
 from attrs import frozen
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
-from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran.bloqs.and_bloq import _and_bloq, _multi_and, And, MultiAnd
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.drawing import Circle, get_musical_score_data
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
-def _make_and():
-    from qualtran.bloqs.and_bloq import And
-
-    return And()
+def test_and_bloq(bloq_autotester):
+    bloq_autotester(_and_bloq)
 
 
-def _make_multi_and():
-    from qualtran.bloqs.and_bloq import MultiAnd
-
-    return MultiAnd(cvs=(1, 1, 1, 1))
-
-
-def test_multiand_decomp():
-    bloq = MultiAnd(cvs=(1, 0, 1, 0))
-    assert_valid_bloq_decomposition(bloq)
+def test_multi_and(bloq_autotester):
+    bloq_autotester(_multi_and)
 
 
 def _iter_and_truth_table(cv1: int, cv2: int):
@@ -172,7 +163,7 @@ def test_multiand_consistent_apply_classical():
 
 
 def test_notebook():
-    execute_notebook('and_bloq')
+    qlt_testing.execute_notebook('and_bloq')
 
 
 @frozen
@@ -210,3 +201,16 @@ def test_and_musical_score():
     # soq[0] and [1] are the dangling symbols
     assert msd.soqs[2].symb == Circle(filled=False)
     assert msd.soqs[3].symb == Circle(filled=False)
+
+
+def test_multiand_adjoint():
+    bb = BloqBuilder()
+    q0 = bb.add_register('q0', 1)
+    q1 = bb.add_register('q1', 1)
+    q2 = bb.add_register('q2', 1)
+
+    qs, junk, trg = bb.add(MultiAnd((1, 1, 1)), ctrl=[q0, q1, q2])
+    qs = bb.add(MultiAnd((1, 1, 1), adjoint=True), ctrl=qs, target=trg, junk=junk)
+
+    cbloq = bb.finalize(q0=qs[0], q1=qs[1], q2=qs[2])
+    qlt_testing.assert_valid_cbloq(cbloq)

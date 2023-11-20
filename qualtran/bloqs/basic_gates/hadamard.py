@@ -18,7 +18,7 @@ from typing import Dict, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Signature, SoquetT
+from qualtran import Bloq, bloq_example, CompositeBloq, DecomposeTypeError, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -49,6 +49,9 @@ class Hadamard(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     def add_my_tensors(
         self,
         tn: 'qtn.TensorNetwork',
@@ -78,3 +81,9 @@ class Hadamard(Bloq):
 
     def t_complexity(self):
         return TComplexity(clifford=1)
+
+
+@bloq_example
+def _hadamard() -> Hadamard:
+    hadamard = Hadamard()
+    return hadamard

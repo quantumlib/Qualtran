@@ -105,7 +105,7 @@ class CSwapApprox(GateWithRegisters):
     def short_name(self) -> str:
         return '~swap'
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         """TComplexity as explained in Appendix B.2.c of https://arxiv.org/abs/1812.00954"""
         n = self.bitsize
         # 4 * n: G gates, each wth 1 T and 4 single qubit cliffords
@@ -233,13 +233,19 @@ class SwapWithZero(GateWithRegisters):
         num_swaps = np.floor(
             sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
         )
-        return {(CSwapApprox(self.target_bitsize), num_swaps)}
+        return {(CSwapApprox(self.target_bitsize), int(num_swaps))}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@(r⇋0)"] * self.selection_bitsize
         for i in range(self.n_target_registers):
             wire_symbols += [f"swap_{i}"] * self.target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+
+@bloq_example
+def _swz() -> SwapWithZero:
+    swz = SwapWithZero(selection_bitsize=8, target_bitsize=32, n_target_registers=4)
+    return swz
 
 
 @bloq_example
@@ -252,7 +258,7 @@ def _swz_small() -> SwapWithZero:
 _SWZ_DOC = BloqDocSpec(
     bloq_cls=SwapWithZero,
     import_line='from qualtran.bloqs.swap_network import SwapWithZero',
-    examples=(_swz_small,),
+    examples=(_swz, _swz_small),
 )
 
 
