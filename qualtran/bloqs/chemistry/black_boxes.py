@@ -165,5 +165,4 @@ class QROAMTwoRegs(Bloq):
             cost += self.data_a_block_size * self.data_b_block_size
         else:
             cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
-        print("QROAM cost", cost)
         return {(Toffoli(), cost)}
