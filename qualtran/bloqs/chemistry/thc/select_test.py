@@ -12,24 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.thc import SelectTHC
+from qualtran.bloqs.chemistry.thc.select import _thc_sel
 
 
-def _make_select():
-    from qualtran.bloqs.chemistry.thc import SelectTHC
-
-    num_spat = 4
-    num_mu = 8
-    num_mu = 10
-    num_spin_orb = 2 * 4
-    select = SelectTHC(num_mu=num_mu, num_spin_orb=num_spin_orb, num_bits_theta=12)
-    return select
-
-
-def test_select_thc():
-    num_mu = 10
-    num_spin_orb = 2 * 4
-    angles = ((0.5,) * (num_spin_orb // 2),) * num_mu
-    select = SelectTHC(num_mu=num_mu, num_spin_orb=num_spin_orb, num_bits_theta=12)
-    qlt_testing.assert_valid_bloq_decomposition(select)
+def test_thc_uniform_prep(bloq_autotester):
+    bloq_autotester(_thc_sel)
