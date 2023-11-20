@@ -20,7 +20,16 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, SelectionRegister, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    Register,
+    SelectionRegister,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThanConstant,
@@ -224,10 +233,10 @@ class PrepareTHC(PrepareOracle):
         succ: success flag qubit from uniform state preparation
         nu_eq_mp1: flag for if $nu = M+1$
         theta: sign register.
-        s: Contiguous index register. 
+        s: Contiguous index register.
         alt_mn: Register to store alt mu and nu values.
         alt_theta: Register for alternate theta values.
-        keep: keep_bitsize-sized register for the keep values from coherent alias sampling. 
+        keep: keep_bitsize-sized register for the keep values from coherent alias sampling.
         less_than: Single qubit ancilla for alias sampling.
         extra_ctrl: An extra control register for producing a multi-controlled CSwap.
 
@@ -433,3 +442,35 @@ class PrepareTHC(PrepareOracle):
         cost_6 = (CSwap(nmu), 3)
         cost_7 = (Toffoli(), 1)
         return {cost_1, cost_2, cost_3, cost_4, cost_5, cost_6, cost_7}
+
+
+@bloq_example
+def _thc_uni() -> UniformSuperpositionTHC:
+    num_mu = 10
+    num_spin_orb = 4
+    thc_uni = UniformSuperpositionTHC(num_mu=num_mu, num_spin_orb=num_spin_orb)
+    return thc_uni
+
+
+@bloq_example
+def _thc_prep() -> PrepareTHC:
+    num_spat = 4
+    num_mu = 8
+    t_l = np.random.normal(0, 1, size=num_spat)
+    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
+    zeta = 0.5 * (zeta + zeta.T)
+    thc_prep = PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
+    return thc_prep
+
+
+_THC_UNI_PREP = BloqDocSpec(
+    bloq_cls=UniformSuperpositionTHC,
+    import_line='from qualtran.bloqs.chemistry.thc.prepare import UniformSuperpositionTHC',
+    examples=(_thc_uni,),
+)
+
+_THC_PREPARE = BloqDocSpec(
+    bloq_cls=PrepareTHC,
+    import_line='from qualtran.bloqs.chemistry.thc.prepare import PrepareTHC',
+    examples=(_thc_prep,),
+)

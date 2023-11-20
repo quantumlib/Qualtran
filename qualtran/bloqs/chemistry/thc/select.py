@@ -19,7 +19,16 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, SelectionRegister, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    Register,
+    SelectionRegister,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import CSwap, TGate, XGate
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import CirqGateAsBloq
@@ -30,7 +39,7 @@ if TYPE_CHECKING:
 
 @frozen
 class THCRotations(Bloq):
-    """Bloq for rotating into THC basis through Givens rotation network.
+    r"""Bloq for rotating into THC basis through Givens rotation network.
 
     This is accounting for In-data:rot and In-R in Fig. 7 of the THC paper (Ref.
     1). In practice this bloq is made up of a QROM load of the angles followed
@@ -281,3 +290,19 @@ class SelectTHC(SelectOracle):
             'sys_a': sys_a,
             'sys_b': sys_b,
         }
+
+
+@bloq_example
+def _thc_sel() -> SelectTHC:
+    num_mu = 8
+    num_mu = 10
+    num_spin_orb = 2 * 4
+    thc_sel = SelectTHC(num_mu=num_mu, num_spin_orb=num_spin_orb, num_bits_theta=12)
+    return thc_sel
+
+
+_THC_SELECT = BloqDocSpec(
+    bloq_cls=SelectTHC,
+    import_line='from qualtran.bloqs.chemistry.thc.select import SelectTHC',
+    examples=(_thc_sel,),
+)

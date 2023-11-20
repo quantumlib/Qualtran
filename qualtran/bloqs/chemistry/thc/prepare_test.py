@@ -16,36 +16,23 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.thc import PrepareTHC, UniformSuperpositionTHC
 from qualtran.bloqs.chemistry.thc.notebook_utils import generalize as thc_generalize
+from qualtran.bloqs.chemistry.thc.prepare import (
+    _thc_prep,
+    _thc_uni,
+    PrepareTHC,
+    UniformSuperpositionTHC,
+)
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.testing import execute_notebook
 
 
-def _make_uniform_superposition():
-    from qualtran.bloqs.chemistry.thc import UniformSuperpositionTHC
-
-    num_mu = 10
-    num_spin_orb = 4
-    return UniformSuperpositionTHC(num_mu=num_mu, num_spin_orb=num_spin_orb)
+def test_thc_uniform_prep(bloq_autotester):
+    bloq_autotester(_thc_uni)
 
 
-def _make_prepare():
-    from qualtran.bloqs.chemistry.thc import PrepareTHC
-
-    num_spat = 4
-    num_mu = 8
-    t_l = np.random.normal(0, 1, size=num_spat)
-    zeta = np.random.normal(0, 1, size=(num_mu, num_mu))
-    zeta = 0.5 * (zeta + zeta.T)
-    return PrepareTHC.from_hamiltonian_coeffs(t_l, zeta, num_bits_state_prep=8)
-
-
-def test_uniform_superposition():
-    num_mu = 10
-    num_spin_orb = 4
-    usup = UniformSuperpositionTHC(num_mu=num_mu, num_spin_orb=num_spin_orb)
-    qlt_testing.assert_valid_bloq_decomposition(usup)
+def test_thc_prepare(bloq_autotester):
+    bloq_autotester(_thc_prep)
 
 
 @pytest.mark.parametrize("num_mu, num_spat, mu", ((10, 4, 10), (40, 10, 17), (72, 31, 27)))
