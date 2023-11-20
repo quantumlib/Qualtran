@@ -216,8 +216,6 @@ class SelectTHC(SelectOracle):
             sel=mu,
             trg=sys_a,
         )
-
-        # Clean up
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         plus_mn = bb.add(XGate(), q=plus_mn)
@@ -225,12 +223,14 @@ class SelectTHC(SelectOracle):
         # Swap spins
         # Should be a negative control..
         nu_eq_mp1, plus_a, plus_b = bb.add(CSwap(1), ctrl=nu_eq_mp1, x=plus_a, y=plus_b)
+        # swap mu / nu
+        nu_eq_mp1, mu, nu = bb.add(CSwap(self.num_mu.bit_length()), ctrl=nu_eq_mp1, x=mu, y=nu)
 
         # System register spin swaps
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         # Rotations
-        nu_eq_mp1, data, nu, sys_a = bb.add(
+        nu_eq_mp1, data, mu, sys_a = bb.add(
             THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
@@ -241,7 +241,7 @@ class SelectTHC(SelectOracle):
             ),
             nu_eq_mp1=nu_eq_mp1,
             data=data,
-            sel=nu,
+            sel=mu,
             trg=sys_a,
         )
         # Controlled Z_0
@@ -249,7 +249,7 @@ class SelectTHC(SelectOracle):
         succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
         sys_a = bb.join(split_sys)
         # Undo rotations
-        nu_eq_mp1, data, nu, sys_a = bb.add(
+        nu_eq_mp1, data, mu, sys_a = bb.add(
             THCRotations(
                 num_mu=self.num_mu,
                 num_spin_orb=self.num_spin_orb,
@@ -261,7 +261,7 @@ class SelectTHC(SelectOracle):
             ),
             nu_eq_mp1=nu_eq_mp1,
             data=data,
-            sel=nu,
+            sel=mu,
             trg=sys_a,
         )
 

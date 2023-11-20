@@ -64,8 +64,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
     enlarged_matrix[:num_mu, :num_mu] = np.abs(zeta)
     enlarged_matrix[:num_spat, num_mu] = np.abs(t_l)
     flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
-    eps = 2**-mu
-    print(eps)
+    eps = 2**-mu / len(flat_data)
     alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
         flat_data, eps
     )

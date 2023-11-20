@@ -57,7 +57,7 @@ class UniformSuperpositionTHC(Bloq):
     The toffoli complexity of this gate should be $10 \log(M+1) + 2 b_r - 9$.
     Currently it is a good deal larger due to:
      1. inverting inequality tests should not need more toffolis.
-     2. We are not using phase-gradient gate toffoli cost for Ry rotations
+     2. We are not using phase-gradient gate toffoli cost for Ry rotations.
      3. Small differences in quoted vs implemented comparator costs.
 
     See: https://github.com/quantumlib/Qualtran/issues/390
@@ -217,10 +217,19 @@ class PrepareTHC(PrepareOracle):
     Registers:
         mu: $\mu$ register.
         nu: $\nu$ register.
-        theta: sign register.
+        plus_mn: plus state for controlled swaps on mu/nu.
+        plus_a / plus_b: plus state for controlled swaps on spins.
+        sigma: ancilla register for alias sampling.
+        rot: ancilla register for rotation for uniform superposition state.
         succ: success flag qubit from uniform state preparation
         nu_eq_mp1: flag for if $nu = M+1$
-        plus_a / plus_b: plus state for controlled swaps on spins.
+        theta: sign register.
+        s: Contiguous index register. 
+        alt_mn: Register to store alt mu and nu values.
+        alt_theta: Register for alternate theta values.
+        keep: keep_bitsize-sized register for the keep values from coherent alias sampling. 
+        less_than: Single qubit ancilla for alias sampling.
+        extra_ctrl: An extra control register for producing a multi-controlled CSwap.
 
     References:
         [Even more efficient quantum computations of chemistry through
@@ -260,7 +269,7 @@ class PrepareTHC(PrepareOracle):
         flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
         thetas = [int(t) for t in (1 - np.sign(flat_data)) // 2]
         alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            flat_data, epsilon=2**-num_bits_state_prep
+            flat_data, epsilon=2**-num_bits_state_prep / len(flat_data)
         )
         num_up_t = len(triu_indices[0])
         alt_mu = []
