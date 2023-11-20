@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from openfermion.resource_estimates.sf.compute_cost_sf import compute_cost
-from openfermion.resource_estimates.utils import power_two, QI, QI2, QR, QR2
+from openfermion.resource_estimates.utils import QI, QI2, QR2
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sf.single_factorization import (
