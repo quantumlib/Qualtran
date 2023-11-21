@@ -186,7 +186,7 @@ class DoubleFactorizationOneBody(Bloq):
         )
         # missing l_ne_zero
         [succ_l, succ_p], sys[0] = bb.add(
-            ApplyControlledZs((1,1), self.num_spin_orb // 2), ctrls=[succ_l, succ_p], system=sys[0]
+            ApplyControlledZs((1, 1), self.num_spin_orb // 2), ctrls=[succ_l, succ_p], system=sys[0]
         )
         # 2nd half (invert preparation / swaps)
         prot = ProgRotGateArray(
