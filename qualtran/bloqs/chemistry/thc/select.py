@@ -13,7 +13,7 @@
 #  limitations under the License.
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -126,6 +126,7 @@ class SelectTHC(SelectOracle):
         kr1: block sizes for QROM erasure for outputting rotation angles. See Eq 34.
         kr2: block sizes for QROM erasure for outputting rotation angles. This
             is for the second QROM (eq 35)
+        control_val: A control bit for the entire gate.
 
     Registers:
         succ: success flag qubit from uniform state preparation
@@ -149,10 +150,11 @@ class SelectTHC(SelectOracle):
     num_bits_theta: int
     kr1: int = 1
     kr2: int = 1
+    control_val: Optional[int] = None
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return ()
+        return () if self.control_val is None else (Register('control', 1),)
 
     @cached_property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
