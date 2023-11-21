@@ -52,6 +52,7 @@ import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
@@ -118,6 +119,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='And',
         module=qualtran.bloqs.and_bloq,
         bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Multi-Paulis',
+        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        bloq_specs=[
+            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
