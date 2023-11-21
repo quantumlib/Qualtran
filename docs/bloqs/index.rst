@@ -64,3 +64,4 @@ Bloqs Library
     unary_iteration.ipynb
     util_bloqs.ipynb
     generalized_qsp.ipynb
+    multi_control_multi_target_pauli
