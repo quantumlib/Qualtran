@@ -181,8 +181,11 @@ class BlackBoxPrepare(Bloq):
         return {'selection': selection, 'junk': junk}
 
     def dagger(self) -> 'BlackBoxPrepare':
-        prep_dag = attrs.evolve(self.prepare, adjoint=not self.adjoint)
-        return attrs.evolve(self, prepare=prep_dag, adjoint=not self.adjoint)
+        sub_bloq_has_adjoint = getattr(self.prepare, 'adjoint', None)
+        if sub_bloq_has_adjoint:
+            prep_dag = attrs.evolve(self.prepare, adjoint=not self.adjoint)
+            return attrs.evolve(self, prepare=prep_dag, adjoint=not self.adjoint)
+        return attrs.evolve(self, adjoint=not self.adjoint)
 
     def short_name(self) -> str:
         dag = '†' if self.adjoint else ''
