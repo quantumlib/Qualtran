@@ -110,7 +110,6 @@ class THCRotations(Bloq):
         # xref https://github.com/quantumlib/Qualtran/issues/370, the cost below
         # assume a phase gradient.
         rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
-        print(rot_cost, toff_cost_qrom)
         return {(TGate(), 4 * (rot_cost + toff_cost_qrom))}
 
 
