@@ -86,37 +86,3 @@ class ProgRotGateArray(Bloq):
             (Toffoli(), (cost_a + cost_c)),
             (QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2, adjoint=self.adjoint), 1),
         }
-
-
-@frozen
-class ApplyControlledZs(Bloq):
-    """Apply controlled Z operation for SELECT
-
-    This is either a CCZ or CCCZ operation. Wrap it as a bloq to hide the split / joins.
-
-    Args:
-        num_controls: The number of controls
-
-    Registers:
-        ctrls: control registers
-        system: system register
-    """
-
-    num_controls: int
-    num_spinorb: int
-
-    def short_name(self) -> str:
-        return "C" * self.num_controls + "Z"
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("ctrls", bitsize=1, shape=(self.num_controls,)),
-                Register("system", bitsize=self.num_spinorb, shape=(2,)),
-            ]
-        )
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # Step 4 in the reference.
-        return {(Toffoli(), self.num_controls - 1)}
