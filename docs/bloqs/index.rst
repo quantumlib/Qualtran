@@ -31,6 +31,7 @@ Bloqs Library
     chemistry/thc/thc.ipynb
     chemistry/trotter/trotter.ipynb
     chemistry/pbc/first_quantization/first_quantization.ipynb
+    chemistry/df/double_factorization.ipynb
 
 .. toctree::
     :maxdepth: 2
