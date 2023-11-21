@@ -34,6 +34,7 @@ from qualtran import (
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Circle, TextBox, WireSymbol
 
 from .t_gate import TGate
 
@@ -228,6 +229,14 @@ class CSwap(GateWithRegisters):
                 ("@",) + ("swap_x",) * self.bitsize + ("swap_y",) * self.bitsize
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'x':
+            return TextBox('×(x)')
+        elif soq.reg.name == 'y':
+            return TextBox('×(y)')
+        else:
+            return Circle(filled=True)
 
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
