@@ -1,7 +1,7 @@
 .. _reference:
 
-Reference
-=========
+API Reference
+=============
 
 This section of the docs provides an API reference for all symbols
 in ``qualtran``.

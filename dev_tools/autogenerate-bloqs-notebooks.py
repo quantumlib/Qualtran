@@ -47,10 +47,11 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import BloqNbSpec, NotebookSpec, render_notebook
 
-import qualtran.bloqs.and_bloq
-import qualtran.bloqs.and_bloq_test
 import qualtran.bloqs.arithmetic
-import qualtran.bloqs.arithmetic_test
+import qualtran.bloqs.arithmetic.addition_test
+import qualtran.bloqs.arithmetic.comparison_test
+import qualtran.bloqs.arithmetic.conversions_test
+import qualtran.bloqs.arithmetic.multiplication_test
 import qualtran.bloqs.basic_gates.cnot_test
 import qualtran.bloqs.basic_gates.hadamard_test
 import qualtran.bloqs.basic_gates.rotation_test
@@ -101,30 +102,21 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         directory=f'{SOURCE_DIR}/bloqs',
     ),
     NotebookSpec(
-        title='And',
-        module=qualtran.bloqs.and_bloq,
-        gate_specs=[
-            BloqNbSpec(qualtran.bloqs.and_bloq_test._make_and),
-            BloqNbSpec(qualtran.bloqs.and_bloq_test._make_multi_and),
-        ],
-        directory=f'{SOURCE_DIR}/bloqs',
-    ),
-    NotebookSpec(
         title='Arithmetic',
         module=qualtran.bloqs.arithmetic,
         gate_specs=[
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_add),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_product),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_sum_of_squares),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_greater_than),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_greater_than_constant),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_equals_a_constant),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_to_contiguous_index),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_scale_int_by_real),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_multiply_two_reals),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_square_real_number),
-            BloqNbSpec(qualtran.bloqs.arithmetic_test._make_signed_to_twos_complement),
+            BloqNbSpec(qualtran.bloqs.arithmetic.addition_test._make_add),
+            BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_product),
+            BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_square),
+            BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_sum_of_squares),
+            BloqNbSpec(qualtran.bloqs.arithmetic.comparison_test._make_greater_than),
+            BloqNbSpec(qualtran.bloqs.arithmetic.comparison_test._make_greater_than_constant),
+            BloqNbSpec(qualtran.bloqs.arithmetic.comparison_test._make_equals_a_constant),
+            BloqNbSpec(qualtran.bloqs.arithmetic.conversions_test._make_to_contiguous_index),
+            BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_scale_int_by_real),
+            BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_multiply_two_reals),
+            BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_square_real_number),
+            BloqNbSpec(qualtran.bloqs.arithmetic.conversions_test._make_signed_to_twos_complement),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
     ),

@@ -19,7 +19,7 @@ from pylint.testutils import CheckerTestCase, MessageTest
 from .pylint_copyright_checker import CopyrightChecker
 
 
-class TestCopyrightChecker(CheckerTestCase):
+class CopyrightCheckerTestSuite(CheckerTestCase):
     r"""Test the copyright-notice checker for Pylint"""
 
     CHECKER_CLASS = CopyrightChecker

@@ -71,7 +71,7 @@ class MeanEstimationOperator(GateWithRegisters):
     of two unitaries:
 
         - REFL_{p}: Reflection around the state prepared by synthesizer $P$. It applies the unitary
-            $P^{\dagger}(2|0><0| - I)P$.
+            $P(2|0><0| - I)P^{\dagger}$.
         - ROT_{y}: Applies a complex phase $\exp(i * -2\arctan{y_{w}})$ when the selection register
             stores $w$. This is achieved by using the encoder to encode $y(w)$ in a temporary target
             register.

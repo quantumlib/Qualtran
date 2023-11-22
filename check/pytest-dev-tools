@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+################################################################################
+# Runs pytest on the dev_tools/ folder.
+#
+# Usage:
+#     check/pytest-dev-tools [--flags for pytest]
+#
+################################################################################
+
+# Get the working directory to the repo root.
+thisdir="$(dirname "${BASH_SOURCE[0]}")" || exit $?
+topdir="$(git -C "${thisdir}" rev-parse --show-toplevel)" || exit $?
+cd "${topdir}" || exit $?
+
+# Run in parallel by default.  Pass the `-n0` option for a single-process run.
+# (the last `-n` option wins)
+PYTEST_ARGS=( "-n=auto" "$@" )
+
+pytest "${PYTEST_ARGS[@]}" dev_tools/
+RESULT=$?
+
+exit "$RESULT"

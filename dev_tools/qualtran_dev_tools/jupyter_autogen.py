@@ -127,11 +127,8 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
 
     def _parse_references_section(self, section: str) -> List[str]:
         """Sphinx method to emit a 'References' section."""
-        return [
-            '#### References',
-            ' '.join(line.strip() for line in self._consume_to_next_section()),
-            '',
-        ]
+        lines = self._dedent(self._consume_to_next_section())
+        return ['#### References', '\n'.join(line for line in lines), '']
 
     def _parse_registers_section(self, section: str) -> List[str]:
         def _template(name, desc_lines):
@@ -191,6 +188,7 @@ from qualtran import Bloq, CompositeBloq, BloqBuilder, Signature, Register
 from qualtran.drawing import show_bloq, show_call_graph, show_counts_sigma
 from typing import *
 import numpy as np
+import sympy
 import cirq\
 """
 
