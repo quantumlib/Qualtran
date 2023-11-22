@@ -1,13 +1,10 @@
 # dependencies to run pytest
-
 pytest
 pytest-asyncio
 pytest-cov
 pytest-xdist
 
 # test executing notebooks
-nbformat
-nbconvert
 ipykernel
 
 # chemistry resource estimates

@@ -12,6 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Bloqs for doing "AND" logical operations.
+
+The behavior is modified by the 'control variable' attributes. A traditional value of '1'
+means that a bit value of '1' is logical true for the and operation. A control value of
+'0' means that a bit value of '0' is the logical true.
+
+The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bit according
+to the and of its control registers. `And` will output the result into a fresh register.
+"""
+
 import itertools
 from functools import cached_property
 from typing import Any, Dict, Set, Tuple
@@ -23,7 +33,16 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Side, Signature, Soquet, SoquetT
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -44,10 +63,9 @@ class And(GateWithRegisters):
         target [right]: The output bit.
 
     References:
-        (Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity)[https://arxiv.org/abs/1805.03662].
+     - [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
             Babbush et. al. 2018. Section III.A. and Fig. 4.
-        (Verifying Measurement Based Uncomputation)[https://algassert.com/post/1903].
-            Gidney, C. 2019.
+     - [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
     cv1: int = 1
@@ -178,6 +196,17 @@ class And(GateWithRegisters):
             return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
 
 
+@bloq_example
+def _and_bloq() -> And:
+    and_bloq = And()
+    return and_bloq
+
+
+_AND_DOC = BloqDocSpec(
+    bloq_cls=And, import_line='from qualtran.bloqs.and_bloq import And', examples=(_and_bloq,)
+)
+
+
 @frozen
 class MultiAnd(GateWithRegisters):
     """A many-bit (multi-control) 'and' operation.
@@ -281,3 +310,16 @@ class MultiAnd(GateWithRegisters):
             return TComplexity(
                 t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
             )
+
+
+@bloq_example
+def _multi_and() -> MultiAnd:
+    multi_and = MultiAnd(cvs=(1,) * 4)
+    return multi_and
+
+
+_MULTI_AND_DOC = BloqDocSpec(
+    bloq_cls=MultiAnd,
+    import_line='from qualtran.bloqs.and_bloq import MultiAnd',
+    examples=(_multi_and,),
+)

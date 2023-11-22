@@ -5,15 +5,17 @@ Bloqs Library
 
 ``qualtran.bloqs`` contains implementations of quantum operations and subroutines.
 
-.. todo: Make module organization match page organization
-    and_bloq -> basic_gates
-    swap_network -> basic_gates?
-    ?? -> mean estimation
-    everything in "Other" -> ??
-
-.. todo: generalized qsp needs a title.
-
 .. todo: swap_network_2 should be removed after jupyter notebook autogen migration.
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Concepts:
+
+    unary_iteration.ipynb
+    arithmetic/comparison_gates.ipynb
+    phase_estimation_of_quantum_walk.ipynb
+    chemistry/trotter/trotter.ipynb
+    factoring/factoring-via-modexp.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -29,31 +31,34 @@ Bloqs Library
 
     chemistry/sparse/sparse.ipynb
     chemistry/thc/thc.ipynb
-    chemistry/trotter/trotter.ipynb
+    chemistry/pbc/first_quantization/first_quantization.ipynb
+    chemistry/df/double_factorization.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Factoring:
 
-    factoring/factoring-via-modexp.ipynb
     factoring/ref-factoring.ipynb
     factoring/mod_exp.ipynb
     factoring/mod_mul.ipynb
 
 .. toctree::
     :maxdepth: 2
+    :caption: Arithmetic:
+
+    arithmetic/arithmetic.ipynb
+
+.. toctree::
+    :maxdepth: 2
     :caption: Other:
 
     apply_gate_to_lth_target.ipynb
-    arithmetic.ipynb
-    comparison_gates.ipynb
     hubbard_model.ipynb
-    phase_estimation_of_quantum_walk.ipynb
     prepare_uniform_superposition.ipynb
     qrom.ipynb
     qubitization_walk_operator.ipynb
     select_pauli_lcu.ipynb
     sorting.ipynb
     state_preparation.ipynb
-    unary_iteration.ipynb
     util_bloqs.ipynb
+    generalized_qsp.ipynb
