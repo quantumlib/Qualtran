@@ -51,6 +51,8 @@ class InnerPrepareSingleFactorization(Bloq):
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             Hypercontraction](https://arxiv.org/abs/2011.03494) Appendix B. Listing 2, page 44.
+        [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity
+        and Low Rank Factorization](https://quantum-journal.org/papers/q-2019-12-02-208/) Sec. 3.2
     """
 
     num_aux: int
@@ -76,11 +78,14 @@ class InnerPrepareSingleFactorization(Bloq):
         cost_a = (Toffoli(), 6 * n + 2 * self.num_bits_rot_aa - 7)
         # contiguous index
         cost_b = (Toffoli(), n**2 + n - 1)
+        # Note the data size is for storing the upper triangular matrices of
+        # size N/2, so N/2 (N/2 + 1)/2. There is an error in the reference
+        # equation B13 of Reg[1] (it is correct in Ref[2], and openfermion).
         # QROAM
         cost_c = (
             QROAMTwoRegs(
                 self.num_aux + 1,
-                self.num_spin_orb**2 // 8 + self.num_spin_orb // 2,
+                self.num_spin_orb**2 // 8 + self.num_spin_orb // 4,
                 self.kp1,
                 self.kp2,
                 2 * n + self.num_bits_state_prep + 2,
