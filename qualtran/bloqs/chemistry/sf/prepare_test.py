@@ -73,7 +73,7 @@ def test_inner_prepare_t_counts():
         num_bits_rot_aa=num_bits_rot_aa,
         adjoint=False,
         kp1=2**2,
-        kp2=2**5
+        kp2=2**5,
     )
     _, counts = in_prep.call_graph()
     toff = counts[TGate()] // 4
