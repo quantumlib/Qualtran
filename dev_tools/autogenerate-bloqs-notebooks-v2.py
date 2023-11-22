@@ -51,6 +51,7 @@ import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.chemistry.df.double_factorization
+import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.prepare_uniform_superposition
@@ -96,6 +97,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.apply_gate_to_lth_target,
         bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='First Quantized Hamiltonian with Quantum Projectile',
+        module=qualtran.bloqs.chemistry.pbc.first_quantization.projectile,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_SELECT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization/projectile',
     ),
     NotebookSpecV2(
         title='Sorting',
