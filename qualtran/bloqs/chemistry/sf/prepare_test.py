@@ -34,7 +34,6 @@ def test_prep_outer(bloq_autotester):
 def test_outerprep_t_counts():
     # Reiher et al hamiltonian parameters (from openfermion unit tests,
     # resource_estimates/sf/compute_cost_sf_test.py)
-    num_spin_orb = 108
     num_aux = 200
     num_bits_state_prep = 10
     num_bits_rot_aa = 7
@@ -98,15 +97,13 @@ def test_inner_prepare_t_counts():
     # Cost of computing contiguous register in step 2 (b).
     cost2b = 4 * (nN**2 + nN - 1)
     # Number of coefficients for first state preparation on p & q.
-    # correct the data size here: https://github.com/quantumlib/OpenFermion/issues/838
-    nprime = int(num_spin_orb**2 // 8 + num_spin_orb // 2)
-    nprime_err = int(num_spin_orb**2 // 8 + num_spin_orb // 4)
+    nprime = int(num_spin_orb**2 // 8 + num_spin_orb // 4)
     bp = int(2 * nN + num_bits_state_prep + 2)
     cost2c = (
-        QR2(num_aux + 1, nprime_err, bp)[-1]
-        + QI((num_aux + 1) * nprime_err)[-1]
-        + QR2(num_aux, nprime_err, bp)[-1]
-        + QI(num_aux * nprime_err)[-1]
+        QR2(num_aux + 1, nprime, bp)[-1]
+        + QI((num_aux + 1) * nprime)[-1]
+        + QR2(num_aux, nprime, bp)[-1]
+        + QI(num_aux * nprime)[-1]
     )
     our_qrom_cost = (
         QR2(num_aux + 1, nprime, bp)[-1]

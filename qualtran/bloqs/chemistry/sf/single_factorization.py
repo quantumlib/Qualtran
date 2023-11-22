@@ -437,7 +437,6 @@ def _sf_one_body() -> SingleFactorizationOneBody:
     num_bits_state_prep = 12
     num_bits_rot_aa = 7
     num_spin_orb = 10
-    num_aux = 50
     sf_one_body = SingleFactorizationOneBody(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,

@@ -152,7 +152,6 @@ class OuterPrepareSingleFactorization(Bloq):
 
 @bloq_example
 def _prep_inner() -> InnerPrepareSingleFactorization:
-    num_aux = 50
     num_bits_state_prep = 12
     num_bits_rot = 7
     num_spin_orb = 10
