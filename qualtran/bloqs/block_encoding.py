@@ -31,7 +31,6 @@ the $l$ registers above) and junk registers which are extra qubits needed by
 state preparation but not controlled upon during SELECT.
 """
 
-import abc
 from functools import cached_property
 from typing import Dict
 
@@ -52,37 +51,26 @@ from qualtran.bloqs.util_bloqs import Partition
 
 
 @attrs.frozen
-class BlockEncoding(Bloq, metaclass=abc.ABCMeta):
-    r"""Abstract base class that defines the API for a block encoding.
+class BlackBoxSelect(Bloq):
+    """A 'black box' Select bloq.
+
+    The `SELECT` operation applies the $l$'th unitary $U_{l}$ on the system register
+    when the selection register stores integer $l$.
+    When implementing specific `SelectOracle` bloqs, it is helpful to have multiple selection
+    registers each with semantic meaning. For example: you could have spatial or spin coordinates
+    on different, named registers. The `SelectOracle` interface encourages this. `BlackBoxSelect`
+    uses the properties on the `SelectOracle` interface to provide a "black box" view of a select
+    operation that just has a selection and system register.
+    During decomposition, this bloq will use the `Partition` utility bloq to partition
+    and route the parts of the unified selection register to the `Select` bloq.
+
+    Args:
+        select: The bloq implementing the `SelectOracle` interface.
 
     Registers:
-        selection: The ancilla registers over which a state is prepared.
-        junk: Additional ancilla registers used during state preparation.
-        system: The system registers to which we want to apply a unitary $U_l$.
+        selection: The combined selection register
+        system: The combined system register
     """
-
-    @property
-    @abc.abstractmethod
-    def selection_register(self) -> Register:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def junk_register(self) -> Register:
-        ...
-
-    @property
-    @abc.abstractmethod
-    def system_register(self) -> Register:
-        ...
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature([self.selection_register, self.junk_register, self.system_register])
-
-
-@attrs.frozen
-class BlackBoxSelect(Bloq):
 
     select: SelectOracle
 
@@ -137,6 +125,10 @@ class BlackBoxPrepare(Bloq):
     Args:
         prepare: The bloq following the `Prepare` interface to wrap.
         adjoint: Whether this is the adjoint preparation.
+
+    Registers:
+        selection: selection register.
+        junk: Additional junk registers not prepared upon.
     """
 
     prepare: PrepareOracle
@@ -193,8 +185,8 @@ class BlackBoxPrepare(Bloq):
 
 
 @attrs.frozen
-class BlackBoxBlockEncoding(BlockEncoding):
-    r"""Standard block encoding using SELECT and PREPARE.
+class BlackBoxBlockEncoding(Bloq):
+    r"""Black box implementation of a block encoding using SELECT and PREPARE.
 
     Builds the block encoding via
     $$
@@ -208,27 +200,39 @@ class BlackBoxBlockEncoding(BlockEncoding):
     $$
         \mathrm{SELECT} |l\rangle_a|\psi\rangle_s = |l\rangle_a U_l |\psi\rangle_s.
     $$
+
+    Args:
+        select: The bloq implementing the `SelectOracle` interface.
+        prepare: The bloq implementing the `SelectOracle` interface.
+
+    Registers:
+        selection: The combined selection register
+        system: The combined system register
+        adjoint: Whether to dagger this bloq or not.
+
+    Registers:
+        selection: selection register.
+        junk: Additional junk registers not prepared upon.
+        system: The combined system register
     """
 
     select: BlackBoxSelect
     prepare: BlackBoxPrepare
     adjoint: bool = False
 
-    @property
-    def selection_register(self) -> Register:
-        return Register('selection', bitsize=self.prepare.selection_bitsize)
-
-    @property
-    def junk_register(self) -> Register:
-        return Register('junk', bitsize=self.prepare.junk_bitsize)
-
-    @property
-    def system_register(self) -> Register:
-        return Register('system', bitsize=self.select.system_bitsize)
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('selection', self.prepare.selection_bitsize),
+                Register('junk', self.prepare.junk_bitsize),
+                Register('system', self.select.system_bitsize),
+            ]
+        )
 
     def short_name(self) -> str:
         dag = '†' if self.adjoint else ''
-        return 'B[V]{dag}'
+        return f'B[V]{dag}'
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT', system: 'SoquetT'
