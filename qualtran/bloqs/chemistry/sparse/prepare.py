@@ -31,7 +31,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition
+from qualtran.bloqs.chemistry.black_boxes import (
+    PrepareUniformSuperposition as BBPrepareUniformSuperposition,
+)
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.swap_network import CSwapApprox
 
@@ -119,14 +122,65 @@ class PrepareSparse(PrepareOracle):
                 bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
                 iteration_length=self.num_spin_orb // 2,
             ),
+            SelectionRegister("sigma", bitsize=self.num_bits_state_prep),
             SelectionRegister("alpha", bitsize=1),
             SelectionRegister("beta", bitsize=1),
-            SelectionRegister("sym_swaps", bitsize=1),
+            SelectionRegister("rot_aa", bitsize=1),
             SelectionRegister("swap_pq", bitsize=1),
             SelectionRegister("swap_rs", bitsize=1),
             SelectionRegister("swap_pqrs", bitsize=1),
-            SelectionRegister("flag_1b", bitsize=1),
         ]
+
+    @cached_property
+    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (
+            Register('ind_alt', bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(2, 4)),
+            Register('theta', bitsize=1, shape=(2,)),
+            Register('keep', bitsize=self.num_bits_state_prep),
+            Register("less_than", bitsize=1),
+            Register("flag_1b", bitsize=(2,)),
+        )
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        d: 'SoquetT',
+        p: 'SoquetT',
+        q: 'SoquetT',
+        r: 'SoquetT',
+        s: 'SoquetT',
+        alpha: 'SoquetT',
+        beta: 'SoquetT',
+        rot_aa: 'SoquetT',
+        swap_pq: 'SoquetT',
+        swap_rs: 'SoquetT',
+        swap_pqrs: 'SoquetT',
+        flag_1b: 'SoquetT',
+        ind_alt: 'SoquetT',
+        theta: 'SoquetT',
+        keep: 'SoquetT',
+        less_than: 'SoquetT',
+        flag_1b: 'SoquetT',
+    ) -> Dict[str, 'SoquetT']:
+        d = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=d)
+        return {
+            'd': d,
+            'p': p,
+            'q': q,
+            'r': r,
+            's': s,
+            'alpha': alpha,
+            'beta': beta,
+            'rot_aa': rot_aa,
+            'swap_pq': swap_pq,
+            'swap_rs': swap_rs,
+            'swap_pqrs': swap_pqrs,
+            'ind_alt': ind_alt,
+            'theta': theta,
+            'keep': keep,
+            'less_than': less_than,
+            'flag_1b': flag_1b,
+        }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
@@ -140,14 +194,14 @@ class PrepareSparse(PrepareOracle):
         qrom_cost = (Toffoli(), num_toff_qrom)
         if self.adjoint:
             return {
-                (PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
+                (BBPrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
                 qrom_cost,
             }
         swap_cost_state_prep = (CSwapApprox(num_bits_spat), 4 + 4)  # 2. pg 39
         ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
 
         return {
-            (PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
+            (BBPrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
             qrom_cost,
             swap_cost_state_prep,
             ineq_cost_state_prep,
