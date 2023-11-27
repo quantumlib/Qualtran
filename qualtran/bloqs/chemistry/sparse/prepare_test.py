@@ -12,19 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.sparse import PrepareSparse
+from qualtran.bloqs.chemistry.sparse.prepare import _prepare_sparse, PrepareSparse
 
 
-def _make_sparse_prepare():
-    from qualtran.bloqs.chemistry.sparse import PrepareSparse
-
-    return PrepareSparse(10, 1_000, 8)
-
-
-def test_sparse_prepare():
-    prep = PrepareSparse(10, 1_000, 8)
-
-
-def test_sparse_prepare_bloq_counts():
-    bloq = PrepareSparse(10, 1_000, 8)
-    graph, sigma = bloq.call_graph()
+def test_prep_inner(bloq_autotester):
+    bloq_autotester(_prepare_sparse)

@@ -14,14 +14,25 @@
 """PREPARE for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    BloqExample,
+    Register,
+    SelectionRegister,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition
+from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.swap_network import CSwapApprox
 
 if TYPE_CHECKING:
@@ -29,7 +40,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class PrepareSparse(Bloq):
+class PrepareSparse(PrepareOracle):
     r"""Prepare oracle for the sparse chemistry Hamiltonian
 
     Prepare the state:
@@ -80,19 +91,42 @@ class PrepareSparse(Bloq):
     k: int = 1
 
     @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("pqrs", (self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
-                Register("theta", 1),
-                Register("alpha", 1),
-                Register("beta", 1),
-                Register("swap_pq", 1),
-                Register("swap_rs", 1),
-                Register("swap_pqrs", 1),
-                Register("flag_1b", 1),
-            ]
-        )
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        # issue here in that pqrs should not be reflected on.
+        return [
+            SelectionRegister(
+                "d",
+                bitsize=(self.num_non_zero - 1).bit_length(),
+                iteration_length=self.num_non_zero,
+            ),
+            SelectionRegister(
+                "p",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "q",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "r",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "s",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister("alpha", bitsize=1),
+            SelectionRegister("beta", bitsize=1),
+            SelectionRegister("sym_swaps", bitsize=1),
+            SelectionRegister("swap_pq", bitsize=1),
+            SelectionRegister("swap_rs", bitsize=1),
+            SelectionRegister("swap_pqrs", bitsize=1),
+            SelectionRegister("flag_1b", bitsize=1),
+        ]
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
@@ -111,9 +145,26 @@ class PrepareSparse(Bloq):
             }
         swap_cost_state_prep = (CSwapApprox(num_bits_spat), 4 + 4)  # 2. pg 39
         ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
+
         return {
             (PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
             qrom_cost,
             swap_cost_state_prep,
             ineq_cost_state_prep,
         }
+
+
+@bloq_example
+def _prepare_sparse() -> PrepareSparse:
+    num_non_zero = 1011
+    num_spin_orb = 18
+    num_bits_state_prep = 11
+    prep = PrepareSparse(num_spin_orb, num_non_zero, num_bits_state_prep)
+    return prep
+
+
+_SPARSE_PREPARE = BloqDocSpec(
+    bloq_cls=PrepareSparse,
+    import_line='from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse',
+    examples=(_prepare_sparse,),
+)
