@@ -15,15 +15,27 @@
 from functools import cached_property
 from typing import Dict, Set, Union
 
+import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet, SoquetT, Register
-from qualtran.bloqs.basic_gates import CSwap, Toffoli
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    Signature,
+    Soquet,
+    SoquetT,
+    Register,
+)
+from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 
 
 @frozen
@@ -105,50 +117,10 @@ class CtrlModMul(Bloq):
 
 
 @frozen
-class ModMul(Bloq):
-    r"""An n-bit modular multiplication gate.
-
-    Implements $U|x\rangle|y\rangle|0\rangle \rightarrow |x\rangle|y\rangle|x * y \mod p\rangle$
-    using $2.25n^2 + 9n$ Toffoli gates.
-
-    Args:
-        bitsize: Number of bits used to represent each integer.
-        p: The modulus for the multiplication.
-
-    Registers:
-        x: A bitsize-sized input register (register x above).
-        y: A bitsize-sized input register (register y above).
-        out: A bitsize-sized input register holding the output of the modular multiplication.
-
-    References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 6 and 8
-    """
-
-    bitsize: Union[int, sympy.Expr]
-    p: Union[int, sympy.Expr]
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature(
-            [
-                Register('x', bitsize=self.bitsize),
-                Register('y', bitsize=self.bitsize),
-                Register('out', bitsize=self.bitsize),
-            ]
-        )
-
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        # Upper bound is 2.25 * (n ** 2) + 9n.
-        return {(2.25 * (self.bitsize**2) + 9 * self.bitsize, Toffoli())}
-
-    def short_name(self) -> str:
-        return f'out = x * y mod {self.p}'
-
-
-@frozen
 class ModDbl(Bloq):
     r"""An n-bit modular doubling gate.
+
+    This gate is designed to operate on integers in the Montogomery form.
 
     Implements $U|x\rangle \rightarrow |2 * x \mod p\rangle$ using $2n$ Toffoli gates.
 
@@ -161,18 +133,63 @@ class ModDbl(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 6 and 8
+        Fig 6d and 8
     """
 
-    bitsize: Union[int, sympy.Expr]
-    p: Union[int, sympy.Expr]
+    bitsize: int
+    p: int
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', bitsize=self.bitsize)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(2 * self.bitsize, Toffoli())}
+    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Assign registers to variables for use in doubling.
+        x = regs['x']
+        lower_bit = bb.allocate(n=1)
+        sign = bb.allocate(n=1)
+
+        # Convert x to an n + 2-bit integer by attaching two |0⟩ qubits as the least and most
+        # significant bits.
+        x_split = bb.split(x)
+        x = bb.join(np.concatenate([[lower_bit], x_split, [sign]]))
+
+        # Add constant -p to the x register.
+        x = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize + 2, k=-1 * self.p, signed=True, cvs=()), x=x
+        )
+
+        # Split the three bit pieces again so that we can use the sign to control our constant
+        # addition circuit.
+        x_split = bb.split(x)
+        sign = x_split[-1]
+        x = bb.join(x_split[0:-1])
+
+        # Add constant p to the x register if the result of the last modular reduction is negative.
+        sign, x = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)),
+            x=x,
+            ctrl=sign,
+        )
+
+        # Split the lower bit ancilla from the x register for use in resetting the other ancilla bit
+        # before freeing them both.
+        x_split = bb.split(x)
+        lower_bit = x_split[0]
+        lower_bit, sign = bb.add(
+            MultiControlPauli(cvs=(0,), target_gate=XGate()), controls=lower_bit, target=sign
+        )
+
+        free_bit = x_split[-1]
+        x = bb.join(np.concatenate([[lower_bit], x_split[1:-1]]))
+
+        # Free the ancilla bits.
+        bb.free(free_bit)
+        bb.free(sign)
+
+        # Return the output registers.
+        return {'x': x}
 
     def short_name(self) -> str:
         return f'x = 2 * x mod {self.p}'

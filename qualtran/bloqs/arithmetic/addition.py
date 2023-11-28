@@ -19,9 +19,12 @@ import cirq
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Side, Signature
+from qualtran import GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran._infra.bloq import Bloq
+from qualtran._infra.composite_bloq import BloqBuilder
 from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import Toffoli, XGate
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -211,6 +214,120 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         if power == -1:
             return OutOfPlaceAdder(self.bitsize, adjoint=not self.adjoint)
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
+
+
+@frozen
+class SimpleAddConstant(Bloq):
+    r"""Applies U_{k}|x> = |x + k>.
+
+    Applies addition to input register `|x>` given classical parameter 'k'.
+
+    Args:
+        bitsize: Number of bits used to represent each integer.
+        k: The classical value to be added to x.
+        cvs: A tuple of control variable settings. Each entry specifies whether that
+            control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
+        signed: A boolean condition which controls whether the x register holds a value represented
+            in 2's Complement or Unsigned. This effects the ability to add a negative constant.
+
+    Registers:
+        x: A bitsize-sized input register (register x above).
+
+    References:
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580) Fig 2a
+    """
+
+    bitsize: int
+    k: int
+    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
+    signed: bool
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        if len(self.cvs) > 0:
+            return Signature(
+                [Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=self.bitsize)]
+            )
+        else:
+            return Signature([Register('x', bitsize=self.bitsize)])
+
+    def binary_rep(self, num, num_bits):
+        # If the registers are interpreting signed bits, represent the output in 2's complement.
+        # Otherwise make sure the classical value k is > 0.
+        if self.signed:
+            num &= (2 << num_bits - 1) - 1
+        else:
+            assert self.k >= 0
+        format_str = '{:0' + str(num_bits) + 'b}'
+        return format_str.format(int(num))
+
+    def on_classical_vals(
+        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if ctrl == 0:
+            return {'ctrl': 0, 'x': x}
+
+        assert ctrl == 1, 'Bad ctrl value.'
+        x_out = x + self.k
+        return {'ctrl': ctrl, 'x': x_out}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Assign registers to variables and allocate ancilla bits for classical integer k.
+        x = regs['x']
+        if len(self.cvs) > 0:
+            ctrls = regs['ctrl']
+        else:
+            ctrls = None
+        k = bb.allocate(n=self.bitsize)
+
+        # Get binary representation of k and split k into separate wires.
+        k_split = bb.split(k)
+        binary_str = "".join(reversed(self.binary_rep(self.k, self.bitsize)))
+
+        # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
+        # controlled.
+        for i in range(self.bitsize):
+            if binary_str[i] == '1':
+                if len(self.cvs) > 0:
+                    ctrls, k_split[i] = bb.add(
+                        MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
+                        controls=ctrls,
+                        target=k_split[i],
+                    )
+                else:
+                    k_split[i] = bb.add(XGate(), q=k_split[i])
+
+        # Rejoin the qubits representing k for in-place addition.
+        k = bb.join(k_split)
+        k, x = bb.add(Add(bitsize=self.bitsize), a=k, b=x)
+
+        # Resplit the k qubits in order to undo the original bit flips to go from the binary
+        # representation back to the zero state.
+        k_split = bb.split(k)
+        for i in range(self.bitsize):
+            if binary_str[i] == '1':
+                if len(self.cvs) > 0:
+                    ctrls, k_split[i] = bb.add(
+                        MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
+                        controls=ctrls,
+                        target=k_split[i],
+                    )
+                else:
+                    k_split[i] = bb.add(XGate(), q=k_split[i])
+
+        # Free the ancilla qubits.
+        k = bb.join(k_split)
+        k = bb.free(k)
+
+        # Return the output registers.
+        if len(self.cvs) > 0:
+            return {'x': x, 'ctrl': ctrls}
+        else:
+            return {'x': x}
+
+    def short_name(self) -> str:
+        return f'x = x + {self.k}'
 
 
 @frozen(auto_attribs=True)

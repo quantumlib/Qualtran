@@ -34,12 +34,6 @@ from qualtran.cirq_interop.testing import (
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
-def _make_greater_than():
-    from qualtran.bloqs.arithmetic import GreaterThan
-
-    return GreaterThan(a_bitsize=4, b_bitsize=4)
-
-
 def _make_greater_than_constant():
     from qualtran.bloqs.arithmetic import GreaterThanConstant
 
@@ -171,15 +165,11 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     assert g.with_registers([2] * 4, [2] * 5, [2]) == LessThanEqual(4, 5)
 
 
-def test_greater_than():
-    bb = BloqBuilder()
-    bitsize = 5
-    q0 = bb.add_register('a', bitsize)
-    q1 = bb.add_register('b', bitsize)
-    anc = bb.add_register('result', 1)
-    q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
-    cbloq = bb.finalize(a=q0, b=q1, result=anc)
-    cbloq.t_complexity()
+@pytest.mark.parametrize('bitsize', [3])
+@pytest.mark.parametrize('signed', [True, False])
+def test_greater_than_decomp(bitsize, signed):
+    bloq = GreaterThan(bitsize=bitsize, signed=signed)
+    assert_valid_bloq_decomposition(bloq)
 
 
 def test_greater_than_constant():

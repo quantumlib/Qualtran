@@ -16,14 +16,16 @@ from typing import Optional
 
 import attrs
 import numpy as np
+import pytest
 import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul, ModMul, ModDbl
+from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul, ModDbl
 from qualtran.bloqs.util_bloqs import Allocate, Free
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.resource_counting import get_cbloq_bloq_counts, SympySymbolAllocator
+from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def _make_modmul():
@@ -131,16 +133,16 @@ def test_consistent_counts():
     assert counts1 == counts2
 
 
-def test_mod_mul():
-    bloq = ModMul(bitsize=8, p=3)
-    assert bloq.short_name() == 'out = x * y mod 3'
-    assert bloq.bloq_counts() == {(216, Toffoli())}
-
-
 def test_mod_dbl():
     bloq = ModDbl(bitsize=8, p=3)
     assert bloq.short_name() == 'x = 2 * x mod 3'
-    assert bloq.bloq_counts() == {(16, Toffoli())}
+
+
+@pytest.mark.parametrize('bitsize', [3])
+@pytest.mark.parametrize('p', [5, 8])
+def test_mod_dbl_decomp(bitsize, p):
+    bloq = ModDbl(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)
 
 
 def test_modul(bloq_autotester):
@@ -149,4 +151,3 @@ def test_modul(bloq_autotester):
 
 def test_modul_symb(bloq_autotester):
     bloq_autotester(_modmul_symb)
-    

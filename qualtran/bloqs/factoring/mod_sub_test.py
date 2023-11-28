@@ -12,17 +12,31 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.basic_gates import Toffoli
+import pytest
+
 from qualtran.bloqs.factoring.mod_sub import ModNeg, ModSub
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_mod_sub():
     bloq = ModSub(bitsize=8, p=3)
     assert bloq.short_name() == 'y = y - x mod 3'
-    assert bloq.bloq_counts() == {(48, Toffoli())}
 
 
 def test_mod_neg():
     bloq = ModNeg(bitsize=8, p=3)
     assert bloq.short_name() == 'x = -x mod 3'
-    assert bloq.bloq_counts() == {(16, Toffoli())}
+
+
+@pytest.mark.parametrize('bitsize', [3])
+@pytest.mark.parametrize('p', [5, 8])
+def test_mod_sub_decomp(bitsize, p):
+    bloq = ModSub(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize('bitsize', [3])
+@pytest.mark.parametrize('p', [5, 8])
+def test_mod_neg_decomp(bitsize, p):
+    bloq = ModNeg(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)

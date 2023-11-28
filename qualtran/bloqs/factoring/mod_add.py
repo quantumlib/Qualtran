@@ -15,15 +15,17 @@
 from functools import cached_property
 from typing import Dict, Set, Union
 
+import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran import Bloq, Register, Signature, SoquetT
+from qualtran.bloqs.basic_gates import Toffoli, TGate, XGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
+from qualtran.bloqs.arithmetic.comparison import GreaterThan
 
 
 @frozen
@@ -145,6 +147,8 @@ class CtrlAddK(Bloq):
 class ModAdd(Bloq):
     r"""An n-bit modular addition gate.
 
+    This gate is designed to operate on integers in the Montogomery form.
+
     Implements $U|x\rangle|y\rangle \rightarrow |x\rangle|y + x \mod p\rangle$ using $4n$ Toffoli
     gates.
 
@@ -157,18 +161,65 @@ class ModAdd(Bloq):
         y: A bitsize-sized input/output register (register y above).
 
     References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig 6 and 8
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig 6a and 8
     """
 
-    bitsize: Union[int, sympy.Expr]
-    p: Union[int, sympy.Expr]
+    bitsize: int
+    p: int
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(4 * self.bitsize, Toffoli())}
+    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Assign registers to variables and allocate ancilla bits for use in addition.
+        x = regs['x']
+        y = regs['y']
+        junk_bit = bb.allocate(n=1)
+        sign = bb.allocate(n=1)
+
+        # Join ancilla bits to x and y registers in order to be able to compute addition of
+        # bitsize+1 registers. This allows us to keep track of the sign of the y register after a
+        # constant subtraction circuit.
+        x_split = bb.split(x)
+        y_split = bb.split(y)
+        x = bb.join(np.concatenate([x_split, [junk_bit]]))
+        y = bb.join(np.concatenate([y_split, [sign]]))
+
+        # Perform in-place addition on quantum register y.
+        x, y = bb.add(Add(bitsize=self.bitsize + 1), a=x, b=y)
+
+        # Temporary solution to equalize the bitlength of the x and y registers for Add().
+        x_split = bb.split(x)
+        junk_bit = x_split[-1]
+        x = bb.join(x_split[0:-1])
+
+        # Add constant -p to the y register.
+        y = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize + 1, k=-1 * self.p, signed=True, cvs=()), x=y
+        )
+
+        # Controlled addition of classical constant p if the sign of y after the last addition is
+        # negative.
+        y_split = bb.split(y)
+        sign = y_split[-1]
+        y = bb.join(y_split[0:-1])
+        sign, y = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize, k=self.p, signed=True, cvs=(1)), ctrl=sign, x=y
+        )
+
+        # Check if x < y; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
+        # again before freeing.
+        x, y, sign = bb.add(GreaterThan(bitsize=self.bitsize, signed=False), a=x, b=y, target=sign)
+        sign = bb.add(XGate(), q=sign)
+
+        # Free the ancilla qubits.
+        junk_bit = bb.free(junk_bit)
+        sign = bb.free(sign)
+
+        # Return the output registers.
+        return {'x': x, 'y': y}
 
     def short_name(self) -> str:
         return f'y = y + x mod {self.p}'

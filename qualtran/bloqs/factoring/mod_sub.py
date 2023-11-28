@@ -13,19 +13,23 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Set, Union
+from typing import Optional, Set, Union, Dict
 
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran import Bloq, Register, Signature, SoquetT
+from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 
 
 @frozen
 class ModSub(Bloq):
     r"""An n-bit modular subtraction gate.
+
+    This gate is designed to operate on integers in the Montogomery form.
 
     Implements $U|x\rangle|y\rangle \rightarrow |x\rangle|y - x \mod p\rangle$ using $6n$ Toffoli
     gates.
@@ -40,18 +44,47 @@ class ModSub(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 6 and 8
+        Fig 6c and 8
     """
 
-    bitsize: Union[int, sympy.Expr]
-    p: Union[int, sympy.Expr]
+    bitsize: int
+    p: int
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(6 * self.bitsize, Toffoli())}
+    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Assign registers to variables for use in subtraction.
+        x = regs['x']
+        y = regs['y']
+
+        # Bit flip all qubits in register x.
+        x_split = bb.split(x)
+        for i in range(self.bitsize):
+            x_split[i] = bb.add(XGate(), q=x_split[i])
+        x = bb.join(x_split)
+
+        # Add constant p+1 to the x register.
+        x = bb.add(SimpleAddConstant(bitsize=self.bitsize, k=self.p + 1, signed=True, cvs=()), x=x)
+
+        # Perform in-place addition on quantum register y.
+        x, y = bb.add(Add(bitsize=self.bitsize), a=x, b=y)
+
+        # Add constant -(p+1) to the x register to uncompute the first addition.
+        x = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize, k=-1 * (self.p + 1), signed=True, cvs=()), x=x
+        )
+
+        # Bit flip all qubits in register x.
+        x_split = bb.split(x)
+        for i in range(self.bitsize):
+            x_split[i] = bb.add(XGate(), q=x_split[i])
+        x = bb.join(x_split)
+
+        # Return the output registers.
+        return {'x': x, 'y': y}
 
     def short_name(self) -> str:
         return f'y = y - x mod {self.p}'
@@ -60,6 +93,8 @@ class ModSub(Bloq):
 @frozen
 class ModNeg(Bloq):
     r"""An n-bit modular negation gate.
+
+    This gate is designed to operate on integers in the Montogomery form.
 
     Implements $U|x\rangle \rightarrow |-x \mod p\rangle$ using $2n$ Toffoli gates.
 
@@ -72,18 +107,56 @@ class ModNeg(Bloq):
 
     References:
         [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
-        Fig 6 and 8
+        Fig 6b and 8
     """
 
-    bitsize: Union[int, sympy.Expr]
-    p: Union[int, sympy.Expr]
+    bitsize: int
+    p: int
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize), Register('p', bitsize=self.bitsize)])
+        return Signature([Register('x', bitsize=self.bitsize)])
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(2 * self.bitsize, Toffoli())}
+    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Assign registers to variables for use in negation. Initialize an ancilla qubit to |1>.
+        x = regs['x']
+        ctrl = bb.allocate(n=1)
+        ctrl = bb.add(XGate(), q=ctrl)
+
+        # Perform a multi-controlled bitflip on the ancilla bit if the state of x is the bitstring
+        # representing 0.
+        cvs = ()
+        for i in range(self.bitsize):
+            cvs = cvs + (0,)
+        x, ctrl = bb.add(MultiControlPauli(cvs=cvs, target_gate=XGate()), controls=x, target=ctrl)
+
+        # Bitflips all qubits if the ctrl bit is set to 1 (the input x register is not in the 0
+        # state).
+        x_split = bb.split(x)
+        for i in range(self.bitsize):
+            ctrl, x_split[i] = bb.add(
+                MultiControlPauli(cvs=(1,), target_gate=XGate()), controls=ctrl, target=x_split[i]
+            )
+        x = bb.join(x_split)
+
+        # Add constant p+1 to the x register.
+        ctrl, x = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize, k=self.p + 1, signed=True, cvs=(1,)),
+            x=x,
+            ctrl=ctrl,
+        )
+
+        # Perform a multi-controlled bitflip on the ancilla bit if the state of x is the bitstring
+        # representing 0.
+        x, ctrl = bb.add(MultiControlPauli(cvs=cvs, target_gate=XGate()), controls=x, target=ctrl)
+
+        # Return the ancilla qubit to the 0 state and free it.
+        ctrl = bb.add(XGate(), q=ctrl)
+        bb.free(ctrl)
+
+        # Return the output registers.
+        return {'x': x}
 
     def short_name(self) -> str:
         return f'x = -x mod {self.p}'
