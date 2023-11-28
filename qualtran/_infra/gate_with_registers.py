@@ -308,7 +308,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
     ) -> cirq.OP_TREE:
-        from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq, InteropQubitManager
+        from qualtran.cirq_interop._cirq_to_bloq import InteropQubitManager
 
         quregs = split_qubits(self.signature, qubits)
         if context is None:
@@ -318,10 +318,11 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         except DecomposeNotImplementedError:
             pass
         try:
-            qm = InteropQubitManager(context.qubit_manager)
-            qm.manage_qubits(qubits)
             cbloq = self.decompose_bloq()
             in_quregs = {reg.name: quregs[reg.name] for reg in self.signature.lefts()}
+            # Input qubits can get de-allocated by cbloq.to_cirq_circuit, thus mark them as managed.
+            qm = InteropQubitManager(context.qubit_manager)
+            qm.manage_qubits(merge_qubits(self.signature.lefts(), **in_quregs))
             circuit, out_quregs = cbloq.to_cirq_circuit(qubit_manager=qm, **in_quregs)
             qubit_map = {q: q for q in circuit.all_qubits()}
             for reg in self.signature.rights():
