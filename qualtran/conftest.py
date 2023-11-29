@@ -58,9 +58,24 @@ def assert_bloq_example_decompose_for_pytest(bloq_ex: BloqExample):
         raise bce from bce
 
 
+def assert_equivalent_bloq_example_counts_for_pytest(bloq_ex: BloqExample):
+    try:
+        qlt_testing.assert_equivalent_bloq_example_counts(bloq_ex)
+    except qlt_testing.BloqCheckException as bce:
+        if bce.check_result in [
+            qlt_testing.BloqCheckResult.UNVERIFIED,
+            qlt_testing.BloqCheckResult.NA,
+            qlt_testing.BloqCheckResult.MISSING,
+        ]:
+            pytest.skip(bce.msg)
+
+        raise bce from bce
+
+
 _TESTFUNCS = [
     ('make', assert_bloq_example_make_for_pytest),
     ('decompose', assert_bloq_example_decompose_for_pytest),
+    ('counts', assert_equivalent_bloq_example_counts_for_pytest),
 ]
 
 

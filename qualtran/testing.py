@@ -370,3 +370,53 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''
+
+
+def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    bloq = bloq_ex.make()
+    generalizer = bloq_ex.generalizer
+
+    has_manual_counts: bool
+    has_decomp_counts: bool
+    manual_counts = None
+    decomp_counts = None
+
+    if bloq.build_call_graph.__qualname__.startswith('Bloq.'):
+        has_manual_counts = False
+    else:
+        has_manual_counts = True
+        # TODO: don't let the author sneak in decomposition??
+        manual_counts = bloq.bloq_counts(generalizer=generalizer)  # TODO: get exactly level 1
+
+    try:
+        cbloq = bloq.decompose_bloq()
+        decomp_counts = cbloq.bloq_counts(generalizer=generalizer)
+        has_decomp_counts = True
+    except (DecomposeTypeError, DecomposeNotImplementedError) as e:
+        has_decomp_counts = False
+
+    if (not has_decomp_counts) and (not has_manual_counts):
+        raise BloqCheckException.missing('No block counts')
+
+    if has_manual_counts and has_decomp_counts:
+        if manual_counts == decomp_counts:
+            return BloqCheckResult.PASS, ''
+        else:
+            raise BloqCheckException.fail(f'{manual_counts} != {decomp_counts}')
+
+    assert has_manual_counts or has_decomp_counts
+    if has_manual_counts:
+        raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from build_call_graph')
+    if has_decomp_counts:
+        raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from decomposition.')
+
+
+def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    try:
+        assert_equivalent_bloq_example_counts(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''

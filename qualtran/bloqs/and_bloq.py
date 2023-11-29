@@ -48,6 +48,12 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import (
+    cirq_to_bloqs,
+    generalize_cvs,
+    ignore_alloc_free,
+    ignore_cliffords,
+)
 
 
 @frozen
@@ -196,7 +202,7 @@ class And(GateWithRegisters):
             return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
 
 
-@bloq_example
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_cliffords, ignore_alloc_free])
 def _and_bloq() -> And:
     and_bloq = And()
     return and_bloq
@@ -302,19 +308,27 @@ class MultiAnd(GateWithRegisters):
         yield self._decompose_via_tree(control, self.cvs, ancilla, *target)
 
     def _t_complexity_(self) -> TComplexity:
+        bc = self.bloq_counts()
+        if self.adjoint:
+            return TComplexity(clifford=bc[ArbitraryClifford(n=1)])
+        else:
+            return TComplexity(t=4 * bc[And()], clifford=bc[ArbitraryClifford(n=1)])
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
         num_single_and = len(self.cvs) - 1
         if self.adjoint:
-            return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
-        else:
-            return TComplexity(
-                t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
-            )
+            return {(ArbitraryClifford(n=1), 4 * num_single_and + 2 * pre_post_cliffords)}
+
+        return {
+            (And(), num_single_and),
+            (ArbitraryClifford(n=1), 9 * num_single_and + 2 * pre_post_cliffords),
+        }
 
 
-@bloq_example
+@bloq_example(generalizer=(ignore_cliffords, generalize_cvs))
 def _multi_and() -> MultiAnd:
-    multi_and = MultiAnd(cvs=(1,) * 4)
+    multi_and = MultiAnd(cvs=(1, 0, 1, 0, 1, 0))
     return multi_and
 
 

@@ -39,6 +39,7 @@ from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -242,13 +243,13 @@ class SwapWithZero(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _swz() -> SwapWithZero:
     swz = SwapWithZero(selection_bitsize=8, target_bitsize=32, n_target_registers=4)
     return swz
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _swz_small() -> SwapWithZero:
     # A small version on four bits.
     swz_small = SwapWithZero(selection_bitsize=3, target_bitsize=2, n_target_registers=2)

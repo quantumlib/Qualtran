@@ -12,11 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import typing
-from typing import Any, Callable, Iterable, Optional, Tuple, Type
+from typing import Any, Callable, Iterable, Sequence, Tuple, Type, TYPE_CHECKING, Union
 
 from attrs import field, frozen
 
 from .bloq import Bloq
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import GeneralizerT
 
 
 @frozen
@@ -39,7 +42,7 @@ class BloqExample:
     _func: Callable[[], Bloq] = field(repr=False, hash=False)
     name: str
     bloq_cls: Type[Bloq]
-    generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
+    generalizer: Union['GeneralizerT', Sequence['GeneralizerT']] = lambda x: x
 
     def make(self) -> Bloq:
         """Make the bloq."""
@@ -77,13 +80,15 @@ def bloq_example(_func: Callable[[], Bloq], **kwargs: Any) -> BloqExample:
 
 @typing.overload
 def bloq_example(
-    _func: None, *, generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
+    _func: None, *, generalizer: 'GeneralizerT' = lambda x: x
 ) -> Callable[[Callable[[], Bloq]], BloqExample]:
     ...
 
 
 def bloq_example(
-    _func: Callable[[], Bloq] = None, *, generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
+    _func: Callable[[], Bloq] = None,
+    *,
+    generalizer: Union['GeneralizerT', Sequence['GeneralizerT']] = lambda x: x,
 ):
     """Decorator to turn a function into a `BloqExample`.
 

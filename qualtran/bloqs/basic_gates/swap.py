@@ -35,6 +35,7 @@ from qualtran import (
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 from .t_gate import TGate
 
@@ -251,14 +252,14 @@ def _cswap_symb() -> CSwap:
     return cswap_symb
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _cswap_small() -> CSwap:
     # A small version on four bits.
     cswap_small = CSwap(bitsize=4)
     return cswap_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _cswap_large() -> CSwap:
     # A large version that swaps 64-bit registers.
     cswap_large = CSwap(bitsize=64)

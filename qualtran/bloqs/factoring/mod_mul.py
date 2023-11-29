@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Optional, Set, Union
 
+import attrs
 import sympy
 from attrs import frozen
 
@@ -23,6 +24,7 @@ from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -104,13 +106,23 @@ class CtrlModMul(Bloq):
             return directional_text_box(f'*={self.k}', side=soq.reg.side)
 
 
-@bloq_example
+_K = sympy.Symbol('k_mul')
+
+
+def _generalize_k(b: Bloq) -> Optional[Bloq]:
+    if isinstance(b, CtrlScaleModAdd):
+        return attrs.evolve(b, k=_K)
+
+    return b
+
+
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul() -> CtrlModMul:
     modmul = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
     return modmul
 
 
-@bloq_example
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul_symb() -> CtrlModMul:
     import sympy
 

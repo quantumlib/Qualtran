@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -33,16 +33,13 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting import big_O
 from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
@@ -113,7 +110,6 @@ class _ZVector(Bloq):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -336,9 +332,6 @@ class _IntVector(Bloq):
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(ArbitraryClifford(self.bitsize), big_O(1))}
 
     def short_name(self) -> str:
         return f'{self.val}'
