@@ -142,7 +142,7 @@ def test_check_bloq_example_make():
 
     with pytest.raises(BloqCheckException) as raises_ctx:
         assert_bloq_example_make(_my_cnot)
-        assert raises_ctx.value.cr is BloqCheckResult.FAIL
+        assert raises_ctx.value.check_result is BloqCheckResult.FAIL
 
     @bloq_example
     def _my_cnot_2() -> TestCNOT:
@@ -178,7 +178,7 @@ def test_check_bloq_decompose_na():
 
     with pytest.raises(BloqCheckException) as raises_ctx:
         assert_bloq_example_decompose(_my_bloq)
-        assert raises_ctx.value.cr is BloqCheckResult.NA
+        assert raises_ctx.value.check_result is BloqCheckResult.NA
 
 
 def test_check_bloq_decompose_missing():
@@ -192,4 +192,4 @@ def test_check_bloq_decompose_missing():
 
     with pytest.raises(BloqCheckException) as raises_ctx:
         assert_bloq_example_decompose(_my_bloq)
-        assert raises_ctx.value.cr is BloqCheckResult.MISSING
+        assert raises_ctx.value.check_result is BloqCheckResult.MISSING

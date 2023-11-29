@@ -252,19 +252,19 @@ class BloqCheckException(AssertionError):
     for convenience.
 
     Args:
-        cr: The BloqCheckResult.
+        check_result: The BloqCheckResult.
         msg: A message providing details for the exception.
     """
 
-    def __init__(self, cr: BloqCheckResult, msg: str):
-        super().__init__(cr, msg)
-        self._cr = cr
+    def __init__(self, check_result: BloqCheckResult, msg: str):
+        super().__init__(check_result, msg)
+        self._check_result = check_result
         self._msg = msg
 
     @property
-    def cr(self) -> BloqCheckResult:
+    def check_result(self) -> BloqCheckResult:
         """The BloqCheckResult."""
-        return self._cr
+        return self._check_result
 
     @property
     def msg(self) -> str:
@@ -319,7 +319,7 @@ def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]
     try:
         assert_bloq_example_make(bloq_ex)
     except BloqCheckException as bce:
-        return bce.cr, bce.msg
+        return bce.check_result, bce.msg
     except Exception as e:
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
@@ -365,7 +365,7 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
     try:
         assert_bloq_example_decompose(bloq_ex)
     except BloqCheckException as bce:
-        return bce.cr, bce.msg
+        return bce.check_result, bce.msg
     except Exception as e:
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 

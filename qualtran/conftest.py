@@ -50,9 +50,9 @@ def assert_bloq_example_decompose_for_pytest(bloq_ex: BloqExample):
     try:
         qlt_testing.assert_bloq_example_decompose(bloq_ex)
     except qlt_testing.BloqCheckException as bce:
-        if bce.cr is qlt_testing.BloqCheckResult.NA:
+        if bce.check_result is qlt_testing.BloqCheckResult.NA:
             pytest.skip(bce.msg)
-        if bce.cr is qlt_testing.BloqCheckResult.MISSING:
+        if bce.check_result is qlt_testing.BloqCheckResult.MISSING:
             pytest.skip(bce.msg)
 
         raise bce from bce
