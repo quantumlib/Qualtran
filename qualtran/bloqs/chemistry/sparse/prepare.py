@@ -116,15 +116,23 @@ class PrepareSparse(PrepareOracle):
         k: qroam blocking factor.
 
     Registers:
+        d: the register indexing non-zero matrix elements. 
         pqrs: the register to store the spatial orbital index.
-        theta: sign qubit.
+        sigma: the register prepared for alias sampling.
         alpha: spin for (pq) indicies.
         beta: spin for (rs) indicies.
+        rot_aa: the qubit rotated for amplitude amplification.
         swap_pq: a |+> state to restore the symmetries of the p and q indices.
         swap_rs: a |+> state to restore the symmetries of the r and s indices.
         swap_pqrs: a |+> state to restore the symmetries of between (pq) and (rs).
-        flag_1b: a single qubit to flag whether the one-body Hamiltonian is to
-            be applied or not during SELECT.
+        theta: sign qubit.
+        alt_pqrs: the register to store the alternate values for the spatial orbital indices.
+        theta: A two qubit register for the sign bit and it's alternate value.
+        keep: The register containing the keep values for alias sampling.
+        less_than: A single qubit for the result of the inequality test during alias sampling. 
+        flag_1b: a two qubit register indicating the if this basis state
+            corresponds to a one-body matrix element. The second qubit stores
+            the alternate value. This qubit will control the SELECT operation.
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
