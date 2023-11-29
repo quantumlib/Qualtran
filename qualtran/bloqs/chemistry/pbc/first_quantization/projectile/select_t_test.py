@@ -11,9 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_t import (
+    _sel_t_proj,
+    SelectTFirstQuantizationWithProj,
+)
 
-from qualtran.bloqs.chemistry.thc.select import _thc_sel
+
+def test_sel_t_proj(bloq_autotester):
+    bloq_autotester(_sel_t_proj)
 
 
-def test_thc_uniform_prep(bloq_autotester):
-    bloq_autotester(_thc_sel)
+def test_select_kinetic_t_counts():
+    num_bits_n = 6
+    sel = SelectTFirstQuantizationWithProj(num_bits_n, 10)
+    _, counts = sel.call_graph()
+    assert counts[TGate()] // 4 == 5 * (num_bits_n - 1) + 2 + 1
