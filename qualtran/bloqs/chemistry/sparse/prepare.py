@@ -14,12 +14,16 @@
 """PREPARE for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
+from qualtran import Register, SelectionRegister
+from qualtran.bloqs.basic_gates import CSwap, Toffoli
+from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition
 from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.bloqs.select_swap_qrom import find_optimal_log_block_size
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
