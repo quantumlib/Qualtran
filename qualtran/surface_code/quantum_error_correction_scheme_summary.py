@@ -42,7 +42,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
 
     error_rate_scaler: float = field(repr=lambda x: f'{x:g}')
     error_rate_threshold: float = field(repr=lambda x: f'{x:g}')
-    reference: str | None
+    reference: str | None = None
 
     def logical_error_rate(self, code_distance: int, physical_error_rate: float) -> float:
         """Logical error suppressed with code distance for this physical error rate.
@@ -98,7 +98,7 @@ class SimpliedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
         single_stabilizer_time_us: Max time of a single X or Z stabilizer measurement.
     """
 
-    single_stabilizer_time_us: float
+    single_stabilizer_time_us: float = 1
 
     def physical_qubits(self, code_distance: int) -> int:
         return 2 * code_distance**2
