@@ -207,6 +207,10 @@ def get_ccz2t_costs(
     if data_block is None:
         # Use "left over" budget for data qubits.
         err_budget = error_budget - distillation_error
+        if err_budget < 0:
+            raise ValueError(
+                f'distillation error {distillation_error} is larger than the error budget {error_budget}'
+            )
         n_logical_qubits = math.ceil((1 + routing_overhead) * n_algo_qubits)
         data_unit_cells = n_logical_qubits * n_cycles
         target_err_per_round = err_budget / data_unit_cells
