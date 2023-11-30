@@ -125,9 +125,8 @@ class PrepareSparse(PrepareOracle):
         theta: A two qubit register for the sign bit and it's alternate value.
         keep: The register containing the keep values for alias sampling.
         less_than: A single qubit for the result of the inequality test during alias sampling.
-        flag_1b: a two qubit register indicating the if this basis state
-            corresponds to a one-body matrix element. The second qubit stores
-            the alternate value. This qubit will control the SELECT operation.
+        flag_1b: a single qubit register indicating whether to apply only the one-body SELECT.
+        alt_flag_1b: alternate value for flag_1b
 
     Refererences:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
@@ -150,7 +149,7 @@ class PrepareSparse(PrepareOracle):
     @cached_property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
         # issue here in that pqrs should not be reflected on.
-        return [
+        return (
             SelectionRegister(
                 "d",
                 bitsize=(self.num_non_zero - 1).bit_length(),
@@ -183,7 +182,8 @@ class PrepareSparse(PrepareOracle):
             SelectionRegister("swap_pq", bitsize=1),
             SelectionRegister("swap_rs", bitsize=1),
             SelectionRegister("swap_pqrs", bitsize=1),
-        ]
+            Register("flag_1b", bitsize=1),
+        )
 
     @cached_property
     def junk_registers(self) -> Tuple[SelectionRegister, ...]:
@@ -192,7 +192,7 @@ class PrepareSparse(PrepareOracle):
             Register('theta', bitsize=1, shape=(2,)),
             Register('keep', bitsize=self.num_bits_state_prep),
             Register("less_than", bitsize=1),
-            Register("flag_1b", bitsize=1, shape=(2,)),
+            Register("alt_flag_1b", bitsize=1),
         )
 
     @classmethod
@@ -274,11 +274,12 @@ class PrepareSparse(PrepareOracle):
         swap_pq: 'SoquetT',
         swap_rs: 'SoquetT',
         swap_pqrs: 'SoquetT',
+        flag_1b: 'SoquetT',
         alt_pqrs: 'SoquetT',
         theta: 'SoquetT',
         keep: 'SoquetT',
         less_than: 'SoquetT',
-        flag_1b: 'SoquetT',
+        alt_flag_1b: 'SoquetT',
     ) -> Dict[str, 'SoquetT']:
         # 1. Prepare \sum_d |d\rangle
         d = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=d)
@@ -315,13 +316,13 @@ class PrepareSparse(PrepareOracle):
             r,
             s,
             theta[0],
-            flag_1b[0],
+            flag_1b,
             alt_pqrs[0],
             alt_pqrs[1],
             alt_pqrs[2],
             alt_pqrs[3],
             theta[1],
-            flag_1b[1],
+            alt_flag_1b,
             keep,
         ) = bb.add(
             qrom,
@@ -331,13 +332,13 @@ class PrepareSparse(PrepareOracle):
             target2=r,
             target3=s,
             target4=theta[0],
-            target5=flag_1b[0],
+            target5=flag_1b,
             target6=alt_pqrs[0],
             target7=alt_pqrs[1],
             target8=alt_pqrs[2],
             target9=alt_pqrs[3],
             target10=theta[1],
-            target11=flag_1b[1],
+            target11=alt_flag_1b,
             target12=keep,
         )
         lte_bloq = LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep)
@@ -360,9 +361,7 @@ class PrepareSparse(PrepareOracle):
         less_than, alt_pqrs[2], r = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[2], y=r)
         less_than, alt_pqrs[3], s = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[3], y=s)
         # swap the 1b/2b alt values
-        less_than, flag_1b[0], flag_1b[1] = bb.add(
-            CSwap(1), ctrl=less_than, x=flag_1b[0], y=flag_1b[1]
-        )
+        # less_than, flag_1b, alt_flag_1b = bb.add(CSwap(1), ctrl=less_than, x=flag_1b, y=alt_flag_1b)
         # invert the comparator
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
         # prepare |+> states for symmetry swaps
@@ -387,11 +386,12 @@ class PrepareSparse(PrepareOracle):
             'swap_pq': swap_pq,
             'swap_rs': swap_rs,
             'swap_pqrs': swap_pqrs,
+            'flag_1b': flag_1b,
             'alt_pqrs': alt_pqrs,
             'theta': theta,
             'keep': keep,
             'less_than': less_than,
-            'flag_1b': flag_1b,
+            'alt_flag_1b': alt_flag_1b,
         }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
