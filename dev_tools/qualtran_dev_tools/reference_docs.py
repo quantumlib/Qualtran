@@ -261,7 +261,7 @@ def generate_ref_docs(reporoot: Path):
         root_title="Qualtran",
         py_modules=[("qualtran", qualtran)],
         base_dir=[reporoot / 'qualtran'],
-        code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran",
+        code_url_prefix="https://github.com/quantumlib/Qualtran/blob/main/qualtran",
         callbacks=[
             local_definitions_filter,
             filter_type_checking,
