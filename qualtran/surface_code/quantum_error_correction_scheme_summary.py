@@ -37,7 +37,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
     Attributes:
         error_rate_scaler: Logical error rate coefficient.
         error_rate_threshold: Logical error rate threshold.
-        reference: source of the estimates in human readable format.
+        reference: source of the estimates in human-readable format.
     """
 
     error_rate_scaler: float = field(repr=lambda x: f'{x:g}')
