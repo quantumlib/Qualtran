@@ -21,17 +21,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    BloqExample,
-    Register,
-    SelectionRegister,
-    Signature,
-    SoquetT,
-)
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, SelectionRegister, SoquetT
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
@@ -43,7 +33,6 @@ from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
-from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 if TYPE_CHECKING:
@@ -79,12 +68,18 @@ def get_sparse_inputs_from_integrals(
     pqrs_indx = np.array(list(itertools.product(pq_indx, pq_indx))).reshape((num_lt, num_lt, 4))
     tril_tril = np.tril_indices(num_lt)
     pqrs_indx = pqrs_indx[tril_tril[0], tril_tril[1], :]
-    eris_eight = eris[*pqrs_indx.T]
+    eris_eight = []
+    # black complains about not being able to parse eris_eight = eris[*pqrs.T]
+    for ix in pqrs_indx:
+        p, q, r, s = ix
+        eris_eight.append(eris[p, q, r, s])
+    eris_eight = np.array(eris_eight)
     keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
     eris_eight = eris_eight[keep_indx]
     pqrs_indx = pqrs_indx[keep_indx[0]]
     assert len(pqrs_indx) == len(eris_eight)
     return np.concatenate((tpq_indx, pqrs_indx)), np.concatenate((tpq_sparse, eris_eight))
+
 
 @frozen
 class PrepareSparse(PrepareOracle):
@@ -116,7 +111,7 @@ class PrepareSparse(PrepareOracle):
         k: qroam blocking factor.
 
     Registers:
-        d: the register indexing non-zero matrix elements. 
+        d: the register indexing non-zero matrix elements.
         pqrs: the register to store the spatial orbital index.
         sigma: the register prepared for alias sampling.
         alpha: spin for (pq) indicies.
@@ -129,7 +124,7 @@ class PrepareSparse(PrepareOracle):
         alt_pqrs: the register to store the alternate values for the spatial orbital indices.
         theta: A two qubit register for the sign bit and it's alternate value.
         keep: The register containing the keep values for alias sampling.
-        less_than: A single qubit for the result of the inequality test during alias sampling. 
+        less_than: A single qubit for the result of the inequality test during alias sampling.
         flag_1b: a two qubit register indicating the if this basis state
             corresponds to a one-body matrix element. The second qubit stores
             the alternate value. This qubit will control the SELECT operation.
@@ -208,8 +203,8 @@ class PrepareSparse(PrepareOracle):
         eris: NDArray[np.float64],
         num_bits_state_prep: int = 8,
         num_bits_rot_aa: int = 8,
-        drop_element_thresh: float=0.0,
-        qroam_block_size: Optional[int] = None
+        drop_element_thresh: float = 0.0,
+        qroam_block_size: Optional[int] = None,
     ) -> 'PrepareSparse':
         r"""Factory method to build PrepareSparse from Hamiltonian coefficients.
 
@@ -236,7 +231,9 @@ class PrepareSparse(PrepareOracle):
             Factorization](https://quantum-journal.org/papers/q-2019-12-02-208/)
             Sec 5 page 15
         """
-        indicies, integrals = get_sparse_inputs_from_integrals(tpq_prime, eris, drop_element_thresh=drop_element_thresh)
+        indicies, integrals = get_sparse_inputs_from_integrals(
+            tpq_prime, eris, drop_element_thresh=drop_element_thresh
+        )
         num_non_zero = len(integrals)
         alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
             np.abs(integrals), epsilon=2**-num_bits_state_prep / num_non_zero
@@ -287,7 +284,9 @@ class PrepareSparse(PrepareOracle):
         d = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=d)
         # 2. QROM the ind_d alt_d values
         n_n = (self.num_spin_orb // 2 - 1).bit_length()
-        target_bitsizes = (n_n,) * 4 + (1,)*2 + (n_n,) * 4 + (1,)*2 + (self.num_bits_state_prep,)
+        target_bitsizes = (
+            (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
+        )
         if self.qroam_block_size is None:
             block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
         else:
@@ -309,7 +308,38 @@ class PrepareSparse(PrepareOracle):
             target_bitsizes=target_bitsizes,
             block_size=block_size,
         )
-        d, p, q, r, s, theta[0], flag_1b[0], alt_pqrs[0], alt_pqrs[1], alt_pqrs[2], alt_pqrs[3], theta[1], flag_1b[1], keep = bb.add(qrom, selection=d, target0=p, target1=q, target2=r, target3=s, target4=theta[0], target5=flag_1b[0], target6=alt_pqrs[0], target7=alt_pqrs[1], target8=alt_pqrs[2], target9=alt_pqrs[3], target10=theta[1], target11=flag_1b[1], target12=keep)
+        (
+            d,
+            p,
+            q,
+            r,
+            s,
+            theta[0],
+            flag_1b[0],
+            alt_pqrs[0],
+            alt_pqrs[1],
+            alt_pqrs[2],
+            alt_pqrs[3],
+            theta[1],
+            flag_1b[1],
+            keep,
+        ) = bb.add(
+            qrom,
+            selection=d,
+            target0=p,
+            target1=q,
+            target2=r,
+            target3=s,
+            target4=theta[0],
+            target5=flag_1b[0],
+            target6=alt_pqrs[0],
+            target7=alt_pqrs[1],
+            target8=alt_pqrs[2],
+            target9=alt_pqrs[3],
+            target10=theta[1],
+            target11=flag_1b[1],
+            target12=keep,
+        )
         lte_bloq = LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep)
         # prepare uniform superposition over sigma
         sigma = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=sigma)
@@ -367,7 +397,13 @@ class PrepareSparse(PrepareOracle):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
         if self.qroam_block_size is None:
-            target_bitsizes = (num_bits_spat,) * 4 + (1,)*2 + (num_bits_spat,) * 4 + (1,)*2 + (self.num_bits_state_prep,)
+            target_bitsizes = (
+                (num_bits_spat,) * 4
+                + (1,) * 2
+                + (num_bits_spat,) * 4
+                + (1,) * 2
+                + (self.num_bits_state_prep,)
+            )
             block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
         else:
             block_size = self.qroam_block_size
@@ -398,9 +434,9 @@ class PrepareSparse(PrepareOracle):
 @bloq_example
 def _prep_sparse() -> PrepareSparse:
     num_spin_orb = 4
-    tpq = np.random.random((num_spin_orb//2, num_spin_orb//2))
+    tpq = np.random.random((num_spin_orb // 2, num_spin_orb // 2))
     tpq = 0.5 * (tpq + tpq.T)
-    eris = np.random.random((num_spin_orb//2,) * 4)
+    eris = np.random.random((num_spin_orb // 2,) * 4)
     eris += np.transpose(eris, (0, 1, 3, 2))
     eris += np.transpose(eris, (1, 0, 2, 3))
     eris += np.transpose(eris, (2, 3, 0, 1))

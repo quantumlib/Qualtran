@@ -60,22 +60,27 @@ def test_decompose_bloq_counts():
     cost_call = prep.call_graph()[1][TGate()]
     assert cost_decomp != cost_call
 
+
 @pytest.mark.parametrize('sparsity', [0.0, 1e-2])
 @pytest.mark.parametrize('nb', [4, 5, 6, 7])
 def test_get_sparse_inputs_from_integrals(nb, sparsity):
     tpq = np.random.random((nb, nb))
     tpq = 0.5 * (tpq + tpq.T)
-    eris = np.random.normal(scale=4, size=(nb,)*4)
+    eris = np.random.normal(scale=4, size=(nb,) * 4)
     eris += np.transpose(eris, (0, 1, 3, 2))
     eris += np.transpose(eris, (1, 0, 2, 3))
     eris += np.transpose(eris, (2, 3, 0, 1))
-    pqrs_indx, eris_eight = get_sparse_inputs_from_integrals(tpq, eris, drop_element_thresh=sparsity)
+    pqrs_indx, eris_eight = get_sparse_inputs_from_integrals(
+        tpq, eris, drop_element_thresh=sparsity
+    )
     num_lt = nb * (nb + 1) // 2
     num_lt_mat = num_lt * (num_lt + 1) // 2
     if sparsity < 1e-12:
         assert len(eris_eight) == num_lt_mat + num_lt
     tpq_recon = np.zeros_like(tpq)
-    tpq_recon[*(pqrs_indx[:num_lt].T[:2])] = eris_eight[:num_lt]
+    for ix, pq in enumerate(pqrs_indx[:num_lt]):
+        p, q, _, _ = pq
+        tpq_recon[p, q] = eris_eight[ix]
     tpq_recon += np.tril(tpq_recon, k=-1).T
     assert np.allclose(tpq_recon, tpq)
     eris[np.where(np.abs(eris) < sparsity)] = 0.0
