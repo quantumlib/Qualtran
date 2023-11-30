@@ -127,7 +127,6 @@ class PrepareSparse(PrepareOracle):
             Register("alt_flag_1b", bitsize=1),
         )
 
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
         if self.qroam_block_size is None:

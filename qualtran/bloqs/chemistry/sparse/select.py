@@ -89,7 +89,6 @@ class SelectSparse(SelectOracle):
     def target_registers(self) -> Tuple[Register, ...]:
         return (Register("sys", bitsize=self.num_spin_orb),)
 
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
         # which is not controlled (for the two body part of the Ham). The figure
