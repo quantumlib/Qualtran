@@ -137,8 +137,6 @@ def _modexp() -> ModExp:
 
 @bloq_example
 def _modexp_symb() -> ModExp:
-    import sympy
-
     g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
     modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     return modexp_symb

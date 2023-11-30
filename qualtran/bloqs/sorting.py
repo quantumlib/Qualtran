@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import numpy as np
+import sympy
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Side, Signature
@@ -61,7 +62,7 @@ class Comparator(Bloq):
     def t_complexity(self):
         # complexity is from less than on two n qubit numbers + controlled swap
         # Hard code for now until CSwap-Bloq is merged.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/219
         t_complexity = GreaterThan(self.bitsize, self.bitsize).t_complexity()
         t_complexity += TComplexity(t=14 * self.bitsize)
         return t_complexity
@@ -69,8 +70,6 @@ class Comparator(Bloq):
 
 @bloq_example
 def _cmp_symb() -> Comparator:
-    import sympy
-
     n = sympy.Symbol('n')
     cmp_symb = Comparator(bitsize=n)
     return cmp_symb
@@ -117,7 +116,7 @@ class BitonicSort(Bloq):
         # Need O(k * log^2(k)) comparisons.
         # TODO: This is Big-O complexity.
         # Should work out constant factors or
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/219
         return (
             self.k
             * int(np.ceil(max(np.log2(self.k) ** 2.0, 1)))
@@ -127,8 +126,6 @@ class BitonicSort(Bloq):
 
 @bloq_example
 def _bitonic_sort() -> BitonicSort:
-    import sympy
-
     n = sympy.Symbol('n')
     bitonic_sort = BitonicSort(bitsize=n, k=3)
     return bitonic_sort

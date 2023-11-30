@@ -22,7 +22,7 @@ from qualtran.drawing import Circle, WireSymbol
 
 
 def _no_nesting_ctrls_yet(instance, field, val):
-    # https://github.com/quantumlib/cirq-qubitization/issues/149
+    # https://github.com/quantumlib/Qualtran/issues/149
     assert isinstance(val, Bloq)
     if 'control' in [reg.name for reg in val.signature]:
         raise NotImplementedError("`ControlledBloq` doesn't support nesting yet.") from None
