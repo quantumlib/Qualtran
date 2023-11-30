@@ -15,4 +15,4 @@
 """
 
 from .prepare import PrepareTHC, UniformSuperpositionTHC
-from .select import SelectTHC
+from .select_bloq import SelectTHC

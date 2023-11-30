@@ -45,7 +45,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
-from qualtran.bloqs.chemistry.sf.select import SelectSingleFactorization
+from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 

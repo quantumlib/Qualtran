@@ -44,7 +44,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
-from qualtran.bloqs.chemistry.df.select import ApplyControlledZs, ProgRotGateArray
+from qualtran.bloqs.chemistry.df.select_bloq import ApplyControlledZs, ProgRotGateArray
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 

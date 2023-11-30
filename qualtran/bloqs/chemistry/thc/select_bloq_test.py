@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.thc.select import _thc_sel
+from qualtran.bloqs.chemistry.thc.select_bloq import _thc_sel
 
 
 def test_thc_uniform_prep(bloq_autotester):
