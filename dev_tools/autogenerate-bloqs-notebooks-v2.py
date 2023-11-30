@@ -52,6 +52,8 @@ import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
+import qualtran.bloqs.chemistry.sparse.prepare
+import qualtran.bloqs.chemistry.sparse.select
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
@@ -123,6 +125,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.df.double_factorization._DF_BLOCK_ENCODING,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/df',
+    ),
+    NotebookSpecV2(
+        title='Sparse',
+        module=qualtran.bloqs.chemistry.sparse,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.sparse.prepare._SPARSE_PREPARE,
+            qualtran.bloqs.chemistry.sparse.select._SPARSE_SELECT,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),
     NotebookSpecV2(
         title='And',

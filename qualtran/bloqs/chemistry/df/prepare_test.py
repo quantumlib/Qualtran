@@ -61,7 +61,6 @@ def test_outerprep_t_counts():
     cost1a = 2 * (3 * nl + 2 * num_bits_rot_aa - 3 * eta - 9)
     cost1b = QR(num_aux + 1, bp1)[1] + QI(num_aux + 1)[1]
     cost1cd = 2 * (num_bits_state_prep + nl)
-    print(4 * toff)
     assert toff == cost1a + cost1b + cost1cd
 
 
