@@ -14,12 +14,12 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, SelectionRegister, SoquetT
+from qualtran import Register, SelectionRegister
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
