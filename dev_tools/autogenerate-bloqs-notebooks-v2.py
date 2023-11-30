@@ -50,7 +50,9 @@ from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_noteboo
 import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
+import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
+import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
@@ -97,6 +99,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
+        title='First Quantized Hamiltonian with Quantum Projectile',
+        module=qualtran.bloqs.chemistry.pbc.first_quantization.projectile,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_SELECT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization/projectile',
+    ),
+    NotebookSpecV2(
         title='Sorting',
         module=qualtran.bloqs.sorting,
         bloq_specs=[
@@ -118,6 +129,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='And',
         module=qualtran.bloqs.and_bloq,
         bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Block Encoding',
+        module=qualtran.bloqs.block_encoding,
+        bloq_specs=[qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
