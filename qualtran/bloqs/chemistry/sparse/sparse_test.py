@@ -36,7 +36,7 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_non_zero, num_bits_r
         num_non_zero,
         num_bits_rot_aa=num_bits_rot_aa,
         num_bits_state_prep=num_bits_state_prep,
-        k=32,  # harcoded in openfermion
+        qroam_block_size=32,  # harcoded in openfermion
     )
     _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
@@ -46,7 +46,7 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_non_zero, num_bits_r
         num_bits_rot_aa=num_bits_rot_aa,
         num_bits_state_prep=num_bits_state_prep,
         adjoint=True,
-        k=2 ** QI(num_non_zero)[0],  # determined from QI in openfermion
+        qroam_block_size=2 ** QI(num_non_zero)[0],  # determined from QI in openfermion
     )
     _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
