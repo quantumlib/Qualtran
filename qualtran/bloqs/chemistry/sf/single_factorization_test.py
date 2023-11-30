@@ -77,11 +77,19 @@ def test_compare_cost_to_openfermion():
     nl = num_aux.bit_length()
     nn = (num_spin_orb // 2 - 1).bit_length()
     cost_refl = nl + 2 * nn + 2 * num_bits_state_prep + 2
-    cost_qualtran = counts[TGate()] // 4  # + cost_refl + 2
-    # there are 4 swaps costed as Toffolis in openfermion, qualtran uses 7 T gates.
-    delta_swaps = 4 * (7 - 4) * nn // 4
+    cost_qualtran = counts[TGate()]
     delta_refl = num_bits_state_prep + 1  # missing bits of reflection for state preparation.
-    cost_qualtran -= delta_swaps  #
+    cost_qualtran -= (
+        # there are 4 swaps costed as Toffolis in openfermion, qualtran uses 7 T gates.
+        4 * (7 - 4) * nn
+        +
+        # inner prepare differences (swaps + inequality test)
+        4 * ((7 - 4) * (2 * nn) + 4 * num_bits_state_prep - 4)
+        +
+        # outer prepare differences (swaps + inequality test)
+        2 * ((7 - 4) * (nl + 1) + 4 * num_bits_state_prep - 4)
+    )
+    cost_qualtran //= 4
     cost_qualtran += delta_refl
     cost_qualtran += cost_refl
     cost_qualtran += 1  # extra toffoli currently missing for additional control
