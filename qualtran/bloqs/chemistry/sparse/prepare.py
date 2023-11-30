@@ -57,7 +57,6 @@ def get_sparse_inputs_from_integrals(
         indicies: corresponding indices of the non-zero matrix elements.
 
     References:
-    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Eq. A19 page 40.
     """
