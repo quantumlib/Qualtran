@@ -19,17 +19,14 @@ from typing import Set, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
-from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition
-from qualtran.bloqs.swap_network import CSwapApprox
+from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
-class PrepareSparse(Bloq):
+class PrepareSparse(PrepareOracle):
     r"""Prepare oracle for the sparse chemistry Hamiltonian
 
     Prepare the state:
@@ -58,10 +55,12 @@ class PrepareSparse(Bloq):
         k: qroam blocking factor.
 
     Registers:
+        d: the register indexing non-zero matrix elements.
         pqrs: the register to store the spatial orbital index.
-        theta: sign qubit.
+        sigma: the register prepared for alias sampling.
         alpha: spin for (pq) indicies.
         beta: spin for (rs) indicies.
+        rot_aa: the qubit rotated for amplitude amplification.
         swap_pq: a |+> state to restore the symmetries of the p and q indices.
         swap_rs: a |+> state to restore the symmetries of the r and s indices.
         swap_pqrs: a |+> state to restore the symmetries of between (pq) and (rs).
@@ -77,31 +76,77 @@ class PrepareSparse(Bloq):
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
     adjoint: bool = False
-    k: int = 1
+    qroam_block_size: Optional[int] = None
 
     @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("pqrs", (self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
-                Register("theta", 1),
-                Register("alpha", 1),
-                Register("beta", 1),
-                Register("swap_pq", 1),
-                Register("swap_rs", 1),
-                Register("swap_pqrs", 1),
-                Register("flag_1b", 1),
-            ]
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        # issue here in that pqrs should not be reflected on.
+        return (
+            SelectionRegister(
+                "d",
+                bitsize=(self.num_non_zero - 1).bit_length(),
+                iteration_length=self.num_non_zero,
+            ),
+            SelectionRegister(
+                "p",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "q",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "r",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "s",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister("sigma", bitsize=self.num_bits_state_prep),
+            SelectionRegister("alpha", bitsize=1),
+            SelectionRegister("beta", bitsize=1),
+            SelectionRegister("rot_aa", bitsize=1),
+            SelectionRegister("swap_pq", bitsize=1),
+            SelectionRegister("swap_rs", bitsize=1),
+            SelectionRegister("swap_pqrs", bitsize=1),
+            Register("flag_1b", bitsize=1),
         )
+
+    @cached_property
+    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (
+            Register('alt_pqrs', bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
+            Register('theta', bitsize=1, shape=(2,)),
+            Register('keep', bitsize=self.num_bits_state_prep),
+            Register("less_than", bitsize=1),
+            Register("alt_flag_1b", bitsize=1),
+        )
+
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
+        if self.qroam_block_size is None:
+            target_bitsizes = (
+                (num_bits_spat,) * 4
+                + (1,) * 2
+                + (num_bits_spat,) * 4
+                + (1,) * 2
+                + (self.num_bits_state_prep,)
+            )
+            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
+        else:
+            block_size = self.qroam_block_size
         if self.adjoint:
-            num_toff_qrom = int(np.ceil(self.num_non_zero / self.k)) + self.k  # A15
+            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + block_size  # A15
         else:
             output_size = self.num_bits_state_prep + 8 * num_bits_spat + 4
-            num_toff_qrom = int(np.ceil(self.num_non_zero / self.k)) + output_size * (
-                self.k - 1
+            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + output_size * (
+                block_size - 1
             )  # A14
         qrom_cost = (Toffoli(), num_toff_qrom)
         if self.adjoint:
@@ -109,7 +154,7 @@ class PrepareSparse(Bloq):
                 (PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
                 qrom_cost,
             }
-        swap_cost_state_prep = (CSwapApprox(num_bits_spat), 4 + 4)  # 2. pg 39
+        swap_cost_state_prep = (CSwap(num_bits_spat), 4 + 4)  # 2. pg 39
         ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
         return {
             (PrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),

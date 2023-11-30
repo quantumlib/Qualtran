@@ -55,10 +55,11 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_non_zero, num_bits_r
     unused_stps = 10
     logd = (num_non_zero - 1).bit_length()
     refl_cost = 4 * (num_bits_state_prep + logd + 4)  # page 40 listing 4
+    delta_swap = 8 * (7 - 4) * (num_spin_orb // 2 - 1).bit_length()
     cost_of = cost_sparse(
         num_spin_orb, unused_lambda, num_non_zero, unused_de, num_bits_state_prep, unused_stps
     )[0]
-    adjusted_cost_qualtran = (cost + refl_cost) // 4
+    adjusted_cost_qualtran = (cost + refl_cost - delta_swap) // 4
     assert adjusted_cost_qualtran == cost_of
 
 
