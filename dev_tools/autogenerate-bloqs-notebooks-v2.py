@@ -132,7 +132,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.chemistry.sparse,
         bloq_specs=[
             qualtran.bloqs.chemistry.sparse.prepare._SPARSE_PREPARE,
-            qualtran.bloqs.chemistry.sparse.select._SPARSE_SELECT,
+            qualtran.bloqs.chemistry.sparse.select_bloq._SPARSE_SELECT,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),
