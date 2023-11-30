@@ -18,7 +18,9 @@ from typing import Set, TYPE_CHECKING
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, Signature
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.arithmetic.comparison import LessThanEqual
+from qualtran.bloqs.arithmetic.conversions import ToContiguousIndex
+from qualtran.bloqs.basic_gates import CSwap, Toffoli
 from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition, QROAM, QROAMTwoRegs
 
 if TYPE_CHECKING:
@@ -41,6 +43,9 @@ class InnerPrepareSingleFactorization(Bloq):
         num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called b_r in Ref[1].
         adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
+        kp1: qroam blocking factor for data indexed by the first register. ($l$ in this case)
+        kp2: qroam blocking factor for data indexed by the second register. ($p,
+            q$ in this case (these are made into a contiguous register.))
 
     Registers:
         l: register to store L values for auxiliary index.
@@ -74,15 +79,15 @@ class InnerPrepareSingleFactorization(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = (self.num_spin_orb // 2 - 1).bit_length()
-        # prep uniform upper triangular.
-        cost_a = (Toffoli(), 6 * n + 2 * self.num_bits_rot_aa - 7)
-        # contiguous index
-        cost_b = (Toffoli(), n**2 + n - 1)
+        # 2. a prep uniform upper triangular.
+        cost_up_tri = (Toffoli(), 6 * n + 2 * self.num_bits_rot_aa - 7)
+        # 2.b contiguous index from p and q
+        cost_contg_indx = (ToContiguousIndex(n, 2 * n), 1)
         # Note the data size is for storing the upper triangular matrices of
         # size N/2, so N/2 (N/2 + 1)/2. There is an error in the reference
         # equation B13 of Reg[1] (it is correct in Ref[2], and openfermion).
-        # QROAM
-        cost_c = (
+        # 2.c QROAM
+        cost_qroam = (
             QROAMTwoRegs(
                 self.num_aux + 1,
                 self.num_spin_orb**2 // 8 + self.num_spin_orb // 4,
@@ -94,10 +99,9 @@ class InnerPrepareSingleFactorization(Bloq):
             1,
         )
         # inequality test
-        cost_d = (Toffoli(), self.num_bits_state_prep)
-        # controlled swap
-        cost_e = (Toffoli(), 2 * n)
-        return {cost_a, cost_b, cost_c, cost_d, cost_e}
+        cost_ineq = (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1)
+        cost_swap = (CSwap(2 * n), 1)
+        return {cost_up_tri, cost_contg_indx, cost_qroam, cost_ineq, cost_swap}
 
 
 @frozen
@@ -141,13 +145,17 @@ class OuterPrepareSingleFactorization(Bloq):
         return Signature.build(l=self.num_aux.bit_length(), succ_l=1, l_ne_zero=1, rot_aa=1)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        cost_a = (PrepareUniformSuperposition(self.num_aux + 1, self.num_bits_rot_aa), 1)
+        # 1.a
+        cost_uni = (PrepareUniformSuperposition(self.num_aux + 1, self.num_bits_rot_aa), 1)
         num_bits_l = (self.num_aux + 1).bit_length()
         output_size = num_bits_l + self.num_bits_state_prep + 2
-        cost_b = (QROAM(self.num_aux + 1, output_size, adjoint=self.adjoint), 1)
-        cost_c = (Toffoli(), self.num_bits_state_prep)
-        cost_d = (Toffoli(), num_bits_l + 1)
-        return {cost_a, cost_b, cost_c, cost_d}
+        # 1.b
+        cost_qroam = (QROAM(self.num_aux + 1, output_size, adjoint=self.adjoint), 1)
+        # 1.c inequality test for alias sampling
+        cost_ineq = (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1)
+        # 1.d swap alt/keep values
+        cost_swap = (CSwap(num_bits_l + 1), 1)
+        return {cost_uni, cost_qroam, cost_ineq, cost_swap}
 
 
 @bloq_example

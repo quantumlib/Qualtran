@@ -41,7 +41,10 @@ def test_outerprep_t_counts():
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     )
     _, counts = outer_prep.call_graph()
-    toff = counts[TGate()] // 4
+    toff = counts[TGate()]
+    nb_l = num_aux.bit_length()
+    toff -= (7 - 4) * (nb_l + 1)
+    toff -= 4 * num_bits_state_prep - 4
     outer_prep = OuterPrepareSingleFactorization(
         num_aux,
         num_bits_state_prep=num_bits_state_prep,
@@ -50,15 +53,21 @@ def test_outerprep_t_counts():
     )
     eta = power_two(num_aux + 1)
     _, counts = outer_prep.call_graph()
-    toff += counts[TGate()] // 4
+    toff += counts[TGate()]
+    # swap difference
+    toff -= (7 - 4) * (nb_l + 1)
+    # See https://github.com/quantumlib/Qualtran/issues/390
+    # inequality difference
+    toff -= 4 * num_bits_state_prep - 4
+    toff //= 4
     # Number of qubits for the first register
-    nL = num_aux.bit_length()
     # Number of qubits for p and q registers
-    cost1a = 2 * (3 * nL - 3 * eta + 2 * num_bits_rot_aa - 9)
-    bL = nL + num_bits_state_prep + 2
+    cost1a = 2 * (3 * nb_l - 3 * eta + 2 * num_bits_rot_aa - 9)
+    bL = nb_l + num_bits_state_prep + 2
     cost1b = QR(num_aux + 1, bL)[-1] + QI(num_aux + 1)[-1]
-    cost1cd = 2 * (num_bits_state_prep + nL + 1)
-    assert toff == (cost1a + cost1b + cost1cd)
+    cost1cd = 2 * (num_bits_state_prep + nb_l + 1)
+    of_cost = cost1a + cost1b + cost1cd
+    assert toff == of_cost
 
 
 def test_inner_prepare_t_counts():
@@ -66,6 +75,7 @@ def test_inner_prepare_t_counts():
     num_aux = 200
     num_bits_state_prep = 10
     num_bits_rot_aa = 7
+    nN = (num_spin_orb // 2 - 1).bit_length()
     in_prep = InnerPrepareSingleFactorization(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,
@@ -76,7 +86,11 @@ def test_inner_prepare_t_counts():
         kp2=2**5,
     )
     _, counts = in_prep.call_graph()
-    toff = counts[TGate()] // 4
+    toff = counts[TGate()]
+    # account for difference in how swaps are counted.
+    # inequality difference
+    toff -= (7 - 4) * (2 * nN)
+    toff -= 4 * num_bits_state_prep - 4
     in_prep = InnerPrepareSingleFactorization(
         num_aux=num_aux,
         num_spin_orb=num_spin_orb,
@@ -88,11 +102,15 @@ def test_inner_prepare_t_counts():
     )
     _, counts = in_prep.call_graph()
     # factor of two from squaring
-    toff += counts[TGate()] // 4
+    toff += counts[TGate()]
+    toff -= (7 - 4) * (2 * nN)
+    # See https://github.com/quantumlib/Qualtran/issues/390
+    # inequality difference
+    toff -= 4 * num_bits_state_prep - 4
     toff *= 2
+    toff //= 4
     # Number of qubits for p and q registers
     # copied from compute_cost_sf.py
-    nN = (num_spin_orb // 2 - 1).bit_length()
     cost2a = 4 * (6 * nN + 2 * num_bits_rot_aa - 7)
     # Cost of computing contiguous register in step 2 (b).
     cost2b = 4 * (nN**2 + nN - 1)

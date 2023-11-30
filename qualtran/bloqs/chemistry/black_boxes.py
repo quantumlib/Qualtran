@@ -140,7 +140,7 @@ class QROAMTwoRegs(Bloq):
 
     References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://arxiv.org/abs/2011.03494)
+            Hypercontraction](https://arxiv.org/abs/2011.03494) Appendix G, Eq. G3 and G6.
     """
 
     data_a_size: int
