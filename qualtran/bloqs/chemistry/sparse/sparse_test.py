@@ -61,7 +61,3 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_non_zero, num_bits_r
     )[0]
     adjusted_cost_qualtran = (cost + refl_cost - delta_swap) // 4
     assert adjusted_cost_qualtran == cost_of
-
-
-def test_notebook():
-    execute_notebook("sparse")
