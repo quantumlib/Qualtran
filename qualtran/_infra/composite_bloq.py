@@ -772,7 +772,7 @@ class BloqBuilder:
 
     @classmethod
     def from_signature(
-        cls, signature: Signature, add_registers_allowed=False
+        cls, signature: Signature, add_registers_allowed: bool = False
     ) -> Tuple['BloqBuilder', Dict[str, SoquetT]]:
         """Construct a BloqBuilder with a pre-specified signature.
 
