@@ -56,7 +56,7 @@ class PrepareSparse(PrepareOracle):
             rotation for amplitude amplification during the uniform state
             preparataion. Default 8.
         adjoint: Whether we are apply PREPARE or PREPARE^dag
-        k: qroam blocking factor.
+        qroam_block_size: qroam blocking factor.
 
     Registers:
         d: the register indexing non-zero matrix elements.
