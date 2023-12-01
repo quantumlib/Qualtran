@@ -53,6 +53,7 @@ import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
+import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
@@ -130,6 +131,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.and_bloq,
         bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Single Factorization',
+        module=qualtran.bloqs.chemistry.sf.single_factorization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.sf.single_factorization._SF_ONE_BODY,
+            qualtran.bloqs.chemistry.sf.single_factorization._SF_BLOCK_ENCODING,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/sf',
     ),
     NotebookSpecV2(
         title='Block Encoding',
