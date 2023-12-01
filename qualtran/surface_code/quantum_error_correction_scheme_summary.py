@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import abc
 import math
+from typing import Optional
 
 from attrs import field, frozen
 
@@ -42,7 +42,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
 
     error_rate_scaler: float = field(repr=lambda x: f'{x:g}')
     error_rate_threshold: float = field(repr=lambda x: f'{x:g}')
-    reference: str | None = None
+    reference: Optional[str] = None
 
     def logical_error_rate(self, code_distance: int, physical_error_rate: float) -> float:
         """Logical error suppressed with code distance for this physical error rate.
