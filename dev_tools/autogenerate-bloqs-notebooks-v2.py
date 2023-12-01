@@ -50,6 +50,7 @@ from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_noteboo
 import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.basic_gates.swap
+import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.sf.single_factorization
@@ -139,6 +140,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.sf.single_factorization._SF_BLOCK_ENCODING,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sf',
+    ),
+    NotebookSpecV2(
+        title='Block Encoding',
+        module=qualtran.bloqs.block_encoding,
+        bloq_specs=[qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
 

@@ -30,7 +30,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @frozen
-class DummySelect(SelectOracle):
+class ExampleSelect(SelectOracle):
     bitsize: int
     control_val: Optional[int] = None
 
@@ -53,7 +53,7 @@ class DummySelect(SelectOracle):
 @pytest.mark.parametrize('bitsize', [2, 3, 4, 5])
 @pytest.mark.parametrize('arctan_bitsize', [5, 6, 7])
 def test_phase_oracle(bitsize: int, arctan_bitsize: int):
-    phase_oracle = ComplexPhaseOracle(DummySelect(bitsize), arctan_bitsize)
+    phase_oracle = ComplexPhaseOracle(ExampleSelect(bitsize), arctan_bitsize)
     g = cq_testing.GateHelper(phase_oracle)
 
     assert_valid_bloq_decomposition(phase_oracle)
@@ -83,6 +83,6 @@ def test_phase_oracle(bitsize: int, arctan_bitsize: int):
 
 def test_phase_oracle_consistent_protocols():
     bitsize, arctan_bitsize = 3, 5
-    gate = ComplexPhaseOracle(DummySelect(bitsize, 1), arctan_bitsize)
+    gate = ComplexPhaseOracle(ExampleSelect(bitsize, 1), arctan_bitsize)
     expected_symbols = ('@',) + ('ROTy',) * bitsize
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_symbols
