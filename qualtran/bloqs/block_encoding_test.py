@@ -12,8 +12,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.thc.select import _thc_sel
+from qualtran.bloqs.block_encoding import (
+    _black_box_block_bloq,
+    _black_box_prepare,
+    _black_box_select,
+)
+from qualtran.testing import execute_notebook
 
 
-def test_thc_uniform_prep(bloq_autotester):
-    bloq_autotester(_thc_sel)
+def test_black_box_bloq(bloq_autotester):
+    bloq_autotester(_black_box_block_bloq)
+
+
+def test_black_box_prepare(bloq_autotester):
+    bloq_autotester(_black_box_prepare)
+
+
+def test_black_box_select(bloq_autotester):
+    bloq_autotester(_black_box_select)
+
+
+def test_notebook():
+    execute_notebook('block_encoding')
