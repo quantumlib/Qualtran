@@ -20,6 +20,7 @@ disable=
     not-callable,            # buggy with attrs
     no-member,               # buggy with attrs
     reimported,              # often relevant for 'autodoc' functionality
+    import-self,             # often relevant for 'autodoc' functionality
     redefined-outer-name,    # tiggered by re-importing
     abstract-method,         # cirq's @value.alternative not respected
     protected-access,        # a lot of usages in tests
