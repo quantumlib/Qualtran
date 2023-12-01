@@ -308,6 +308,7 @@ class CompositeBloq(Bloq):
         # that are not flattened. We do this by initializing the bloq builder's `i` counter
         # to one greater than the existing maximum value, so all calls to `add_from` will result
         # in new, higher `binst.i` values.
+        # pylint: disable=protected-access
         bb._i = max(binst.i for binst in self.bloq_instances) + 1
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -323,6 +324,7 @@ class CompositeBloq(Bloq):
                 # bloqs, it is safe to call `bb._add_binst` with the old `binst` (and in
                 # particular with the old `binst.i`) to preserve the `binst.i` of unflattened
                 # bloqs.
+                # pylint: disable=protected-access
                 new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
 
             soq_map.extend(zip(old_out_soqs, new_out_soqs))

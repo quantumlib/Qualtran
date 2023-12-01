@@ -248,6 +248,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
                 for reg in self.signature
             ):
+                # pylint: disable=raise-missing-from
                 raise DecomposeTypeError(f"Cannot decompose parameterized {self}.")
 
             qm = InteropQubitManager()

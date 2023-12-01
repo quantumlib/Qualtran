@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import quimb.tensor as qtn
@@ -62,7 +62,7 @@ class _XVector(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
@@ -70,9 +70,7 @@ class _XVector(Bloq):
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_MINUS if self.bit else _PLUS,
-                inds=(side['q'],),
-                tags=[self.short_name(), binst],
+                data=_MINUS if self.bit else _PLUS, inds=(side['q'],), tags=[self.short_name(), tag]
             )
         )
 
@@ -154,14 +152,14 @@ class XGate(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
         tn.add(
             qtn.Tensor(
-                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
 
