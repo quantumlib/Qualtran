@@ -112,8 +112,8 @@ def _update_assign_from_vals(
     for reg in regs:
         try:
             arr = vals[reg.name]
-        except KeyError:
-            raise ValueError(f"{binst} requires an input register named {reg.name}")
+        except KeyError as e:
+            raise ValueError(f"{binst} requires an input register named {reg.name}") from e
 
         if reg.shape:
             arr = np.asarray(arr)
