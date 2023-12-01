@@ -71,7 +71,7 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
     def code_distance_from_budget(self, physical_error_rate: float, budget: float) -> int:
         """Get the code distance that keeps one below the logical error `budget`."""
 
-        # See: `error_at()`. p_l = a Λ^(-r) where r = (d+1)/2
+        # See: `logical_error_rate()`. p_l = a Λ^(-r) where r = (d+1)/2
         # Which we invert: r = ln(p_l/a) / ln(1/Λ)
         r = math.log(budget / self.error_rate_scaler) / math.log(
             physical_error_rate / self.error_rate_threshold
@@ -83,11 +83,11 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
 
     @abc.abstractmethod
     def physical_qubits(self, code_distance: int) -> int:
-        """The number of physical qubits used by the error detection circuit."""
+        """The number of physical qubits per logical qubit used by the error detection circuit."""
 
     @abc.abstractmethod
     def error_detection_circuit_time_us(self, code_distance: int) -> float:
-        """The time of a quantum error detection cycle in seconds."""
+        """The time of a quantum error detection cycle in microseconds."""
 
 
 @frozen
@@ -108,14 +108,14 @@ class SimpliedSurfaceCode(QuantumErrorCorrectionSchemeSummary):
         return self.single_stabilizer_time_us * code_distance
 
 
-BeverlandSuperConductingQubits = SimpliedSurfaceCode(
+BeverlandSuperconductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=0.4,  # Equals 4*t_gate+2*t_meas where t_gate=50ns and t_meas=100ns.
     reference='https://arxiv.org/abs/2211.07629',
 )
 
-FowlerSuperConductingQubits = SimpliedSurfaceCode(
+FowlerSuperconductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.1,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=1,

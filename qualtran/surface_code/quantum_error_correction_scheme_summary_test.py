@@ -18,17 +18,17 @@ import pytest
 from qualtran.surface_code import quantum_error_correction_scheme_summary as qecs
 
 
-@pytest.mark.parametrize('qec,want', [(qecs.BeverlandSuperConductingQubits, 3e-4)])
+@pytest.mark.parametrize('qec,want', [(qecs.BeverlandSuperconductingQubits, 3e-4)])
 def test_logical_error_rate(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
     assert qec.logical_error_rate(3, 1e-3) == pytest.approx(want)
 
 
-@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperConductingQubits, 242]])
+@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperconductingQubits, 242]])
 def test_physical_qubits(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: int):
     assert qec.physical_qubits(11) == want
 
 
-@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperConductingQubits, 4.8]])
+@pytest.mark.parametrize('qec,want', [[qecs.BeverlandSuperconductingQubits, 4.8]])
 def test_error_detection_cycle_time(qec: qecs.QuantumErrorCorrectionSchemeSummary, want: float):
     assert qec.error_detection_circuit_time_us(12) == pytest.approx(want)
 
@@ -37,19 +37,19 @@ def test_invert_error_at():
     phys_err = 1e-3
     budgets = np.logspace(-1, -18)
     for budget in budgets:
-        d = qecs.FowlerSuperConductingQubits.code_distance_from_budget(
+        d = qecs.FowlerSuperconductingQubits.code_distance_from_budget(
             physical_error_rate=phys_err, budget=budget
         )
         assert d % 2 == 1
         assert (
-            qecs.FowlerSuperConductingQubits.logical_error_rate(
+            qecs.FowlerSuperconductingQubits.logical_error_rate(
                 physical_error_rate=phys_err, code_distance=d
             )
             <= budget
         )
         if d > 3:
             assert (
-                qecs.FowlerSuperConductingQubits.logical_error_rate(
+                qecs.FowlerSuperconductingQubits.logical_error_rate(
                     physical_error_rate=phys_err, code_distance=d - 2
                 )
                 > budget

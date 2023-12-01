@@ -54,7 +54,7 @@ class SimpleDataBlock(DataBlock):
 
     data_d: int
     routing_overhead: float = 0.5
-    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperConductingQubits
+    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     def n_logical_qubits(self, n_algo_qubits: int) -> int:
         """Number of logical qubits including overhead.

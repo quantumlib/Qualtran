@@ -39,7 +39,7 @@ class CCZ2TFactory(MagicStateFactory):
 
     distillation_l1_d: int = 15
     distillation_l2_d: int = 31
-    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperConductingQubits
+    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     # -------------------------------------------------------------------------------
     # ----     Level 0    ---------
@@ -214,13 +214,13 @@ def get_ccz2t_costs(
         n_logical_qubits = math.ceil((1 + routing_overhead) * n_algo_qubits)
         data_unit_cells = n_logical_qubits * n_cycles
         target_err_per_round = err_budget / data_unit_cells
-        data_d = qec.FowlerSuperConductingQubits.code_distance_from_budget(
+        data_d = qec.FowlerSuperconductingQubits.code_distance_from_budget(
             physical_error_rate=phys_err, budget=target_err_per_round
         )
         data_block = SimpleDataBlock(
             data_d=data_d,
             routing_overhead=routing_overhead,
-            qec_scheme=qec.FowlerSuperConductingQubits,
+            qec_scheme=qec.FowlerSuperconductingQubits,
         )
 
     data_error = data_block.data_error(
