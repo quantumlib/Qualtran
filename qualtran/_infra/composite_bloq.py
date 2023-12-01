@@ -773,7 +773,9 @@ class BloqBuilder:
         return None
 
     @classmethod
-    def from_signature(cls, signature: Signature, add_registers_allowed=False):
+    def from_signature(
+        cls, signature: Signature, add_registers_allowed: bool = False
+    ) -> Tuple['BloqBuilder', Dict[str, SoquetT]]:
         """Construct a BloqBuilder with a pre-specified signature.
 
         This is safer if e.g. you're decomposing an existing Bloq and need the signatures
