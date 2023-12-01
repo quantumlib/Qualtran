@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import math
-from typing import Optional
+from typing import Callable, Iterator, Optional, Tuple
 
 from attrs import frozen
 
@@ -164,6 +164,27 @@ def get_ccz2t_costs(
     *,
     n_magic: AlgorithmSummary,
     n_algo_qubits: int,
+    phys_err: float,
+    cycle_time_us: float,
+    factory: MagicStateFactory,
+    data_block: DataBlock,
+) -> PhysicalCost:
+    distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
+    n_cycles = factory.n_cycles(n_magic=n_magic)
+    data_error = data_block.data_error(
+        n_algo_qubits=n_algo_qubits, n_cycles=n_cycles, phys_err=phys_err
+    )
+    failure_prob = distillation_error + data_error
+    footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
+    duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
+
+    return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
+
+
+def get_ccz2t_costs_from_error_budget(
+    *,
+    n_magic: AlgorithmSummary,
+    n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
     cycle_time_us: float = 1.0,
@@ -223,11 +244,60 @@ def get_ccz2t_costs(
             qec_scheme=qec.FowlerSuperconductingQubits,
         )
 
-    data_error = data_block.data_error(
-        n_algo_qubits=n_algo_qubits, n_cycles=n_cycles, phys_err=phys_err
+    return get_ccz2t_costs(
+        n_magic=n_magic,
+        n_algo_qubits=n_algo_qubits,
+        phys_err=phys_err,
+        cycle_time_us=cycle_time_us,
+        factory=factory,
+        data_block=data_block,
     )
-    failure_prob = distillation_error + data_error
-    footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
-    duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
 
-    return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
+
+def iter_ccz2t_factories(
+    l1_start: int = 5, l1_stop: int = 25, l2_stop: int = 41
+) -> Iterator[CCZ2TFactory]:
+    for l1_distance in range(l1_start, l1_stop, 2):
+        for l2_distance in range(l1_distance + 2, l2_stop, 2):
+            yield CCZ2TFactory(distillation_l1_d=l1_distance, distillation_l2_d=l2_distance)
+
+
+def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
+    for logical_data_qubit_distance in range(d_start, d_stop, 2):
+        yield SimpleDataBlock(data_d=logical_data_qubit_distance)
+
+
+def get_ccz2t_costs_from_grid_search(
+    *,
+    n_magic: AlgorithmSummary,
+    n_algo_qubits: int,
+    phys_err: float = 1e-3,
+    cycle_time_us: float = 1.0,
+    factory_iter: Callable[[], Iterator] = iter_ccz2t_factories,
+    data_block_iter: Callable[[], Iterator] = iter_simple_data_blocks,
+) -> Tuple[PhysicalCost, CCZ2TFactory, SimpleDataBlock]:
+    """Grid search over parameters to minimize space time volume.
+
+    This is from openfermion. What paper was it introduced or used in?
+    """
+    best_cost: Optional[PhysicalCost] = None
+    best_params: Optional[Tuple[CCZ2TFactory, SimpleDataBlock]] = None
+    for factory in factory_iter():
+        for data_block in data_block_iter():
+            cost = get_ccz2t_costs(
+                n_magic=n_magic,
+                n_algo_qubits=n_algo_qubits,
+                phys_err=phys_err,
+                cycle_time_us=cycle_time_us,
+                factory=factory,
+                data_block=data_block,
+            )
+
+            if cost.failure_prob > 0.1:
+                continue
+            if best_cost is None or cost.qubit_hours < best_cost.qubit_hours:
+                best_cost = cost
+                best_params = (factory, data_block)
+
+    best_factory, best_data_block = best_params
+    return best_cost, best_factory, best_data_block

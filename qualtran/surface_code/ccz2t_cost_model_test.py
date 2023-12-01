@@ -16,11 +16,15 @@ import numpy as np
 import pytest
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.ccz2t_cost_model import get_ccz2t_costs
+from qualtran.surface_code.ccz2t_cost_model import (
+    get_ccz2t_costs,
+    get_ccz2t_costs_from_error_budget,
+    get_ccz2t_costs_from_grid_search,
+)
 
 
 def test_vs_spreadsheet():
-    re = get_ccz2t_costs(
+    re = get_ccz2t_costs_from_error_budget(
         n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
         n_algo_qubits=100,
         error_budget=0.01,
@@ -35,4 +39,19 @@ def test_vs_spreadsheet():
 
 def test_invalid_input():
     with pytest.raises(ValueError):
-        _ = get_ccz2t_costs(n_magic=AlgorithmSummary(toffoli_gates=3.2e10), n_algo_qubits=2196)
+        _ = get_ccz2t_costs(
+            n_magic=AlgorithmSummary(toffoli_gates=3.2e10), n_algo_qubits=2196
+        )
+
+
+def test_grid_search_runs():
+    # TODO: a better test vs some published reference
+    cost, factory, db = get_ccz2t_costs_from_grid_search(
+        n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
+        n_algo_qubits=100,
+        phys_err=1e-3,
+        cycle_time_us=1,
+    )
+    assert factory.distillation_l1_d == 15
+    assert factory.distillation_l2_d == 23
+    assert db.data_d == 25
