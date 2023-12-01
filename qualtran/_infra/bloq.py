@@ -181,7 +181,7 @@ class Bloq(metaclass=abc.ABCMeta):
         try:
             return self.decompose_bloq().on_classical_vals(**vals)
         except NotImplementedError as e:
-            raise NotImplementedError(f"{self} does not support classical simulation: {e}")
+            raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Call this bloq on classical data.

@@ -45,7 +45,7 @@ def test_gate_nb_spec():
 
 
 def test_notebook_spec():
-    import qualtran_dev_tools.jupyter_autogen_test
+    import qualtran_dev_tools.jupyter_autogen_test  # pylint: disable=import-self
 
     nbspec = NotebookSpec(
         title='test',
@@ -100,7 +100,7 @@ def test_get_code_for_demoing_a_gate():
 
 
 def test_render_notebook_cells():
-    import qualtran_dev_tools.jupyter_autogen_test
+    import qualtran_dev_tools.jupyter_autogen_test  # pylint: disable=import-self
 
     cells = render_notebook_cells(
         NotebookSpec(
