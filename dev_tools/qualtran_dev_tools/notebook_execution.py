@@ -29,7 +29,11 @@ from .git_tools import get_git_root
 def get_nb_rel_paths(sourceroot: Path) -> List[Path]:
     """List all checked-in *.ipynb files within `sourceroot`."""
     cp = subprocess.run(
-        ['git', 'ls-files', '*.ipynb'], capture_output=True, universal_newlines=True, cwd=sourceroot
+        ['git', 'ls-files', '*.ipynb'],
+        capture_output=True,
+        universal_newlines=True,
+        cwd=sourceroot,
+        check=True,
     )
     outs = cp.stdout.splitlines()
     nb_rel_paths = [Path(out) for out in outs]
@@ -144,7 +148,7 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
     ep = ExecutePreprocessor(timeout=600, kernel_name="python3", record_timing=False)
     try:
         nb, resources = ep.preprocess(nb)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         print(f'{paths.nb_in} failed!')
         print(e)
         return e

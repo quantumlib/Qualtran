@@ -36,6 +36,7 @@ from typing import Dict, Iterable, Set, TYPE_CHECKING
 import cirq
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
@@ -322,7 +323,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
     @classmethod
     def build_from_coeffs(
-        cls, one_body_ham, factorized_two_body_ham
+        cls, one_body_ham: NDArray[float], factorized_two_body_ham: NDArray[float]
     ) -> 'DoubleFactorizationBlockEncoding':
         """Factory method to build double factorization block encoding given Hamiltonian inputs.
 

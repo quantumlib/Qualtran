@@ -639,6 +639,7 @@ def draw_musical_score(msd: MusicalScoreData):
 
     ax.set_xlim((-2, msd.max_x + 1))
     ax.set_ylim((-msd.max_y - 0.5, 1))
+    ax.axis('off')
     fig.tight_layout()
     return fig, ax
 

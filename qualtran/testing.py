@@ -320,7 +320,7 @@ def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]
         assert_bloq_example_make(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''
@@ -366,7 +366,7 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
         assert_bloq_example_decompose(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''

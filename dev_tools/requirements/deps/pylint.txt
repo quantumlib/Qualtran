@@ -1,2 +1,9 @@
-pylint~=2.15.6
+pylint~=2.15
 
+# for checking _test.py files
+pytest
+openfermion[resources]
+
+# dev tools
+tensorflow-docs
+sphinx
