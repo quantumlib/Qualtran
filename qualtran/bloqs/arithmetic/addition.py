@@ -19,9 +19,7 @@ import cirq
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Side, Signature, SoquetT
-from qualtran._infra.bloq import Bloq
-from qualtran._infra.composite_bloq import BloqBuilder
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Side, Signature, SoquetT
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
@@ -221,7 +219,7 @@ class SimpleAddConstant(Bloq):
     r"""Applies U_{k}|x> = |x + k>.
 
     Applies addition to input register `|x>` given classical integer 'k'.
-    
+
     This is the simple version of constant addition because it involves simply converting the
     classical integer into a quantum parameter and using quantum-quantum addition as opposed to
     designing a bespoke circuit for constant addition based on the classical parameter.
@@ -250,12 +248,10 @@ class SimpleAddConstant(Bloq):
     def signature(self) -> 'Signature':
         if len(self.cvs) > 0:
             return Signature(
-            [Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=self.bitsize)]
-        )
+                [Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=self.bitsize)]
+            )
         else:
-            return Signature(
-            [Register('x', bitsize=self.bitsize)]
-        )
+            return Signature([Register('x', bitsize=self.bitsize)])
 
     def binary_rep(self, num: int, num_bits: int):
         # If the registers are interpreting signed bits, represent the output in 2's complement.
@@ -263,7 +259,7 @@ class SimpleAddConstant(Bloq):
         if self.signed:
             num &= (2 << num_bits - 1) - 1
         else:
-            assert self.k >= 0
+            assert num >= 0
         format_str = '{:0' + str(num_bits) + 'b}'
         return format_str.format(int(num))
 
