@@ -220,15 +220,19 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
 class SimpleAddConstant(Bloq):
     r"""Applies U_{k}|x> = |x + k>.
 
-    Applies addition to input register `|x>` given classical parameter 'k'.
+    Applies addition to input register `|x>` given classical integer 'k'.
+    
+    This is the simple version of constant addition because it involves simply converting the
+    classical integer into a quantum parameter and using quantum-quantum addition as opposed to
+    designing a bespoke circuit for constant addition based on the classical parameter.
 
     Args:
         bitsize: Number of bits used to represent each integer.
-        k: The classical value to be added to x.
+        k: The classical integer value to be added to x.
         cvs: A tuple of control variable settings. Each entry specifies whether that
             control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
         signed: A boolean condition which controls whether the x register holds a value represented
-            in 2's Complement or Unsigned. This effects the ability to add a negative constant.
+            in 2's Complement or Unsigned. This affects the ability to add a negative constant.
 
     Registers:
         x: A bitsize-sized input register (register x above).
@@ -246,12 +250,14 @@ class SimpleAddConstant(Bloq):
     def signature(self) -> 'Signature':
         if len(self.cvs) > 0:
             return Signature(
-                [Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=self.bitsize)]
-            )
+            [Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=self.bitsize)]
+        )
         else:
-            return Signature([Register('x', bitsize=self.bitsize)])
+            return Signature(
+            [Register('x', bitsize=self.bitsize)]
+        )
 
-    def binary_rep(self, num, num_bits):
+    def binary_rep(self, num: int, num_bits: int):
         # If the registers are interpreting signed bits, represent the output in 2's complement.
         # Otherwise make sure the classical value k is > 0.
         if self.signed:
@@ -318,7 +324,7 @@ class SimpleAddConstant(Bloq):
 
         # Free the ancilla qubits.
         k = bb.join(k_split)
-        k = bb.free(k)
+        bb.free(k)
 
         # Return the output registers.
         if len(self.cvs) > 0:
