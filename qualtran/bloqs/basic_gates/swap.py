@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -22,8 +22,21 @@ import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    DecomposeTypeError,
+    GateWithRegisters,
+    Signature,
+    SoquetT,
+)
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Circle, TextBox, WireSymbol
+
+from .t_gate import TGate
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
@@ -147,6 +160,9 @@ class TwoBitCSwap(Bloq):
         # https://arxiv.org/abs/1308.4134
         return TComplexity(t=7, clifford=10)
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TGate(), 7), (ArbitraryClifford(n=3), 10)}
+
 
 @frozen
 class CSwap(GateWithRegisters):
@@ -154,7 +170,7 @@ class CSwap(GateWithRegisters):
 
     Implements a multi-target controlled swap unitary $CSWAP_n = |0><0| I + |1><1| SWAP_n$.
 
-    This decomposes into a qubitwise SWAP on the two target registers, and takes 14*n T-gates.
+    This decomposes into a qubitwise SWAP on the two target registers, and takes $14n$ T-gates.
 
     Args:
         bitsize: The bitsize of each of the two registers being swapped.
@@ -175,7 +191,7 @@ class CSwap(GateWithRegisters):
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError("`bitsize` must be a real value to support decomposition.")
+            raise DecomposeTypeError("`bitsize` must be a concrete value.")
 
         xs = bb.split(x)
         ys = bb.split(y)
@@ -185,8 +201,8 @@ class CSwap(GateWithRegisters):
 
         return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(self.bitsize, TwoBitCSwap())}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TwoBitCSwap(), self.bitsize)}
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -214,5 +230,43 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'x':
+            return TextBox('×(x)')
+        elif soq.reg.name == 'y':
+            return TextBox('×(y)')
+        else:
+            return Circle(filled=True)
+
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
+
+
+@bloq_example
+def _cswap_symb() -> CSwap:
+    # A symbolic version. The bitsize is the symbol 'n'.
+    from sympy import sympify
+
+    cswap_symb = CSwap(bitsize=sympify('n'))
+    return cswap_symb
+
+
+@bloq_example
+def _cswap_small() -> CSwap:
+    # A small version on four bits.
+    cswap_small = CSwap(bitsize=4)
+    return cswap_small
+
+
+@bloq_example
+def _cswap_large() -> CSwap:
+    # A large version that swaps 64-bit registers.
+    cswap_large = CSwap(bitsize=64)
+    return cswap_large
+
+
+_CSWAP_DOC = BloqDocSpec(
+    bloq_cls=CSwap,
+    import_line='from qualtran.bloqs.basic_gates import CSwap',
+    examples=(_cswap_symb, _cswap_small, _cswap_large),
+)

@@ -19,12 +19,7 @@ import pytest
 
 from qualtran import BloqBuilder
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.arithmetic.addition import (
-    Add,
-    AddConstantMod,
-    OutOfPlaceAdder,
-    SimpleAddConstant,
-)
+from qualtran.bloqs.arithmetic import Add, AddConstantMod, OutOfPlaceAdder, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison_test import identity_map
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.testing import (

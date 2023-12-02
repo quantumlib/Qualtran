@@ -134,7 +134,7 @@ class MyModulePageInfo(ModulePageInfo):
     DEFAULT_BUILDER_CLASS = MyModulePageBuilder
 
     def collect_docs(self):
-        ret = super().collect_docs()
+        ret = super().collect_docs()  # pylint: disable=assignment-from-no-return
         self._classes = _filter_and_sort_members(self.py_object, self._classes)
         return ret
 
@@ -145,7 +145,7 @@ class MyClassPageInfo(ClassPageInfo):
     DEFAULT_BUILDER_CLASS = MyClassPageBuilder
 
     def collect_docs(self):
-        ret = super().collect_docs()
+        ret = super().collect_docs()  # pylint: disable=assignment-from-no-return
         # Note: currently the following sort is un-done by the class page builder.
         # If the upstream page builder changes to respect the member order (like for the other
         # page types), we should sort them here.
@@ -224,7 +224,7 @@ tensorflow_docs.api_generator.parser.TABLE_TEMPLATE = MY_TABLE_TEMPLATE
 tensorflow_docs.api_generator.parser.ITEMS_TEMPLATE = MyItemTemplate
 
 
-def generate_ref_docs():
+def generate_ref_docs(reporoot: Path):
     """Use `tensorflow_docs` to generate markdown reference docs."""
 
     # Important: we currently do not import submodules in our module's `__init__` methods,
@@ -232,19 +232,36 @@ def generate_ref_docs():
     # them all here.
 
     import qualtran
-    from qualtran import cirq_interop, drawing, resource_counting
-    from qualtran.simulation import classical_sim, quimb_sim
+    from qualtran import (
+        cirq_interop,
+        drawing,
+        linalg,
+        resource_counting,
+        serialization,
+        surface_code,
+        testing,
+    )
+    from qualtran.simulation import classical_sim, tensor
 
     # prevent unused warnings:
-    assert [drawing, resource_counting, cirq_interop, quimb_sim, classical_sim]
+    assert [
+        cirq_interop,
+        drawing,
+        linalg,
+        resource_counting,
+        serialization,
+        surface_code,
+        testing,
+        classical_sim,
+        tensor,
+    ]
 
-    reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
     doc_generator = DocGenerator(
         root_title="Qualtran",
         py_modules=[("qualtran", qualtran)],
         base_dir=[reporoot / 'qualtran'],
-        code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran",
+        code_url_prefix="https://github.com/quantumlib/Qualtran/blob/main/qualtran",
         callbacks=[
             local_definitions_filter,
             filter_type_checking,
@@ -328,14 +345,23 @@ def fixup_all_symbols_page(path: Path) -> bool:
     return False
 
 
-def apply_fixups():
+def remove_extra_files(output_dir: Path):
+    """Remove metadata files that we don't use."""
+    (output_dir / 'qualtran/_toc.yaml').unlink(missing_ok=True)
+    (output_dir / 'qualtran/_redirects.yaml').unlink(missing_ok=True)
+    (output_dir / 'qualtran/_api_cache.json').unlink(missing_ok=True)
+    (output_dir / 'qualtran/api_report.pb').unlink(missing_ok=True)
+
+
+def apply_fixups(reporoot: Path):
     """For each generated markdown file, apply fixups.
 
     - `fixup_all_symbols_page`
     - `fixup_suffix`
     """
-    reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
+    remove_extra_files(output_dir)
+
     page_paths = output_dir.glob('qualtran/**/*.md')
     for path in page_paths:
         if fixup_all_symbols_page(path):
@@ -350,9 +376,8 @@ def apply_fixups():
             f.write(content)
 
 
-def generate_ref_toc():
+def generate_ref_toc(reporoot: Path):
     """Generate a sphinx-style table of contents (TOC) from generated markdown files."""
-    reporoot = get_git_root()
     output_dir = reporoot / 'docs/reference'
     page_paths = output_dir.glob('qualtran/**/*.md')
 
@@ -366,6 +391,7 @@ def generate_ref_toc():
 
 
 def build_reference_docs():
-    generate_ref_docs()
-    apply_fixups()
-    generate_ref_toc()
+    reporoot = get_git_root()
+    generate_ref_docs(reporoot)
+    apply_fixups(reporoot)
+    generate_ref_toc(reporoot)

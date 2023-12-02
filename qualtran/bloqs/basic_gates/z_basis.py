@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -22,7 +22,17 @@ import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    CompositeBloq,
+    DecomposeTypeError,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import big_O
@@ -66,10 +76,13 @@ class _ZVector(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
 
+    def decompose_bloq(self) -> CompositeBloq:
+        raise DecomposeTypeError(f"{self} is atomic")
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
@@ -77,7 +90,7 @@ class _ZVector(Bloq):
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), binst]
+                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), tag]
             )
         )
 
@@ -100,7 +113,6 @@ class _ZVector(Bloq):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -137,12 +149,24 @@ class ZeroState(_ZVector):
         self.__attrs_init__(bit=False, state=True, n=n)
 
 
+@bloq_example
+def _zero_state() -> ZeroState:
+    zero_state = ZeroState()
+    return zero_state
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class ZeroEffect(_ZVector):
     """The effect <0|"""
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=False, n=n)
+
+
+@bloq_example
+def _zero_effect() -> ZeroEffect:
+    zero_effect = ZeroEffect()
+    return zero_effect
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -153,12 +177,24 @@ class OneState(_ZVector):
         self.__attrs_init__(bit=True, state=True, n=n)
 
 
+@bloq_example
+def _one_state() -> OneState:
+    one_state = OneState()
+    return one_state
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class OneEffect(_ZVector):
     """The effect <1|"""
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+
+@bloq_example
+def _one_effect() -> OneEffect:
+    one_effect = OneEffect()
+    return one_effect
 
 
 @frozen
@@ -175,17 +211,20 @@ class ZGate(Bloq):
     def short_name(self) -> 'str':
         return 'Z'
 
+    def decompose_bloq(self) -> CompositeBloq:
+        raise DecomposeTypeError(f"{self} is atomic")
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
         tn.add(
             qtn.Tensor(
-                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
 
@@ -196,6 +235,12 @@ class ZGate(Bloq):
 
         (q,) = q
         return cirq.Z(q), {'q': [q]}
+
+
+@bloq_example
+def _zgate() -> ZGate:
+    zgate = ZGate()
+    return zgate
 
 
 @frozen
@@ -291,8 +336,8 @@ class _IntVector(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
-        return {(big_O(1), ArbitraryClifford(self.bitsize))}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(ArbitraryClifford(self.bitsize), big_O(1))}
 
     def short_name(self) -> str:
         return f'{self.val}'
@@ -318,6 +363,12 @@ class IntState(_IntVector):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
 
+@bloq_example
+def _int_state() -> IntState:
+    int_state = IntState(55, bitsize=8)
+    return int_state
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class IntEffect(_IntVector):
     """The effect <val| for non-negative integer val
@@ -332,3 +383,9 @@ class IntEffect(_IntVector):
 
     def __init__(self, val: int, bitsize: int):
         self.__attrs_init__(val=val, bitsize=bitsize, state=False)
+
+
+@bloq_example
+def _int_effect() -> IntEffect:
+    int_effect = IntEffect(55, bitsize=8)
+    return int_effect

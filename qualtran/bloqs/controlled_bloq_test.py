@@ -89,5 +89,5 @@ C[Join(n=3)]<4>
 
 def test_doubly_controlled():
     with pytest.raises(NotImplementedError):
-        # TODO: https://github.com/quantumlib/cirq-qubitization/issues/149
+        # TODO: https://github.com/quantumlib/Qualtran/issues/149
         ControlledBloq(ControlledBloq(Atom()))

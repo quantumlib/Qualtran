@@ -36,7 +36,7 @@ import networkx as nx
 import numpy as np
 from numpy.typing import NDArray
 
-from .bloq import Bloq
+from .bloq import Bloq, DecomposeTypeError
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
 from .registers import Register, Side, Signature
 
@@ -161,18 +161,6 @@ class CompositeBloq(Bloq):
 
         return cirq_optree_to_cbloq(circuit)
 
-    def tensor_contract(self) -> NDArray:
-        """Return a contracted, dense ndarray representing this composite bloq.
-
-        This constructs a tensor network and then contracts it according to our registers,
-        i.e. the dangling indices. The returned array will be 0-, 1- or 2- dimensional. If it is
-        a 2-dimensional matrix, we follow the quantum computing / matrix multiplication convention
-        of (right, left) indices.
-        """
-        from qualtran.simulation.quimb_sim import _cbloq_to_dense
-
-        return _cbloq_to_dense(self)
-
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """Support classical data by recursing into the composite bloq."""
         from qualtran.simulation.classical_sim import _cbloq_call_classically
@@ -201,13 +189,13 @@ class CompositeBloq(Bloq):
         return self
 
     def decompose_bloq(self) -> 'CompositeBloq':
-        raise NotImplementedError("Come back later.")
+        raise DecomposeTypeError("CompositeBloq cannot be decomposed.")
 
-    def bloq_counts(self, _: Optional['SympySymbolAllocator'] = None) -> Set['BloqCountT']:
+    def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""
-        from qualtran.resource_counting import get_cbloq_bloq_counts
+        from qualtran.resource_counting.bloq_counts import _build_cbloq_counts_graph
 
-        return get_cbloq_bloq_counts(self)
+        return _build_cbloq_counts_graph(self)
 
     def iter_bloqnections(
         self,
@@ -320,6 +308,7 @@ class CompositeBloq(Bloq):
         # that are not flattened. We do this by initializing the bloq builder's `i` counter
         # to one greater than the existing maximum value, so all calls to `add_from` will result
         # in new, higher `binst.i` values.
+        # pylint: disable=protected-access
         bb._i = max(binst.i for binst in self.bloq_instances) + 1
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
@@ -335,6 +324,7 @@ class CompositeBloq(Bloq):
                 # bloqs, it is safe to call `bb._add_binst` with the old `binst` (and in
                 # particular with the old `binst.i`) to preserve the `binst.i` of unflattened
                 # bloqs.
+                # pylint: disable=protected-access
                 new_out_soqs = tuple(soq for _, soq in bb._add_binst(binst, in_soqs=in_soqs))
 
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
@@ -783,7 +773,9 @@ class BloqBuilder:
         return None
 
     @classmethod
-    def from_signature(cls, signature: Signature, add_registers_allowed=False):
+    def from_signature(
+        cls, signature: Signature, add_registers_allowed: bool = False
+    ) -> Tuple['BloqBuilder', Dict[str, SoquetT]]:
         """Construct a BloqBuilder with a pre-specified signature.
 
         This is safer if e.g. you're decomposing an existing Bloq and need the signatures

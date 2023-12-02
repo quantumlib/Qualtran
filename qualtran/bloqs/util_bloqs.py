@@ -15,14 +15,15 @@
 """Bloqs for virtual operations and register reshaping."""
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
+import attrs
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
-from qualtran import Bloq, BloqInstance, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
@@ -67,7 +68,7 @@ class Split(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst: BloqInstance,
+        tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
@@ -76,7 +77,7 @@ class Split(Bloq):
             qtn.Tensor(
                 data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
                 inds=outgoing['split'].tolist() + [incoming['split']],
-                tags=['Split', binst],
+                tags=['Split', tag],
             )
         )
 
@@ -115,7 +116,7 @@ class Join(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst: BloqInstance,
+        tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
@@ -124,12 +125,126 @@ class Join(Bloq):
             qtn.Tensor(
                 data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
                 inds=incoming['join'].tolist() + [outgoing['join']],
-                tags=['Join', binst],
+                tags=['Join', tag],
             )
         )
 
     def on_classical_vals(self, join: 'NDArray[np.uint8]') -> Dict[str, int]:
         return {'join': bits_to_ints(join)[0]}
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.shape:
+            text = f'[{", ".join(str(i) for i in soq.idx)}]'
+            return directional_text_box(text, side=soq.reg.side)
+        return directional_text_box(' ', side=soq.reg.side)
+
+
+@frozen
+class Partition(Bloq):
+    """Partition a generic index into multiple registers.
+
+    Args:
+        n: The total bitsize of the un-partitioned register
+        regs: Registers to partition into. The `side` attribute is ignored.
+        partition: `False` means un-partition instead.
+
+    Registers:
+        x: the un-partitioned register. LEFT by default.
+        [user spec]: The registers provided by the `regs` argument. RIGHT by default.
+    """
+
+    n: int
+    regs: Tuple[Register, ...]
+    partition: bool = True
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        lumped = Side.LEFT if self.partition else Side.RIGHT
+        partitioned = Side.RIGHT if self.partition else Side.LEFT
+
+        return Signature(
+            [Register('x', bitsize=self.n, side=lumped)]
+            + [attrs.evolve(reg, side=partitioned) for reg in self.regs]
+        )
+
+    def dagger(self):
+        return attrs.evolve(self, partition=not self.partition)
+
+    def as_cirq_op(self, qubit_manager, **cirq_quregs) -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        if self.partition:
+            outregs = {}
+            start = 0
+            for reg in self.regs:
+                shape = reg.shape + (reg.bitsize,)
+                size = np.prod(shape)
+                outregs[reg.name] = np.array(cirq_quregs['x'][start : start + size]).reshape(shape)
+                start += size
+            return None, outregs
+        else:
+            return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity()
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        unitary_shape = []
+        soquets = []
+        _incoming = incoming if self.partition else outgoing
+        _outgoing = outgoing if self.partition else incoming
+        for reg in self.regs:
+            for i in range(int(np.prod(reg.shape))):
+                unitary_shape.append(2**reg.bitsize)
+                if isinstance(_outgoing[reg.name], np.ndarray):
+                    soquets.append(_outgoing[reg.name].ravel()[i])
+                else:
+                    soquets.append(_outgoing[reg.name])
+
+        tn.add(
+            qtn.Tensor(
+                data=np.eye(2**self.n, 2**self.n).reshape(
+                    tuple(unitary_shape) + (2**self.n,)
+                ),
+                inds=soquets + [_incoming['x']],
+                tags=['Partition', tag],
+            )
+        )
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, int]:
+        if self.partition:
+            out_vals = {}
+            xbits = ints_to_bits(vals['x'], self.n)[0]
+            start = 0
+            for reg in self.regs:
+                size = np.prod(reg.shape + (reg.bitsize,))
+                bits_reg = xbits[start : start + size]
+                if reg.shape == ():
+                    out_vals[reg.name] = bits_to_ints(bits_reg)[0]
+                else:
+                    ints_reg = bits_to_ints(
+                        [
+                            bits_reg[i * reg.bitsize : (i + 1) * reg.bitsize]
+                            for i in range(np.prod(reg.shape))
+                        ]
+                    )
+                    out_vals[reg.name] = np.array(ints_reg).reshape(reg.shape)
+                start += size
+            return out_vals
+        else:
+            out_vals = []
+            for reg in self.regs:
+                if isinstance(vals[reg.name], np.ndarray):
+                    out_vals.append(ints_to_bits(vals[reg.name].ravel(), reg.bitsize).ravel())
+                else:
+                    out_vals.append(ints_to_bits(vals[reg.name], reg.bitsize)[0])
+            big_int = np.concatenate(out_vals)
+            return {'x': bits_to_ints(big_int)[0]}
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:

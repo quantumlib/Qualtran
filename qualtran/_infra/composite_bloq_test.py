@@ -41,6 +41,7 @@ from qualtran import (
 )
 from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
+from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import IntEffect, ZeroEffect
 from qualtran.bloqs.util_bloqs import Join
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -83,6 +84,7 @@ def test_create_binst_graph():
     binst1 = cxns[2].left.binst
     binst2 = cxns[2].right.binst
     binst_graph = _create_binst_graph(cxns)
+    # pylint: disable=protected-access
     assert nx.is_isomorphic(binst_graph, CompositeBloq(cxns, signature)._binst_graph)
 
     binst_generations = list(nx.topological_generations(binst_graph))
@@ -141,7 +143,7 @@ def test_iter_bloqsoqs():
 def test_map_soqs():
     cbloq = TestTwoCNOT().decompose_bloq()
     bb, _ = BloqBuilder.from_signature(cbloq.signature)
-    bb._i = 100
+    bb._i = 100  # pylint: disable=protected-access
 
     soq_map: List[Tuple[SoquetT, SoquetT]] = []
     for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
@@ -342,7 +344,7 @@ def test_complicated_target_register():
     # note: this includes the two `Dangling` generations.
     assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
 
-    circuit, _ = cbloq.to_cirq_circuit(**bloq.signature.get_cirq_quregs())
+    circuit, _ = cbloq.to_cirq_circuit(**get_named_qubits(bloq.signature.lefts()))
     cirq.testing.assert_has_diagram(
         circuit,
         """\

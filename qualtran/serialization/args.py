@@ -70,4 +70,4 @@ def _ndarray_to_proto(arr: np.ndarray) -> args_pb2.NDArray:
 
 
 def _ndarray_from_proto(arr: args_pb2.NDArray) -> np.ndarray:
-    return np.ndarray(arr.shape, eval(arr.dtype), arr.data)
+    return np.ndarray(arr.shape, eval(arr.dtype), arr.data)  # pylint: disable=eval-used

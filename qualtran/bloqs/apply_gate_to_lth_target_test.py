@@ -15,12 +15,20 @@
 import cirq
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import SelectionRegister, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
-from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit
+from qualtran.bloqs.apply_gate_to_lth_target import _apply_z_to_odd, ApplyGateToLthQubit
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+
+
+def test_apply_z_to_odd(bloq_autotester):
+    bloq_autotester(_apply_z_to_odd)
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('apply_gate_to_lth_target')
 
 
 @pytest.mark.parametrize("selection_bitsize,target_bitsize", [[3, 5], [3, 7], [4, 5]])
@@ -111,8 +119,4 @@ def test_bloq_has_consistent_decomposition(selection_bitsize, target_bitsize):
         lambda n: cirq.Z if n & 1 else cirq.I,
         control_regs=Signature.build(control=2),
     )
-    assert_valid_bloq_decomposition(bloq)
-
-
-def test_notebook():
-    execute_notebook('apply_gate_to_lth_target')
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
