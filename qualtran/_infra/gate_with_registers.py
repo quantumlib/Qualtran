@@ -91,7 +91,7 @@ def get_named_qubits(registers: Iterable[Register]) -> Dict[str, NDArray[cirq.Qi
         return np.array(
             [cirq.NamedQubit(f"{reg.name}")]
             if reg.total_bits() == 1
-            else cirq.NamedQubit.range(reg.total_bits(), prefix=reg.name),
+            else cirq.NamedQubit.range(reg.total_bits(), prefix=f"{reg.name}qubit"),
             dtype=object,
         )
 
