@@ -12,18 +12,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import subprocess
-from pathlib import Path
+from qualtran.bloqs.block_encoding import (
+    _black_box_block_bloq,
+    _black_box_prepare,
+    _black_box_select,
+)
+from qualtran.testing import execute_notebook
 
 
-def get_git_root() -> Path:
-    """Get the root git repository path."""
-    cp = subprocess.run(
-        ['git', 'rev-parse', '--show-toplevel'],
-        capture_output=True,
-        universal_newlines=True,
-        check=True,
-    )
-    path = Path(cp.stdout.strip()).absolute()
-    assert path.exists()
-    return path
+def test_black_box_bloq(bloq_autotester):
+    bloq_autotester(_black_box_block_bloq)
+
+
+def test_black_box_prepare(bloq_autotester):
+    bloq_autotester(_black_box_prepare)
+
+
+def test_black_box_select(bloq_autotester):
+    bloq_autotester(_black_box_select)
+
+
+def test_notebook():
+    execute_notebook('block_encoding')

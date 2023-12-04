@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Optional, Set, Union
 
 import numpy as np
 import sympy
@@ -75,7 +75,7 @@ class ModExp(Bloq):
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: int, g=None):
+    def make_for_shor(cls, big_n: int, g: Optional[int] = None):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
