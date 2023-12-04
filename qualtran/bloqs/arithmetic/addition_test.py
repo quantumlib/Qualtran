@@ -233,7 +233,7 @@ def test_out_of_place_adder():
     assert_valid_bloq_decomposition(gate**-1)
 
 
-@pytest.mark.parametrize('bitsize', [3])
+@pytest.mark.parametrize('bitsize', [5])
 @pytest.mark.parametrize('k', [5, 8])
 @pytest.mark.parametrize('signed', [True, False])
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])

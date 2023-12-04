@@ -24,6 +24,7 @@ from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -253,25 +254,17 @@ class SimpleAddConstant(Bloq):
         else:
             return Signature([Register('x', bitsize=self.bitsize)])
 
-    def binary_rep(self, num: int, num_bits: int):
-        # If the registers are interpreting signed bits, represent the output in 2's complement.
-        # Otherwise make sure the classical value k is > 0.
-        if self.signed:
-            num &= (2 << num_bits - 1) - 1
-        else:
-            assert num >= 0
-        format_str = '{:0' + str(num_bits) + 'b}'
-        return format_str.format(int(num))
+    def apply(self, *args) -> Union[int, Iterable[int]]:
+        target_val = args[-1]
+        new_target_val = target_val + self.k
 
-    def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
-        if ctrl == 0:
-            return {'ctrl': 0, 'x': x}
+        if self.cvs and args[0] != int(''.join(str(x) for x in self.cvs), 2):
+            new_target_val = target_val
+        ret = (args[0], new_target_val) if self.cvs else (new_target_val,)
+        return ret
 
-        assert ctrl == 1, 'Bad ctrl value.'
-        x_out = x + self.k
-        return {'ctrl': ctrl, 'x': x_out}
+    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
+        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
 
@@ -285,12 +278,16 @@ class SimpleAddConstant(Bloq):
 
         # Get binary representation of k and split k into separate wires.
         k_split = bb.split(k)
-        binary_str = "".join(reversed(self.binary_rep(self.k, self.bitsize)))
+        if self.signed:
+            binary_rep = list(iter_bits_twos_complement(self.k, self.bitsize))
+        else:
+            binary_rep = list(iter_bits(self.k, self.bitsize))
+        binary_rep.reverse()
 
         # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
         # controlled.
         for i in range(self.bitsize):
-            if binary_str[i] == '1':
+            if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
                         MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
@@ -308,7 +305,7 @@ class SimpleAddConstant(Bloq):
         # representation back to the zero state.
         k_split = bb.split(k)
         for i in range(self.bitsize):
-            if binary_str[i] == '1':
+            if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
                         MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
