@@ -49,18 +49,19 @@ from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_noteboo
 
 import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
+import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
-
 
 NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     NotebookSpecV2(
@@ -146,6 +147,24 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.block_encoding,
         bloq_specs=[qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Multi-Paulis',
+        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        bloq_specs=[
+            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Addition',
+        module=qualtran.bloqs.arithmetic.addition,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.addition._ADD_DOC,
+            qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
+            qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
+        ],
     ),
 ]
 

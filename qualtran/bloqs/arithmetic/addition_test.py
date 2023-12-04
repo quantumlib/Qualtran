@@ -35,12 +35,6 @@ from qualtran.cirq_interop.testing import (
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-def _make_add():
-    from qualtran.bloqs.arithmetic import Add
-
-    return Add(bitsize=4)
-
-
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add_decomposition(a: int, b: int, num_bits: int):
     num_anc = num_bits - 1
