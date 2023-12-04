@@ -51,7 +51,12 @@ import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.basic_gates.swap
+import qualtran.bloqs.block_encoding
+import qualtran.bloqs.chemistry.df.double_factorization
+import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
+import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
@@ -96,6 +101,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
+        title='First Quantized Hamiltonian with Quantum Projectile',
+        module=qualtran.bloqs.chemistry.pbc.first_quantization.projectile,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_SELECT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization/projectile',
+    ),
+    NotebookSpecV2(
         title='Sorting',
         module=qualtran.bloqs.sorting,
         bloq_specs=[
@@ -105,9 +119,42 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
+        title='Double Factorization',
+        module=qualtran.bloqs.chemistry.df.double_factorization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.df.double_factorization._DF_ONE_BODY,
+            qualtran.bloqs.chemistry.df.double_factorization._DF_BLOCK_ENCODING,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/df',
+    ),
+    NotebookSpecV2(
         title='And',
         module=qualtran.bloqs.and_bloq,
         bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Single Factorization',
+        module=qualtran.bloqs.chemistry.sf.single_factorization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.sf.single_factorization._SF_ONE_BODY,
+            qualtran.bloqs.chemistry.sf.single_factorization._SF_BLOCK_ENCODING,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/sf',
+    ),
+    NotebookSpecV2(
+        title='Block Encoding',
+        module=qualtran.bloqs.block_encoding,
+        bloq_specs=[qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Multi-Paulis',
+        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        bloq_specs=[
+            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(

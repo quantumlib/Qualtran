@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Dict, Iterable, Set, Type
+from typing import Any, Dict, Iterable, Optional, Set, Type
 
 import pandas as pd
 import pandas.io.formats.style
@@ -90,7 +90,8 @@ def show_bloq_report_card(df: pd.DataFrame) -> pandas.io.formats.style.Styler:
 
 
 def get_bloq_report_card(
-    bclasses: Iterable[Type[Bloq]] | None = None, bexamples: Iterable[BloqExample] | None = None
+    bclasses: Optional[Iterable[Type[Bloq]]] = None,
+    bexamples: Optional[Iterable[BloqExample]] = None,
 ) -> pd.DataFrame:
     if bclasses is None:
         bclasses = get_bloq_classes()

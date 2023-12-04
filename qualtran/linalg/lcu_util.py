@@ -15,6 +15,7 @@
 """Utility methods for LCU circuits as implemented in https://github.com/quantumlib/OpenFermion"""
 
 import math
+from typing import Sequence
 
 
 def _partial_sums(vals):
@@ -145,7 +146,9 @@ def _preprocess_for_efficient_roulette_selection(discretized_probabilities):
     return alternates, keep_weights
 
 
-def preprocess_lcu_coefficients_for_reversible_sampling(lcu_coefficients, epsilon):
+def preprocess_lcu_coefficients_for_reversible_sampling(
+    lcu_coefficients: Sequence[float], epsilon: float
+):
     """Prepares data used to perform efficient reversible roulette selection.
 
     Treats the coefficients of unitaries in the linear combination of

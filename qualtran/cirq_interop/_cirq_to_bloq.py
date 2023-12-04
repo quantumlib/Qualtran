@@ -88,7 +88,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
         try:
             return cirq.decompose_once(op)
         except TypeError as e:
-            raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.")
+            raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.") from e
 
     def add_my_tensors(
         self,

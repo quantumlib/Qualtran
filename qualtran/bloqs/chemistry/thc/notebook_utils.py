@@ -17,6 +17,7 @@ from typing import Dict
 import attrs
 import cirq
 
+from qualtran import Bloq
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
@@ -26,11 +27,10 @@ from qualtran.bloqs.arithmetic import (
     LessThanEqual,
     ToContiguousIndex,
 )
-from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate
+from qualtran.bloqs.basic_gates import CSwap, Rx, Ry, Rz, TGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
-from qualtran.bloqs.swap_network import CSwapApprox
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting import SympySymbolAllocator
@@ -98,7 +98,7 @@ def generalize(bloq):
     return bloq
 
 
-def bin_bloq_counts(bloq) -> Dict[str, int]:
+def bin_bloq_counts(bloq: Bloq) -> Dict[str, int]:
     """Classify bloq counts.
 
     It's helpful to classify bloqs by their type (comparators, reflections, swaps, ...)
@@ -124,7 +124,7 @@ def bin_bloq_counts(bloq) -> Dict[str, int]:
                     classified_bloqs['reflections'] += num_calls * num_t
             elif isinstance(bloq, (SelectSwapQROM, QROM)):
                 classified_bloqs['qrom'] += num_calls * num_t
-            elif isinstance(bloq, CSwapApprox):
+            elif isinstance(bloq, CSwap):
                 classified_bloqs['controlled_swaps'] += num_calls * num_t
             elif isinstance(bloq, rotation_bloqs):
                 classified_bloqs['rotation'] += num_calls * num_t

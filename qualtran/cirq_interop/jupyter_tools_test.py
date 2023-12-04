@@ -44,14 +44,14 @@ def test_svg_circuit():
 def test_display_gate_and_compilation(monkeypatch):
     call_args = []
 
-    def _dummy_display(stuff):
+    def _mock_display(stuff):
         call_args.append(stuff)
 
-    monkeypatch.setattr(IPython.display, "display", _dummy_display)
+    monkeypatch.setattr(IPython.display, "display", _mock_display)
     g = cq_testing.GateHelper(MultiAnd(cvs=(1, 1, 1)))
     display_gate_and_compilation(g)
 
-    (display_arg,) = call_args
+    (display_arg,) = call_args  # pylint: disable=unbalanced-tuple-unpacking
     assert isinstance(display_arg, ipywidgets.HBox)
     assert len(display_arg.children) == 2
 

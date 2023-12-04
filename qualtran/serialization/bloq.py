@@ -24,6 +24,8 @@ from qualtran import (
     CompositeBloq,
     Connection,
     DanglingT,
+    DecomposeNotImplementedError,
+    DecomposeTypeError,
     LeftDangle,
     RightDangle,
     Signature,
@@ -298,7 +300,7 @@ def _populate_bloq_to_idx(
 def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq:
     try:
         t_complexity = annotations.t_complexity_to_proto(bloq.t_complexity())
-    except:
+    except (DecomposeTypeError, DecomposeNotImplementedError, TypeError):
         t_complexity = None
 
     return bloq_pb2.Bloq(
