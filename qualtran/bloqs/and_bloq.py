@@ -26,6 +26,7 @@ import itertools
 from functools import cached_property
 from typing import Any, Dict, Set, Tuple
 
+import attrs
 import cirq
 import numpy as np
 import quimb.tensor as qtn
@@ -70,33 +71,36 @@ class And(GateWithRegisters):
 
     cv1: int = 1
     cv2: int = 1
-    adjoint: bool = False
+    uncompute: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
                 Register('ctrl', 1, shape=(2,)),
-                Register('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
+                Register('target', 1, side=Side.RIGHT if not self.uncompute else Side.LEFT),
             ]
         )
+
+    def adjoint(self) -> 'And':
+        return attrs.evolve(self, uncompute=not self.uncompute)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
             pre_post_cliffords = big_O(1)
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
-        if self.adjoint:
+        if self.uncompute:
             return {(ArbitraryClifford(n=2), 4 + 2 * pre_post_cliffords)}
 
         return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.uncompute else ''
         return f'And{dag}'
 
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        if self.adjoint:
+        if self.uncompute:
             raise NotImplementedError("Come back later.")
 
         target = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
@@ -118,8 +122,8 @@ class And(GateWithRegisters):
             else:
                 data[c1, c2, c1, c2, 0] = 1
 
-        # Here: adjoint just switches the direction of the target index.
-        if self.adjoint:
+        # Here: uncompute just switches the direction of the target index.
+        if self.uncompute:
             trg = incoming['target']
         else:
             trg = outgoing['target']
@@ -158,7 +162,7 @@ class And(GateWithRegisters):
         (c1, c2), (target,) = (quregs['ctrl'].flatten(), quregs['target'].flatten())
         pre_post_ops = [cirq.X(q) for (q, v) in zip([c1, c2], [self.cv1, self.cv2]) if v == 0]
         yield pre_post_ops
-        if self.adjoint:
+        if self.uncompute:
             yield cirq.H(target)
             yield cirq.measure(target, key=f"{target}")
             yield cirq.CZ(c1, c2).with_classical_controls(f"{target}")
@@ -172,25 +176,25 @@ class And(GateWithRegisters):
             yield [cirq.H(target), cirq.S(target)]
         yield pre_post_ops
 
-    def __pow__(self, power: int) -> "And":
+    def __pow__(self, power: int) -> 'And':
         if power == 1:
             return self
         if power == -1:
-            return And(self.cv1, self.cv2, adjoint=self.adjoint ^ True)
+            return self.adjoint()
         return NotImplemented  # pragma: no cover
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
-        target = "And†" if self.adjoint else "And"
+        target = "And†" if self.uncompute else "And"
         wire_symbols = [controls[self.cv1], controls[self.cv2], target]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _has_unitary_(self) -> bool:
-        return not self.adjoint
+        return not self.uncompute
 
     def _t_complexity_(self) -> TComplexity:
         pre_post_cliffords = 2 - self.cv1 - self.cv2  # number of zeros in self.cv
-        if self.adjoint:
+        if self.uncompute:
             return TComplexity(clifford=4 + 2 * pre_post_cliffords)
         else:
             return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)

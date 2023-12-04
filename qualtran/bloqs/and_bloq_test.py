@@ -78,7 +78,7 @@ def test_truth_table_classical(cv1, cv2):
 def test_bad_adjoint(cv1, cv2):
     state = [ZeroState(), OneState()]
     eff = [ZeroEffect(), OneEffect()]
-    and_ = And(cv1, cv2, adjoint=True)
+    and_ = And(cv1, cv2, uncompute=True)
 
     for a, b in itertools.product([0, 1], repeat=2):
         bb = BloqBuilder()
@@ -103,7 +103,7 @@ def test_inverse():
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
     qs, trg = bb.add(And(), ctrl=[q0, q1])
-    qs = bb.add(And(adjoint=True), ctrl=qs, target=trg)
+    qs = bb.add(And(uncompute=True), ctrl=qs, target=trg)
     cbloq = bb.finalize(q0=qs[0], q1=qs[1])
 
     mat = cbloq.tensor_contract()
@@ -176,7 +176,7 @@ class AndIdentity(Bloq):
         self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         qs, trg = bb.add(And(), ctrl=[q0, q1])
-        q0, q1 = bb.add(And(adjoint=True), ctrl=qs, target=trg)
+        q0, q1 = bb.add(And(uncompute=True), ctrl=qs, target=trg)
         return {'q0': q0, 'q1': q1}
 
 

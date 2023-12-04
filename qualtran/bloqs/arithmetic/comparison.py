@@ -109,7 +109,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
                 # ancilla[i] = are_equal so far and (q_i != _val[i]).
                 #            = equivalent to: Is the current prefix of qubits < prefix of `_val`?
                 yield And().on(q, are_equal, a)
-                adjoint.append(And(adjoint=True).on(q, are_equal, a))
+                adjoint.append(And().adjoint().on(q, are_equal, a))
 
                 # target ^= is the current prefix of the qubit sequence < current prefix of `_val`
                 yield cirq.CNOT(a, target)
@@ -121,7 +121,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
             else:
                 # ancilla[i] = are_equal so far and (q = 1).
                 yield And().on(q, are_equal, a)
-                adjoint.append(And(adjoint=True).on(q, are_equal, a))
+                adjoint.append(And().adjoint().on(q, are_equal, a))
 
                 # if `a=1` then we need to flip `are_equal` since this means that are_equal=1,
                 # b_i=0, q_i=1 => current prefixes are not equal so we need to flip `are_equal`.
