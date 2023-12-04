@@ -55,6 +55,7 @@ import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
@@ -145,6 +146,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Block Encoding',
         module=qualtran.bloqs.block_encoding,
         bloq_specs=[qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Multi-Paulis',
+        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        bloq_specs=[
+            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]

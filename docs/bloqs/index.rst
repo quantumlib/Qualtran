@@ -62,3 +62,4 @@ Bloqs Library
     state_preparation.ipynb
     util_bloqs.ipynb
     generalized_qsp.ipynb
+    multi_control_multi_target_pauli
