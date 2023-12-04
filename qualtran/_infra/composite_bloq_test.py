@@ -84,6 +84,7 @@ def test_create_binst_graph():
     binst1 = cxns[2].left.binst
     binst2 = cxns[2].right.binst
     binst_graph = _create_binst_graph(cxns)
+    # pylint: disable=protected-access
     assert nx.is_isomorphic(binst_graph, CompositeBloq(cxns, signature)._binst_graph)
 
     binst_generations = list(nx.topological_generations(binst_graph))
@@ -142,7 +143,7 @@ def test_iter_bloqsoqs():
 def test_map_soqs():
     cbloq = TestTwoCNOT().decompose_bloq()
     bb, _ = BloqBuilder.from_signature(cbloq.signature)
-    bb._i = 100
+    bb._i = 100  # pylint: disable=protected-access
 
     soq_map: List[Tuple[SoquetT, SoquetT]] = []
     for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():

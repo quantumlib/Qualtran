@@ -35,11 +35,14 @@ from qualtran import (
 from qualtran._infra.bloq_test import TestCNOT
 from qualtran.drawing.graphviz_test import Atom, TestParallelBloq
 from qualtran.testing import (
+    assert_bloq_example_decompose,
+    assert_bloq_example_make,
     assert_connections_compatible,
     assert_registers_match_dangling,
     assert_registers_match_parent,
     assert_soquets_belong_to_registers,
     assert_soquets_used_exactly_once,
+    BloqCheckException,
     BloqCheckResult,
     check_bloq_example_decompose,
     check_bloq_example_make,
@@ -137,6 +140,10 @@ def test_check_bloq_example_make():
     assert res is BloqCheckResult.FAIL, msg
     assert re.match(r'.*is not an instance of Bloq', msg)
 
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_make(_my_cnot)
+        assert raises_ctx.value.check_result is BloqCheckResult.FAIL
+
     @bloq_example
     def _my_cnot_2() -> TestCNOT:
         return TestCNOT()
@@ -144,6 +151,8 @@ def test_check_bloq_example_make():
     res, msg = check_bloq_example_make(_my_cnot_2)
     assert res is BloqCheckResult.PASS, msg
     assert msg == ''
+
+    assert_bloq_example_make(_my_cnot_2)
 
 
 def test_check_bloq_decompose_pass():
@@ -155,6 +164,8 @@ def test_check_bloq_decompose_pass():
     assert res is BloqCheckResult.PASS, msg
     assert msg == ''
 
+    assert_bloq_example_decompose(_my_bloq)
+
 
 def test_check_bloq_decompose_na():
     @bloq_example
@@ -165,6 +176,10 @@ def test_check_bloq_decompose_na():
     assert res is BloqCheckResult.NA, msg
     assert re.match(r'.*is atomic', msg)
 
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_decompose(_my_bloq)
+        assert raises_ctx.value.check_result is BloqCheckResult.NA
+
 
 def test_check_bloq_decompose_missing():
     @bloq_example
@@ -174,3 +189,7 @@ def test_check_bloq_decompose_missing():
     res, msg = check_bloq_example_decompose(_my_bloq)
     assert res is BloqCheckResult.MISSING, msg
     assert re.match(r'.*declare a decomposition', msg)
+
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_decompose(_my_bloq)
+        assert raises_ctx.value.check_result is BloqCheckResult.MISSING

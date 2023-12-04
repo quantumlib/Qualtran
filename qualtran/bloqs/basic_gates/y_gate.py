@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
@@ -43,14 +43,14 @@ class YGate(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
         tn.add(
             qtn.Tensor(
-                data=_PAULIY, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+                data=_PAULIY, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
 

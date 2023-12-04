@@ -119,7 +119,6 @@ class MultiplexedCSwap3D(Bloq):
 
     num_bits_p: int
     eta: int
-    cvs: Tuple[int, ...] = ()
 
     @cached_property
     def signature(self) -> Signature:
@@ -173,7 +172,6 @@ class MultiplexedCSwap3D(Bloq):
     def build_composite_bloq(
         self, bb: BloqBuilder, sel: SoquetT, targets: SoquetT, junk: SoquetT
     ) -> Dict[str, 'SoquetT']:
-        # (sys, 3), bitsize -> (sys,), 3*bitsize
         flat_sys = self._reshape_reg(bb, targets, (self.eta,), bitsize=3 * self.num_bits_p)
         flat_p = self._reshape_reg(bb, junk, (), bitsize=3 * self.num_bits_p)
         sel, flat_sys, flat_p = bb.add(
