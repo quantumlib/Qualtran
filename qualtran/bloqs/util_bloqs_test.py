@@ -52,9 +52,9 @@ def test_util_bloqs():
     bb = BloqBuilder()
     qs1 = bb.add(Allocate(10))
     assert isinstance(qs1, Soquet)
-    qs2 = bb.add(Split(10), split=qs1)
+    qs2 = bb.add(Split(10), reg=qs1)
     assert qs2.shape == (10,)
-    qs3 = bb.add(Join(10), join=qs2)
+    qs3 = bb.add(Join(10), reg=qs2)
     assert isinstance(qs3, Soquet)
     no_return = bb.add(Free(10), free=qs3)
     assert no_return is None
@@ -78,7 +78,7 @@ class TestPartition(Bloq):
         out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
         test_regs = bb.add(
-            partition.dagger(), **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)}
+            partition.adjoint(), **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)}
         )
         return {'test_regs': test_regs}
 
@@ -127,7 +127,7 @@ def test_partition_call_classically():
     flat_out = np.concatenate([v.ravel() if isinstance(v, np.ndarray) else [v] for v in out])
     # 6th set bit == 64
     assert flat_out[2] == 2
-    out = bloq.dagger().call_classically(**{reg.name: val for (reg, val) in zip(regs, out)})
+    out = bloq.adjoint().call_classically(**{reg.name: val for (reg, val) in zip(regs, out)})
     assert out[0] == 64
 
 
@@ -156,22 +156,22 @@ def test_classical_sim():
 
 def test_classical_sim_dtypes():
     s = Split(n=8)
-    (xx,) = s.call_classically(split=255)
+    (xx,) = s.call_classically(reg=255)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     with pytest.raises(ValueError):
-        _ = s.call_classically(split=256)
+        _ = s.call_classically(reg=256)
 
     # with numpy types
-    (xx,) = s.call_classically(split=np.uint8(255))
+    (xx,) = s.call_classically(reg=np.uint8(255))
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     # Warning: numpy will wrap too-large values
-    (xx,) = s.call_classically(split=np.uint8(256))
+    (xx,) = s.call_classically(reg=np.uint8(256))
     assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
 
     with pytest.raises(ValueError):
-        _ = s.call_classically(split=np.uint16(256))
+        _ = s.call_classically(reg=np.uint16(256))
 
 
 def test_notebook():

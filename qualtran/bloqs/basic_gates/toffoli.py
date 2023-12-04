@@ -49,6 +49,9 @@ class Toffoli(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('ctrl', 1, shape=(2,)), Register('target', 1)])
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 4)}
 
