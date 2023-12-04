@@ -22,6 +22,7 @@ from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
 from qualtran.surface_code.physical_cost import PhysicalCost
+from qualtran.surface_code.multi_factory import MultiFactory
 
 
 @frozen
@@ -76,7 +77,9 @@ class CCZ2TFactory(MagicStateFactory):
         As a simplifying approximation here (and elsewhere) we assume different sources
         of error are independent, and we merely add the probabilities.
         """
-        return self.l0_state_injection_error(phys_err) + self.l0_topo_error_t_gate(phys_err)
+        return self.l0_state_injection_error(phys_err) + self.l0_topo_error_t_gate(
+            phys_err
+        )
 
     # -------------------------------------------------------------------------------
     # ----     Level 1    ---------
@@ -178,7 +181,9 @@ def get_ccz2t_costs(
     footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
     duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
 
-    return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
+    return PhysicalCost(
+        failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr
+    )
 
 
 def get_ccz2t_costs_from_error_budget(
@@ -195,7 +200,7 @@ def get_ccz2t_costs_from_error_budget(
     """Physical costs using the model from catalyzed CCZ to 2T paper.
 
     Args:
-        n_magic: The number of magic states (T, Toffli) required to execute the algorithm
+        n_magic: The number of magic states (T, Toffoli) required to execute the algorithm
         n_algo_qubits: Number of algorithm logical qubits.
         phys_err: The physical error rate of the device. This sets the suppression
             factor for increasing code distance.
@@ -255,11 +260,32 @@ def get_ccz2t_costs_from_error_budget(
 
 
 def iter_ccz2t_factories(
-    l1_start: int = 5, l1_stop: int = 25, l2_stop: int = 41
-) -> Iterator[CCZ2TFactory]:
+    l1_start: int = 5, l1_stop: int = 25, l2_stop: int = 41, *, n_factories=1
+) -> Iterator[MagicStateFactory]:
+    """Iterate over CCZ2T (multi)factories in the given range of distillation code distances
+
+    Args:
+        l1_start (int, optional): Minimum level 1 distillation distance.
+        l1_stop (int, optional): Maximum level 1 distillation distance.
+        l2_stop (int, optional): Maximum level 2 distillation distance. The minimum is
+            automatically chosen as 2 + l1_distance, ensuring l2_distance > l1_distance.
+        n_factories (int, optional): Number of factories to be used in parallel.
+    """
+    if n_factories == 1:
+        factory = CCZ2TFactory
+    elif n_factories > 1:
+
+        def factory(distillation_l1_d, distillation_l2_d):
+            base_factory = CCZ2TFactory(
+                distillation_l1_d=l1_distance, distillation_l2_d=l2_distance
+            )
+            return MultiFactory(base_factory=base_factory, n_factories=n_factories)
+    else:
+        raise ValueError("The number of factories should be a positive integer")
+
     for l1_distance in range(l1_start, l1_stop, 2):
         for l2_distance in range(l1_distance + 2, l2_stop, 2):
-            yield CCZ2TFactory(distillation_l1_d=l1_distance, distillation_l2_d=l2_distance)
+            yield factory(distillation_l1_d=l1_distance, distillation_l2_d=l2_distance)
 
 
 def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
@@ -272,13 +298,31 @@ def get_ccz2t_costs_from_grid_search(
     n_magic: AlgorithmSummary,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
+    error_budget: float = 1e-2,
     cycle_time_us: float = 1.0,
     factory_iter: Callable[[], Iterator] = iter_ccz2t_factories,
     data_block_iter: Callable[[], Iterator] = iter_simple_data_blocks,
+    cost_function: Callable[[PhysicalCost], float] = (lambda pc: pc.qubit_hours)
 ) -> Tuple[PhysicalCost, CCZ2TFactory, SimpleDataBlock]:
     """Grid search over parameters to minimize space time volume.
 
-    This is from openfermion. What paper was it introduced or used in?
+    Args:
+        n_magic: The number of magic states (T, Toffoli) required to execute the algorithm
+        n_algo_qubits: Number of algorithm logical qubits.
+        phys_err: The physical error rate of the device. This sets the suppression
+            factor for increasing code distance.
+        error_budget: The acceptable chance of an error occurring at any point. This includes
+            data storage failures as well as top-level distillation failure.
+        cycle_time_us: The number of microseconds it takes to execute a surface code cycle.
+        factory_iter: generator yielding the instances of MagicStateFactory to search over.
+        data_block_iter: generator yielding the instances of SimpleDataBlock to search over.
+        cost_function: function of PhysicalCost to be minimized. Defaults to spacetime volume.
+            Set `cost_function = (lambda pc: pc.duration_hr)` to mimimize wall time.
+
+    Returns:
+        Tuple[PhysicalCost, CCZ2TFactory, SimpleDataBlock]: _description_
+
+    This is from openfermion. What paper was it introduced or used in? TODO
     """
     best_cost: Optional[PhysicalCost] = None
     best_params: Optional[Tuple[CCZ2TFactory, SimpleDataBlock]] = None
@@ -293,9 +337,9 @@ def get_ccz2t_costs_from_grid_search(
                 data_block=data_block,
             )
 
-            if cost.failure_prob > 0.1:
+            if cost.failure_prob > error_budget:
                 continue
-            if best_cost is None or cost.qubit_hours < best_cost.qubit_hours:
+            if best_cost is None or cost_function(cost) < cost_function(best_cost):
                 best_cost = cost
                 best_params = (factory, data_block)
 

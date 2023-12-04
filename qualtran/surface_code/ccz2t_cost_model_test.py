@@ -50,8 +50,13 @@ def test_grid_search_runs():
         n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
         n_algo_qubits=100,
         phys_err=1e-3,
+        error_budget=0.1,
         cycle_time_us=1,
     )
     assert factory.distillation_l1_d == 15
     assert factory.distillation_l2_d == 23
     assert db.data_d == 25
+
+def test_grid_search_against_thc():
+    # TODO: test in developement, see thc_femoco_compliation.py
+    pass
