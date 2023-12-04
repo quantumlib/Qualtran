@@ -17,10 +17,11 @@ from typing import Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
+import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran import bloq_example, Bloq, BloqBuilder, BloqDocSpec, GateWithRegisters, Register, Side, Signature, SoquetT
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
@@ -131,6 +132,32 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
 
 
+@bloq_example
+def _add_symb() -> Add:
+    n = sympy.Symbol('n')
+    add_symb = Add(bitsize=n)
+    return add_symb
+
+
+@bloq_example
+def _add_small() -> Add:
+    add_small = Add(bitsize=4)
+    return add_small
+
+
+@bloq_example
+def _add_large() -> Add:
+    add_large = Add(bitsize=64)
+    return add_large
+
+
+_ADD_DOC = BloqDocSpec(
+    bloq_cls=Add,
+    import_line='from qualtran.bloqs.arithmetic.addition import Add',
+    examples=(_add_symb, _add_small, _add_large),
+)
+
+
 @frozen
 class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
     r"""An n-bit addition gate.
@@ -143,9 +170,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
             is of size `bitsize+1` so it has enough space to hold the sum of `a+b`.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input register (register b above).
-     - c: A bitize+1-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
+        a: A bitsize-sized input register (register a above).
+        b: A bitsize-sized input register (register b above).
+        c: A bitize+1-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -330,15 +357,39 @@ class SimpleAddConstant(Bloq):
 
     def short_name(self) -> str:
         return f'x += {self.k}'
+@bloq_example
+def _add_oop_symb() -> OutOfPlaceAdder:
+    n = sympy.Symbol('n')
+    add_oop_symb = OutOfPlaceAdder(bitsize=n)
+    return add_oop_symb
+
+
+@bloq_example
+def _add_oop_small() -> OutOfPlaceAdder:
+    add_oop_small = OutOfPlaceAdder(bitsize=4)
+    return add_oop_small
+
+
+@bloq_example
+def _add_oop_large() -> OutOfPlaceAdder:
+    add_oop_large = OutOfPlaceAdder(bitsize=64)
+    return add_oop_large
+
+
+_ADD_OOP_DOC = BloqDocSpec(
+    bloq_cls=OutOfPlaceAdder,
+    import_line='from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder',
+    examples=(_add_oop_symb, _add_oop_small, _add_oop_large),
+)
 
 
 @frozen(auto_attribs=True)
 class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
-    """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.
+    """Applies U(add, M)|x> = |(x + add) % M> if x < M else |x>.
 
     Applies modular addition to input register `|x>` given parameters `mod` and `add_val` s.t.
-        1) If integer `x` < `mod`: output is `|(x + add) % M>`
-        2) If integer `x` >= `mod`: output is `|x>`.
+     1. If integer `x` < `mod`: output is `|(x + add) % M>`
+     2. If integer `x` >= `mod`: output is `|x>`.
 
     This condition is needed to ensure that the mapping of all input basis states (i.e. input
     states |0>, |1>, ..., |2 ** bitsize - 1) to corresponding output states is bijective and thus
@@ -357,6 +408,8 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
 
     @mod.validator
     def _validate_mod(self, attribute, value):
+        if isinstance(value, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            return
         if not 1 <= value <= 2**self.bitsize:
             raise ValueError(f"mod: {value} must be between [1, {2 ** self.bitsize}].")
 
@@ -399,3 +452,32 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     def _t_complexity_(self) -> TComplexity:
         # Rough cost as given in https://arxiv.org/abs/1905.09749
         return 5 * Add(self.bitsize).t_complexity()
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(Add(self.bitsize), 5)}
+
+
+@bloq_example
+def _add_k_symb() -> AddConstantMod:
+    n, m, k = sympy.symbols('n m k')
+    add_k_symb = AddConstantMod(bitsize=n, mod=m, add_val=k)
+    return add_k_symb
+
+
+@bloq_example
+def _add_k_small() -> AddConstantMod:
+    add_k_small = AddConstantMod(bitsize=4, mod=7, add_val=1)
+    return add_k_small
+
+
+@bloq_example
+def _add_k_large() -> AddConstantMod:
+    add_k_large = AddConstantMod(bitsize=64, mod=500, add_val=23)
+    return add_k_large
+
+
+_ADD_K_DOC = BloqDocSpec(
+    bloq_cls=AddConstantMod,
+    import_line='from qualtran.bloqs.arithmetic.addition import AddConstantMod',
+    examples=(_add_k_symb, _add_k_small, _add_k_large),
+)

@@ -47,6 +47,7 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/arithmetic.ipynb
+    arithmetic/addition.ipynb
 
 .. toctree::
     :maxdepth: 2
