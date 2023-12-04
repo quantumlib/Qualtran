@@ -19,7 +19,12 @@ import pytest
 
 from qualtran import BloqBuilder
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.arithmetic import Add, AddConstantMod, OutOfPlaceAdder, SimpleAddConstant
+from qualtran.bloqs.arithmetic.addition import (
+    Add,
+    AddConstantMod,
+    OutOfPlaceAdder,
+    SimpleAddConstant,
+)
 from qualtran.bloqs.arithmetic.comparison_test import identity_map
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.testing import (
@@ -228,7 +233,7 @@ def test_out_of_place_adder():
     assert_valid_bloq_decomposition(gate**-1)
 
 
-@pytest.mark.parametrize('bitsize', [3])
+@pytest.mark.parametrize('bitsize', [5])
 @pytest.mark.parametrize('k', [5, 8])
 @pytest.mark.parametrize('signed', [True, False])
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
