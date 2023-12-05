@@ -39,7 +39,6 @@ class CCZ2TFactory(MagicStateFactory):
 
     distillation_l1_d: int = 15
     distillation_l2_d: int = 31
-    cycle_time_us: float = 1
     qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     # -------------------------------------------------------------------------------
