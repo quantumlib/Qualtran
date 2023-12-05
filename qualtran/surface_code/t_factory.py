@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-import math
+from typing import Optional
 
 from attrs import field, frozen
 
@@ -21,34 +20,36 @@ from qualtran.surface_code.magic_state_factory import MagicStateFactory
 
 
 @frozen
-class SimpleTFactory(MagicStateFactory):
+class Simple15to1TFactory(MagicStateFactory):
     """A summary of properties of a T-states factory.
 
-    A summary of T-state factories as described in Appendix E of https://arxiv.org/abs/2211.07629
+    Represents 15-to-1 T-state factories as described in Appendix C of https://arxiv.org/abs/2211.07629
+    The number of rounds and their construction (code distance, number of units, ...etc) is ignored
+    and only the overall specification is reported as per table VII.
 
     Attributes:
         num_qubits: Number of physical qubits used by the factory.
-        generation_time_ns: Time to generate a single T-state.
-        distillation_error_: Probability of not accepting a magic state
+        cycle_time_us: Time to generate a single T-state.
+        error_rate: Probability of not accepting a magic state
         reference: Source of these estimates.
     """
 
     num_qubits: int
-    generation_time_us: float = field(repr=lambda x: f'{x:g}')
-    distillation_error_: float = field(repr=lambda x: f'{x:g}')
-    reference: str | None = None
+    cycle_time_us: float = field(repr=lambda x: f'{x:g}')
+    error_rate: float = field(repr=lambda x: f'{x:g}')
+    reference: Optional[str] = None
 
     def footprint(self) -> int:
         return self.num_qubits
 
     def n_cycles(self, n_magic: AlgorithmSummary) -> int:
         t_states = n_magic.t_gates + 4 * n_magic.toffoli_gates
-        expected_cycles_per_t_state = 1 / (1 - self.distillation_error_)
-        return math.ceil(t_states * expected_cycles_per_t_state)
+        # Number of cycles equals to number of T states since the factory creates 1 state per cycle
+        return t_states
 
     def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
         t_states = n_magic.t_gates + 4 * n_magic.toffoli_gates
-        return t_states * self.distillation_error_
+        return t_states * self.error_rate
 
-    def spacetime_footprint(self) -> float:
-        return self.generation_time_us * self.num_qubits
+    def cycle_duration_us(self) -> float:
+        return self.cycle_time_us

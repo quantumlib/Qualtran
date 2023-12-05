@@ -38,9 +38,13 @@ class MagicStateFactory(metaclass=abc.ABCMeta):
         """The total error expected from distilling magic states with a given physical error rate."""
 
     @abc.abstractmethod
+    def cycle_duration_us(self) -> float:
+        """The duration of a single distillation cycle in microseconds."""
+
     def spacetime_footprint(self) -> float:
         """The spacetime cost of producing a single magic state.
 
         Equals the number of qubits times the time needed to produce a single magic state.
         reference: Appendix E of https://arxiv.org/abs/2211.07629
         """
+        return self.cycle_duration_us() * self.footprint()

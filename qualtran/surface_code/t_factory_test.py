@@ -13,14 +13,16 @@
 #  limitations under the License.
 
 
+from qualtran.surface_code import t_factory
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.t_factory import SimpleTFactory
 
 
-def test_footprint():
-    factory = SimpleTFactory(num_qubits=5, generation_time_us=42, distillation_error_=1e-3)
+def test_15to1factory():
+    factory = t_factory.Simple15to1TFactory(
+        num_qubits=16000, cycle_time_us=83.2, error_rate=2.1e-15
+    )
     magic_count = AlgorithmSummary(t_gates=1, toffoli_gates=1)
-    assert factory.footprint() == 5
-    assert factory.n_cycles(magic_count) == 6
-    assert factory.spacetime_footprint() == 5 * 42
-    assert factory.distillation_error(magic_count, 1e-3) == 5e-3
+    assert factory.footprint() == 16000
+    assert factory.n_cycles(magic_count) == 5
+    assert factory.spacetime_footprint() == 16000 * 83.2
+    assert factory.distillation_error(magic_count, 1e-3) == 5 * 2.1e-15

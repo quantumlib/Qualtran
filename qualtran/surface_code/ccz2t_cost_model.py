@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import math
+from typing import Optional
 
 from attrs import frozen
 
@@ -38,6 +39,7 @@ class CCZ2TFactory(MagicStateFactory):
 
     distillation_l1_d: int = 15
     distillation_l2_d: int = 31
+    cycle_time_us: float = 1
     qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     # -------------------------------------------------------------------------------
@@ -158,8 +160,8 @@ class CCZ2TFactory(MagicStateFactory):
 
         return math.ceil((n_ccz_states * ccz_depth + catalyzations) * distillation_d)
 
-    def spacetime_footprint(self) -> float:
-        raise NotImplementedError
+    def cycle_duration_us(self) -> float:
+        return self.cycle_time_us  # pragma: no cover
 
 
 def get_ccz2t_costs(
