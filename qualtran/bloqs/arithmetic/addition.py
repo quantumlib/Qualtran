@@ -16,6 +16,7 @@ from functools import cached_property
 from typing import Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
+import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -217,7 +218,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
 
 @frozen
 class SimpleAddConstant(Bloq):
-    r"""Applies U_{k}|x> = |x + k>.
+    r"""Takes |x> to |x + k> for a classical integer `k`.
 
     Applies addition to input register `|x>` given classical integer 'k'.
 
@@ -254,22 +255,24 @@ class SimpleAddConstant(Bloq):
         else:
             return Signature([Register('x', bitsize=self.bitsize)])
 
-    def apply(self, *args) -> Union[int, Iterable[int]]:
-        target_val = args[-1]
-        new_target_val = target_val + self.k
+    def on_classical_vals(
+        self, x: 'ClassicalValT', **vars: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if self.cvs:
+            ctrl = vars['ctrl']
+        else:
+            return {'x': x + self.k}
 
-        if self.cvs and args[0] != int(''.join(str(x) for x in self.cvs), 2):
-            new_target_val = target_val
-        ret = (args[0], new_target_val) if self.cvs else (new_target_val,)
-        return ret
+        if np.equal(ctrl, self.cvs):
+            return {'ctrl': ctrl, 'x': x + self.k}
+        else:
+            return {'ctrl': ctrl, 'x': x}
 
-    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
-        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: SoquetT, **regs: SoquetT
+    ) -> Dict[str, 'SoquetT']:
 
         # Assign registers to variables and allocate ancilla bits for classical integer k.
-        x = regs['x']
         if len(self.cvs) > 0:
             ctrls = regs['ctrl']
         else:
@@ -321,12 +324,12 @@ class SimpleAddConstant(Bloq):
 
         # Return the output registers.
         if len(self.cvs) > 0:
-            return {'x': x, 'ctrl': ctrls}
+            return {'ctrl': ctrls, 'x': x}
         else:
             return {'x': x}
 
     def short_name(self) -> str:
-        return f'x = x + {self.k}'
+        return f'x += {self.k}'
 
 
 @frozen(auto_attribs=True)
