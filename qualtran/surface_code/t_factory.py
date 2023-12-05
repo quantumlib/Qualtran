@@ -29,13 +29,11 @@ class Simple15to1TFactory(MagicStateFactory):
 
     Attributes:
         num_qubits: Number of physical qubits used by the factory.
-        cycle_time_us: Time to generate a single T-state.
         error_rate: Probability of not accepting a magic state
         reference: Source of these estimates.
     """
 
     num_qubits: int
-    cycle_time_us: float = field(repr=lambda x: f'{x:g}')
     error_rate: float = field(repr=lambda x: f'{x:g}')
     reference: Optional[str] = None
 
@@ -50,6 +48,3 @@ class Simple15to1TFactory(MagicStateFactory):
     def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
         t_states = n_magic.t_gates + 4 * n_magic.toffoli_gates
         return t_states * self.error_rate
-
-    def cycle_duration_us(self) -> float:
-        return self.cycle_time_us

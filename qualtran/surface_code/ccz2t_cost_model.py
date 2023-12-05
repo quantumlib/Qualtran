@@ -160,9 +160,6 @@ class CCZ2TFactory(MagicStateFactory):
 
         return math.ceil((n_ccz_states * ccz_depth + catalyzations) * distillation_d)
 
-    def cycle_duration_us(self) -> float:
-        return self.cycle_time_us  # pragma: no cover
-
 
 def get_ccz2t_costs(
     *,

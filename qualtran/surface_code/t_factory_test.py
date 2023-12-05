@@ -18,11 +18,9 @@ from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 
 
 def test_15to1factory():
-    factory = t_factory.Simple15to1TFactory(
-        num_qubits=16000, cycle_time_us=83.2, error_rate=2.1e-15
-    )
+    factory = t_factory.Simple15to1TFactory(num_qubits=16000, error_rate=2.1e-15)
     magic_count = AlgorithmSummary(t_gates=1, toffoli_gates=1)
     assert factory.footprint() == 16000
     assert factory.n_cycles(magic_count) == 5
-    assert factory.spacetime_footprint() == 16000 * 83.2
+    assert factory.spacetime_footprint() == 16000
     assert factory.distillation_error(magic_count, 1e-3) == 5 * 2.1e-15
