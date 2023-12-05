@@ -266,7 +266,7 @@ _SWZ_DOC = BloqDocSpec(
 class MultiplexedCSwap(UnaryIterationGate):
     r"""Swaps the $l$-th register into an ancilla using unary iteration.
 
-    Applies the unitary which peforms
+    Applies the unitary which performs
     $$
         U |l\rangle|\psi_0\rangle\cdots|\psi_l\rangle\cdots|\psi_n\rangle|\mathrm{junk}\rangle
         \rightarrow

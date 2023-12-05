@@ -14,6 +14,7 @@
 
 import abc
 import math
+from typing import Optional
 
 from attrs import frozen
 
@@ -51,9 +52,9 @@ class RotationLogarithmicModel(RotationCostModel):
     """
     slope: float
     overhead: float
-    gateset: str | None = None
-    approximation_protocol: str | None = None
-    reference: str | None = None
+    gateset: Optional[str] = None
+    approximation_protocol: Optional[str] = None
+    reference: Optional[str] = None
 
     def rotation_cost(self, error_budget: float) -> AlgorithmSummary:
         return AlgorithmSummary(
@@ -86,7 +87,7 @@ class ConstantWithOverheadRotationCost(RotationCostModel):
 
     bitsize: int
     overhead_rotation_cost: RotationCostModel
-    reference: str | None = None
+    reference: Optional[str] = None
 
     def rotation_cost(self, error_budget: float) -> AlgorithmSummary:
         return AlgorithmSummary(toffoli_gates=max(self.bitsize - 2, 0))

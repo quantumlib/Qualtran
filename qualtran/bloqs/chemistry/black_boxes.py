@@ -116,8 +116,53 @@ class QROAM(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(sel=self.data_size, trg=self.target_bitsize)
+        return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost = get_qroam_cost(self.data_size, self.target_bitsize, adjoint=self.adjoint)
+        return {(Toffoli(), cost)}
+
+
+@frozen
+class QROAMTwoRegs(Bloq):
+    """Placeholder bloq for QROAM on two registers.
+
+    Args:
+        data_a_size: Amount of data we want to load from first index.
+        data_b_size: Amount of data we want to load from second index.
+        data_a_block_size: Blocking factor for first index.
+        data_b_block_size: Blocking factor for second index.
+        target_bitsize: the amount of bits of output we need.
+        adjoint: whether to get costs from inverse qrom (true) or not (false).
+
+    Returns:
+       val_opt: minimal (optimal) cost of QROM
+
+    References:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            Hypercontraction](https://arxiv.org/abs/2011.03494) Appendix G, Eq. G3 and G6.
+    """
+
+    data_a_size: int
+    data_b_size: int
+    data_a_block_size: int
+    data_b_block_size: int
+    target_bitsize: int
+    adjoint: bool = False
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"QROAM{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
+        cost *= int(np.ceil(self.data_b_size / self.data_b_block_size))
+        if self.adjoint:
+            cost += self.data_a_block_size * self.data_b_block_size
+        else:
+            cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
         return {(Toffoli(), cost)}

@@ -107,7 +107,7 @@ def _get_all_and_output_quregs_from_input(
 
     For every register `reg` in `registers`, this method checks:
     - If `reg.side == Side.LEFT`:
-        - Ensure that `in_quregs` has a an entry corresponding to `reg`
+        - Ensure that `in_quregs` has an entry corresponding to `reg`
         - Deallocate the corresponding qubits using `qubit_manager.deallocate`.
         - These qubits are part of `all_quregs` but not `out_quregs`.
     - If `reg.side == Side.RIGHT`:
@@ -248,6 +248,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
                 for reg in self.signature
             ):
+                # pylint: disable=raise-missing-from
                 raise DecomposeTypeError(f"Cannot decompose parameterized {self}.")
 
             qm = InteropQubitManager()

@@ -89,7 +89,7 @@ class Bloq(metaclass=abc.ABCMeta):
         programming. For example, it is analogous to function declarations in a
         C header (`*.h`) file.
 
-        This is the only manditory method (property) you must implement to inherit from
+        This is the only mandatory method (property) you must implement to inherit from
         `Bloq`. You can optionally implement additional methods to encode more information
         about this bloq.
         """
@@ -181,7 +181,7 @@ class Bloq(metaclass=abc.ABCMeta):
         try:
             return self.decompose_bloq().on_classical_vals(**vals)
         except NotImplementedError as e:
-            raise NotImplementedError(f"{self} does not support classical simulation: {e}")
+            raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Call this bloq on classical data.
