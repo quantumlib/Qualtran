@@ -11,27 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import numpy as np
+import pytest
 
-from qualtran import bloq_example, BloqExample
-from qualtran.bloqs.for_testing import TestAtom
-
-
-def _tester_bloq_func() -> TestAtom:
-    return TestAtom()
+from qualtran import DecomposeTypeError
+from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 
 
-@bloq_example
-def _tester_bloq() -> TestAtom:
-    return TestAtom()
+def test_test_atom():
+    ta = TestAtom()
+    assert ta.short_name() == 'Atom'
+    with pytest.raises(DecomposeTypeError):
+        ta.decompose_bloq()
 
 
-def test_bloq_example_explicit():
-    be = BloqExample(func=_tester_bloq_func, name='tester_bloq', bloq_cls=TestAtom)
-    assert be.name == 'tester_bloq'
-    assert be.bloq_cls == TestAtom
-
-
-def test_bloq_example_decorator():
-    be = _tester_bloq
-    assert be.name == 'tester_bloq'
-    assert be.bloq_cls == TestAtom
+def test_test_two_bit_op():
+    tba = TestTwoBitOp()
+    assert len(tba.signature) == 2
+    np.testing.assert_allclose(
+        tba.tensor_contract(), np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    )
