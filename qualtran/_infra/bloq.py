@@ -89,7 +89,7 @@ class Bloq(metaclass=abc.ABCMeta):
         programming. For example, it is analogous to function declarations in a
         C header (`*.h`) file.
 
-        This is the only manditory method (property) you must implement to inherit from
+        This is the only mandatory method (property) you must implement to inherit from
         `Bloq`. You can optionally implement additional methods to encode more information
         about this bloq.
         """
