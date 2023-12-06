@@ -163,16 +163,18 @@ def bloqs_to_proto(
         _add_bloq_to_dict(bloq, bloq_to_idx)
         _populate_bloq_to_idx(bloq, bloq_to_idx, pred, max_depth)
 
+    # Decompose[..]Error is raised if `bloq` does not have a decomposition.
+    # KeyError is raised if `bloq` has a decomposition, but we do not wish to serialize it
+    # because of conditions checked by `pred` and `max_depth`.
+    stop_recursing_exceptions = (DecomposeNotImplementedError, DecomposeTypeError, KeyError)
+
     # `bloq_to_idx` would now contain a list of all bloqs that should be serialized.
     library = bloq_pb2.BloqLibrary(name=name)
     for bloq, bloq_id in bloq_to_idx.items():
         try:
             cbloq = bloq if isinstance(bloq, CompositeBloq) else bloq.decompose_bloq()
             decomposition = [_connection_to_proto(cxn, bloq_to_idx) for cxn in cbloq.connections]
-        except (NotImplementedError, KeyError):
-            # NotImplementedError is raised if `bloq` does not have a decomposition.
-            # KeyError is raises if `bloq` has a decomposition but we do not wish to serialize it
-            # because of conditions checked by `pred` and `max_depth`.
+        except stop_recursing_exceptions:
             decomposition = None
 
         try:
@@ -180,10 +182,7 @@ def bloqs_to_proto(
                 bloq_to_idx[b]: args.int_or_sympy_to_proto(c)
                 for b, c in sorted(bloq.bloq_counts().items(), key=lambda x: x[1])
             }
-        except (NotImplementedError, KeyError):
-            # NotImplementedError is raised if `bloq` does not implement bloq_counts.
-            # KeyError is raises if `bloq` has `bloq_counts` but we do not wish to serialize it
-            # because of conditions checked by `pred` and `max_depth`.
+        except stop_recursing_exceptions:
             bloq_counts = None
 
         library.table.add(
