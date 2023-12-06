@@ -16,11 +16,12 @@
 import abc
 import inspect
 import textwrap
+from pathlib import Path
 from types import ModuleType
 from typing import List, Optional
 
 import nbformat
-from attrs import frozen
+from attrs import field, frozen
 
 from qualtran import BloqDocSpec, BloqExample
 
@@ -49,8 +50,12 @@ class NotebookSpecV2:
     title: str
     module: ModuleType
     bloq_specs: List[BloqDocSpec]
-    directory: str = '.'
+    directory: str = field()
     _path_stem: Optional[str] = None
+
+    @directory.default
+    def _default_directory(self) -> str:
+        return str(Path(self.module.__file__).parent)
 
     @property
     def path_stem(self):
