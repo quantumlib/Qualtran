@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import networkx as nx
 import sympy
 
 import qualtran.testing as qlt_testing
@@ -112,13 +113,29 @@ def test_adjoint_adjoint():
     assert adj.adjoint() == zero
 
 
-def test_build_call_graph():
+def test_bloq_counts():
     n = sympy.Symbol('_n0')
     bc = Adjoint(TestBloqWithCallGraph()).bloq_counts()
     assert bc == {
         Adjoint(subbloq=TestAtom()): n,
         Adjoint(subbloq=TestSerialCombo()): 1,
         Adjoint(subbloq=TestParallelCombo()): 1,
+    }
+
+
+def test_call_graph():
+    graph, _ = Adjoint(TestBloqWithCallGraph()).call_graph()
+    edge_strs = {f'{caller} -> {callee}' for caller, callee in graph.edges}
+    assert edge_strs == {
+        'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestAtom())',
+        'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestParallelCombo())',
+        'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestSerialCombo())',
+        'Adjoint(subbloq=TestParallelCombo()) -> Adjoint(subbloq=Join(n=3))',
+        'Adjoint(subbloq=TestParallelCombo()) -> Adjoint(subbloq=Split(n=3))',
+        'Adjoint(subbloq=TestParallelCombo()) -> Adjoint(subbloq=TestAtom())',
+        "Adjoint(subbloq=TestSerialCombo()) -> Adjoint(subbloq=TestAtom('atom0'))",
+        "Adjoint(subbloq=TestSerialCombo()) -> Adjoint(subbloq=TestAtom('atom1'))",
+        "Adjoint(subbloq=TestSerialCombo()) -> Adjoint(subbloq=TestAtom('atom2'))",
     }
 
 
