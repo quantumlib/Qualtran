@@ -24,7 +24,7 @@ from qualtran.surface_code.rotation_cost_model import RotationCostModel
 def logical_qubits(algorithm_specs: AlgorithmSummary) -> int:
     """Number of logical qubits needed for the algorithm.
 
-        Source: Equation D1 in https://arxiv.org/abs/2211.07629.
+    Source: Equation D1 in https://arxiv.org/abs/2211.07629.
 
     Args:
         algorithm_specs: A summary of an algorithm/circuit.
@@ -38,7 +38,7 @@ def minimum_time_steps(
 ) -> int:
     """Minimum number of time steps needed for the algorithm.
 
-        Source: Equation D3 in https://arxiv.org/abs/2211.07629.
+    Source: Equation D3 in https://arxiv.org/abs/2211.07629.
 
     Args:
         error_budget: Error Budget.
@@ -62,9 +62,13 @@ def code_distance(
     qec: QuantumErrorCorrectionSchemeSummary,
     physical_error_rate: float,
 ) -> int:
-    """Minimum code distance needed to run the algorithm within the error budget.
+    r"""Minimum code distance needed to run the algorithm within the error budget.
 
-        Source: -Corrected- E2 from https://arxiv.org/abs/2211.07629.
+    This is the code distance $d$ that satisfies $QCP = \epsilon/3$. Where:
+        $\epsilon$ is the error budget.
+        Q is the number of logical qubits.
+        C is the number of time steps.
+        P(d) is the logical error rate.
 
     Args:
         error_budget: Error Budget.
@@ -82,7 +86,7 @@ def t_states(
 ) -> float:
     """Total number of T states consumed by the algorithm.
 
-        Source: D4 in https://arxiv.org/abs/2211.07629.
+    Source: D4 in https://arxiv.org/abs/2211.07629.
 
     Args:
         error_budget: Error Budget.
