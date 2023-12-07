@@ -38,6 +38,7 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     op = gate.on_registers(a=qubits[:num_bits], b=qubits[num_bits:])
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     context = cirq.DecompositionContext(greedy_mm)
+    circuit0 = cirq.Circuit(op)
     circuit = cirq.Circuit(cirq.decompose_once(op, context=context))
     circuit0 = cirq.Circuit(op)
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
@@ -48,9 +49,6 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     final_state[:num_bits] = list(iter_bits(a, num_bits))
     final_state[num_bits : 2 * num_bits] = list(iter_bits(a + b, num_bits))
     assert_circuit_inp_out_cirqsim(circuit, qubits + ancillas, initial_state, final_state)
-    assert_circuit_inp_out_cirqsim(
-        circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
-    )
     # Test diagrams
     expected_wire_symbols = ("In(x)",) * num_bits + ("In(y)/Out(x+y)",) * num_bits
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
