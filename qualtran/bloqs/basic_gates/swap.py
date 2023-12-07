@@ -92,7 +92,7 @@ class TwoBitSwap(Bloq):
         tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[self.short_name(), tag]))
 
     def on_classical_vals(
-        self, x: 'ClassicalValT', y: 'ClassicalValT'
+        self, *, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': y, 'y': x}
 
@@ -142,7 +142,7 @@ class TwoBitCSwap(Bloq):
         tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[self.short_name(), tag]))
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
+        self, *, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}
@@ -205,7 +205,7 @@ class CSwap(GateWithRegisters):
         return {(TwoBitCSwap(), self.bitsize)}
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
+        self, *, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}

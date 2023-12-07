@@ -239,7 +239,7 @@ class MultiAnd(GateWithRegisters):
         dag = '†' if self.adjoint else ''
         return f'And{dag}'
 
-    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
+    def on_classical_vals(self, *, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
         if self.adjoint:
             raise NotImplementedError("Come back later.")
 

@@ -116,7 +116,7 @@ class ModExp(Bloq):
             (self._CtrlModMul(k=k), self.exp_bitsize),
         }
 
-    def on_classical_vals(self, exponent: int):
+    def on_classical_vals(self, *, exponent: int):
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
     def short_name(self) -> str:

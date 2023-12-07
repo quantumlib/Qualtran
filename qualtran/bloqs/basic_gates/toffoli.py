@@ -56,7 +56,7 @@ class Toffoli(Bloq):
         return TComplexity(t=4)
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', target: 'ClassicalValT'
+        self, *, ctrl: 'ClassicalValT', target: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         assert target in [0, 1]
         if ctrl[0] == 1 and ctrl[1] == 1:

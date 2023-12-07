@@ -87,7 +87,7 @@ class CtrlModMul(Bloq):
         k = ssa.new_symbol('k')
         return {(self._Add(k=k), 2), (CSwap(self.bitsize), 1)}
 
-    def on_classical_vals(self, ctrl, x) -> Dict[str, ClassicalValT]:
+    def on_classical_vals(self, *, ctrl, x) -> Dict[str, ClassicalValT]:
         if ctrl == 0:
             return {'ctrl': ctrl, 'x': x}
 

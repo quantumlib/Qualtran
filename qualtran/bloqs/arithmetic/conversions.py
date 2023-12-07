@@ -65,7 +65,7 @@ class ToContiguousIndex(Bloq):
         )
 
     def on_classical_vals(
-        self, mu: 'ClassicalValT', nu: 'ClassicalValT'
+        self, *, mu: 'ClassicalValT', nu: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
 

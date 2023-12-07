@@ -62,7 +62,7 @@ class Split(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def on_classical_vals(self, split: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, split: int) -> Dict[str, 'ClassicalValT']:
         return {'split': ints_to_bits(np.array([split]), self.n)[0]}
 
     def add_my_tensors(
@@ -129,7 +129,7 @@ class Join(Bloq):
             )
         )
 
-    def on_classical_vals(self, join: 'NDArray[np.uint8]') -> Dict[str, int]:
+    def on_classical_vals(self, *, join: 'NDArray[np.uint8]') -> Dict[str, int]:
         return {'join': bits_to_ints(join)[0]}
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
@@ -288,7 +288,7 @@ class Free(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('free', bitsize=self.n, side=Side.LEFT)])
 
-    def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, free: int) -> Dict[str, 'ClassicalValT']:
         if free != 0:
             raise ValueError(f"Tried to free a non-zero register: {free}.")
         return {}

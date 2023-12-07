@@ -63,7 +63,7 @@ class CtrlScaleModAdd(Bloq):
         return n * bloq.t_complexity()
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
+        self, *, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}

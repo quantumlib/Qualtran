@@ -90,7 +90,7 @@ class CNOT(Bloq):
             )
         )
 
-    def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, *, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
     def as_cirq_op(

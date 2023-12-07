@@ -94,7 +94,7 @@ class CSwapApprox(GateWithRegisters):
         yield [g_on_y, cnot_x_to_y, g_on_y, cnot_y_to_x]
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
+        self, *, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         if ctrl == 0:
             return {'ctrl': 0, 'x': x, 'y': y}
