@@ -220,35 +220,41 @@ class Partition(Bloq):
             )
         )
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, int]:
+    def _classical_partition(self, x: int) -> Dict[str, 'ClassicalValT']:
+        out_vals = {}
+        xbits = ints_to_bits(x, self.n)[0]
+        start = 0
+        for reg in self.regs:
+            size = np.prod(reg.shape + (reg.bitsize,))
+            bits_reg = xbits[start : start + size]
+            if reg.shape == ():
+                out_vals[reg.name] = bits_to_ints(bits_reg)[0]
+            else:
+                ints_reg = bits_to_ints(
+                    [
+                        bits_reg[i * reg.bitsize : (i + 1) * reg.bitsize]
+                        for i in range(np.prod(reg.shape))
+                    ]
+                )
+                out_vals[reg.name] = np.array(ints_reg).reshape(reg.shape)
+            start += size
+        return out_vals
+
+    def _classical_unpartition(self, **vals: 'ClassicalValT'):
+        out_vals = []
+        for reg in self.regs:
+            if isinstance(vals[reg.name], np.ndarray):
+                out_vals.append(ints_to_bits(vals[reg.name].ravel(), reg.bitsize).ravel())
+            else:
+                out_vals.append(ints_to_bits(vals[reg.name], reg.bitsize)[0])
+        big_int = np.concatenate(out_vals)
+        return {'x': bits_to_ints(big_int)[0]}
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if self.partition:
-            out_vals = {}
-            xbits = ints_to_bits(vals['x'], self.n)[0]
-            start = 0
-            for reg in self.regs:
-                size = np.prod(reg.shape + (reg.bitsize,))
-                bits_reg = xbits[start : start + size]
-                if reg.shape == ():
-                    out_vals[reg.name] = bits_to_ints(bits_reg)[0]
-                else:
-                    ints_reg = bits_to_ints(
-                        [
-                            bits_reg[i * reg.bitsize : (i + 1) * reg.bitsize]
-                            for i in range(np.prod(reg.shape))
-                        ]
-                    )
-                    out_vals[reg.name] = np.array(ints_reg).reshape(reg.shape)
-                start += size
-            return out_vals
+            return self._classical_partition(vals['x'])
         else:
-            out_vals = []
-            for reg in self.regs:
-                if isinstance(vals[reg.name], np.ndarray):
-                    out_vals.append(ints_to_bits(vals[reg.name].ravel(), reg.bitsize).ravel())
-                else:
-                    out_vals.append(ints_to_bits(vals[reg.name], reg.bitsize)[0])
-            big_int = np.concatenate(out_vals)
-            return {'x': bits_to_ints(big_int)[0]}
+            return self._classical_unpartition(**vals)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:
