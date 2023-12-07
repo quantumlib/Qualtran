@@ -29,6 +29,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, ModPlus, WireSymbol
 
 if TYPE_CHECKING:
@@ -92,6 +93,9 @@ class CNOT(Bloq):
 
     def on_classical_vals(self, *, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'

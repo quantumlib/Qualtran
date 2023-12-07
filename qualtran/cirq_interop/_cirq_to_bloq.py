@@ -264,6 +264,25 @@ def _gather_input_soqs(
     return qvars_in
 
 
+def _bloq_from_op(op: cirq.Operation) -> Bloq:
+    """Get the `Bloq` corresponding to `op.gate`."""
+    from qualtran.bloqs.basic_gates import CNOT, XGate, ZGate
+
+    if op.gate is None:
+        raise ValueError(f"Only gate operations are supported, not {op}.")
+
+    if isinstance(op.gate, Bloq):
+        return op.gate
+    if op.gate == cirq.CNOT:
+        return CNOT()
+    if op.gate == cirq.X:
+        return XGate()
+    if op.gate == cirq.Z:
+        return ZGate()
+
+    return CirqGateAsBloq(op.gate)
+
+
 def cirq_optree_to_cbloq(
     optree: cirq.OP_TREE,
     *,
@@ -333,10 +352,7 @@ def cirq_optree_to_cbloq(
 
     # 2. Add each operation to the composite Bloq.
     for op in circuit.all_operations():
-        if op.gate is None:
-            raise ValueError(f"Only gate operations are supported, not {op}.")
-
-        bloq = op.gate if isinstance(op.gate, Bloq) else CirqGateAsBloq(op.gate)
+        bloq = _bloq_from_op(op)
         if cirq.num_qubits(op.gate) == 0:
             bb.add(bloq)
             continue
