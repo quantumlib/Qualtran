@@ -20,7 +20,6 @@ import cirq
 import sympy
 
 from qualtran import Bloq, Signature
-from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.composite_bloq_test import TestTwoCNOT
 from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
@@ -53,7 +52,6 @@ def test_bloq_to_proto_cnot():
 
 
 def test_cbloq_to_proto_two_cnot():
-    bloq_serialization.RESOLVER_DICT.update({'TestCNOT': TestCNOT})
     bloq_serialization.RESOLVER_DICT.update({'TestTwoCNOT': TestTwoCNOT})
 
     cbloq = TestTwoCNOT().decompose_bloq()
@@ -61,7 +59,6 @@ def test_cbloq_to_proto_two_cnot():
     assert len(proto_lib.table) == 2  # TestTwoCNOT and TestCNOT
     # First one is always the CompositeBloq.
     assert len(proto_lib.table[0].decomposition) == 6
-    assert proto_lib.table[0].bloq.t_complexity.clifford == 2
     # Test round trip.
     assert cbloq in bloq_serialization.bloqs_from_proto(proto_lib)
 

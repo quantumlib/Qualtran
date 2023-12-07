@@ -12,26 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran import bloq_example, BloqExample
-from qualtran.bloqs.for_testing import TestAtom
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.for_testing.many_registers import TestMultiRegister
 
 
-def _tester_bloq_func() -> TestAtom:
-    return TestAtom()
+def test_test_multi_register():
+    bloq = TestMultiRegister()
+    assert [r.name for r in bloq.signature] == ['xx', 'yy', 'zz']
+    assert sum(r.total_bits() for r in bloq.signature) == 12
 
-
-@bloq_example
-def _tester_bloq() -> TestAtom:
-    return TestAtom()
-
-
-def test_bloq_example_explicit():
-    be = BloqExample(func=_tester_bloq_func, name='tester_bloq', bloq_cls=TestAtom)
-    assert be.name == 'tester_bloq'
-    assert be.bloq_cls == TestAtom
-
-
-def test_bloq_example_decorator():
-    be = _tester_bloq
-    assert be.name == 'tester_bloq'
-    assert be.bloq_cls == TestAtom
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
