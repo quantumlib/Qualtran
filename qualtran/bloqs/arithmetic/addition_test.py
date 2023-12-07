@@ -155,6 +155,13 @@ def test_add():
     cbloq.t_complexity()
 
 
+def test_add_classical():
+    bloq = Add(bitsize=32)
+    ret1 = bloq.call_classically(a=10, b=3)
+    ret2 = bloq.decompose_bloq().call_classically(a=10, b=3)
+    assert ret1 == ret2
+
+
 @pytest.mark.parametrize('bitsize', [3])
 @pytest.mark.parametrize('mod', [5, 8])
 @pytest.mark.parametrize('add_val', [1, 2])
