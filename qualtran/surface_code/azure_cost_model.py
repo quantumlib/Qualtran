@@ -30,7 +30,7 @@ def logical_qubits(algorithm_specs: AlgorithmSummary) -> int:
         algorithm_specs: A summary of an algorithm/circuit.
     """
     q_alg = algorithm_specs.algorithm_qubits
-    return 2 * q_alg + math.ceil(math.sqrt(8 * q_alg)) + 1
+    return math.ceil(2 * q_alg + math.sqrt(8 * q_alg) + 1)
 
 
 def minimum_time_steps(
@@ -46,9 +46,9 @@ def minimum_time_steps(
         rotation_model: Cost model used to compute the number of T gates
             needed to approximate rotations.
     """
-    c_min = alg.measurements + alg.rotation_gates + alg.t_gates + 3 * alg.toffoli_gates
+    c_min = math.ceil(alg.measurements + alg.rotation_gates + alg.t_gates + 3 * alg.toffoli_gates)
     eps_syn = error_budget / 3
-    c_min += (
+    c_min += math.ceil(
         alg.rotation_circuit_depth
         * rotation_model.rotation_cost(eps_syn / alg.rotation_gates).t_gates
     )
@@ -71,7 +71,7 @@ def code_distance(
         time_steps: Number of time steps used to run the algorithm.
         alg: A summary of an algorithm/circuit.
         qec: Quantum Error Correction Scheme.
-        physical_parameters: Physical Assumptions.
+        physical_error_rate: The physical error rate of the device.
     """
     q = logical_qubits(alg)
     return qec.code_distance_from_budget(physical_error_rate, error_budget / (3 * q * time_steps))
