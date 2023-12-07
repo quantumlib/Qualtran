@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import sympy
@@ -66,9 +66,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         a, b = register_values
         return a, a + b
 
-    def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, a: int, b: int) -> Dict[str, 'ClassicalValT']:
         return {'a': a, 'b': a + b}
 
     def short_name(self) -> str:
@@ -199,9 +197,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         return a, b, c + a + b
 
     def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
+        self, *, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return dict(zip('abc', (a, b, a + b)))
+        return {'a': a, 'b': b, 'c': a + b}
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
@@ -313,19 +311,32 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "AddMod":
         raise NotImplementedError()
 
+    def _classical_unctrled(self, target_val: int):
+        if target_val < self.mod:
+            return (target_val + self.add_val) % self.mod
+        return target_val
+
     def apply(self, *args) -> Union[int, Iterable[int]]:
         target_val = args[-1]
-        if target_val < self.mod:
-            new_target_val = (target_val + self.add_val) % self.mod
-        else:
-            new_target_val = target_val
+        new_target_val = self._classical_unctrled(target_val)
         if self.cvs and args[0] != int(''.join(str(x) for x in self.cvs), 2):
             new_target_val = target_val
         ret = (args[0], new_target_val) if self.cvs else (new_target_val,)
         return ret
 
-    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
-        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
+    def on_classical_vals(
+        self, *, x: int, ctrl: Optional[int] = None
+    ) -> Dict[str, 'ClassicalValT']:
+        out = self._classical_unctrled(x)
+        if self.cvs:
+            assert ctrl is not None
+            if ctrl == int(''.join(str(x) for x in self.cvs), 2):
+                return {'ctrl': ctrl, 'x': out}
+            else:
+                return {'ctrl': ctrl, 'x': x}
+
+        assert ctrl is None
+        return {'x': out}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if b else '@(0)' for b in self.cvs]
