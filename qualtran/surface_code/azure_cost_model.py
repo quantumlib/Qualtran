@@ -22,7 +22,12 @@ from qualtran.surface_code.rotation_cost_model import RotationCostModel
 
 
 def logical_qubits(algorithm_specs: AlgorithmSummary) -> int:
-    """Number of logical qubits needed for the algorithm.
+    r"""Number of logical qubits needed for the algorithm.
+
+    Equals:
+    $$
+        2 Q_\mathrm{alg} + \lceil \sqrt{8 Q_\mathrm{alg}} \rceil + 1
+    $$
 
     Source: Equation D1 in https://arxiv.org/abs/2211.07629.
 
@@ -36,8 +41,19 @@ def logical_qubits(algorithm_specs: AlgorithmSummary) -> int:
 def minimum_time_steps(
     error_budget: float, alg: AlgorithmSummary, rotation_model: RotationCostModel
 ) -> int:
-    """Minimum number of time steps needed for the algorithm.
+    r"""Minimum number of time steps needed for the algorithm.
 
+    Equals
+    $$
+        M_\mathrm{meas} + M_R + M_T + 3 M_\mathrm{Tof} + D_R \textrm{rotation cost}
+    $$
+    Where:
+        $M_\mathrm{meas}$ is the number of measurements.
+        $M_R$ is the number of rotations.
+        $M_T$ is the number of T operations.
+        $M_mathrm{Tof}$ is the number of toffoli operations.
+        $D_R$ is the depth of the rotation circuit.
+        $\textrm{rotation cost}$ is the number of T operations needed to approximate a rotation to $\epsilon/(3*M_R)$.
     Source: Equation D3 in https://arxiv.org/abs/2211.07629.
 
     Args:
@@ -84,8 +100,17 @@ def code_distance(
 def t_states(
     error_budget: float, alg: AlgorithmSummary, rotation_model: RotationCostModel
 ) -> float:
-    """Total number of T states consumed by the algorithm.
+    r"""Total number of T states consumed by the algorithm.
 
+    Equals
+    $$
+       M_T + 4 M_\mathrm{Tof} + M_R \textrm{rotation cost}
+    $$
+    Where:
+        $M_R$ is the number of rotations.
+        $M_T$ is the number of T operations.
+        $M_mathrm{Tof}$ is the number of toffoli operations.
+        $\textrm{rotation cost}$ is the number of T operations needed to approximate a rotation to $\epsilon/(3*M_R)$.
     Source: D4 in https://arxiv.org/abs/2211.07629.
 
     Args:
