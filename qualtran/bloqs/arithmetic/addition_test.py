@@ -41,11 +41,11 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     circuit = cirq.Circuit(cirq.decompose_once(op, context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
-    initial_state[:num_bits] = list(iter_bits(a, num_bits))[::-1]
-    initial_state[num_bits : 2 * num_bits] = list(iter_bits(b, num_bits))[::-1]
-    final_state = [0] * (2 * num_bits + num_bits - 1)
-    final_state[:num_bits] = list(iter_bits(a, num_bits))[::-1]
-    final_state[num_bits : 2 * num_bits] = list(iter_bits(a + b, num_bits))[::-1]
+    initial_state[:num_bits] = list(iter_bits(a, num_bits))
+    initial_state[num_bits : 2 * num_bits] = list(iter_bits(b, num_bits))
+    final_state = [0] * (2 * num_bits + num_anc)
+    final_state[:num_bits] = list(iter_bits(a, num_bits))
+    final_state[num_bits : 2 * num_bits] = list(iter_bits(a + b, num_bits))
     assert_circuit_inp_out_cirqsim(circuit, qubits + ancillas, initial_state, final_state)
     # Test diagrams
     expected_wire_symbols = ("In(x)",) * num_bits + ("In(y)/Out(x+y)",) * num_bits
@@ -64,12 +64,12 @@ def test_add_truncated():
     assert len(ancillas) == num_anc
     all_qubits = qubits + ancillas
     # Corresponds to 2^2 + 2^2 (4 + 4 = 8 = 2^3 (needs num_bits = 4 to work properly))
-    initial_state = [0, 0, 1, 0, 0, 1, 0, 0]
-    # Should be 1000 (or 0001 below) but bit falls off the end
-    final_state = [0, 0, 1, 0, 0, 0, 0, 0]
-    # increasing number of bits yields correct value
+    initial_state = [1, 0, 0, 1, 0, 0, 0, 0]
+    # Should be 1000 but bit falls off the end
+    final_state = [1, 0, 0, 0, 0, 0, 0, 0]
     assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
+    # increasing number of bits yields correct value
     num_bits = 4
     num_anc = num_bits - 1
     gate = Add(num_bits)
@@ -80,8 +80,9 @@ def test_add_truncated():
     ancillas = sorted(circuit.all_qubits() - frozenset(qubits))
     assert len(ancillas) == num_anc
     all_qubits = qubits + ancillas
-    initial_state = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
-    final_state = [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0]
+    # 0100|0100|000
+    initial_state = [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+    final_state = [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]
     assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
     num_bits = 3
@@ -95,9 +96,9 @@ def test_add_truncated():
     assert len(ancillas) == num_anc
     all_qubits = qubits + ancillas
     # Corresponds to 2^2 + (2^2 + 2^1 + 2^0) (4 + 7 = 11 = 1011 (need num_bits=4 to work properly))
-    initial_state = [0, 0, 1, 1, 1, 1, 0, 0]
-    # Should be 1011 (or 1101 below) but last two bits are lost
-    final_state = [0, 0, 1, 1, 1, 0, 0, 0]
+    initial_state = [1, 0, 0, 1, 1, 1, 0, 0]
+    # Should be 1011 but last bit is lost.
+    final_state = [1, 0, 0, 0, 1, 1, 0, 0]
     assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
 
@@ -111,11 +112,11 @@ def test_subtract(a, b, num_bits):
     circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits), context=context))
     ancillas = sorted(circuit.all_qubits())[-num_anc:]
     initial_state = [0] * (2 * num_bits + num_anc)
-    initial_state[:num_bits] = list(iter_bits_twos_complement(a, num_bits))[::-1]
-    initial_state[num_bits : 2 * num_bits] = list(iter_bits_twos_complement(-b, num_bits))[::-1]
+    initial_state[:num_bits] = list(iter_bits_twos_complement(a, num_bits))
+    initial_state[num_bits : 2 * num_bits] = list(iter_bits_twos_complement(-b, num_bits))
     final_state = [0] * (2 * num_bits + num_bits - 1)
-    final_state[:num_bits] = list(iter_bits_twos_complement(a, num_bits))[::-1]
-    final_state[num_bits : 2 * num_bits] = list(iter_bits_twos_complement(a - b, num_bits))[::-1]
+    final_state[:num_bits] = list(iter_bits_twos_complement(a, num_bits))
+    final_state[num_bits : 2 * num_bits] = list(iter_bits_twos_complement(a - b, num_bits))
     all_qubits = qubits + ancillas
     assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
@@ -143,6 +144,13 @@ def test_add_no_decompose(a, b):
     assert true_out_int == int(out_bin, 2)
     basis_map[input_int] = output_int
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
+
+
+@pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
+def test_add_call_classically(a: int, b: int, num_bits: int):
+    bloq = Add(num_bits)
+    ret = bloq.call_classically(a=a, b=b)
+    assert ret == (a, a + b)
 
 
 def test_add():
