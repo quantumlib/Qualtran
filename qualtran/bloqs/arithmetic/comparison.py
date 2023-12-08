@@ -155,15 +155,12 @@ class BiQubitsMixer(GateWithRegisters):
     should clean the qubits at a later point in time with the adjoint gate.
     See: https://github.com/quantumlib/Cirq/pull/6313 and
     https://github.com/quantumlib/Qualtran/issues/389
-    """  # pylint: disable=line-too-long
-
-    adjoint: bool = False
+    """
 
     @cached_property
     def signature(self) -> Signature:
-        one_side = Side.RIGHT if not self.adjoint else Side.LEFT
         return Signature(
-            [Register('x', 2), Register('y', 2), Register('ancilla', 3, side=one_side)]
+            [Register('x', 2), Register('y', 2), Register('ancilla', 3, side=Side.RIGHT)]
         )
 
     def decompose_from_registers(
@@ -181,7 +178,7 @@ class BiQubitsMixer(GateWithRegisters):
             a T complexity of zero.
             """
             yield cirq.CNOT(a, b)
-            yield And(adjoint=self.adjoint).on(control, b, aux)
+            yield And().on(control, b, aux)
             yield cirq.CNOT(aux, a)
             yield cirq.CNOT(a, b)
 
@@ -200,25 +197,19 @@ class BiQubitsMixer(GateWithRegisters):
             yield from _cswap(x_msb, y_msb, y_lsb, ancilla[2])
             yield cirq.CNOT(y_lsb, x_lsb)
 
-        if self.adjoint:
-            yield from reversed(tuple(cirq.flatten_to_ops(_decomposition())))
-        else:
-            yield from _decomposition()
+        yield from _decomposition()
 
     def __pow__(self, power: int) -> cirq.Gate:
         if power == 1:
             return self
         if power == -1:
-            return BiQubitsMixer(adjoint=not self.adjoint)
+            return self.adjoint()
         return NotImplemented  # pragma: no cover
 
-    def _t_complexity_(self) -> TComplexity:
-        if self.adjoint:
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
+        if adjoint:
             return TComplexity(clifford=18)
         return TComplexity(t=8, clifford=28)
-
-    def _has_unitary_(self):
-        return not self.adjoint
 
 
 @frozen
@@ -228,17 +219,14 @@ class SingleQubitCompare(GateWithRegisters):
     Source: (FIG. 3) in https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
     """  # pylint: disable=line-too-long
 
-    adjoint: bool = False
-
     @cached_property
     def signature(self) -> Signature:
-        one_side = Side.RIGHT if not self.adjoint else Side.LEFT
         return Signature(
             [
                 Register('a', 1),
                 Register('b', 1),
-                Register('less_than', 1, side=one_side),
-                Register('greater_than', 1, side=one_side),
+                Register('less_than', 1, side=Side.RIGHT),
+                Register('greater_than', 1, side=Side.RIGHT),
             ]
         )
 
@@ -251,29 +239,26 @@ class SingleQubitCompare(GateWithRegisters):
         greater_than = quregs['greater_than']
 
         def _decomposition() -> Iterator[cirq.Operation]:
-            yield And(0, 1, adjoint=self.adjoint).on(*a, *b, *less_than)
+            yield And(0, 1).on(*a, *b, *less_than)
             yield cirq.CNOT(*less_than, *greater_than)
             yield cirq.CNOT(*b, *greater_than)
             yield cirq.CNOT(*a, *b)
             yield cirq.CNOT(*a, *greater_than)
             yield cirq.X(*b)
 
-        if self.adjoint:
-            yield from reversed(tuple(_decomposition()))
-        else:
-            yield from _decomposition()
+        yield from _decomposition()
 
     def __pow__(self, power: int) -> cirq.Gate:
         if not isinstance(power, int):
             raise ValueError('SingleQubitCompare is only defined for integer powers.')
         if power % 2 == 0:
             return cirq.IdentityGate(4)
-        if power < 0:
-            return SingleQubitCompare(adjoint=not self.adjoint)
+        if power == -1:
+            return self.adjoint()
         return self
 
-    def _t_complexity_(self) -> TComplexity:
-        if self.adjoint:
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
+        if adjoint:
             return TComplexity(clifford=11)
         return TComplexity(t=4, clifford=16)
 
@@ -404,9 +389,9 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
             a=lhs[-1], b=rhs[-1], less_than=less_than, greater_than=greater_than
         )
         adjoint.append(
-            SingleQubitCompare(adjoint=True).on_registers(
-                a=lhs[-1], b=rhs[-1], less_than=less_than, greater_than=greater_than
-            )
+            SingleQubitCompare()
+            .adjoint()
+            .on_registers(a=lhs[-1], b=rhs[-1], less_than=less_than, greater_than=greater_than)
         )
 
         if prefix_equality is None:
@@ -416,7 +401,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
             (less_than_or_equal,) = context.qubit_manager.qalloc(1)
             yield And(1, 0).on(prefix_equality, greater_than, less_than_or_equal)
             adjoint.append(
-                And(1, 0, adjoint=True).on(prefix_equality, greater_than, less_than_or_equal)
+                And(1, 0).adjoint().on(prefix_equality, greater_than, less_than_or_equal)
             )
 
             yield cirq.CNOT(less_than_or_equal, target)

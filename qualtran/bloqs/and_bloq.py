@@ -226,27 +226,18 @@ class MultiAnd(GateWithRegisters):
     """
 
     cvs: Tuple[int, ...] = field(validator=lambda i, f, v: len(v) >= 3, converter=tuple)
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
-        one_side = Side.RIGHT if not self.adjoint else Side.LEFT
         return Signature(
             [
                 Register('ctrl', 1, shape=(len(self.cvs),)),
-                Register('junk', 1, shape=(len(self.cvs) - 2,), side=one_side),
-                Register('target', 1, side=one_side),
+                Register('junk', 1, shape=(len(self.cvs) - 2,), side=Side.RIGHT),
+                Register('target', 1, side=Side.RIGHT),
             ]
         )
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f'And{dag}'
-
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        if self.adjoint:
-            raise NotImplementedError("Come back later.")
-
         accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
@@ -255,19 +246,16 @@ class MultiAnd(GateWithRegisters):
         if power == 1:
             return self
         if power == -1:
-            return MultiAnd(self.cvs, adjoint=self.adjoint ^ True)
+            return self.adjoint()
         return NotImplemented  # pragma: no cover
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
-        target = "And†" if self.adjoint else "And"
+        target = "And"
         wire_symbols = [controls[c] for c in self.cvs]
         wire_symbols += ["Anc"] * (len(self.cvs) - 2)
         wire_symbols += [target]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def _has_unitary_(self) -> bool:
-        return not self.adjoint
 
     def _decompose_via_tree(
         self,
@@ -279,21 +267,14 @@ class MultiAnd(GateWithRegisters):
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
 
         if len(controls) == 2:
-            yield And(*control_values, adjoint=self.adjoint).on(*controls, target)
+            yield And(*control_values).on(*controls, target)
             return
         new_controls = np.concatenate([ancillas[0:1], controls[2:]])
         new_control_values = (1, *control_values[2:])
-        and_op = And(*control_values[:2], adjoint=self.adjoint).on(*controls[:2], ancillas[0])
-        if self.adjoint:
-            yield from self._decompose_via_tree(
-                new_controls, new_control_values, ancillas[1:], target
-            )
-            yield and_op
-        else:
-            yield and_op
-            yield from self._decompose_via_tree(
-                new_controls, new_control_values, ancillas[1:], target
-            )
+        and_op = And(*control_values[:2]).on(*controls[:2], ancillas[0])
+
+        yield and_op
+        yield from self._decompose_via_tree(new_controls, new_control_values, ancillas[1:], target)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -305,15 +286,17 @@ class MultiAnd(GateWithRegisters):
         )
         yield self._decompose_via_tree(control, self.cvs, ancilla, *target)
 
-    def _t_complexity_(self) -> TComplexity:
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
         pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
         num_single_and = len(self.cvs) - 1
-        if self.adjoint:
+        if adjoint:
             return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
-        else:
-            return TComplexity(
-                t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
-            )
+        return TComplexity(
+            t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
+        )
+
+    def short_name(self) -> str:
+        return 'And'
 
 
 @bloq_example

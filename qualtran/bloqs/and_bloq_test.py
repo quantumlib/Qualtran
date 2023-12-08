@@ -210,7 +210,7 @@ def test_multiand_adjoint():
     q2 = bb.add_register('q2', 1)
 
     qs, junk, trg = bb.add(MultiAnd((1, 1, 1)), ctrl=[q0, q1, q2])
-    qs = bb.add(MultiAnd((1, 1, 1), adjoint=True), ctrl=qs, target=trg, junk=junk)
+    qs = bb.add(MultiAnd((1, 1, 1)).adjoint(), ctrl=qs, target=trg, junk=junk)
 
     cbloq = bb.finalize(q0=qs[0], q1=qs[1], q2=qs[2])
     qlt_testing.assert_valid_cbloq(cbloq)
