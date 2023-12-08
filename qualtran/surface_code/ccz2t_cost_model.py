@@ -40,7 +40,9 @@ class CCZ2TFactory(MagicStateFactory):
 
     distillation_l1_d: int = 15
     distillation_l2_d: int = 31
-    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
+    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = (
+        qec.FowlerSuperconductingQubits
+    )
 
     # -------------------------------------------------------------------------------
     # ----     Level 0    ---------
@@ -235,7 +237,7 @@ def get_ccz2t_costs_from_error_budget(
         err_budget = error_budget - distillation_error
         if err_budget < 0:
             raise ValueError(
-                f'distillation error {distillation_error} is larger than the error budget {error_budget}'
+                f"distillation error {distillation_error} is larger than the error budget {error_budget}"
             )
         n_logical_qubits = math.ceil((1 + routing_overhead) * n_algo_qubits)
         data_unit_cells = n_logical_qubits * n_cycles
@@ -322,7 +324,9 @@ def get_ccz2t_costs_from_grid_search(
     Returns:
         best_cost, best_factory, best_data_block
 
-    This is from openfermion. What paper was it introduced or used in? TODO
+    References:
+        A similar search was conducted manually in https://arxiv.org/abs/2011.03494, using a tweaked
+        version of the spreadsheet from https://arxiv.org/abs/1812.01238.
     """
     best_cost: Optional[PhysicalCost] = None
     best_params: Optional[Tuple[CCZ2TFactory, SimpleDataBlock]] = None
