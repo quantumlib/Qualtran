@@ -23,8 +23,8 @@ from qualtran.surface_code.magic_state_factory import MagicStateFactory
 class MultiFactory(MagicStateFactory):
     """Overlay of MagicStateFactory representing multiple factories of the same kind.
 
-    All quantities are derived by those of `base_factory`. `footprint` is multiplied by 
-    `n_factories`, `n_cycles` is divided by `n_factoties`, and  `distillation_error` is independent 
+    All quantities are derived by those of `base_factory`. `footprint` is multiplied by
+    `n_factories`, `n_cycles` is divided by `n_factoties`, and  `distillation_error` is independent
     on the number of factories.
 
     Args:

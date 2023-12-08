@@ -288,6 +288,7 @@ def iter_ccz2t_factories(
                 distillation_l1_d=l1_distance, distillation_l2_d=l2_distance
             )
             return MultiFactory(base_factory=base_factory, n_factories=n_factories)
+
     else:
         raise ValueError("The number of factories should be a positive integer")
 
