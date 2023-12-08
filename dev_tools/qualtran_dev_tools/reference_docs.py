@@ -134,7 +134,7 @@ class MyModulePageInfo(ModulePageInfo):
     DEFAULT_BUILDER_CLASS = MyModulePageBuilder
 
     def collect_docs(self):
-        ret = super().collect_docs()
+        ret = super().collect_docs()  # pylint: disable=assignment-from-no-return
         self._classes = _filter_and_sort_members(self.py_object, self._classes)
         return ret
 
@@ -145,7 +145,7 @@ class MyClassPageInfo(ClassPageInfo):
     DEFAULT_BUILDER_CLASS = MyClassPageBuilder
 
     def collect_docs(self):
-        ret = super().collect_docs()
+        ret = super().collect_docs()  # pylint: disable=assignment-from-no-return
         # Note: currently the following sort is un-done by the class page builder.
         # If the upstream page builder changes to respect the member order (like for the other
         # page types), we should sort them here.
@@ -261,7 +261,7 @@ def generate_ref_docs(reporoot: Path):
         root_title="Qualtran",
         py_modules=[("qualtran", qualtran)],
         base_dir=[reporoot / 'qualtran'],
-        code_url_prefix="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran",
+        code_url_prefix="https://github.com/quantumlib/Qualtran/blob/main/qualtran",
         callbacks=[
             local_definitions_filter,
             filter_type_checking,

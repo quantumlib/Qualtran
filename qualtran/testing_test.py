@@ -32,14 +32,17 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran._infra.bloq_test import TestCNOT
-from qualtran.drawing.graphviz_test import Atom, TestParallelBloq
+from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestTwoBitOp
 from qualtran.testing import (
+    assert_bloq_example_decompose,
+    assert_bloq_example_make,
     assert_connections_compatible,
     assert_registers_match_dangling,
     assert_registers_match_parent,
     assert_soquets_belong_to_registers,
     assert_soquets_used_exactly_once,
+    BloqCheckException,
     BloqCheckResult,
     check_bloq_example_decompose,
     check_bloq_example_make,
@@ -49,7 +52,7 @@ from qualtran.testing import (
 def _manually_make_test_cbloq_cxns():
     signature = Signature.build(q1=1, q2=1)
     q1, q2 = signature
-    tcn = TestCNOT()
+    tcn = TestTwoBitOp()
     control, target = tcn.signature
     binst1 = BloqInstance(tcn, 1)
     binst2 = BloqInstance(tcn, 2)
@@ -115,9 +118,9 @@ def test_assert_soquets_belong_to_registers():
 
 def test_assert_soquets_used_exactly_once():
     cxns, signature = _manually_make_test_cbloq_cxns()
-    binst1 = BloqInstance(TestCNOT(), 1)
-    binst2 = BloqInstance(TestCNOT(), 2)
-    control, target = TestCNOT().signature
+    binst1 = BloqInstance(TestTwoBitOp(), 1)
+    binst2 = BloqInstance(TestTwoBitOp(), 2)
+    control, target = TestTwoBitOp().signature
 
     cxns.append(Connection(Soquet(binst1, target), Soquet(binst2, control)))
     cbloq = CompositeBloq(cxns, signature)
@@ -130,47 +133,70 @@ def test_assert_soquets_used_exactly_once():
 
 def test_check_bloq_example_make():
     @bloq_example
-    def _my_cnot() -> TestCNOT:
+    def _my_cnot() -> CNOT:
         return 'CNOT 0 1'
 
     res, msg = check_bloq_example_make(_my_cnot)
     assert res is BloqCheckResult.FAIL, msg
     assert re.match(r'.*is not an instance of Bloq', msg)
 
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_make(_my_cnot)
+        assert raises_ctx.value.check_result is BloqCheckResult.FAIL
+
     @bloq_example
-    def _my_cnot_2() -> TestCNOT:
-        return TestCNOT()
+    def _my_cnot_2() -> CNOT:
+        return CNOT()
 
     res, msg = check_bloq_example_make(_my_cnot_2)
     assert res is BloqCheckResult.PASS, msg
     assert msg == ''
 
+    assert_bloq_example_make(_my_cnot_2)
+
 
 def test_check_bloq_decompose_pass():
     @bloq_example
-    def _my_bloq() -> TestParallelBloq:
-        return TestParallelBloq()
+    def _my_bloq() -> TestParallelCombo:
+        return TestParallelCombo()
 
     res, msg = check_bloq_example_decompose(_my_bloq)
     assert res is BloqCheckResult.PASS, msg
     assert msg == ''
 
+    assert_bloq_example_decompose(_my_bloq)
+
 
 def test_check_bloq_decompose_na():
     @bloq_example
-    def _my_bloq() -> Atom:
-        return Atom()
+    def _my_bloq() -> TestAtom:
+        return TestAtom()
 
     res, msg = check_bloq_example_decompose(_my_bloq)
     assert res is BloqCheckResult.NA, msg
     assert re.match(r'.*is atomic', msg)
 
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_decompose(_my_bloq)
+        assert raises_ctx.value.check_result is BloqCheckResult.NA
+
+
+@frozen
+class TestMissingDecomp(Bloq):
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([])
+
 
 def test_check_bloq_decompose_missing():
     @bloq_example
-    def _my_bloq() -> TestCNOT:
-        return TestCNOT()
+    def _my_bloq() -> TestMissingDecomp:
+        return TestMissingDecomp()
 
     res, msg = check_bloq_example_decompose(_my_bloq)
     assert res is BloqCheckResult.MISSING, msg
     assert re.match(r'.*declare a decomposition', msg)
+
+    with pytest.raises(BloqCheckException) as raises_ctx:
+        assert_bloq_example_decompose(_my_bloq)
+        assert raises_ctx.value.check_result is BloqCheckResult.MISSING

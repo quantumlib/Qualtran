@@ -134,7 +134,7 @@ def test_apply_classical():
 
 def test_cnot_assign_dict():
     cbloq = CNOT().as_composite_bloq()
-    binst_graph = cbloq._binst_graph
+    binst_graph = cbloq._binst_graph  # pylint: disable=protected-access
     vals = dict(ctrl=1, target=0)
     out_vals, soq_assign = _cbloq_call_classically(cbloq.signature, vals, binst_graph)
     assert out_vals == {'ctrl': 1, 'target': 1}

@@ -12,17 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import numpy as np
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.for_testing.many_registers import TestMultiRegister
 
-from qualtran.surface_code.formulae import code_distance_from_budget, error_at
 
+def test_test_multi_register():
+    bloq = TestMultiRegister()
+    assert [r.name for r in bloq.signature] == ['xx', 'yy', 'zz']
+    assert sum(r.total_bits() for r in bloq.signature) == 12
 
-def test_invert_error_at():
-    phys_err = 1e-3
-    budgets = np.logspace(-1, -18)
-    for budget in budgets:
-        d = code_distance_from_budget(phys_err=phys_err, budget=budget)
-        assert d % 2 == 1
-        assert error_at(phys_err=phys_err, d=d) <= budget
-        if d > 3:
-            assert error_at(phys_err=phys_err, d=d - 2) > budget
+    qlt_testing.assert_valid_bloq_decomposition(bloq)

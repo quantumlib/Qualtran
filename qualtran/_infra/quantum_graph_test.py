@@ -15,7 +15,7 @@
 import pytest
 
 from qualtran import BloqInstance, DanglingT, LeftDangle, Register, RightDangle, Side, Soquet
-from qualtran._infra.bloq_test import TestCNOT
+from qualtran.bloqs.for_testing import TestAtom, TestTwoBitOp
 
 
 def test_dangling():
@@ -43,14 +43,14 @@ def test_dangling_hash():
 
 
 def test_soquet():
-    soq = Soquet(BloqInstance(TestCNOT(), i=0), Register('x', 10))
+    soq = Soquet(BloqInstance(TestTwoBitOp(), i=0), Register('x', 10))
     assert soq.reg.side is Side.THRU
     assert soq.idx == ()
     assert soq.pretty() == 'x'
 
 
 def test_soquet_idxed():
-    binst = BloqInstance(TestCNOT(), i=0)
+    binst = BloqInstance(TestTwoBitOp(), i=0)
     reg = Register('y', 10, shape=(10, 2))
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
@@ -67,7 +67,7 @@ def test_soquet_idxed():
 
 
 def test_bloq_instance():
-    binst_a = BloqInstance(TestCNOT(), i=1)
-    binst_b = BloqInstance(TestCNOT(), i=1)
+    binst_a = BloqInstance(TestAtom(), i=1)
+    binst_b = BloqInstance(TestAtom(), i=1)
     assert binst_a == binst_b
-    assert str(binst_a) == 'TestCNOT()<1>'
+    assert str(binst_a) == 'TestAtom()<1>'
