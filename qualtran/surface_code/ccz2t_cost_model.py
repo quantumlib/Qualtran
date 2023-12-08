@@ -21,8 +21,8 @@ import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
-from qualtran.surface_code.physical_cost import PhysicalCost
 from qualtran.surface_code.multi_factory import MultiFactory
+from qualtran.surface_code.physical_cost import PhysicalCost
 
 
 @frozen
