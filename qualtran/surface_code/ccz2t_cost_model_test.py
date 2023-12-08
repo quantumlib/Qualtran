@@ -57,6 +57,7 @@ def test_grid_search_runs():
     assert factory.distillation_l2_d == 23
     assert db.data_d == 25
 
+
 def test_grid_search_against_thc():
     # TODO: test in developement, see thc_femoco_compliation.py
     pass

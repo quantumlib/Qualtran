@@ -302,7 +302,7 @@ def get_ccz2t_costs_from_grid_search(
     cycle_time_us: float = 1.0,
     factory_iter: Callable[[], Iterator] = iter_ccz2t_factories,
     data_block_iter: Callable[[], Iterator] = iter_simple_data_blocks,
-    cost_function: Callable[[PhysicalCost], float] = (lambda pc: pc.qubit_hours)
+    cost_function: Callable[[PhysicalCost], float] = (lambda pc: pc.qubit_hours),
 ) -> Tuple[PhysicalCost, CCZ2TFactory, SimpleDataBlock]:
     """Grid search over parameters to minimize space time volume.
 
@@ -320,7 +320,7 @@ def get_ccz2t_costs_from_grid_search(
             Set `cost_function = (lambda pc: pc.duration_hr)` to mimimize wall time.
 
     Returns:
-        Tuple[PhysicalCost, CCZ2TFactory, SimpleDataBlock]: _description_
+        best_cost, best_factory, best_data_block
 
     This is from openfermion. What paper was it introduced or used in? TODO
     """

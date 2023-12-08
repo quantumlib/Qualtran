@@ -12,10 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numpy as np
+from attrs import frozen
+
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
-
-from attrs import frozen
 
 
 @frozen
@@ -23,8 +24,12 @@ class MultiFactory(MagicStateFactory):
     """Overlay of MagicStateFactory representing multiple factories of the same kind.
 
     Args:
-        base_factory (MagicStateFactory): the base factory to be replicated.
-        n_factories (int): number of factories to construct.
+        base_factory: the base factory to be replicated.
+        n_factories: number of factories to construct.
+
+    All quantities are derived by those of `base_factory`.
+    `footprint` is multiplied by `n_factories`, `n_cycles` is divided by `n_factoties`, and
+    `distillation_error` is independent on the number of factories.
     """
 
     base_factory: MagicStateFactory
@@ -34,8 +39,7 @@ class MultiFactory(MagicStateFactory):
         return self.base_factory.footprint() * self.n_factories
 
     def n_cycles(self, n_magic: AlgorithmSummary) -> int:
-        return self.base_factory.n_cycles(n_magic) // self.n_factories
+        return np.ceil(self.base_factory.n_cycles(n_magic) / self.n_factories)
 
     def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
-        # the distillation error per magic state does not change for different number of factories
         return self.base_factory.distillation_error(n_magic, phys_err)
