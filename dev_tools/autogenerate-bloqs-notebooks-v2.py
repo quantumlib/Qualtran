@@ -134,12 +134,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
-        title='Block Encoding',
-        module=qualtran.bloqs.block_encoding,
-        bloq_specs=[qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/',
-    ),
-    NotebookSpecV2(
         title='Single Factorization',
         module=qualtran.bloqs.chemistry.sf.single_factorization,
         bloq_specs=[

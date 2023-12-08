@@ -190,7 +190,6 @@ class SelectTHC(SelectOracle):
         sys_a: SoquetT,
         sys_b: SoquetT,
     ) -> Dict[str, 'SoquetT']:
-
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         # Rotations
