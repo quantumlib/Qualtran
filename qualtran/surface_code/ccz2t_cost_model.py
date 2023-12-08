@@ -170,6 +170,18 @@ def get_ccz2t_costs(
     factory: MagicStateFactory,
     data_block: DataBlock,
 ) -> PhysicalCost:
+    """Generate spacetime cost and failure probability given physical and logical parameters.
+
+    Note that this function can return failure probabilities larger than 1.
+
+    Args:
+        n_magic: The number of magic states (T, Toffoli) required to execute the algorithm
+        n_algo_qubits: Number of algorithm logical qubits.
+        phys_err: The physical error rate of the device.
+        cycle_time_us: The number of microseconds it takes to execute a surface code cycle.
+        factory: magic state factory configuration. Used to evaluate distillation error and cost.
+        data_block: data block configuration. Used to evaluate data error and footprint.
+    """
     distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
     n_cycles = factory.n_cycles(n_magic=n_magic)
     data_error = data_block.data_error(

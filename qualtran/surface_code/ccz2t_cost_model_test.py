@@ -13,11 +13,9 @@
 #  limitations under the License.
 
 import numpy as np
-import pytest
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.ccz2t_cost_model import (
-    get_ccz2t_costs,
     get_ccz2t_costs_from_error_budget,
     get_ccz2t_costs_from_grid_search,
 )
@@ -37,13 +35,7 @@ def test_vs_spreadsheet():
     np.testing.assert_allclose(re.duration_hr, 7.53, rtol=1e-3)
 
 
-def test_invalid_input():
-    with pytest.raises(ValueError):
-        _ = get_ccz2t_costs(n_magic=AlgorithmSummary(toffoli_gates=3.2e10), n_algo_qubits=2196)
-
-
 def test_grid_search_runs():
-    # TODO: a better test vs some published reference
     cost, factory, db = get_ccz2t_costs_from_grid_search(
         n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
         n_algo_qubits=100,
