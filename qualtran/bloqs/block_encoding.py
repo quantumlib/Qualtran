@@ -124,7 +124,7 @@ class BlackBoxPrepare(Bloq):
 
     Args:
         prepare: The bloq following the `Prepare` interface to wrap.
-        adjoint: Whether this is the adjoint preparation.
+        is_adjoint: Whether this is the adjoint preparation.
 
     Registers:
         selection: selection register.
@@ -132,7 +132,7 @@ class BlackBoxPrepare(Bloq):
     """
 
     prepare: PrepareOracle
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def selection_bitsize(self):
@@ -173,14 +173,10 @@ class BlackBoxPrepare(Bloq):
         return {'selection': selection, 'junk': junk}
 
     def dagger(self) -> 'BlackBoxPrepare':
-        sub_bloq_has_adjoint = getattr(self.prepare, 'adjoint', None)
-        if sub_bloq_has_adjoint:
-            prep_dag = attrs.evolve(self.prepare, adjoint=not self.adjoint)
-            return attrs.evolve(self, prepare=prep_dag, adjoint=not self.adjoint)
-        return attrs.evolve(self, adjoint=not self.adjoint)
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def short_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.is_adjoint else ''
         return f'Prep{dag}'
 
 
@@ -206,19 +202,13 @@ class BlackBoxBlockEncoding(Bloq):
         prepare: The bloq implementing the `SelectOracle` interface.
 
     Registers:
-        selection: The combined selection register
-        system: The combined system register
-        adjoint: Whether to dagger this bloq or not.
-
-    Registers:
-        selection: selection register.
+        selection: The combined selection register.
         junk: Additional junk registers not prepared upon.
-        system: The combined system register
+        system: The combined system register.
     """
 
     select: BlackBoxSelect
     prepare: BlackBoxPrepare
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -231,8 +221,7 @@ class BlackBoxBlockEncoding(Bloq):
         )
 
     def short_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f'B[V]{dag}'
+        return 'B[V]'
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT', system: 'SoquetT'
