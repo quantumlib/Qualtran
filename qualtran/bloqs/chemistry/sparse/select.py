@@ -14,26 +14,26 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Optional, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Register, SelectionRegister
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.select_and_prepare import SelectOracle
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
-class SelectSparse(Bloq):
+class SelectSparse(SelectOracle):
     r"""SELECT oracle for the sparse Hamiltonian.
 
     Implements the two applications of Fig. 13.
 
     Args:
         num_spin_orb: The number of spin orbitals. Typically called N.
-        num_controls: The number of controls.
 
     Registers:
         flag_1b: a single qubit to flag whether the one-body Hamiltonian is to
@@ -51,23 +51,43 @@ class SelectSparse(Bloq):
             hypercontraction](https://arxiv.org/abs/2011.03494) Fig 13.
     """
     num_spin_orb: int
-    num_controls: int = 0
+    control_val: Optional[int] = None
 
     @cached_property
-    def signature(self) -> Signature:
-        regs = [
-            Register('flag_1b', 1),
-            Register('swap_pq', 1),
-            Register('swap_rs', 1),
-            Register('swap_pqrs', 1),
-            Register('theta', 1),
-            Register('pqrs', bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
-            Register('alpha', 1),
-            Register('beta', 1),
-        ]
-        if self.num_controls > 0:
-            regs += [Register("control", 1)]
-        return Signature(regs)
+    def control_registers(self) -> Tuple[Register, ...]:
+        return () if self.control_val is None else (Register('control', 1),)
+
+    @cached_property
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (
+            SelectionRegister(
+                "p",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "q",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "r",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister(
+                "s",
+                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                iteration_length=self.num_spin_orb // 2,
+            ),
+            SelectionRegister("alpha", bitsize=1),
+            SelectionRegister("beta", bitsize=1),
+            SelectionRegister("flag_1b", bitsize=1),
+        )
+
+    @cached_property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return (Register("sys", bitsize=self.num_spin_orb),)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
