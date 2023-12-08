@@ -164,7 +164,7 @@ def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, symp
             for k in callee_sigma.keys():
                 sigma[k] += callee_sigma[k] * n
 
-    return bloq_sigmas[root_bloq]
+    return dict(bloq_sigmas[root_bloq])
 
 
 def get_bloq_call_graph(

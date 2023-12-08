@@ -11,27 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 
-from qualtran import bloq_example, BloqExample
-from qualtran.bloqs.for_testing import TestAtom
+import attrs
 
-
-def _tester_bloq_func() -> TestAtom:
-    return TestAtom()
-
-
-@bloq_example
-def _tester_bloq() -> TestAtom:
-    return TestAtom()
+from qualtran import Bloq
+from qualtran.bloqs.for_testing import TestAtom, TestBloqWithCallGraph
 
 
-def test_bloq_example_explicit():
-    be = BloqExample(func=_tester_bloq_func, name='tester_bloq', bloq_cls=TestAtom)
-    assert be.name == 'tester_bloq'
-    assert be.bloq_cls == TestAtom
+def test_test_bloq_with_call_graph():
+    bwcg = TestBloqWithCallGraph()
 
+    def all_atoms_the_same(b: Bloq) -> Optional[Bloq]:
+        if isinstance(b, TestAtom):
+            return attrs.evolve(b, tag=None)
+        return b
 
-def test_bloq_example_decorator():
-    be = _tester_bloq
-    assert be.name == 'tester_bloq'
-    assert be.bloq_cls == TestAtom
+    g, sigma = bwcg.call_graph(generalizer=all_atoms_the_same)
+    assert len(sigma) == 3
+    assert g.number_of_edges() == (3 + 2 + 2)  # level 1 + level 2 + split/join
