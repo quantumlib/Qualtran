@@ -85,6 +85,7 @@ class PrepareSparse(PrepareOracle):
     @cached_property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
         # issue here in that pqrs should not be reflected on.
+        # See: https://github.com/quantumlib/Qualtran/issues/549
         return (
             SelectionRegister(
                 "d",
@@ -118,7 +119,7 @@ class PrepareSparse(PrepareOracle):
             SelectionRegister("swap_pq", bitsize=1),
             SelectionRegister("swap_rs", bitsize=1),
             SelectionRegister("swap_pqrs", bitsize=1),
-            Register("flag_1b", bitsize=1),
+            SelectionRegister("flag_1b", bitsize=1),
         )
 
     @cached_property
