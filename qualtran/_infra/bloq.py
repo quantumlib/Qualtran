@@ -157,6 +157,20 @@ class Bloq(metaclass=abc.ABCMeta):
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         return bb.finalize(**bb.add_d(self, **initial_soqs))
 
+    def adjoint(self) -> 'Bloq':
+        """The adjoint of this bloq.
+
+        Bloq authors can override this method in certain circumstances. Otherwise, the default
+        fallback wraps this bloq in `Adjoint`.
+
+        Please see the documentation for `Adjoint` and the `Adjoint.ipynb` notebook for full
+        details.
+        """
+
+        from qualtran import Adjoint
+
+        return Adjoint(self)
+
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
