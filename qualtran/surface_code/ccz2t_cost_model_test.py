@@ -39,9 +39,7 @@ def test_vs_spreadsheet():
 
 def test_invalid_input():
     with pytest.raises(ValueError):
-        _ = get_ccz2t_costs(
-            n_magic=AlgorithmSummary(toffoli_gates=3.2e10), n_algo_qubits=2196
-        )
+        _ = get_ccz2t_costs(n_magic=AlgorithmSummary(toffoli_gates=3.2e10), n_algo_qubits=2196)
 
 
 def test_grid_search_runs():

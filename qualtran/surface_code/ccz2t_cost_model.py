@@ -40,9 +40,7 @@ class CCZ2TFactory(MagicStateFactory):
 
     distillation_l1_d: int = 15
     distillation_l2_d: int = 31
-    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = (
-        qec.FowlerSuperconductingQubits
-    )
+    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     # -------------------------------------------------------------------------------
     # ----     Level 0    ---------
@@ -79,9 +77,7 @@ class CCZ2TFactory(MagicStateFactory):
         As a simplifying approximation here (and elsewhere) we assume different sources
         of error are independent, and we merely add the probabilities.
         """
-        return self.l0_state_injection_error(phys_err) + self.l0_topo_error_t_gate(
-            phys_err
-        )
+        return self.l0_state_injection_error(phys_err) + self.l0_topo_error_t_gate(phys_err)
 
     # -------------------------------------------------------------------------------
     # ----     Level 1    ---------
@@ -183,9 +179,7 @@ def get_ccz2t_costs(
     footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
     duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
 
-    return PhysicalCost(
-        failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr
-    )
+    return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
 
 
 def get_ccz2t_costs_from_error_budget(
@@ -326,7 +320,7 @@ def get_ccz2t_costs_from_grid_search(
 
     References:
         A similar search was conducted manually in https://arxiv.org/abs/2011.03494, using a tweaked
-        version of the spreadsheet from https://arxiv.org/abs/1812.01238.
+        version of the spreadsheet from https://arxiv.org/abs/1812.01238
     """
     best_cost: Optional[PhysicalCost] = None
     best_params: Optional[Tuple[CCZ2TFactory, SimpleDataBlock]] = None
