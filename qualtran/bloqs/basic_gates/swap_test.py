@@ -12,15 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
-
 import cirq
 import numpy as np
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, DecomposeTypeError
+from qualtran import BloqBuilder, DecomposeTypeError
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,

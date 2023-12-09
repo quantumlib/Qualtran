@@ -15,11 +15,11 @@
 import random
 from typing import Dict, Tuple
 
+import cirq
 import numpy as np
 import pytest
 import sympy
 
-import cirq
 import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq, BloqBuilder, SelectionRegister
 from qualtran.bloqs.basic_gates import CSwap, TGate
