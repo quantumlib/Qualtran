@@ -25,7 +25,7 @@ from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.for_testing import TestMultiRegister
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
-from qualtran.simulation.classical_sim import _cbloq_call_classically
+from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -140,7 +140,7 @@ def test_classical_sim():
     y = bb.join(xs)
     cbloq = bb.finalize(y=y)
 
-    ret, assign = _cbloq_call_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
+    ret, assign = call_cbloq_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
     assert assign[x] == 0
 
     assert assign[xs[0]] == 0
