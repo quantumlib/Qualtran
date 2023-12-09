@@ -28,6 +28,8 @@ def test_register():
     assert r.side == Side.THRU
     assert r.total_bits() == 5
 
+    assert r == r.adjoint()
+
 
 def test_multidim_register():
     r = Register("my_reg", bitsize=1, shape=(2, 3), side=Side.RIGHT)
@@ -37,6 +39,8 @@ def test_multidim_register():
     assert not r.side & Side.LEFT
     assert r.side & Side.THRU
     assert r.total_bits() == 2 * 3
+
+    assert r.adjoint() == Register("my_reg", bitsize=1, shape=(2, 3), side=Side.LEFT)
 
 
 @pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
@@ -130,6 +134,10 @@ def test_and_regs():
         Register('control', 2),
         Register('target', 1, side=Side.RIGHT),
     ]
+
+    adj = signature.adjoint()
+    assert list(adj.rights()) == [Register('control', 2)]
+    assert list(adj.lefts()) == [Register('control', 2), Register('target', 1, side=Side.LEFT)]
 
 
 def test_agg_split():

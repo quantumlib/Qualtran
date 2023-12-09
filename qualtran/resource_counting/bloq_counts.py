@@ -51,17 +51,14 @@ class SympySymbolAllocator:
         return s
 
 
-def _build_cbloq_counts_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
+def build_cbloq_call_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
     """Count all the subbloqs in a composite bloq.
 
-    `CompositeBloq.resource_counting` calls this with no generalizer.
+    This is the function underpinning `CompositeBloq.build_call_graph`.
 
     Args:
         cbloq: The composite bloq.
-        generalizer: A function that replaces bloq attributes that do not affect resource costs
-            with sympy placeholders.
     """
-
     counts: Dict[Bloq, int] = defaultdict(lambda: 0)
     for binst in cbloq.bloq_instances:
         counts[binst.bloq] += 1
@@ -164,7 +161,7 @@ def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, symp
             for k in callee_sigma.keys():
                 sigma[k] += callee_sigma[k] * n
 
-    return bloq_sigmas[root_bloq]
+    return dict(bloq_sigmas[root_bloq])
 
 
 def get_bloq_call_graph(
