@@ -38,7 +38,7 @@ from qualtran.bloqs.basic_gates.swap import (
     _cswap_symb,
     _swap_matrix,
 )
-from qualtran.bloqs.util_bloqs import Join, Split
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 
 def _make_CSwap():
@@ -186,13 +186,7 @@ def test_cswap_bloq_counts():
     bloq = CSwap(bitsize=8)
     counts1 = bloq.bloq_counts()
 
-    def generalize(b: Bloq) -> Optional[Bloq]:
-        if isinstance(b, (Split, Join)):
-            # Ignore these
-            return
-        return b
-
-    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
+    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
     assert counts1 == counts2
 
 

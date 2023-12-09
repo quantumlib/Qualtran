@@ -39,6 +39,7 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
+from qualtran.resource_counting.generalizers import ignore_cliffords
 from qualtran.simulation.tensor import flatten_for_tensor_contraction
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -184,12 +185,7 @@ def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_
 
     n = sympy.Symbol('n')
 
-    def _gen_clif(bloq: Bloq) -> Bloq:
-        if isinstance(bloq, ArbitraryClifford):
-            return ArbitraryClifford(n)
-        return bloq
-
-    _, sigma = gate.call_graph(generalizer=_gen_clif)
+    _, sigma = gate.call_graph(generalizer=ignore_cliffords)
     assert sigma[TGate()] == want.t
     assert sigma[ArbitraryClifford(n)] == want.clifford
 
