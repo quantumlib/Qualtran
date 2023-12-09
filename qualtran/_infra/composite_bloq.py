@@ -335,6 +335,16 @@ class CompositeBloq(Bloq):
         fsoqs = _map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
 
+    def adjoint(self) -> 'CompositeBloq':
+        """Get a composite bloq which is the adjoint of this composite bloq.
+
+        The adjoint of a composite bloq is another composite bloq where the order of
+        operations is reversed and each subbloq is replaced with its adjoint.
+        """
+        from .adjoint import _adjoint_cbloq
+
+        return _adjoint_cbloq(self)
+
     def flatten(
         self, pred: Callable[[BloqInstance], bool], max_depth: int = 1_000
     ) -> 'CompositeBloq':
