@@ -23,4 +23,5 @@ from .bloq_counts import (
     SympySymbolAllocator,
     get_bloq_call_graph,
     print_counts_graph,
+    build_cbloq_call_graph,
 )
