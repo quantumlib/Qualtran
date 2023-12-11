@@ -15,7 +15,7 @@
 """Functionality for the `Bloq.call_graph()` protocol."""
 
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import networkx as nx
 import sympy
@@ -23,6 +23,7 @@ import sympy
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
+GeneralizerT = Callable[[Bloq], Optional[Bloq]]
 
 
 def big_O(expr) -> sympy.Order:
@@ -67,7 +68,7 @@ def build_cbloq_call_graph(cbloq: CompositeBloq) -> Set[BloqCountT]:
 
 
 def _generalize_callees(
-    raw_callee_counts: Set[BloqCountT], generalizer: Callable[[Bloq], Optional[Bloq]]
+    raw_callee_counts: Set[BloqCountT], generalizer: GeneralizerT
 ) -> List[BloqCountT]:
     """Apply `generalizer` to the results of `bloq.build_call_graph`.
 
@@ -86,7 +87,7 @@ def _generalize_callees(
 
 def _build_call_graph(
     bloq: Bloq,
-    generalizer: Callable[[Bloq], Optional[Bloq]],
+    generalizer: GeneralizerT,
     ssa: SympySymbolAllocator,
     keep: Callable[[Bloq], bool],
     max_depth: Optional[int],
@@ -164,9 +165,22 @@ def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, symp
     return dict(bloq_sigmas[root_bloq])
 
 
+def _make_composite_generalizer(*funcs: GeneralizerT) -> GeneralizerT:
+    """Return a generalizer that calls each `*funcs` generalizers in order."""
+
+    def _composite_generalize(b: Bloq) -> Optional[Bloq]:
+        for func in funcs:
+            b = func(b)
+            if b is None:
+                return
+        return b
+
+    return _composite_generalize
+
+
 def get_bloq_call_graph(
     bloq: Bloq,
-    generalizer: Callable[[Bloq], Optional[Bloq]] = None,
+    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
     ssa: Optional[SympySymbolAllocator] = None,
     keep: Optional[Callable[[Bloq], bool]] = None,
     max_depth: Optional[int] = None,
@@ -179,7 +193,8 @@ def get_bloq_call_graph(
         bloq: The bloq to count sub-bloqs.
         generalizer: If provided, run this function on each (sub)bloq to replace attributes
             that do not affect resource estimates with generic sympy symbols. If the function
-            returns `None`, the bloq is omitted from the counts graph.
+            returns `None`, the bloq is omitted from the counts graph. If a sequence of
+            generalizers is provided, each generalizer will be run in order.
         ssa: a `SympySymbolAllocator` that will be passed to the `Bloq.build_call_graph` method. If
             your `generalizer` function closes over a `SympySymbolAllocator`, provide it here as
             well. Otherwise, we will create a new allocator.
@@ -200,6 +215,8 @@ def get_bloq_call_graph(
         keep = lambda b: False
     if generalizer is None:
         generalizer = lambda b: b
+    if isinstance(generalizer, (list, tuple)):
+        generalizer = _make_composite_generalizer(*generalizer)
 
     g = nx.DiGraph()
     bloq = generalizer(bloq)

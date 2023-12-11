@@ -190,6 +190,7 @@ def test_swap_with_zero_bloq_counts(selection_bitsize, target_bitsize, n_target_
         return bloq
 
     _, sigma = gate.call_graph(generalizer=_gen_clif)
+
     assert sigma[TGate()] == want.t
     assert sigma[ArbitraryClifford(n)] == want.clifford
 
