@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.thc.notebook_utils import generalize as thc_generalize
+from qualtran.bloqs.chemistry.thc.notebook_utils import GENERALIZERS as THC_GENERALIZERS
 from qualtran.bloqs.chemistry.thc.prepare import (
     _thc_prep,
     _thc_uni,
@@ -76,7 +76,7 @@ def test_prepare_graph():
     num_mu = 10
     num_spin_orb = 4
     uniform_bloq = UniformSuperpositionTHC(num_mu=num_mu, num_spin_orb=num_spin_orb)
-    graph, sigma = uniform_bloq.call_graph(generalizer=thc_generalize)
+    graph, sigma = uniform_bloq.call_graph(generalizer=THC_GENERALIZERS)
     assert isinstance(graph, nx.DiGraph)
     assert isinstance(sigma, dict)
 
