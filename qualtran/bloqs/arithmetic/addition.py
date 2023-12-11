@@ -69,8 +69,10 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         a, b = register_values
         return a, a + b
 
-    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
-        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'a': a, 'b': a + b}
 
     def short_name(self) -> str:
         return "a+b"
@@ -106,9 +108,10 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        input_bits = quregs['a']
-        output_bits = quregs['b']
-        ancillas = context.qubit_manager.qalloc(self.bitsize - 1)
+        # reverse the order of qubits for big endian-ness.
+        input_bits = quregs['a'][::-1]
+        output_bits = quregs['b'][::-1]
+        ancillas = context.qubit_manager.qalloc(self.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
         # Left part of Fig.2

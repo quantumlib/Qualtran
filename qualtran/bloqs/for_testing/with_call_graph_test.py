@@ -11,8 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 
-from .atom import TestAtom, TestTwoBitOp
-from .many_registers import TestMultiRegister
-from .with_call_graph import TestBloqWithCallGraph
-from .with_decomposition import TestParallelCombo, TestSerialCombo
+import attrs
+
+from qualtran import Bloq
+from qualtran.bloqs.for_testing import TestAtom, TestBloqWithCallGraph
+
+
+def test_test_bloq_with_call_graph():
+    bwcg = TestBloqWithCallGraph()
+
+    def all_atoms_the_same(b: Bloq) -> Optional[Bloq]:
+        if isinstance(b, TestAtom):
+            return attrs.evolve(b, tag=None)
+        return b
+
+    g, sigma = bwcg.call_graph(generalizer=all_atoms_the_same)
+    assert len(sigma) == 3
+    assert g.number_of_edges() == (3 + 2 + 2)  # level 1 + level 2 + split/join

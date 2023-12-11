@@ -38,9 +38,9 @@ class ClassicalSimGraphDrawer(PrettyGraphDrawer):
 
     def __init__(self, bloq: Bloq, vals: Dict[str, 'ClassicalValT']):
         super().__init__(bloq=bloq)
-        from qualtran.simulation.classical_sim import _cbloq_call_classically
+        from qualtran.simulation.classical_sim import call_cbloq_classically
 
-        _, soq_assign = _cbloq_call_classically(
+        _, soq_assign = call_cbloq_classically(
             self._cbloq.signature, vals, self._cbloq._binst_graph
         )
         self._soq_assign = soq_assign
