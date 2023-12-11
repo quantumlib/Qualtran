@@ -173,7 +173,7 @@ def _binst_on_classical_vals(
     _update_assign_from_vals(bloq.signature.rights(), binst, out_vals, soq_assign)
 
 
-def _cbloq_call_classically(
+def call_cbloq_classically(
     signature: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.

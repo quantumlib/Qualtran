@@ -119,6 +119,9 @@ class CirqGateAsBloqBase(GateWithRegisters):
         qubits = in_quregs.get('q', ()).flatten()
         return self.cirq_gate.on(*qubits), in_quregs
 
+    def adjoint(self) -> 'Bloq':
+        return CirqGateAsBloq(gate=cirq.inverse(self.cirq_gate))
+
 
 @frozen
 class CirqGateAsBloq(CirqGateAsBloqBase):
