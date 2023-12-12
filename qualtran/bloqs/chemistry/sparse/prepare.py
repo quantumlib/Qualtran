@@ -226,16 +226,6 @@ class PrepareSparse(PrepareOracle):
             Register("alt_flag_1b", bitsize=1),
         )
 
-    @cached_property
-    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (
-            Register('alt_pqrs', bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
-            Register('theta', bitsize=1, shape=(2,)),
-            Register('keep', bitsize=self.num_bits_state_prep),
-            Register("less_than", bitsize=1),
-            Register("alt_flag_1b", bitsize=1),
-        )
-
     @classmethod
     def from_hamiltonian_coeffs(
         cls,
