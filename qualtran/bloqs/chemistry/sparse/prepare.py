@@ -44,7 +44,7 @@ def get_sparse_inputs_from_integrals(
 ):
     r"""Simple way to build sparse integrals from usual chemistry integrals.
 
-    Extract $p \ge q$, $r \ge s$, $pq \ge rs$, and then truncate based on drop_element_thresh.
+    Extract permutational-unique elements, and then truncate based on drop_element_thresh.
 
     Args:
         tpq_prime: The modified one-body matrix elements.
@@ -55,6 +55,11 @@ def get_sparse_inputs_from_integrals(
     Returns:
         integrals: Sparsified, symmetry inequivalent integrals.
         indicies: correpsonding indices of the non-zero matrix elements.
+
+    References:
+    Refererences:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            hypercontraction](https://arxiv.org/abs/2011.03494) Eq. A19 page 40.
     """
     assert len(tpq_prime.shape) == 2, "hcore should be a matrix"
     assert len(eris.shape) == 4, "eris should be 4-index tensor"
@@ -63,21 +68,46 @@ def get_sparse_inputs_from_integrals(
     # we don't sparsify one-body, but just take the upper triangular part
     tpq_sparse = tpq_prime[tril]
     tpq_indx = np.array([(ix[0], ix[1], 0, 0) for ix in zip(*tril)])
-    num_lt = len(tril[0])
-    pq_indx = list(zip(*tril))
-    pqrs_indx = np.array(list(itertools.product(pq_indx, pq_indx))).reshape((num_lt, num_lt, 4))
-    tril_tril = np.tril_indices(num_lt)
-    pqrs_indx = pqrs_indx[tril_tril[0], tril_tril[1], :]
     eris_eight = []
-    # black complains about not being able to parse eris_eight = eris[*pqrs.T]
-    for ix in pqrs_indx:
-        p, q, r, s = ix
+    pqrs_indx = []
+    # ignoring scaling factors for the moment.
+    for p, q, r, s in itertools.combinations(range(num_spat), 4):
         eris_eight.append(eris[p, q, r, s])
+        pqrs_indx.append((p, q, r, s))
+        eris_eight.append(eris[p, r, q, s])
+        pqrs_indx.append((p, r, q, s))
+        eris_eight.append(eris[p, s, r, q])
+        pqrs_indx.append((p, s, r, q))
+    for p, q, r in itertools.combinations(range(num_spat), 3):
+        eris_eight.append(eris[p, p, q, r])
+        pqrs_indx.append((p, p, q, r))
+        eris_eight.append(eris[p, q, p, r])
+        pqrs_indx.append((p, q, p, r))
+        eris_eight.append(eris[q, q, p, r])
+        pqrs_indx.append((q, q, p, r))
+        eris_eight.append(eris[q, r, p, q])
+        pqrs_indx.append((q, r, p, q))
+        eris_eight.append(eris[r, r, p, q])
+        pqrs_indx.append((r, r, p, q))
+        eris_eight.append(eris[r, p, q, r])
+        pqrs_indx.append((r, p, q, r))
+    for p, q in itertools.combinations(range(num_spat), 2):
+        eris_eight.append(eris[p, p, q, q])
+        pqrs_indx.append((p, p, q, q))
+        eris_eight.append(eris[p, q, p, q])
+        pqrs_indx.append((p, q, p, q))
+        eris_eight.append(eris[p, p, p, q])
+        pqrs_indx.append((p, p, p, q))
+        eris_eight.append(eris[q, q, q, p])
+        pqrs_indx.append((q, q, q, p))
+    for p in range(num_spat):
+        eris_eight.append(eris[p, p, p, p])
+        pqrs_indx.append((p, p, p, p))
     eris_eight = np.array(eris_eight)
+    pqrs_indx = np.array(pqrs_indx)
     keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
     eris_eight = eris_eight[keep_indx]
     pqrs_indx = pqrs_indx[keep_indx[0]]
-    assert len(pqrs_indx) == len(eris_eight)
     return np.concatenate((tpq_indx, pqrs_indx)), np.concatenate((tpq_sparse, eris_eight))
 
 
