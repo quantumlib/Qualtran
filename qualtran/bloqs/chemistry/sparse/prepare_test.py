@@ -74,7 +74,8 @@ def test_get_sparse_inputs_from_integrals(nb, sparsity):
         tpq, eris, drop_element_thresh=sparsity
     )
     # eq A20 + one-body bit
-    assert len(pqrs_indx) == nb * (nb + 1) * (nb**2 + nb + 2) // 8 + nb * (nb + 1) // 2
+    if sparsity < 1e-12:
+        assert len(pqrs_indx) == nb * (nb + 1) * (nb**2 + nb + 2) // 8 + nb * (nb + 1) // 2
     num_lt = nb * (nb + 1) // 2
     num_lt_mat = num_lt * (num_lt + 1) // 2
     if sparsity < 1e-12:
