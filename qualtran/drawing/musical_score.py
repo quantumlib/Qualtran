@@ -350,10 +350,15 @@ class WireSymbol(metaclass=abc.ABCMeta):
     A symbol is a particular visual representation of a bloq's register.
     """
 
-    def draw(self, ax, x, y):
+    @abc.abstractmethod
+    def draw(self, ax, x, y) -> None:
         """Draw this symbol using matplotlib."""
 
-    def json_dict(self):
+    def adjoint(self) -> 'WireSymbol':
+        """Return a symbol that is the adjoint of this."""
+        return self
+
+    def json_dict(self) -> Dict[str, Any]:
         return {'symb_cls': self.__class__.__name__, 'symb_attributes': attrs.asdict(self)}
 
 
@@ -407,6 +412,9 @@ class RarrowTextBox(WireSymbol):
             bbox={'boxstyle': 'rarrow', 'fc': 'white'},
         )
 
+    def adjoint(self):
+        return LarrowTextBox(text=self.text)
+
 
 @frozen
 class LarrowTextBox(WireSymbol):
@@ -423,6 +431,9 @@ class LarrowTextBox(WireSymbol):
             va='center',
             bbox={'boxstyle': 'larrow', 'fc': 'white'},
         )
+
+    def adjoint(self) -> 'WireSymbol':
+        return RarrowTextBox(text=self.text)
 
 
 @frozen
@@ -639,6 +650,7 @@ def draw_musical_score(msd: MusicalScoreData):
 
     ax.set_xlim((-2, msd.max_x + 1))
     ax.set_ylim((-msd.max_y - 0.5, 1))
+    ax.axis('off')
     fig.tight_layout()
     return fig, ax
 

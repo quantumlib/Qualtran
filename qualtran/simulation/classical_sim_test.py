@@ -23,9 +23,9 @@ from numpy.typing import NDArray
 from qualtran import Bloq, BloqBuilder, Register, Side, Signature
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
-    _cbloq_call_classically,
     _update_assign_from_vals,
     bits_to_ints,
+    call_cbloq_classically,
     ints_to_bits,
 )
 from qualtran.testing import execute_notebook
@@ -134,9 +134,9 @@ def test_apply_classical():
 
 def test_cnot_assign_dict():
     cbloq = CNOT().as_composite_bloq()
-    binst_graph = cbloq._binst_graph
+    binst_graph = cbloq._binst_graph  # pylint: disable=protected-access
     vals = dict(ctrl=1, target=0)
-    out_vals, soq_assign = _cbloq_call_classically(cbloq.signature, vals, binst_graph)
+    out_vals, soq_assign = call_cbloq_classically(cbloq.signature, vals, binst_graph)
     assert out_vals == {'ctrl': 1, 'target': 1}
     # left-dangle, regs, right-dangle
     assert len(soq_assign) == 2 + 2 + 2

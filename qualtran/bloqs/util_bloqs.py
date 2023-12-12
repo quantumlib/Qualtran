@@ -15,7 +15,7 @@
 """Bloqs for virtual operations and register reshaping."""
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -23,7 +23,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
-from qualtran import Bloq, BloqInstance, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
@@ -68,7 +68,7 @@ class Split(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst: BloqInstance,
+        tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
@@ -77,7 +77,7 @@ class Split(Bloq):
             qtn.Tensor(
                 data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
                 inds=outgoing['split'].tolist() + [incoming['split']],
-                tags=['Split', binst],
+                tags=['Split', tag],
             )
         )
 
@@ -116,7 +116,7 @@ class Join(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst: BloqInstance,
+        tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
@@ -125,7 +125,7 @@ class Join(Bloq):
             qtn.Tensor(
                 data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
                 inds=incoming['join'].tolist() + [outgoing['join']],
-                tags=['Join', binst],
+                tags=['Join', tag],
             )
         )
 
@@ -189,7 +189,7 @@ class Partition(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst: BloqInstance,
+        tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
@@ -212,7 +212,7 @@ class Partition(Bloq):
                     tuple(unitary_shape) + (2**self.n,)
                 ),
                 inds=soquets + [_incoming['x']],
-                tags=['Partition', binst],
+                tags=['Partition', tag],
             )
         )
 

@@ -18,6 +18,7 @@ import itertools
 from collections import defaultdict
 from typing import Dict, Iterable, Iterator, List, overload, Tuple
 
+import attrs
 import numpy as np
 from attrs import field, frozen
 
@@ -72,6 +73,16 @@ class Register:
         This is the product of bitsize and each of the dimensions in `shape`.
         """
         return self.bitsize * int(np.prod(self.shape))
+
+    def adjoint(self) -> 'Register':
+        """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
+        if self.side is Side.THRU:
+            return self
+        if self.side is Side.LEFT:
+            return attrs.evolve(self, side=Side.RIGHT)
+        if self.side is Side.RIGHT:
+            return attrs.evolve(self, side=Side.LEFT)
+        raise ValueError(f"Unknown side {self.side}")
 
 
 @frozen
@@ -205,6 +216,10 @@ class Signature:
             groups[reg.name].append(reg)
 
         yield from groups.items()
+
+    def adjoint(self) -> 'Signature':
+        """Swap all RIGHT and LEFT registers in this collection."""
+        return Signature(reg.adjoint() for reg in self._registers)
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'
