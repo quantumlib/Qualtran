@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import math
-from typing import Callable, Iterator, Optional, Tuple
+from typing import Callable, Iterator, Iterable, Optional, Tuple
 
 from attrs import frozen
 
@@ -309,8 +309,8 @@ def get_ccz2t_costs_from_grid_search(
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
     cycle_time_us: float = 1.0,
-    factory_iter: Callable[[], Iterator] = iter_ccz2t_factories,
-    data_block_iter: Callable[[], Iterator] = iter_simple_data_blocks,
+    factory_iter: Iterable[MagicStateFactory] = tuple(iter_ccz2t_factories()),
+    data_block_iter: Iterable[DataBlock] = tuple(iter_simple_data_blocks()),
     cost_function: Callable[[PhysicalCost], float] = (lambda pc: pc.qubit_hours),
 ) -> Tuple[PhysicalCost, CCZ2TFactory, SimpleDataBlock]:
     """Grid search over parameters to minimize space time volume.
@@ -323,8 +323,8 @@ def get_ccz2t_costs_from_grid_search(
         error_budget: The acceptable chance of an error occurring at any point. This includes
             data storage failures as well as top-level distillation failure.
         cycle_time_us: The number of microseconds it takes to execute a surface code cycle.
-        factory_iter: generator yielding the instances of MagicStateFactory to search over.
-        data_block_iter: generator yielding the instances of SimpleDataBlock to search over.
+        factory_iter: iterable containing the instances of MagicStateFactory to search over.
+        data_block_iter: iterable containing the instances of SimpleDataBlock to search over.
         cost_function: function of PhysicalCost to be minimized. Defaults to spacetime volume.
             Set `cost_function = (lambda pc: pc.duration_hr)` to mimimize wall time.
 
@@ -337,8 +337,8 @@ def get_ccz2t_costs_from_grid_search(
     """
     best_cost: Optional[PhysicalCost] = None
     best_params: Optional[Tuple[CCZ2TFactory, SimpleDataBlock]] = None
-    for factory in factory_iter():
-        for data_block in data_block_iter():
+    for factory in factory_iter:
+        for data_block in data_block_iter:
             cost = get_ccz2t_costs(
                 n_magic=n_magic,
                 n_algo_qubits=n_algo_qubits,
