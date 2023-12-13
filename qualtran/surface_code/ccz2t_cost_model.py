@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import math
-from typing import Callable, Iterator, Iterable, Optional, Tuple
+from typing import Callable, Iterable, Iterator, Optional, Tuple
 
 from attrs import frozen
 
