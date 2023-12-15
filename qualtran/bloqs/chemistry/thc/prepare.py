@@ -381,11 +381,11 @@ class PrepareTHC(PrepareOracle):
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
             qroam,
             selection=s,
-            target0=theta,
-            target1=alt_theta,
-            target2=alt_mu,
-            target3=alt_nu,
-            target4=keep,
+            target0_=theta,
+            target1_=alt_theta,
+            target2_=alt_mu,
+            target3_=alt_nu,
+            target4_=keep,
         )
         sigma = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=sigma)
         lte_gate = LessThanEqual(self.keep_bitsize, self.keep_bitsize)

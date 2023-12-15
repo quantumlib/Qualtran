@@ -162,7 +162,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
             data ^= angles_bits[:, st:en].dot(power_of_2s[: en - st])
             yield QROM(
                 [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
-            ).on_registers(selection=selection, target0=kappa_load_target)
+            ).on_registers(selection=selection, target0_=kappa_load_target)
             data = angles_bits[:, st:en].dot(power_of_2s[: en - st])
             for cqid, bpow, idx in zip(kappa_load_target, angles_bit_pow[st:en], angles_idx[st:en]):
                 if idx != last_id:
@@ -173,7 +173,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
                 yield self.rotation_gate(bpow).on(*rotations_target).controlled_by(cqid)
         yield QROM(
             [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
-        ).on_registers(selection=selection, target0=kappa_load_target)
+        ).on_registers(selection=selection, target0_=kappa_load_target)
 
 
 class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):
