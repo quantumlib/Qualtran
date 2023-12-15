@@ -46,7 +46,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
-from qualtran.bloqs.chemistry.df.select import ProgRotGateArray
+from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
@@ -324,7 +324,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
     @classmethod
     def build_from_coeffs(
-        cls, one_body_ham: NDArray[float], factorized_two_body_ham: NDArray[float]
+        cls, one_body_ham: NDArray[np.float64], factorized_two_body_ham: NDArray[np.float64]
     ) -> 'DoubleFactorizationBlockEncoding':
         """Factory method to build double factorization block encoding given Hamiltonian inputs.
 

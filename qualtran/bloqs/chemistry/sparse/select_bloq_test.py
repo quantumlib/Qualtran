@@ -12,8 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.thc.select import _thc_sel
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.chemistry.sparse.select_bloq import _sel_sparse
 
 
-def test_thc_uniform_prep(bloq_autotester):
-    bloq_autotester(_thc_sel)
+def test_prep_inner(bloq_autotester):
+    bloq_autotester(_sel_sparse)
+
+
+def test_decompose_bloq_counts():
+    sel = _sel_sparse()
+    cost_decomp = sel.decompose_bloq().call_graph()[1][TGate()]
+    cost_call = sel.call_graph()[1][TGate()]
+    assert cost_call == cost_decomp

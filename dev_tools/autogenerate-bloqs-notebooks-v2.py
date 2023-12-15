@@ -56,7 +56,7 @@ import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
-import qualtran.bloqs.chemistry.sparse.select
+import qualtran.bloqs.chemistry.sparse.select_bloq
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
@@ -134,7 +134,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.chemistry.sparse,
         bloq_specs=[
             qualtran.bloqs.chemistry.sparse.prepare._SPARSE_PREPARE,
-            qualtran.bloqs.chemistry.sparse.select._SPARSE_SELECT,
+            qualtran.bloqs.chemistry.sparse.select_bloq._SPARSE_SELECT,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),

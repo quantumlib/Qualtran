@@ -15,7 +15,7 @@
 from openfermion.resource_estimates.utils import QI, QR
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.df.select import ProgRotGateArray
+from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 
 
 def test_rotations():
