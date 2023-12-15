@@ -79,6 +79,8 @@ def get_qroam_cost(
         data_size: Amount of data we want to load.
         bitsize: the amount of bits of output we need.
         adjoint: whether to get costs from inverse qrom (true) or not (false).
+        qroam_block_size: The block size for QROAM. Default find the optimal
+            value given the data size.
 
     Returns:
        val_opt: minimal (optimal) cost of QROM

@@ -25,6 +25,7 @@ def linear(x, a, c):
 
 def fit_linear(x, y):
     try:
+        # pylint: disable-next=unbalanced-tuple-unpacking
         popt, _ = scipy.optimize.curve_fit(linear, x, y)
         return popt
     except np.linalg.LinAlgError:
