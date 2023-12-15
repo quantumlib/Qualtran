@@ -17,9 +17,9 @@ from typing import Optional
 
 from attrs import frozen
 
+import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
-from qualtran.surface_code.formulae import code_distance_from_budget, error_at
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
 from qualtran.surface_code.physical_cost import PhysicalCost
 
@@ -39,6 +39,7 @@ class CCZ2TFactory(MagicStateFactory):
 
     distillation_l1_d: int = 15
     distillation_l2_d: int = 31
+    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     # -------------------------------------------------------------------------------
     # ----     Level 0    ---------
@@ -61,7 +62,9 @@ class CCZ2TFactory(MagicStateFactory):
 
         # The chance of a logical error occurring within a lattice surgery unit cell at
         # code distance d1*0.5.
-        topo_error_per_unit_cell = error_at(phys_err, d=self.distillation_l1_d // 2)
+        topo_error_per_unit_cell = self.qec_scheme.logical_error_rate(
+            physical_error_rate=phys_err, code_distance=self.distillation_l1_d // 2
+        )
 
         # It takes approximately 100 L0 unit cells to get the injected state where
         # it needs to be and perform the T gate.
@@ -83,12 +86,16 @@ class CCZ2TFactory(MagicStateFactory):
         """Topological error associated with a L1 T factory."""
 
         # The L1 T factory uses approximately 1000 L1 unit cells.
-        return 1000 * error_at(phys_err, d=self.distillation_l1_d)
+        return 1000 * self.qec_scheme.logical_error_rate(
+            physical_error_rate=phys_err, code_distance=self.distillation_l1_d
+        )
 
     def l1_topo_error_t_gate(self, phys_err: float) -> float:
         # It takes approximately 100 L1 unit cells to get the L1 state produced by the
         # factory to where it needs to be and perform the T gate.
-        return 100 * error_at(phys_err, d=self.distillation_l1_d)
+        return 100 * self.qec_scheme.logical_error_rate(
+            physical_error_rate=phys_err, code_distance=self.distillation_l1_d
+        )
 
     def l1_distillation_error(self, phys_err: float) -> float:
         """The error due to level-0 faulty T states making it through distillation undetected.
@@ -117,7 +124,9 @@ class CCZ2TFactory(MagicStateFactory):
         """
 
         # The L2 CCZ factory and catalyzed T factory both use approximately 1000 L2 unit cells.
-        l2_topo_error_factory = 1000 * error_at(phys_err, d=self.distillation_l2_d)
+        l2_topo_error_factory = 1000 * self.qec_scheme.logical_error_rate(
+            physical_error_rate=phys_err, code_distance=self.distillation_l2_d
+        )
 
         # Distillation error for this level.
         l2_distillation_error = 28 * self.l1_error(phys_err) ** 2
@@ -156,11 +165,11 @@ def get_ccz2t_costs(
     n_magic: AlgorithmSummary,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
-    error_budget: Optional[float] = 1e-2,
+    error_budget: float = 1e-2,
     cycle_time_us: float = 1.0,
-    routing_overhead: Optional[float] = 0.5,
-    factory: MagicStateFactory = None,
-    data_block: DataBlock = None,
+    routing_overhead: float = 0.5,
+    factory: Optional[MagicStateFactory] = None,
+    data_block: Optional[DataBlock] = None,
 ) -> PhysicalCost:
     """Physical costs using the model from catalyzed CCZ to 2T paper.
 
@@ -198,11 +207,21 @@ def get_ccz2t_costs(
     if data_block is None:
         # Use "left over" budget for data qubits.
         err_budget = error_budget - distillation_error
+        if err_budget < 0:
+            raise ValueError(
+                f'distillation error {distillation_error} is larger than the error budget {error_budget}'
+            )
         n_logical_qubits = math.ceil((1 + routing_overhead) * n_algo_qubits)
         data_unit_cells = n_logical_qubits * n_cycles
         target_err_per_round = err_budget / data_unit_cells
-        data_d = code_distance_from_budget(phys_err=phys_err, budget=target_err_per_round)
-        data_block = SimpleDataBlock(data_d=data_d, routing_overhead=routing_overhead)
+        data_d = qec.FowlerSuperconductingQubits.code_distance_from_budget(
+            physical_error_rate=phys_err, budget=target_err_per_round
+        )
+        data_block = SimpleDataBlock(
+            data_d=data_d,
+            routing_overhead=routing_overhead,
+            qec_scheme=qec.FowlerSuperconductingQubits,
+        )
 
     data_error = data_block.data_error(
         n_algo_qubits=n_algo_qubits, n_cycles=n_cycles, phys_err=phys_err

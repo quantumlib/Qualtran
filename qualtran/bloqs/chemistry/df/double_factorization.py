@@ -36,15 +36,17 @@ from typing import Dict, Iterable, Set, TYPE_CHECKING
 import cirq
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
-from qualtran.bloqs.chemistry.df.select_bloq import ApplyControlledZs, ProgRotGateArray
+from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
@@ -184,8 +186,8 @@ class DoubleFactorizationOneBody(Bloq):
             prot, offset=offset, p=p, rotations=rotations, spin=spin, sys=sys
         )
         # missing l_ne_zero
-        [succ_l, succ_p], sys = bb.add(
-            ApplyControlledZs(2, self.num_spin_orb // 2), ctrls=[succ_l, succ_p], system=sys
+        [succ_l, succ_p], sys[0] = bb.add(
+            ApplyControlledZs((1, 1), self.num_spin_orb // 2), ctrls=[succ_l, succ_p], system=sys[0]
         )
         # 2nd half (invert preparation / swaps)
         prot = ProgRotGateArray(
@@ -322,7 +324,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
     @classmethod
     def build_from_coeffs(
-        cls, one_body_ham, factorized_two_body_ham
+        cls, one_body_ham: NDArray[np.float64], factorized_two_body_ham: NDArray[np.float64]
     ) -> 'DoubleFactorizationBlockEncoding':
         """Factory method to build double factorization block encoding given Hamiltonian inputs.
 

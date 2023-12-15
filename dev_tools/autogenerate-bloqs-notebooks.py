@@ -105,7 +105,6 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         title='Arithmetic',
         module=qualtran.bloqs.arithmetic,
         gate_specs=[
-            BloqNbSpec(qualtran.bloqs.arithmetic.addition_test._make_add),
             BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_product),
             BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_square),
             BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_sum_of_squares),

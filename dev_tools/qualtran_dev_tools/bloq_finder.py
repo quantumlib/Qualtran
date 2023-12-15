@@ -25,7 +25,11 @@ from .git_tools import get_git_root
 def _get_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> List[Path]:
     """Get *.py files based on `filter_func`."""
     cp = subprocess.run(
-        ['git', 'ls-files', '*.py'], capture_output=True, universal_newlines=True, cwd=bloqs_root
+        ['git', 'ls-files', '*.py'],
+        capture_output=True,
+        universal_newlines=True,
+        cwd=bloqs_root,
+        check=True,
     )
     outs = cp.stdout.splitlines()
     paths = [Path(out) for out in outs]

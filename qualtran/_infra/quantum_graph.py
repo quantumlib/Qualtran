@@ -72,7 +72,7 @@ class DanglingT:
         return False
 
 
-def _to_tuple(x: Union[int, Tuple[int, ...]]):
+def _to_tuple(x: Union[int, Tuple[int, ...]]) -> Tuple[int, ...]:
     if isinstance(x, int):
         return (x,)
     return x

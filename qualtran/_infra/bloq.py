@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -89,7 +89,7 @@ class Bloq(metaclass=abc.ABCMeta):
         programming. For example, it is analogous to function declarations in a
         C header (`*.h`) file.
 
-        This is the only manditory method (property) you must implement to inherit from
+        This is the only mandatory method (property) you must implement to inherit from
         `Bloq`. You can optionally implement additional methods to encode more information
         about this bloq.
         """
@@ -157,6 +157,20 @@ class Bloq(metaclass=abc.ABCMeta):
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         return bb.finalize(**bb.add_d(self, **initial_soqs))
 
+    def adjoint(self) -> 'Bloq':
+        """The adjoint of this bloq.
+
+        Bloq authors can override this method in certain circumstances. Otherwise, the default
+        fallback wraps this bloq in `Adjoint`.
+
+        Please see the documentation for `Adjoint` and the `Adjoint.ipynb` notebook for full
+        details.
+        """
+
+        from qualtran import Adjoint
+
+        return Adjoint(self)
+
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
@@ -181,7 +195,7 @@ class Bloq(metaclass=abc.ABCMeta):
         try:
             return self.decompose_bloq().on_classical_vals(**vals)
         except NotImplementedError as e:
-            raise NotImplementedError(f"{self} does not support classical simulation: {e}")
+            raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Call this bloq on classical data.
@@ -267,7 +281,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def call_graph(
         self,
-        generalizer: Callable[['Bloq'], Optional['Bloq']] = None,
+        generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
         keep: Optional[Sequence['Bloq']] = None,
         max_depth: Optional[int] = None,
     ) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]:
@@ -280,7 +294,8 @@ class Bloq(metaclass=abc.ABCMeta):
         Args:
             generalizer: If provided, run this function on each (sub)bloq to replace attributes
                 that do not affect resource estimates with generic sympy symbols. If the function
-                returns `None`, the bloq is omitted from the counts graph.
+                returns `None`, the bloq is omitted from the counts graph. If a sequence of
+                generalizers is provided, each generalizer will be run in order.
             keep: If this function evaluates to True for the current bloq, keep the bloq as a leaf
                 node in the call graph instead of recursing into it.
             max_depth: If provided, build a call graph with at most this many layers.
@@ -297,7 +312,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return get_bloq_call_graph(self, generalizer=generalizer, keep=keep, max_depth=max_depth)
 
     def bloq_counts(
-        self, generalizer: Callable[['Bloq'], Optional['Bloq']] = None
+        self, generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None
     ) -> Dict['Bloq', Union[int, 'sympy.Expr']]:
         """The number of subbloqs directly called by this bloq.
 
@@ -308,7 +323,8 @@ class Bloq(metaclass=abc.ABCMeta):
         Args:
             generalizer: If provided, run this function on each (sub)bloq to replace attributes
                 that do not affect resource estimates with generic sympy symbols. If the function
-                returns `None`, the bloq is omitted from the counts graph.
+                returns `None`, the bloq is omitted from the counts graph. If a sequence of
+                generalizers is provided, each generalizer will be run in order.
 
         Returns:
             A dictionary mapping subbloq to the number of times they appear in the decomposition.
