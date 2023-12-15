@@ -40,12 +40,13 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
     InnerPrepareDoubleFactorization,
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
-from qualtran.bloqs.chemistry.df.select import ApplyControlledZs, ProgRotGateArray
+from qualtran.bloqs.chemistry.df.select import ProgRotGateArray
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
@@ -185,8 +186,8 @@ class DoubleFactorizationOneBody(Bloq):
             prot, offset=offset, p=p, rotations=rotations, spin=spin, sys=sys
         )
         # missing l_ne_zero
-        [succ_l, succ_p], sys = bb.add(
-            ApplyControlledZs(2, self.num_spin_orb // 2), ctrls=[succ_l, succ_p], system=sys
+        [succ_l, succ_p], sys[0] = bb.add(
+            ApplyControlledZs((1, 1), self.num_spin_orb // 2), ctrls=[succ_l, succ_p], system=sys[0]
         )
         # 2nd half (invert preparation / swaps)
         prot = ProgRotGateArray(

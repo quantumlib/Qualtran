@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import frozen
 
@@ -29,9 +28,9 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CSwap, TGate, XGate
+from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
+from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.select_and_prepare import SelectOracle
-from qualtran.cirq_interop import CirqGateAsBloq
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -110,7 +109,7 @@ class THCRotations(Bloq):
         # xref https://github.com/quantumlib/Qualtran/issues/370, the cost below
         # assume a phase gradient.
         rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
-        return {(TGate(), 4 * (rot_cost + toff_cost_qrom))}
+        return {(Toffoli(), (rot_cost + toff_cost_qrom))}
 
 
 @frozen
@@ -191,7 +190,6 @@ class SelectTHC(SelectOracle):
         sys_a: SoquetT,
         sys_b: SoquetT,
     ) -> Dict[str, 'SoquetT']:
-
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
         # Rotations
@@ -210,9 +208,9 @@ class SelectTHC(SelectOracle):
             trg=sys_a,
         )
         # Controlled Z_0
-        split_sys = bb.split(sys_a)
-        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
-        sys_a = bb.join(split_sys)
+        (succ,), sys_b = bb.add(
+            ApplyControlledZs(cvs=(1,), bitsize=self.num_spin_orb // 2), ctrls=(succ,), system=sys_b
+        )
         # Undo rotations
         nu_eq_mp1, data, mu, sys_a = bb.add(
             THCRotations(
@@ -257,9 +255,11 @@ class SelectTHC(SelectOracle):
             trg=sys_a,
         )
         # Controlled Z_0
-        split_sys = bb.split(sys_a)
-        succ, split_sys[0] = bb.add(CirqGateAsBloq(cirq.CZ), q=[succ, split_sys[0]])
-        sys_a = bb.join(split_sys)
+        (succ, nu_eq_mp1), sys_b = bb.add(
+            ApplyControlledZs(cvs=(1, 0), bitsize=self.num_spin_orb // 2),
+            ctrls=(succ, nu_eq_mp1),
+            system=sys_b,
+        )
         # Undo rotations
         nu_eq_mp1, data, mu, sys_a = bb.add(
             THCRotations(
