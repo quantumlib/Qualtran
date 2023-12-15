@@ -288,22 +288,6 @@ class SingleFactorizationBlockEncoding(Bloq):
     kp1_inv: int = 1
     kp2_inv: int = 1
 
-    @classmethod
-    def build(cls, one_body_ham, factorized_two_body_ham):
-        """Factory method to build single factorization block encoding given Hamiltonian inputs.
-
-        Args:
-            one_body_ham: One body hamiltonian ($T_{pq}$') matrix elements.
-                (includes exchange terms).
-            factorized_two_body_ham: One body hamiltonian ($W^{(l)}_{pq}$).
-
-        Returns:
-            SingleFactorization bloq with alt/keep values appropriately constructed.
-        """
-        assert len(one_body_ham.shape) == 2
-        assert len(factorized_two_body_ham.shape) == 3
-        raise NotImplementedError("Factory method not implemented yet.")
-
     @property
     def control_registers(self) -> Iterable[Register]:
         return (Register('ctrl', bitsize=1, shape=(3,)),)
