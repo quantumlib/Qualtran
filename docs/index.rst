@@ -48,19 +48,6 @@ and high-level quantum programs. :ref:`Read more... <bloqs_library>`
    bloqs/index.rst
 
 
-:ref:`surface_code`
-------------------------------
-
-``qualtran.surface_code`` contains implementations of classes and routines useful for estimating
-the cost of running fault-tolerant quantum algorithms using surface codes for error correction.
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   surface_code/index.rst
-
-
 :ref:`reference`
 -------------------------------
 
