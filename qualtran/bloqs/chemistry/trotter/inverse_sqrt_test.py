@@ -80,7 +80,7 @@ def multiply_fixed_point_floats(a: int, b: int, width: int) -> int:
     result = 0
     for l, lambda_l in enumerate(f"{a:0{width}b}"):
         for k, kappa_k in enumerate(f"{b:0{width}b}"):
-            if k + l + 2 < width:
+            if k + l + 2 <= width:
                 result += int(lambda_l) * int(kappa_k) * 2 ** ((width - k - l - 2))
     return result
 

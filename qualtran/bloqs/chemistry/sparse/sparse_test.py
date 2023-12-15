@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import attrs
+import numpy as np
 import pytest
 from openfermion.resource_estimates.sparse.costing_sparse import cost_sparse
 from openfermion.resource_estimates.utils import QI
@@ -20,33 +22,36 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
 
 
-@pytest.mark.parametrize(
-    "num_spin_orb, num_non_zero, num_bits_rot_aa",
-    ((30, 1_000, 4), (129, 10_000, 3), (213, 100_000, 3)),
-)
-def test_sparse_costs_against_openfermion(num_spin_orb, num_non_zero, num_bits_rot_aa):
+def make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa):
+    tpq = np.random.random((num_spin_orb // 2, num_spin_orb // 2))
+    tpq = 0.5 * (tpq + tpq.T)
+    eris = np.random.random((num_spin_orb // 2,) * 4)
+    eris += np.transpose(eris, (0, 1, 3, 2))
+    eris += np.transpose(eris, (1, 0, 2, 3))
+    eris += np.transpose(eris, (2, 3, 0, 1))
+    prep_sparse = PrepareSparse.from_hamiltonian_coeffs(
+        num_spin_orb,
+        tpq,
+        eris,
+        qroam_block_size=32,
+        num_bits_state_prep=num_bits_state_prep,
+        num_bits_rot_aa=num_bits_rot_aa,
+    )
+    num_nnz = len(prep_sparse.alt_pqrs[0])
+    return prep_sparse, num_nnz
+
+
+@pytest.mark.parametrize("num_spin_orb, num_bits_rot_aa", ((8, 3), (20, 3), (57, 3)))
+def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     num_bits_state_prep = 12
     cost = 0
     bloq = SelectSparse(num_spin_orb)
     _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
-    bloq = PrepareSparse(
-        num_spin_orb,
-        num_non_zero,
-        num_bits_rot_aa=num_bits_rot_aa,
-        num_bits_state_prep=num_bits_state_prep,
-        qroam_block_size=32,  # harcoded in openfermion
-    )
+    bloq, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
     _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
-    bloq = PrepareSparse(
-        num_spin_orb,
-        num_non_zero,
-        num_bits_rot_aa=num_bits_rot_aa,
-        num_bits_state_prep=num_bits_state_prep,
-        adjoint=True,
-        qroam_block_size=2 ** QI(num_non_zero)[0],  # determined from QI in openfermion
-    )
+    bloq = attrs.evolve(bloq, adjoint=True, qroam_block_size=2 ** QI(num_non_zero)[0])
     _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
     unused_lambda = 10
