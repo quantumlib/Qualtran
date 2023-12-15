@@ -48,16 +48,16 @@ def get_sparse_inputs_from_integrals(
 
     Args:
         tpq_prime: The modified one-body matrix elements.
-        eris: The 4-index electron repulision integral (ERI) tensor in chemists notation (pq|rs).
+        eris: The 4-index electron repulsion integral (ERI) tensor in chemists notation (pq|rs).
         drop_element_thresh: Threshold for considering an ERI element as zero.
             Default 0, i.e. don't threshold the elements.
 
     Returns:
         integrals: Sparsified, symmetry inequivalent integrals.
-        indicies: correpsonding indices of the non-zero matrix elements.
+        indicies: corresponding indices of the non-zero matrix elements.
 
     References:
-    Refererences:
+    References:
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Eq. A19 page 40.
     """
@@ -65,44 +65,37 @@ def get_sparse_inputs_from_integrals(
     assert len(eris.shape) == 4, "eris should be 4-index tensor"
     num_spat = tpq_prime.shape[-1]
     tril = np.tril_indices(num_spat)
-    # we don't sparsify one-body, but just take the upper triangular part
+    # we don't sparsify one-body, but just take the lower triangular part
     tpq_sparse = tpq_prime[tril]
     tpq_indx = np.array([(ix[0], ix[1], 0, 0) for ix in zip(*tril)])
     eris_eight = []
     pqrs_indx = []
+
+    # "_indx" to avoid positional arguments out of order pylint error.
+    def _add(p_indx: int, q_indx: int, r_indx: int, s_indx: int):
+        nonlocal eris_eight, pqrs_indx
+        eris_eight.append(eris[p_indx, q_indx, r_indx, s_indx])
+        pqrs_indx.append((p_indx, q_indx, r_indx, s_indx))
+
     # ignoring scaling factors for the moment.
     for p, q, r, s in itertools.combinations(range(num_spat), 4):
-        eris_eight.append(eris[p, q, r, s])
-        pqrs_indx.append((p, q, r, s))
-        eris_eight.append(eris[p, r, q, s])
-        pqrs_indx.append((p, r, q, s))
-        eris_eight.append(eris[p, s, r, q])
-        pqrs_indx.append((p, s, r, q))
+        _add(p, q, r, s)
+        _add(p, r, q, s)
+        _add(p, s, r, q)
     for p, q, r in itertools.combinations(range(num_spat), 3):
-        eris_eight.append(eris[p, p, q, r])
-        pqrs_indx.append((p, p, q, r))
-        eris_eight.append(eris[p, q, p, r])
-        pqrs_indx.append((p, q, p, r))
-        eris_eight.append(eris[q, q, p, r])
-        pqrs_indx.append((q, q, p, r))
-        eris_eight.append(eris[q, r, p, q])
-        pqrs_indx.append((q, r, p, q))
-        eris_eight.append(eris[r, r, p, q])
-        pqrs_indx.append((r, r, p, q))
-        eris_eight.append(eris[r, p, q, r])
-        pqrs_indx.append((r, p, q, r))
+        _add(p, p, q, r)
+        _add(p, q, p, r)
+        _add(q, q, p, r)
+        _add(q, r, p, q)
+        _add(r, r, p, q)
+        _add(r, p, q, r)
     for p, q in itertools.combinations(range(num_spat), 2):
-        eris_eight.append(eris[p, p, q, q])
-        pqrs_indx.append((p, p, q, q))
-        eris_eight.append(eris[p, q, p, q])
-        pqrs_indx.append((p, q, p, q))
-        eris_eight.append(eris[p, p, p, q])
-        pqrs_indx.append((p, p, p, q))
-        eris_eight.append(eris[q, q, q, p])
-        pqrs_indx.append((q, q, q, p))
+        _add(p, p, q, q)
+        _add(p, q, p, q)
+        _add(p, p, p, q)
+        _add(q, q, q, p)
     for p in range(num_spat):
-        eris_eight.append(eris[p, p, p, p])
-        pqrs_indx.append((p, p, p, p))
+        _add(p, p, p, p)
     eris_eight = np.array(eris_eight)
     pqrs_indx = np.array(pqrs_indx)
     keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
@@ -136,7 +129,7 @@ class PrepareSparse(PrepareOracle):
             preparation. This will control the size of the keep register.
         num_bits_rot_aa: The number of bits of precision for the single-qubit
             rotation for amplitude amplification during the uniform state
-            preparataion. Default 8.
+            preparation. Default 8.
         adjoint: Whether we are apply PREPARE or PREPARE^dag
         qroam_block_size: qroam blocking factor.
 
@@ -246,7 +239,7 @@ class PrepareSparse(PrepareOracle):
             num_bits_state_prep: The number of bits for the state prepared during alias sampling.
             num_bits_rot_aa: The number of bits of precision for the single-qubit
                 rotation for amplitude amplification during the uniform state
-                preparataion. Default 8.
+                preparation. Default 8.
             drop_element_thresh: Threshold for considering an ERI element as zero.
                 Default 0, i.e. don't threshold the elements.
             qroam_block_size: Block size for qroam (called $k$ in the reference).
