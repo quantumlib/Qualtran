@@ -20,6 +20,7 @@ from openfermion.resource_estimates.utils import QI
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
+from qualtran.testing import execute_notebook
 
 
 def make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa):
