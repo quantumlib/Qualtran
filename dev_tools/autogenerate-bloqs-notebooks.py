@@ -65,9 +65,9 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv_test
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t_test
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv_test
 import qualtran.bloqs.chemistry.sparse.prepare_test
-import qualtran.bloqs.chemistry.sparse.select_test
+import qualtran.bloqs.chemistry.sparse.select_bloq_test
 import qualtran.bloqs.chemistry.thc.prepare_test
-import qualtran.bloqs.chemistry.thc.select_test
+import qualtran.bloqs.chemistry.thc.select_bloq_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
