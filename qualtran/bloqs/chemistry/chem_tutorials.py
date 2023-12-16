@@ -57,11 +57,11 @@ def plot_linear_log_log(
     xs: NDArray[np.float64],
     ys: NDArray[np.float64],
     label: Optional[str] = None,
-    color='C0',
+    color: str = 'C0',
 ):
     """Fit a power law to the input data set and plot on existing axis.
 
-    Plots 
+    Plots
 
     $$
         y = a * x^b + c
@@ -73,6 +73,8 @@ def plot_linear_log_log(
         ax: The matplotlib axis.
         xs: The x-values for the fit.
         ys: The y-values for the fit.
+        label: An optioanl text label for the data set. In None the legend reads $N^b$.
+        color: The color for the data set.
     """
     slope, intr = fit_linear(np.log(xs), np.log(ys))
     x_min = xs[0]
