@@ -324,13 +324,13 @@ class PrepareTHC(PrepareOracle):
     @cached_property
     def junk_registers(self) -> Tuple[SelectionRegister, ...]:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
-        alt_bitsize = max(max(self.alt_mu).bit_length(), max(self.alt_nu).bit_length())
+        log_mu = self.num_mu.bit_length()
         return (
             Register('succ', bitsize=1),
             Register('nu_eq_mp1', bitsize=1),
             Register('theta', bitsize=1),
             Register('s', bitsize=(data_size - 1).bit_length()),
-            Register('alt_mn', bitsize=alt_bitsize, shape=(2,)),
+            Register('alt_mn', bitsize=log_mu, shape=(2,)),
             Register('alt_theta', bitsize=1),
             Register('keep', bitsize=self.keep_bitsize),
             Register('less_than', bitsize=1),
@@ -369,13 +369,12 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         log_d = (data_size - 1).bit_length()
-        alt_bitsize = max(max(self.alt_mu).bit_length(), max(self.alt_nu).bit_length())
         # 2. Make contiguous register from mu and nu and store in register `s`.
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
         # 3. Load alt / keep values
         qroam = SelectSwapQROM(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
-            target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
+            target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
         )
         alt_mu, alt_nu = alt_mn
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
