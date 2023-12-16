@@ -53,7 +53,12 @@ import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.sparse.select_bloq
@@ -101,6 +106,19 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.apply_gate_to_lth_target,
         bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='First Quantized Hamiltonian',
+        module=qualtran.bloqs.chemistry.pbc.first_quantization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare._FIRST_QUANTIZED_PREPARE_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare._FIRST_QUANTIZED_SELECT_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t._PREPARE_T,
+            qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv._PREPARE_UV,
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_t._SELECT_T,
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_uv._SELECT_UV,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization',
     ),
     NotebookSpecV2(
         title='First Quantized Hamiltonian with Quantum Projectile',
