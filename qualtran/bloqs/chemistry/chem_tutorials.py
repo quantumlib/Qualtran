@@ -14,6 +14,7 @@
 """Some utility functions for chemistry tutorials"""
 from typing import Optional
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 from numpy.typing import NDArray
@@ -33,6 +34,15 @@ def fit_linear(x, y):
 
 
 def gen_random_chem_ham(num_spin_orb: int):
+    """Generate random chemistry hamiltonian with 8-fold symmetry.
+
+    Args:
+        num_spin_orb: The number of spin orbitals.
+
+    Returns:
+        tpq: 2D array of one-body matrix elements of (size num_spin_orb // 2)^2.
+        eris: 4D array of one-body matrix elements of size (num_spin_orb // 2)^4.
+    """
     tpq = np.random.random((num_spin_orb // 2, num_spin_orb // 2))
     tpq = 0.5 * (tpq + tpq.T)
     eris = np.random.normal(size=(num_spin_orb // 2,) * 4)
@@ -43,13 +53,27 @@ def gen_random_chem_ham(num_spin_orb: int):
 
 
 def plot_linear_log_log(
-    fig,
-    ax,
+    ax: plt.Axes,
     xs: NDArray[np.float64],
     ys: NDArray[np.float64],
     label: Optional[str] = None,
     color='C0',
 ):
+    """Fit a power law to the input data set and plot on existing axis.
+
+    Plots 
+
+    $$
+        y = a * x^b + c
+    $$
+
+    on a log-log plot.
+
+    Args:
+        ax: The matplotlib axis.
+        xs: The x-values for the fit.
+        ys: The y-values for the fit.
+    """
     slope, intr = fit_linear(np.log(xs), np.log(ys))
     x_min = xs[0]
     x_max = xs[-1]
