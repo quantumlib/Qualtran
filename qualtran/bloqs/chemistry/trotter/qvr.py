@@ -18,7 +18,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -64,3 +64,16 @@ class QuantumVariableRotation(Bloq):
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
         return {(Rz(theta), self.phi_bitsize)}
+
+
+@bloq_example
+def _qvr() -> QuantumVariableRotation:
+    qvr = QuantumVariableRotation(12)
+    return qvr
+
+
+_QVR = BloqDocSpec(
+    bloq_cls=QuantumVariableRotation,
+    import_line='from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation',
+    examples=(_qvr,),
+)

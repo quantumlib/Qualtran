@@ -19,7 +19,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -237,3 +237,28 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
         return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(self.poly_bitsize), 3)}
+
+
+@bloq_example
+def _nr_inv_sqrt() -> NewtonRaphsonApproxInverseSquareRoot:
+    nr_inv_sqrt = NewtonRaphsonApproxInverseSquareRoot(7, 8, 12)
+    return nr_inv_sqrt
+
+
+@bloq_example
+def _poly_inv_sqrt() -> PolynmomialEvaluationInverseSquareRoot:
+    poly_inv_sqrt = PolynmomialEvaluationInverseSquareRoot(7, 8, 12)
+    return poly_inv_sqrt
+
+
+_NR_INV_SQRT = BloqDocSpec(
+    bloq_cls=NewtonRaphsonApproxInverseSquareRoot,
+    import_line='from qualtran.bloqs.chemistry.trotter.inverse_sqrt import NewtonRaphsonApproxInverseSquareRoot',
+    examples=(_nr_inv_sqrt,),
+)
+
+_POLY_INV_SQRT = BloqDocSpec(
+    bloq_cls=PolynmomialEvaluationInverseSquareRoot,
+    import_line='from qualtran.bloqs.chemistry.trotter.inverse_sqrt import PolynomialEvaluationInverseSquareRoot',
+    examples=(_poly_inv_sqrt,),
+)

@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation
+from qualtran.bloqs.chemistry.trotter.qvr import _qvr
 
 
-def test_qvr():
-    QuantumVariableRotation(10)
+def test_kinetic_energy(bloq_autotester):
+    bloq_autotester(_qvr)

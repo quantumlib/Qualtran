@@ -17,7 +17,7 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic import SumOfSquares
 from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation
 
@@ -66,3 +66,18 @@ class KineticEnergy(Bloq):
             sos = bb.add(QuantumVariableRotation(phi_bitsize=(2 * bitsize + 2)), phi=sos)
             bb.free(sos)
         return {'system': system}
+
+
+@bloq_example
+def _kinetic_energy() -> KineticEnergy:
+    nelec = 12
+    ngrid_x = 2 * 8 + 1
+    kinetic_energy = KineticEnergy(nelec, ngrid_x)
+    return kinetic_energy
+
+
+_KINETIC_ENERGY = BloqDocSpec(
+    bloq_cls=KineticEnergy,
+    import_line='from qualtran.bloqs.chemistry.trotter.kinetic import KineticEnergy',
+    examples=(_kinetic_energy,),
+)
