@@ -128,6 +128,7 @@ def _prepare_t() -> PrepareTFirstQuantization:
     eta = 10
 
     prepare_t = PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+    return prepare_t
 
 
 _PREPARE_T = BloqDocSpec(

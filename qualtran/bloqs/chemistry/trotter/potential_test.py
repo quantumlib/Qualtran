@@ -29,8 +29,10 @@ from qualtran.bloqs.chemistry.trotter.potential import (
 def test_pair_potential(bloq_autotester):
     bloq_autotester(_pair_potential)
 
+
 def test_potential_energy(bloq_autotester):
     bloq_autotester(_potential_energy)
+
 
 @pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
 def test_potential_bloq(nelec, nx):
