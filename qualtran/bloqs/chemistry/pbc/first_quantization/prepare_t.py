@@ -17,7 +17,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
@@ -120,3 +120,18 @@ class PrepareTFirstQuantization(Bloq):
         uni_prep_w = (Toffoli(), 13)
         # Factor of two for r and s registers.
         return {uni_prep_w, (PreparePowerTwoState(bitsize=self.num_bits_p), 2)}
+
+
+@bloq_example
+def _prepare_t() -> PrepareTFirstQuantization:
+    num_bits_p = 5
+    eta = 10
+
+    prepare_t = PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+
+
+_PREPARE_T = BloqDocSpec(
+    bloq_cls=PrepareTFirstQuantization,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization',
+    examples=(_prepare_t,),
+)
