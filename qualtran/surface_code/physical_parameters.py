@@ -35,7 +35,7 @@ class PhysicalParameters:
     reference: Optional[str] = None
 
 
-BeverlandEtAl = PhysicalParameters(
+BEVERLAND_PARAMS = PhysicalParameters(
     t_gate_ns=50,  # 50ns
     t_meas_ns=100,  # 100ns
     physical_error_rate=1e-4,
