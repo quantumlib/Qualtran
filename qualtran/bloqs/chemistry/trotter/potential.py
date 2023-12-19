@@ -107,10 +107,10 @@ class PairPotential(Bloq):
         sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3 = bb.add(
             qrom_bloq,
             selection=sos,
-            target0=qrom_anc_c0,
-            target1=qrom_anc_c1,
-            target2=qrom_anc_c2,
-            target3=qrom_anc_c3,
+            target0_=qrom_anc_c0,
+            target1_=qrom_anc_c1,
+            target2_=qrom_anc_c2,
+            target3_=qrom_anc_c3,
         )
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
