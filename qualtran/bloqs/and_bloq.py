@@ -225,7 +225,12 @@ class MultiAnd(GateWithRegisters):
         target [right]: The output bit.
     """
 
-    cvs: Tuple[int, ...] = field(validator=lambda i, f, v: len(v) >= 3, converter=tuple)
+    cvs: Tuple[int, ...] = field(converter=tuple)
+
+    @cvs.validator
+    def _validate_cvs(self, field, val):
+        if len(val) < 3:
+            raise ValueError("MultiAnd must have at least 3 control values `cvs`.")
 
     @cached_property
     def signature(self) -> Signature:

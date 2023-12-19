@@ -162,6 +162,15 @@ def test_multiand_consistent_apply_classical():
             np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
 
+def test_multi_validate():
+    with pytest.raises(ValueError):
+        _ = MultiAnd(cvs=(0,))
+    with pytest.raises(ValueError):
+        _ = MultiAnd(cvs=[0])
+    with pytest.raises(ValueError):
+        _ = MultiAnd(cvs=(0, 0))
+
+
 def test_notebook():
     qlt_testing.execute_notebook('and_bloq')
 
