@@ -15,6 +15,7 @@
 from functools import cached_property
 from typing import Dict, Iterable, Iterator, List, Sequence, Set, TYPE_CHECKING, Union
 
+import attrs
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
@@ -157,10 +158,13 @@ class BiQubitsMixer(GateWithRegisters):
     https://github.com/quantumlib/Qualtran/issues/389
     """
 
+    is_adjoint: bool = False
+
     @cached_property
     def signature(self) -> Signature:
+        one_side = Side.RIGHT if not self.is_adjoint else Side.LEFT
         return Signature(
-            [Register('x', 2), Register('y', 2), Register('ancilla', 3, side=Side.RIGHT)]
+            [Register('x', 2), Register('y', 2), Register('ancilla', 3, side=one_side)]
         )
 
     def decompose_from_registers(
@@ -178,7 +182,7 @@ class BiQubitsMixer(GateWithRegisters):
             a T complexity of zero.
             """
             yield cirq.CNOT(a, b)
-            yield And().on(control, b, aux)
+            yield And(uncompute=self.is_adjoint).on(control, b, aux)
             yield cirq.CNOT(aux, a)
             yield cirq.CNOT(a, b)
 
@@ -197,7 +201,13 @@ class BiQubitsMixer(GateWithRegisters):
             yield from _cswap(x_msb, y_msb, y_lsb, ancilla[2])
             yield cirq.CNOT(y_lsb, x_lsb)
 
-        yield from _decomposition()
+        if self.is_adjoint:
+            yield from reversed(tuple(cirq.flatten_to_ops(_decomposition())))
+        else:
+            yield from _decomposition()
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def __pow__(self, power: int) -> cirq.Gate:
         if power == 1:
@@ -206,10 +216,13 @@ class BiQubitsMixer(GateWithRegisters):
             return self.adjoint()
         return NotImplemented  # pragma: no cover
 
-    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
-        if adjoint:
+    def _t_complexity_(self) -> TComplexity:
+        if self.is_adjoint:
             return TComplexity(clifford=18)
         return TComplexity(t=8, clifford=28)
+
+    def _has_unitary_(self):
+        return not self.is_adjoint
 
 
 @frozen
@@ -219,14 +232,17 @@ class SingleQubitCompare(GateWithRegisters):
     Source: (FIG. 3) in https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
     """  # pylint: disable=line-too-long
 
+    is_adjoint: bool = False
+
     @cached_property
     def signature(self) -> Signature:
+        one_side = Side.RIGHT if not self.is_adjoint else Side.LEFT
         return Signature(
             [
                 Register('a', 1),
                 Register('b', 1),
-                Register('less_than', 1, side=Side.RIGHT),
-                Register('greater_than', 1, side=Side.RIGHT),
+                Register('less_than', 1, side=one_side),
+                Register('greater_than', 1, side=one_side),
             ]
         )
 
@@ -239,14 +255,20 @@ class SingleQubitCompare(GateWithRegisters):
         greater_than = quregs['greater_than']
 
         def _decomposition() -> Iterator[cirq.Operation]:
-            yield And(0, 1).on(*a, *b, *less_than)
+            yield And(0, 1, uncompute=self.is_adjoint).on(*a, *b, *less_than)
             yield cirq.CNOT(*less_than, *greater_than)
             yield cirq.CNOT(*b, *greater_than)
             yield cirq.CNOT(*a, *b)
             yield cirq.CNOT(*a, *greater_than)
             yield cirq.X(*b)
 
-        yield from _decomposition()
+        if self.is_adjoint:
+            yield from reversed(tuple(_decomposition()))
+        else:
+            yield from _decomposition()
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def __pow__(self, power: int) -> cirq.Gate:
         if not isinstance(power, int):
@@ -257,8 +279,8 @@ class SingleQubitCompare(GateWithRegisters):
             return self.adjoint()
         return self
 
-    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
-        if adjoint:
+    def _t_complexity_(self) -> TComplexity:
+        if self.is_adjoint:
             return TComplexity(clifford=11)
         return TComplexity(t=4, clifford=16)
 
