@@ -1056,7 +1056,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(n=soq.reg.bitsize), free=soq)
+        self.add(Free(n=soq.reg.bitsize), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""

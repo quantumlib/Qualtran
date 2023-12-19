@@ -269,10 +269,13 @@ class Allocate(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('alloc', bitsize=self.n, side=Side.RIGHT)])
+        return Signature([Register('reg', bitsize=self.n, side=Side.RIGHT)])
+
+    def adjoint(self) -> 'Bloq':
+        return Free(n=self.n)
 
     def on_classical_vals(self) -> Dict[str, int]:
-        return {'alloc': 0}
+        return {'reg': 0}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -290,11 +293,14 @@ class Free(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('free', bitsize=self.n, side=Side.LEFT)])
+        return Signature([Register('reg', bitsize=self.n, side=Side.LEFT)])
 
-    def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
-        if free != 0:
-            raise ValueError(f"Tried to free a non-zero register: {free}.")
+    def adjoint(self) -> 'Bloq':
+        return Allocate(n=self.n)
+
+    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        if reg != 0:
+            raise ValueError(f"Tried to free a non-zero register: {reg}.")
         return {}
 
     def t_complexity(self) -> 'TComplexity':

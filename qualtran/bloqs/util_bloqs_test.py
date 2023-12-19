@@ -56,7 +56,7 @@ def test_util_bloqs():
     assert qs2.shape == (10,)
     qs3 = bb.add(Join(10), reg=qs2)
     assert isinstance(qs3, Soquet)
-    no_return = bb.add(Free(10), free=qs3)
+    no_return = bb.add(Free(10), reg=qs3)
     assert no_return is None
 
 
