@@ -111,7 +111,7 @@ class QROM(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(Register(f'target{i}', l) for i, l in enumerate(self.target_bitsizes) if l)
+        return tuple(Register(f'target{i}_', l) for i, l in enumerate(self.target_bitsizes) if l)
 
     def _load_nth_data(
         self,
@@ -120,7 +120,7 @@ class QROM(UnaryIterationGate):
         **target_regs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         for i, d in enumerate(self.data):
-            target = target_regs.get(f'target{i}', ())
+            target = target_regs.get(f'target{i}_', ())
             for q, bit in zip(target, f'{int(d[selection_idx]):0{len(target)}b}'):
                 if int(bit):
                     yield gate(q)

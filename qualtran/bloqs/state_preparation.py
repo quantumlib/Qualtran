@@ -166,6 +166,6 @@ class StatePreparationAliasSampling(PrepareOracle):
             (self.selection_bitsize,),
             (self.alternates_bitsize, self.keep_bitsize),
         )
-        yield qrom_gate.on_registers(selection=selection, target0=alt, target1=keep)
+        yield qrom_gate.on_registers(selection=selection, target0_=alt, target1_=keep)
         yield LessThanEqual(self.mu, self.mu).on(*keep, *sigma_mu, *less_than_equal)
         yield CSwap.make_on(ctrl=less_than_equal, x=alt, y=selection)

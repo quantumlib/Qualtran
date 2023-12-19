@@ -71,7 +71,7 @@ def test_qrom_1d(data, num_controls):
             initial_state = [qubit_vals[x] for x in g.all_qubits]
             if cval or not num_controls:
                 for ti, d in enumerate(data):
-                    target = g.quregs[f"target{ti}"]
+                    target = g.quregs[f"target{ti}_"]
                     qubit_vals.update(zip(target, iter_bits(d[selection_integer], len(target))))
             final_state = [qubit_vals[x] for x in g.all_qubits]
 
@@ -172,9 +172,9 @@ def test_qrom_variable_spacing():
         r'''
 selection00: ───X───@───X───@───
                     │       │
-target00: ──────────┼───────X───
+target0_0: ─────────┼───────X───
                     │
-target01: ──────────X───────────
+target0_1: ─────────X───────────
     ''',
     )
     # When inner loop range is not a power of 2, the inner segment tree cannot be skipped.
@@ -193,9 +193,9 @@ selection10: ───────(0)───────┼──────�
                     │         │       │          │         │       │
 anc_1: ─────────────And───@───X───@───And†───────And───@───X───@───And†───
                           │       │                    │       │
-target00: ────────────────┼───────┼────────────────────X───────X──────────
+target0_0: ───────────────┼───────┼────────────────────X───────X──────────
                           │       │
-target01: ────────────────X───────X───────────────────────────────────────
+target0_1: ───────────────X───────X───────────────────────────────────────
         ''',
     )
     # No T-gates needed if all elements to load are identical.
@@ -255,7 +255,7 @@ def test_qrom_multi_dim(data, num_controls):
             initial_state = [qubit_vals[x] for x in g.all_qubits]
             if cval or not num_controls:
                 for ti, d in enumerate(data):
-                    target = g.quregs[f"target{ti}"]
+                    target = g.quregs[f"target{ti}_"]
                     qubit_vals.update(zip(target, iter_bits(int(d[idxs]), len(target))))
             final_state = [qubit_vals[x] for x in g.all_qubits]
             qubit_vals = {x: 0 for x in g.all_qubits}
