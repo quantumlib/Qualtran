@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""SELECT and PREPARE for the second quantized Tensor Hypercontracted (THC) chemistry Hamtiltonian.
-"""
 
-from .prepare import PrepareTHC, UniformSuperpositionTHC
-from .select_bloq import SelectTHC
+from qualtran.bloqs.chemistry.thc.select_bloq import _thc_sel
+
+
+def test_thc_uniform_prep(bloq_autotester):
+    bloq_autotester(_thc_sel)
