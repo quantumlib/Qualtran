@@ -50,5 +50,11 @@ def test_chebyshev(bloq_autotester):
     bloq_autotester(_chebyshev_poly)
 
 
+def test_chebyshev_t_counts():
+    counts = _chebyshev_poly().call_graph()[1]
+    counts_decomp = _chebyshev_poly().decompose_bloq().call_graph()[1]
+    assert counts[TGate()] == counts_decomp[TGate()]
+
+
 def test_notebook():
     execute_notebook('block_encoding')
