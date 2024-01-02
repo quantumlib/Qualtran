@@ -19,25 +19,64 @@ import pytest
 import sympy
 from attrs import frozen
 from cirq.testing import random_unitary
+from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.generalized_qsp import GeneralizedQSP, qsp_phase_factors, SU2RotationGate
+from qualtran.bloqs.generalized_qsp import (
+    GeneralizedQSP,
+    qsp_complementary_polynomial,
+    qsp_phase_factors,
+    SU2RotationGate,
+)
 
 
 def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
-    rng = np.random.default_rng(42)
+    random_state = np.random.default_rng(42)
 
     for _ in range(20):
-        theta = rng.random() * 2 * np.pi
-        phi = rng.random() * 2 * np.pi
-        lambd = rng.random() * 2 * np.pi
+        theta = random_state.random() * 2 * np.pi
+        phi = random_state.random() * 2 * np.pi
+        lambd = random_state.random() * 2 * np.pi
 
         gate = SU2RotationGate(theta, phi, lambd)
 
         expected = gate.rotation_matrix
         actual = cirq.unitary(gate)
         np.testing.assert_allclose(actual, expected)
+
+
+def check_polynomial_pair_on_random_points_on_unit_circle(
+    P: Sequence[complex] | Polynomial,
+    Q: Sequence[complex] | Polynomial,
+    *,
+    random_state: np.random.RandomState,
+    n_points: int = 1000,
+):
+    P = Polynomial(P)
+    Q = Polynomial(Q)
+
+    for _ in range(n_points):
+        z = np.exp(random_state.random() * np.pi * 2j)
+        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1)
+
+
+def random_qsp_polynomial(degree: int, *, random_state: np.random.RandomState) -> Sequence[complex]:
+    return (
+        random_state.random(size=degree)
+        / degree
+        * np.exp(random_state.random(size=degree) * np.pi * 2j)
+    )
+
+
+@pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
+def test_complimentary_polynomial(degree: int):
+    random_state = np.random.RandomState(42)
+
+    for _ in range(10):
+        P = random_qsp_polynomial(degree, random_state=random_state)
+        Q = qsp_complementary_polynomial(P, verify=True)
+        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
 
 
 @frozen
@@ -71,37 +110,36 @@ def evaluate_polynomial_of_matrix(P: Sequence[complex], U: NDArray) -> NDArray:
     return result
 
 
-def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex], Q: Sequence[complex]):
+def assert_matrices_same_upto_global_phase(A: NDArray, B: NDArray):
+    assert A.shape == B.shape
+    np.testing.assert_allclose(A @ A.conj().T, B @ B.conj().T)
+    np.testing.assert_allclose(A.conj().T @ A, B.conj().T @ B)
+
+
+def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
-    result_unitary = cirq.unitary(GeneralizedQSP(U, P, Q))
+    gqsp_U = GeneralizedQSP(U, P)
+    result_unitary = cirq.unitary(gqsp_U)
 
     expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)
     actual_top_left = result_unitary[:N, :N]
-    np.testing.assert_allclose(expected_top_left, actual_top_left)
+    assert_matrices_same_upto_global_phase(expected_top_left, actual_top_left)
 
-    expected_bottom_left = evaluate_polynomial_of_matrix(Q, input_unitary)
+    expected_bottom_left = evaluate_polynomial_of_matrix(gqsp_U.Q, input_unitary)
     actual_bottom_left = result_unitary[N:, :N]
-    np.testing.assert_allclose(expected_bottom_left, actual_bottom_left)
+    assert_matrices_same_upto_global_phase(expected_bottom_left, actual_bottom_left)
 
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
-@pytest.mark.parametrize(
-    ("P", "Q"),
-    [
-        ([0.5, 0.5], [-0.5, 0.5]),
-        ([0.5, 0, 0.5], [-0.5, 0, 0.5]),
-        ([0.5, 0, 0, 0.5], [-0.5, 0, 0, 0.5]),
-    ],
-)
-def test_generalized_qsp_on_random_unitaries(
-    bitsize: int, P: Sequence[complex], Q: Sequence[complex]
-):
+@pytest.mark.parametrize("degree", [2, 3, 4])
+def test_generalized_qsp_on_random_unitaries(bitsize: int, degree: int):
     random_state = np.random.RandomState(42)
 
     for _ in range(20):
         U = RandomGate.create(bitsize, random_state=random_state)
-        verify_generalized_qsp(U, P, Q)
+        P = random_qsp_polynomial(degree, random_state=random_state)
+        verify_generalized_qsp(U, P)
 
 
 @frozen
@@ -156,13 +194,10 @@ class SymbolicGQSP:
         assert abs(error_QU) <= 1e-10
 
 
-@pytest.mark.parametrize(
-    ("P", "Q"),
-    [
-        ([0.5, 0.5], [-0.5, 0.5]),
-        ([0.5, 0, 0.5], [-0.5, 0, 0.5]),
-        ([0.5, 0, 0, 0.5], [-0.5, 0, 0, 0.5]),
-    ],
-)
-def test_generalized_qsp_with_symbolic_signal_matrix(P: Sequence[complex], Q: Sequence[complex]):
+@pytest.mark.parametrize("degree", [2, 3, 4])
+def test_generalized_qsp_with_symbolic_signal_matrix(degree: int):
+    random_state = np.random.RandomState(102)
+
+    P = random_qsp_polynomial(degree, random_state=random_state)
+    Q = qsp_complementary_polynomial(P)
     SymbolicGQSP(P, Q).verify()

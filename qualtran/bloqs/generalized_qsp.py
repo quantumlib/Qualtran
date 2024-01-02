@@ -18,6 +18,7 @@ from typing import Sequence, Tuple
 import cirq
 import numpy as np
 from attrs import frozen
+from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, Register, Signature
@@ -79,6 +80,82 @@ class SU2RotationGate(GateWithRegisters):
         yield cirq.GlobalPhaseGate(matrix[0, 0].conj()).on()
 
 
+def qsp_complementary_polynomial(P: Sequence[complex], *, verify=False) -> Sequence[complex]:
+    r"""Computes the Q polynomial given P
+
+    Computes polynomial $Q$ of degree at-most that of $P$, satisfying
+
+        $$ \abs{P(e^{i\theta})}^2 + \abs{Q(e^{i\theta})}^2 = 1 $$
+
+    for every $\theta \in \mathbb{R}$.
+
+    The exact method for computing $Q$ is described in the proof of Theorem 4.
+
+    Args:
+        P: Co-efficients of a complex polynomial.
+        verify: sanity check the computed polynomial roots (defaults to False).
+
+    References:
+        [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
+            Motlagh and Wiebe. (2023). Theorem 4.
+    """
+    d = len(P) - 1  # degree
+
+    # R(z) = z^d (1 - P^*(z) P(z)) (Eq. 34, 35)
+    R = Polynomial.basis(d) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
+    roots = R.roots()
+
+    units: list[complex] = []  # roots r s.t. \abs{r} = 1
+    larger_roots: list[complex] = []  # roots r s.t. \abs{r} > 1
+    smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
+
+    for r in roots:
+        if np.allclose(np.abs(r), 1):
+            units.append(r)
+        elif np.abs(r) > 1:
+            larger_roots.append(r)
+        else:
+            smaller_roots.append(r)
+
+    if verify:
+
+        def is_permutation(A, B):
+            assert len(A) == len(B)
+            A = list(A)
+            for z in B:
+                for w in A:
+                    if np.allclose(z, w):
+                        A.remove(w)
+                        break
+                else:
+                    return False
+            return True
+
+        assert is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
+
+    c = R.coef[-1]
+    scaling_factor = np.sqrt(np.abs(c * np.prod(larger_roots)))
+
+    # pair up roots in `units`
+    paired_units: list[complex] = []
+    unpaired_units: list[complex] = []
+    for z in units:
+        for w in unpaired_units:
+            if np.allclose(z, w):
+                paired_units.append(z)
+                unpaired_units.remove(w)
+                break
+        else:
+            unpaired_units.append(z)
+
+    if verify:
+        assert len(unpaired_units) == 0
+
+    Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
+
+    return Q.coef
+
+
 def qsp_phase_factors(
     P: Sequence[complex], Q: Sequence[complex]
 ) -> Tuple[Sequence[float], Sequence[float], float]:
@@ -117,7 +194,7 @@ def qsp_phase_factors(
 
         a, b = np.around(S[:, d], decimals=10)
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
-        phi[d] = (np.angle(a) - np.angle(b)) % (2 * np.pi)
+        phi[d] = np.angle(a) - np.angle(b)
 
         if d == 0:
             lambd = np.angle(b)
@@ -132,19 +209,18 @@ def qsp_phase_factors(
 class GeneralizedQSP(GateWithRegisters):
     r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
 
-    Given a pair of QSP polynomials $P, Q$, this gate represents the following unitary:
+    This gate represents the following unitary:
 
-        $$ \begin{bmatrix} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix} $$
+        $$ \begin{bmatrix} P(U) & \cdot \\ \cdot & \cdot \end{bmatrix} $$
 
-    The polynomials $P, Q$ must satisfy:
-        $\abs{P(x)}^2 + \abs{Q(x)}^2 = 1$ for every $x \in \mathbb{C}$ such that $\abs{x} = 1$
+    The polynomial $P$ must satisfy:
+    $\abs{P(e^{i \theta})}^2 \le 1$ for every $\theta \in \mathbb{R}$.
 
     The exact circuit is described in Figure 2.
 
     Args:
         U: Unitary operation.
         P: Co-efficients of a complex polynomial.
-        Q: Co-efficients of a complex polynomial.
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -153,11 +229,14 @@ class GeneralizedQSP(GateWithRegisters):
 
     U: GateWithRegisters
     P: Sequence[complex]
-    Q: Sequence[complex]
 
     @property
     def signature(self) -> Signature:
         return Signature([Register(name='signal', bitsize=1), *self.U.signature])
+
+    @cached_property
+    def Q(self):
+        return qsp_complementary_polynomial(self.P)
 
     @cached_property
     def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:
