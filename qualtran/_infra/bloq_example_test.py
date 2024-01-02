@@ -11,37 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from functools import cached_property
 
-from attrs import frozen
-
-from qualtran import Bloq, bloq_example, BloqExample, Signature
+from qualtran import bloq_example, BloqExample
+from qualtran.bloqs.for_testing import TestAtom
 
 
-@frozen
-class TesterBloq(Bloq):
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(x=10, y=10)
-
-
-def _tester_bloq_func() -> TesterBloq:
-    return TesterBloq()
+def _tester_bloq_func() -> TestAtom:
+    return TestAtom()
 
 
 @bloq_example
-def _tester_bloq() -> TesterBloq:
-    return TesterBloq()
+def _tester_bloq() -> TestAtom:
+    return TestAtom()
 
 
 def test_bloq_example_explicit():
-    be = BloqExample(func=_tester_bloq_func, name='tester_bloq', bloq_cls=TesterBloq)
+    be = BloqExample(func=_tester_bloq_func, name='tester_bloq', bloq_cls=TestAtom)
     assert be.name == 'tester_bloq'
-
-    assert be.bloq_cls == TesterBloq
+    assert be.bloq_cls == TestAtom
 
 
 def test_bloq_example_decorator():
     be = _tester_bloq
     assert be.name == 'tester_bloq'
-    assert be.bloq_cls == TesterBloq
+    assert be.bloq_cls == TestAtom

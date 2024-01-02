@@ -15,11 +15,15 @@
 import numpy as np
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.ccz2t_cost_model import get_ccz2t_costs
+from qualtran.surface_code.ccz2t_cost_model import (
+    get_ccz2t_costs_from_error_budget,
+    get_ccz2t_costs_from_grid_search,
+    iter_ccz2t_factories,
+)
 
 
 def test_vs_spreadsheet():
-    re = get_ccz2t_costs(
+    re = get_ccz2t_costs_from_error_budget(
         n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
         n_algo_qubits=100,
         error_budget=0.01,
@@ -30,3 +34,34 @@ def test_vs_spreadsheet():
     np.testing.assert_allclose(re.failure_prob, 0.0084, rtol=1e-3)
     np.testing.assert_allclose(re.footprint, 4.00e5, rtol=1e-3)
     np.testing.assert_allclose(re.duration_hr, 7.53, rtol=1e-3)
+
+
+def test_grid_search_runs():
+    cost, factory, db = get_ccz2t_costs_from_grid_search(
+        n_magic=AlgorithmSummary(t_gates=10**8, toffoli_gates=10**8),
+        n_algo_qubits=100,
+        phys_err=1e-3,
+        error_budget=0.1,
+        cycle_time_us=1,
+    )
+    assert factory.distillation_l1_d == 15
+    assert factory.distillation_l2_d == 23
+    assert db.data_d == 25
+
+
+def test_grid_search_against_thc():
+    """test based on the parameters reported in section IV.C of Lee et al., PRXQuantum 2, 2021"""
+    best_cost, best_factory, best_data_block = get_ccz2t_costs_from_grid_search(
+        n_magic=AlgorithmSummary(toffoli_gates=6665400000),
+        n_algo_qubits=696,
+        error_budget=1e-2,
+        phys_err=1e-3,
+        factory_iter=iter_ccz2t_factories(n_factories=4),
+        cost_function=(lambda pc: pc.duration_hr),
+    )
+    assert best_cost.failure_prob == 0.007725395132201774
+    assert best_cost.footprint == 2933032
+    assert best_cost.duration_hr == 89.1034375
+    assert best_factory.base_factory.distillation_l1_d == 17
+    assert best_factory.base_factory.distillation_l2_d == 29
+    assert best_data_block.data_d == 33

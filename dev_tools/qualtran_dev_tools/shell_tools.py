@@ -91,7 +91,7 @@ def run(
         if abbreviate_non_option_arguments:
             cmd_desc = abbreviate_command_arguments_after_switches(cmd_desc)
         print("run:", cmd_desc, file=sys.stderr)
-    return subprocess.run(args, **subprocess_run_kwargs)
+    return subprocess.run(args, **subprocess_run_kwargs)  # pylint: disable=subprocess-run-check
 
 
 def output_of(args: Union[str, List[str]], **kwargs) -> str:

@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.chemistry.sf.select_bloq import _select
 
-from qualtran.bloqs.chemistry.thc.select import _thc_sel
 
-
-def test_thc_uniform_prep(bloq_autotester):
-    bloq_autotester(_thc_sel)
+def test_select(bloq_autotester):
+    bloq_autotester(_select)

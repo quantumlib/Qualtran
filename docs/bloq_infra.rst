@@ -13,6 +13,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
    :caption: Basic:
 
    _infra/Bloqs-Tutorial.ipynb
+   Protocols.ipynb
    simulation/classical_sim.ipynb
    simulation/tensor.ipynb
    resource_counting/bloq_counts.ipynb

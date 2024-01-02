@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 
 from attrs import field, frozen
 
@@ -31,10 +32,10 @@ class PhysicalParameters:
 
     physical_error_rate: float = field(default=1e-3, repr=lambda x: f'{x:g}')
 
-    reference: str | None = None
+    reference: Optional[str] = None
 
 
-BeverlandEtAl = PhysicalParameters(
+BEVERLAND_PARAMS = PhysicalParameters(
     t_gate_ns=50,  # 50ns
     t_meas_ns=100,  # 100ns
     physical_error_rate=1e-4,

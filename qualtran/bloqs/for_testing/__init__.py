@@ -12,20 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.sparse import SelectSparse
-
-
-def _make_sparse_select():
-    from qualtran.bloqs.chemistry.sparse import SelectSparse
-
-    return SelectSparse(10)
-
-
-def test_sparse_select():
-    sel = SelectSparse(10)
-
-
-def test_sparse_select_bloq_counts():
-    bloq = SelectSparse(10)
-    graph, sigma = bloq.call_graph()
-    assert isinstance(sigma, dict)
+from .atom import TestAtom, TestTwoBitOp
+from .many_registers import TestMultiRegister
+from .with_call_graph import TestBloqWithCallGraph
+from .with_decomposition import TestParallelCombo, TestSerialCombo
