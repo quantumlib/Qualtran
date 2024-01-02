@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence
+from typing import Sequence, Union
 
 import cirq
 import numpy as np
@@ -47,8 +47,8 @@ def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
 
 
 def check_polynomial_pair_on_random_points_on_unit_circle(
-    P: Sequence[complex] | Polynomial,
-    Q: Sequence[complex] | Polynomial,
+    P: Union[Sequence[complex], Polynomial],
+    Q: Union[Sequence[complex], Polynomial],
     *,
     random_state: np.random.RandomState,
     n_points: int = 1000,

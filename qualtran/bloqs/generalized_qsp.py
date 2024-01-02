@@ -80,7 +80,9 @@ class SU2RotationGate(GateWithRegisters):
         yield cirq.GlobalPhaseGate(matrix[0, 0].conj()).on()
 
 
-def qsp_complementary_polynomial(P: Sequence[complex], *, verify=False) -> Sequence[complex]:
+def qsp_complementary_polynomial(
+    P: Sequence[complex], *, verify: bool = False
+) -> Sequence[complex]:
     r"""Computes the Q polynomial given P
 
     Computes polynomial $Q$ of degree at-most that of $P$, satisfying
@@ -140,11 +142,15 @@ def qsp_complementary_polynomial(P: Sequence[complex], *, verify=False) -> Seque
     paired_units: list[complex] = []
     unpaired_units: list[complex] = []
     for z in units:
+        matched_z = None
         for w in unpaired_units:
             if np.allclose(z, w):
-                paired_units.append(z)
-                unpaired_units.remove(w)
+                matched_z = w
                 break
+
+        if matched_z:
+            paired_units.append(z)
+            unpaired_units.remove(matched_z)
         else:
             unpaired_units.append(z)
 
