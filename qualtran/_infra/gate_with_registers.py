@@ -239,7 +239,8 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
 
-        from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq, InteropQubitManager
+        from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq
+        from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
         try:
             return Bloq.decompose_bloq(self)
@@ -309,7 +310,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
     ) -> cirq.OP_TREE:
-        from qualtran.cirq_interop._cirq_to_bloq import InteropQubitManager
+        from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
         quregs = split_qubits(self.signature, qubits)
         if context is None:
