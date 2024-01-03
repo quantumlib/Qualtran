@@ -17,14 +17,19 @@ import pytest
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
 
-def test_interop_qubit_manager():
-    qm = InteropQubitManager()
+@pytest.mark.parametrize('base_qm', [cirq.GreedyQubitManager('anc'), cirq.SimpleQubitManager()])
+def test_interop_qubit_manager(base_qm):
+    qm = InteropQubitManager(base_qm)
+    # qm delegates allocation / de-allocation requests to base_qm.
+    q = qm.qalloc(1)
+    qm.qfree(q)
     q = cirq.q('junk')
-    with pytest.raises(ValueError, match='not allocated'):
+    # q is not managed and was not allocated by base_qm.
+    with pytest.raises((ValueError, AssertionError)):
         qm.qfree([q])
     # You can delegate qubits to be "managed" by the InteropQubitManager.
     qm.manage_qubits([q])
     qm.qfree([q])
     # q was already deallocated.
-    with pytest.raises(ValueError, match='not allocated'):
+    with pytest.raises((ValueError, AssertionError)):
         qm.qfree([q])
