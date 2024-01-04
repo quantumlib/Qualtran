@@ -101,7 +101,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
             return
         else:
             yield cirq.CX(anc[depth - 1], anc[depth])
-            yield And(adjoint=True).on(inp[depth], out[depth], anc[depth])
+            yield And().adjoint().on(inp[depth], out[depth], anc[depth])
             yield cirq.CX(anc[depth - 1], inp[depth])
             yield cirq.CX(inp[depth], out[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
@@ -121,7 +121,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         yield cirq.CX(input_bits[-1], output_bits[-1])
         # right part of Fig.2
         yield from self._right_building_block(input_bits, output_bits, ancillas, self.bitsize - 2)
-        yield And(adjoint=True).on(input_bits[0], output_bits[0], ancillas[0])
+        yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield cirq.CX(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
@@ -228,14 +228,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         return cirq.inverse(optree) if self.adjoint else optree
 
     def t_complexity(self) -> TComplexity:
-        and_t = And(adjoint=self.adjoint).t_complexity()
+        and_t = And(uncompute=self.adjoint).t_complexity()
         num_clifford = self.bitsize * (5 + and_t.clifford)
         num_t = self.bitsize * and_t.t
         return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
-            (And(adjoint=self.adjoint), self.bitsize),
+            (And(uncompute=self.adjoint), self.bitsize),
             (ArbitraryClifford(n=2), 5 * self.bitsize),
         }
 

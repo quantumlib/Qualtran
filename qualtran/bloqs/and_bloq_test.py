@@ -78,7 +78,7 @@ def test_truth_table_classical(cv1, cv2):
 def test_bad_adjoint(cv1, cv2):
     state = [ZeroState(), OneState()]
     eff = [ZeroEffect(), OneEffect()]
-    and_ = And(cv1, cv2, adjoint=True)
+    and_ = And(cv1, cv2, uncompute=True)
 
     for a, b in itertools.product([0, 1], repeat=2):
         bb = BloqBuilder()
@@ -103,7 +103,7 @@ def test_inverse():
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
     qs, trg = bb.add(And(), ctrl=[q0, q1])
-    qs = bb.add(And(adjoint=True), ctrl=qs, target=trg)
+    qs = bb.add(And(uncompute=True), ctrl=qs, target=trg)
     cbloq = bb.finalize(q0=qs[0], q1=qs[1])
 
     mat = cbloq.tensor_contract()
@@ -162,6 +162,15 @@ def test_multiand_consistent_apply_classical():
             np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
 
+def test_multi_validate():
+    with pytest.raises(ValueError):
+        _ = MultiAnd(cvs=(0,))
+    with pytest.raises(ValueError):
+        _ = MultiAnd(cvs=[0])
+    with pytest.raises(ValueError):
+        _ = MultiAnd(cvs=(0, 0))
+
+
 def test_notebook():
     qlt_testing.execute_notebook('and_bloq')
 
@@ -176,7 +185,7 @@ class AndIdentity(Bloq):
         self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         qs, trg = bb.add(And(), ctrl=[q0, q1])
-        q0, q1 = bb.add(And(adjoint=True), ctrl=qs, target=trg)
+        q0, q1 = bb.add(And(uncompute=True), ctrl=qs, target=trg)
         return {'q0': q0, 'q1': q1}
 
 
@@ -210,7 +219,7 @@ def test_multiand_adjoint():
     q2 = bb.add_register('q2', 1)
 
     qs, junk, trg = bb.add(MultiAnd((1, 1, 1)), ctrl=[q0, q1, q2])
-    qs = bb.add(MultiAnd((1, 1, 1), adjoint=True), ctrl=qs, target=trg, junk=junk)
+    qs = bb.add(MultiAnd((1, 1, 1)).adjoint(), ctrl=qs, target=trg, junk=junk)
 
     cbloq = bb.finalize(q0=qs[0], q1=qs[1], q2=qs[2])
     qlt_testing.assert_valid_cbloq(cbloq)
