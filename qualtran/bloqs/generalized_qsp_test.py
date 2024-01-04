@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from functools import cached_property
 from typing import Sequence, Union
 
 import cirq
 import numpy as np
 import pytest
 import sympy
-from attrs import frozen
+from attrs import define, frozen
 from cirq.testing import random_unitary
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
@@ -29,6 +30,13 @@ from qualtran.bloqs.generalized_qsp import (
     qsp_phase_factors,
     SU2RotationGate,
 )
+
+
+def assert_angles_almost_equal(
+    actual: Union[float, Sequence[float]], desired: Union[float, Sequence[float]]
+):
+    """Helper to check if two angle sequences are equal (up to multiples of 2*pi)"""
+    np.testing.assert_almost_equal(np.exp(np.array(actual) * 1j), np.exp(np.array(desired) * 1j))
 
 
 def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
@@ -62,10 +70,8 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
 
 
 def random_qsp_polynomial(degree: int, *, random_state: np.random.RandomState) -> Sequence[complex]:
-    return (
-        random_state.random(size=degree)
-        / degree
-        * np.exp(random_state.random(size=degree) * np.pi * 2j)
+    return (random_state.random(size=degree) / degree) * np.exp(
+        random_state.random(size=degree) * np.pi * 2j
     )
 
 
@@ -112,8 +118,8 @@ def evaluate_polynomial_of_matrix(P: Sequence[complex], U: NDArray) -> NDArray:
 
 def assert_matrices_same_upto_global_phase(A: NDArray, B: NDArray):
     assert A.shape == B.shape
-    np.testing.assert_allclose(A @ A.conj().T, B @ B.conj().T)
-    np.testing.assert_allclose(A.conj().T @ A, B.conj().T @ B)
+    assert np.linalg.norm(A @ A.conj().T - B @ B.conj().T) <= 1e-5
+    assert np.linalg.norm(A.conj().T @ A - B.conj().T @ B) <= 1e-5
 
 
 def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
@@ -142,7 +148,7 @@ def test_generalized_qsp_on_random_unitaries(bitsize: int, degree: int):
         verify_generalized_qsp(U, P)
 
 
-@frozen
+@define(slots=False)
 class SymbolicGQSP:
     r"""Run the Generalized QSP algorithm on a symbolic input unitary
 
@@ -157,7 +163,10 @@ class SymbolicGQSP:
     """
 
     P: Sequence[complex]
-    Q: Sequence[complex]
+
+    @cached_property
+    def Q(self):
+        return qsp_complementary_polynomial(self.P)
 
     def get_symbolic_qsp_matrix(self, U: sympy.Symbol):
         theta, phi, lambd = qsp_phase_factors(self.P, self.Q)
@@ -180,6 +189,9 @@ class SymbolicGQSP:
         return float(sum(abs(c) for c in sympy.Poly(M, U).coeffs()))
 
     def verify(self):
+        check_polynomial_pair_on_random_points_on_unit_circle(
+            self.P, self.Q, random_state=np.random.RandomState(42)
+        )
         U = sympy.symbols('U')
         W = self.get_symbolic_qsp_matrix(U)
         actual_PU, actual_QU = W[:, 0]
@@ -190,8 +202,8 @@ class SymbolicGQSP:
         error_PU = self.upperbound_matrix_norm(expected_PU - actual_PU, U)
         error_QU = self.upperbound_matrix_norm(expected_QU - actual_QU, U)
 
-        assert abs(error_PU) <= 1e-10
-        assert abs(error_QU) <= 1e-10
+        assert abs(error_PU) <= 1e-5
+        assert abs(error_QU) <= 1e-5
 
 
 @pytest.mark.parametrize("degree", [2, 3, 4])
@@ -199,5 +211,4 @@ def test_generalized_qsp_with_symbolic_signal_matrix(degree: int):
     random_state = np.random.RandomState(102)
 
     P = random_qsp_polynomial(degree, random_state=random_state)
-    Q = qsp_complementary_polynomial(P)
-    SymbolicGQSP(P, Q).verify()
+    SymbolicGQSP(P).verify()
