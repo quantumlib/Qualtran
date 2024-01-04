@@ -166,3 +166,12 @@ class Adjoint(GateWithRegisters):
         # delegating and then flip back. Subbloqs only have to answer this protocol
         # if the provided soquet is facing the correct direction.
         return self.subbloq.wire_symbol(attrs.evolve(soq, reg=soq.reg.adjoint())).adjoint()
+
+    def _t_complexity_(self):
+        """The cirq-style `_t_complexity_` delegates to the subbloq's method with a special shim.
+
+        The cirq-style t complexity protocol does not leverage the heirarchical decomposition
+        of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
+        """
+        # TODO: https://github.com/quantumlib/Qualtran/issues/489
+        return self.subbloq._t_complexity_(adjoint=True)

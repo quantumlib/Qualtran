@@ -15,11 +15,12 @@
 from functools import cached_property
 from typing import List, Set, TYPE_CHECKING
 
+import attrs
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Side, Signature
+from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -40,24 +41,23 @@ class HammingWeightCompute(GateWithRegisters):
         bitsize: Number of bits in the input register. The allocated output register
             is of size $\log_2(\text{bitsize})$ so it has enough space to hold the hamming weight
             of x.
+        uncompute: Whether to uncompute the hamming weight instead.
 
     Registers:
      - x: A $\text{bitsize}$-sized input register (register x above).
-     - junk: A LEFT/RIGHT ancilla register, depending on whether gate is adjoint or not,
-        of size $\text{bitsize} - \text{hamming\_weight(bitsize)}$.
-     - out: A LEFT/RIGHT output register, depending on whether the gate is adjoint or not,
-        of size $\log_2(\text{bitize})$.
+     - junk: A RIGHT ancilla register of size $\text{bitsize} - \text{hamming\_weight(bitsize)}$.
+     - out: A RIGHT output register of size $\log_2(\text{bitize})$.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648), Page-4
     """
 
     bitsize: int
-    adjoint: bool = False
+    uncompute: bool = False
 
     @cached_property
     def signature(self):
-        side = Side.LEFT if self.adjoint else Side.RIGHT
+        side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
                 Register('x', self.bitsize),
@@ -103,10 +103,10 @@ class HammingWeightCompute(GateWithRegisters):
         junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
         out: List[cirq.Qid] = [*quregs['out'][::-1]]
         optree = self._decompose_using_three_to_two_adders(x, junk, out)
-        return cirq.inverse(optree) if self.adjoint else optree
+        return cirq.inverse(optree) if self.uncompute else optree
 
-    def t_complexity(self) -> TComplexity:
-        and_t = And(adjoint=self.adjoint).t_complexity()
+    def _t_complexity_(self) -> TComplexity:
+        and_t = And(uncompute=self.uncompute)._t_complexity_()
         junk_bitsize = self.bitsize - self.bitsize.bit_count()
         num_clifford = junk_bitsize * (5 + and_t.clifford) + self.bitsize.bit_count()
         num_t = junk_bitsize * and_t.t
@@ -114,13 +114,19 @@ class HammingWeightCompute(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
-            (And(adjoint=self.adjoint), self.bitsize),
+            (And(uncompute=self.uncompute), self.bitsize),
             (ArbitraryClifford(n=2), 5 * self.bitsize),
         }
+
+    def adjoint(self) -> 'Bloq':
+        # TODO: There is nothing special about the `uncompute` construction of this bloq.
+        # However: using the default `Adjoint` bloq somehow breaks Cirq simulation of
+        # `HammingWeightPhasing`.
+        return attrs.evolve(self, uncompute=not self.uncompute)
 
     def __pow__(self, power: int):
         if power == 1:
             return self
         if power == -1:
-            return HammingWeightCompute(self.bitsize, adjoint=not self.adjoint)
+            return self.adjoint()
         raise NotImplementedError("HammingWeightCompute.__pow__ defined only for +1/-1.")

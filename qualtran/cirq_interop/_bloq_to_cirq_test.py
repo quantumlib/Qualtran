@@ -127,7 +127,7 @@ def test_contruct_op_from_gate():
     assert len(out_quregs['target']) == 1
     assert op == and_gate.on_registers(**out_quregs)
     # Deallocates qubits for LEFT only registers.
-    and_inv = And(adjoint=True)
+    and_inv = And().adjoint()
     op, inv_out_quregs = and_inv.as_cirq_op(qm, **out_quregs)
     assert inv_out_quregs == in_quregs
     assert op == and_inv.on_registers(**out_quregs)

@@ -49,21 +49,22 @@ class Split(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register(name='split', bitsize=self.n, shape=tuple(), side=Side.LEFT),
-                Register(name='split', bitsize=1, shape=(self.n,), side=Side.RIGHT),
+                Register(name='reg', bitsize=self.n, shape=tuple(), side=Side.LEFT),
+                Register(name='reg', bitsize=1, shape=(self.n,), side=Side.RIGHT),
             ]
         )
 
-    def as_cirq_op(
-        self, qubit_manager, split: 'CirqQuregT'
-    ) -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'split': split.reshape((self.n, 1))}
+    def adjoint(self) -> 'Bloq':
+        return Join(n=self.n)
+
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'reg': reg.reshape((self.n, 1))}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
-    def on_classical_vals(self, split: int) -> Dict[str, 'ClassicalValT']:
-        return {'split': ints_to_bits(np.array([split]), self.n)[0]}
+    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        return {'reg': ints_to_bits(np.array([reg]), self.n)[0]}
 
     def add_my_tensors(
         self,
@@ -76,7 +77,7 @@ class Split(Bloq):
         tn.add(
             qtn.Tensor(
                 data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
-                inds=outgoing['split'].tolist() + [incoming['split']],
+                inds=outgoing['reg'].tolist() + [incoming['reg']],
                 tags=['Split', tag],
             )
         )
@@ -102,13 +103,16 @@ class Join(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('join', bitsize=1, shape=(self.n,), side=Side.LEFT),
-                Register('join', bitsize=self.n, shape=tuple(), side=Side.RIGHT),
+                Register('reg', bitsize=1, shape=(self.n,), side=Side.LEFT),
+                Register('reg', bitsize=self.n, shape=tuple(), side=Side.RIGHT),
             ]
         )
 
-    def as_cirq_op(self, qubit_manager, join: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'join': join.reshape(self.n)}
+    def adjoint(self) -> 'Bloq':
+        return Split(n=self.n)
+
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'reg': reg.reshape(self.n)}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -124,13 +128,13 @@ class Join(Bloq):
         tn.add(
             qtn.Tensor(
                 data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
-                inds=incoming['join'].tolist() + [outgoing['join']],
+                inds=incoming['reg'].tolist() + [outgoing['reg']],
                 tags=['Join', tag],
             )
         )
 
-    def on_classical_vals(self, join: 'NDArray[np.uint8]') -> Dict[str, int]:
-        return {'join': bits_to_ints(join)[0]}
+    def on_classical_vals(self, reg: 'NDArray[np.uint8]') -> Dict[str, int]:
+        return {'reg': bits_to_ints(reg)[0]}
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:
@@ -167,7 +171,7 @@ class Partition(Bloq):
             + [attrs.evolve(reg, side=partitioned) for reg in self.regs]
         )
 
-    def dagger(self):
+    def adjoint(self):
         return attrs.evolve(self, partition=not self.partition)
 
     def as_cirq_op(self, qubit_manager, **cirq_quregs) -> Tuple[None, Dict[str, 'CirqQuregT']]:
@@ -265,10 +269,13 @@ class Allocate(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('alloc', bitsize=self.n, side=Side.RIGHT)])
+        return Signature([Register('reg', bitsize=self.n, side=Side.RIGHT)])
+
+    def adjoint(self) -> 'Bloq':
+        return Free(n=self.n)
 
     def on_classical_vals(self) -> Dict[str, int]:
-        return {'alloc': 0}
+        return {'reg': 0}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -286,11 +293,14 @@ class Free(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('free', bitsize=self.n, side=Side.LEFT)])
+        return Signature([Register('reg', bitsize=self.n, side=Side.LEFT)])
 
-    def on_classical_vals(self, free: int) -> Dict[str, 'ClassicalValT']:
-        if free != 0:
-            raise ValueError(f"Tried to free a non-zero register: {free}.")
+    def adjoint(self) -> 'Bloq':
+        return Allocate(n=self.n)
+
+    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        if reg != 0:
+            raise ValueError(f"Tried to free a non-zero register: {reg}.")
         return {}
 
     def t_complexity(self) -> 'TComplexity':

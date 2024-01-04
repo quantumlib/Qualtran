@@ -23,7 +23,7 @@ from qualtran.bloqs.basic_gates import ZPowGate
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting.bloq_counts import BloqCountT
+    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -73,7 +73,7 @@ class HammingWeightPhasing(GateWithRegisters):
             )
         out = bb.join(out)
         soqs['x'] = bb.add(
-            HammingWeightCompute(self.bitsize, adjoint=True), x=soqs['x'], junk=junk, out=out
+            HammingWeightCompute(self.bitsize).adjoint(), x=soqs['x'], junk=junk, out=out
         )
         return soqs
 
@@ -83,6 +83,6 @@ class HammingWeightPhasing(GateWithRegisters):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
             (HammingWeightCompute(self.bitsize), 1),
-            (HammingWeightCompute(self.bitsize, adjoint=True), 1),
+            (HammingWeightCompute(self.bitsize).adjoint(), 1),
             (ZPowGate(exponent=self.exponent), self.bitsize.bit_length()),
         }
