@@ -108,10 +108,11 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
     $O(log(1/eps))$ and a scaled addition into the target takes $(b_{grad} - 2)(log(1/eps) + 2)$).
     Therefore, to apply $n$ individual rotations on a target register of size $n$, the complexity is
     independent of $n$ and is essentially a constant (scales only with log(1/eps)).
-    However, for the actual constant values to be better, value of $n$ needs to be $> log(1/eps)$.
-    In the case of hamming weight phasing, $n$ corresponds to the hamming weight register which itself
-    is $log(\text{bitsize})$. Thus, as `eps` becomes smaller, the required value of $\text{bitsize}$,
-    for the phase gradient version to become more performant, becomes larger.
+    However, for the actual constant values to be better, the value of $n$ needs to be
+    $> log(1/eps)$. In the case of hamming weight phasing, $n$ corresponds to the hamming weight
+    register which itself is $log(\text{bitsize})$. Thus, as `eps` becomes smaller, the required
+    value of $\text{bitsize}$, for the phase gradient version to become more performant, becomes
+    larger.
 
     Args:
         bitsize: Size of input register to apply `Z ** exponent` to.
@@ -142,8 +143,9 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
     def b_grad(self) -> int:
         return max(self.bitsize.bit_length(), self.b_phase + int(np.ceil(np.log2(self.b_phase))))
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        x, phase_grad = soqs['x'], soqs['phase_grad']
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', *, x: 'SoquetT', phase_grad: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
         x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
         out, phase_grad = bb.add(
             AddScaledValIntoPhaseReg(
