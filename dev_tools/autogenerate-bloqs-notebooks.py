@@ -47,8 +47,6 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import BloqNbSpec, NotebookSpec, render_notebook
 
-import qualtran.bloqs.and_bloq
-import qualtran.bloqs.and_bloq_test
 import qualtran.bloqs.arithmetic
 import qualtran.bloqs.arithmetic.addition_test
 import qualtran.bloqs.arithmetic.comparison_test
@@ -67,9 +65,9 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv_test
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t_test
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv_test
 import qualtran.bloqs.chemistry.sparse.prepare_test
-import qualtran.bloqs.chemistry.sparse.select_test
+import qualtran.bloqs.chemistry.sparse.select_bloq_test
 import qualtran.bloqs.chemistry.thc.prepare_test
-import qualtran.bloqs.chemistry.thc.select_test
+import qualtran.bloqs.chemistry.thc.select_bloq_test
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_exp_test
 import qualtran.bloqs.factoring.mod_mul_test
@@ -104,19 +102,9 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         directory=f'{SOURCE_DIR}/bloqs',
     ),
     NotebookSpec(
-        title='And',
-        module=qualtran.bloqs.and_bloq,
-        gate_specs=[
-            BloqNbSpec(qualtran.bloqs.and_bloq_test._make_and),
-            BloqNbSpec(qualtran.bloqs.and_bloq_test._make_multi_and),
-        ],
-        directory=f'{SOURCE_DIR}/bloqs',
-    ),
-    NotebookSpec(
         title='Arithmetic',
         module=qualtran.bloqs.arithmetic,
         gate_specs=[
-            BloqNbSpec(qualtran.bloqs.arithmetic.addition_test._make_add),
             BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_product),
             BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_square),
             BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_sum_of_squares),

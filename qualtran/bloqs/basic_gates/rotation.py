@@ -40,8 +40,8 @@ class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
         # TODO Determine precise clifford count and/or ignore.
         # This is an improvement over Ref. 2 from the docstring which provides
         # a bound of 3 log(1/eps).
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
         return TComplexity(t=num_t)
 

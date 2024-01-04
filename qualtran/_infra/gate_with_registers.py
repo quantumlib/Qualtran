@@ -107,7 +107,7 @@ def _get_all_and_output_quregs_from_input(
 
     For every register `reg` in `registers`, this method checks:
     - If `reg.side == Side.LEFT`:
-        - Ensure that `in_quregs` has a an entry corresponding to `reg`
+        - Ensure that `in_quregs` has an entry corresponding to `reg`
         - Deallocate the corresponding qubits using `qubit_manager.deallocate`.
         - These qubits are part of `all_quregs` but not `out_quregs`.
     - If `reg.side == Side.RIGHT`:
@@ -239,7 +239,8 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
 
-        from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq, InteropQubitManager
+        from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq
+        from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
         try:
             return Bloq.decompose_bloq(self)
@@ -248,6 +249,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
                 for reg in self.signature
             ):
+                # pylint: disable=raise-missing-from
                 raise DecomposeTypeError(f"Cannot decompose parameterized {self}.")
 
             qm = InteropQubitManager()
@@ -308,17 +310,22 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
     ) -> cirq.OP_TREE:
+        from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
+
         quregs = split_qubits(self.signature, qubits)
         if context is None:
             context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
         try:
             return self.decompose_from_registers(context=context, **quregs)
-        except DecomposeNotImplementedError as e:
+        except DecomposeNotImplementedError:
             pass
         try:
-            qm = context.qubit_manager
             cbloq = self.decompose_bloq()
-            circuit, out_quregs = cbloq.to_cirq_circuit(qubit_manager=qm, **quregs)
+            in_quregs = {reg.name: quregs[reg.name] for reg in self.signature.lefts()}
+            # Input qubits can get de-allocated by cbloq.to_cirq_circuit, thus mark them as managed.
+            qm = InteropQubitManager(context.qubit_manager)
+            qm.manage_qubits(merge_qubits(self.signature.lefts(), **in_quregs))
+            circuit, out_quregs = cbloq.to_cirq_circuit(qubit_manager=qm, **in_quregs)
             qubit_map = {q: q for q in circuit.all_qubits()}
             for reg in self.signature.rights():
                 if reg.side == Side.RIGHT:
@@ -329,7 +336,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                     qm.qfree([q for q in out_quregs[reg.name].flatten()])
                     qubit_map |= zip(out_quregs[reg.name].flatten(), quregs[reg.name].flatten())
             return circuit.unfreeze(copy=False).transform_qubits(qubit_map)
-        except DecomposeNotImplementedError as e:
+        except DecomposeNotImplementedError:
             pass
         return NotImplemented
 

@@ -82,7 +82,7 @@ class _ZVector(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
@@ -90,7 +90,7 @@ class _ZVector(Bloq):
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), binst]
+                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), tag]
             )
         )
 
@@ -113,7 +113,6 @@ class _ZVector(Bloq):
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -149,6 +148,9 @@ class ZeroState(_ZVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return ZeroEffect()
+
 
 @bloq_example
 def _zero_state() -> ZeroState:
@@ -162,6 +164,9 @@ class ZeroEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return ZeroState()
 
 
 @bloq_example
@@ -177,6 +182,9 @@ class OneState(_ZVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return OneEffect()
+
 
 @bloq_example
 def _one_state() -> OneState:
@@ -190,6 +198,9 @@ class OneEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return OneState()
 
 
 @bloq_example
@@ -209,6 +220,9 @@ class ZGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
     def short_name(self) -> 'str':
         return 'Z'
 
@@ -218,14 +232,14 @@ class ZGate(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
         tn.add(
             qtn.Tensor(
-                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
 

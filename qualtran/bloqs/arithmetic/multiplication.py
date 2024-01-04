@@ -118,8 +118,8 @@ class Square(Bloq):
 
     def t_complexity(self):
         # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = self.bitsize * (self.bitsize - 1)
         return TComplexity(t=4 * num_toff)
 
@@ -171,8 +171,8 @@ class SumOfSquares(Bloq):
 
     def t_complexity(self):
         # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = self.k * self.bitsize**2 - self.bitsize
         if self.k % 3 == 0:
             num_toff -= 1
@@ -225,8 +225,8 @@ class Product(Bloq):
 
     def t_complexity(self):
         # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         num_toff = 2 * self.a_bitsize * self.b_bitsize - max(self.a_bitsize, self.b_bitsize)
         return TComplexity(t=4 * num_toff)
 

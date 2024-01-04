@@ -48,11 +48,17 @@ class SelectTFirstQuantization(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
-                Register("plus", bitsize=1),
                 Register("flag_T", bitsize=1),
+                Register("plus", bitsize=1),
+                Register("w", bitsize=3),
+                Register("r", bitsize=self.num_bits_p),
+                Register("s", bitsize=self.num_bits_p),
+                Register("p", bitsize=self.num_bits_p, shape=(3,)),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'SEL $T$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$

@@ -12,15 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Optional
-
 import cirq
 import numpy as np
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, DecomposeTypeError
+from qualtran import BloqBuilder, DecomposeTypeError
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
@@ -38,7 +36,7 @@ from qualtran.bloqs.basic_gates.swap import (
     _cswap_symb,
     _swap_matrix,
 )
-from qualtran.bloqs.util_bloqs import Join, Split
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 
 def _make_CSwap():
@@ -186,13 +184,7 @@ def test_cswap_bloq_counts():
     bloq = CSwap(bitsize=8)
     counts1 = bloq.bloq_counts()
 
-    def generalize(b: Bloq) -> Optional[Bloq]:
-        if isinstance(b, (Split, Join)):
-            # Ignore these
-            return
-        return b
-
-    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)
+    counts2 = bloq.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
     assert counts1 == counts2
 
 

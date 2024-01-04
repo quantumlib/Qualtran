@@ -103,7 +103,7 @@ def _unary_iteration_segtree(
     yield from _unary_iteration_segtree(
         ops, anc, selection, ancilla, sl + 1, m, r, l_iter, r_iter, break_early
     )
-    ops.append(and_bloq.And(adjoint=True).on(control, sq, anc))
+    ops.append(and_bloq.And().adjoint().on(control, sq, anc))
 
 
 def _unary_iteration_zero_control(

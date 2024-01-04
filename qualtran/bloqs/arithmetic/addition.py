@@ -16,10 +16,11 @@ from functools import cached_property
 from typing import Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
+import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Side, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -65,8 +66,10 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         a, b = register_values
         return a, a + b
 
-    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
-        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'a': a, 'b': a + b}
 
     def short_name(self) -> str:
         return "a+b"
@@ -94,7 +97,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
             return
         else:
             yield cirq.CX(anc[depth - 1], anc[depth])
-            yield And(adjoint=True).on(inp[depth], out[depth], anc[depth])
+            yield And().adjoint().on(inp[depth], out[depth], anc[depth])
             yield cirq.CX(anc[depth - 1], inp[depth])
             yield cirq.CX(inp[depth], out[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
@@ -102,9 +105,10 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        input_bits = quregs['a']
-        output_bits = quregs['b']
-        ancillas = context.qubit_manager.qalloc(self.bitsize - 1)
+        # reverse the order of qubits for big endian-ness.
+        input_bits = quregs['a'][::-1]
+        output_bits = quregs['b'][::-1]
+        ancillas = context.qubit_manager.qalloc(self.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
         # Left part of Fig.2
@@ -113,7 +117,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         yield cirq.CX(input_bits[-1], output_bits[-1])
         # right part of Fig.2
         yield from self._right_building_block(input_bits, output_bits, ancillas, self.bitsize - 2)
-        yield And(adjoint=True).on(input_bits[0], output_bits[0], ancillas[0])
+        yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield cirq.CX(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
@@ -128,6 +132,32 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
 
 
+@bloq_example
+def _add_symb() -> Add:
+    n = sympy.Symbol('n')
+    add_symb = Add(bitsize=n)
+    return add_symb
+
+
+@bloq_example
+def _add_small() -> Add:
+    add_small = Add(bitsize=4)
+    return add_small
+
+
+@bloq_example
+def _add_large() -> Add:
+    add_large = Add(bitsize=64)
+    return add_large
+
+
+_ADD_DOC = BloqDocSpec(
+    bloq_cls=Add,
+    import_line='from qualtran.bloqs.arithmetic.addition import Add',
+    examples=(_add_symb, _add_small, _add_large),
+)
+
+
 @frozen
 class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
     r"""An n-bit addition gate.
@@ -140,9 +170,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
             is of size `bitsize+1` so it has enough space to hold the sum of `a+b`.
 
     Registers:
-     - a: A bitsize-sized input register (register a above).
-     - b: A bitsize-sized input register (register b above).
-     - c: A bitize+1-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
+        a: A bitsize-sized input register (register a above).
+        b: A bitsize-sized input register (register b above).
+        c: A bitize+1-sized LEFT/RIGHT register depending on whether the gate adjoint or not.
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -194,14 +224,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         return cirq.inverse(optree) if self.adjoint else optree
 
     def t_complexity(self) -> TComplexity:
-        and_t = And(adjoint=self.adjoint).t_complexity()
+        and_t = And(uncompute=self.adjoint).t_complexity()
         num_clifford = self.bitsize * (5 + and_t.clifford)
         num_t = self.bitsize * and_t.t
         return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
-            (And(adjoint=self.adjoint), self.bitsize),
+            (And(uncompute=self.adjoint), self.bitsize),
             (ArbitraryClifford(n=2), 5 * self.bitsize),
         }
 
@@ -213,13 +243,39 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
 
+@bloq_example
+def _add_oop_symb() -> OutOfPlaceAdder:
+    n = sympy.Symbol('n')
+    add_oop_symb = OutOfPlaceAdder(bitsize=n)
+    return add_oop_symb
+
+
+@bloq_example
+def _add_oop_small() -> OutOfPlaceAdder:
+    add_oop_small = OutOfPlaceAdder(bitsize=4)
+    return add_oop_small
+
+
+@bloq_example
+def _add_oop_large() -> OutOfPlaceAdder:
+    add_oop_large = OutOfPlaceAdder(bitsize=64)
+    return add_oop_large
+
+
+_ADD_OOP_DOC = BloqDocSpec(
+    bloq_cls=OutOfPlaceAdder,
+    import_line='from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder',
+    examples=(_add_oop_symb, _add_oop_small, _add_oop_large),
+)
+
+
 @frozen(auto_attribs=True)
 class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
-    """Applies U_{M}_{add}|x> = |(x + add) % M> if x < M else |x>.
+    """Applies U(add, M)|x> = |(x + add) % M> if x < M else |x>.
 
     Applies modular addition to input register `|x>` given parameters `mod` and `add_val` s.t.
-        1) If integer `x` < `mod`: output is `|(x + add) % M>`
-        2) If integer `x` >= `mod`: output is `|x>`.
+     1. If integer `x` < `mod`: output is `|(x + add) % M>`
+     2. If integer `x` >= `mod`: output is `|x>`.
 
     This condition is needed to ensure that the mapping of all input basis states (i.e. input
     states |0>, |1>, ..., |2 ** bitsize - 1) to corresponding output states is bijective and thus
@@ -238,6 +294,8 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
 
     @mod.validator
     def _validate_mod(self, attribute, value):
+        if isinstance(value, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            return
         if not 1 <= value <= 2**self.bitsize:
             raise ValueError(f"mod: {value} must be between [1, {2 ** self.bitsize}].")
 
@@ -280,3 +338,32 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     def _t_complexity_(self) -> TComplexity:
         # Rough cost as given in https://arxiv.org/abs/1905.09749
         return 5 * Add(self.bitsize).t_complexity()
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(Add(self.bitsize), 5)}
+
+
+@bloq_example
+def _add_k_symb() -> AddConstantMod:
+    n, m, k = sympy.symbols('n m k')
+    add_k_symb = AddConstantMod(bitsize=n, mod=m, add_val=k)
+    return add_k_symb
+
+
+@bloq_example
+def _add_k_small() -> AddConstantMod:
+    add_k_small = AddConstantMod(bitsize=4, mod=7, add_val=1)
+    return add_k_small
+
+
+@bloq_example
+def _add_k_large() -> AddConstantMod:
+    add_k_large = AddConstantMod(bitsize=64, mod=500, add_val=23)
+    return add_k_large
+
+
+_ADD_K_DOC = BloqDocSpec(
+    bloq_cls=AddConstantMod,
+    import_line='from qualtran.bloqs.arithmetic.addition import AddConstantMod',
+    examples=(_add_k_symb, _add_k_small, _add_k_large),
+)

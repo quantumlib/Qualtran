@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import quimb.tensor as qtn
@@ -62,7 +62,7 @@ class _XVector(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
@@ -70,9 +70,7 @@ class _XVector(Bloq):
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_MINUS if self.bit else _PLUS,
-                inds=(side['q'],),
-                tags=[self.short_name(), binst],
+                data=_MINUS if self.bit else _PLUS, inds=(side['q'],), tags=[self.short_name(), tag]
             )
         )
 
@@ -115,6 +113,9 @@ class PlusState(_XVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return PlusEffect()
+
 
 @frozen(init=False, field_transformer=_hide_base_fields)
 class PlusEffect(_XVector):
@@ -122,6 +123,9 @@ class PlusEffect(_XVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return PlusState()
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -131,6 +135,9 @@ class MinusState(_XVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return MinusEffect()
+
 
 @frozen(init=False, field_transformer=_hide_base_fields)
 class MinusEffect(_XVector):
@@ -138,6 +145,9 @@ class MinusEffect(_XVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return MinusState()
 
 
 @frozen
@@ -151,17 +161,20 @@ class XGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
         tn.add(
             qtn.Tensor(
-                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+                data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
 

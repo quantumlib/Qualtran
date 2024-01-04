@@ -29,3 +29,7 @@ class PhysicalCost:
 
     duration_hr: float
     """Total time in hours to run algorithm."""
+
+    @property
+    def qubit_hours(self) -> float:
+        return self.footprint * self.duration_hr

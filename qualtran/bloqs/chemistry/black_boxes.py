@@ -1,0 +1,226 @@
+#  Copyright 2023 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+"""Common Chemistry bloqs which have costs that differ from those currently implemented in qualtran.
+
+These are for temporary convenience to lock-in the quoted literature costs.
+"""
+from functools import cached_property
+from typing import Set, Tuple, TYPE_CHECKING
+
+import cirq
+import numpy as np
+from attrs import field, frozen
+from sympy import factorint
+
+from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
+from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.drawing import Circle, TextBox, WireSymbol
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+
+
+@frozen
+class PrepareUniformSuperposition(Bloq):
+    r"""Prepare a uniform superposition over $d$ basis states.
+
+    Uses quoted literature costs which relies on phase gradient for rotations.
+
+    Args:
+        d: The number of coefficients to prepare.
+        num_bits_rot_aa: The number of bits of precision for the single-qubit
+            rotation for amplitude amplification during the uniform state
+            preparataion. Default 8.
+
+    Registers:
+        d: the register to prepare the uniform superposition on.
+
+    Refererences:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            hypercontraction](https://arxiv.org/abs/2011.03494) Page 39.
+    """
+    d: int
+    num_bits_rot_aa: int = 8
+
+    @cached_property
+    def signature(self) -> Signature:
+        regs = [Register('d', (self.num_non_zero - 1).bit_length())]
+        return Signature(regs)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        factors = factorint(self.d)
+        eta = factors[min(list(sorted(factors.keys())))]
+        if self.d % 2 == 1:
+            eta = 0
+        uniform_prep = 3 * (self.d - 1).bit_length() - 3 * eta + 2 * self.num_bits_rot_aa - 9
+        return {(Toffoli(), uniform_prep)}
+
+
+def get_qroam_cost(data_size: int, bitsize: int, adjoint: bool = False) -> Tuple[int, int]:
+    """This gives the optimal k and minimum cost for a QROM over L values of size M.
+
+    Adapted from openfermion and accounts for quoted inverse cost.
+
+    Args:
+        data_size: Amount of data we want to load.
+        bitsize: the amount of bits of output we need.
+        adjoint: whether to get costs from inverse qrom (true) or not (false).
+
+    Returns:
+       val_opt: minimal (optimal) cost of QROM
+    """
+    if adjoint:
+        k = 0.5 * np.log2(data_size)
+        value = lambda k: data_size / 2**k + 2**k
+    else:
+        k = 0.5 * np.log2(data_size / bitsize)
+        assert k >= 0
+        value = lambda k: data_size / 2**k + bitsize * (2**k - 1)
+    k_int = np.array([np.floor(k), np.ceil(k)])
+    k_opt = k_int[np.argmin(value(k_int))]
+    val_opt = np.ceil(value(k_opt))
+    return int(val_opt)
+
+
+@frozen
+class QROAM(Bloq):
+    """Placeholder bloq for QROAM with costs matching literature values.
+
+    https://github.com/quantumlib/Qualtran/issues/368
+
+    Args:
+        data_size: Amount of data we want to load.
+        bitsize: the amount of bits of output we need.
+        adjoint: whether to get costs from inverse qrom (true) or not (false).
+
+    Returns:
+       val_opt: minimal (optimal) cost of QROM
+    """
+
+    data_size: int
+    target_bitsize: int
+    adjoint: bool = False
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"QROAM{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        cost = get_qroam_cost(self.data_size, self.target_bitsize, adjoint=self.adjoint)
+        return {(Toffoli(), cost)}
+
+
+@frozen
+class QROAMTwoRegs(Bloq):
+    """Placeholder bloq for QROAM on two registers.
+
+    Args:
+        data_a_size: Amount of data we want to load from first index.
+        data_b_size: Amount of data we want to load from second index.
+        data_a_block_size: Blocking factor for first index.
+        data_b_block_size: Blocking factor for second index.
+        target_bitsize: the amount of bits of output we need.
+        adjoint: whether to get costs from inverse qrom (true) or not (false).
+
+    Returns:
+       val_opt: minimal (optimal) cost of QROM
+
+    References:
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor
+            Hypercontraction](https://arxiv.org/abs/2011.03494) Appendix G, Eq. G3 and G6.
+    """
+
+    data_a_size: int
+    data_b_size: int
+    data_a_block_size: int
+    data_b_block_size: int
+    target_bitsize: int
+    adjoint: bool = False
+
+    def pretty_name(self) -> str:
+        dag = '†' if self.adjoint else ''
+        return f"QROAM{dag}"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
+        cost *= int(np.ceil(self.data_b_size / self.data_b_block_size))
+        if self.adjoint:
+            cost += self.data_a_block_size * self.data_b_block_size
+        else:
+            cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
+        return {(Toffoli(), cost)}
+
+
+@frozen
+class ApplyControlledZs(Bloq):
+    """Apply controlled Z operation to a single qubit in a big system register.
+
+    Used in THC / DF Select.
+
+    This is either a CCZ or CCCZ operation. Wrap it as a bloq to hide the split / joins.
+
+    Args:
+        cvs: The control values of the controls.
+        bitsize: The system bitsize.
+
+    Registers:
+        ctrls: control registers
+        system: system register
+    """
+
+    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
+    bitsize: int
+
+    def short_name(self) -> str:
+        return "C" * len(self.cvs) + "Z"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register("ctrls", bitsize=1, shape=(len(self.cvs),)),
+                Register("system", bitsize=self.bitsize),
+            ]
+        )
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'system':
+            return TextBox('Z')
+
+        (c_idx,) = soq.idx
+        filled = bool(self.cvs[c_idx])
+        return Circle(filled)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', ctrls: SoquetT, system: SoquetT):
+        ctrls = bb.join(ctrls)
+        split_sys = bb.split(system)
+        ctrls, split_sys[0] = bb.add(
+            MultiControlPauli(self.cvs, cirq.Z), controls=ctrls, target=split_sys[0]
+        )
+        system = bb.join(split_sys)
+        ctrls = bb.split(ctrls)
+        return {'ctrls': ctrls, 'system': system}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # remove this method once https://github.com/quantumlib/Qualtran/issues/528 is resolved.
+        return {(Toffoli(), len(self.cvs) - 1)}

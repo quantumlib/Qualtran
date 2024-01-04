@@ -18,13 +18,17 @@ from tempfile import NamedTemporaryFile
 from typing import List
 
 import nbformat
-from nbconvert.preprocessors import ClearMetadataPreprocessor
+from nbconvert.preprocessors import ClearMetadataPreprocessor, ClearOutputPreprocessor
 
 
 def get_nb_rel_paths(rootdir) -> List[Path]:
     """List all checked-in *.ipynb files within `rootdir`."""
     cp = subprocess.run(
-        ['git', 'ls-files', '*.ipynb'], capture_output=True, universal_newlines=True, cwd=rootdir
+        ['git', 'ls-files', '*.ipynb'],
+        capture_output=True,
+        universal_newlines=True,
+        cwd=rootdir,
+        check=True,
     )
     outs = cp.stdout.splitlines()
     nb_rel_paths = [Path(out) for out in outs]
@@ -40,13 +44,16 @@ def clean_notebook(nb_path: Path, do_clean: bool = True):
     with nb_path.open() as f:
         nb = nbformat.read(f, as_version=4)
 
-    pp = ClearMetadataPreprocessor(preserve_cell_metadata_mask={'cq.autogen'})
-    nb, resources = pp.preprocess(nb, resources={})
+    pp1 = ClearOutputPreprocessor()
+    pp2 = ClearMetadataPreprocessor(preserve_cell_metadata_mask={'cq.autogen'})
+    resources = {}
+    nb, resources = pp1.preprocess(nb, resources=resources)
+    nb, resources = pp2.preprocess(nb, resources=resources)
 
     with NamedTemporaryFile('w', delete=False) as f:
         nbformat.write(nb, f, version=4)
 
-    res = subprocess.run(['diff', nb_path, f.name], capture_output=True)
+    res = subprocess.run(['diff', nb_path, f.name], capture_output=True, check=True)
     dirty = len(res.stdout) > 0
     print(str(nb_path))
     if dirty:

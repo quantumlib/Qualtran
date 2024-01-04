@@ -27,9 +27,9 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 @attrs.frozen(cache_hash=True)
 class ReflectionUsingPrepare(GateWithRegisters):
-    """Applies reflection around a state prepared by `prepare_gate`
+    r"""Applies reflection around a state prepared by `prepare_gate`
 
-    Applies $R_{s} = I - 2|s><s|$ using $R_{s} = P^†(I - 2|0><0|)P$ s.t. $P|0> = |s>$.
+    Applies $R_{s} = I - 2|s><s|$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$ s.t. $P|0> = |s>$.
     Here
         $|s>$: The state along which we want to reflect.
         $P$: Unitary that prepares that state $|s>$ from the zero state $|0>$

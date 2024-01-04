@@ -112,8 +112,8 @@ def _update_assign_from_vals(
     for reg in regs:
         try:
             arr = vals[reg.name]
-        except KeyError:
-            raise ValueError(f"{binst} requires an input register named {reg.name}")
+        except KeyError as e:
+            raise ValueError(f"{binst} requires an input register named {reg.name}") from e
 
         if reg.shape:
             arr = np.asarray(arr)
@@ -173,7 +173,7 @@ def _binst_on_classical_vals(
     _update_assign_from_vals(bloq.signature.rights(), binst, out_vals, soq_assign)
 
 
-def _cbloq_call_classically(
+def call_cbloq_classically(
     signature: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
