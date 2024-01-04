@@ -18,30 +18,39 @@ import cirq
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.rotations.phase_gradient import PhaseGradientSchoolBook
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
 
 
 @attrs.frozen
-class QFTSchoolBook(GateWithRegisters):
-    r"""Textbook version of QFT using $\frac{N (N + 1)}{2}$ controlled rotations."""
+class QFTTextBook(GateWithRegisters):
+    r"""Textbook version of QFT using $\frac{N (N + 1)}{2}$ controlled rotations.
+
+    Args:
+        bitsize: Size of the input register to apply QFT on.
+        with_reverse: Whether or not to include the swaps at the end
+            of the circuit decomposition that reverse the order of the
+            qubits. If True, the swaps are inserted. Defaults to True.
+            These are technically necessary in order to perform the
+            correct effect, but can almost always be optimized away by just
+            performing later operations on different qubits.
+    """
 
     bitsize: int
-    _with_reverse: bool = True
+    with_reverse: bool = True
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        q = quregs['q']
         yield cirq.H(q[0])
         for i in range(1, len(q)):
-            yield PhaseGradientSchoolBook(i, exponent=0.5, controlled=True).on_registers(
+            yield PhaseGradientUnitary(i, exponent=0.5, controlled=True).on_registers(
                 ctrl=q[i], phase_grad=q[:i][::-1]
             )
             yield cirq.H(q[i])
-        if self._with_reverse:
+        if self.with_reverse:
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])

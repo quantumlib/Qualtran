@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 @attrs.frozen
 class TestQFTWithPhaseGradient(GateWithRegisters):
     bitsize: int
-    _with_reverse: bool
+    with_reverse: bool
 
     @property
     def signature(self) -> 'Signature':
@@ -40,7 +40,7 @@ class TestQFTWithPhaseGradient(GateWithRegisters):
     def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> Dict[str, 'SoquetT']:
         phase_grad = bb.add(PhaseGradientState(self.bitsize))
         q, phase_grad = bb.add(
-            QFTPhaseGradient(self.bitsize, self._with_reverse), q=q, phase_grad=phase_grad
+            QFTPhaseGradient(self.bitsize, self.with_reverse), q=q, phase_grad=phase_grad
         )
         bb.add(PhaseGradientState(self.bitsize, adjoint=True), phase_grad=phase_grad)
         return {'q': q}
@@ -59,7 +59,7 @@ def test_qft_with_phase_gradient(n: int, without_reverse: bool):
 
 
 @pytest.mark.parametrize('n', [10, 100, 500])
-def test_qft_school_book_t_complexity(n: int):
+def test_qft_text_book_t_complexity(n: int):
     qft_bloq = QFTPhaseGradient(n)
     print(qft_bloq.t_complexity())
 
@@ -69,5 +69,5 @@ def test_qft_school_book_t_complexity(n: int):
         return f(x // 2) + f(x - x // 2) + PlusEqualProduct(x // 2, x - x // 2, x).t_complexity().t
 
     qft_t_complexity = qft_bloq.t_complexity()
-    assert qft_t_complexity.t == f(n) <= 4 * (n**2)
+    assert qft_t_complexity.t == f(n) <= 8 * (n**2)
     assert qft_t_complexity.rotations == 0

@@ -38,13 +38,19 @@ class QFTPhaseGradient(GateWithRegisters):
 
     Args:
         bitsize: Size of input register to apply QFT on.
+        with_reverse: Whether or not to include the swaps at the end
+            of the circuit decomposition that reverse the order of the
+            qubits. If True, the swaps are inserted. Defaults to True.
+            These are technically necessary in order to perform the
+            correct effect, but can almost always be optimized away by just
+            performing later operations on different qubits.
 
     References:
         [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
     """
 
     bitsize: int
-    _with_reverse: bool = True
+    with_reverse: bool = True
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -63,6 +69,6 @@ class QFTPhaseGradient(GateWithRegisters):
             a=a[::-1], b=b, result=phase_grad
         )
         yield QFTPhaseGradient(len(b), False).on_registers(q=b, phase_grad=phase_grad[: len(b)])
-        if self._with_reverse:
+        if self.with_reverse:
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])

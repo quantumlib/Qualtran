@@ -22,6 +22,7 @@ from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
+    from qualtran import SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -55,7 +56,8 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
         return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
 
     def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=4 * max(self.a_bitsize, self.b_bitsize) ** 2)
+        # TODO: The T-complexity here is approximate.
+        return TComplexity(t=8 * max(self.a_bitsize, self.b_bitsize) ** 2)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize

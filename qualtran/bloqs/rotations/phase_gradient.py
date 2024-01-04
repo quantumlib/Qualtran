@@ -25,21 +25,23 @@ from qualtran.bloqs.on_each import OnEach
 
 
 @attrs.frozen
-class PhaseGradientSchoolBook(GateWithRegisters):
-    r"""A naive implementation (Controlled-/)PhaseGradient gate on an n-bit register.
+class PhaseGradientUnitary(GateWithRegisters):
+    r"""Implementation of (Controlled-/)PhaseGradient unitary gate on an n-bit register.
 
-    Supports both
+    The class supports implementing the phase gradient unitary gate and a controlled version
+    thereof. The n bit phase gradient unitary is defined as
+
     $$
-        \text{PhaseGrad}_{n} = \sum_{k=0}^{2^{n}-1}|k\rangle\ langle k| \omega_{n, t}^{k}
+        \text{PhaseGrad}_{n} = \sum_{k=0}^{2^{n}-1}|k\rangle\langle k| \omega_{n, t}^{k}
     $$
-    and
-    $$
-        \text{CPhaseGrad}_{n} = \sum_{k=0}^{2^{n}-1} |0\rangle \langle 0| I + |1\rangle \langle1| \omega_{n, t}^{k}$
-    $$
+
     where
+
     $$
         \omega_{n, t} = \exp\left(\frac{2\pi i t}{2^n}\right)
     $$
+
+    The implementation simply decomposes into $n$ (controlled-) rotations, one on each qubit.
     """
     bitsize: int
     exponent: int = 1
@@ -69,9 +71,7 @@ class PhaseGradientSchoolBook(GateWithRegisters):
     def __pow__(self, power):
         if power == 1:
             return self
-        return PhaseGradientSchoolBook(
-            self.bitsize, self.exponent * power, self.controlled, self.eps
-        )
+        return PhaseGradientUnitary(self.bitsize, self.exponent * power, self.controlled, self.eps)
 
 
 @attrs.frozen
@@ -87,6 +87,9 @@ class PhaseGradientState(GateWithRegisters):
     $$
         \omega_{n} = \exp\left(\frac{2\pi i}{2^n}\right)
     $$
+
+    Allocates / deallocates registers to store the phase gradient state and delegates
+    to the `PhaseGradientUnitary` bloq defined above.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -109,14 +112,12 @@ class PhaseGradientState(GateWithRegisters):
         # Assumes `phase_grad` is in big-endian representation.
         phase_grad = quregs['phase_grad']
         ops = [OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)]
-        ops += [
-            PhaseGradientSchoolBook(self.bitsize, exponent=-1).on_registers(phase_grad=phase_grad)
-        ]
+        ops += [PhaseGradientUnitary(self.bitsize, exponent=-1).on_registers(phase_grad=phase_grad)]
         yield cirq.inverse(ops) if self.adjoint else ops
 
     def __pow__(self, power):
         if power == 1:
             return self
         if power == -1:
-            return PhaseGradientState(self.bitsize, self.adjoint ^ True, self.eps)
+            return PhaseGradientState(self.bitsize, not self.adjoint, self.eps)
         raise NotImplementedError(f"Power is only defined for +1/-1. Found {self.power}.")

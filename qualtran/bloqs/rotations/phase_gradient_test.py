@@ -15,7 +15,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.rotations.phase_gradient import PhaseGradientSchoolBook, PhaseGradientState
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState, PhaseGradientUnitary
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -41,7 +41,7 @@ def test_phase_gradient_state(n: int):
 @pytest.mark.parametrize('exponent', [-0.5, 1, 1 / 10])
 @pytest.mark.parametrize('controlled', [True, False])
 def test_phase_gradient_gate(n: int, exponent, controlled):
-    bloq = PhaseGradientSchoolBook(n, exponent, controlled)
+    bloq = PhaseGradientUnitary(n, exponent, controlled)
     assert_valid_bloq_decomposition(bloq)
     assert_valid_bloq_decomposition(bloq**-1)
     cirq_gate = cirq.PhaseGradientGate(num_qubits=n, exponent=exponent)

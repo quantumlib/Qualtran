@@ -15,14 +15,14 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.qft.qft_school_book import QFTSchoolBook
+from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7])
 @pytest.mark.parametrize('without_reverse', [True, False])
 def test_qft_school_book(n: int, without_reverse: bool):
-    qft_bloq = QFTSchoolBook(n, not without_reverse)
+    qft_bloq = QFTTextBook(n, not without_reverse)
     qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
 
     assert np.allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
@@ -32,8 +32,8 @@ def test_qft_school_book(n: int, without_reverse: bool):
 
 
 @pytest.mark.parametrize('n', [10, 100, 500])
-def test_qft_school_book_t_complexity(n: int):
-    qft_bloq = QFTSchoolBook(n)
+def test_qft_text_book_t_complexity(n: int):
+    qft_bloq = QFTTextBook(n)
     qft_t_complexity = qft_bloq.t_complexity()
     assert qft_t_complexity.rotations == (n * (n - 1)) // 2
     assert qft_t_complexity.t == 0
