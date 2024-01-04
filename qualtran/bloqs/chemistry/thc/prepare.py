@@ -89,7 +89,6 @@ class UniformSuperpositionTHC(Bloq):
 
     num_mu: int
     num_spin_orb: int
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -253,7 +252,6 @@ class PrepareTHC(PrepareOracle):
     theta: Tuple[int, ...] = field(repr=False)
     keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
-    adjoint: bool = False
 
     @classmethod
     def from_hamiltonian_coeffs(
@@ -435,7 +433,7 @@ class PrepareTHC(PrepareOracle):
         nd = (data_size - 1).bit_length()
         cost_2 = (ToContiguousIndex(nmu, nd), 1)
         m = 2 * nmu + 2 + self.keep_bitsize
-        cost_3 = (QROAM(data_size, m, self.adjoint), 1)
+        cost_3 = (QROAM(data_size, m), 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
         cost_6 = (CSwap(nmu), 3)

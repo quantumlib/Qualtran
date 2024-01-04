@@ -72,7 +72,6 @@ class DoubleFactorizationOneBody(Bloq):
             rotation for amplitude amplification. Called $b_r$ in the reference.
         num_bits_rot: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called $\beth$ in Ref[1].
-        adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
 
     Registers:
         succ_l: control for success for outer state preparation.
@@ -99,7 +98,6 @@ class DoubleFactorizationOneBody(Bloq):
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
     num_bits_rot: int = 24
-    adjoint: bool = False
 
     @property
     def control_registers(self) -> Iterable[Register]:
@@ -168,7 +166,6 @@ class DoubleFactorizationOneBody(Bloq):
             num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
-            adjoint=False,
         )
         xi, offset, rot, succ_p, p = bb.add(
             in_prep, xi=xi, offset=offset, rot=rot, succ_p=succ_p, p=p
@@ -180,7 +177,6 @@ class DoubleFactorizationOneBody(Bloq):
             num_eig=self.num_eig,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
-            adjoint=False,
         )
         offset, p, rotations, spin, sys = bb.add(
             prot, offset=offset, p=p, rotations=rotations, spin=spin, sys=sys
@@ -195,8 +191,7 @@ class DoubleFactorizationOneBody(Bloq):
             num_eig=self.num_eig,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
-            adjoint=True,
-        )
+        ).adjoint()
         offset, p, rotations, spin, sys = bb.add(
             prot, offset=offset, p=p, rotations=rotations, spin=spin, sys=sys
         )
@@ -207,8 +202,7 @@ class DoubleFactorizationOneBody(Bloq):
             num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
-            adjoint=True,
-        )
+        ).adjoint()
         xi, offset, rot, succ_p, p = bb.add(
             in_prep_dag, xi=xi, offset=offset, rot=rot, succ_p=succ_p, p=p
         )
@@ -235,30 +229,15 @@ class DoubleFactorizationOneBody(Bloq):
             num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa,
             num_bits_state_prep=self.num_bits_state_prep,
-            adjoint=False,
         )
         rot = ProgRotGateArray(
             num_aux=self.num_aux,
             num_eig=self.num_eig,
             num_spin_orb=self.num_spin_orb,
             num_bits_rot=self.num_bits_rot,
-            adjoint=False,
         )
-        in_prep_dag = InnerPrepareDoubleFactorization(
-            num_aux=self.num_aux,
-            num_spin_orb=self.num_spin_orb,
-            num_eig=self.num_eig,
-            num_bits_rot_aa=self.num_bits_rot_aa,
-            num_bits_state_prep=self.num_bits_state_prep,
-            adjoint=True,
-        )
-        rot_dag = ProgRotGateArray(
-            num_aux=self.num_aux,
-            num_eig=self.num_eig,
-            num_spin_orb=self.num_spin_orb,
-            num_bits_rot=self.num_bits_rot,
-            adjoint=True,
-        )
+        in_prep_dag = in_prep.adjoint()
+        rot_dag = rot.adjoint()
         # 2*In-prep_l, addition, Rotations, 2*H, 2*SWAPS, subtraction
         return {
             (in_prep, 1),  # in-prep_l listing 3 page 52/53
@@ -464,8 +443,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
             num_spin_orb=self.num_spin_orb,
             num_eig=self.num_eig,
             num_bits_rot_aa=self.num_bits_rot_aa_inner,
-            adjoint=True,
-        )
+        ).adjoint()
         l, l_ne_zero, xi, rot, offset = bb.add(
             in_l_data_l, l=l, l_ne_zero=l_ne_zero, xi=xi, rot_data=rot, offset=offset
         )
@@ -474,8 +452,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
             self.num_aux,
             num_bits_state_prep=self.num_bits_state_prep,
             num_bits_rot_aa=self.num_bits_rot_aa_outer,
-            adjoint=True,
-        )
+        ).adjoint()
         l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
         ctrl = succ_l, l_ne_zero, theta, succ_p
         return {
@@ -506,7 +483,6 @@ def _df_one_body() -> DoubleFactorizationOneBody:
         num_eig=num_eig,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot=num_bits_rot,
-        adjoint=False,
     )
     return df_one_body
 
