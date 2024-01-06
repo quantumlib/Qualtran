@@ -315,7 +315,6 @@ class SimpleAddConstant(Bloq):
             binary_rep = list(iter_bits_twos_complement(self.k, self.bitsize))
         else:
             binary_rep = list(iter_bits(self.k, self.bitsize))
-        binary_rep.reverse()
 
         # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
         # controlled.
