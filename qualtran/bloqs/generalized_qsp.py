@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Sequence, Tuple
 
@@ -159,7 +158,7 @@ def qsp_complementary_polynomial(
 
     Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
 
-    return Q.coef
+    return np.around(Q.coef, decimals=10)
 
 
 def qsp_phase_factors(
@@ -198,7 +197,7 @@ def qsp_phase_factors(
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
 
-        a, b = np.around(S[:, d], decimals=10)
+        a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
         phi[d] = np.angle(a) - np.angle(b)
 
