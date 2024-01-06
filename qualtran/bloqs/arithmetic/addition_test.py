@@ -247,3 +247,11 @@ def test_out_of_place_adder():
 def test_simple_add_constant_decomp(bitsize, k, signed, cvs):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=signed)
     assert_valid_bloq_decomposition(bloq)
+
+@pytest.mark.parametrize('k', [1])
+@pytest.mark.parametrize('x', [0])
+def test_classical_simple_add_constant(k, x):
+    bloq = SimpleAddConstant(bitsize=4, k=k, cvs=(), signed=True)
+    ret1 = bloq.call_classically(x=x)
+    ret2 = bloq.decompose_bloq().call_classically(x=x)
+    assert ret1 == ret2
