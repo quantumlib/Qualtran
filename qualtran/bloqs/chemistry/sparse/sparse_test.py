@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from distutils.util import execute
+
 import attrs
 import numpy as np
 import pytest
@@ -20,6 +22,7 @@ from openfermion.resource_estimates.utils import QI
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
+from qualtran.testing import execute_notebook
 
 
 def make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa):
@@ -65,3 +68,7 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     )[0]
     adjusted_cost_qualtran = (cost + refl_cost - delta_swap) // 4
     assert adjusted_cost_qualtran == cost_of
+
+
+def test_notebook():
+    execute_notebook("sparse")
