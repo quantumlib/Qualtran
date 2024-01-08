@@ -23,7 +23,7 @@ from qualtran import GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
-from qualtran.cirq_interop.bit_tools import iter_bits_fixed_point
+from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -148,7 +148,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         phase_bitsize: Size of phase gradient register to which the input value should be added.
 
     Registers:
-        A single THRU register of size `bitsize`.
+        - x : Input THRU register storing input value x to be added to the phase gradient register.
+        - phase_grad : Phase gradient THRU register.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -170,11 +171,11 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("not needed.")
 
-    def apply(self, x, phase) -> Union[int, Iterable[int]]:
-        return x, phase + x
+    def apply(self, x, phase_grad) -> Union[int, Iterable[int]]:
+        return x, phase_grad + x
 
-    def on_classical_vals(self, x, phase) -> Dict[str, 'ClassicalValT']:
-        return {'x': x, 'phase': (phase + x) % (2**self.phase_bitsize)}
+    def on_classical_vals(self, x, phase_grad) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'phase_grad': (phase_grad + x) % (2**self.phase_bitsize)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toffoli = self.phase_bitsize - 2
@@ -202,7 +203,9 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         gamma_bitsize: Number of bits of precisions to be used for `gamma`.
 
     Registers:
-        A single THRU register of size `bitsize`.
+        - x : Input THRU register storing input value x to be scaled and added to the phase
+            gradient register.
+        - phase_grad : Phase gradient THRU register.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -229,9 +232,12 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def gamma_int_numerator(self) -> int:
-        return int(
-            ''.join(str(x) for x in iter_bits_fixed_point(self.gamma, self.phase_bitsize)), 2
+        _, gamma_fixed_width_int = float_as_fixed_width_int(self.gamma, self.gamma_bitsize + 1)
+        gamma_fixed_width_float = gamma_fixed_width_int / 2**self.gamma_bitsize
+        _, gamma_numerator = float_as_fixed_width_int(
+            gamma_fixed_width_float, self.phase_bitsize + 1
         )
+        return gamma_numerator
 
     def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
         return x, phase_grad + self.gamma_int_numerator * x

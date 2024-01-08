@@ -121,7 +121,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     Registers:
         - x : Input THRU register of size `bitsize`, to apply `Z**exponent` to.
-        - phase_grad : Phase gradient THRU register of size `log2(1/eps)`, to be used to
+        - phase_grad : Phase gradient THRU register of size `O(log2(1/eps))`, to be used to
             apply the phasing via addition.
 
     References:
@@ -139,7 +139,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     @cached_property
     def b_phase(self) -> int:
-        return int(np.log2(1 / self.eps))
+        return int(np.ceil(np.log2(1 / self.eps)))
 
     @cached_property
     def b_grad(self) -> int:
