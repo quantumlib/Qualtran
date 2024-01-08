@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """Some utility functions for chemistry tutorials"""
-from typing import Optional
+from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,11 +20,31 @@ import scipy.optimize
 from numpy.typing import NDArray
 
 
-def linear(x, a, c):
+def linear(x: NDArray[np.float64], a: float, c: float) -> NDArray[np.float64]:
+    r"""Evaluate the linear function $y = a * x + c$.
+
+    Args:
+        x: The x values to evaluate the function at.
+        a: The slope.
+        c: The intercept.
+
+    Returns:
+        y: An array of the linear function values evaluated for each value of x.
+    """
     return a * x + c
 
 
-def fit_linear(x, y):
+def fit_linear(x: NDArray[np.float64], y: NDArray[np.float64]) -> Tuple[float, float]:
+    """Fit a line given x and y values.
+
+    Args
+        x: the independent variable (x value) for the linear fit.
+        y: the dependent (y) for the linear fit.
+
+    Returns
+        slope: The slope of the linear fit.
+        intercept: the intercept of the linear fit.
+    """
     try:
         # pylint: disable-next=unbalanced-tuple-unpacking
         popt, _ = scipy.optimize.curve_fit(linear, x, y)
