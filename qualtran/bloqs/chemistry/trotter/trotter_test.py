@@ -14,5 +14,9 @@
 import qualtran.testing as qlt_testing
 
 
+def test_costing_notebook():
+    qlt_testing.execute_notebook('trotter_costs')
+
+
 def test_notebook():
     qlt_testing.execute_notebook('trotter')
