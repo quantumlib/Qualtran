@@ -121,7 +121,7 @@ class QROAM(Bloq):
 
     data_size: int
     target_bitsize: int
-    adjoint: bool = False
+    is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
 
     def pretty_name(self) -> str:
@@ -136,7 +136,7 @@ class QROAM(Bloq):
         cost = get_qroam_cost(
             self.data_size,
             self.target_bitsize,
-            adjoint=self.adjoint,
+            adjoint=self.is_adjoint,
             qroam_block_size=self.qroam_block_size,
         )
         return {(Toffoli(), cost)}
