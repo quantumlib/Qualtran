@@ -18,6 +18,7 @@ These are for temporary convenience to lock-in the quoted literature costs.
 from functools import cached_property
 from typing import Optional, Set, Tuple, TYPE_CHECKING
 
+import attrs
 import cirq
 import numpy as np
 from attrs import field, frozen
@@ -124,7 +125,7 @@ class QROAM(Bloq):
     qroam_block_size: Optional[int] = None
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.is_adjoint else ''
         return f"QROAM{dag}"
 
     @cached_property
@@ -140,6 +141,9 @@ class QROAM(Bloq):
         )
         return {(Toffoli(), cost)}
 
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
+
 
 @frozen
 class QROAMTwoRegs(Bloq):
@@ -151,7 +155,7 @@ class QROAMTwoRegs(Bloq):
         data_a_block_size: Blocking factor for first index.
         data_b_block_size: Blocking factor for second index.
         target_bitsize: the amount of bits of output we need.
-        adjoint: whether to get costs from inverse qrom (true) or not (false).
+        is_adjoint: whether to get costs from inverse qrom (true) or not (false).
 
     Returns:
        val_opt: minimal (optimal) cost of QROM
@@ -166,10 +170,10 @@ class QROAMTwoRegs(Bloq):
     data_a_block_size: int
     data_b_block_size: int
     target_bitsize: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.is_adjoint else ''
         return f"QROAM{dag}"
 
     @cached_property
@@ -179,11 +183,14 @@ class QROAMTwoRegs(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
         cost *= int(np.ceil(self.data_b_size / self.data_b_block_size))
-        if self.adjoint:
+        if self.is_adjoint:
             cost += self.data_a_block_size * self.data_b_block_size
         else:
             cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
         return {(Toffoli(), cost)}
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
 
 @frozen

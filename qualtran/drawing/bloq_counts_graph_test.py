@@ -35,9 +35,9 @@ def test_format_counts_graph_markdown():
     ret = format_counts_graph_markdown(graph)
     assert (
         ret
-        == r""" - `MultiAnd(cvs=(1, 1, 1, 1, 1, 1), adjoint=False)`
-   - `And(cv1=1, cv2=1, adjoint=False)`: $\displaystyle 5$
- - `And(cv1=1, cv2=1, adjoint=False)`
+        == r""" - `MultiAnd(cvs=(1, 1, 1, 1, 1, 1))`
+   - `And(cv1=1, cv2=1, uncompute=False)`: $\displaystyle 5$
+ - `And(cv1=1, cv2=1, uncompute=False)`
    - `ArbitraryClifford(n=2)`: $\displaystyle 9$
    - `TGate()`: $\displaystyle 4$
 """

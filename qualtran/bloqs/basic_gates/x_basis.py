@@ -113,6 +113,9 @@ class PlusState(_XVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return PlusEffect()
+
 
 @frozen(init=False, field_transformer=_hide_base_fields)
 class PlusEffect(_XVector):
@@ -120,6 +123,9 @@ class PlusEffect(_XVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return PlusState()
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -129,6 +135,9 @@ class MinusState(_XVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return MinusEffect()
+
 
 @frozen(init=False, field_transformer=_hide_base_fields)
 class MinusEffect(_XVector):
@@ -136,6 +145,9 @@ class MinusEffect(_XVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return MinusState()
 
 
 @frozen
@@ -148,6 +160,9 @@ class XGate(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
+
+    def adjoint(self) -> 'Bloq':
+        return self
 
     def add_my_tensors(
         self,
