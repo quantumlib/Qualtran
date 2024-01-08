@@ -69,7 +69,7 @@ class Reflection(Bloq):
                 f"cvs must be same length as bitsizes: {len(self.cvs)} vs {len(self.bitsizes)}"
             )
 
-    def pretty_name(self) -> str:
+    def short_name(self) -> str:
         return 'Refl'
 
     @cached_property
