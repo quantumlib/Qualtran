@@ -12,16 +12,81 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Set, TYPE_CHECKING
+from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
+import cirq
 from attrs import frozen
 
-from qualtran import Bloq, Register, Side, Signature
+from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
+    from qualtran import SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
+
+
+@frozen
+class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
+    """Performs result += a * b"""
+
+    a_bitsize: int
+    b_bitsize: int
+    result_bitsize: int
+    adjoint: bool = False
+
+    def short_name(self) -> str:
+        return "result -= a*b" if self.adjoint else "result += a*b"
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature.build(a=self.a_bitsize, b=self.b_bitsize, result=self.result_bitsize)
+
+    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
+
+    def apply(self, a: int, b: int, result: int) -> Union[int, Iterable[int]]:
+        return a, b, (result + a * b * ((-1) ** self.adjoint)) % (2**self.result_bitsize)
+
+    def with_registers(self, *new_registers: Union[int, Sequence[int]]):
+        raise NotImplementedError("Not needed.")
+
+    def on_classical_vals(self, a: int, b: int, result: int) -> Dict[str, 'ClassicalValT']:
+        result_out = (result + a * b * ((-1) ** self.adjoint)) % (2**self.result_bitsize)
+        return {'a': a, 'b': b, 'result': result_out}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        # TODO: The T-complexity here is approximate.
+        return TComplexity(t=8 * max(self.a_bitsize, self.b_bitsize) ** 2)
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
+        wire_symbols += ['c-=a*b' if self.adjoint else 'c+=a*b'] * self.result_bitsize
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __pow__(self, power):
+        if power == 1:
+            return self
+        if power == -1:
+            return PlusEqualProduct(
+                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.adjoint
+            )
+        raise NotImplementedError("PlusEqualProduct.__pow__ defined only for powers +1/-1.")
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
 
 
 @frozen

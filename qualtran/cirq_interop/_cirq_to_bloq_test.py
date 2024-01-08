@@ -68,7 +68,7 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert x.signature[0].shape == ()
     assert toffoli.signature[0].shape == (3,)
 
-    assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
+    assert str(x) == 'X'
     assert x.pretty_name() == 'cirq.X'
     assert x.short_name() == 'cirq.X'
 
