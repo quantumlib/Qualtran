@@ -62,6 +62,8 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.sparse.select_bloq
+import qualtran.bloqs.chemistry.thc.prepare
+import qualtran.bloqs.chemistry.thc.select_bloq
 import qualtran.bloqs.chemistry.trotter.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.kinetic
 import qualtran.bloqs.chemistry.trotter.potential
@@ -187,6 +189,16 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.potential._POTENTIAL_ENERGY,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
+    ),
+    NotebookSpecV2(
+        title='Tensor Hypercontraction',
+        module=qualtran.bloqs.chemistry.thc,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.thc.prepare._THC_UNI_PREP,
+            qualtran.bloqs.chemistry.thc.prepare._THC_PREPARE,
+            qualtran.bloqs.chemistry.thc.select_bloq._THC_SELECT,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
     ),
     NotebookSpecV2(
         title='Block Encoding',
