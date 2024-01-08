@@ -14,7 +14,7 @@
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.trotter.kinetic import KineticEnergy
+from qualtran.bloqs.chemistry.trotter.kinetic import _kinetic_energy, KineticEnergy
 
 
 @pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
@@ -22,3 +22,7 @@ def test_kinetic_bloq(nelec, nx):
     ngrid_x = 2 * nx + 1
     ke = KineticEnergy(nelec, ngrid_x)
     qlt_testing.assert_valid_bloq_decomposition(ke)
+
+
+def test_kinetic_energy(bloq_autotester):
+    bloq_autotester(_kinetic_energy)

@@ -17,28 +17,28 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic import SumOfSquares
 from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation
 
 
 @frozen
 class KineticEnergy(Bloq):
-    """Bloq for the Kinetic energy unitary defined in the reference.
+    r"""Bloq for the Kinetic energy unitary defined in the reference.
 
     Args:
         num_elec: The number of electrons.
         num_grid: The number of grid points in each of the x, y and z
-            directions. In total, for a cubic grid, there are N = num_grid**3
+            directions. In total, for a cubic grid, there are $N = \mathrm{num\_grid}^3$
             grid points. The number of bits required (in each spatial dimension)
             is thus log N + 1, where the + 1 is for the sign bit.
 
     Registers:
-     - system: The system register of size eta * 3 * nb
+        system: The system register of size eta * 3 * nb
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     num_elec: int
@@ -66,3 +66,18 @@ class KineticEnergy(Bloq):
             sos = bb.add(QuantumVariableRotation(phi_bitsize=(2 * bitsize + 2)), phi=sos)
             bb.free(sos)
         return {'system': system}
+
+
+@bloq_example
+def _kinetic_energy() -> KineticEnergy:
+    nelec = 12
+    ngrid_x = 2 * 8 + 1
+    kinetic_energy = KineticEnergy(nelec, ngrid_x)
+    return kinetic_energy
+
+
+_KINETIC_ENERGY = BloqDocSpec(
+    bloq_cls=KineticEnergy,
+    import_line='from qualtran.bloqs.chemistry.trotter.kinetic import KineticEnergy',
+    examples=(_kinetic_energy,),
+)
