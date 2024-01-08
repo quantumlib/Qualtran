@@ -99,6 +99,28 @@ class ZPowGate(_RotationBloq):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
+    def __pow__(self, power):
+        g = self.cirq_gate**power
+        return ZPowGate(g.exponent, g.global_shift, self.eps)
+
+
+@frozen
+class CZPowGate(CirqGateAsBloqBase):
+    exponent: float = 1.0
+    global_shift: float = 0.0
+    eps: float = 1e-11
+
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(rotations=1)
+
+    def __pow__(self, power):
+        g = self.cirq_gate**power
+        return CZPowGate(g.exponent, g.global_shift, self.eps)
+
 
 @frozen
 class XPowGate(_RotationBloq):
