@@ -52,8 +52,9 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("Not needed.")
 
-    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
-        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
+    def on_classical_vals(self, a: int, b: int, result: int) -> Dict[str, 'ClassicalValT']:
+        result_out = (result + a * b * ((-1) ** self.adjoint)) % (2**self.result_bitsize)
+        return {'a': a, 'b': b, 'result': result_out}
 
     def _t_complexity_(self) -> 'TComplexity':
         # TODO: The T-complexity here is approximate.
