@@ -224,5 +224,6 @@ class SymbolicGQSP:
 def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
     random_state = np.random.RandomState(102)
 
-    P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
-    SymbolicGQSP(P).verify()
+    for _ in range(10):
+        P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
+        SymbolicGQSP(P).verify()
