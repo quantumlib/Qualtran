@@ -31,6 +31,7 @@ extensions = ['myst_nb']
 
 nb_execution_mode = 'off'
 myst_enable_extensions = ['dollarmath', 'amsmath', 'deflist']
+myst_dmath_double_inline = True
 
 suppress_warnings = [
     # The markdown parser myst gets mad when you skip to small headers
