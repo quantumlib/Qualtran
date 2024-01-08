@@ -42,7 +42,6 @@ class InnerPrepareSingleFactorization(Bloq):
             sampling. Called aleph (fancy N) in Ref[1].
         num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called b_r in Ref[1].
-        adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
         kp1: qroam blocking factor for data indexed by the first register. ($l$ in this case)
         kp2: qroam blocking factor for data indexed by the second register. ($p,
             q$ in this case (these are made into a contiguous register.))
@@ -64,13 +63,11 @@ class InnerPrepareSingleFactorization(Bloq):
     num_spin_orb: int
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
     kp1: int = 1
     kp2: int = 1
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"In-Prep{dag}"
+        return "In-Prep"
 
     @cached_property
     def signature(self) -> Signature:
@@ -94,7 +91,6 @@ class InnerPrepareSingleFactorization(Bloq):
                 self.kp1,
                 self.kp2,
                 2 * n + self.num_bits_state_prep + 2,
-                adjoint=self.adjoint,
             ),
             1,
         )
@@ -117,7 +113,6 @@ class OuterPrepareSingleFactorization(Bloq):
             sampling. Called $\aleph$ in the reference.
         num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called $b_r$ in the reference.
-        adjoint: Whether to dagger the bloq or not.
 
     Registers:
         l: register to store L values for auxiliary index.
@@ -134,11 +129,9 @@ class OuterPrepareSingleFactorization(Bloq):
     num_aux: int
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"OuterPrep{dag}"
+        return "OuterPrep"
 
     @cached_property
     def signature(self) -> Signature:
@@ -150,7 +143,7 @@ class OuterPrepareSingleFactorization(Bloq):
         num_bits_l = (self.num_aux + 1).bit_length()
         output_size = num_bits_l + self.num_bits_state_prep + 2
         # 1.b
-        cost_qroam = (QROAM(self.num_aux + 1, output_size, adjoint=self.adjoint), 1)
+        cost_qroam = (QROAM(self.num_aux + 1, output_size), 1)
         # 1.c inequality test for alias sampling
         cost_ineq = (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1)
         # 1.d swap alt/keep values
