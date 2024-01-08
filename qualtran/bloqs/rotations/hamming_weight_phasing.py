@@ -120,7 +120,9 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         eps: Accuracy of synthesizing the Z rotations.
 
     Registers:
-        A single THRU register of size `bitsize`.
+        - x : Input THRU register of size `bitsize`, to apply `Z**exponent` to.
+        - phase_grad : Phase gradient THRU register of size `log2(1/eps)`, to be used to
+            apply the phasing via addition.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
