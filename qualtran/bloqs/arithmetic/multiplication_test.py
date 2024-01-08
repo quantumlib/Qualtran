@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import cirq
+
 from qualtran import BloqBuilder, Register
 from qualtran.bloqs.arithmetic import (
     MultiplyTwoReals,
+    PlusEqualProduct,
     Product,
     ScaleIntByReal,
     Square,
@@ -114,6 +117,29 @@ def test_square_real_number():
     q1 = bb.add_register('b', 15)
     q0, q1, q2 = bb.add(SquareRealNumber(15), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
+
+
+def test_plus_equal_product():
+    a_bit, b_bit, res_bit = 2, 2, 4
+    num_bits = a_bit + b_bit + res_bit
+    bloq = PlusEqualProduct(a_bit, b_bit, res_bit)
+    basis_map = {}
+    for a in range(2**a_bit):
+        for b in range(2**b_bit):
+            for result in range(2**res_bit):
+                res_out = (result + a * b) % 2**res_bit
+                # Test Bloq style classical simulation.
+                assert bloq.call_classically(a=a, b=b, result=result) == (a, b, res_out)
+                # Prepare basis states mapping for cirq-style simulation.
+                input_state_str = f'{a:0{a_bit}b}' + f'{b:0{b_bit}b}' + f'{result:0{res_bit}b}'
+                input_state = int(input_state_str, 2)
+                output_state_str = f'{a:0{a_bit}b}' + f'{b:0{b_bit}b}' + f'{res_out:0{res_bit}b}'
+                output_state = int(output_state_str, 2)
+                basis_map[input_state] = output_state
+    # Test cirq style simulation.
+    assert len(basis_map) == len(set(basis_map.values()))
+    circuit = cirq.Circuit(bloq.on(*cirq.LineQubit.range(num_bits)))
+    cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
 
 
 def test_arithmetic_notebook():
