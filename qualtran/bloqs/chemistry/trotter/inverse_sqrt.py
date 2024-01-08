@@ -121,8 +121,8 @@ def build_qrom_data_for_poly_fit(
 class NewtonRaphsonApproxInverseSquareRoot(Bloq):
     r"""Bloq implementing a single Newton-Raphson step to approximate the inverse square root.
 
-    Given a (polynomial) approximation for $y_n = 1/sqrt{x}$ we can approximate
-    the inverse square root by
+    Given a (polynomial) approximation for $1/\sqrt{x}$ (which will be $y_0$)
+    below we can approximate the inverse square root by
 
     $$
         y_{n+1} = \frac{1}{2}y_n\left(3-y_n^2 x\right)
@@ -131,10 +131,10 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
     For the case of computing the Coulomb potential we want
 
     $$
-        \frac{1}{|r_i-r_j|} = \frac{1}{\sqrt{\sum_k^3 (x^{k}_i-x^{k})^2}}
+        \frac{1}{|r_i-r_j|} = \frac{1}{\sqrt{\sum_k^3 (x^{k}_i-x^{k}_j)^2}}
     $$
-    where $x^k_i \in \{x, y, z}$. Thus the input register should store $\sum_k^3
-    (x^{k}_i-x^{k}_j)^2$.
+    where $x^{k}_i$ is the $i$-th electron's coordinate in 3D and $k \in \{x,y,z\}$.
+    Thus the input register should store $\sum_{k=x,y,z} (x^{k}_i-x^{k}_j)^2$.
 
     Args:
         x_sq_bitsize: The number of bits encoding the input (integer) register holding (x^2).
@@ -142,14 +142,14 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             holding y0 (the output of PolynomialEvaluation).
         output_bitsize: The number of bits to store the output of the NewtonRaphson step.
 
-    Register:
+    Registers:
         x_sq: an input_bitsize size register storing the value x^2.
         poly: an poly_bitsize size register storing the value x^2.
         target: a target_bitsize size register storing the output of the newton raphson step.
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
     x_sq_bitsize: int
     poly_bitsize: int
@@ -199,13 +199,13 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         in_bitsize: The number of bits encoding the input registers.
         out_bitsize: The number of bits encoding the input registers.
 
-    Register:
+    Registers:
         in_c{0,1,2,3}: QROM input containing the 4 polynomial coefficients.
-     - out: Output register to store polynomial approximation to inverse square root.
+        out: Output register to store polynomial approximation to inverse square root.
 
     References:
-        (Quantum computation of stopping power for inertial fusion target design
-    )[https://arxiv.org/pdf/2308.12352.pdf]
+        [Quantum computation of stopping power for inertial fusion target design](
+            https://arxiv.org/pdf/2308.12352.pdf)
     """
     x_sq_bitsize: int
     poly_bitsize: int
@@ -259,6 +259,6 @@ _NR_INV_SQRT = BloqDocSpec(
 
 _POLY_INV_SQRT = BloqDocSpec(
     bloq_cls=PolynmomialEvaluationInverseSquareRoot,
-    import_line='from qualtran.bloqs.chemistry.trotter.inverse_sqrt import PolynomialEvaluationInverseSquareRoot',
+    import_line='from qualtran.bloqs.chemistry.trotter.inverse_sqrt import PolynmomialEvaluationInverseSquareRoot',
     examples=(_poly_inv_sqrt,),
 )

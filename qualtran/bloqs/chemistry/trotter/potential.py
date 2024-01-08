@@ -45,12 +45,12 @@ class PairPotential(Bloq):
             different cases.
 
     Registers:
-     - system_i: The ith electron's register.
-     - system_j: The jth electron's register.
+        system_i: The ith electron's register.
+        system_j: The jth electron's register.
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     bitsize: int
@@ -169,11 +169,11 @@ class PotentialEnergy(Bloq):
             different cases.
 
     Registers:
-     - system: The system register of size eta * 3 * nb
+        system: The system register of size eta * 3 * nb
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     num_elec: int

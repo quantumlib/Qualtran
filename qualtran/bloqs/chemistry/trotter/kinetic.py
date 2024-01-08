@@ -24,21 +24,21 @@ from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation
 
 @frozen
 class KineticEnergy(Bloq):
-    """Bloq for the Kinetic energy unitary defined in the reference.
+    r"""Bloq for the Kinetic energy unitary defined in the reference.
 
     Args:
         num_elec: The number of electrons.
         num_grid: The number of grid points in each of the x, y and z
-            directions. In total, for a cubic grid, there are N = num_grid**3
+            directions. In total, for a cubic grid, there are $N = \mathrm{num\_grid}^3$
             grid points. The number of bits required (in each spatial dimension)
             is thus log N + 1, where the + 1 is for the sign bit.
 
     Registers:
-     - system: The system register of size eta * 3 * nb
+        system: The system register of size eta * 3 * nb
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     num_elec: int

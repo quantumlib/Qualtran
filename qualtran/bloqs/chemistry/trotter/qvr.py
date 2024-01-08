@@ -39,12 +39,12 @@ class QuantumVariableRotation(Bloq):
     Args:
         bitsize: The number of bits encoding the phase angle $\phi_j$.
 
-    Register:
+    Registers:
         phi: a bitsize size register storing the angle $\phi_j$.
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
             Fig 14.
     """
     phi_bitsize: int

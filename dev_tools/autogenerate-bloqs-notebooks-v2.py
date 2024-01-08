@@ -62,6 +62,10 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.sparse.select_bloq
+import qualtran.bloqs.chemistry.trotter.inverse_sqrt
+import qualtran.bloqs.chemistry.trotter.kinetic
+import qualtran.bloqs.chemistry.trotter.potential
+import qualtran.bloqs.chemistry.trotter.qvr
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
@@ -170,6 +174,19 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.sf.single_factorization._SF_BLOCK_ENCODING,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sf',
+    ),
+    NotebookSpecV2(
+        title='Trotter Bloqs',
+        module=qualtran.bloqs.chemistry.trotter,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.inverse_sqrt._POLY_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.inverse_sqrt._NR_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.qvr._QVR,
+            qualtran.bloqs.chemistry.trotter.kinetic._KINETIC_ENERGY,
+            qualtran.bloqs.chemistry.trotter.potential._PAIR_POTENTIAL,
+            qualtran.bloqs.chemistry.trotter.potential._POTENTIAL_ENERGY,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
     ),
     NotebookSpecV2(
         title='Block Encoding',
