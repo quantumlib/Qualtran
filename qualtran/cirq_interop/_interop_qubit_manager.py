@@ -13,24 +13,30 @@
 #  limitations under the License.
 
 """Qubit Manager to use when converting Cirq gates to/from Bloqs."""
-from typing import Iterable
+from typing import Iterable, List, Optional
 
 import cirq
 
 
-class InteropQubitManager(cirq.ops.SimpleQubitManager):
+class InteropQubitManager(cirq.QubitManager):
     """Qubit Manager to use to facilitate interop of Cirq gates and Bloqs."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, qm: Optional[cirq.QubitManager] = None):
+        if qm is None:
+            qm = cirq.SimpleQubitManager()
+        self._qm = qm
         self._managed_qubits = set()
+
+    def qalloc(self, n: int, dim: int = 2) -> List['cirq.Qid']:
+        return self._qm.qalloc(n, dim)
+
+    def qborrow(self, n: int, dim: int = 2) -> List['cirq.Qid']:
+        return self._qm.qborrow(n, dim)
 
     def manage_qubits(self, qubits: Iterable[cirq.Qid]):
         self._managed_qubits |= set(qubits)
 
     def qfree(self, qubits: Iterable[cirq.Qid]):
-        qs = set(qubits)
-        managed_qs = qs & self._managed_qubits
-        qs -= managed_qs
+        managed_qs = set(qubits) & self._managed_qubits
         self._managed_qubits -= managed_qs
-        super().qfree(qs)
+        self._qm.qfree([q for q in qubits if q not in managed_qs])

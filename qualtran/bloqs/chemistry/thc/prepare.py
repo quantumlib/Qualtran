@@ -89,7 +89,6 @@ class UniformSuperpositionTHC(Bloq):
 
     num_mu: int
     num_spin_orb: int
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -253,7 +252,6 @@ class PrepareTHC(PrepareOracle):
     theta: Tuple[int, ...] = field(repr=False)
     keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
-    adjoint: bool = False
 
     @classmethod
     def from_hamiltonian_coeffs(
@@ -324,13 +322,13 @@ class PrepareTHC(PrepareOracle):
     @cached_property
     def junk_registers(self) -> Tuple[SelectionRegister, ...]:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
-        alt_bitsize = max(max(self.alt_mu).bit_length(), max(self.alt_nu).bit_length())
+        log_mu = self.num_mu.bit_length()
         return (
             Register('succ', bitsize=1),
             Register('nu_eq_mp1', bitsize=1),
             Register('theta', bitsize=1),
             Register('s', bitsize=(data_size - 1).bit_length()),
-            Register('alt_mn', bitsize=alt_bitsize, shape=(2,)),
+            Register('alt_mn', bitsize=log_mu, shape=(2,)),
             Register('alt_theta', bitsize=1),
             Register('keep', bitsize=self.keep_bitsize),
             Register('less_than', bitsize=1),
@@ -369,23 +367,22 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         log_d = (data_size - 1).bit_length()
-        alt_bitsize = max(max(self.alt_mu).bit_length(), max(self.alt_nu).bit_length())
         # 2. Make contiguous register from mu and nu and store in register `s`.
         mu, nu, s = bb.add(ToContiguousIndex(log_mu, log_d), mu=mu, nu=nu, s=s)
         # 3. Load alt / keep values
         qroam = SelectSwapQROM(
             *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
-            target_bitsizes=(1, 1, alt_bitsize, alt_bitsize, self.keep_bitsize),
+            target_bitsizes=(1, 1, log_mu, log_mu, self.keep_bitsize),
         )
         alt_mu, alt_nu = alt_mn
         s, theta, alt_theta, alt_mu, alt_nu, keep = bb.add(
             qroam,
             selection=s,
-            target0=theta,
-            target1=alt_theta,
-            target2=alt_mu,
-            target3=alt_nu,
-            target4=keep,
+            target0_=theta,
+            target1_=alt_theta,
+            target2_=alt_mu,
+            target3_=alt_nu,
+            target4_=keep,
         )
         sigma = bb.add(OnEach(self.keep_bitsize, Hadamard()), q=sigma)
         lte_gate = LessThanEqual(self.keep_bitsize, self.keep_bitsize)
@@ -436,7 +433,7 @@ class PrepareTHC(PrepareOracle):
         nd = (data_size - 1).bit_length()
         cost_2 = (ToContiguousIndex(nmu, nd), 1)
         m = 2 * nmu + 2 + self.keep_bitsize
-        cost_3 = (QROAM(data_size, m, self.adjoint), 1)
+        cost_3 = (QROAM(data_size, m), 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
         cost_6 = (CSwap(nmu), 3)

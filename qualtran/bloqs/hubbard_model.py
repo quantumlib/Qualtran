@@ -329,7 +329,7 @@ class PrepareHubbard(PrepareOracle):
             ctrl=np.array([U, V, temp[-1:]]), junk=np.array([and_anc]), target=and_target
         )
         yield CSwap.make_on(ctrl=and_target, x=[*p_x, *p_y, *alpha], y=[*q_x, *q_y, *beta])
-        yield MultiAnd(cvs=(0, 0, 1), adjoint=True).on_registers(
+        yield MultiAnd(cvs=(0, 0, 1)).adjoint().on_registers(
             ctrl=np.array([U, V, temp[-1:]]), junk=np.array([and_anc]), target=and_target
         )
         context.qubit_manager.qfree([*and_anc, *and_target])

@@ -150,8 +150,9 @@ class SelectSwapQROM(GateWithRegisters):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
+        # See https://github.com/quantumlib/Qualtran/issues/556 for unusual placement of underscore.
         return tuple(
-            Register(f'target{sequence_id}', self._target_bitsizes[sequence_id])
+            Register(f'target{sequence_id}_', self._target_bitsizes[sequence_id])
             for sequence_id in range(self._num_sequences)
         )
 

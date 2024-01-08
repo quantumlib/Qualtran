@@ -47,11 +47,8 @@ def test_outerprep_t_counts():
     _, counts = outer_prep.call_graph()
     toff = counts[TGate()] // 4
     outer_prep = OuterPrepareDoubleFactorization(
-        num_aux,
-        num_bits_state_prep=num_bits_state_prep,
-        num_bits_rot_aa=num_bits_rot_aa,
-        adjoint=True,
-    )
+        num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
+    ).adjoint()
     _, counts = outer_prep.call_graph()
     toff += counts[TGate()] // 4
     # The output size for the QROM for the first state preparation in Eq. (C27)
@@ -75,12 +72,8 @@ def test_indexed_data_t_counts():
     _, counts = in_l_data_l.call_graph()
     toff = counts[TGate()] // 4
     in_l_data_l = OutputIndexedData(
-        num_aux=num_aux,
-        num_spin_orb=num_spin_orb,
-        num_eig=num_eig,
-        num_bits_rot_aa=num_bits_rot_aa,
-        adjoint=True,
-    )
+        num_aux=num_aux, num_spin_orb=num_spin_orb, num_eig=num_eig, num_bits_rot_aa=num_bits_rot_aa
+    ).adjoint()
     _, counts = in_l_data_l.call_graph()
     toff += counts[TGate()] // 4
     # captured from cost2 in openfermion df.compute_cost
@@ -103,7 +96,6 @@ def test_inner_prepare_t_counts():
         num_eig=num_eig,
         num_bits_rot_aa=num_bits_rot_aa,
         num_bits_state_prep=num_bits_state_prep,
-        adjoint=False,
     )
     _, counts = in_prep.call_graph()
     toff = counts[TGate()] // 4
@@ -113,8 +105,7 @@ def test_inner_prepare_t_counts():
         num_eig=num_eig,
         num_bits_rot_aa=num_bits_rot_aa,
         num_bits_state_prep=num_bits_state_prep,
-        adjoint=True,
-    )
+    ).adjoint()
     _, counts = in_prep.call_graph()
     toff += counts[TGate()] // 4
     toff *= 2  # cost is for the two applications of the in-prep, in-prep^
