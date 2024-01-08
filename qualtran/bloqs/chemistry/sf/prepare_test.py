@@ -46,11 +46,8 @@ def test_outerprep_t_counts():
     toff -= (7 - 4) * (nb_l + 1)
     toff -= 4 * num_bits_state_prep - 4
     outer_prep = OuterPrepareSingleFactorization(
-        num_aux,
-        num_bits_state_prep=num_bits_state_prep,
-        num_bits_rot_aa=num_bits_rot_aa,
-        adjoint=True,
-    )
+        num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
+    ).adjoint()
     eta = power_two(num_aux + 1)
     _, counts = outer_prep.call_graph()
     toff += counts[TGate()]
@@ -81,7 +78,6 @@ def test_inner_prepare_t_counts():
         num_spin_orb=num_spin_orb,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa=num_bits_rot_aa,
-        adjoint=False,
         kp1=2**2,
         kp2=2**5,
     )
@@ -96,10 +92,9 @@ def test_inner_prepare_t_counts():
         num_spin_orb=num_spin_orb,
         num_bits_rot_aa=num_bits_rot_aa,
         num_bits_state_prep=num_bits_state_prep,
-        adjoint=True,
         kp1=2**1,
         kp2=2**8,
-    )
+    ).adjoint()
     _, counts = in_prep.call_graph()
     # factor of two from squaring
     toff += counts[TGate()]

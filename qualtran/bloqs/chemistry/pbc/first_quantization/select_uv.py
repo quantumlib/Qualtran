@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 
@@ -124,3 +124,22 @@ class SelectUVFirstQuantization(Bloq):
         # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
         cost_phase = (ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos), 1)
         return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc, cost_phase}
+
+
+@bloq_example
+def _select_uv() -> SelectUVFirstQuantization:
+    num_bits_p = 5
+    eta = 10
+    num_bits_nuc_pos = 16
+
+    select_uv = SelectUVFirstQuantization(
+        num_bits_p=num_bits_p, eta=eta, num_atoms=eta, num_bits_nuc_pos=num_bits_nuc_pos
+    )
+    return select_uv
+
+
+_SELECT_UV = BloqDocSpec(
+    bloq_cls=SelectUVFirstQuantization,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization',
+    examples=(_select_uv,),
+)

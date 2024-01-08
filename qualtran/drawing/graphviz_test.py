@@ -42,7 +42,7 @@ def test_assign_ids():
             prefixes.add(v)
             continue
         prefixes.add(ma.group(1))
-    assert sorted(prefixes) == ['Join', 'Split', 'TestAtom', 'join', 'q', 'reg', 'split']
+    assert sorted(prefixes) == ['Join', 'Split', 'TestAtom', 'q', 'reg']
 
 
 @pytest.mark.parametrize('draw_cls', [GraphDrawer, PrettyGraphDrawer])

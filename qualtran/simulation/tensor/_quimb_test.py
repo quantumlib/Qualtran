@@ -64,8 +64,8 @@ def test_cbloq_to_quimb_with_no_ops_on_register():
     signature = Signature.build(selection=2, target=1)
     bb, soqs = BloqBuilder().from_signature(signature=signature)
     selection, target = soqs['selection'], soqs['target']
-    selection = bb.add(Split(2), split=selection)
-    selection = bb.add(Join(2), join=selection)
+    selection = bb.add(Split(2), reg=selection)
+    selection = bb.add(Join(2), reg=selection)
     cbloq = bb.finalize(selection=selection, target=soqs['target'])
     np.testing.assert_allclose(cbloq.tensor_contract(), np.eye(2**3))
 

@@ -158,10 +158,10 @@ class BlackBoxSelect(Bloq):
         sel_out_regs = out_regs[: len(sel_regs)]
         sys_out_regs = out_regs[len(sel_regs) :]
         selection = bb.add(
-            sel_part.dagger(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
+            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
         )
         system = bb.add(
-            sys_part.dagger(), **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)}
+            sys_part.adjoint(), **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)}
         )
         return {'selection': selection, 'system': system}
 
@@ -175,7 +175,6 @@ class BlackBoxPrepare(Bloq):
 
     Args:
         prepare: The bloq following the `Prepare` interface to wrap.
-        is_adjoint: Whether this is the adjoint preparation.
 
     Registers:
         selection: selection register.
@@ -183,7 +182,6 @@ class BlackBoxPrepare(Bloq):
     """
 
     prepare: PrepareOracle
-    is_adjoint: bool = False
 
     @cached_property
     def selection_bitsize(self):
@@ -216,19 +214,15 @@ class BlackBoxPrepare(Bloq):
         sel_out_regs = out_regs[: len(sel_regs)]
         jnk_out_regs = out_regs[len(sel_regs) :]
         selection = bb.add(
-            sel_part.dagger(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
+            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
         )
         junk = bb.add(
-            jnk_part.dagger(), **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)}
+            jnk_part.adjoint(), **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)}
         )
         return {'selection': selection, 'junk': junk}
 
-    def dagger(self) -> 'BlackBoxPrepare':
-        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
-
     def short_name(self) -> str:
-        dag = '†' if self.is_adjoint else ''
-        return f'Prep{dag}'
+        return 'Prep'
 
 
 @attrs.frozen
@@ -292,7 +286,7 @@ class BlackBoxBlockEncoding(Bloq):
         # includes selection registers and any selection registers used by PREPARE
         selection, junk = bb.add(self.prepare, selection=selection, junk=junk)
         selection, system = bb.add(self.select, selection=selection, system=system)
-        selection, junk = bb.add(self.prepare.dagger(), selection=selection, junk=junk)
+        selection, junk = bb.add(self.prepare.adjoint(), selection=selection, junk=junk)
         return {'selection': selection, 'junk': junk, 'system': system}
 
 

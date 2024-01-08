@@ -163,6 +163,9 @@ class TwoBitCSwap(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 7), (ArbitraryClifford(n=3), 10)}
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
 
 @frozen
 class CSwap(GateWithRegisters):
@@ -240,6 +243,9 @@ class CSwap(GateWithRegisters):
 
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
+
+    def adjoint(self) -> 'Bloq':
+        return self
 
 
 @bloq_example

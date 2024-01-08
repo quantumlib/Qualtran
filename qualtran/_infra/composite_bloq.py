@@ -1056,7 +1056,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(n=soq.reg.bitsize), free=soq)
+        self.add(Free(n=soq.reg.bitsize), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""
@@ -1065,7 +1065,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
 
-        return self.add(Split(n=soq.reg.bitsize), split=soq)
+        return self.add(Split(n=soq.reg.bitsize), reg=soq)
 
     def join(self, soqs: NDArray[Soquet]) -> Soquet:
         from qualtran.bloqs.util_bloqs import Join
@@ -1078,4 +1078,4 @@ class BloqBuilder:
         if not all(soq.reg.bitsize == 1 for soq in soqs):
             raise ValueError("`join` can only join equal-bitsized soquets, currently only size 1.")
 
-        return self.add(Join(n=n), join=soqs)
+        return self.add(Join(n=n), reg=soqs)

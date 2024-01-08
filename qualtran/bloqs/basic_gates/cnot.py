@@ -62,6 +62,9 @@ class CNOT(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
