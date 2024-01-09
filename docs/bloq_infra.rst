@@ -17,6 +17,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
    simulation/tensor.ipynb
    resource_counting/bloq_counts.ipynb
    Adjoint.ipynb
+   Controlled.ipynb
 
 .. toctree::
    :maxdepth: 1
