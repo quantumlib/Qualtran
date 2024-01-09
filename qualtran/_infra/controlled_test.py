@@ -14,14 +14,14 @@
 
 import pytest
 
-from qualtran.bloqs.controlled_bloq import ControlledBloq
+import qualtran.testing as qlt_testing
+from qualtran import ControlledBloq
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
-from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_controlled_serial():
     bloq = ControlledBloq(subbloq=TestSerialCombo())
-    cbloq = assert_valid_bloq_decomposition(bloq)
+    cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert (
         cbloq.debug_text()
         == """\
@@ -47,7 +47,7 @@ C[TestAtom('atom2')]<2>
 
 def test_controlled_parallel():
     bloq = ControlledBloq(subbloq=TestParallelCombo())
-    cbloq = assert_valid_bloq_decomposition(bloq)
+    cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     print()
     print(cbloq.debug_text())
     print()
@@ -94,3 +94,7 @@ def test_doubly_controlled():
     with pytest.raises(NotImplementedError):
         # TODO: https://github.com/quantumlib/Qualtran/issues/149
         ControlledBloq(ControlledBloq(TestAtom()))
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('../Controlled')

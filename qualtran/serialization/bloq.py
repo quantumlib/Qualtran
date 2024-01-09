@@ -23,6 +23,7 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
+    ControlledBloq,
     DanglingT,
     DecomposeNotImplementedError,
     DecomposeTypeError,
@@ -32,7 +33,6 @@ from qualtran import (
     Soquet,
 )
 from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
-from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.protos import args_pb2, bloq_pb2
