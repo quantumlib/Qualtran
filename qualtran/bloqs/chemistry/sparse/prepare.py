@@ -21,14 +21,21 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, SelectionRegister, SoquetT
+from qualtran import (
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    ControlledBloq,
+    Register,
+    SelectionRegister,
+    SoquetT,
+)
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
 from qualtran.bloqs.chemistry.black_boxes import (
     PrepareUniformSuperposition as BBPrepareUniformSuperposition,
 )
-from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.bloqs.select_and_prepare import PrepareOracle
