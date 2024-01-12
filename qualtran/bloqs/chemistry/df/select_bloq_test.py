@@ -24,21 +24,13 @@ def test_rotations():
     num_bits_rot = 10
     num_eig = 13031
     rot = ProgRotGateArray(
-        num_aux=num_aux,
-        num_eig=num_eig,
-        num_spin_orb=num_spin_orb,
-        num_bits_rot=num_bits_rot,
-        adjoint=False,
+        num_aux=num_aux, num_eig=num_eig, num_spin_orb=num_spin_orb, num_bits_rot=num_bits_rot
     )
     _, counts = rot.call_graph()
     toff = counts[TGate()] // 4
     rot = ProgRotGateArray(
-        num_aux=num_aux,
-        num_eig=num_eig,
-        num_spin_orb=num_spin_orb,
-        num_bits_rot=num_bits_rot,
-        adjoint=True,
-    )
+        num_aux=num_aux, num_eig=num_eig, num_spin_orb=num_spin_orb, num_bits_rot=num_bits_rot
+    ).adjoint()
     _, counts = rot.call_graph()
     toff += counts[TGate()] // 4
     toff *= 2  # cost is for the two applications of the (rot, rot^) pair

@@ -18,7 +18,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -39,12 +39,12 @@ class QuantumVariableRotation(Bloq):
     Args:
         bitsize: The number of bits encoding the phase angle $\phi_j$.
 
-    Register:
+    Registers:
         phi: a bitsize size register storing the angle $\phi_j$.
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
             Fig 14.
     """
     phi_bitsize: int
@@ -64,3 +64,16 @@ class QuantumVariableRotation(Bloq):
         theta = ssa.new_symbol('theta')
         # need to update rotation bloq.
         return {(Rz(theta), self.phi_bitsize)}
+
+
+@bloq_example
+def _qvr() -> QuantumVariableRotation:
+    qvr = QuantumVariableRotation(12)
+    return qvr
+
+
+_QVR = BloqDocSpec(
+    bloq_cls=QuantumVariableRotation,
+    import_line='from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation',
+    examples=(_qvr,),
+)

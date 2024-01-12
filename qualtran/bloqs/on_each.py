@@ -18,11 +18,11 @@ from typing import Dict
 
 import attrs
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Signature, SoquetT
 
 
 @attrs.frozen
-class OnEach(Bloq):
+class OnEach(GateWithRegisters):
     """Add a single-qubit (unparameterized) bloq on each of n qubits.
 
     Args:
@@ -50,7 +50,6 @@ class OnEach(Bloq):
         return rf'{self.gate.short_name()}⨂{self.n}'
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> Dict[str, SoquetT]:
-
         qs = bb.split(q)
         for i in range(self.n):
             qs[i] = bb.add(self.gate, q=qs[i])

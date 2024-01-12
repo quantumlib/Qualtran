@@ -18,7 +18,20 @@ from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
 )
-from qualtran.bloqs.chemistry.trotter.potential import PairPotential, PotentialEnergy
+from qualtran.bloqs.chemistry.trotter.potential import (
+    _pair_potential,
+    _potential_energy,
+    PairPotential,
+    PotentialEnergy,
+)
+
+
+def test_pair_potential(bloq_autotester):
+    bloq_autotester(_pair_potential)
+
+
+def test_potential_energy(bloq_autotester):
+    bloq_autotester(_potential_energy)
 
 
 @pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))

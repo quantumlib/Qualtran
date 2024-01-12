@@ -16,8 +16,9 @@
 These are for temporary convenience to lock-in the quoted literature costs.
 """
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Optional, Set, Tuple, TYPE_CHECKING
 
+import attrs
 import cirq
 import numpy as np
 from attrs import field, frozen
@@ -68,7 +69,9 @@ class PrepareUniformSuperposition(Bloq):
         return {(Toffoli(), uniform_prep)}
 
 
-def get_qroam_cost(data_size: int, bitsize: int, adjoint: bool = False) -> Tuple[int, int]:
+def get_qroam_cost(
+    data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: Optional[int] = None
+) -> Tuple[int, int]:
     """This gives the optimal k and minimum cost for a QROM over L values of size M.
 
     Adapted from openfermion and accounts for quoted inverse cost.
@@ -77,20 +80,29 @@ def get_qroam_cost(data_size: int, bitsize: int, adjoint: bool = False) -> Tuple
         data_size: Amount of data we want to load.
         bitsize: the amount of bits of output we need.
         adjoint: whether to get costs from inverse qrom (true) or not (false).
+        qroam_block_size: The block size for QROAM. Default find the optimal
+            value given the data size.
 
     Returns:
        val_opt: minimal (optimal) cost of QROM
     """
+    if qroam_block_size == 1:
+        return data_size - 1
     if adjoint:
-        k = 0.5 * np.log2(data_size)
-        value = lambda k: data_size / 2**k + 2**k
+        if qroam_block_size is None:
+            log_blk = 0.5 * np.log2(data_size)
+            qroam_block_size = 2**log_blk
+        value = lambda x: data_size / x + x
     else:
-        k = 0.5 * np.log2(data_size / bitsize)
-        assert k >= 0
-        value = lambda k: data_size / 2**k + bitsize * (2**k - 1)
+        if qroam_block_size is None:
+            log_blk = 0.5 * np.log2(data_size / bitsize)
+            assert log_blk >= 0
+            qroam_block_size = 2**log_blk
+        value = lambda x: data_size / x + bitsize * (x - 1)
+    k = np.log2(qroam_block_size)
     k_int = np.array([np.floor(k), np.ceil(k)])
-    k_opt = k_int[np.argmin(value(k_int))]
-    val_opt = np.ceil(value(k_opt))
+    k_opt = k_int[np.argmin(value(2**k_int))]
+    val_opt = np.ceil(value(2**k_opt))
     return int(val_opt)
 
 
@@ -104,17 +116,16 @@ class QROAM(Bloq):
         data_size: Amount of data we want to load.
         bitsize: the amount of bits of output we need.
         adjoint: whether to get costs from inverse qrom (true) or not (false).
-
-    Returns:
-       val_opt: minimal (optimal) cost of QROM
+        qroam_blocking_factor: Block size for qroam. Default None (tries to find optimal block size)
     """
 
     data_size: int
     target_bitsize: int
-    adjoint: bool = False
+    is_adjoint: bool = False
+    qroam_block_size: Optional[int] = None
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.is_adjoint else ''
         return f"QROAM{dag}"
 
     @cached_property
@@ -122,8 +133,16 @@ class QROAM(Bloq):
         return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        cost = get_qroam_cost(self.data_size, self.target_bitsize, adjoint=self.adjoint)
+        cost = get_qroam_cost(
+            self.data_size,
+            self.target_bitsize,
+            adjoint=self.is_adjoint,
+            qroam_block_size=self.qroam_block_size,
+        )
         return {(Toffoli(), cost)}
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
 
 @frozen
@@ -136,7 +155,7 @@ class QROAMTwoRegs(Bloq):
         data_a_block_size: Blocking factor for first index.
         data_b_block_size: Blocking factor for second index.
         target_bitsize: the amount of bits of output we need.
-        adjoint: whether to get costs from inverse qrom (true) or not (false).
+        is_adjoint: whether to get costs from inverse qrom (true) or not (false).
 
     Returns:
        val_opt: minimal (optimal) cost of QROM
@@ -151,10 +170,10 @@ class QROAMTwoRegs(Bloq):
     data_a_block_size: int
     data_b_block_size: int
     target_bitsize: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.is_adjoint else ''
         return f"QROAM{dag}"
 
     @cached_property
@@ -164,11 +183,14 @@ class QROAMTwoRegs(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
         cost *= int(np.ceil(self.data_b_size / self.data_b_block_size))
-        if self.adjoint:
+        if self.is_adjoint:
             cost += self.data_a_block_size * self.data_b_block_size
         else:
             cost += self.target_bitsize * (self.data_a_block_size * self.data_b_block_size - 1)
         return {(Toffoli(), cost)}
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
 
 @frozen

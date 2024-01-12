@@ -17,6 +17,8 @@ import pytest
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
+    _nr_inv_sqrt,
+    _poly_inv_sqrt,
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
     NewtonRaphsonApproxInverseSquareRoot,
@@ -25,13 +27,21 @@ from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_fixed_point
 
 
-def test_newton_raphson_inverse_sqrt():
+def test_newton_raphson_inverse_sqrt(bloq_autotester):
+    bloq_autotester(_nr_inv_sqrt)
+
+
+def test_poly_eval_inverse_sqrt(bloq_autotester):
+    bloq_autotester(_poly_inv_sqrt)
+
+
+def test_newton_raphson_inverse_sqrt_bloq_counts():
     bloq = NewtonRaphsonApproxInverseSquareRoot(7, 8, 12)
     _, counts = bloq.call_graph()
     assert counts[TGate()] == 1632
 
 
-def test_poly_eval_inverse_sqrt():
+def test_poly_eval_inverse_sqrt_bloq_counts():
     bloq = PolynmomialEvaluationInverseSquareRoot(7, 8, 12)
     _, counts = bloq.call_graph()
     assert counts[TGate()] == 744

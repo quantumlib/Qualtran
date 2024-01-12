@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 @frozen
 class ProgRotGateArray(Bloq):
-    r"""Rotate to to/from MO basis so-as-to apply number operators in DF basis.
+    r"""Rotate to/from MO basis so-as-to apply number operators in DF basis.
 
     An actual implementation of should derive from ProgrammableRotationGateArray.
 
@@ -55,11 +55,9 @@ class ProgRotGateArray(Bloq):
     num_spin_orb: int
     num_eig: int
     num_bits_rot: int
-    adjoint: bool = False
 
     def short_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"Rotations{dag}"
+        return "Rotations"
 
     @cached_property
     def signature(self) -> Signature:
@@ -84,5 +82,5 @@ class ProgRotGateArray(Bloq):
         cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations
         return {
             (Toffoli(), (cost_a + cost_c)),
-            (QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2, adjoint=self.adjoint), 1),
+            (QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2), 1),
         }
