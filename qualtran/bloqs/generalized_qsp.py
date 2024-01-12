@@ -91,6 +91,10 @@ def qsp_complementary_polynomial(
     for every $\theta \in \mathbb{R}$.
 
     The exact method for computing $Q$ is described in the proof of Theorem 4.
+    The method computes an auxillary polynomial R, whose roots are computed
+    and re-interpolated the obtain the required polynomial Q.
+
+    TODO Also implement the more efficient optimization-based method described in Eq. 52
 
     Args:
         P: Co-efficients of a complex polynomial.
@@ -102,10 +106,24 @@ def qsp_complementary_polynomial(
     """
     d = len(P) - 1  # degree
 
-    # R(z) = z^d (1 - P^*(z) P(z)) (Eq. 34, 35)
+    r"""R(z) = z^d (1 - P^*(z) P(z))
+    obtained on simplifying Eq. 34, Eq. 35 by substituting H, T.
+    The definition of $R$ is given in the text from Eq.34 - Eq. 35,
+    following the chain of definitions below:
+
+        $$
+        T(\theta) = \abs{P(e^{i\theta}),
+        H = I - T,
+        H = e^{-id\theta} R(e^{i\theta})
+        $$
+        
+    Here H and T are defined on reals, so the initial definition of R is only on the unit circle.
+    We analytically continue this definition to the entire complex plane by replacing $e^{i\theta}$ by $z$.
+    """
     R = Polynomial.basis(d) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
     roots = R.roots()
 
+    # R is self-inversive, so larger_roots and smaller_roots occur in conjugate pairs.
     units: list[complex] = []  # roots r s.t. \abs{r} = 1
     larger_roots: list[complex] = []  # roots r s.t. \abs{r} > 1
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
@@ -119,7 +137,7 @@ def qsp_complementary_polynomial(
             smaller_roots.append(r)
 
     if verify:
-
+        # verify that the non-unit roots indeed occur in conjugate pairs.
         def is_permutation(A, B):
             assert len(A) == len(B)
             A = list(A)
@@ -134,10 +152,12 @@ def qsp_complementary_polynomial(
 
         assert is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
+    # Leading co-efficient of R described in Eq. 37.
     c = R.coef[-1]
     scaling_factor = np.sqrt(np.abs(c * np.prod(larger_roots)))
 
-    # pair up roots in `units`
+    # pair up roots in `units`, claimed in Eq. 40 and the explanation preceding it.
+    # all unit roots must have even multiplicity.
     paired_units: list[complex] = []
     unpaired_units: list[complex] = []
     for z in units:
@@ -156,6 +176,13 @@ def qsp_complementary_polynomial(
     if verify:
         assert len(unpaired_units) == 0
 
+    r"""Q = G \hat{G}
+    
+    \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
+    
+    G*(z) G(z) is the interpolation of the conjugate paired non-unit roots of R,
+    described in Eq. 37 - Eq. 38
+    """
     Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
 
     return np.around(Q.coef, decimals=10)
@@ -199,6 +226,12 @@ def qsp_phase_factors(
 
         a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
+        # \phi_d = arg(a / b)
+        # TODO this is numerically unstable for values of a and b around 0,
+        #      np.angle(0) = 0, but for near-zero values it produces the "correct angle",
+        #      even though we want it to be 0.
+        #      There should be a more numerically stable way to compute the relevant phis
+        #      so that the final QSP sequence is valid.
         phi[d] = np.angle(a) - np.angle(b)
 
         if d == 0:
