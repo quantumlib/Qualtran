@@ -17,9 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import builtins
-import collections.abc
 import google.protobuf.descriptor
-import google.protobuf.internal.containers
 import google.protobuf.message
 import sys
 
@@ -54,25 +52,15 @@ global___IntOrSympy = IntOrSympy
 class NDArray(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    SHAPE_FIELD_NUMBER: builtins.int
-    DTYPE_FIELD_NUMBER: builtins.int
-    DATA_FIELD_NUMBER: builtins.int
-    @property
-    def shape(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]:
-        """A flattened numpy array. Let `a` be a numpy array. It should be serialized / deserialized as:
-        >>> shape, dtype, data = a.shape, a.dtype, a.tobytes()
-        >>> arr = np.ndarray(shape, dtype, data)
-        """
-    dtype: builtins.str
-    data: builtins.bytes
+    NDARRAY_FIELD_NUMBER: builtins.int
+    ndarray: builtins.bytes
+    """A Numpy array serialized as bytes using np.save() / np.load()."""
     def __init__(
         self,
         *,
-        shape: collections.abc.Iterable[builtins.int] | None = ...,
-        dtype: builtins.str = ...,
-        data: builtins.bytes = ...,
+        ndarray: builtins.bytes = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["data", b"data", "dtype", b"dtype", "shape", b"shape"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["ndarray", b"ndarray"]) -> None: ...
 
 global___NDArray = NDArray
 
