@@ -19,9 +19,8 @@ import attrs
 import cirq
 import sympy
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, ControlledBloq, Signature
 from qualtran._infra.composite_bloq_test import TestTwoCNOT
-from qualtran.bloqs.controlled_bloq import ControlledBloq
 from qualtran.bloqs.factoring.mod_exp import ModExp
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
