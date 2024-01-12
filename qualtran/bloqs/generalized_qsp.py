@@ -106,20 +106,19 @@ def qsp_complementary_polynomial(
     """
     d = len(P) - 1  # degree
 
-    r"""R(z) = z^d (1 - P^*(z) P(z))
-    obtained on simplifying Eq. 34, Eq. 35 by substituting H, T.
-    The definition of $R$ is given in the text from Eq.34 - Eq. 35,
-    following the chain of definitions below:
-
-        $$
-        T(\theta) = \abs{P(e^{i\theta}),
-        H = I - T,
-        H = e^{-id\theta} R(e^{i\theta})
-        $$
-        
-    Here H and T are defined on reals, so the initial definition of R is only on the unit circle.
-    We analytically continue this definition to the entire complex plane by replacing $e^{i\theta}$ by $z$.
-    """
+    # R(z) = z^d (1 - P^*(z) P(z))
+    # obtained on simplifying Eq. 34, Eq. 35 by substituting H, T.
+    # The definition of $R$ is given in the text from Eq.34 - Eq. 35,
+    # following the chain of definitions below:
+    #
+    #     $$
+    #     T(\theta) = \abs{P(e^{i\theta}),
+    #     H = I - T,
+    #     H = e^{-id\theta} R(e^{i\theta})
+    #     $$
+    #
+    # Here H and T are defined on reals, so the initial definition of R is only on the unit circle.
+    # We analytically continue this definition to the entire complex plane by replacing $e^{i\theta}$ by $z$.
     R = Polynomial.basis(d) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
     roots = R.roots()
 
@@ -176,13 +175,10 @@ def qsp_complementary_polynomial(
     if verify:
         assert len(unpaired_units) == 0
 
-    r"""Q = G \hat{G}
-    
-    \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
-    
-    G*(z) G(z) is the interpolation of the conjugate paired non-unit roots of R,
-    described in Eq. 37 - Eq. 38
-    """
+    # Q = G \hat{G}, where
+    # - \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
+    # - G*(z) G(z) is the interpolation of the conjugate paired non-unit roots of R,
+    #   described in Eq. 37 - Eq. 38
     Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
 
     return np.around(Q.coef, decimals=10)
