@@ -26,12 +26,8 @@ message IntOrSympy {
 }
 
 message NDArray {
-  // A flattened numpy array. Let `a` be a numpy array. It should be serialized / deserialized as:
-  // >>> shape, dtype, data = a.shape, a.dtype, a.tobytes()
-  // >>> arr = np.ndarray(shape, dtype, data)
-  repeated int32 shape = 1;
-  string dtype = 2;
-  bytes data = 3;
+  // A Numpy array serialized as bytes using np.save() / np.load().
+  bytes ndarray = 1;
 }
 
 message BloqArg {
