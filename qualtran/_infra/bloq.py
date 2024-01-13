@@ -369,6 +369,55 @@ class Bloq(metaclass=abc.ABCMeta):
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
 
+    def on(self, *qubits: 'cirq.Qid') -> 'cirq.Operation':
+        """A `cirq.Operation` of this bloq operating on the given qubits.
+
+        This method supports an alternative decomposition backend that follows a 'Cirq-style'
+        association of gates with qubits to form operations. Instead of wiring up `Soquet`s,
+        each gate operates on qubit addresses (`cirq.Qid`s), which are reused by multiple
+        gates. This method lets you operate this bloq on qubits and returns a `cirq.Operation`.
+
+        The primary, bloq-native way of writing decompositions is to override
+        `build_composite_bloq`. If this is what you're doing, do not use this method.
+
+        To provide a Cirq-style decomposition for this bloq, implement a method (typically named
+        `decompose_from_registers` for historical reasons) that yields a list of `cirq.Operation`s
+        using `cirq.Gate.on(...)`, `Bloq.on(...)`, `GateWithRegisters.on_registers(...)`, or
+        `Bloq.on_registers(...)`.
+
+        See Also:
+            `Bloq.on_registers`: Provides the same functionality, but with named registers
+                instead of a flat list of qubits.
+            `decompose_from_decompose_from_registers`: More details on how to write a cirq-style
+                decomposition.
+        """
+        import cirq
+
+        from qualtran.cirq_interop import BloqAsCirqGate
+
+        return cirq.Gate.on(BloqAsCirqGate(bloq=self), *qubits)
+
+    def on_registers(
+        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], 'NDArray[cirq.Qid]']
+    ) -> 'cirq.Operation':
+        """A `cirq.Operation` of this bloq operating on the given qubit registers.
+
+        This method supports an alternative decomposition backend that follows a 'Cirq-style'
+        association of gates with qubits to form operations. See `Bloq.on()` for more details.
+
+        Args:
+            **qubit_regs: A mapping of register name to the qubits comprising that register.
+
+        See Also:
+            `Bloq.on`: Provides the same functionality, but with a flat list of qubits.
+                instead of named registers.
+            `decompose_from_decompose_from_registers`: More details on how to write a cirq-style
+                decomposition.
+        """
+        from qualtran._infra.gate_with_registers import merge_qubits
+
+        return self.on(*merge_qubits(self.signature, **qubit_regs))
+
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         """On a musical score visualization, use this `WireSymbol` to represent `soq`.
 

@@ -15,17 +15,17 @@
 """Qualtran Bloqs to Cirq gates/circuits conversion."""
 
 from functools import cached_property
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import cirq
 import networkx as nx
 import numpy as np
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
-    CompositeBloq,
     Connection,
-    GateWithRegisters,
+    DecomposeNotImplementedError,
     LeftDangle,
     Register,
     RightDangle,
@@ -34,10 +34,41 @@ from qualtran import (
     Soquet,
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran._infra.gate_with_registers import (
+    _get_all_and_output_quregs_from_input,
+    merge_qubits,
+    split_qubits,
+    total_bits,
+)
 from qualtran.cirq_interop._cirq_to_bloq import _QReg, CirqQuregInT, CirqQuregT
+from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 
 
-class BloqAsCirqGate(GateWithRegisters):
+def _cirq_style_decompose_from_decompose_bloq(
+    bloq: Bloq, quregs, context: cirq.DecompositionContext
+) -> cirq.Circuit:
+    """Helper function to implement cirq-style `_decompose_with_context_` that relies
+    on `Bloq.decompose_bloq()`
+    """
+    cbloq = bloq.decompose_bloq()
+    in_quregs = {reg.name: quregs[reg.name] for reg in bloq.signature.lefts()}
+    # Input qubits can get de-allocated by cbloq.to_cirq_circuit, thus mark them as managed.
+    qm = InteropQubitManager(context.qubit_manager)
+    qm.manage_qubits(merge_qubits(bloq.signature.lefts(), **in_quregs))
+    circuit, out_quregs = cbloq.to_cirq_circuit(qubit_manager=qm, **in_quregs)
+    qubit_map = {q: q for q in circuit.all_qubits()}
+    for reg in bloq.signature.rights():
+        if reg.side == Side.RIGHT:
+            # Right only registers can get mapped to newly allocated output qubits in `out_regs`.
+            # Map them back to the original system qubits and deallocate newly allocated qubits.
+            assert reg.name in quregs and reg.name in out_quregs
+            assert quregs[reg.name].shape == out_quregs[reg.name].shape
+            qm.qfree([q for q in out_quregs[reg.name].flatten()])
+            qubit_map |= zip(out_quregs[reg.name].flatten(), quregs[reg.name].flatten())
+    return circuit.unfreeze(copy=False).transform_qubits(qubit_map)
+
+
+class BloqAsCirqGate(cirq.Gate):
     """A shim for using bloqs in a Cirq circuit.
 
     Args:
@@ -85,21 +116,39 @@ class BloqAsCirqGate(GateWithRegisters):
             op: A cirq operation whose gate is the `BloqAsCirqGate`-wrapped version of `bloq`.
             cirq_quregs: The output cirq qubit registers.
         """
-        return BloqAsCirqGate(bloq=bloq).as_cirq_op(qubit_manager=qubit_manager, **cirq_quregs)
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        """Delegate decomposition to wrapped Bloq's decomposition.
-
-        Since `BloqAsCirqGate` derives from `GateWithRegisters`, it is sufficient to override either
-        Bloq-style `decompose_bloq` or Cirq-style `decompose_from_registers` to obtain the other one
-        for free. Thus, a cirq-style `_decompose_` is auto generated here using the bloq-style
-        `decompose_bloq`.
-        """
-        return self.bloq.decompose_bloq()
+        all_quregs, out_quregs = _get_all_and_output_quregs_from_input(
+            bloq.signature, qubit_manager, in_quregs=cirq_quregs
+        )
+        return BloqAsCirqGate(bloq=bloq).on_registers(**all_quregs), out_quregs
 
     def _t_complexity_(self):
         """Delegate to the bloq's t complexity."""
         return self._bloq.t_complexity()
+
+    def _num_qubits_(self) -> int:
+        return total_bits(self.signature)
+
+    def _decompose_with_context_(
+        self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
+    ) -> cirq.OP_TREE:
+        quregs = split_qubits(self.signature, qubits)
+        if context is None:
+            context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
+        try:
+            return _cirq_style_decompose_from_decompose_bloq(
+                bloq=self.bloq, quregs=quregs, context=context
+            )
+        except DecomposeNotImplementedError:
+            pass
+        return NotImplemented
+
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+        return self._decompose_with_context_(qubits)
+
+    def on_registers(
+        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
+    ) -> cirq.Operation:
+        return self.on(*merge_qubits(self.signature, **qubit_regs))
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Draw cirq diagrams.
@@ -121,6 +170,13 @@ class BloqAsCirqGate(GateWithRegisters):
         if self._reg_to_wires is None:
             wire_symbols[0] = self._bloq.pretty_name()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def __pow__(self, power, modulo=None):
+        if power == 1:
+            return self
+        if power == -1:
+            return BloqAsCirqGate(self.bloq.adjoint())
+        raise ValueError(f"Bad power: {power}")
 
     def __eq__(self, other):
         if not isinstance(other, BloqAsCirqGate):
