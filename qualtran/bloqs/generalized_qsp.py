@@ -184,7 +184,7 @@ def qsp_complementary_polynomial(
 
     Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
 
-    return np.around(Q.coef, decimals=10)
+    return Q.coef
 
 
 def qsp_phase_factors(
