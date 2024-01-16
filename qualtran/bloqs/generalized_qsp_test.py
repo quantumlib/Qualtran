@@ -79,7 +79,7 @@ def random_qsp_polynomial(
 
 
 @pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
-def test_complimentary_polynomial(degree: int):
+def test_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
@@ -89,7 +89,7 @@ def test_complimentary_polynomial(degree: int):
 
 
 @pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
-def test_real_polynomial_has_real_complimentary_polynomial(degree: int):
+def test_real_polynomial_has_real_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
