@@ -92,9 +92,9 @@ def qsp_complementary_polynomial(
 
     The exact method for computing $Q$ is described in the proof of Theorem 4.
     The method computes an auxillary polynomial R, whose roots are computed
-    and re-interpolated the obtain the required polynomial Q.
+    and re-interpolated to obtain the required polynomial Q.
 
-    TODO Also implement the more efficient optimization-based method described in Eq. 52
+    TODO: Also implement the more efficient optimization-based method described in Eq. 52
 
     Args:
         P: Co-efficients of a complex polynomial.
@@ -151,10 +151,6 @@ def qsp_complementary_polynomial(
 
         assert is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
-    # Leading co-efficient of R described in Eq. 37.
-    c = R.coef[-1]
-    scaling_factor = np.sqrt(np.abs(c * np.prod(larger_roots)))
-
     # pair up roots in `units`, claimed in Eq. 40 and the explanation preceding it.
     # all unit roots must have even multiplicity.
     paired_units: list[complex] = []
@@ -179,6 +175,13 @@ def qsp_complementary_polynomial(
     # - \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
     # - G*(z) G(z) is the interpolation of the conjugate paired non-unit roots of R,
     #   described in Eq. 37 - Eq. 38
+
+    # Leading co-efficient of R described in Eq. 37.
+    # Note: In the paper, the polynomial is interpolated from larger_roots,
+    #       but this is swapped in our implementation to reduce the error in Q.
+    c = R.coef[-1]
+    scaling_factor = np.sqrt(np.abs(c * np.prod(larger_roots)))
+
     Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
 
     return np.around(Q.coef, decimals=10)
