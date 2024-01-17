@@ -423,7 +423,7 @@ def cirq_optree_to_cbloq(
 
 
 def decompose_from_cirq_style_method(
-    bloq: Bloq, method_name='decompose_from_registers'
+    bloq: Bloq, method_name: str = 'decompose_from_registers'
 ) -> CompositeBloq:
     """Return a `CompositeBloq` decomposition using a cirq-style decompose method.
 
