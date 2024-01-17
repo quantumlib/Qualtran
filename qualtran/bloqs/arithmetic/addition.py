@@ -72,7 +72,8 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'a': a, 'b': a + b}
+        assert self.bitsize <= 64 # TODO: be smarter
+        return {'a': a, 'b': np.uint64(a) + np.uint64(b)} # TODO: account for signed integer addition
 
     def short_name(self) -> str:
         return "a+b"
@@ -319,7 +320,7 @@ class SimpleAddConstant(Bloq):
         else:
             return {'x': x + self.k}
 
-        if np.equal(ctrl, self.cvs):
+        if ctrl == 1:
             return {'ctrl': ctrl, 'x': x + self.k}
         else:
             return {'ctrl': ctrl, 'x': x}
