@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import cirq
 import numpy as np
@@ -20,8 +20,8 @@ from attrs import field, frozen
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature, Register, SoquetT, Bloq, BloqBuilder
-from qualtran.bloqs.basic_gates import Toffoli, XGate, CNOT
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Signature, SoquetT
+from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.simulation.classical_sim import bits_to_ints
