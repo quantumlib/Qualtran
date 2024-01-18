@@ -10,16 +10,25 @@ types (``Register``), and algorithms (``CompositeBloq``).
 
 .. toctree::
    :maxdepth: 1
-   :caption: Basic:
 
    _infra/Bloqs-Tutorial.ipynb
+   Protocols.ipynb
    simulation/classical_sim.ipynb
    simulation/tensor.ipynb
    resource_counting/bloq_counts.ipynb
+   Adjoint.ipynb
+   Controlled.ipynb
 
 .. toctree::
    :maxdepth: 1
-   :caption: Advanced:
+   :caption: Quantum Computer Architectures:
+
+   surface_code/azure_cost_model.ipynb
+   surface_code/thc_compilation.ipynb
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Advanced Topics:
 
    _infra/composite_bloq.ipynb
    cirq_interop/cirq_interop.ipynb

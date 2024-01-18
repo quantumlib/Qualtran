@@ -12,20 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.sparse import SelectSparse
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.for_testing.many_registers import TestMultiRegister
 
 
-def _make_sparse_select():
-    from qualtran.bloqs.chemistry.sparse import SelectSparse
+def test_test_multi_register():
+    bloq = TestMultiRegister()
+    assert [r.name for r in bloq.signature] == ['xx', 'yy', 'zz']
+    assert sum(r.total_bits() for r in bloq.signature) == 12
 
-    return SelectSparse(10)
-
-
-def test_sparse_select():
-    sel = SelectSparse(10)
-
-
-def test_sparse_select_bloq_counts():
-    bloq = SelectSparse(10)
-    graph, sigma = bloq.call_graph()
-    assert isinstance(sigma, dict)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)

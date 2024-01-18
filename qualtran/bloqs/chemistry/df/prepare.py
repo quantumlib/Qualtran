@@ -41,7 +41,6 @@ class InnerPrepareDoubleFactorization(Bloq):
             rotation for amplitude amplification. Called $b_r$ in the reference.
         num_bits_state_prep: The number of bits of precision for coherent alias
             sampling. Called $\aleph$ in Ref[1].
-        adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
 
     Registers:
         xi: data register for number storing $\Xi^{(l)}$.
@@ -59,11 +58,9 @@ class InnerPrepareDoubleFactorization(Bloq):
     num_eig: int
     num_bits_rot_aa: int
     num_bits_state_prep: int
-    adjoint: bool = False
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"In-Prep{dag}"
+        return "In-Prep"
 
     @cached_property
     def signature(self) -> Signature:
@@ -82,7 +79,7 @@ class InnerPrepareDoubleFactorization(Bloq):
         cost_b = (Add(num_bits_lxi), 1)
         # QROAM for alt/keep values
         bp = num_bits_xi + self.num_bits_state_prep + 2  # C31
-        cost_c = (QROAM(self.num_eig + self.num_spin_orb // 2, bp, self.adjoint), 1)
+        cost_c = (QROAM(self.num_eig + self.num_spin_orb // 2, bp), 1)
         # inequality tests + CSWAP
         cost_d = (Toffoli(), self.num_bits_state_prep + num_bits_xi)
         return {cost_a, cost_b, cost_c, cost_d}
@@ -107,7 +104,6 @@ class OuterPrepareDoubleFactorization(Bloq):
         num_bits_rot_aa: Number of bits of precision for single qubit
             rotation for amplitude amplification in inner state preparation.
             Called $b_r$ in the reference.
-        adjoint: Whether to dagger the bloq or not.
 
     Registers:
         l: register to store L values for auxiliary index.
@@ -122,11 +118,9 @@ class OuterPrepareDoubleFactorization(Bloq):
     num_aux: int
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"OuterPrep{dag}"
+        return "OuterPrep"
 
     @cached_property
     def signature(self) -> Signature:
@@ -138,7 +132,7 @@ class OuterPrepareDoubleFactorization(Bloq):
         cost_a = (PrepareUniformSuperposition(self.num_aux + 1, self.num_bits_rot_aa), 1)
         # QROAM for alt/keep
         output_size = num_bits_l + self.num_bits_state_prep
-        cost_b = (QROAM(self.num_aux + 1, output_size, adjoint=self.adjoint), 1)
+        cost_b = (QROAM(self.num_aux + 1, output_size), 1)
         # inequality test
         cost_c = (Toffoli(), self.num_bits_state_prep)
         # controlled swaps
@@ -161,7 +155,6 @@ class OutputIndexedData(Bloq):
         num_eig: Total number of eigenvalues.
         num_bits_rot_aa: Number of bits of precision for single qubit
             rotation for amplitude amplification.  Called $b_r$ in the reference.
-        ajoint: Whether to dagger the bloq or note. Affects bloq counts.
 
     Registers:
         l: register to store L values for auxiliary index.
@@ -180,11 +173,9 @@ class OutputIndexedData(Bloq):
     num_spin_orb: int
     num_eig: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"In_l-data_l{dag}"
+        return "In_l-data_l"
 
     @cached_property
     def signature(self) -> Signature:
@@ -203,7 +194,7 @@ class OutputIndexedData(Bloq):
         num_bits_lxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()
         bo = num_bits_xi + num_bits_lxi + self.num_bits_rot_aa + 1
-        return {(QROAM(self.num_aux + 1, bo, adjoint=self.adjoint), 1)}
+        return {(QROAM(self.num_aux + 1, bo), 1)}
 
 
 @bloq_example
@@ -219,7 +210,6 @@ def _prep_inner() -> InnerPrepareDoubleFactorization:
         num_eig=num_eig,
         num_bits_rot_aa=num_bits_rot,
         num_bits_state_prep=num_bits_state_prep,
-        adjoint=False,
     )
     return prep_inner
 

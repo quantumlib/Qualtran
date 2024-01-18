@@ -21,11 +21,11 @@ import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Register, Side, Signature, Soquet, SoquetT
-from qualtran._infra.bloq_test import TestCNOT
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, XGate
+from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.for_testing import TestMultiRegister
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
-from qualtran.simulation.classical_sim import _cbloq_call_classically
+from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -52,35 +52,12 @@ def test_util_bloqs():
     bb = BloqBuilder()
     qs1 = bb.add(Allocate(10))
     assert isinstance(qs1, Soquet)
-    qs2 = bb.add(Split(10), split=qs1)
+    qs2 = bb.add(Split(10), reg=qs1)
     assert qs2.shape == (10,)
-    qs3 = bb.add(Join(10), join=qs2)
+    qs3 = bb.add(Join(10), reg=qs2)
     assert isinstance(qs3, Soquet)
-    no_return = bb.add(Free(10), free=qs3)
+    no_return = bb.add(Free(10), reg=qs3)
     assert no_return is None
-
-
-@frozen
-class ComplicatedBloq(Bloq):
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature([Register('xx', 3), Register('yy', 2, shape=(2, 2))])
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
-        xs = bb.split(xx)
-        xs[0] = bb.add(Hadamard(), q=xs[0])
-        xx = bb.join(xs)
-        for i in range(2):
-            for j in range(2):
-                a, b = bb.split(yy[i, j])
-                a, b = bb.add(CNOT(), ctrl=a, target=b)
-                yy[i, j] = bb.join(np.array([a, b]))
-        return {'xx': xx, 'yy': yy}
-
-    def short_name(self) -> str:
-        return 'CB'
 
 
 @frozen
@@ -101,36 +78,45 @@ class TestPartition(Bloq):
         out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
         test_regs = bb.add(
-            partition.dagger(), **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)}
+            partition.adjoint(), **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)}
         )
         return {'test_regs': test_regs}
 
 
 def test_partition():
-    bloq = TestPartition(test_bloq=TestCNOT())
+    bloq = TestPartition(test_bloq=CNOT())
     assert_valid_bloq_decomposition(bloq)
-    bloq = TestPartition(test_bloq=ComplicatedBloq())
+
+    bloq = TestPartition(test_bloq=TestMultiRegister())
     assert_valid_bloq_decomposition(bloq)
 
 
 def test_partition_tensor_contract():
-    bloq = TestPartition(test_bloq=ComplicatedBloq())
+    bloq = TestPartition(test_bloq=TestMultiRegister())
     tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
     assert len(tn.tensors) == 3
-    assert bloq_to_dense(bloq).shape == (2048, 2048)
+    assert bloq_to_dense(bloq).shape == (4096, 4096)
 
 
 def test_partition_as_cirq_op():
-    bloq = TestPartition(test_bloq=TestCNOT())
+    bloq = TestPartition(test_bloq=CNOT())
     quregs = get_named_qubits(bloq.signature.lefts())
     op, quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
     unitary = cirq.unitary(cirq.Circuit(op))
     assert np.allclose(unitary, bloq_to_dense(CNOT()))
-    bloq = TestPartition(test_bloq=ComplicatedBloq())
-    quregs = get_named_qubits(bloq.signature.lefts())
-    op, quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
-    unitary = cirq.unitary(cirq.Circuit(op))
-    assert np.allclose(unitary, bloq_to_dense(bloq))
+
+    bloq = TestPartition(test_bloq=TestMultiRegister())
+    circuit, _ = bloq.decompose_bloq().to_cirq_circuit(
+        cirq.ops.SimpleQubitManager(), test_regs=cirq.NamedQubit.range(12, prefix='system')
+    )
+    assert (
+        circuit.to_text_diagram(transpose=True)
+        == """\
+system0           system1 system2 system3 system4 system5 system6 system7 system8 system9 system10 system11
+│                 │       │       │       │       │       │       │       │       │       │        │
+TestMultiRegister─yy──────yy──────yy──────yy──────yy──────yy──────yy──────yy──────zz──────zz───────zz
+│                 │       │       │       │       │       │       │       │       │       │        │"""
+    )
 
 
 def test_partition_call_classically():
@@ -141,7 +127,7 @@ def test_partition_call_classically():
     flat_out = np.concatenate([v.ravel() if isinstance(v, np.ndarray) else [v] for v in out])
     # 6th set bit == 64
     assert flat_out[2] == 2
-    out = bloq.dagger().call_classically(**{reg.name: val for (reg, val) in zip(regs, out)})
+    out = bloq.adjoint().call_classically(**{reg.name: val for (reg, val) in zip(regs, out)})
     assert out[0] == 64
 
 
@@ -154,7 +140,7 @@ def test_classical_sim():
     y = bb.join(xs)
     cbloq = bb.finalize(y=y)
 
-    ret, assign = _cbloq_call_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
+    ret, assign = call_cbloq_classically(cbloq.signature, vals={}, binst_graph=cbloq._binst_graph)
     assert assign[x] == 0
 
     assert assign[xs[0]] == 0
@@ -170,22 +156,22 @@ def test_classical_sim():
 
 def test_classical_sim_dtypes():
     s = Split(n=8)
-    (xx,) = s.call_classically(split=255)
+    (xx,) = s.call_classically(reg=255)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     with pytest.raises(ValueError):
-        _ = s.call_classically(split=256)
+        _ = s.call_classically(reg=256)
 
     # with numpy types
-    (xx,) = s.call_classically(split=np.uint8(255))
+    (xx,) = s.call_classically(reg=np.uint8(255))
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     # Warning: numpy will wrap too-large values
-    (xx,) = s.call_classically(split=np.uint8(256))
+    (xx,) = s.call_classically(reg=np.uint8(256))
     assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
 
     with pytest.raises(ValueError):
-        _ = s.call_classically(split=np.uint16(256))
+        _ = s.call_classically(reg=np.uint16(256))
 
 
 def test_notebook():

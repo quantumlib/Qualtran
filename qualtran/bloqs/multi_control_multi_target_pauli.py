@@ -12,15 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Dict, Tuple
 
 import cirq
 import numpy as np
+import sympy
 from attrs import field, frozen
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Signature, SoquetT
+from qualtran import bloq_example, Bloq, BloqBuilder, BloqDocSpec, GateWithRegisters, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -29,11 +30,13 @@ from qualtran.simulation.classical_sim import bits_to_ints
 
 @frozen
 class MultiTargetCNOT(GateWithRegisters):
-    """Implements single control, multi-target CNOT_{n} gate in 2*log(n) + 1 CNOT depth.
+    r"""Implements single control, multi-target $C[X^{\otimes n}]$ gate.
 
-    Implements CNOT_{n} = |0><0| I + |1><1| X^{n} using a circuit of depth 2*log(n) + 1
-    containing only CNOT gates. See Appendix B.1 of https://arxiv.org/abs/1812.00954 for
-    reference.
+    Implements $|0><0| I + |1><1| X^{\otimes n}$ using a circuit of depth $2\log(n) + 1$
+    containing only CNOT gates.
+
+    References:
+        Appendix B.1 of https://arxiv.org/abs/1812.00954.
     """
 
     bitsize: int
@@ -46,10 +49,9 @@ class MultiTargetCNOT(GateWithRegisters):
         self,
         *,
         context: cirq.DecompositionContext,
-        **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
+        control: NDArray[cirq.Qid],
+        targets: NDArray[cirq.Qid],
     ):
-        control, targets = quregs['control'], quregs['targets']
-
         def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)
@@ -65,6 +67,26 @@ class MultiTargetCNOT(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self.bitsize)
 
 
+@bloq_example
+def _c_multi_not_symb() -> MultiTargetCNOT:
+    n = sympy.Symbol('n')
+    c_multi_not_symb = MultiTargetCNOT(bitsize=n)
+    return c_multi_not_symb
+
+
+@bloq_example
+def _c_multi_not() -> MultiTargetCNOT:
+    c_multi_not = MultiTargetCNOT(bitsize=5)
+    return c_multi_not
+
+
+_C_MULTI_NOT_DOC = BloqDocSpec(
+    bloq_cls=MultiTargetCNOT,
+    import_line='from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT',
+    examples=(_c_multi_not_symb, _c_multi_not),
+)
+
+
 @frozen
 class MultiControlPauli(GateWithRegisters):
     """Implements multi-control, single-target C^{n}P gate.
@@ -73,8 +95,7 @@ class MultiControlPauli(GateWithRegisters):
     clean ancillas using a multi-controlled `AND` gate.
 
     References:
-        [Constructing Large Controlled Nots]
-        (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
+        [Constructing Large Controlled Nots](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
     """
 
     cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
@@ -272,3 +293,15 @@ class MultiControlX(Bloq):
 
     def short_name(self) -> str:
         return f'C^{len(self.cvs)}-NOT(x)'
+
+@bloq_example
+def _ccpauli() -> MultiControlPauli:
+    ccpauli = MultiControlPauli(cvs=(1, 0, 1, 0, 1), target_gate=cirq.X)
+    return ccpauli
+
+
+_CC_PAULI_DOC = BloqDocSpec(
+    bloq_cls=MultiControlPauli,
+    import_line='from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli',
+    examples=(_ccpauli,),
+)

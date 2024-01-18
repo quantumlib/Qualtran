@@ -17,7 +17,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import PrepareNuState
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
 
@@ -105,3 +105,30 @@ class PrepareUVFirstQuantization(Bloq):
                 1,
             ),
         }
+
+
+@bloq_example
+def _prepare_uv() -> PrepareUVFirstQuantization:
+    num_bits_p = 5
+    eta = 10
+    num_atoms = 10
+    lambda_zeta = 10
+    m_param = 2**8
+    num_bits_nuc_pos = 16
+
+    prepare_uv = PrepareUVFirstQuantization(
+        num_bits_p=num_bits_p,
+        eta=eta,
+        num_atoms=num_atoms,
+        m_param=m_param,
+        lambda_zeta=lambda_zeta,
+        num_bits_nuc_pos=num_bits_nuc_pos,
+    )
+    return prepare_uv
+
+
+_PREPARE_UV = BloqDocSpec(
+    bloq_cls=PrepareUVFirstQuantization,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import PrepareUVFirstQuantization',
+    examples=(_prepare_uv,),
+)

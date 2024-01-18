@@ -163,16 +163,16 @@ class CompositeBloq(Bloq):
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """Support classical data by recursing into the composite bloq."""
-        from qualtran.simulation.classical_sim import _cbloq_call_classically
+        from qualtran.simulation.classical_sim import call_cbloq_classically
 
-        out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
+        out_vals, _ = call_cbloq_classically(self.signature, vals, self._binst_graph)
         return out_vals
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Support classical data by recursing into the composite bloq."""
-        from qualtran.simulation.classical_sim import _cbloq_call_classically
+        from qualtran.simulation.classical_sim import call_cbloq_classically
 
-        out_vals, _ = _cbloq_call_classically(self.signature, vals, self._binst_graph)
+        out_vals, _ = call_cbloq_classically(self.signature, vals, self._binst_graph)
         return tuple(out_vals[reg.name] for reg in self.signature.rights())
 
     def t_complexity(self) -> 'TComplexity':
@@ -193,9 +193,9 @@ class CompositeBloq(Bloq):
 
     def build_call_graph(self, ssa: Optional['SympySymbolAllocator']) -> Set['BloqCountT']:
         """Return the bloq counts by counting up all the subbloqs."""
-        from qualtran.resource_counting.bloq_counts import _build_cbloq_counts_graph
+        from qualtran.resource_counting import build_cbloq_call_graph
 
-        return _build_cbloq_counts_graph(self)
+        return build_cbloq_call_graph(self)
 
     def iter_bloqnections(
         self,
@@ -334,6 +334,16 @@ class CompositeBloq(Bloq):
 
         fsoqs = _map_soqs(self.final_soqs(), soq_map)
         return bb.finalize(**fsoqs)
+
+    def adjoint(self) -> 'CompositeBloq':
+        """Get a composite bloq which is the adjoint of this composite bloq.
+
+        The adjoint of a composite bloq is another composite bloq where the order of
+        operations is reversed and each subbloq is replaced with its adjoint.
+        """
+        from .adjoint import _adjoint_cbloq
+
+        return _adjoint_cbloq(self)
 
     def flatten(
         self, pred: Callable[[BloqInstance], bool], max_depth: int = 1_000
@@ -1046,7 +1056,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(n=soq.reg.bitsize), free=soq)
+        self.add(Free(n=soq.reg.bitsize), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""
@@ -1055,7 +1065,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
 
-        return self.add(Split(n=soq.reg.bitsize), split=soq)
+        return self.add(Split(n=soq.reg.bitsize), reg=soq)
 
     def join(self, soqs: NDArray[Soquet]) -> Soquet:
         from qualtran.bloqs.util_bloqs import Join
@@ -1068,4 +1078,4 @@ class BloqBuilder:
         if not all(soq.reg.bitsize == 1 for soq in soqs):
             raise ValueError("`join` can only join equal-bitsized soquets, currently only size 1.")
 
-        return self.add(Join(n=n), join=soqs)
+        return self.add(Join(n=n), reg=soqs)

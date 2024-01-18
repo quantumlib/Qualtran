@@ -14,7 +14,8 @@ Bloqs Library
     unary_iteration.ipynb
     arithmetic/comparison_gates.ipynb
     phase_estimation_of_quantum_walk.ipynb
-    chemistry/trotter/trotter.ipynb
+    chemistry/trotter/trotter_costs.ipynb
+    chemistry/resource_estimation.ipynb
     factoring/factoring-via-modexp.ipynb
 
 .. toctree::
@@ -32,7 +33,10 @@ Bloqs Library
     chemistry/sparse/sparse.ipynb
     chemistry/thc/thc.ipynb
     chemistry/pbc/first_quantization/first_quantization.ipynb
+    chemistry/pbc/first_quantization/projectile/projectile.ipynb
+    chemistry/sf/single_factorization.ipynb
     chemistry/df/double_factorization.ipynb
+    chemistry/trotter/trotter.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -47,6 +51,7 @@ Bloqs Library
     :caption: Arithmetic:
 
     arithmetic/arithmetic.ipynb
+    arithmetic/addition.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -62,3 +67,5 @@ Bloqs Library
     state_preparation.ipynb
     util_bloqs.ipynb
     generalized_qsp.ipynb
+    multi_control_multi_target_pauli.ipynb
+    block_encoding.ipynb

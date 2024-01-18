@@ -13,23 +13,28 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
+import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
 
 
+_TMATRIX = np.array([[1, 0], [0, np.exp(1.0j * np.pi / 4.0)]], dtype=np.complex128)
+
+
 @frozen
 class TGate(Bloq):
-    """The T gate.
+    r"""The T gate.
 
     This is the fourth root of the Pauli Z gate. Quantum programs composed solely
     of gates belonging to the Clifford group (like X, Z, Hadamard, CNOT, S) can be simulated
@@ -37,6 +42,17 @@ class TGate(Bloq):
     gates do not provide a universal quantum gateset. The addition of any non-Clifford gate
     makes the gateset universal. One of the most popular additions is the T gate, yielding
     the common Clifford+T gateset.
+
+    The unitary matrix of `cirq.T` is
+    $$
+    \begin{bmatrix}
+        1 & 0 \\
+        0 & e^{i \pi /4}
+    \end{bmatrix}
+    $$
+
+    Args:
+        is_adjoint: If True, this bloq is $T^\dagger$ instead.
 
     Registers:
         q: The qubit
@@ -50,6 +66,8 @@ class TGate(Bloq):
             Gidney. 2023.
     """
 
+    is_adjoint: bool = False
+
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
@@ -57,8 +75,25 @@ class TGate(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=1)
 
-    def short_name(self) -> str:
-        return 'T'
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
+
+        data = _TMATRIX.conj().T if self.is_adjoint else _TMATRIX
+        tn.add(
+            qtn.Tensor(
+                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
+            )
+        )
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -67,3 +102,11 @@ class TGate(Bloq):
 
         (q,) = q
         return cirq.T(q), {'q': np.array([q])}
+
+    def pretty_name(self) -> str:
+        maybe_dag = '†' if self.is_adjoint else ''
+        return f'T{maybe_dag}'
+
+    def __str__(self):
+        maybe_dag = 'is_adjoint=True' if self.is_adjoint else ''
+        return f'TGate({maybe_dag})'
