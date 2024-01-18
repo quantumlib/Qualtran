@@ -63,3 +63,21 @@ def test_classical_multi_control_x(x, cvs, ctrl):
     ret1 = bloq.call_classically(x=x, ctrl=ctrl)
     ret2 = cbloq.call_classically(x=x, ctrl=ctrl)
     assert ret1 == ret2
+
+
+@pytest.mark.parametrize(
+    "cvs,x,ctrl,result",
+    [
+        ((), 0, 0, 1),
+        ((0), 1, 0, 0),
+        ((1, 0), 0, 2, 1),
+        ((1, 1, 1), 1, 7, 0),
+        ((1, 0, 1, 0), 1, 10, 0),
+        ((1), 0, 0, 0),
+    ],
+)
+def test_classical_multi_control_x_correctness(x, cvs, ctrl, result):
+    bloq = MultiControlX(cvs=cvs)
+    cbloq = bloq.decompose_bloq()
+    ret = bloq.call_classically(x=x, ctrl=ctrl)
+    assert ret[-1] == result
