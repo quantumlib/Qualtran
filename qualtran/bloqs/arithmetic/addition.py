@@ -247,6 +247,32 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
 
+@bloq_example
+def _add_oop_symb() -> OutOfPlaceAdder:
+    n = sympy.Symbol('n')
+    add_oop_symb = OutOfPlaceAdder(bitsize=n)
+    return add_oop_symb
+
+
+@bloq_example
+def _add_oop_small() -> OutOfPlaceAdder:
+    add_oop_small = OutOfPlaceAdder(bitsize=4)
+    return add_oop_small
+
+
+@bloq_example
+def _add_oop_large() -> OutOfPlaceAdder:
+    add_oop_large = OutOfPlaceAdder(bitsize=64)
+    return add_oop_large
+
+
+_ADD_OOP_DOC = BloqDocSpec(
+    bloq_cls=OutOfPlaceAdder,
+    import_line='from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder',
+    examples=(_add_oop_symb, _add_oop_small, _add_oop_large),
+)
+
+
 @frozen
 class SimpleAddConstant(Bloq):
     r"""Takes |x> to |x + k> for a classical integer `k`.
@@ -360,30 +386,6 @@ class SimpleAddConstant(Bloq):
 
     def short_name(self) -> str:
         return f'x += {self.k}'
-@bloq_example
-def _add_oop_symb() -> OutOfPlaceAdder:
-    n = sympy.Symbol('n')
-    add_oop_symb = OutOfPlaceAdder(bitsize=n)
-    return add_oop_symb
-
-
-@bloq_example
-def _add_oop_small() -> OutOfPlaceAdder:
-    add_oop_small = OutOfPlaceAdder(bitsize=4)
-    return add_oop_small
-
-
-@bloq_example
-def _add_oop_large() -> OutOfPlaceAdder:
-    add_oop_large = OutOfPlaceAdder(bitsize=64)
-    return add_oop_large
-
-
-_ADD_OOP_DOC = BloqDocSpec(
-    bloq_cls=OutOfPlaceAdder,
-    import_line='from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder',
-    examples=(_add_oop_symb, _add_oop_small, _add_oop_large),
-)
 
 
 @frozen(auto_attribs=True)
