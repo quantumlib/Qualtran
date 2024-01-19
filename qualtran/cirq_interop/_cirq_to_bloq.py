@@ -427,8 +427,7 @@ def decompose_from_cirq_style_method(
 ) -> CompositeBloq:
     """Return a `CompositeBloq` decomposition using a cirq-style decompose method.
 
-    For more details about defining cirq-style decompositions, see the documentation for
-    `GateWithRegisters`. Briefly, the bloq must have a method with the given name that
+    The bloq must have a method with the given name (by default: "decompose_from_registers") that
     satisfies the following function signature:
 
         def decompose_from_registers(
