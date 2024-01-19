@@ -32,9 +32,11 @@ state preparation but not controlled upon during SELECT.
 """
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import attrs
+import cirq
+import numpy as np
 
 from qualtran import (
     Bloq,
@@ -46,13 +48,62 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.util_bloqs import Partition
+from qualtran.drawing import Circle, WireSymbol
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+
+
+@attrs.frozen
+class Reflection(Bloq):
+    bitsizes: Tuple[int]
+    cvs: Tuple[int]
+
+    def __attrs_post_init__(self):
+        if len(self.bitsizes) != len(self.cvs):
+            raise ValueError(
+                f"cvs must be same length as bitsizes: {len(self.cvs)} vs {len(self.bitsizes)}"
+            )
+
+    def short_name(self) -> str:
+        return 'Refl'
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature([Register(name=f'reg{i}', bitsize=b) for i, b in enumerate(self.bitsizes)])
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        idx = int(soq.pretty()[3:])
+        filled = bool(self.cvs[idx])
+        return Circle(filled)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **regs) -> Dict[str, 'Soquet']:
+        unpacked_cvs = sum(((c,) * b for c, b in zip(self.cvs, self.bitsizes)), ())
+        # the last qubit is used as the target for the Z
+        mcp = MultiControlPauli(cvs=unpacked_cvs[:-1], target_gate=cirq.Z)
+        split_regs = np.concatenate([bb.split(r) for r in regs.values()])
+        ctrls, target = bb.add(mcp, controls=bb.join(split_regs[:-1]), target=split_regs[-1])
+        splt_ctrls = bb.split(ctrls)
+        join_regs = np.concatenate([splt_ctrls, [target]])
+        out_regs = {}
+        start = 0
+        for i, b in enumerate(self.bitsizes):
+            out_regs[f'reg{i}'] = bb.join(join_regs[start : start + b])
+            start += b
+        return out_regs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        nbits = sum(self.bitsizes) - 1
+        return {(Toffoli(), nbits - 1)}
 
 
 @attrs.frozen
 class BlackBoxSelect(Bloq):
-    """A 'black box' Select bloq.
+    r"""A 'black box' Select bloq.
 
     The `SELECT` operation applies the $l$'th unitary $U_{l}$ on the system register
     when the selection register stores integer $l$.
@@ -107,10 +158,10 @@ class BlackBoxSelect(Bloq):
         sel_out_regs = out_regs[: len(sel_regs)]
         sys_out_regs = out_regs[len(sel_regs) :]
         selection = bb.add(
-            sel_part.dagger(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
+            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
         )
         system = bb.add(
-            sys_part.dagger(), **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)}
+            sys_part.adjoint(), **{reg.name: sp for reg, sp in zip(sys_regs, sys_out_regs)}
         )
         return {'selection': selection, 'system': system}
 
@@ -124,7 +175,6 @@ class BlackBoxPrepare(Bloq):
 
     Args:
         prepare: The bloq following the `Prepare` interface to wrap.
-        is_adjoint: Whether this is the adjoint preparation.
 
     Registers:
         selection: selection register.
@@ -132,7 +182,6 @@ class BlackBoxPrepare(Bloq):
     """
 
     prepare: PrepareOracle
-    is_adjoint: bool = False
 
     @cached_property
     def selection_bitsize(self):
@@ -165,19 +214,15 @@ class BlackBoxPrepare(Bloq):
         sel_out_regs = out_regs[: len(sel_regs)]
         jnk_out_regs = out_regs[len(sel_regs) :]
         selection = bb.add(
-            sel_part.dagger(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
+            sel_part.adjoint(), **{reg.name: sp for reg, sp in zip(sel_regs, sel_out_regs)}
         )
         junk = bb.add(
-            jnk_part.dagger(), **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)}
+            jnk_part.adjoint(), **{reg.name: sp for reg, sp in zip(jnk_regs, jnk_out_regs)}
         )
         return {'selection': selection, 'junk': junk}
 
-    def dagger(self) -> 'BlackBoxPrepare':
-        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
-
     def short_name(self) -> str:
-        dag = '†' if self.is_adjoint else ''
-        return f'Prep{dag}'
+        return 'Prep'
 
 
 @attrs.frozen
@@ -211,6 +256,18 @@ class BlackBoxBlockEncoding(Bloq):
     prepare: BlackBoxPrepare
 
     @cached_property
+    def selection_bitsize(self):
+        return self.prepare.selection_bitsize
+
+    @cached_property
+    def junk_bitsize(self):
+        return self.prepare.junk_bitsize
+
+    @cached_property
+    def system_bitsize(self):
+        return self.select.system_bitsize
+
+    @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
@@ -229,8 +286,78 @@ class BlackBoxBlockEncoding(Bloq):
         # includes selection registers and any selection registers used by PREPARE
         selection, junk = bb.add(self.prepare, selection=selection, junk=junk)
         selection, system = bb.add(self.select, selection=selection, system=system)
-        selection, junk = bb.add(self.prepare.dagger(), selection=selection, junk=junk)
+        selection, junk = bb.add(self.prepare.adjoint(), selection=selection, junk=junk)
         return {'selection': selection, 'junk': junk, 'system': system}
+
+
+@attrs.frozen
+class ChebyshevPolynomial(Bloq):
+    r"""Block encoding of $T_j[H]$ where $T_j$ is the $j$-th Chebyshev polynomial.
+
+    Here H is a Hamiltonian with spectral norm $|H| \le 1$, we assume we have
+    an $n_L$ qubit ancilla register, and assume that $j > 0$ to avoid block
+    encoding the identity operator.
+
+    Recall:
+
+    \begin{align*}
+        T_0[H] &= \mathbb{1} \\
+        T_1[H] &= H \\
+        T_2[H] &= 2 H^2 - \mathbb{1} \\
+        T_3[H] &= 4 H^3 - 3 H \\
+        &\dots
+    \end{align*}
+
+    Args:
+        block_encoding: Block encoding of a Hamiltonian $H$, $\mathcal{B}[H]$.
+        order: order of Chebychev polynomial.
+
+    References:
+        [Quantum computing enhanced computational catalysis](
+            https://arxiv.org/abs/2007.14460). Page 45; Theorem 1.
+    """
+
+    block_encoding: BlackBoxBlockEncoding
+    order: int
+
+    def __attrs_post_init__(self):
+        if self.order < 1:
+            raise ValueError(f"order must be greater >= 1. Found {self.order}.")
+
+    def short_name(self) -> str:
+        return f"T_{self.order}[{self.block_encoding.short_name()}]"
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('selection', self.block_encoding.selection_bitsize),
+                Register('junk', self.block_encoding.junk_bitsize),
+                Register('system', self.block_encoding.system_bitsize),
+            ]
+        )
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT', system: 'SoquetT'
+    ) -> Dict[str, 'Soquet']:
+        # includes selection registers and any selection registers used by PREPARE
+        selection, junk, system = bb.add(
+            self.block_encoding, selection=selection, junk=junk, system=system
+        )
+        for iorder in range(1, self.order):
+            selection = bb.add(
+                Reflection(bitsizes=(self.block_encoding.selection_bitsize,), cvs=(0,)),
+                reg0=selection,
+            )
+            selection, junk, system = bb.add(
+                self.block_encoding, selection=selection, junk=junk, system=system
+            )
+        return {'selection': selection, 'junk': junk, 'system': system}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        n = self.order
+        num_refl = self.block_encoding.selection_bitsize
+        return {(Reflection(bitsizes=(num_refl,), cvs=(0,)), n - 1), (self.block_encoding, n)}
 
 
 @bloq_example
@@ -252,8 +379,14 @@ def _black_box_select() -> BlackBoxSelect:
 
 
 @bloq_example
+def _reflection() -> Reflection:
+    reflection = Reflection(bitsizes=(2, 3, 1), cvs=(0, 1, 1))
+    return reflection
+
+
+@bloq_example
 def _black_box_block_bloq() -> BlackBoxBlockEncoding:
-    from qualtran.bloqs.block_encoding import BlackBoxPrepare, BlackBoxSelect
+    from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     select = BlackBoxSelect(SelectHubbard(2, 2))
@@ -266,4 +399,23 @@ _BLACK_BOX_BLOCK_BLOQ_DOC = BloqDocSpec(
     bloq_cls=BlackBoxBlockEncoding,
     import_line='from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding',
     examples=(_black_box_block_bloq,),
+)
+
+
+@bloq_example
+def _chebyshev_poly() -> ChebyshevPolynomial:
+    from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
+    from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
+
+    select = BlackBoxSelect(SelectHubbard(2, 2))
+    prepare = BlackBoxPrepare(PrepareHubbard(2, 2, 1, 4))
+    black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
+    chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, 3)
+    return chebyshev_poly
+
+
+_CHEBYSHEV_BLOQ_DOC = BloqDocSpec(
+    bloq_cls=ChebyshevPolynomial,
+    import_line='from qualtran.bloqs.block_encoding import ChebyshevPolynomial',
+    examples=(_chebyshev_poly,),
 )

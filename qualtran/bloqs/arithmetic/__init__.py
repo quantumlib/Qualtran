@@ -26,6 +26,7 @@ from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement,
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 from qualtran.bloqs.arithmetic.multiplication import (
     MultiplyTwoReals,
+    PlusEqualProduct,
     Product,
     ScaleIntByReal,
     Square,

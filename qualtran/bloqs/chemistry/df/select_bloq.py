@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 @frozen
 class ProgRotGateArray(Bloq):
-    r"""Rotate to to/from MO basis so-as-to apply number operators in DF basis.
+    r"""Rotate to/from MO basis so-as-to apply number operators in DF basis.
 
     An actual implementation of should derive from ProgrammableRotationGateArray.
 
@@ -55,11 +55,9 @@ class ProgRotGateArray(Bloq):
     num_spin_orb: int
     num_eig: int
     num_bits_rot: int
-    adjoint: bool = False
 
     def short_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f"Rotations{dag}"
+        return "Rotations"
 
     @cached_property
     def signature(self) -> Signature:
@@ -84,39 +82,5 @@ class ProgRotGateArray(Bloq):
         cost_c = self.num_spin_orb * (self.num_bits_rot - 2)  # apply rotations
         return {
             (Toffoli(), (cost_a + cost_c)),
-            (QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2, adjoint=self.adjoint), 1),
+            (QROAM(data_size, self.num_spin_orb * self.num_bits_rot // 2), 1),
         }
-
-
-@frozen
-class ApplyControlledZs(Bloq):
-    """Apply controlled Z operation for SELECT
-
-    This is either a CCZ or CCCZ operation. Wrap it as a bloq to hide the split / joins.
-
-    Args:
-        num_controls: The number of controls
-
-    Registers:
-        ctrls: control registers
-        system: system register
-    """
-
-    num_controls: int
-    num_spinorb: int
-
-    def short_name(self) -> str:
-        return "C" * self.num_controls + "Z"
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature(
-            [
-                Register("ctrls", bitsize=1, shape=(self.num_controls,)),
-                Register("system", bitsize=self.num_spinorb, shape=(2,)),
-            ]
-        )
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # Step 4 in the reference.
-        return {(Toffoli(), self.num_controls - 1)}

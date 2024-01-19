@@ -148,6 +148,9 @@ class ZeroState(_ZVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return ZeroEffect()
+
 
 @bloq_example
 def _zero_state() -> ZeroState:
@@ -161,6 +164,9 @@ class ZeroEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return ZeroState()
 
 
 @bloq_example
@@ -176,6 +182,9 @@ class OneState(_ZVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return OneEffect()
+
 
 @bloq_example
 def _one_state() -> OneState:
@@ -189,6 +198,9 @@ class OneEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return OneState()
 
 
 @bloq_example
@@ -207,6 +219,9 @@ class ZGate(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
+
+    def adjoint(self) -> 'Bloq':
+        return self
 
     def short_name(self) -> 'str':
         return 'Z'

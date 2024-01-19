@@ -57,4 +57,4 @@ to perform control swaps between the $pqrs$ registers.
 """
 
 from .prepare import PrepareSparse
-from .select import SelectSparse
+from .select_bloq import SelectSparse

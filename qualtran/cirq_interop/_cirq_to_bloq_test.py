@@ -68,7 +68,7 @@ def test_cirq_gate_as_bloq_for_trivial_gates():
     assert x.signature[0].shape == ()
     assert toffoli.signature[0].shape == (3,)
 
-    assert str(x) == 'CirqGateAsBloq(gate=cirq.X)'
+    assert str(x) == 'X'
     assert x.pretty_name() == 'cirq.X'
     assert x.short_name() == 'cirq.X'
 
@@ -89,7 +89,7 @@ def test_cirq_gate_as_bloq_tensor_contract_for_and_gate():
     assert np.isclose(state_vector[7], 1)
 
     with pytest.raises(NotImplementedError, match="supported only for unitary gates"):
-        _ = CirqGateAsBloq(And(adjoint=True)).as_composite_bloq().tensor_contract()
+        _ = CirqGateAsBloq(And(uncompute=True)).as_composite_bloq().tensor_contract()
 
 
 def test_bloq_decompose():

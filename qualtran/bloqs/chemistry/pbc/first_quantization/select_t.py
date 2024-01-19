@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -69,3 +69,19 @@ class SelectTFirstQuantization(Bloq):
         # of $T$ thus we come to our total.
         # Eq 73. page
         return {(Toffoli(), (5 * (self.num_bits_p - 1) + 2))}
+
+
+@bloq_example
+def _select_t() -> SelectTFirstQuantization:
+    num_bits_p = 5
+    eta = 10
+
+    select_t = SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+    return select_t
+
+
+_SELECT_T = BloqDocSpec(
+    bloq_cls=SelectTFirstQuantization,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization',
+    examples=(_select_t,),
+)

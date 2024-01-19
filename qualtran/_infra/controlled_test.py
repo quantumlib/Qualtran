@@ -14,14 +14,14 @@
 
 import pytest
 
-from qualtran.bloqs.controlled_bloq import ControlledBloq
+import qualtran.testing as qlt_testing
+from qualtran import ControlledBloq
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
-from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_controlled_serial():
     bloq = ControlledBloq(subbloq=TestSerialCombo())
-    cbloq = assert_valid_bloq_decomposition(bloq)
+    cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     assert (
         cbloq.debug_text()
         == """\
@@ -47,7 +47,7 @@ C[TestAtom('atom2')]<2>
 
 def test_controlled_parallel():
     bloq = ControlledBloq(subbloq=TestParallelCombo())
-    cbloq = assert_valid_bloq_decomposition(bloq)
+    cbloq = qlt_testing.assert_valid_bloq_decomposition(bloq)
     print()
     print(cbloq.debug_text())
     print()
@@ -56,37 +56,37 @@ def test_controlled_parallel():
         == """\
 C[Split(n=3)]<0>
   LeftDangle.control -> control
-  LeftDangle.reg -> split
+  LeftDangle.reg -> reg
   control -> C[TestAtom()]<1>.control
-  split[0] -> C[TestAtom()]<1>.q
-  split[1] -> C[TestAtom()]<2>.q
-  split[2] -> C[TestAtom()]<3>.q
+  reg[0] -> C[TestAtom()]<1>.q
+  reg[1] -> C[TestAtom()]<2>.q
+  reg[2] -> C[TestAtom()]<3>.q
 --------------------
 C[TestAtom()]<1>
   C[Split(n=3)]<0>.control -> control
-  C[Split(n=3)]<0>.split[0] -> q
+  C[Split(n=3)]<0>.reg[0] -> q
   control -> C[TestAtom()]<2>.control
-  q -> C[Join(n=3)]<4>.join[0]
+  q -> C[Join(n=3)]<4>.reg[0]
 --------------------
 C[TestAtom()]<2>
   C[TestAtom()]<1>.control -> control
-  C[Split(n=3)]<0>.split[1] -> q
+  C[Split(n=3)]<0>.reg[1] -> q
   control -> C[TestAtom()]<3>.control
-  q -> C[Join(n=3)]<4>.join[1]
+  q -> C[Join(n=3)]<4>.reg[1]
 --------------------
 C[TestAtom()]<3>
   C[TestAtom()]<2>.control -> control
-  C[Split(n=3)]<0>.split[2] -> q
+  C[Split(n=3)]<0>.reg[2] -> q
   control -> C[Join(n=3)]<4>.control
-  q -> C[Join(n=3)]<4>.join[2]
+  q -> C[Join(n=3)]<4>.reg[2]
 --------------------
 C[Join(n=3)]<4>
   C[TestAtom()]<3>.control -> control
-  C[TestAtom()]<3>.q -> join[2]
-  C[TestAtom()]<1>.q -> join[0]
-  C[TestAtom()]<2>.q -> join[1]
+  C[TestAtom()]<3>.q -> reg[2]
+  C[TestAtom()]<1>.q -> reg[0]
+  C[TestAtom()]<2>.q -> reg[1]
   control -> RightDangle.control
-  join -> RightDangle.reg"""
+  reg -> RightDangle.reg"""
     )
 
 
@@ -94,3 +94,7 @@ def test_doubly_controlled():
     with pytest.raises(NotImplementedError):
         # TODO: https://github.com/quantumlib/Qualtran/issues/149
         ControlledBloq(ControlledBloq(TestAtom()))
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('../Controlled')

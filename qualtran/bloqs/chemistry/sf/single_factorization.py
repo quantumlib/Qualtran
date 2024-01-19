@@ -45,7 +45,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
-from qualtran.bloqs.chemistry.sf.select import SelectSingleFactorization
+from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
@@ -170,7 +170,6 @@ class SingleFactorizationOneBody(Bloq):
             self.num_spin_orb,
             self.num_bits_state_prep,
             self.num_bits_rot_aa,
-            adjoint=False,
             kp1=self.kp1,
             kp2=self.kp2,
         )
@@ -195,10 +194,9 @@ class SingleFactorizationOneBody(Bloq):
             self.num_spin_orb,
             self.num_bits_state_prep,
             self.num_bits_rot_aa,
-            adjoint=True,
             kp1=self.kp1_inv,
             kp2=self.kp2_inv,
-        )
+        ).adjoint()
         l, p, q, succ_pq = bb.add(iprep_dag, l=l, p=p, q=q, succ_pq=succ_pq)
         return {
             'succ_l': succ_l,
@@ -219,7 +217,6 @@ class SingleFactorizationOneBody(Bloq):
             self.num_spin_orb,
             self.num_bits_state_prep,
             self.num_bits_rot_aa,
-            adjoint=False,
             kp1=self.kp1,
             kp2=self.kp2,
         )
@@ -228,10 +225,9 @@ class SingleFactorizationOneBody(Bloq):
             self.num_spin_orb,
             self.num_bits_state_prep,
             self.num_bits_rot_aa,
-            adjoint=True,
             kp1=self.kp1_inv,
             kp2=self.kp2_inv,
-        )
+        ).adjoint()
         n = (self.num_spin_orb // 2 - 1).bit_length()
         return {
             (iprep, 1),
@@ -398,8 +394,7 @@ class SingleFactorizationBlockEncoding(Bloq):
             self.num_aux,
             num_bits_state_prep=self.num_bits_state_prep,
             num_bits_rot_aa=self.num_bits_rot_aa_outer,
-            adjoint=True,
-        )
+        ).adjoint()
         l, succ_l, l_ne_zero, rot_aa[1] = bb.add(
             outer_prep, l=l, succ_l=succ_l, l_ne_zero=l_ne_zero, rot_aa=rot_aa[1]
         )
