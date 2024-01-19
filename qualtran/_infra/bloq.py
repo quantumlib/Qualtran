@@ -388,7 +388,7 @@ class Bloq(metaclass=abc.ABCMeta):
         See Also:
             `Bloq.on_registers`: Provides the same functionality, but with named registers
                 instead of a flat list of qubits.
-            `decompose_from_decompose_from_registers`: More details on how to write a cirq-style
+            `decompose_from_cirq_style_method`: More details on how to write a cirq-style
                 decomposition.
         """
         import cirq
@@ -403,7 +403,8 @@ class Bloq(metaclass=abc.ABCMeta):
         """A `cirq.Operation` of this bloq operating on the given qubit registers.
 
         This method supports an alternative decomposition backend that follows a 'Cirq-style'
-        association of gates with qubits to form operations. See `Bloq.on()` for more details.
+        association of gates with qubit registers to form operations. See `Bloq.on()` for
+        more details.
 
         Args:
             **qubit_regs: A mapping of register name to the qubits comprising that register.
@@ -411,7 +412,7 @@ class Bloq(metaclass=abc.ABCMeta):
         See Also:
             `Bloq.on`: Provides the same functionality, but with a flat list of qubits.
                 instead of named registers.
-            `decompose_from_decompose_from_registers`: More details on how to write a cirq-style
+            `decompose_from_cirq_style_method`: More details on how to write a cirq-style
                 decomposition.
         """
         from qualtran._infra.gate_with_registers import merge_qubits
