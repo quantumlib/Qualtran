@@ -298,7 +298,7 @@ def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
 
     gate = op.gate
     if isinstance(gate, BloqAsCirqGate):
-        # Perhaps this was operation was constructed from `Bloq.on()`.
+        # Perhaps this operation was constructed from `Bloq.on()`.
         return gate.bloq
     if isinstance(gate, Bloq):
         # I.e., `GateWithRegisters`.
