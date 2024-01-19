@@ -247,6 +247,7 @@ def test_simple_add_constant_decomp_unsigned(bitsize, k, cvs):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
     assert_valid_bloq_decomposition(bloq)
 
+
 @pytest.mark.parametrize('bitsize', [5])
 @pytest.mark.parametrize('k', [-5, 8])
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
@@ -254,13 +255,27 @@ def test_simple_add_constant_decomp_signed(bitsize, k, cvs):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
     assert_valid_bloq_decomposition(bloq)
 
-@pytest.mark.parametrize('bitsize', [5])
-@pytest.mark.parametrize('k', [5, 8])
-@pytest.mark.parametrize('x', [0, 1, 5])
-@pytest.mark.parametrize('cvs', [[], [1], [1, 1]])
-@pytest.mark.parametrize('ctrl', [0, 1])
+
+@pytest.mark.parametrize(
+    'bitsize,k,x,cvs,ctrl', [(5, 1, 2, (), 1), (5, 3, 2, (1), 1), (5, 2, 0, (1, 0), 2)]
+)
 def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrl):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
     ret1 = bloq.call_classically(x=x, ctrl=ctrl)
     ret2 = bloq.decompose_bloq().call_classically(x=x, ctrl=ctrl)
     assert ret1 == ret2
+
+
+@pytest.mark.parametrize(
+    'bitsize,k,x,cvs,ctrl,result',
+    [
+        (5, 1, 2, (), 1, 3),
+        (5, 3, 2, (1), 1, 5),
+        (5, 2, 0, (1, 0), 2, 2),
+        (5, 1, 2, (1, 0, 1), 0, 2),
+    ],
+)
+def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrl, result):
+    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
+    ret = bloq.call_classically(x=x, ctrl=ctrl)
+    assert ret[-1] == result

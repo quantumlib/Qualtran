@@ -21,13 +21,25 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, Bloq, BloqBuilder, BloqDocSpec, GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran import (
+    bloq_example,
+    Bloq,
+    BloqBuilder,
+    BloqDocSpec,
+    GateWithRegisters,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import Toffoli, XGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.simulation.classical_sim import bits_to_ints
+
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -72,8 +84,11 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        assert self.bitsize <= 64 # TODO: be smarter
-        return {'a': a, 'b': np.uint64(a) + np.uint64(b)} # TODO: account for signed integer addition
+        assert self.bitsize <= 64  # TODO: be smarter
+        return {
+            'a': a,
+            'b': np.uint64(a) + np.uint64(b),
+        }  # TODO: account for signed integer addition
 
     def short_name(self) -> str:
         return "a+b"
@@ -315,15 +330,16 @@ class SimpleAddConstant(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', **vars: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        if self.cvs:
+        if len(self.cvs) > 0:
             ctrl = vars['ctrl']
         else:
             return {'x': x + self.k}
 
-        if ctrl == 1:
-            return {'ctrl': ctrl, 'x': x + self.k}
-        else:
-            return {'ctrl': ctrl, 'x': x}
+        ctrls = bits_to_ints(self.cvs)
+        if ctrls == ctrl:
+            x = x + self.k
+
+        return {'ctrl': ctrl, 'x': x}
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: SoquetT, **regs: SoquetT
@@ -349,9 +365,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
-                        controls=ctrls,
-                        target=k_split[i],
+                        MultiControlX(cvs=self.cvs), ctrl=ctrls, x=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -367,9 +381,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
-                        controls=ctrls,
-                        target=k_split[i],
+                        MultiControlX(cvs=self.cvs), ctrl=ctrls, x=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
