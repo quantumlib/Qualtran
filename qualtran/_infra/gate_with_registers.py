@@ -13,14 +13,13 @@
 #  limitations under the License.
 
 import abc
-import itertools
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
 from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
@@ -238,36 +237,12 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 - `build_composite_bloq` raises a `DecomposeNotImplementedError` and
                 - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
-
-        from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq
-        from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
+        from qualtran.cirq_interop._cirq_to_bloq import decompose_from_cirq_style_method
 
         try:
             return Bloq.decompose_bloq(self)
         except DecomposeNotImplementedError:
-            if any(
-                cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
-                for reg in self.signature
-            ):
-                # pylint: disable=raise-missing-from
-                raise DecomposeTypeError(f"Cannot decompose parameterized {self}.")
-
-            qm = InteropQubitManager()
-            in_quregs = get_named_qubits(self.signature.lefts())
-            qm.manage_qubits(
-                itertools.chain.from_iterable(qreg.flatten() for qreg in in_quregs.values())
-            )
-            all_quregs, out_quregs = _get_all_and_output_quregs_from_input(
-                self.signature, qm, in_quregs
-            )
-            context = cirq.DecompositionContext(qubit_manager=qm)
-            decomposed_optree = self.decompose_from_registers(context=context, **all_quregs)
-            return cirq_optree_to_cbloq(
-                decomposed_optree,
-                signature=self.signature,
-                in_quregs=in_quregs,
-                out_quregs=out_quregs,
-            )
+            return decompose_from_cirq_style_method(self)
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
@@ -310,7 +285,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
     ) -> cirq.OP_TREE:
-        from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
+        from qualtran.cirq_interop._bloq_to_cirq import _cirq_style_decompose_from_decompose_bloq
 
         quregs = split_qubits(self.signature, qubits)
         if context is None:
@@ -320,28 +295,21 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         except DecomposeNotImplementedError:
             pass
         try:
-            cbloq = self.decompose_bloq()
-            in_quregs = {reg.name: quregs[reg.name] for reg in self.signature.lefts()}
-            # Input qubits can get de-allocated by cbloq.to_cirq_circuit, thus mark them as managed.
-            qm = InteropQubitManager(context.qubit_manager)
-            qm.manage_qubits(merge_qubits(self.signature.lefts(), **in_quregs))
-            circuit, out_quregs = cbloq.to_cirq_circuit(qubit_manager=qm, **in_quregs)
-            qubit_map = {q: q for q in circuit.all_qubits()}
-            for reg in self.signature.rights():
-                if reg.side == Side.RIGHT:
-                    # Right only registers can get mapped to newly allocated output qubits in `out_regs`.
-                    # Map them back to the original system qubits and deallocate newly allocated qubits.
-                    assert reg.name in quregs and reg.name in out_quregs
-                    assert quregs[reg.name].shape == out_quregs[reg.name].shape
-                    qm.qfree([q for q in out_quregs[reg.name].flatten()])
-                    qubit_map |= zip(out_quregs[reg.name].flatten(), quregs[reg.name].flatten())
-            return circuit.unfreeze(copy=False).transform_qubits(qubit_map)
+            return _cirq_style_decompose_from_decompose_bloq(
+                bloq=self, quregs=quregs, context=context
+            )
         except DecomposeNotImplementedError:
             pass
         return NotImplemented
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
+
+    def on(self, *qubits) -> 'cirq.Operation':
+        import cirq
+
+        # Multiple inheritance: use `cirq.Gate.on()`, not the bloq method.
+        return cirq.Gate.on(self, *qubits)
 
     def on_registers(
         self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
