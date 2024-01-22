@@ -21,7 +21,16 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, Bloq, BloqBuilder, BloqDocSpec, GateWithRegisters, Register, Signature, SoquetT
+from qualtran import (
+    bloq_example,
+    Bloq,
+    BloqBuilder,
+    BloqDocSpec,
+    GateWithRegisters,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -140,12 +149,25 @@ class MultiControlPauli(GateWithRegisters):
         return True
 
 
+@bloq_example
+def _ccpauli() -> MultiControlPauli:
+    ccpauli = MultiControlPauli(cvs=(1, 0, 1, 0, 1), target_gate=cirq.X)
+    return ccpauli
+
+
+_CC_PAULI_DOC = BloqDocSpec(
+    bloq_cls=MultiControlPauli,
+    import_line='from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli',
+    examples=(_ccpauli,),
+)
+
+
 @frozen
 class MultiControlX(Bloq):
-    r"""Implements multi-control, single-target X gate as a bloq using $n-1$ clean ancillas.
+    r"""Implements multi-control, single-target X gate as a bloq using $n-2$ clean ancillas.
 
     References:
-        [Constructing Large Controlled Nots]
+        [$C^n$NOT from n-2 Zeroed bits from Constructing Large Controlled Nots]
         (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
     """
 
@@ -153,18 +175,13 @@ class MultiControlX(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        if len(self.cvs) > 0:
-            return Signature([Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=1)])
-        else:
-            return Signature([Register('x', bitsize=1)])
+        assert len(self.cvs) > 0
+        return Signature([Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=1)])
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vars: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        if len(self.cvs) > 0:
-            ctrl = vars['ctrl']
-        else:
-            return {'x': (x + 1) % 2}
+        ctrl = vars['ctrl']
 
         ctrls = bits_to_ints(self.cvs)
         if ctrls == ctrl:
@@ -178,11 +195,6 @@ class MultiControlX(Bloq):
 
         # n = number of controls in the bloq.
         n = len(self.cvs)
-
-        # Base case 0: XGate()
-        if n == 0:
-            x = bb.add(XGate(), q=x)
-            return {'x': x}
 
         # Base case 1: CNOT()
         if n == 1:
@@ -205,10 +217,7 @@ class MultiControlX(Bloq):
                 if self.cvs[i] == 0:
                     ctrls_split[i] = bb.add(XGate(), q=ctrls_split[i])
 
-            ctrl = [ctrls_split[0], ctrls_split[1]]
-            ctrl, x = bb.add(Toffoli(), ctrl=ctrl, target=x)
-            ctrls_split[0] = ctrl[0]
-            ctrls_split[1] = ctrl[1]
+            ctrls_split, x = bb.add(Toffoli(), ctrl=ctrls_split, target=x)
 
             for i in range(len(self.cvs)):
                 if self.cvs[i] == 0:
@@ -286,22 +295,7 @@ class MultiControlX(Bloq):
         bb.free(ancillas)
 
         # Return the output registers.
-        if n > 0:
-            return {'ctrl': ctrls, 'x': x}
-        else:
-            return {'x': x}
+        return {'ctrl': ctrls, 'x': x}
 
     def short_name(self) -> str:
-        return f'C^{len(self.cvs)}-NOT(x)'
-
-@bloq_example
-def _ccpauli() -> MultiControlPauli:
-    ccpauli = MultiControlPauli(cvs=(1, 0, 1, 0, 1), target_gate=cirq.X)
-    return ccpauli
-
-
-_CC_PAULI_DOC = BloqDocSpec(
-    bloq_cls=MultiControlPauli,
-    import_line='from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli',
-    examples=(_ccpauli,),
-)
+        return f'C^{len(self.cvs)}-NOT'
