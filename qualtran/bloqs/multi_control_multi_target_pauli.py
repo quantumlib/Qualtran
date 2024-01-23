@@ -166,6 +166,15 @@ _CC_PAULI_DOC = BloqDocSpec(
 class MultiControlX(Bloq):
     r"""Implements multi-control, single-target X gate as a bloq using $n-2$ clean ancillas.
 
+    Args:
+        cvs: A tuple of control variable settings. Each entry specifies whether that
+            control line is a "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
+
+    Registers:
+        ctrls: An input register with n 1-bit controls corresponding to the size of the control
+            variable settings above.
+        x: A 1-bit input register bit-flipped based on the values in the ctrls register.
+
     References:
         [$C^n$NOT from n-2 Zeroed bits from Constructing Large Controlled Nots]
         (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
