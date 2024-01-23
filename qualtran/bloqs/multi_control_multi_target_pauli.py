@@ -166,8 +166,8 @@ class MultiControlX(Bloq):
     r"""Implements multi-control, single-target X gate as a bloq using $n-2$ clean ancillas.
 
     Args:
-        cvs: A tuple of control variable settings. Each entry specifies whether that
-            control line is a "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
+        cvs: A tuple of control values. Each entry specifies whether that control line is a
+            "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
 
     Registers:
         ctrls: An input register with n 1-bit controls corresponding to the size of the control
@@ -175,8 +175,9 @@ class MultiControlX(Bloq):
         x: A 1-bit input register bit-flipped based on the values in the ctrls register.
 
     References:
-        [$C^n$NOT from n-2 Zeroed bits from Constructing Large Controlled Nots]
-        (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
+        [Constructing Large CNOTS]
+        (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html).
+        Section title "$n−2$ Ancilla Bits", Figure titled $C^n$NOT from $n-2$ zeroed bits.
     """
 
     cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
@@ -189,7 +190,7 @@ class MultiControlX(Bloq):
         )
 
     def on_classical_vals(
-        self, x: 'ClassicalValT', ctrls: 'ClassicalValT'
+        self, ctrls: 'ClassicalValT', x: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         if (self.cvs == ctrls).all():
             x = (x + 1) % 2
@@ -197,7 +198,7 @@ class MultiControlX(Bloq):
         return {'ctrls': ctrls, 'x': x}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, ctrls: SoquetT
+        self, bb: 'BloqBuilder', ctrls: SoquetT, x: SoquetT
     ) -> Dict[str, 'SoquetT']:
 
         # n = number of controls in the bloq.
