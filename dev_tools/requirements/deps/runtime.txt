@@ -16,10 +16,8 @@ ipython
 matplotlib
 ipywidgets
 
-# quimb and its tensor dependencies
+# quimb simulation
 quimb
-opt_einsum
-autoray
 
 # serialization
 protobuf
