@@ -22,8 +22,8 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    bloq_example,
     Bloq,
+    bloq_example,
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
@@ -31,10 +31,9 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
-from qualtran.simulation.classical_sim import bits_to_ints
 
 
 @frozen
