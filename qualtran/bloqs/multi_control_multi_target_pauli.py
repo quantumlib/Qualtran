@@ -176,21 +176,20 @@ class MultiControlX(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         assert len(self.cvs) > 0
-        return Signature([Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=1)])
+        return Signature(
+            [Register('ctrls', bitsize=1, shape=(len(self.cvs),)), Register('x', bitsize=1)]
+        )
 
     def on_classical_vals(
-        self, x: 'ClassicalValT', **vars: 'ClassicalValT'
+        self, x: 'ClassicalValT', ctrls: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        ctrl = vars['ctrl']
-
-        ctrls = bits_to_ints(self.cvs)
-        if ctrls == ctrl:
+        if (self.cvs == ctrls).all():
             x = (x + 1) % 2
 
-        return {'ctrl': ctrl, 'x': x}
+        return {'ctrls': ctrls, 'x': x}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, **regs: SoquetT
+        self, bb: 'BloqBuilder', x: SoquetT, ctrls: SoquetT
     ) -> Dict[str, 'SoquetT']:
 
         # n = number of controls in the bloq.
@@ -198,41 +197,34 @@ class MultiControlX(Bloq):
 
         # Base case 1: CNOT()
         if n == 1:
-            ctrl = regs['ctrl']
             # Allows for 0-controlled implementations.
             if self.cvs[0] == 0:
-                ctrl = bb.add(XGate(), q=ctrl)
-            ctrl, x = bb.add(CNOT(), ctrl=ctrl, target=x)
+                ctrls[0] = bb.add(XGate(), q=ctrls[0])
+            ctrls[0], x = bb.add(CNOT(), ctrl=ctrls[0], target=x)
             if self.cvs[0] == 0:
-                ctrl = bb.add(XGate(), q=ctrl)
-            return {'ctrl': ctrl, 'x': x}
+                ctrls[0] = bb.add(XGate(), q=ctrls[0])
+            return {'ctrls': ctrls, 'x': x}
 
         # Base case 2: Toffoli()
         if n == 2:
-            ctrls = regs['ctrl']
-            ctrls_split = bb.split(ctrls)
-
             # Allows for 0-controlled implementations.
             for i in range(len(self.cvs)):
                 if self.cvs[i] == 0:
-                    ctrls_split[i] = bb.add(XGate(), q=ctrls_split[i])
+                    ctrls[i] = bb.add(XGate(), q=ctrls[i])
 
-            ctrls_split, x = bb.add(Toffoli(), ctrl=ctrls_split, target=x)
+            ctrls, x = bb.add(Toffoli(), ctrl=ctrls, target=x)
 
             for i in range(len(self.cvs)):
                 if self.cvs[i] == 0:
-                    ctrls_split[i] = bb.add(XGate(), q=ctrls_split[i])
+                    ctrls[i] = bb.add(XGate(), q=ctrls[i])
 
-            ctrls = bb.join(ctrls_split)
-            return {'ctrl': ctrls, 'x': x}
+            return {'ctrls': ctrls, 'x': x}
 
         # Iterative case: MultiControlledX
-        # Assign registers to variables and allocate necessary ancilla bits.
-        ctrls = regs['ctrl']
-        ancillas = bb.allocate(n=n - 2)
+        # Allocate necessary ancilla bits.
+        ancillas = bb.allocate(n=(n - 2))
 
-        # Split ancilla control and ancilla bits for bloq decomposition connections.
-        ctrls_split = bb.split(ctrls)
+        # Split the ancilla bits for bloq decomposition connections.
         ancillas_split = bb.split(ancillas)
 
         # Initialize a list to store the grouped Toffoli gate controls.
@@ -241,10 +233,10 @@ class MultiControlX(Bloq):
         # Allows for 0-controlled implementations.
         for i in range(len(self.cvs)):
             if self.cvs[i] == 0:
-                ctrls_split[i] = bb.add(XGate(), q=ctrls_split[i])
+                ctrls[i] = bb.add(XGate(), q=ctrls[i])
 
         # Iterative case 0: The first Toffoli gate is controlled by the first two controls.
-        toffoli_ctrl = [ctrls_split[0], ctrls_split[1]]
+        toffoli_ctrl = [ctrls[0], ctrls[1]]
         toffoli_ctrl, ancillas_split[0] = bb.add(
             Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[0]
         )
@@ -253,19 +245,19 @@ class MultiControlX(Bloq):
 
         # Iterative case i: The middle Toffoli gates with controls ancilla and control.
         for i in range(n - 3):
-            toffoli_ctrl = [ancillas_split[i], ctrls_split[i + 2]]
+            toffoli_ctrl = [ancillas_split[i], ctrls[i + 2]]
             toffoli_ctrl, ancillas_split[i + 1] = bb.add(
                 Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[i + 1]
             )
             toffoli_ctrls.append(toffoli_ctrl)
 
         # Iteritave case n - 1: The final Toffoli gate which is not uncomputed.
-        toffoli_ctrl = [ancillas_split[n - 3], ctrls_split[n - 1]]
+        toffoli_ctrl = [ancillas_split[n - 3], ctrls[n - 1]]
         toffoli_ctrl, x = bb.add(Toffoli(), ctrl=toffoli_ctrl, target=x)
 
         # Start storing end states back into ancilla and control qubits.
         ancillas_split[n - 3] = toffoli_ctrl[0]
-        ctrls_split[n - 1] = toffoli_ctrl[1]
+        ctrls[n - 1] = toffoli_ctrl[1]
 
         # Iterative case i: Uncomputation of middle Toffoli gates.
         for i in range(n - 3):
@@ -274,28 +266,26 @@ class MultiControlX(Bloq):
                 Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[n - 3 - i]
             )
             ancillas_split[n - 4 - i] = toffoli_ctrl[0]
-            ctrls_split[n - 2 - i] = toffoli_ctrl[1]
+            ctrls[n - 2 - i] = toffoli_ctrl[1]
 
         # Iterative case 0: Uncomputation of first Toffoli gate.
         toffoli_ctrl = toffoli_ctrls.pop()
         toffoli_ctrl, ancillas_split[0] = bb.add(
             Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[0]
         )
-        ctrls_split[0] = toffoli_ctrl[0]
-        ctrls_split[1] = toffoli_ctrl[1]
+        ctrls[0:2] = toffoli_ctrl
 
         # Uncompute 0-controlled qubits.
         for i in range(len(self.cvs)):
             if self.cvs[i] == 0:
-                ctrls_split[i] = bb.add(XGate(), q=ctrls_split[i])
+                ctrls[i] = bb.add(XGate(), q=ctrls[i])
 
         # Join and free ancilla qubits.
-        ctrls = bb.join(ctrls_split)
         ancillas = bb.join(ancillas_split)
         bb.free(ancillas)
 
         # Return the output registers.
-        return {'ctrl': ctrls, 'x': x}
+        return {'ctrls': ctrls, 'x': x}
 
     def short_name(self) -> str:
         return f'C^{len(self.cvs)}-NOT'

@@ -54,19 +54,23 @@ def test_multi_control_x(cvs):
 
 
 @pytest.mark.parametrize(
-    "cvs,x,ctrl,result",
+    "cvs,x,ctrls,result",
     [
-        ((0,), 1, 0, 0),
-        ((1, 0), 0, 2, 1),
-        ((1, 1, 1), 1, 7, 0),
-        ((1, 0, 1, 0), 1, 10, 0),
-        ((1,), 0, 0, 0),
+        ((0,), 1, (0,), 0),
+        ((1, 0), 0, (1, 0), 1),
+        ((1, 1, 1), 1, (1, 1, 1), 0),
+        ((1, 0, 1, 0), 1, (1, 0, 1, 0), 0),
+        ((1,), 0, (0,), 0),
     ],
 )
-def test_classical_multi_control_x(cvs, x, ctrl, result):
+def test_classical_multi_control_x(cvs, x, ctrls, result):
     bloq = MultiControlX(cvs=cvs)
     cbloq = bloq.decompose_bloq()
-    ret1 = bloq.call_classically(x=x, ctrl=ctrl)
-    ret2 = cbloq.call_classically(x=x, ctrl=ctrl)
-    assert ret1 == ret2
-    assert ret1[-1] == result
+    bloq_classical = bloq.call_classically(x=x, ctrls=ctrls)
+    cbloq_classical = cbloq.call_classically(x=x, ctrls=ctrls)
+
+    assert len(bloq_classical) == len(cbloq_classical)
+    for i in range(len(bloq_classical)):
+        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
+
+    assert bloq_classical[-1] == result
