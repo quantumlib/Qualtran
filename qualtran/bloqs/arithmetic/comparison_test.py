@@ -85,7 +85,7 @@ def test_less_than_gate():
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
     gate2 = LessThanConstant(4, 10)
     assert gate.with_registers(*gate2.registers()) == gate2
-    assert cirq.circuit_diagram_info(gate).wire_symbols == ("In(x)",) * 3 + ("+(x < 5)",)
+    assert cirq.circuit_diagram_info(gate).wire_symbols == ("In(x)",) * 3 + ("⨁(x < 5)",)
     assert (gate**1 is gate) and (gate**-1 is gate)
     assert gate.__pow__(2) is NotImplemented
 
@@ -165,7 +165,7 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     u = cirq.unitary(g)
     np.testing.assert_allclose(u @ u, np.eye(2 ** (x_bitsize + y_bitsize + 1)))
     # Test diagrams
-    expected_wire_symbols = ("In(x)",) * x_bitsize + ("In(y)",) * y_bitsize + ("+(x <= y)",)
+    expected_wire_symbols = ("In(x)",) * x_bitsize + ("In(y)",) * y_bitsize + ("⨁(x <= y)",)
     assert cirq.circuit_diagram_info(g).wire_symbols == expected_wire_symbols
     # Test with_registers
     assert g.with_registers([2] * 4, [2] * 5, [2]) == LessThanEqual(4, 5)
