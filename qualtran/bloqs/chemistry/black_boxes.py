@@ -60,6 +60,9 @@ class PrepareUniformSuperposition(Bloq):
         regs = [Register('d', (self.num_non_zero - 1).bit_length())]
         return Signature(regs)
 
+    def short_name(self) -> str:
+        return r'$\sum_l |l\rangle'
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         factors = factorint(self.d)
         eta = factors[min(list(sorted(factors.keys())))]

@@ -21,10 +21,13 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
+from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.drawing import WireSymbol
+from qualtran.drawing.musical_score import TextBox
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -60,7 +63,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.bitsize
-        wire_symbols += [f'+(x < {self.less_than_val})']
+        wire_symbols += [f'⨁(x < {self.less_than_val})']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power: int):
@@ -321,13 +324,16 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
+    def short_name(self) -> str:
+        return 'x <= y'
+
     def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
         return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.x_bitsize
         wire_symbols += ["In(y)"] * self.y_bitsize
-        wire_symbols += ['+(x <= y)']
+        wire_symbols += ['⨁(x <= y)']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power: int):
@@ -489,6 +495,14 @@ class GreaterThan(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        if soq.name == 'a':
+            return TextBox("In(a)")
+        if soq.name == 'b':
+            return TextBox("In(b)")
+        elif soq.name == 'target':
+            return TextBox("⨁(a > b)")
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
@@ -527,6 +541,15 @@ class GreaterThanConstant(Bloq):
     def t_complexity(self) -> TComplexity:
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
+    def short_name(self) -> str:
+        return f"x > {self.val}"
+
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        if soq.reg.name == 'x':
+            return TextBox("In(x)")
+        elif soq.reg.name == 'target':
+            return TextBox(f"⨁(x > {self.val})")
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
@@ -560,6 +583,15 @@ class EqualsAConstant(Bloq):
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
+
+    def short_name(self) -> str:
+        return f"x == {self.val}"
+
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        if soq.reg.name == 'x':
+            return TextBox("In(x)")
+        elif soq.reg.name == 'target':
+            return TextBox(f"⨁(x = {self.val})")
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # See: https://github.com/quantumlib/Qualtran/issues/219
