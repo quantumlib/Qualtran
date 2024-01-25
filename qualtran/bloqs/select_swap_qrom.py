@@ -250,7 +250,7 @@ class SelectSwapQROM(GateWithRegisters):
             return Circle()
 
     def short_name(self) -> str:
-        return 'SelSwapQROM'
+        return 'QROAM'
 
     def _value_equality_values_(self):
         return self.block_size, self._target_bitsizes, self.data
