@@ -157,9 +157,12 @@ def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet')
     begin = 0
     symbol: str = soq.pretty()
     for reg in signature:
-        finish = begin + int(np.prod(reg.shape))
+        finish = begin + reg.bitsize * int(np.prod(reg.shape))
         if reg == soq.reg:
-            symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
+            if int(np.prod(reg.shape)) == 1:
+                symbol = wire_symbols[begin]
+            else:
+                symbol = np.array(wire_symbols[begin : begin + finish]).reshape(reg.shape)[soq.idx]
         begin = finish
     return directional_text_box(text=symbol, side=soq.reg.side)
 
