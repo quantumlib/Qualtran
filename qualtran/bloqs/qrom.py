@@ -20,10 +20,11 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import Register, SelectionRegister
+from qualtran import Register, SelectionRegister, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
+from qualtran.drawing import Circle, TextBox, WireSymbol
 
 
 @cirq.value_equality()
@@ -170,6 +171,23 @@ class QROM(UnaryIterationGate):
         for i, target in enumerate(self.target_registers):
             wire_symbols += [f"QROM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        name = soq.reg.name
+        if name == 'selection':
+            return TextBox('In')
+        elif 'selection' in name:
+            sel_indx = int(name.replace('selection', ''))
+            # get i,j,k,l,m,n type subscripts
+            subscript = chr(ord('i') + sel_indx)
+            return TextBox(f'In_{subscript}')
+        elif 'target' in name:
+            trg_indx = int(name.replace('target', '').replace('_', ''))
+            # match the sel index
+            subscript = chr(ord('a') + trg_indx)
+            return TextBox(f'data_{subscript}')
+        elif name == 'control':
+            return Circle()
 
     def __pow__(self, power: int):
         if power in [1, -1]:
