@@ -22,8 +22,8 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    bloq_example,
     Bloq,
+    bloq_example,
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
@@ -39,7 +39,6 @@ from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.simulation.classical_sim import bits_to_ints
-
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -301,8 +300,8 @@ class SimpleAddConstant(Bloq):
     Args:
         bitsize: Number of bits used to represent each integer.
         k: The classical integer value to be added to x.
-        cvs: A tuple of control variable settings. Each entry specifies whether that
-            control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
+        cvs: A tuple of control values. Each entry specifies whether that control line is a
+            "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
         signed: A boolean condition which controls whether the x register holds a value represented
             in 2's Complement or Unsigned. This affects the ability to add a negative constant.
 
@@ -322,7 +321,10 @@ class SimpleAddConstant(Bloq):
     def signature(self) -> 'Signature':
         if len(self.cvs) > 0:
             return Signature(
-                [Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=self.bitsize)]
+                [
+                    Register('ctrls', bitsize=1, shape=(len(self.cvs),)),
+                    Register('x', bitsize=self.bitsize),
+                ]
             )
         else:
             return Signature([Register('x', bitsize=self.bitsize)])
@@ -331,15 +333,14 @@ class SimpleAddConstant(Bloq):
         self, x: 'ClassicalValT', **vars: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         if len(self.cvs) > 0:
-            ctrl = vars['ctrl']
+            ctrls = vars['ctrls']
         else:
             return {'x': x + self.k}
 
-        ctrls = bits_to_ints(self.cvs)
-        if ctrls == ctrl:
+        if (self.cvs == ctrls).all():
             x = x + self.k
 
-        return {'ctrl': ctrl, 'x': x}
+        return {'ctrls': ctrls, 'x': x}
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: SoquetT, **regs: SoquetT
@@ -347,7 +348,7 @@ class SimpleAddConstant(Bloq):
 
         # Assign registers to variables and allocate ancilla bits for classical integer k.
         if len(self.cvs) > 0:
-            ctrls = regs['ctrl']
+            ctrls = regs['ctrls']
         else:
             ctrls = None
         k = bb.allocate(n=self.bitsize)
@@ -365,7 +366,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrl=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -381,7 +382,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrl=ctrls, x=k_split[i]
+                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -392,7 +393,7 @@ class SimpleAddConstant(Bloq):
 
         # Return the output registers.
         if len(self.cvs) > 0:
-            return {'ctrl': ctrls, 'x': x}
+            return {'ctrls': ctrls, 'x': x}
         else:
             return {'x': x}
 

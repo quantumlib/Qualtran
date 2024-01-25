@@ -15,6 +15,7 @@
 import itertools
 
 import cirq
+import numpy as np
 import pytest
 
 from qualtran import BloqBuilder
@@ -257,25 +258,37 @@ def test_simple_add_constant_decomp_signed(bitsize, k, cvs):
 
 
 @pytest.mark.parametrize(
-    'bitsize,k,x,cvs,ctrl', [(5, 1, 2, (), 1), (5, 3, 2, (1), 1), (5, 2, 0, (1, 0), 2)]
-)
-def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrl):
-    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
-    ret1 = bloq.call_classically(x=x, ctrl=ctrl)
-    ret2 = bloq.decompose_bloq().call_classically(x=x, ctrl=ctrl)
-    assert ret1 == ret2
-
-
-@pytest.mark.parametrize(
-    'bitsize,k,x,cvs,ctrl,result',
+    'bitsize,k,x,cvs,ctrls,result',
     [
-        (5, 1, 2, (), 1, 3),
-        (5, 3, 2, (1), 1, 5),
-        (5, 2, 0, (1, 0), 2, 2),
-        (5, 1, 2, (1, 0, 1), 0, 2),
+        (5, 1, 2, (), (), 3),
+        (5, 3, 2, (1,), (1,), 5),
+        (5, 2, 0, (1, 0), (1, 0), 2),
+        (5, 1, 2, (1, 0, 1), (0, 0, 0), 2),
     ],
 )
-def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrl, result):
+def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrls, result):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
-    ret = bloq.call_classically(x=x, ctrl=ctrl)
-    assert ret[-1] == result
+    cbloq = bloq.decompose_bloq()
+    bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
+    cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
+
+    assert len(bloq_classical) == len(cbloq_classical)
+    for i in range(len(bloq_classical)):
+        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
+
+    assert bloq_classical[-1] == result
+
+
+# TODO: write tests for signed integer addition (subtraction)
+@pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])
+def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result):
+    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
+    cbloq = bloq.decompose_bloq()
+    bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
+    cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
+
+    assert len(bloq_classical) == len(cbloq_classical)
+    for i in range(len(bloq_classical)):
+        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
+
+    assert bloq_classical[-1] == result
