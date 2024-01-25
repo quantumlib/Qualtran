@@ -38,7 +38,6 @@ from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.simulation.classical_sim import bits_to_ints
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -330,10 +329,10 @@ class SimpleAddConstant(Bloq):
             return Signature([Register('x', bitsize=self.bitsize)])
 
     def on_classical_vals(
-        self, x: 'ClassicalValT', **vars: 'ClassicalValT'
+        self, x: 'ClassicalValT', **vals: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         if len(self.cvs) > 0:
-            ctrls = vars['ctrls']
+            ctrls = vals['ctrls']
         else:
             return {'x': x + self.k}
 
