@@ -47,37 +47,30 @@ def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
     assert_decompose_is_consistent_with_t_complexity(gate)
 
 
-@pytest.mark.parametrize("cvs", [(), (0), (1, 0), (1, 1, 1), (1, 0, 1, 0)])
+@pytest.mark.parametrize("cvs", [(0,), (1, 0), (1, 1, 1), (1, 0, 1, 0)])
 def test_multi_control_x(cvs):
     bloq = MultiControlX(cvs=cvs)
     assert_valid_bloq_decomposition(bloq=bloq)
 
 
 @pytest.mark.parametrize(
-    "cvs,x,ctrl",
-    [((), 0, 0), ((0), 1, 0), ((1, 0), 0, 2), ((1, 1, 1), 1, 7), ((1, 0, 1, 0), 1, 10)],
-)
-def test_classical_multi_control_x(x, cvs, ctrl):
-    bloq = MultiControlX(cvs=cvs)
-    cbloq = bloq.decompose_bloq()
-    ret1 = bloq.call_classically(x=x, ctrl=ctrl)
-    ret2 = cbloq.call_classically(x=x, ctrl=ctrl)
-    assert ret1 == ret2
-
-
-@pytest.mark.parametrize(
-    "cvs,x,ctrl,result",
+    "cvs,x,ctrls,result",
     [
-        ((), 0, 0, 1),
-        ((0), 1, 0, 0),
-        ((1, 0), 0, 2, 1),
-        ((1, 1, 1), 1, 7, 0),
-        ((1, 0, 1, 0), 1, 10, 0),
-        ((1), 0, 0, 0),
+        ((0,), 1, (0,), 0),
+        ((1, 0), 0, (1, 0), 1),
+        ((1, 1, 1), 1, (1, 1, 1), 0),
+        ((1, 0, 1, 0), 1, (1, 0, 1, 0), 0),
+        ((1,), 0, (0,), 0),
     ],
 )
-def test_classical_multi_control_x_correctness(x, cvs, ctrl, result):
+def test_classical_multi_control_x(cvs, x, ctrls, result):
     bloq = MultiControlX(cvs=cvs)
     cbloq = bloq.decompose_bloq()
-    ret = bloq.call_classically(x=x, ctrl=ctrl)
-    assert ret[-1] == result
+    bloq_classical = bloq.call_classically(x=x, ctrls=ctrls)
+    cbloq_classical = cbloq.call_classically(x=x, ctrls=ctrls)
+
+    assert len(bloq_classical) == len(cbloq_classical)
+    for i in range(len(bloq_classical)):
+        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
+
+    assert bloq_classical[-1] == result
