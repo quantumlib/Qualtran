@@ -215,19 +215,19 @@ def test_qrom_wire_symbols():
         return ws
 
     ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'QROM_0']
+    assert ws == ['In', 'data_a']
 
     qrom = QROM.build([3, 3, 3, 3], [2, 2, 2, 2])
     ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'QROM_0', 'QROM_1']
+    assert ws == ['In', 'data_a', 'data_b']
 
     qrom = QROM.build([[3, 3], [3, 3]], [[2, 2], [2, 2]], [[1, 1], [2, 2]])
     ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'In', 'QROM_0', 'QROM_1', 'QROM_2']
+    assert ws == ['In_i', 'In_j', 'data_a', 'data_b', 'data_c']
 
     qrom = QROM.build(np.arange(27).reshape(3, 3, 3))
     ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'In', 'In', 'QROM_0']
+    assert ws == ['In_i', 'In_j', 'In_k', 'data_a']
 
 
 @pytest.mark.parametrize(
