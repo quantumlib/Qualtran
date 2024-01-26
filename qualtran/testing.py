@@ -374,7 +374,7 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
 
 
 def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
-    """Get a bloqs wire symbols.
+    """Assert a bloq's wire symbols match the expected ones.
 
     Args:
         bloq: the bloq whose wire symbols we want to get.
