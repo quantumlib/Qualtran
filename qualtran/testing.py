@@ -377,7 +377,7 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
     """Assert a bloq's wire symbols match the expected ones.
 
     Args:
-        bloq: the bloq whose wire symbols we want to get.
+        bloq: the bloq whose wire symbols we want to check.
         expected_ws: A list of the expected wire symbols.
     """
     ws = []
