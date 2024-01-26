@@ -184,9 +184,7 @@ def test_greater_than():
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
     cbloq.t_complexity()
-    assert_wire_symbols_match_expected(
-        GreaterThanConstant(bitsize, 17), ['In(a)', 'In(b)', '⨁(a > b)']
-    )
+    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
 
 
 def test_greater_than_constant():
