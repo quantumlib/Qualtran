@@ -147,7 +147,11 @@ class UniformSuperpositionTHC(Bloq):
         # 6. Reflect on comparitors, rotated qubit and |+>.
         # ctrls = bb.join(np.array([rot, lte_nu_mp1, lte_mu_nu]))
         rot, lte_nu_mp1, lte_mu_nu, junk = bb.add(
-            Reflection((1, 1, 1, 1), (1,1,1,1)), reg0=rot, reg1=lte_nu_mp1, reg2=lte_mu_nu, reg3=junk
+            Reflection((1, 1, 1, 1), (1, 1, 1, 1)),
+            reg0=rot,
+            reg1=lte_nu_mp1,
+            reg2=lte_mu_nu,
+            reg3=junk,
         )
         # (rot, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
