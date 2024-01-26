@@ -13,11 +13,13 @@
 #  limitations under the License.
 
 import itertools
+from typing import List
 
 import cirq
 import numpy as np
 import pytest
 
+from qualtran import Soquet
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
@@ -200,6 +202,32 @@ target0_1: ───────────────X───────X�
     )
     # No T-gates needed if all elements to load are identical.
     assert t_complexity(QROM.build([3, 3, 3, 3])).t == 0
+
+
+def test_qrom_wire_symbols():
+    qrom = QROM.build([3, 3, 3, 3])
+
+    def get_wire_symbols_strings(bloq) -> List[str]:
+        ws = []
+        regs = bloq.signature
+        for i, r in enumerate(regs):
+            ws.append(qrom.wire_symbol(Soquet(i, r)).text)
+        return ws
+
+    ws = get_wire_symbols_strings(qrom)
+    assert ws == ['In', 'QROM_0']
+
+    qrom = QROM.build([3, 3, 3, 3], [2, 2, 2, 2])
+    ws = get_wire_symbols_strings(qrom)
+    assert ws == ['In', 'QROM_0', 'QROM_1']
+
+    qrom = QROM.build([[3, 3], [3, 3]], [[2, 2], [2, 2]], [[1, 1], [2, 2]])
+    ws = get_wire_symbols_strings(qrom)
+    assert ws == ['In', 'In', 'QROM_0', 'QROM_1', 'QROM_2']
+
+    qrom = QROM.build(np.arange(27).reshape(3, 3, 3))
+    ws = get_wire_symbols_strings(qrom)
+    assert ws == ['In', 'In', 'In', 'QROM_0']
 
 
 @pytest.mark.parametrize(

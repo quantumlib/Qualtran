@@ -157,9 +157,23 @@ def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet')
     begin = 0
     symbol: str = soq.pretty()
     for reg in signature:
-        finish = begin + int(np.prod(reg.shape))
+        reg_size = int(np.prod(reg.shape))
+        finish = begin + reg.bitsize * int(np.prod(reg.shape))
         if reg == soq.reg:
-            symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
+            if reg_size == 1:
+                # either shape = () or shape = (1,), wire_symbols is a list of
+                # size reg.bitsize, we only want one label for the register.
+                symbol = wire_symbols[begin]
+            elif reg.bitsize > 1:
+                # If the bitsize > 1 AND the shape of the register is non
+                # trivial then we only want to index into the shape, (not shape
+                # * bitsize)
+                symbol = np.array(wire_symbols[begin : begin + reg_size]).reshape(reg.shape)[
+                    soq.idx
+                ]
+            else:
+                # bitsize = 1 and shape is non trivial, index into the array of wireshapes.
+                symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
         begin = finish
     return directional_text_box(text=symbol, side=soq.reg.side)
 

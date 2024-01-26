@@ -23,6 +23,7 @@ from qualtran.bloqs.chemistry.thc.prepare import (
     PrepareTHC,
     UniformSuperpositionTHC,
 )
+from qualtran.drawing.musical_score import get_musical_score_data, MusicalScoreData
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.testing import execute_notebook
 
@@ -79,6 +80,15 @@ def test_prepare_graph():
     graph, sigma = uniform_bloq.call_graph(generalizer=THC_GENERALIZERS)
     assert isinstance(graph, nx.DiGraph)
     assert isinstance(sigma, dict)
+
+
+def test_musical_score():
+    uni = _thc_uni()
+    msd = get_musical_score_data(uni)
+    assert isinstance(msd, MusicalScoreData)
+    prep = _thc_prep()
+    msd = get_musical_score_data(prep)
+    assert isinstance(msd, MusicalScoreData)
 
 
 def test_notebook():
