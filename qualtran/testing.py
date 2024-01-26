@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Tuple
+from typing import List, Tuple
 
 from qualtran import (
     Bloq,
@@ -29,6 +29,7 @@ from qualtran import (
     LeftDangle,
     RightDangle,
     Side,
+    Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 
@@ -370,3 +371,18 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''
+
+
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
+    """Get a bloqs wire symbols.
+
+    Args:
+        bloq: the bloq whose wire symbols we want to get.
+        expected_ws: A list of the expected wire symbols.
+    """
+    ws = []
+    regs = bloq.signature
+    for i, r in enumerate(regs):
+        ws.append(bloq.wire_symbol(Soquet(i, r)).text)
+
+    assert ws == expected_ws

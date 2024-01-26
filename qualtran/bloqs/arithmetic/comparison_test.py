@@ -31,7 +31,11 @@ from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
 )
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+from qualtran.testing import (
+    assert_valid_bloq_decomposition,
+    assert_wire_symbols_match_expected,
+    execute_notebook,
+)
 
 
 def _make_greater_than():
@@ -180,6 +184,9 @@ def test_greater_than():
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
     cbloq.t_complexity()
+    assert_wire_symbols_match_expected(
+        GreaterThanConstant(bitsize, 17), ['In(a)', 'In(b)', '⨁(a > b)']
+    )
 
 
 def test_greater_than_constant():
@@ -190,6 +197,7 @@ def test_greater_than_constant():
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
+    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
 
 
 def test_equals_a_constant():
@@ -200,6 +208,7 @@ def test_equals_a_constant():
     q0, anc = bb.add(EqualsAConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
+    assert_wire_symbols_match_expected(EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)'])
 
 
 def test_comparison_gates_notebook():
