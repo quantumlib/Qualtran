@@ -32,11 +32,9 @@ state preparation but not controlled upon during SELECT.
 """
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING
 
 import attrs
-import cirq
-import numpy as np
 
 from qualtran import (
     Bloq,
@@ -48,57 +46,12 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.util_bloqs import Partition
-from qualtran.drawing import Circle, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-
-
-@attrs.frozen
-class Reflection(Bloq):
-    bitsizes: Tuple[int]
-    cvs: Tuple[int]
-
-    def __attrs_post_init__(self):
-        if len(self.bitsizes) != len(self.cvs):
-            raise ValueError(
-                f"cvs must be same length as bitsizes: {len(self.cvs)} vs {len(self.bitsizes)}"
-            )
-
-    def short_name(self) -> str:
-        return 'Refl'
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature([Register(name=f'reg{i}', bitsize=b) for i, b in enumerate(self.bitsizes)])
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        idx = int(soq.pretty()[3:])
-        filled = bool(self.cvs[idx])
-        return Circle(filled)
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs) -> Dict[str, 'Soquet']:
-        unpacked_cvs = sum(((c,) * b for c, b in zip(self.cvs, self.bitsizes)), ())
-        # the last qubit is used as the target for the Z
-        mcp = MultiControlPauli(cvs=unpacked_cvs[:-1], target_gate=cirq.Z)
-        split_regs = np.concatenate([bb.split(r) for r in regs.values()])
-        ctrls, target = bb.add(mcp, controls=bb.join(split_regs[:-1]), target=split_regs[-1])
-        splt_ctrls = bb.split(ctrls)
-        join_regs = np.concatenate([splt_ctrls, [target]])
-        out_regs = {}
-        start = 0
-        for i, b in enumerate(self.bitsizes):
-            out_regs[f'reg{i}'] = bb.join(join_regs[start : start + b])
-            start += b
-        return out_regs
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        nbits = sum(self.bitsizes) - 1
-        return {(Toffoli(), nbits - 1)}
 
 
 @attrs.frozen
@@ -376,12 +329,6 @@ def _black_box_select() -> BlackBoxSelect:
     select = SelectHubbard(2, 2)
     black_box_select = BlackBoxSelect(select=select)
     return black_box_select
-
-
-@bloq_example
-def _reflection() -> Reflection:
-    reflection = Reflection(bitsizes=(2, 3, 1), cvs=(0, 1, 1))
-    return reflection
 
 
 @bloq_example

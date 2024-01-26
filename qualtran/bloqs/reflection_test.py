@@ -14,36 +14,19 @@
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
-from qualtran.bloqs.block_encoding import (
-    _black_box_block_bloq,
-    _black_box_prepare,
-    _black_box_select,
-    _chebyshev_poly,
-)
+from qualtran.bloqs.reflection import _reflection
 from qualtran.testing import execute_notebook
 
 
-def test_black_box_bloq(bloq_autotester):
-    bloq_autotester(_black_box_block_bloq)
+def test_reflection(bloq_autotester):
+    bloq_autotester(_reflection)
 
 
-def test_black_box_prepare(bloq_autotester):
-    bloq_autotester(_black_box_prepare)
-
-
-def test_black_box_select(bloq_autotester):
-    bloq_autotester(_black_box_select)
-
-
-def test_chebyshev(bloq_autotester):
-    bloq_autotester(_chebyshev_poly)
-
-
-def test_chebyshev_t_counts():
-    counts = _chebyshev_poly().call_graph()[1]
-    counts_decomp = _chebyshev_poly().decompose_bloq().call_graph()[1]
+def test_reflection_t_counts():
+    counts = _reflection().call_graph()[1]
+    counts_decomp = _reflection().decompose_bloq().call_graph()[1]
     assert counts[TGate()] == counts_decomp[TGate()]
 
 
 def test_notebook():
-    execute_notebook('block_encoding')
+    execute_notebook('reflection')
