@@ -13,19 +13,21 @@
 #  limitations under the License.
 
 import itertools
-from typing import List
 
 import cirq
 import numpy as np
 import pytest
 
-from qualtran import Soquet
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+from qualtran.testing import (
+    assert_valid_bloq_decomposition,
+    assert_wire_symbols_match_expected,
+    execute_notebook,
+)
 
 
 @pytest.mark.parametrize(
@@ -207,27 +209,16 @@ target0_1: ───────────────X───────X�
 def test_qrom_wire_symbols():
     qrom = QROM.build([3, 3, 3, 3])
 
-    def get_wire_symbols_strings(bloq) -> List[str]:
-        ws = []
-        regs = bloq.signature
-        for i, r in enumerate(regs):
-            ws.append(qrom.wire_symbol(Soquet(i, r)).text)
-        return ws
-
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'QROM_0']
+    assert_wire_symbols_match_expected(qrom, ['In', 'data_a'])
 
     qrom = QROM.build([3, 3, 3, 3], [2, 2, 2, 2])
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'QROM_0', 'QROM_1']
+    assert_wire_symbols_match_expected(qrom, ['In', 'data_a', 'data_b'])
 
     qrom = QROM.build([[3, 3], [3, 3]], [[2, 2], [2, 2]], [[1, 1], [2, 2]])
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'In', 'QROM_0', 'QROM_1', 'QROM_2']
+    assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'data_a', 'data_b', 'data_c'])
 
     qrom = QROM.build(np.arange(27).reshape(3, 3, 3))
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'In', 'In', 'QROM_0']
+    assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'In_k', 'data_a'])
 
 
 @pytest.mark.parametrize(
