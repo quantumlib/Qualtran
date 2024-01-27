@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, CostKV, GeneralizerT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -278,6 +278,14 @@ class Bloq(metaclass=abc.ABCMeta):
         the provided `SympySymbolAllocator`.
         """
         return self.decompose_bloq().build_call_graph(ssa)
+
+    def my_static_costs(self) -> Sequence['CostKV']:
+        return []
+
+    def my_leaf_costs(self) -> Sequence['CostKV']:
+        from qualtran.resource_counting import AddCostVal, BloqCount
+
+        return [(BloqCount(self), AddCostVal(1))]
 
     def call_graph(
         self,

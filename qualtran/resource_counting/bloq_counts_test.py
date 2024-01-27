@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import attrs
 import networkx as nx
@@ -25,6 +25,7 @@ from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
 from qualtran.resource_counting import BloqCountT, get_bloq_call_graph, SympySymbolAllocator
+from qualtran.resource_counting import BloqCount, AddCostVal, CostKV
 
 
 @frozen
@@ -119,6 +120,40 @@ class OnlyCallGraphBloqShim(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return set(self.callees)
+
+    def my_static_costs(self) -> List[CostKV]:
+        """Anything that you can't deduce by recursion. For example, you shouldn't include
+        the T count here because that should be found by diving into the call graph
+        until you get to the T bloq and you can add it all up.
+
+        This could be something like success probability or 'overhead'. For examples sake,
+        I've moved clifford accounting to an additional cost instead of capturing it in the
+        call graph.
+        """
+        return []
+
+    def my_leaf_costs(self) -> List[CostKV]:
+        """The costs if this is a leaf bloq; i.e. sorry: we're not going to deduce costs
+        from the call graph for you.
+
+        We'll include my_addtl_costs even if you're a leaf; so don't repeat yourself.
+
+        By default, this records that we do--in fact-- take one bloq count of ourself. So
+        if you end on a bloq you know it at least takes one of itself.
+
+        If there are success probabilities or max_width or overhead complications from
+        callees, it's lost (unless you override this). Is this a problem? Should we error
+        if this is not explicitly overridden and we end up making it a leaf bloq?
+
+        Consider the Tof+T cost model. If we built the big-ol cost model, then we'd just
+        get a T count. If you included a toffoli count (naively, e.g. in my_addtl_costs) you'd
+        get the 4*tof t-gates "double counted". If your call graph had *only* tof, then
+        this would work fine because tof would be a leaf.
+
+        The solution is to change the call-graph generation logic to consider Tof a leaf
+        node (as well as T if it shows up in other branches of the DAG).
+        """
+        return [(BloqCount(self), AddCostVal(1))]
 
     def pretty_name(self):
         return self.name
