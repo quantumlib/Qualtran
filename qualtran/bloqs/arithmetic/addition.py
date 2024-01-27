@@ -82,11 +82,12 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        assert self.bitsize <= 64  # TODO: be smarter
-        return {
-            'a': a,
-            'b': np.uint64(a) + np.uint64(b),
-        }  # TODO: account for signed integer addition
+        # TODO: support classical value overflows behind the scenes
+        # https://github.com/quantumlib/Qualtran/issues/607
+        assert self.bitsize <= 64
+        # TODO: account for signed integer addition
+        # https://github.com/quantumlib/Qualtran/issues/606
+        return {'a': a, 'b': np.uint64(a) + np.uint64(b)}
 
     def short_name(self) -> str:
         return "a+b"

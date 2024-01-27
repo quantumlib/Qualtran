@@ -280,6 +280,7 @@ def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrls, resul
 
 
 # TODO: write tests for signed integer addition (subtraction)
+# https://github.com/quantumlib/Qualtran/issues/606
 @pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])
 def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
