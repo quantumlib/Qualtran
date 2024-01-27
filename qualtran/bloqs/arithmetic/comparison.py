@@ -496,11 +496,11 @@ class GreaterThan(Bloq):
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.name == 'a':
+        if soq.reg.name == 'a':
             return TextBox("In(a)")
-        if soq.name == 'b':
+        if soq.reg.name == 'b':
             return TextBox("In(b)")
-        elif soq.name == 'target':
+        elif soq.reg.name == 'target':
             return TextBox("⨁(a > b)")
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
