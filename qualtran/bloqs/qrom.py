@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence, Set, Tuple
 
 import attrs
 import cirq
@@ -23,8 +23,10 @@ from numpy.typing import ArrayLike, NDArray
 from qualtran import Register, SelectionRegister, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @cirq.value_equality()
@@ -197,3 +199,15 @@ class QROM(UnaryIterationGate):
     def _value_equality_values_(self):
         data_tuple = tuple(tuple(d.flatten()) for d in self.data)
         return (self.selection_registers, self.target_registers, self.control_registers, data_tuple)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # Note this does not give the correct T complexity if we expect variable spaced qrom.
+        # QROM is unary iteration + a bunch of CX gates to write the data.
+        data_len = self.data[0].size
+        num_ands = data_len - 2 + self.num_controls
+        # number of cnots is just given by how many set bits each data entry has.
+        num_data_cnots = sum([int(x).bit_count() for x in np.array(self.data).ravel()])
+        extra_cnot = int(self.num_controls > 0)
+        num_data_cnots += data_len - 2 + extra_cnot
+        # ignoring the additional potential 2 X gates if num_controls == 0
+        return {(And(), num_ands), (And(uncompute=True), num_ands), (CNOT(), num_data_cnots)}

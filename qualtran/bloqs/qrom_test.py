@@ -19,10 +19,12 @@ import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
+from qualtran.bloqs.basic_gates import CNOT, TGate
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
+from qualtran.resource_counting.generalizers import cirq_to_bloqs
 from qualtran.testing import (
     assert_valid_bloq_decomposition,
     assert_wire_symbols_match_expected,
@@ -143,6 +145,23 @@ def _assert_qrom_has_diagram(qrom: QROM, expected_diagram: str):
     selection_and_anc = (selection[0],) + sum(zip(selection[1:], anc), ())
     qubit_order = cirq.QubitOrder.explicit(selection_and_anc, fallback=cirq.QubitOrder.DEFAULT)
     cirq.testing.assert_has_diagram(circuit, expected_diagram, qubit_order=qubit_order)
+
+
+@pytest.mark.parametrize("num_controls", [0, 1, 2])
+def test_qrom_call_graph_matches_decomposition(num_controls):
+    arr = np.arange(50)
+    qrom = QROM.build(arr, num_controls=num_controls)
+    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
+    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
+    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
+    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]
+    arr_a = np.arange(64).reshape(8, 8)
+    arr_b = 10 * np.arange(64).reshape(8, 8)
+    qrom = QROM.build(arr_a, arr_b, num_controls=num_controls)
+    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
+    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
+    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
+    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]
 
 
 def test_qrom_variable_spacing():
