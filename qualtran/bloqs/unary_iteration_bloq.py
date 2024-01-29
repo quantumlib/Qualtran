@@ -554,31 +554,11 @@ class UnaryIterationGate(GateWithRegisters):
         def unary_iteration_loops(
             nested_depth: int, selection_reg_name_to_val: Dict[str, int], num_controls: int
         ) -> None:
-            """Recursively write any number of nested coherent for-loops using unary iteration.
-
-            This helper method is useful to write `num_loops` number of nested coherent for-loops by
-            recursively calling this method `num_loops` times. The ith recursive call of this method
-            has `nested_depth=i` and represents the body of ith nested for-loop.
-
-            Args:
-                nested_depth: Integer between `[0, num_loops]` representing the nest-level of
-                    for-loop for which this method implements the body.
-                selection_reg_name_to_val: A dictionary containing `nested_depth` elements mapping
-                    the selection integer names (i.e. loop variables) to corresponding values;
-                    for each of the `nested_depth` parent for-loops written before.
-                controls: Control qubits that should be used to conditionally activate the body of
-                    this for-loop.
-
-            Returns:
-                `cirq.OP_TREE` implementing `num_loops` nested coherent for-loops, with operations
-                returned by `self.nth_operation` applied conditionally to the target register based
-                on values of selection signature.
-            """
             if nested_depth == num_loops:
                 for bloq, count in self.nth_operation_callgraph(**selection_reg_name_to_val):
                     bloq_counts[bloq] += count
                 return
-            # Use recursion to write `num_loops` nested loops using unary_iteration().
+            # Use recursion to cost out `num_loops` nested loops using _unary_iteration_callgraph()
             selection_index_prefix = tuple(selection_reg_name_to_val.values())
             ith_for_loop = _unary_iteration_callgraph(
                 l_iter=0,
