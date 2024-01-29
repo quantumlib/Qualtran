@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 import abc
-from typing import Callable, Dict, Iterator, List, Sequence, Tuple
+from collections import defaultdict
+from typing import Callable, Dict, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -23,6 +24,13 @@ from numpy.typing import NDArray
 from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs import and_bloq
+from qualtran.bloqs.basic_gates import CNOT, XGate
+
+if TYPE_CHECKING:
+    import sympy
+
+    from qualtran import Bloq
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 def _unary_iteration_segtree(
@@ -194,7 +202,7 @@ def unary_iteration(
     Users can write multi-dimensional coherent for loops as follows:
 
     >>> import cirq
-    >>> from qualtran.bloqs.unary_iteration_gate import unary_iteration
+    >>> from qualtran.bloqs.unary_iteration_bloq import unary_iteration
     >>> N, M = 5, 7
     >>> target = [[cirq.q(f't({i}, {j})') for j in range(M)] for i in range(N)]
     >>> selection = [[cirq.q(f's({i}, {j})') for j in range(3)] for i in range(3)]
@@ -259,6 +267,80 @@ def unary_iteration(
     qubit_manager.qfree(ancilla)
 
 
+def _unary_iteration_callgraph_segtree(
+    l_iter: int,
+    r_iter: int,
+    l: int,
+    r: int,
+    break_early: Callable[[int, int], bool],
+    bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
+) -> Iterator[int]:
+    if l >= r_iter or l_iter >= r:
+        # Range corresponding to this node is completely outside of iteration range.
+        return
+    if l_iter <= l < r <= r_iter and (l == (r - 1) or break_early(l, r)):
+        # Reached a leaf node or a "special" internal node; yield the operations.
+        yield l
+        return
+    m = (l + r) >> 1
+    if r_iter <= m:
+        # Yield only left sub-tree.
+        yield from _unary_iteration_callgraph_segtree(
+            l_iter, r_iter, l, m, break_early, bloq_counts
+        )
+        return
+    if l_iter >= m:
+        # Yield only right sub-tree
+        yield from _unary_iteration_callgraph_segtree(
+            l_iter, r_iter, m, r, break_early, bloq_counts
+        )
+        return
+    bloq_counts[and_bloq.And(1, 0)] += 1
+    yield from _unary_iteration_callgraph_segtree(l_iter, r_iter, l, m, break_early, bloq_counts)
+    bloq_counts[CNOT()] += 1
+    yield from _unary_iteration_callgraph_segtree(l_iter, r_iter, m, r, break_early, bloq_counts)
+    bloq_counts[and_bloq.And().adjoint()] += 1
+
+
+def _unary_iteration_callgraph(
+    l_iter: int,
+    r_iter: int,
+    selection_bitsize: int,
+    control_bitsize: int,
+    break_early: Callable[[int, int], bool],
+    bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
+) -> Iterator[int]:
+    assert 2**selection_bitsize >= r_iter - l_iter
+    assert selection_bitsize > 0
+    if control_bitsize == 0:
+        while r_iter <= 2 ** (selection_bitsize - 1):
+            selection_bitsize -= 1
+        bloq_counts[XGate()] = 2
+        l, r = 0, 2**selection_bitsize
+        yield from _unary_iteration_callgraph_segtree(
+            l_iter, r_iter, l, (l + r) >> 1, break_early, bloq_counts
+        )
+        yield from _unary_iteration_callgraph_segtree(
+            l_iter, r_iter, (l + r) >> 1, r, break_early, bloq_counts
+        )
+        return
+
+    if control_bitsize == 2:
+        bloq_counts[and_bloq.And(1, 1)] += 1
+        bloq_counts[and_bloq.And(1, 1).adjoint()] += 1
+
+    if control_bitsize > 2:
+        multi_and = and_bloq.MultiAnd(cvs=(1,) * control_bitsize)
+        bloq_counts[multi_and] += 1
+        bloq_counts[multi_and.adjoint()] += 1
+
+    assert control_bitsize == 1
+    assert 2**selection_bitsize >= r_iter - l_iter
+    yield from _unary_iteration_callgraph_segtree(
+        l_iter, r_iter, 0, 2**selection_bitsize, break_early, bloq_counts
+    )
+
+
 class UnaryIterationGate(GateWithRegisters):
     """Base class for defining multiplexed gates that can execute a coherent for-loop.
 
@@ -309,14 +391,14 @@ class UnaryIterationGate(GateWithRegisters):
     def nth_operation(
         self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
     ) -> cirq.OP_TREE:
-        """Apply nth operation on the target signature when selection signature store `n`.
+        """Apply nth operation on the target register when selection register store `n`.
 
         The `UnaryIterationGate` class is a mixin that represents a coherent for-loop over
-        different indices (i.e. selection signature). This method denotes the "body" of the
+        different indices (i.e. selection register). This method denotes the "body" of the
         for-loop, which is executed `self.selection_registers.total_iteration_size` times and each
-        iteration represents a unique combination of values stored in selection signature. For each
+        iteration represents a unique combination of values stored in selection registers. For each
         call, the method should return the operations that should be applied to the target
-        signature, given the values stored in selection signature.
+        register, given the values stored in selection register.
 
         The derived classes should specify the following arguments as `**kwargs`:
             1) `control: cirq.Qid`: A qubit which can be used as a control to selectively
@@ -456,3 +538,64 @@ class UnaryIterationGate(GateWithRegisters):
         wire_symbols += ["In"] * total_bits(self.selection_registers)
         wire_symbols += [self.__class__.__name__] * total_bits(self.target_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
+        raise NotImplementedError(
+            f"Derived class {type(self)} does not implement `nth_operation_callgraph`."
+        )
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if total_bits(self.selection_registers) == 0 or self._break_early(
+            (), 0, self.selection_registers[0].iteration_length
+        ):
+            return self.decompose_bloq().build_call_graph(ssa)
+        num_loops = len(self.selection_registers)
+        bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = defaultdict(lambda: 0)
+
+        def unary_iteration_loops(
+            nested_depth: int, selection_reg_name_to_val: Dict[str, int], num_controls: int
+        ) -> None:
+            """Recursively write any number of nested coherent for-loops using unary iteration.
+
+            This helper method is useful to write `num_loops` number of nested coherent for-loops by
+            recursively calling this method `num_loops` times. The ith recursive call of this method
+            has `nested_depth=i` and represents the body of ith nested for-loop.
+
+            Args:
+                nested_depth: Integer between `[0, num_loops]` representing the nest-level of
+                    for-loop for which this method implements the body.
+                selection_reg_name_to_val: A dictionary containing `nested_depth` elements mapping
+                    the selection integer names (i.e. loop variables) to corresponding values;
+                    for each of the `nested_depth` parent for-loops written before.
+                controls: Control qubits that should be used to conditionally activate the body of
+                    this for-loop.
+
+            Returns:
+                `cirq.OP_TREE` implementing `num_loops` nested coherent for-loops, with operations
+                returned by `self.nth_operation` applied conditionally to the target register based
+                on values of selection signature.
+            """
+            if nested_depth == num_loops:
+                for bloq, count in self.nth_operation_callgraph(**selection_reg_name_to_val):
+                    bloq_counts[bloq] += count
+                return
+            # Use recursion to write `num_loops` nested loops using unary_iteration().
+            selection_index_prefix = tuple(selection_reg_name_to_val.values())
+            ith_for_loop = _unary_iteration_callgraph(
+                l_iter=0,
+                r_iter=self.selection_registers[nested_depth].iteration_length,
+                selection_bitsize=self.selection_registers[nested_depth].bitsize,
+                control_bitsize=num_controls,
+                break_early=lambda l, r: self._break_early(selection_index_prefix, l, r),
+                bloq_counts=bloq_counts,
+            )
+            for n in ith_for_loop:
+                selection_reg_name_to_val[self.selection_registers[nested_depth].name] = n
+                unary_iteration_loops(nested_depth + 1, selection_reg_name_to_val, num_controls=1)
+                selection_reg_name_to_val.pop(self.selection_registers[nested_depth].name)
+
+        try:
+            unary_iteration_loops(0, {}, total_bits(self.control_registers))
+            return {(bloq, count) for bloq, count in bloq_counts.items()}
+        except NotImplementedError as e:
+            return super().build_call_graph(ssa)
