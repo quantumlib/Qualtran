@@ -33,45 +33,6 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-@frozen
-class PrepareUniformSuperposition(Bloq):
-    r"""Prepare a uniform superposition over $d$ basis states.
-
-    Uses quoted literature costs which relies on phase gradient for rotations.
-
-    Args:
-        d: The number of coefficients to prepare.
-        num_bits_rot_aa: The number of bits of precision for the single-qubit
-            rotation for amplitude amplification during the uniform state
-            preparataion. Default 8.
-
-    Registers:
-        d: the register to prepare the uniform superposition on.
-
-    Refererences:
-        [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            hypercontraction](https://arxiv.org/abs/2011.03494) Page 39.
-    """
-    d: int
-    num_bits_rot_aa: int = 8
-
-    @cached_property
-    def signature(self) -> Signature:
-        regs = [Register('d', (self.num_non_zero - 1).bit_length())]
-        return Signature(regs)
-
-    def short_name(self) -> str:
-        return r'$\sum_l |l\rangle'
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        factors = factorint(self.d)
-        eta = factors[min(list(sorted(factors.keys())))]
-        if self.d % 2 == 1:
-            eta = 0
-        uniform_prep = 3 * (self.d - 1).bit_length() - 3 * eta + 2 * self.num_bits_rot_aa - 9
-        return {(Toffoli(), uniform_prep)}
-
-
 def get_qroam_cost(
     data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: Optional[int] = None
 ) -> Tuple[int, int]:
