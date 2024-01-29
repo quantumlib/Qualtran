@@ -270,36 +270,44 @@ def unary_iteration(
 def _unary_iteration_callgraph_segtree(
     l_iter: int,
     r_iter: int,
-    l: int,
-    r: int,
+    l_range: int,
+    r_range: int,
     break_early: Callable[[int, int], bool],
     bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
-) -> Iterator[int]:
-    if l >= r_iter or l_iter >= r:
-        # Range corresponding to this node is completely outside of iteration range.
-        return
-    if l_iter <= l < r <= r_iter and (l == (r - 1) or break_early(l, r)):
-        # Reached a leaf node or a "special" internal node; yield the operations.
-        yield l
-        return
-    m = (l + r) >> 1
-    if r_iter <= m:
-        # Yield only left sub-tree.
-        yield from _unary_iteration_callgraph_segtree(
-            l_iter, r_iter, l, m, break_early, bloq_counts
-        )
-        return
-    if l_iter >= m:
-        # Yield only right sub-tree
-        yield from _unary_iteration_callgraph_segtree(
-            l_iter, r_iter, m, r, break_early, bloq_counts
-        )
-        return
-    bloq_counts[and_bloq.And(1, 0)] += 1
-    yield from _unary_iteration_callgraph_segtree(l_iter, r_iter, l, m, break_early, bloq_counts)
-    bloq_counts[CNOT()] += 1
-    yield from _unary_iteration_callgraph_segtree(l_iter, r_iter, m, r, break_early, bloq_counts)
-    bloq_counts[and_bloq.And().adjoint()] += 1
+) -> Sequence[int]:
+    n = r_range - l_range
+    l, r = np.zeros(2 * n, dtype=int), np.zeros(2 * n, dtype=int)
+    for i in range(n, 2 * n):
+        l[i], r[i] = l_range + i - n, l_range + i - n + 1
+
+    for i in range(n - 1, 0, -1):
+        l[i], r[i] = l[2 * i], r[2 * i + 1]
+    marked = np.zeros(2 * n, dtype=int)
+    num_ands = 0
+    ret: List[int] = []
+    for i in range(1, 2 * n):
+        marked[i] = marked[i // 2]
+        if marked[i]:
+            continue
+        if l[i] >= r_iter or l_iter >= r[i]:
+            # Range corresponding to this node is completely outside of iteration range.
+            marked[i] = 1
+            continue
+        if l_iter <= l[i] < r[i] <= r_iter and (l[i] == (r[i] - 1) or break_early(l[i], r[i])):
+            # Reached a leaf node or a "special" internal node; yield the operations.
+            marked[i] = 1
+            ret.append(l[i])
+            continue
+        m = (l[i] + r[i]) >> 1
+        if r_iter <= m or l_iter >= m:
+            # Yield only left sub-tree or right sub-tree. No need of any ops here.
+            continue
+        # Need to yield both left & right subtrees. Add the ands to bloq counts.
+        num_ands += 1
+    bloq_counts[and_bloq.And(1, 0)] += num_ands
+    bloq_counts[CNOT()] += num_ands
+    bloq_counts[and_bloq.And().adjoint()] += num_ands
+    return ret
 
 
 def _unary_iteration_callgraph(
@@ -309,21 +317,21 @@ def _unary_iteration_callgraph(
     control_bitsize: int,
     break_early: Callable[[int, int], bool],
     bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
-) -> Iterator[int]:
+) -> Sequence[int]:
     assert 2**selection_bitsize >= r_iter - l_iter
     assert selection_bitsize > 0
     if control_bitsize == 0:
         while r_iter <= 2 ** (selection_bitsize - 1):
             selection_bitsize -= 1
-        bloq_counts[XGate()] = 2
+        bloq_counts[XGate()] += 2
         l, r = 0, 2**selection_bitsize
-        yield from _unary_iteration_callgraph_segtree(
+        ret = _unary_iteration_callgraph_segtree(
             l_iter, r_iter, l, (l + r) >> 1, break_early, bloq_counts
         )
-        yield from _unary_iteration_callgraph_segtree(
+        ret += _unary_iteration_callgraph_segtree(
             l_iter, r_iter, (l + r) >> 1, r, break_early, bloq_counts
         )
-        return
+        return ret
 
     if control_bitsize == 2:
         bloq_counts[and_bloq.And(1, 1)] += 1
@@ -335,8 +343,8 @@ def _unary_iteration_callgraph(
         bloq_counts[multi_and.adjoint()] += 1
 
     assert 2**selection_bitsize >= r_iter - l_iter
-    yield from _unary_iteration_callgraph_segtree(
-        l_iter, r_iter, 0, 2**selection_bitsize, break_early, bloq_counts
+    return _unary_iteration_callgraph_segtree(
+        l_iter, r_iter, 0, 1 << selection_bitsize, break_early, bloq_counts
     )
 
 

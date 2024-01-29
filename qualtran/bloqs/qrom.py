@@ -155,9 +155,11 @@ class QROM(UnaryIterationGate):
 
     def _break_early(self, selection_index_prefix: Tuple[int, ...], l: int, r: int):
         for data in self.data:
-            unique_element = np.unique(data[selection_index_prefix][l:r])
-            if len(unique_element) > 1:
-                return False
+            data_l_r_flat = data[selection_index_prefix][l:r].flat
+            unique_element = data_l_r_flat[0]
+            for x in data_l_r_flat:
+                if x != unique_element:
+                    return False
         return True
 
     def nth_operation(
