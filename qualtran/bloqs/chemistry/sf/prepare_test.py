@@ -62,6 +62,7 @@ def test_outerprep_t_counts():
     # Number of qubits for p and q registers
     cost1a = 2 * (3 * nb_l - 3 * eta + 2 * num_bits_rot_aa - 9)
     # correct the expected cost by using a different uniform superposition algorithm
+    # see: https://github.com/quantumlib/Qualtran/issues/611
     prep = PrepareUniformSuperposition(num_aux + 1)
     cost1a_mod = prep.call_graph()[1][TGate()] // 4
     cost1a_mod += prep.adjoint().call_graph()[1][TGate()] // 4

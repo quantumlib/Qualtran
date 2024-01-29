@@ -92,6 +92,7 @@ def test_compare_cost_to_openfermion():
     )
     cost_qualtran //= 4
     # correct the expected cost by using a different uniform superposition algorithm
+    # https://github.com/quantumlib/Qualtran/issues/611
     eta = power_two(num_aux + 1)
     cost1a = 2 * (3 * nl - 3 * eta + 2 * num_bits_rot_aa_outer - 9)
     prep = PrepareUniformSuperposition(num_aux + 1)

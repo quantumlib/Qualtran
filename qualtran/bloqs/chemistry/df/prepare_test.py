@@ -61,6 +61,7 @@ def test_outerprep_t_counts():
     cost1b = QR(num_aux + 1, bp1)[1] + QI(num_aux + 1)[1]
     cost1cd = 2 * (num_bits_state_prep + nl)
     # correct the expected cost by using a different uniform superposition algorithm
+    # https://github.com/quantumlib/Qualtran/issues/611
     prep = PrepareUniformSuperposition(num_aux + 1)
     cost1a_mod = prep.call_graph()[1][TGate()] // 4
     cost1a_mod += prep.adjoint().call_graph()[1][TGate()] // 4
