@@ -2,35 +2,74 @@ from typing import Dict, Tuple
 import attrs
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT, Side, Register
+from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import ZeroState, PlusState, ZeroEffect
 from qualtran.bloqs.qrom import QROM
-from qualtran.bloqs.basic_gates.rotation import Rx, Rz
+from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.basic_gates.hadamard import Hadamard
 
 
 @attrs.frozen
 class ControlledRotStatePreparation(Bloq):
     n_qubits: int
+    rot_reg_size: int
+    state: Tuple
 
     @property
     def signature(self):
-        return Signature.build(control=1, state=self.n_qubits)
+        return Signature.build(
+            control=1,
+            target=self.n_qubits,
+            rot_reg=self.rot_reg_size,
+            phase_gradient=self.rot_reg_size,
+            phase_ancilla=1,
+        )
 
     def build_composite_bloq(
-        self, bb: BloqBuilder, *, control: SoquetT, state: SoquetT
+        self,
+        bb: BloqBuilder,
+        *,
+        control: SoquetT,
+        target: SoquetT,
+        rot_reg: SoquetT,
+        phase_gradient: SoquetT,
+        phase_ancilla: SoquetT,
     ) -> Dict[str, SoquetT]:
-        state_qb = bb.split(state)
-        state = bb.join(state_qb)
-        return {"control": control, "state": state}
+        return {
+            "control": control,
+            "target": target,
+            "rot_reg": rot_reg,
+            "pahse_gradient": phase_gradient,
+            "phase_ancilla": phase_ancilla,
+        }
 
 
 @attrs.frozen
-class ControlledPrepareQubit(Bloq):
+class ControlledRotateQubit(Bloq):
+    rot_reg_size: int
+    rot_value: int
+
+    @property
+    def signature(self):
+        return Signature.build(
+            prepare_control=1,
+            qubit=1,
+            rot_reg=self.rot_reg_size,
+            phase_gradient=self.rot_reg_size,
+        )
+
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+        return super().build_composite_bloq(bb, **soqs)
+
+
+@attrs.frozen
+class ControlledQROMRotateQubit(Bloq):
     n_selections: int
     rot_reg_size: int
-    rom_vals: Tuple
+    rom_values: Tuple
 
     @property
     def signature(self):
@@ -39,7 +78,7 @@ class ControlledPrepareQubit(Bloq):
             selection=self.n_selections,
             qubit=1,
             rot_reg=self.rot_reg_size,
-            phase_gradient=self.rot_reg_size
+            phase_gradient=self.rot_reg_size,
         )
 
     def build_composite_bloq(
@@ -50,36 +89,48 @@ class ControlledPrepareQubit(Bloq):
         selection: SoquetT,
         qubit: SoquetT,
         rot_reg: SoquetT,
-        phase_gradient: SoquetT
+        phase_gradient: SoquetT,
     ) -> Dict[str, SoquetT]:
+        """Parameters:
+            * prepare_control
+            * selection (not necessary if n_selections == 0)
+            * qubit
+            * rot_reg
+            * phase_gradient
+        """
         qrom = QROM(
-            [np.array(self.rom_vals)],
+            [np.array(self.rom_values)],
             selection_bitsizes=(self.n_selections,),
             target_bitsizes=(self.rot_reg_size,),
-            num_controls=1,
+            num_controls=2,
+        )
+        qrom_control = bb.join(np.array([prepare_control, qubit]))
+        qrom_control, selection, rot_reg = bb.add(
+            qrom, control=qrom_control, selection=selection, target0_=rot_reg
         )
 
-        prepare_control, selection, rot_reg = bb.add(
-            qrom, control=prepare_control, selection=selection, target0_=rot_reg
+        rot_reg, phase_gradient = bb.add(
+            Add(bitsize=self.rot_reg_size), a=rot_reg, b=phase_gradient
         )
 
-        qubit = bb.add(Rx(angle=np.pi / 2), q=qubit)
-        qubit = bb.add(Rx(angle=-np.pi / 2), q=qubit)
-
-        prepare_control, selection, rot_reg = bb.add(
-            qrom, control=prepare_control, selection=selection, target0_=rot_reg
+        qrom_control, selection, rot_reg = bb.add(
+            qrom, control=qrom_control, selection=selection, target0_=rot_reg
         )
+        separated = bb.split(qrom_control)
+        prepare_control = separated[0]
+        qubit = separated[1]
+
         return {
             "prepare_control": prepare_control,
             "selection": selection,
             "qubit": qubit,
             "rot_reg": rot_reg,
-            "phase_gradient": phase_gradient
+            "phase_gradient": phase_gradient,
         }
 
 
 class RotationTree:
-    def extractRomValuesFromState(state, rot_reg_size):
+    def extractRomValuesFromState(state: ArrayLike, rot_reg_size: int):
         rotation_tree = RotationTree.rotationTreeFromState(state)
         next_layer = [rotation_tree]
         rom_vals = []
@@ -109,8 +160,8 @@ class RotationTree:
         return np.acos(np.sqrt(self.__getP0()))
 
     def angle2RomValue(angle, rot_reg_size):
-        rom_val = 2**rot_reg_size - 1 - 2**rot_reg_size * angle / (2 * np.pi)
-        return round(rom_val)
+        rom_value_decimal = 2**rot_reg_size * (1 - angle / (2 * np.pi))
+        return round(rom_value_decimal) % (2**rot_reg_size)
 
     # do not call, use rotationTreeFromState
     def __init__(self, sum0, sum1, branch0, branch1):
