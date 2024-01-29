@@ -301,7 +301,6 @@ def _unary_iteration_callgraph_segtree(
     Returns:
         Returns a sequence of integers, each representing the first element `l` in the range
         `[l, r)` corresponding to the leaf nodes of the constructed segment tree.
-
         The derived operations should specify the cost of attaching operations on each of the
         leaf nodes, identified by the `l` entries, to fully specify the cost of the corresponding
         unary iteration bloq.
@@ -328,7 +327,7 @@ def _unary_iteration_callgraph_segtree(
             marked[i] = 1
             continue
         if l_iter <= l[i] < r[i] <= r_iter and (i >= n or break_early(l[i], r[i])):
-            # Reached a leaf node or a "special" internal node; append it's left element.
+            # Reached a leaf node or a "special" internal node; append its left element.
             marked[i] = 1
             ret.append(l[i])
             continue

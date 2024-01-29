@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import itertools
-from typing import Sequence, Tuple, Set, TYPE_CHECKING
+from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import pytest
@@ -21,13 +21,13 @@ from cirq._compat import cached_property
 
 from qualtran import Register, SelectionRegister, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.unary_iteration_bloq import unary_iteration, UnaryIterationGate
+from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
-from qualtran.bloqs.basic_gates import CNOT
 from qualtran.resource_counting.generalizers import cirq_to_bloqs
-from qualtran.bloqs.util_bloqs import Split, Join
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 if TYPE_CHECKING:
     from qualtran import Bloq
