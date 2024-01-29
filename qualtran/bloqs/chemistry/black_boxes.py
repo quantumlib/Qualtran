@@ -22,7 +22,6 @@ import attrs
 import cirq
 import numpy as np
 from attrs import field, frozen
-from sympy import factorint
 
 from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
