@@ -48,24 +48,6 @@ class ControlledRotStatePreparation(Bloq):
 
 
 @attrs.frozen
-class ControlledRotateQubit(Bloq):
-    rot_reg_size: int
-    rot_value: int
-
-    @property
-    def signature(self):
-        return Signature.build(
-            prepare_control=1,
-            qubit=1,
-            rot_reg=self.rot_reg_size,
-            phase_gradient=self.rot_reg_size,
-        )
-
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
-        return super().build_composite_bloq(bb, **soqs)
-
-
-@attrs.frozen
 class ControlledQROMRotateQubit(Bloq):
     n_selections: int
     rot_reg_size: int
@@ -84,12 +66,7 @@ class ControlledQROMRotateQubit(Bloq):
     def build_composite_bloq(
         self,
         bb: BloqBuilder,
-        *,
-        prepare_control: SoquetT,
-        selection: SoquetT,
-        qubit: SoquetT,
-        rot_reg: SoquetT,
-        phase_gradient: SoquetT,
+        **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
         """Parameters:
             * prepare_control
@@ -104,29 +81,33 @@ class ControlledQROMRotateQubit(Bloq):
             target_bitsizes=(self.rot_reg_size,),
             num_controls=2,
         )
-        qrom_control = bb.join(np.array([prepare_control, qubit]))
-        qrom_control, selection, rot_reg = bb.add(
-            qrom, control=qrom_control, selection=selection, target0_=rot_reg
+        qrom_control = bb.join(np.array([soqs['prepare_control'], soqs['qubit']]))
+        if self.n_selections != 0:
+            qrom_control, soqs['selection'], soqs['rot_reg'] = bb.add(
+                qrom, control=qrom_control, selection=soqs['selection'], target0_=soqs['rot_reg']
+            )
+        else:
+            qrom_control, soqs['rot_reg'] = bb.add(
+                qrom, control=qrom_control, target0_=soqs['rot_reg']
+            )
+
+        soqs['rot_reg'], soqs['phase_gradient'] = bb.add(
+            Add(bitsize=self.rot_reg_size), a=soqs['rot_reg'], b=soqs['phase_gradient']
         )
 
-        rot_reg, phase_gradient = bb.add(
-            Add(bitsize=self.rot_reg_size), a=rot_reg, b=phase_gradient
-        )
-
-        qrom_control, selection, rot_reg = bb.add(
-            qrom, control=qrom_control, selection=selection, target0_=rot_reg
-        )
+        if self.n_selections != 0:
+            qrom_control, soqs['selection'], soqs['rot_reg'] = bb.add(
+                qrom, control=qrom_control, selection=soqs['selection'], target0_=soqs['rot_reg']
+            )
+        else:
+            qrom_control, soqs['rot_reg'] = bb.add(
+                qrom, control=qrom_control, target0_=soqs['rot_reg']
+            )
         separated = bb.split(qrom_control)
-        prepare_control = separated[0]
-        qubit = separated[1]
+        soqs['prepare_control'] = separated[0]
+        soqs['qubit'] = separated[1]
 
-        return {
-            "prepare_control": prepare_control,
-            "selection": selection,
-            "qubit": qubit,
-            "rot_reg": rot_reg,
-            "phase_gradient": phase_gradient,
-        }
+        return soqs
 
 
 class RotationTree:
