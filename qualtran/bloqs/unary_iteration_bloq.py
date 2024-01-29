@@ -275,34 +275,69 @@ def _unary_iteration_callgraph_segtree(
     break_early: Callable[[int, int], bool],
     bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
 ) -> Sequence[int]:
+    """Iterative segment tree used to construct call graph for Unary iteration.
+
+    See https://codeforces.com/blog/entry/18051 for an explanation of how iterative
+    segment trees work.
+
+    The method constructs a unary iteration segment tree for the case when `num_controls=1`,
+    similar to `_unary_iteration_segtree`, and adds the bloq counts to `bloq_counts` dict.
+
+    Args:
+        l_iter: Left index of iteration range over which the segment tree should be constructed.
+        r_iter: Right index of iteration range over which the segment tree should be constructed.
+        l_range: Left index of range represented by the root node of the segment tree.
+            Should be a power of 2.
+        r_range: Right index of range represented by the root node of the segment tree.
+            Should be a power of 2 and greater than l_range.
+        break_early: For each internal node of the segment tree, `break_early(l, r)` is called to
+            evaluate whether the unary iteration should terminate early and not recurse in the
+            subtree of the node representing range `[l, r)`. If True, the internal node is
+            considered equivalent to a leaf node and the method yields only one tuple
+            `(OP_TREE, control_qubit, l)` for all integers in the range `[l, r)`.
+        bloq_counts: Mutable Dictionary to which the counts of bloqs used by the unary iteration
+            segment tree are appended.
+
+    Returns:
+        Returns a sequence of integers, each representing the first element `l` in the range
+        `[l, r)` corresponding to the leaf nodes of the constructed segment tree.
+
+        The derived operations should specify the cost of attaching operations on each of the
+        leaf nodes, identified by the `l` entries, to fully specify the cost of the corresponding
+        unary iteration bloq.
+    """
     n = r_range - l_range
     l, r = np.zeros(2 * n, dtype=int), np.zeros(2 * n, dtype=int)
+    # For each of the N leaf nodes, mark the range they represent as [l[i], r[i])
     for i in range(n, 2 * n):
         l[i], r[i] = l_range + i - n, l_range + i - n + 1
-
+    # For each of the N - 1 internal nodes, derive the range they represent using left (2 * i)
+    # & right (2 * i + 1) child.
     for i in range(n - 1, 0, -1):
-        l[i], r[i] = l[2 * i], r[2 * i + 1]
-    marked = np.zeros(2 * n, dtype=int)
+        l[i], r[i] = l[i << 1], r[(i << 1) | 1]
+    marked = np.zeros(2 * n, dtype=bool)
     num_ands = 0
     ret: List[int] = []
     for i in range(1, 2 * n):
-        marked[i] = marked[i // 2]
+        marked[i] = marked[i >> 1]
         if marked[i]:
+            # We don't need to traverse this subtree since it's parent was already "marked".
             continue
         if l[i] >= r_iter or l_iter >= r[i]:
             # Range corresponding to this node is completely outside of iteration range.
             marked[i] = 1
             continue
-        if l_iter <= l[i] < r[i] <= r_iter and (l[i] == (r[i] - 1) or break_early(l[i], r[i])):
-            # Reached a leaf node or a "special" internal node; yield the operations.
+        if l_iter <= l[i] < r[i] <= r_iter and (i >= n or break_early(l[i], r[i])):
+            # Reached a leaf node or a "special" internal node; append it's left element.
             marked[i] = 1
             ret.append(l[i])
             continue
         m = (l[i] + r[i]) >> 1
         if r_iter <= m or l_iter >= m:
-            # Yield only left sub-tree or right sub-tree. No need of any ops here.
+            # Yield only left sub-tree or right sub-tree. No need of any ops here. We'll visit
+            # the left / right subtrees later.
             continue
-        # Need to yield both left & right subtrees. Add the ands to bloq counts.
+        # Need to yield both left & right subtrees. Add the `ands` to bloq counts.
         num_ands += 1
     bloq_counts[and_bloq.And(1, 0)] += num_ands
     bloq_counts[CNOT()] += num_ands
@@ -318,6 +353,11 @@ def _unary_iteration_callgraph(
     break_early: Callable[[int, int], bool],
     bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
 ) -> Sequence[int]:
+    """Helper to compute the call graph for unary iteration.
+
+    See docstring of `_unary_iteration_callgraph_segtree`, to which this method delegates, for
+    more details. This helper takes care of cases when `control_bitsize != 1`.
+    """
     assert 2**selection_bitsize >= r_iter - l_iter
     assert selection_bitsize > 0
     if control_bitsize == 0:
