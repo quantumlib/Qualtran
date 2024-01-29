@@ -334,7 +334,6 @@ def _unary_iteration_callgraph(
         bloq_counts[multi_and] += 1
         bloq_counts[multi_and.adjoint()] += 1
 
-    assert control_bitsize == 1
     assert 2**selection_bitsize >= r_iter - l_iter
     yield from _unary_iteration_callgraph_segtree(
         l_iter, r_iter, 0, 2**selection_bitsize, break_early, bloq_counts
