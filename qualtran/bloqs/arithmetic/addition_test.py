@@ -15,11 +15,17 @@
 import itertools
 
 import cirq
+import numpy as np
 import pytest
 
 from qualtran import BloqBuilder
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.arithmetic import Add, AddConstantMod, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.addition import (
+    Add,
+    AddConstantMod,
+    OutOfPlaceAdder,
+    SimpleAddConstant,
+)
 from qualtran.bloqs.arithmetic.comparison_test import identity_map
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.testing import (
@@ -233,3 +239,57 @@ def test_out_of_place_adder():
     assert_decompose_is_consistent_with_t_complexity(gate**-1)
     assert_valid_bloq_decomposition(gate)
     assert_valid_bloq_decomposition(gate**-1)
+
+
+@pytest.mark.parametrize('bitsize', [5])
+@pytest.mark.parametrize('k', [5, 8])
+@pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
+def test_simple_add_constant_decomp_unsigned(bitsize, k, cvs):
+    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
+    assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize('bitsize', [5])
+@pytest.mark.parametrize('k', [-5, 8])
+@pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
+def test_simple_add_constant_decomp_signed(bitsize, k, cvs):
+    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
+    assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize(
+    'bitsize,k,x,cvs,ctrls,result',
+    [
+        (5, 1, 2, (), (), 3),
+        (5, 3, 2, (1,), (1,), 5),
+        (5, 2, 0, (1, 0), (1, 0), 2),
+        (5, 1, 2, (1, 0, 1), (0, 0, 0), 2),
+    ],
+)
+def test_classical_simple_add_constant_unsigned(bitsize, k, x, cvs, ctrls, result):
+    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
+    cbloq = bloq.decompose_bloq()
+    bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
+    cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
+
+    assert len(bloq_classical) == len(cbloq_classical)
+    for i in range(len(bloq_classical)):
+        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
+
+    assert bloq_classical[-1] == result
+
+
+# TODO: write tests for signed integer addition (subtraction)
+# https://github.com/quantumlib/Qualtran/issues/606
+@pytest.mark.parametrize('bitsize,k,x,cvs,ctrls,result', [(5, 2, 0, (1, 0), (1, 0), 2)])
+def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result):
+    bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
+    cbloq = bloq.decompose_bloq()
+    bloq_classical = bloq.call_classically(ctrls=ctrls, x=x)
+    cbloq_classical = cbloq.call_classically(ctrls=ctrls, x=x)
+
+    assert len(bloq_classical) == len(cbloq_classical)
+    for i in range(len(bloq_classical)):
+        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
+
+    assert bloq_classical[-1] == result
