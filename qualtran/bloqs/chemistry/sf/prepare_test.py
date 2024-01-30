@@ -49,7 +49,6 @@ def test_outerprep_t_counts():
     outer_prep = OuterPrepareSingleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     ).adjoint()
-    eta = power_two(num_aux + 1)
     _, counts = outer_prep.call_graph()
     toff += counts[TGate()]
     # swap difference
@@ -60,6 +59,7 @@ def test_outerprep_t_counts():
     toff //= 4
     # Number of qubits for the first register
     # Number of qubits for p and q registers
+    eta = power_two(num_aux + 1)
     cost1a = 2 * (3 * nb_l - 3 * eta + 2 * num_bits_rot_aa - 9)
     # correct the expected cost by using a different uniform superposition algorithm
     # see: https://github.com/quantumlib/Qualtran/issues/611
