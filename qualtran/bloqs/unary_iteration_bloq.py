@@ -306,38 +306,37 @@ def _unary_iteration_callgraph_segtree(
         unary iteration bloq.
     """
     n = r_range - l_range
-    l, r = np.zeros(2 * n, dtype=int), np.zeros(2 * n, dtype=int)
-    # For each of the N leaf nodes, mark the range they represent as [l[i], r[i])
-    for i in range(n, 2 * n):
-        l[i], r[i] = l_range + i - n, l_range + i - n + 1
-    # For each of the N - 1 internal nodes, derive the range they represent using left (2 * i)
-    # & right (2 * i + 1) child.
-    for i in range(n - 1, 0, -1):
-        l[i], r[i] = l[i << 1], r[(i << 1) | 1]
+    n_levels = n.bit_length()
     marked = np.zeros(2 * n, dtype=bool)
     num_ands = 0
     ret: List[int] = []
-    for i in range(1, 2 * n):
-        marked[i] = marked[i >> 1]
-        if marked[i]:
-            # We don't need to traverse this subtree since it's parent was already "marked".
-            continue
-        if l[i] >= r_iter or l_iter >= r[i]:
-            # Range corresponding to this node is completely outside of iteration range.
-            marked[i] = 1
-            continue
-        if l_iter <= l[i] < r[i] <= r_iter and (i >= n or break_early(l[i], r[i])):
-            # Reached a leaf node or a "special" internal node; append its left element.
-            marked[i] = 1
-            ret.append(l[i])
-            continue
-        m = (l[i] + r[i]) >> 1
-        if r_iter <= m or l_iter >= m:
-            # Yield only left sub-tree or right sub-tree. No need of any ops here. We'll visit
-            # the left / right subtrees later.
-            continue
-        # Need to yield both left & right subtrees. Add the `ands` to bloq counts.
-        num_ands += 1
+    step_size = n
+    for lvl in range(1, n_levels + 1):
+        r = l_range
+        for i in range((1 << (lvl - 1)), (1 << lvl)):
+            l = r
+            r = l + step_size
+            marked[i] = marked[i >> 1]
+            if marked[i]:
+                # We don't need to traverse this subtree since it's parent was already "marked".
+                continue
+            if l >= r_iter or l_iter >= r:
+                # Range corresponding to this node is completely outside of iteration range.
+                marked[i] = 1
+                continue
+            if l_iter <= l < r <= r_iter and (i >= n or break_early(l, r)):
+                # Reached a leaf node or a "special" internal node; append its left element.
+                marked[i] = 1
+                ret.append(l)
+                continue
+            m = (l + r) >> 1
+            if r_iter <= m or l_iter >= m:
+                # Yield only left sub-tree or right sub-tree. No need of any ops here. We'll visit
+                # the left / right subtrees later.
+                continue
+            # Need to yield both left & right subtrees. Add the `ands` to bloq counts.
+            num_ands += 1
+        step_size //= 2
     bloq_counts[and_bloq.And(1, 0)] += num_ands
     bloq_counts[CNOT()] += num_ands
     bloq_counts[and_bloq.And().adjoint()] += num_ands
