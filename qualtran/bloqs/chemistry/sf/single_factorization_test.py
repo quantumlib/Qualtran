@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from openfermion.resource_estimates.sf.compute_cost_sf import compute_cost
-from openfermion.resource_estimates.utils import QI, QI2, QR2
+from openfermion.resource_estimates.utils import power_two, QI, QI2, QR2
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sf.single_factorization import (
@@ -22,6 +22,7 @@ from qualtran.bloqs.chemistry.sf.single_factorization import (
     SingleFactorizationBlockEncoding,
     SingleFactorizationOneBody,
 )
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.testing import execute_notebook
 
 
@@ -90,6 +91,15 @@ def test_compare_cost_to_openfermion():
         2 * ((7 - 4) * (nl + 1) + 4 * num_bits_state_prep - 4)
     )
     cost_qualtran //= 4
+    # correct the expected cost by using a different uniform superposition algorithm
+    # https://github.com/quantumlib/Qualtran/issues/611
+    eta = power_two(num_aux + 1)
+    cost1a = 2 * (3 * nl - 3 * eta + 2 * num_bits_rot_aa_outer - 9)
+    prep = PrepareUniformSuperposition(num_aux + 1)
+    cost1a_mod = prep.call_graph()[1][TGate()] // 4
+    cost1a_mod += prep.adjoint().call_graph()[1][TGate()] // 4
+    delta_uni_prep = cost1a_mod - cost1a
+    cost_qualtran -= delta_uni_prep
     cost_qualtran += delta_refl
     cost_qualtran += cost_refl
     cost_qualtran += 1  # extra toffoli currently missing for additional control

@@ -21,6 +21,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 
 def test_prep_inner(bloq_autotester):
@@ -48,7 +49,6 @@ def test_outerprep_t_counts():
     outer_prep = OuterPrepareSingleFactorization(
         num_aux, num_bits_state_prep=num_bits_state_prep, num_bits_rot_aa=num_bits_rot_aa
     ).adjoint()
-    eta = power_two(num_aux + 1)
     _, counts = outer_prep.call_graph()
     toff += counts[TGate()]
     # swap difference
@@ -59,11 +59,18 @@ def test_outerprep_t_counts():
     toff //= 4
     # Number of qubits for the first register
     # Number of qubits for p and q registers
+    eta = power_two(num_aux + 1)
     cost1a = 2 * (3 * nb_l - 3 * eta + 2 * num_bits_rot_aa - 9)
+    # correct the expected cost by using a different uniform superposition algorithm
+    # see: https://github.com/quantumlib/Qualtran/issues/611
+    prep = PrepareUniformSuperposition(num_aux + 1)
+    cost1a_mod = prep.call_graph()[1][TGate()] // 4
+    cost1a_mod += prep.adjoint().call_graph()[1][TGate()] // 4
+    assert cost1a != cost1a_mod
     bL = nb_l + num_bits_state_prep + 2
     cost1b = QR(num_aux + 1, bL)[-1] + QI(num_aux + 1)[-1]
     cost1cd = 2 * (num_bits_state_prep + nb_l + 1)
-    of_cost = cost1a + cost1b + cost1cd
+    of_cost = cost1a_mod + cost1b + cost1cd
     assert toff == of_cost
 
 
