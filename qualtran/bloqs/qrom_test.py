@@ -13,19 +13,23 @@
 #  limitations under the License.
 
 import itertools
-from typing import List
 
 import cirq
 import numpy as np
 import pytest
 
-from qualtran import Soquet
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
+from qualtran.bloqs.basic_gates import CNOT, TGate
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+from qualtran.resource_counting.generalizers import cirq_to_bloqs
+from qualtran.testing import (
+    assert_valid_bloq_decomposition,
+    assert_wire_symbols_match_expected,
+    execute_notebook,
+)
 
 
 @pytest.mark.parametrize(
@@ -207,27 +211,16 @@ target0_1: ───────────────X───────X�
 def test_qrom_wire_symbols():
     qrom = QROM.build([3, 3, 3, 3])
 
-    def get_wire_symbols_strings(bloq) -> List[str]:
-        ws = []
-        regs = bloq.signature
-        for i, r in enumerate(regs):
-            ws.append(qrom.wire_symbol(Soquet(i, r)).text)
-        return ws
-
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'QROM_0']
+    assert_wire_symbols_match_expected(qrom, ['In', 'data_a'])
 
     qrom = QROM.build([3, 3, 3, 3], [2, 2, 2, 2])
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'QROM_0', 'QROM_1']
+    assert_wire_symbols_match_expected(qrom, ['In', 'data_a', 'data_b'])
 
     qrom = QROM.build([[3, 3], [3, 3]], [[2, 2], [2, 2]], [[1, 1], [2, 2]])
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'In', 'QROM_0', 'QROM_1', 'QROM_2']
+    assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'data_a', 'data_b', 'data_c'])
 
     qrom = QROM.build(np.arange(27).reshape(3, 3, 3))
-    ws = get_wire_symbols_strings(qrom)
-    assert ws == ['In', 'In', 'In', 'QROM_0']
+    assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'In_k', 'data_a'])
 
 
 @pytest.mark.parametrize(
@@ -308,3 +301,32 @@ def test_ndim_t_complexity(data, num_controls):
     n = data[0].size
     assert t_complexity(g.gate) == t_complexity(g.operation) == qrom.t_complexity()
     assert t_complexity(g.gate).t == max(0, 4 * n - 8 + 4 * num_controls)
+
+
+@pytest.mark.parametrize("num_controls", [0, 1, 2])
+def test_qrom_call_graph_matches_decomposition(num_controls):
+    # Base case
+    arr = np.arange(50)
+    qrom = QROM.build(arr, num_controls=num_controls)
+    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
+    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
+    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
+    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]
+
+    # Multiple Multi dimensional arrays
+    arr_a = np.arange(64).reshape(8, 8)
+    arr_b = 10 * np.arange(64).reshape(8, 8)
+    qrom = QROM.build(arr_a, arr_b, num_controls=num_controls)
+    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
+    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
+    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
+    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]
+
+    # Variable QROM case.
+    arr_a = np.array([1, 2, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5])
+    arr_b = 10 * arr_a
+    qrom = QROM.build(arr_a, arr_b, num_controls=num_controls)
+    _, sigma_call = qrom.call_graph(generalizer=cirq_to_bloqs)
+    _, sigma_dcmp = qrom.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
+    assert sigma_call[TGate()] == sigma_dcmp[TGate()]
+    assert sigma_call[CNOT()] == sigma_dcmp[CNOT()]

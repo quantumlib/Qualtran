@@ -129,6 +129,9 @@ class MultiControlPauli(GateWithRegisters):
         yield and_op**-1
         qm.qfree([*and_ancilla, *and_target])
 
+    def short_name(self) -> str:
+        return r'$C^{n}(P)$'
+
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@" if b else "@(0)" for b in self.cvs]
         wire_symbols += [str(self.target_gate)]

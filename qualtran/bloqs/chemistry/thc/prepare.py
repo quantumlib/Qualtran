@@ -102,6 +102,9 @@ class UniformSuperpositionTHC(Bloq):
             ]
         )
 
+    def short_name(self) -> str:
+        return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
+
     def build_composite_bloq(
         self,
         bb: 'BloqBuilder',

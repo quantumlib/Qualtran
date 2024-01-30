@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence, Set, Tuple
 
 import attrs
 import cirq
@@ -20,10 +20,13 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import Register, SelectionRegister
+from qualtran import Register, SelectionRegister, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
+from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.resource_counting import BloqCountT
 
 
 @cirq.value_equality()
@@ -152,9 +155,11 @@ class QROM(UnaryIterationGate):
 
     def _break_early(self, selection_index_prefix: Tuple[int, ...], l: int, r: int):
         for data in self.data:
-            unique_element = np.unique(data[selection_index_prefix][l:r])
-            if len(unique_element) > 1:
-                return False
+            data_l_r_flat = data[selection_index_prefix][l:r].flat
+            unique_element = data_l_r_flat[0]
+            for x in data_l_r_flat:
+                if x != unique_element:
+                    return False
         return True
 
     def nth_operation(
@@ -171,6 +176,23 @@ class QROM(UnaryIterationGate):
             wire_symbols += [f"QROM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        name = soq.reg.name
+        if name == 'selection':
+            return TextBox('In')
+        elif 'selection' in name:
+            sel_indx = int(name.replace('selection', ''))
+            # get i,j,k,l,m,n type subscripts
+            subscript = chr(ord('i') + sel_indx)
+            return TextBox(f'In_{subscript}')
+        elif 'target' in name:
+            trg_indx = int(name.replace('target', '').replace('_', ''))
+            # match the sel index
+            subscript = chr(ord('a') + trg_indx)
+            return TextBox(f'data_{subscript}')
+        elif name == 'control':
+            return Circle()
+
     def __pow__(self, power: int):
         if power in [1, -1]:
             return self
@@ -179,3 +201,7 @@ class QROM(UnaryIterationGate):
     def _value_equality_values_(self):
         data_tuple = tuple(tuple(d.flatten()) for d in self.data)
         return (self.selection_registers, self.target_registers, self.control_registers, data_tuple)
+
+    def nth_operation_callgraph(self, **kwargs: int) -> Set['BloqCountT']:
+        selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
+        return {(CNOT(), sum(int(d[selection_idx]).bit_count() for d in self.data))}

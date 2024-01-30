@@ -31,7 +31,11 @@ from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
 )
-from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+from qualtran.testing import (
+    assert_valid_bloq_decomposition,
+    assert_wire_symbols_match_expected,
+    execute_notebook,
+)
 
 
 def _make_greater_than():
@@ -85,7 +89,7 @@ def test_less_than_gate():
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
     gate2 = LessThanConstant(4, 10)
     assert gate.with_registers(*gate2.registers()) == gate2
-    assert cirq.circuit_diagram_info(gate).wire_symbols == ("In(x)",) * 3 + ("+(x < 5)",)
+    assert cirq.circuit_diagram_info(gate).wire_symbols == ("In(x)",) * 3 + ("⨁(x < 5)",)
     assert (gate**1 is gate) and (gate**-1 is gate)
     assert gate.__pow__(2) is NotImplemented
 
@@ -165,7 +169,7 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     u = cirq.unitary(g)
     np.testing.assert_allclose(u @ u, np.eye(2 ** (x_bitsize + y_bitsize + 1)))
     # Test diagrams
-    expected_wire_symbols = ("In(x)",) * x_bitsize + ("In(y)",) * y_bitsize + ("+(x <= y)",)
+    expected_wire_symbols = ("In(x)",) * x_bitsize + ("In(y)",) * y_bitsize + ("⨁(x <= y)",)
     assert cirq.circuit_diagram_info(g).wire_symbols == expected_wire_symbols
     # Test with_registers
     assert g.with_registers([2] * 4, [2] * 5, [2]) == LessThanEqual(4, 5)
@@ -180,6 +184,7 @@ def test_greater_than():
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
     cbloq.t_complexity()
+    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
 
 
 def test_greater_than_constant():
@@ -190,6 +195,7 @@ def test_greater_than_constant():
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
+    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
 
 
 def test_equals_a_constant():
@@ -200,6 +206,7 @@ def test_equals_a_constant():
     q0, anc = bb.add(EqualsAConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
+    assert_wire_symbols_match_expected(EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)'])
 
 
 def test_comparison_gates_notebook():
