@@ -60,6 +60,8 @@ from ._infra.quantum_graph import (
 
 from ._infra.gate_with_registers import GateWithRegisters
 
+from ._infra.data_types import QAny, QBit, BoundedQInt, QDTypeT, QFixedPoint, QInt, QUnsignedInt
+
 from ._infra.adjoint import Adjoint
 
 from ._infra.controlled import ControlledBloq

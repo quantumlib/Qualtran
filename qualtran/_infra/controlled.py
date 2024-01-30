@@ -17,7 +17,7 @@ from typing import List, Tuple
 
 from attrs import field, frozen
 
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, CompositeBloq, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.drawing import Circle, WireSymbol
 
 
@@ -45,7 +45,7 @@ class ControlledBloq(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature((Register(name="control", bitsize=1),) + tuple(self.subbloq.signature))
+        return Signature((Register(name="control", dtype=QBit()),) + tuple(self.subbloq.signature))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         if not isinstance(self.subbloq, CompositeBloq):

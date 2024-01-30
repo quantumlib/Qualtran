@@ -16,7 +16,7 @@ from typing import Dict
 
 import cirq
 
-from qualtran import GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran import GateWithRegisters, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
 from qualtran.testing import execute_notebook
 
@@ -24,9 +24,9 @@ from qualtran.testing import execute_notebook
 class _TestGate(GateWithRegisters):
     @property
     def signature(self) -> Signature:
-        r1 = Register("r1", 5)
-        r2 = Register("r2", 2)
-        r3 = Register("r3", 1)
+        r1 = Register("r1", dtype=QAny(5))
+        r2 = Register("r2", dtype=QAny(2))
+        r3 = Register("r3", dtype=QBit())
         regs = Signature([r1, r2, r3])
         return regs
 
@@ -53,9 +53,9 @@ class BloqWithDecompose(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('l', 1, side=Side.LEFT),
-                Register('t', 1, side=Side.THRU),
-                Register('r', 1, side=Side.RIGHT),
+                Register('l', dtype=QBit(), side=Side.LEFT),
+                Register('t', dtype=QBit(), side=Side.THRU),
+                Register('r', dtype=QBit(), side=Side.RIGHT),
             ]
         )
 
@@ -65,7 +65,7 @@ class BloqWithDecompose(GateWithRegisters):
         l = bb.add(XGate(), q=l)
         bb.free(l)
         t = bb.add(YGate(), q=t)
-        r = bb.allocate(1)
+        r = bb.allocate(QBit())
         r = bb.add(ZGate(), q=r)
         return {'t': t, 'r': r}
 

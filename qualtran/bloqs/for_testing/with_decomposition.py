@@ -17,7 +17,7 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, Signature, Soquet
+from qualtran import Bloq, QAny, Signature, Soquet
 from qualtran.bloqs.for_testing.atom import TestAtom
 
 
@@ -48,4 +48,4 @@ class TestParallelCombo(Bloq):
         for i in range(len(reg)):
             reg[i] = bb.add(TestAtom(), q=reg[i])
 
-        return {'reg': bb.join(reg)}
+        return {'reg': bb.join(reg, dtype=QAny(3))}

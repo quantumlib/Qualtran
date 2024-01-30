@@ -16,11 +16,14 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple
+from functools import cached_property
+from typing import Dict, Generic, Iterable, Iterator, List, overload, Tuple
 
 import attrs
 import numpy as np
 from attrs import field, frozen
+
+from qualtran._infra.data_types import QAny, QBit, QDTypeT
 
 
 class Side(enum.Flag):
@@ -40,7 +43,7 @@ class Side(enum.Flag):
 
 
 @frozen
-class Register:
+class Register(Generic[QDTypeT]):
     """A data type describing a register of qubits.
 
     Each register has a name as well as attributes describing the quantum data expected
@@ -49,7 +52,8 @@ class Register:
 
     Attributes:
         name: The string name of the register
-        bitsize: The number of (qu)bits in the register.
+        dtype: Quantum data type this register is representing. For example, an
+            array of 32-bit fixed-point floats.
         shape: A tuple of integer dimensions to declare a multidimensional register. The
             total number of bits is the product of entries in this tuple times `bitsize`.
         side: Whether this is a left, right, or thru register. See the documentation for `Side`
@@ -57,7 +61,7 @@ class Register:
     """
 
     name: str
-    bitsize: int
+    dtype: QDTypeT
     shape: Tuple[int, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
@@ -67,12 +71,16 @@ class Register:
         """Iterate over all possible indices of a multidimensional register."""
         yield from itertools.product(*[range(sh) for sh in self.shape])
 
+    @property
+    def bitsize(self) -> int:
+        return self.dtype.num_qubits
+
     def total_bits(self) -> int:
         """The total number of bits in this register.
 
         This is the product of bitsize and each of the dimensions in `shape`.
         """
-        return self.bitsize * int(np.prod(self.shape))
+        return self.dtype.num_qubits * int(np.prod(self.shape))
 
     def adjoint(self) -> 'Register':
         """Return the 'adjoint' of this register by switching RIGHT and LEFT registers."""
@@ -186,9 +194,13 @@ class Signature:
 
         Args:
             registers: keyword arguments mapping register name to bitsize. All registers
-                will be 0-dimensional and THRU.
+                will be 0-dimensional and THRU. If the bitsize > 1 then the
+                register will have type QAny else it will have type QBit.
         """
-        return cls(Register(name=k, bitsize=v) for k, v in registers.items() if v)
+        return cls(
+            Register(name=k, dtype=QAny(bitsize=v)) if v > 1 else Register(name=k, dtype=QBit())
+            for k, v in registers.items()
+        )
 
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""

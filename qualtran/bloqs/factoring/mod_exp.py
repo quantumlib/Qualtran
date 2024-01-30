@@ -30,6 +30,7 @@ from qualtran import (
     Signature,
     SoquetT,
 )
+from qualtran._infra.data_types import QUnsignedInt
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -69,8 +70,8 @@ class ModExp(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('exponent', bitsize=self.exp_bitsize),
-                Register('x', bitsize=self.x_bitsize, side=Side.RIGHT),
+                Register('exponent', dtype=QUnsignedInt(self.exp_bitsize)),
+                Register('x', dtype=QUnsignedInt(self.x_bitsize), side=Side.RIGHT),
             ]
         )
 
@@ -107,7 +108,7 @@ class ModExp(Bloq):
             exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
             base = base * base % self.mod
 
-        return {'exponent': bb.join(exponent), 'x': x}
+        return {'exponent': bb.join(exponent, dtype=QUnsignedInt(self.exp_bitsize)), 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')

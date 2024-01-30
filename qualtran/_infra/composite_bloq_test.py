@@ -31,6 +31,9 @@ from qualtran import (
     CompositeBloq,
     Connection,
     LeftDangle,
+    QAny,
+    QBit,
+    QInt,
     Register,
     RightDangle,
     Side,
@@ -190,8 +193,8 @@ def test_bloq_builder():
 
 def _get_bb():
     bb = BloqBuilder()
-    x = bb.add_register('x', 1)
-    y = bb.add_register('y', 1)
+    x = bb.add_register('x', dtype=QBit())
+    y = bb.add_register('y', dtype=QBit())
     return bb, x, y
 
 
@@ -199,7 +202,9 @@ def test_wrong_soquet():
     bb, x, y = _get_bb()
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*target.*'):
-        bad_target_arg = Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', 2))
+        bad_target_arg = Soquet(
+            BloqInstance(TestTwoBitOp(), i=12), Register('target', dtype=QAny(2))
+        )
         bb.add(TestTwoBitOp(), ctrl=x, target=bad_target_arg)
 
 
@@ -244,7 +249,9 @@ def test_finalize_wrong_soquet():
     assert y != y2
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', 2)))
+        bb.finalize(
+            x=x2, y=Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', dtype=QAny(2)))
+        )
 
 
 def test_finalize_double_use_1():
@@ -277,7 +284,7 @@ def test_finalize_strict_too_many_args():
 
     bb.add_register_allowed = False
     with pytest.raises(BloqError, match=r'Finalizing does not accept Soquets.*z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', 1)))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', dtype=QBit())))
 
 
 def test_finalize_bad_args():
@@ -285,26 +292,26 @@ def test_finalize_bad_args():
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet.*RightDangle\.z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', 1)))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', dtype=QAny(1))))
 
 
 def test_finalize_alloc():
     bb, x, y = _get_bb()
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
-    z = bb.allocate(1)
+    z = bb.allocate(dtype=QBit())
 
     cbloq = bb.finalize(x=x2, y=y2, z=z)
     assert len(list(cbloq.signature.rights())) == 3
 
 
 def test_get_soquets():
-    soqs = _get_dangling_soquets(Join(10).signature, right=True)
+    soqs = _get_dangling_soquets(Join(QAny(10)).signature, right=True)
     assert list(soqs.keys()) == ['reg']
     soq = soqs['reg']
     assert soq.binst == RightDangle
     assert soq.reg.bitsize == 10
 
-    soqs = _get_dangling_soquets(Join(10).signature, right=False)
+    soqs = _get_dangling_soquets(Join(QAny(10)).signature, right=False)
     assert list(soqs.keys()) == ['reg']
     soq = soqs['reg']
     assert soq.shape == (10,)
@@ -315,7 +322,9 @@ class TestMultiCNOT(Bloq):
     # A minimal test-bloq with a complicated `target` register.
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('control', 1), Register('target', 1, shape=(2, 3))])
+        return Signature(
+            [Register('control', dtype=QBit()), Register('target', dtype=QBit(), shape=(2, 3))]
+        )
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']
@@ -360,9 +369,9 @@ target[1, 2]: ──────────────────────
 def test_util_convenience_methods():
     bb = BloqBuilder()
 
-    qs = bb.allocate(10)
+    qs = bb.allocate(QInt(10))
     qs = bb.split(qs)
-    qs = bb.join(qs)
+    qs = bb.join(qs, dtype=QInt(10))
     bb.free(qs)
     cbloq = bb.finalize()
     assert len(cbloq.connections) == 1 + 10 + 1
@@ -371,19 +380,29 @@ def test_util_convenience_methods():
 def test_util_convenience_methods_errors():
     bb = BloqBuilder()
 
-    qs = np.asarray([bb.allocate(5), bb.allocate(5)])
+    qs = np.asarray([bb.allocate(QInt(5)), bb.allocate(QInt(5))])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
         qs = bb.split(qs)
 
-    qs = bb.allocate(5)
+    qs = bb.allocate(QInt(5))
     with pytest.raises(ValueError, match='.*expects a 1-d array'):
-        qs = bb.join(qs)
+        qs = bb.join(qs, dtype=QInt(5))
+
+    # this works, casting between types is allowed
+    qs = bb.allocate(QInt(5))
+    qs = bb.split(qs)
+    qs = bb.join(qs, dtype=QAny(5))
+    # this doesn't work, truncation is not allowed in splits / joins
+    qs = bb.allocate(QInt(5))
+    qs = bb.split(qs)
+    with pytest.raises(ValueError, match='.* 2 vs. 5'):
+        qs = bb.join(qs, dtype=QInt(2))
 
     # but this works:
     qs = np.asarray([bb.allocate(), bb.allocate()])
-    qs = bb.join(qs)
+    qs = bb.join(qs, dtype=QAny(2))
 
-    qs = np.asarray([bb.allocate(5), bb.allocate(5)])
+    qs = np.asarray([bb.allocate(QInt(5)), bb.allocate(QInt(5))])
     with pytest.raises(ValueError, match='.*expects a single Soquet'):
         bb.free(qs)
 
@@ -411,7 +430,7 @@ def test_copy(cls):
 @pytest.mark.parametrize('call_decompose', [False, True])
 def test_add_from(call_decompose):
     bb = BloqBuilder()
-    stuff = bb.add_register('stuff', 3)
+    stuff = bb.add_register('stuff', QAny(3))
     stuff = bb.add(TestParallelCombo(), reg=stuff)
     if call_decompose:
         (stuff,) = bb.add_from(TestParallelCombo().decompose_bloq(), reg=stuff)
@@ -423,25 +442,25 @@ def test_add_from(call_decompose):
         == """\
 TestParallelCombo()<0>
   LeftDangle.stuff -> reg
-  reg -> Split(n=3)<1>.reg
+  reg -> Split(dtype=QAny(bitsize=3))<1>.reg
 --------------------
-Split(n=3)<1>
+Split(dtype=QAny(bitsize=3))<1>
   TestParallelCombo()<0>.reg -> reg
   reg[0] -> TestAtom()<2>.q
   reg[1] -> TestAtom()<3>.q
   reg[2] -> TestAtom()<4>.q
 --------------------
 TestAtom()<2>
-  Split(n=3)<1>.reg[0] -> q
-  q -> Join(n=3)<5>.reg[0]
+  Split(dtype=QAny(bitsize=3))<1>.reg[0] -> q
+  q -> Join(dtype=QAny(bitsize=3))<5>.reg[0]
 TestAtom()<3>
-  Split(n=3)<1>.reg[1] -> q
-  q -> Join(n=3)<5>.reg[1]
+  Split(dtype=QAny(bitsize=3))<1>.reg[1] -> q
+  q -> Join(dtype=QAny(bitsize=3))<5>.reg[1]
 TestAtom()<4>
-  Split(n=3)<1>.reg[2] -> q
-  q -> Join(n=3)<5>.reg[2]
+  Split(dtype=QAny(bitsize=3))<1>.reg[2] -> q
+  q -> Join(dtype=QAny(bitsize=3))<5>.reg[2]
 --------------------
-Join(n=3)<5>
+Join(dtype=QAny(bitsize=3))<5>
   TestAtom()<2>.q -> reg[0]
   TestAtom()<3>.q -> reg[1]
   TestAtom()<4>.q -> reg[2]
@@ -457,7 +476,7 @@ def test_final_soqs():
 
 def test_add_from_left_bloq():
     bb = BloqBuilder()
-    x = bb.add_register(Register('x', 8, side=Side.LEFT))
+    x = bb.add_register(Register('x', dtype=QAny(8), side=Side.LEFT))
 
     # The following exercises the special case of calling `final_soqs`
     # for a gate with left registers only
@@ -468,15 +487,15 @@ def test_add_from_left_bloq():
 
 def test_add_duplicate_register():
     bb = BloqBuilder()
-    _ = bb.add_register('control', 1)
-    y = bb.add_register('control', 2)
+    _ = bb.add_register('control', QBit())
+    y = bb.add_register('control', QBit())
     with pytest.raises(ValueError):
         bb.finalize(control=y)
 
 
 def test_flatten():
     bb = BloqBuilder()
-    stuff = bb.add_register('stuff', 3)
+    stuff = bb.add_register('stuff', QAny(3))
     stuff = bb.add(TestParallelCombo(), reg=stuff)
     stuff = bb.add(TestParallelCombo(), reg=stuff)
     cbloq = bb.finalize(stuff=stuff)

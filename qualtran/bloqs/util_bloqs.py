@@ -23,7 +23,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
-from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, QAny, QBit, QDTypeT, Register, Side, Signature, Soquet, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
@@ -43,28 +43,28 @@ class Split(Bloq):
         n: The bitsize of the left register.
     """
 
-    n: int
+    dtype: QDTypeT
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register(name='reg', bitsize=self.n, shape=tuple(), side=Side.LEFT),
-                Register(name='reg', bitsize=1, shape=(self.n,), side=Side.RIGHT),
+                Register(name='reg', dtype=self.dtype, shape=tuple(), side=Side.LEFT),
+                Register(name='reg', dtype=QBit(), shape=(self.dtype.num_qubits,), side=Side.RIGHT),
             ]
         )
 
     def adjoint(self) -> 'Bloq':
-        return Join(n=self.n)
+        return Join(dtype=self.dtype)
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'reg': reg.reshape((self.n, 1))}
+        return None, {'reg': reg.reshape((self.dtype.num_qubits, 1))}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        return {'reg': ints_to_bits(np.array([reg]), self.n)[0]}
+        return {'reg': ints_to_bits(np.array([reg]), self.dtype.num_qubits)[0]}
 
     def add_my_tensors(
         self,
@@ -76,7 +76,9 @@ class Split(Bloq):
     ):
         tn.add(
             qtn.Tensor(
-                data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
+                data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
+                    (2,) * self.dtype.num_qubits + (2**self.dtype.num_qubits,)
+                ),
                 inds=outgoing['reg'].tolist() + [incoming['reg']],
                 tags=['Split', tag],
             )
@@ -97,22 +99,22 @@ class Join(Bloq):
         n: The bitsize of the right register.
     """
 
-    n: int
+    dtype: QDTypeT
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('reg', bitsize=1, shape=(self.n,), side=Side.LEFT),
-                Register('reg', bitsize=self.n, shape=tuple(), side=Side.RIGHT),
+                Register('reg', dtype=QBit(), shape=(self.dtype.num_qubits,), side=Side.LEFT),
+                Register('reg', dtype=self.dtype, shape=tuple(), side=Side.RIGHT),
             ]
         )
 
     def adjoint(self) -> 'Bloq':
-        return Split(n=self.n)
+        return Split(self.dtype)
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'reg': reg.reshape(self.n)}
+        return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -127,7 +129,9 @@ class Join(Bloq):
     ):
         tn.add(
             qtn.Tensor(
-                data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
+                data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
+                    (2,) * self.dtype.num_qubits + (2**self.dtype.num_qubits,)
+                ),
                 inds=incoming['reg'].tolist() + [outgoing['reg']],
                 tags=['Join', tag],
             )
@@ -157,7 +161,7 @@ class Partition(Bloq):
         [user spec]: The registers provided by the `regs` argument. RIGHT by default.
     """
 
-    n: int
+    dtype: QDTypeT
     regs: Tuple[Register, ...]
     partition: bool = True
 
@@ -167,7 +171,7 @@ class Partition(Bloq):
         partitioned = Side.RIGHT if self.partition else Side.LEFT
 
         return Signature(
-            [Register('x', bitsize=self.n, side=lumped)]
+            [Register('x', dtype=self.dtype, side=lumped)]
             + [attrs.evolve(reg, side=partitioned) for reg in self.regs]
         )
 
@@ -262,17 +266,17 @@ class Allocate(Bloq):
     """Allocate an `n` bit register.
 
     Attributes:
-          n: the bitsize of the allocated register.
+          dtype: the type of the allocated register.
     """
 
-    n: int
+    dtype: QDTypeT
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('reg', bitsize=self.n, side=Side.RIGHT)])
+        return Signature([Register('reg', dtype=self.dtype, side=Side.RIGHT)])
 
     def adjoint(self) -> 'Bloq':
-        return Free(n=self.n)
+        return Free(dtype=self.dtype)
 
     def on_classical_vals(self) -> Dict[str, int]:
         return {'reg': 0}
@@ -301,14 +305,14 @@ class Free(Bloq):
         n: the bitsize of the register to be freed.
     """
 
-    n: int
+    dtype: QDTypeT
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('reg', bitsize=self.n, side=Side.LEFT)])
+        return Signature([Register('reg', dtype=self.dtype, side=Side.LEFT)])
 
     def adjoint(self) -> 'Bloq':
-        return Allocate(n=self.n)
+        return Allocate(dtype=self.dtype)
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         if reg != 0:
@@ -336,7 +340,8 @@ class ArbitraryClifford(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('x', bitsize=self.n)])
+        dtype = QAny(self.n) if self.n > 1 else QBit()
+        return Signature([Register('x', dtype=dtype)])
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(clifford=1)

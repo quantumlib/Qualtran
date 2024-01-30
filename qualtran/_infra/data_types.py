@@ -27,22 +27,26 @@ class QDType:
 
 QDTypeT = TypeVar("QDTypeT", bound=QDType)
 
+
 @attrs.frozen
 class QBit(QDType):
-    """A single qubit. The smallest addressable unit of quantum data. """
+    """A single qubit. The smallest addressable unit of quantum data."""
 
     @property
     def num_qubits(self):
         return 1
 
+
 @attrs.frozen
 class QAny(QDType):
-  """Opaque bag-of-qbits type. Should be used sparingly"""
+    """Opaque bag-of-qbits type. Should be used sparingly"""
+
     bitsize: int
 
     @property
     def num_qubits(self):
         return self.bitsize
+
 
 @attrs.frozen
 class QInt(QDType):
@@ -67,24 +71,17 @@ class QUnsignedInt(QDType):
 
     Attributes:
         bitsize: The number of qubits used to represent the integer.
-        mod: The divisor in modular addition. [Is this necessary / what is the usecase for mod < bitsize.]
     """
 
     bitsize: int
-    mod: int
-
-    def __attrs_post_init__(self):
-        if self.mod > self.bitsize:
-            raise ValueError(
-                f"QIntMod mod value must be <= bitsize: mod = {self.mod}, bitsize = {self.bitsize}"
-            )
 
     @property
     def num_qubits(self):
         return self.bitsize
 
+
 @attrs.frozen
-class QBoundedInt(QDType):
+class BoundedQInt(QDType):
     """Integer whose values are bounded within a range.
 
     Attributes:

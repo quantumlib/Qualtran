@@ -54,6 +54,6 @@ Bloqs support multi-dimensional, arbitrary-bitwidth, potentially asymmetric regi
 bloqs can represent high-level computations like "ModularExponentiation" or 
 "Quantum Phase Estimation".
 
-Low-level `Bloq`s where all `Register`s have `bitsize=1`, `shape=(n,)`,
+Low-level `Bloq`s where all `Register`s have `dtype=QBit()`, `shape=(n,)`,
 and `side=Side.THRU` we generally name "gates". Bloqs that satisfy these conditions
 are similar to gates found in other quantum computing libraries.

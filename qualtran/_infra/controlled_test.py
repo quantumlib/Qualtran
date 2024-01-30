@@ -54,7 +54,7 @@ def test_controlled_parallel():
     assert (
         cbloq.debug_text()
         == """\
-C[Split(n=3)]<0>
+C[Split(dtype=QAny(bitsize=3))]<0>
   LeftDangle.control -> control
   LeftDangle.reg -> reg
   control -> C[TestAtom()]<1>.control
@@ -63,24 +63,24 @@ C[Split(n=3)]<0>
   reg[2] -> C[TestAtom()]<3>.q
 --------------------
 C[TestAtom()]<1>
-  C[Split(n=3)]<0>.control -> control
-  C[Split(n=3)]<0>.reg[0] -> q
+  C[Split(dtype=QAny(bitsize=3))]<0>.control -> control
+  C[Split(dtype=QAny(bitsize=3))]<0>.reg[0] -> q
   control -> C[TestAtom()]<2>.control
-  q -> C[Join(n=3)]<4>.reg[0]
+  q -> C[Join(dtype=QAny(bitsize=3))]<4>.reg[0]
 --------------------
 C[TestAtom()]<2>
   C[TestAtom()]<1>.control -> control
-  C[Split(n=3)]<0>.reg[1] -> q
+  C[Split(dtype=QAny(bitsize=3))]<0>.reg[1] -> q
   control -> C[TestAtom()]<3>.control
-  q -> C[Join(n=3)]<4>.reg[1]
+  q -> C[Join(dtype=QAny(bitsize=3))]<4>.reg[1]
 --------------------
 C[TestAtom()]<3>
   C[TestAtom()]<2>.control -> control
-  C[Split(n=3)]<0>.reg[2] -> q
-  control -> C[Join(n=3)]<4>.control
-  q -> C[Join(n=3)]<4>.reg[2]
+  C[Split(dtype=QAny(bitsize=3))]<0>.reg[2] -> q
+  control -> C[Join(dtype=QAny(bitsize=3))]<4>.control
+  q -> C[Join(dtype=QAny(bitsize=3))]<4>.reg[2]
 --------------------
-C[Join(n=3)]<4>
+C[Join(dtype=QAny(bitsize=3))]<4>
   C[TestAtom()]<3>.control -> control
   C[TestAtom()]<3>.q -> reg[2]
   C[TestAtom()]<1>.q -> reg[0]

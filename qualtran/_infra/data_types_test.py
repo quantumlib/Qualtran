@@ -14,7 +14,7 @@
 
 import pytest
 
-from qualtran._infra.data_types import BoundedQInt, QFloat, QInt, QIntMod
+from qualtran._infra.data_types import BoundedQInt, QFixedPoint, QInt, QUnsignedInt
 
 
 def test_qint():
@@ -23,10 +23,8 @@ def test_qint():
 
 
 def test_qintmod():
-    qint_8 = QIntMod(8, 4)
+    qint_8 = QUnsignedInt(8)
     assert qint_8.num_qubits == 8
-    with pytest.raises(ValueError):
-        QIntMod(8, 37)
 
 
 def test_bounded_qint():
@@ -40,6 +38,6 @@ def test_bounded_qint():
         BoundedQInt(3, range(2, -2))
 
 
-def test_qfloat():
-    qfloat_16 = QFloat(1, 15)
-    assert qfloat_16.num_qubits == 16
+def test_qfixedpoint():
+    qfp_16 = QFixedPoint(1, 15)
+    assert qfp_16.num_qubits == 16
