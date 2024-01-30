@@ -25,7 +25,6 @@ electron repulsion integrals.
 from functools import cached_property
 from typing import Dict, Iterable, Set, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import frozen
 
@@ -46,7 +45,7 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     OuterPrepareSingleFactorization,
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
@@ -363,18 +362,17 @@ class SingleFactorizationBlockEncoding(Bloq):
             rot_aa=rot_aa[1],
             sys=sys,
         )
-        # reflect about the inner state preparation registers
-        # The last ctrl is the 'target' register for the MCP gate.
+        # reflect about the inner state preparation registers, controlled on succ_l and l_ne_zero.
         n_n = (self.num_spin_orb // 2 - 1).bit_length()
-        cvs = (1, 1) + (0,) * (2 * n_n + 1)
-        mcp = MultiControlPauli(cvs, cirq.Z)
-        ctrls = bb.join(np.concatenate([[succ_l, l_ne_zero], bb.split(p), bb.split(q), [swap_pq]]))
-        ctrls, spin = bb.add(mcp, controls=ctrls, target=spin)
-        ctrls = bb.split(ctrls)
-        succ_l, l_ne_zero = ctrls[:2]
-        p = bb.join(ctrls[2 : 2 + n_n])
-        q = bb.join(ctrls[2 + n_n : 2 + 2 * n_n])
-        swap_pq = ctrls[-1]
+        succ_l, l_ne_zero, p, q, swap_pq, spin = bb.add(
+            Reflection((1, 1, n_n, n_n, 1, 1), cvs=(1, 1, 0, 0, 0, 0)),
+            reg0=succ_l,
+            reg1=l_ne_zero,
+            reg2=p,
+            reg3=q,
+            reg4=swap_pq,
+            reg5=spin,
+        )
         # apply one-body again
         succ_l, l_ne_zero, succ_pq, l, p, q, swap_pq, spin, rot_aa[1], sys = bb.add(
             one_body,
