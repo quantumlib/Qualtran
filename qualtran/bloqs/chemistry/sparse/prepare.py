@@ -443,10 +443,7 @@ class PrepareSparse(PrepareOracle):
             )  # A14
         qrom_cost = (Toffoli(), num_toff_qrom)
         if self.adjoint:
-            return {
-                (PrepareUniformSuperposition(self.num_non_zero), 1),
-                qrom_cost,
-            }
+            return {(PrepareUniformSuperposition(self.num_non_zero), 1), qrom_cost}
         swap_cost_state_prep = (CSwap(num_bits_spat), 4 + 4)  # 2. pg 39
         ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
 
