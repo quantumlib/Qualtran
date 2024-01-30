@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 from openfermion.resource_estimates.utils import power_two, QI, QR
 
 from qualtran.bloqs.basic_gates import TGate
@@ -23,6 +24,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OuterPrepareDoubleFactorization,
     OutputIndexedData,
 )
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 
 def test_prep_inner(bloq_autotester):
@@ -53,12 +55,18 @@ def test_outerprep_t_counts():
     toff += counts[TGate()] // 4
     # The output size for the QROM for the first state preparation in Eq. (C27)
     eta = power_two(num_aux + 1)
-    nl = (num_aux - 1).bit_length()
+    nl = num_aux.bit_length()
     bp1 = nl + num_bits_state_prep
     cost1a = 2 * (3 * nl + 2 * num_bits_rot_aa - 3 * eta - 9)
     cost1b = QR(num_aux + 1, bp1)[1] + QI(num_aux + 1)[1]
     cost1cd = 2 * (num_bits_state_prep + nl)
-    assert toff == cost1a + cost1b + cost1cd
+    # correct the expected cost by using a different uniform superposition algorithm
+    # https://github.com/quantumlib/Qualtran/issues/611
+    prep = PrepareUniformSuperposition(num_aux + 1)
+    cost1a_mod = prep.call_graph()[1][TGate()] // 4
+    cost1a_mod += prep.adjoint().call_graph()[1][TGate()] // 4
+    assert cost1a != cost1a_mod
+    assert toff == cost1a_mod + cost1b + cost1cd
 
 
 def test_indexed_data_t_counts():
