@@ -58,6 +58,18 @@ def test_util_bloqs():
     assert isinstance(qs3, Soquet)
     no_return = bb.add(Free(10), reg=qs3)
     assert no_return is None
+    assert bb.finalize().tensor_contract() == 1.0
+
+
+def test_free_nonzero_state_vector_leads_to_unnormalized_state():
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.on_each import OnEach
+
+    bb = BloqBuilder()
+    qs1 = bb.add(Allocate(10))
+    qs2 = bb.add(OnEach(10, Hadamard()), q=qs1)
+    no_return = bb.add(Free(10), reg=qs2)
+    assert np.allclose(bb.finalize().tensor_contract(), np.sqrt(1 / 2**10))
 
 
 def test_util_bloqs_tensor_contraction():
