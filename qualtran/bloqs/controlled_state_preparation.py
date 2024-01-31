@@ -37,9 +37,32 @@ class ControlledRotStatePreparation(Bloq):
         rot_reg = bb.join(
             np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_size)])
         )
+        control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
+            rom_vals, bb, control, target_state, rot_reg, phase_gradient
+        )
+        qs = bb.split(rot_reg)
+        for q in qs:
+            bb.add(ZeroEffect(), q=q)
+        return {
+            "control": control,
+            "target_state": target_state,
+            "phase_gradient": phase_gradient,
+        }
+
+    def __prepareAmplitudes(
+        self,
+        rom_vals: ArrayLike,
+        bb: BloqBuilder,
+        control: SoquetT,
+        target_state: SoquetT,
+        rot_reg: SoquetT,
+        phase_gradient: SoquetT,
+    ):
         state_qubits = bb.split(target_state)
         for i in range(self.n_qubits):
-            ctrl_rot_q = ControlledQROMRotateQubit(i, self.rot_reg_size, tuple(rom_vals[i]))
+            ctrl_rot_q = ControlledQROMRotateQubit(
+                i, self.rot_reg_size, tuple(rom_vals[i])
+            )
             state_qubits[i] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[i])
             if i == 0:
                 control, state_qubits[i], rot_reg, phase_gradient = bb.add(
@@ -47,7 +70,7 @@ class ControlledRotStatePreparation(Bloq):
                     prepare_control=control,
                     qubit=state_qubits[i],
                     rot_reg=rot_reg,
-                    phase_gradient=phase_gradient
+                    phase_gradient=phase_gradient,
                 )
             else:
                 sel = bb.join(state_qubits[:i])
@@ -57,20 +80,13 @@ class ControlledRotStatePreparation(Bloq):
                     selection=sel,
                     qubit=state_qubits[i],
                     rot_reg=rot_reg,
-                    phase_gradient=phase_gradient
+                    phase_gradient=phase_gradient,
                 )
                 state_qubits[:i] = bb.split(sel)
             state_qubits[i] = bb.add(Rx(angle=-np.pi / 2), q=state_qubits[i])
 
         target_state = bb.join(state_qubits)
-        qs = bb.split(rot_reg)
-        for q in qs:
-            bb.add(ZeroEffect(), q=q)
-        return {
-            "control": control,
-            "target_state": target_state,
-            "phase_gradient": phase_gradient,
-        }
+        return control, target_state, rot_reg, phase_gradient
 
 
 @attrs.frozen
@@ -168,7 +184,7 @@ class RotationTree:
         return RotationTree(dn_l.sum_total, dn_r.sum_total, dn_l, dn_r)
 
     def getAngle0(self):
-        return 2*np.arccos(np.sqrt(self.__getP0()))
+        return 2 * np.arccos(np.sqrt(self.__getP0()))
 
     def angle2RomValue(angle, rot_reg_size):
         rom_value_decimal = 2**rot_reg_size * (1 - angle / (2 * np.pi))
