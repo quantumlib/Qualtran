@@ -40,6 +40,9 @@ class ControlledRotStatePreparation(Bloq):
         control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
             rom_vals, bb, control, target_state, rot_reg, phase_gradient
         )
+        control, target_state, rot_reg, phase_gradient = self.__preparePhases(
+            rom_vals, bb, control, target_state, rot_reg, phase_gradient
+        )
         qs = bb.split(rot_reg)
         for q in qs:
             bb.add(ZeroEffect(), q=q)
@@ -87,6 +90,34 @@ class ControlledRotStatePreparation(Bloq):
 
         target_state = bb.join(state_qubits)
         return control, target_state, rot_reg, phase_gradient
+
+    def __preparePhases(
+        self,
+        amplitude_rom_vals: ArrayLike,
+        bb: BloqBuilder,
+        control: SoquetT,
+        target_state: SoquetT,
+        rot_reg: SoquetT,
+        phase_gradient: SoquetT,
+    ):
+        rot_ancilla = bb.add(ZeroState())
+        rom_vals = self.__getPhaseROMValues(amplitude_rom_vals)
+        ctrl_rot = ControlledQROMRotateQubit(
+            self.n_qubits, self.rot_reg_size, tuple(rom_vals)
+        )
+        control, target_state, rot_ancilla, rot_reg, phase_gradient = bb.add(
+            ctrl_rot,
+            prepare_control=control,
+            selection=target_state,
+            qubit=rot_ancilla,
+            rot_reg=rot_reg,
+            phase_gradient=phase_gradient
+        )
+        bb.add(ZeroEffect(), q=rot_ancilla)
+        return control, target_state, rot_reg, phase_gradient
+
+    def __getPhaseROMValues(self, amplitude_rom_vals):
+        return [0] * (2**self.n_qubits)
 
 
 @attrs.frozen
