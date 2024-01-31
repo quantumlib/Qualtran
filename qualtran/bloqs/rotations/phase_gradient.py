@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, GateWithRegisters, Register, Side, SoquetT, Signature
 from qualtran.bloqs.basic_gates import Hadamard, PlusState, PlusEffect, MinusState, MinusEffect, Toffoli
-from qualtran.bloqs.basic_gates.rotation import PlusState, CZPowGate, ZPowGate
+from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 

@@ -46,7 +46,9 @@ def test_phase_gradient_state(n: int):
 
 @pytest.mark.parametrize('n', [6, 7, 8])
 def test_phase_gradient_state_tensor_contract(n: int):
-    state_coefs = np.array([np.exp(1j*2*np.pi*i/(2**n)) for i in range(n)])
+    state_coefs = np.array(
+        [np.exp(1j * 2 * np.pi * i / (2**n)) / np.power(2, n / 2) for i in range(2**n)]
+    )
     gate = PhaseGradientState(n)
     assert np.allclose(state_coefs, gate.tensor_contract())
     bb = BloqBuilder()
