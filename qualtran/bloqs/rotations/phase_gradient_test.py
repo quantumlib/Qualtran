@@ -15,6 +15,7 @@ import cirq
 import numpy as np
 import pytest
 
+from qualtran import BloqBuilder
 from qualtran.bloqs.rotations.phase_gradient import (
     AddIntoPhaseGrad,
     AddScaledValIntoPhaseReg,
@@ -41,6 +42,18 @@ def test_phase_gradient_state(n: int):
     )
     assert gate.t_complexity().rotations == n - 2
     assert gate.t_complexity().clifford == n + 2
+
+
+@pytest.mark.parametrize('n', [6, 7, 8])
+def test_phase_gradient_state_tensor_contract(n: int):
+    state_coefs = np.array([np.exp(1j*2*np.pi*i/(2**n)) for i in range(n)])
+    gate = PhaseGradientState(n)
+    assert np.allclose(state_coefs, gate.tensor_contract())
+    bb = BloqBuilder()
+    wires = bb.add(PhaseGradientState(n))
+    bb.add(PhaseGradientState(bitsize=n, adjoint=True), phase_grad=wires)
+    circuit = bb.finalize()
+    assert np.isclose(circuit.tensor_contract(), 1)
 
 
 @pytest.mark.parametrize('n', [6, 7, 8])
