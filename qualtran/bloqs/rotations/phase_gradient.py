@@ -17,10 +17,11 @@ from typing import Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
+import numpy as np
 from numpy.typing import NDArray
 import numpy as np
 
-from qualtran import BloqBuilder, GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran import BloqBuilder, GateWithRegisters, Register, Side, SoquetT, Signature
 from qualtran.bloqs.basic_gates import Hadamard, PlusState, PlusEffect, MinusState, MinusEffect, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
@@ -144,7 +145,6 @@ class PhaseGradientState(GateWithRegisters):
                 qubits[i] = bb.add(ZPowGate(exponent=1 / 2**i), q=qubits[i])
             phase_grad = bb.join(np.array(qubits))
             return {"phase_grad": phase_grad}
-        
 
     def __pow__(self, power):
         if power == 1:
