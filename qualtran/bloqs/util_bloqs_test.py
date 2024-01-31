@@ -60,6 +60,17 @@ def test_util_bloqs():
     assert no_return is None
 
 
+def test_util_bloqs_tensor_contraction():
+    bb = BloqBuilder()
+    qs1 = bb.add(Allocate(10))
+    qs2 = bb.add(Split(10), reg=qs1)
+    qs3 = bb.add(Join(10), reg=qs2)
+    cbloq = bb.finalize(out=qs3)
+    expected = np.zeros(2**10)
+    expected[0] = 1
+    np.testing.assert_allclose(cbloq.tensor_contract(), expected)
+
+
 @frozen
 class TestPartition(Bloq):
     test_bloq: Bloq
