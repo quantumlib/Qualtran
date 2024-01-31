@@ -33,7 +33,6 @@ where $\Xi^{(l)} $ is the rank of second factorization.
 from functools import cached_property
 from typing import Dict, Iterable, Set, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
@@ -47,7 +46,7 @@ from qualtran.bloqs.chemistry.df.prepare import (
     OutputIndexedData,
 )
 from qualtran.bloqs.chemistry.df.select_bloq import ProgRotGateArray
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
@@ -377,7 +376,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         sys: SoquetT,
     ) -> Dict[str, 'SoquetT']:
         succ_l, l_ne_zero, theta, succ_p = ctrl
-        num_bits_xi = (self.num_spin_orb // 2 - 1).bit_length()  # C14
+        n_n = (self.num_spin_orb // 2 - 1).bit_length()  # C14
         outer_prep = OuterPrepareDoubleFactorization(
             self.num_aux,
             num_bits_state_prep=self.num_bits_state_prep,
@@ -416,13 +415,9 @@ class DoubleFactorizationBlockEncoding(Bloq):
             sys=sys,
         )
         # The last ctrl is the 'target' register for the MCP gate.
-        cvs = (1, 1) + (0,) * num_bits_xi
-        mcp = MultiControlPauli(cvs, cirq.Z)
-        ctrls = bb.join(np.concatenate([[succ_l, l_ne_zero], bb.split(p)]))
-        ctrls, spin = bb.add(mcp, controls=ctrls, target=spin)
-        ctrls = bb.split(ctrls)
-        succ_l, l_ne_zero = ctrls[:2]
-        p = bb.join(ctrls[2:])
+        succ_l, l_ne_zero, p, spin = bb.add(
+            Reflection((1, 1, n_n, 1), (1, 1, 0, 0)), reg0=succ_l, reg1=l_ne_zero, reg2=p, reg3=spin
+        )
         succ_l, l_ne_zero, succ_p, p, rot_aa, spin, xi, offset, rot, rotations, sys = bb.add(
             one_body,
             succ_l=succ_l,
