@@ -44,6 +44,15 @@ def test_phase_gradient_state(n: int):
 
 
 @pytest.mark.parametrize('n', [6, 7, 8])
+@pytest.mark.parametrize('t', [+0.124, -0.124, -1, +1])
+def test_phase_gradient_state_tensor_contract(n: int, t: float):
+    omega = np.exp(np.pi * 2 * t * 1j / (2**n))
+    state_coefs = 1 / np.sqrt(2**n) * np.array([omega**k for k in range(2**n)])
+    bloq = PhaseGradientState(n, t)
+    np.testing.assert_allclose(state_coefs, bloq.tensor_contract())
+
+
+@pytest.mark.parametrize('n', [6, 7, 8])
 @pytest.mark.parametrize('exponent', [-0.5, 1, 1 / 10])
 @pytest.mark.parametrize('controlled', [True, False])
 def test_phase_gradient_gate(n: int, exponent, controlled):
