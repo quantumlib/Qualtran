@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 import abc
-from typing import TypeVar
+from typing import TypeVar, Union
 
 import attrs
+import sympy
 
 
 class QDType:
@@ -41,7 +42,7 @@ class QBit(QDType):
 class QAny(QDType):
     """Opaque bag-of-qbits type. Should be used sparingly"""
 
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
 
     @property
     def num_qubits(self):
@@ -56,7 +57,7 @@ class QInt(QDType):
         bitsize: The number of qubits used to represent the integer.
     """
 
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
 
     @property
     def num_qubits(self):
@@ -89,7 +90,7 @@ class BoundedQInt(QDType):
         iteration_range: The
     """
 
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
     iteration_range: range
 
     def __attrs_post_init__(self):
@@ -120,8 +121,8 @@ class QFixedPoint(QDType):
         frac_bitsize: The number of qubits used to represent the fractional part of the float.
     """
 
-    int_bitsize: int
-    frac_bitsize: int
+    int_bitsize: Union[int, sympy.Expr]
+    frac_bitsize: Union[int, sympy.Expr]
 
     @property
     def num_qubits(self):

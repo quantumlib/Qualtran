@@ -18,7 +18,7 @@ from typing import Any, Dict, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, CompositeBloq, DecomposeTypeError, Signature, SoquetT
+from qualtran import Bloq, bloq_example, CompositeBloq, DecomposeTypeError, QBit, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -47,7 +47,7 @@ class Hadamard(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(q=1)
+        return Signature.build(q=QBit())
 
     def adjoint(self) -> 'Bloq':
         return self

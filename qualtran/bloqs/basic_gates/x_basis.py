@@ -161,7 +161,7 @@ class XGate(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(q=1)
+        return Signature.build(q=QBit())
 
     def adjoint(self) -> 'Bloq':
         return self

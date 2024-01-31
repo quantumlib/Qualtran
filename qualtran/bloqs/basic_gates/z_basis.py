@@ -222,7 +222,7 @@ class ZGate(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(q=1)
+        return Signature.build(q=QBit())
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -304,7 +304,7 @@ class _IntVector(Bloq):
             xs.append(x)
         xs = np.array(xs)
 
-        return {'val': bb.join(xs)}
+        return {'val': bb.join(xs, dtype=QUnsignedInt(2))}
 
     @staticmethod
     def _build_composite_effect(

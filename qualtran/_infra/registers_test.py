@@ -78,7 +78,7 @@ def test_selection_registers_consistent():
 
 
 def test_registers_getitem_raises():
-    g = Signature.build(a=4, b=3, c=2)
+    g = Signature.build(a=QAny(4), b=QAny(3), c=QAny(2))
     with pytest.raises(TypeError, match="indices must be integers or slices"):
         _ = g[2.5]
 
@@ -128,7 +128,7 @@ def test_signature():
 
 def test_signature_build():
     sig1 = Signature([Register[QAny]("r1", QAny(5)), Register[QAny]("r2", QAny(2))])
-    sig2 = Signature.build(r1=5, r2=2)
+    sig2 = Signature.build(r1=QAny(5), r2=QAny(2))
     assert sig1 == sig2
 
 

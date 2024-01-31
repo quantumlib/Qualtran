@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import BloqBuilder, Signature
+from qualtran import BloqBuilder, QBit, Signature
 from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
 from qualtran.bloqs.basic_gates.cnot import _cnot
 from qualtran.drawing import get_musical_score_data
@@ -44,7 +44,7 @@ def test_cnot_tensor():
 
 
 def test_cnot_cbloq_tensor_vs_cirq():
-    bb, soqs = BloqBuilder.from_signature(Signature.build(c=1, t=1))
+    bb, soqs = BloqBuilder.from_signature(Signature.build(c=QBit(), t=QBit()))
     c, t = bb.add(CNOT(), ctrl=soqs['c'], target=soqs['t'])
     cbloq = bb.finalize(c=c, t=t)
     matrix = cbloq.tensor_contract()

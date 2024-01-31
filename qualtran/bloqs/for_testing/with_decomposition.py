@@ -17,7 +17,7 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, QAny, Signature, Soquet
+from qualtran import Bloq, QAny, QBit, Signature, Soquet
 from qualtran.bloqs.for_testing.atom import TestAtom
 
 
@@ -27,7 +27,7 @@ class TestSerialCombo(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(reg=1)
+        return Signature.build(reg=QBit())
 
     def build_composite_bloq(self, bb: 'BloqBuilder', reg: 'SoquetT') -> Dict[str, 'Soquet']:
         for i in range(3):
@@ -41,7 +41,7 @@ class TestParallelCombo(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(reg=3)
+        return Signature.build(reg=QAny(3))
 
     def build_composite_bloq(self, bb: 'BloqBuilder', reg: 'SoquetT') -> Dict[str, 'Soquet']:
         reg = bb.split(reg)

@@ -17,7 +17,7 @@ from typing import Dict
 import cirq
 import numpy as np
 
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, QBit, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, PlusState, TGate
 
 
@@ -54,7 +54,7 @@ def test_tensors():
 class TestTStateMaker(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=1)
+        return Signature.build(x=QBit())
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> Dict[str, 'SoquetT']:
         x = bb.add(Hadamard(), q=x)

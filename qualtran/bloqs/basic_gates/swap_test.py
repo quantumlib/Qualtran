@@ -18,7 +18,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, DecomposeTypeError
+from qualtran import BloqBuilder, DecomposeTypeError, QBit
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import (
     CSwap,
@@ -73,8 +73,8 @@ def _set_ctrl_two_bit_swap(ctrl_bit):
 
     bb = BloqBuilder()
     q0 = bb.add(states[ctrl_bit])
-    q1 = bb.add_register('q1', dtype=QBit(), $4)
-    q2 = bb.add_register('q2', dtype=QBit(), $4)
+    q1 = bb.add_register('q1', dtype=QBit())
+    q2 = bb.add_register('q2', dtype=QBit())
     q0, q1, q2 = bb.add(TwoBitCSwap(), ctrl=q0, x=q1, y=q2)
     bb.add(effs[ctrl_bit], q=q0)
     return bb.finalize(q1=q1, q2=q2)
@@ -111,8 +111,8 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
 
     bb = BloqBuilder()
     q0 = bb.add(states[ctrl_bit])
-    q1 = bb.add_register('q1', dtype=QBit(), $4)
-    q2 = bb.add_register('q2', dtype=QBit(), $4)
+    q1 = bb.add_register('q1', dtype=QBit())
+    q2 = bb.add_register('q2', dtype=QBit())
     q0, q1, q2 = bb.add(bloq, ctrl=q0, x=q1, y=q2)
     bb.add(effs[ctrl_bit], q=q0)
     return bb.finalize(q1=q1, q2=q2)

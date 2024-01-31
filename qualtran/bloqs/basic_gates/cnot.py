@@ -25,6 +25,7 @@ from qualtran import (
     bloq_example,
     CompositeBloq,
     DecomposeTypeError,
+    QBit,
     Signature,
     Soquet,
     SoquetT,
@@ -57,7 +58,7 @@ class CNOT(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(ctrl=1, target=1)
+        return Signature.build(ctrl=QBit(), target=QBit())
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")

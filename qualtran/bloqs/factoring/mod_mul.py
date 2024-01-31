@@ -18,7 +18,17 @@ from typing import Dict, Set, Union
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QBit,
+    QUnsignedInt,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
@@ -54,7 +64,7 @@ class CtrlModMul(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(ctrl=1, x=self.bitsize)
+        return Signature.build(ctrl=QBit(), x=QUnsignedInt(self.bitsize))
 
     def _Add(self, k: Union[int, sympy.Expr]):
         """Helper method to forward attributes to `CtrlScaleModAdd`."""

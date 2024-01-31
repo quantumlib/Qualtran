@@ -29,6 +29,8 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     GateWithRegisters,
+    QAny,
+    QBit,
     Signature,
     SoquetT,
 )
@@ -69,7 +71,7 @@ class TwoBitSwap(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=1, y=1)
+        return Signature.build(x=QBit(), y=QBit())
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'
@@ -114,7 +116,7 @@ class TwoBitCSwap(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(ctrl=1, x=1, y=1)
+        return Signature.build(ctrl=QBit(), x=QBit(), y=QBit())
 
     def as_cirq_op(
         self,
@@ -188,7 +190,7 @@ class CSwap(GateWithRegisters):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+        return Signature.build(ctrl=QBit(), x=QAny(self.bitsize), y=QAny(self.bitsize))
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
@@ -202,7 +204,11 @@ class CSwap(GateWithRegisters):
         for i in range(self.bitsize):
             ctrl, xs[i], ys[i] = bb.add(TwoBitCSwap(), ctrl=ctrl, x=xs[i], y=ys[i])
 
-        return {'ctrl': ctrl, 'x': bb.join(xs), 'y': bb.join(ys)}
+        return {
+            'ctrl': ctrl,
+            'x': bb.join(xs, dtype=QAny(self.bitsize)),
+            'y': bb.join(ys, dtype=QAny(self.bitsize)),
+        }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TwoBitCSwap(), self.bitsize)}

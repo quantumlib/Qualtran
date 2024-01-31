@@ -189,18 +189,14 @@ class Signature:
         self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
-    def build(cls, **registers: int) -> 'Signature':
+    def build(cls, **registers: QDTypeT) -> 'Signature':
         """Construct a Signature comprised of simple thru registers.
 
         Args:
-            registers: keyword arguments mapping register name to bitsize. All registers
-                will be 0-dimensional and THRU. If the bitsize > 1 then the
-                register will have type QAny else it will have type QBit.
+            registers: keyword arguments mapping register name to QDType. All registers
+                will be 0-dimensional and THRU.
         """
-        return cls(
-            Register(name=k, dtype=QAny(bitsize=v)) if v > 1 else Register(name=k, dtype=QBit())
-            for k, v in registers.items()
-        )
+        return cls(Register(name=k, dtype=v) for k, v in registers.items())
 
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""

@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloq, DecomposeTypeError, Signature, SoquetT
+from qualtran import Bloq, CompositeBloq, DecomposeTypeError, Signature, SoquetT, QBit
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ class TestAtom(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(q=1)
+        return Signature.build(q=QBit())
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -83,7 +83,7 @@ class TestAtom(Bloq):
 class TestTwoBitOp(Bloq):
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(ctrl=1, target=1)
+        return Signature.build(ctrl=QBit(), target=QBit())
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")

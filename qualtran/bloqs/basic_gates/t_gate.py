@@ -19,7 +19,7 @@ import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Signature, SoquetT
+from qualtran import Bloq, QBit, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -70,10 +70,10 @@ class TGate(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(q=1)
+        return Signature.build(q=QBit())
 
     def t_complexity(self) -> 'TComplexity':
-        return TComplexity(t=1)
+        return TComplexity(t=QBit())
 
     def add_my_tensors(
         self,

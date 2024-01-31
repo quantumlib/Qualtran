@@ -19,7 +19,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, Signature, SoquetT
+from qualtran import Bloq, QBit, Signature, SoquetT
 
 if TYPE_CHECKING:
     import cirq
@@ -38,7 +38,7 @@ class YGate(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(q=1)
+        return Signature.build(q=QBit())
 
     def add_my_tensors(
         self,

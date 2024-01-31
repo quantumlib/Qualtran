@@ -50,7 +50,7 @@ from qualtran.bloqs.util_bloqs import Join
 
 
 def _manually_make_test_cbloq_cxns():
-    signature = Signature.build(q1=1, q2=1)
+    signature = Signature.build(q1=QBit(), q2=QBit())
     q1, q2 = signature
     tcn = TestTwoBitOp()
     control, target = tcn.signature
@@ -71,7 +71,7 @@ def _manually_make_test_cbloq_cxns():
 class TestTwoCNOT(Bloq):
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(q1=1, q2=1)
+        return Signature.build(q1=QBit(), q2=QBit())
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q1: 'Soquet', q2: 'Soquet'
@@ -173,7 +173,7 @@ def test_bb_composite_bloq():
 
 
 def test_bloq_builder():
-    signature = Signature.build(x=1, y=1)
+    signature = Signature.build(x=QBit(), y=QBit())
     x_reg, y_reg = signature
     bb, initial_soqs = BloqBuilder.from_signature(signature)
     assert initial_soqs == {'x': Soquet(LeftDangle, x_reg), 'y': Soquet(LeftDangle, y_reg)}
