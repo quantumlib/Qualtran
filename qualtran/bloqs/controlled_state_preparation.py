@@ -6,7 +6,7 @@ from numpy.typing import ArrayLike
 
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT, Side, Register
 from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.basic_gates import ZeroState, ZeroEffect
+from qualtran.bloqs.basic_gates import OneState, OneEffect, ZeroState, ZeroEffect
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.basic_gates.rotation import Rx
 
@@ -100,7 +100,7 @@ class ControlledRotStatePreparation(Bloq):
         rot_reg: SoquetT,
         phase_gradient: SoquetT,
     ):
-        rot_ancilla = bb.add(ZeroState())
+        rot_ancilla = bb.add(OneState())
         rom_vals = self.__getPhaseROMValues(amplitude_rom_vals)
         ctrl_rot = ControlledQROMRotateQubit(
             self.n_qubits, self.rot_reg_size, tuple(rom_vals)
@@ -113,11 +113,24 @@ class ControlledRotStatePreparation(Bloq):
             rot_reg=rot_reg,
             phase_gradient=phase_gradient
         )
-        bb.add(ZeroEffect(), q=rot_ancilla)
+        bb.add(OneEffect(), q=rot_ancilla)
         return control, target_state, rot_reg, phase_gradient
 
     def __getPhaseROMValues(self, amplitude_rom_vals):
-        return [0] * (2**self.n_qubits)
+        """As we are using the equivalent to controlled Z to do the rotations instead of Rz, there
+        is a phase offset for each coefficient that has to be corrected. This offset is half of the
+        turn angle applied.
+        """
+        offset_angles = [0]*(2**self.n_qubits)
+        for i in range(self.n_qubits):
+            for j in range(i+1):
+                item_range = 2**(self.n_qubits-i)
+                offset = np.pi*(1-amplitude_rom_vals[i][j]/(2**self.rot_reg_size))
+                for k in range(item_range*j, item_range*(j+1)):
+                    offset_angles[k] += offset
+        angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
+        rom_values = [RotationTree.angle2RomValue(a, self.rot_reg_size) for a in angles]
+        return rom_values
 
 
 @attrs.frozen
