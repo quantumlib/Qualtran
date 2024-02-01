@@ -56,6 +56,9 @@ class PrepareUniformSuperposition(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build(ctrl=len(self.cvs), target=(self.n - 1).bit_length())
 
+    def short_name(self) -> str:
+        return r'$\sum_l |l\rangle$'
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         control_symbols = ["@" if cv else "@(0)" for cv in self.cvs]
         target_symbols = ['target'] * self.signature.get_left('target').total_bits()
@@ -108,9 +111,6 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
         yield cirq.H.on_each(*logL_qubits)
         context.qubit_manager.qfree([*and_target, *and_ancilla])
-
-    def short_name(self) -> str:
-        return 'uniform'
 
 
 @bloq_example

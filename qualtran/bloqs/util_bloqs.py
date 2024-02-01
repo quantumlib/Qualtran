@@ -286,6 +286,18 @@ class Allocate(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
 
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        data = np.zeros(1 << self.n)
+        data[0] = 1
+        tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
+
 
 @frozen
 class Free(Bloq):

@@ -19,6 +19,9 @@ from typing import Dict
 import attrs
 
 from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Signature, SoquetT
+from qualtran._infra.quantum_graph import Soquet
+from qualtran.drawing import WireSymbol
+from qualtran.drawing.musical_score import TextBox
 
 
 @attrs.frozen
@@ -48,6 +51,9 @@ class OnEach(GateWithRegisters):
 
     def short_name(self) -> str:
         return rf'{self.gate.short_name()}⨂{self.n}'
+
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        return TextBox(self.gate.short_name())
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> Dict[str, SoquetT]:
         qs = bb.split(q)

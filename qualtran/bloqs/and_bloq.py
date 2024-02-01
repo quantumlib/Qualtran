@@ -35,8 +35,10 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqDocSpec,
+    CompositeBloq,
     GateWithRegisters,
     Register,
     Side,
@@ -46,6 +48,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
@@ -216,7 +219,7 @@ _AND_DOC = BloqDocSpec(
 
 
 @frozen
-class MultiAnd(GateWithRegisters):
+class MultiAnd(Bloq):
     """A many-bit (multi-control) 'and' operation.
 
     Args:
@@ -294,6 +297,9 @@ class MultiAnd(GateWithRegisters):
             quregs['target'].flatten(),
         )
         yield self._decompose_via_tree(control, self.cvs, ancilla, *target)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
 
     def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
         pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv

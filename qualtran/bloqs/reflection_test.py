@@ -12,17 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Bi-directional interop between Qualtran & Cirq using Cirq-FT.
+from qualtran.bloqs.basic_gates import TGate
+from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.bloqs.reflection import _reflection
+from qualtran.testing import execute_notebook
 
-isort:skip_file
-"""
 
-from ._cirq_to_bloq import (
-    CirqQuregT,
-    CirqGateAsBloq,
-    CirqGateAsBloqBase,
-    cirq_optree_to_cbloq,
-    decompose_from_cirq_style_method,
-)
+def test_reflection(bloq_autotester):
+    bloq_autotester(_reflection)
 
-from ._bloq_to_cirq import BloqAsCirqGate
+
+def test_reflection_t_counts():
+    counts = _reflection().call_graph()[1]
+    counts_decomp = _reflection().decompose_bloq().call_graph()[1]
+    assert counts[TGate()] == counts_decomp[TGate()]
+
+
+def test_notebook():
+    execute_notebook('reflection')

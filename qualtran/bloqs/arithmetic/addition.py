@@ -16,14 +16,27 @@ from functools import cached_property
 from typing import Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
+import numpy as np
 import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Side, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    GateWithRegisters,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import Toffoli, XGate
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -66,8 +79,15 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         a, b = register_values
         return a, a + b
 
-    def on_classical_vals(self, a: int, b: int) -> Dict[str, 'ClassicalValT']:
-        return {'a': a, 'b': a + b}
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        # TODO: support classical value overflows behind the scenes
+        # https://github.com/quantumlib/Qualtran/issues/607
+        assert self.bitsize <= 64
+        # TODO: account for signed integer addition
+        # https://github.com/quantumlib/Qualtran/issues/606
+        return {'a': a, 'b': np.uint64(a) + np.uint64(b)}
 
     def short_name(self) -> str:
         return "a+b"
@@ -265,6 +285,120 @@ _ADD_OOP_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder',
     examples=(_add_oop_symb, _add_oop_small, _add_oop_large),
 )
+
+
+@frozen
+class SimpleAddConstant(Bloq):
+    r"""Takes |x> to |x + k> for a classical integer `k`.
+
+    Applies addition to input register `|x>` given classical integer 'k'.
+
+    This is the simple version of constant addition because it involves simply converting the
+    classical integer into a quantum parameter and using quantum-quantum addition as opposed to
+    designing a bespoke circuit for constant addition based on the classical parameter.
+
+    Args:
+        bitsize: Number of bits used to represent each integer.
+        k: The classical integer value to be added to x.
+        cvs: A tuple of control values. Each entry specifies whether that control line is a
+            "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
+        signed: A boolean condition which controls whether the x register holds a value represented
+            in 2's Complement or Unsigned. This affects the ability to add a negative constant.
+
+    Registers:
+        x: A bitsize-sized input register (register x above).
+
+    References:
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580) Fig 2a
+    """
+
+    bitsize: int
+    k: int
+    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
+    signed: bool
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        if len(self.cvs) > 0:
+            return Signature(
+                [
+                    Register('ctrls', bitsize=1, shape=(len(self.cvs),)),
+                    Register('x', bitsize=self.bitsize),
+                ]
+            )
+        else:
+            return Signature([Register('x', bitsize=self.bitsize)])
+
+    def on_classical_vals(
+        self, x: 'ClassicalValT', **vals: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if len(self.cvs) > 0:
+            ctrls = vals['ctrls']
+        else:
+            return {'x': x + self.k}
+
+        if (self.cvs == ctrls).all():
+            x = x + self.k
+
+        return {'ctrls': ctrls, 'x': x}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: SoquetT, **regs: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+
+        # Assign registers to variables and allocate ancilla bits for classical integer k.
+        if len(self.cvs) > 0:
+            ctrls = regs['ctrls']
+        else:
+            ctrls = None
+        k = bb.allocate(n=self.bitsize)
+
+        # Get binary representation of k and split k into separate wires.
+        k_split = bb.split(k)
+        if self.signed:
+            binary_rep = list(iter_bits_twos_complement(self.k, self.bitsize))
+        else:
+            binary_rep = list(iter_bits(self.k, self.bitsize))
+
+        # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
+        # controlled.
+        for i in range(self.bitsize):
+            if binary_rep[i] == 1:
+                if len(self.cvs) > 0:
+                    ctrls, k_split[i] = bb.add(
+                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                    )
+                else:
+                    k_split[i] = bb.add(XGate(), q=k_split[i])
+
+        # Rejoin the qubits representing k for in-place addition.
+        k = bb.join(k_split)
+        k, x = bb.add(Add(bitsize=self.bitsize), a=k, b=x)
+
+        # Resplit the k qubits in order to undo the original bit flips to go from the binary
+        # representation back to the zero state.
+        k_split = bb.split(k)
+        for i in range(self.bitsize):
+            if binary_rep[i] == 1:
+                if len(self.cvs) > 0:
+                    ctrls, k_split[i] = bb.add(
+                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                    )
+                else:
+                    k_split[i] = bb.add(XGate(), q=k_split[i])
+
+        # Free the ancilla qubits.
+        k = bb.join(k_split)
+        bb.free(k)
+
+        # Return the output registers.
+        if len(self.cvs) > 0:
+            return {'ctrls': ctrls, 'x': x}
+        else:
+            return {'x': x}
+
+    def short_name(self) -> str:
+        return f'x += {self.k}'
 
 
 @frozen(auto_attribs=True)

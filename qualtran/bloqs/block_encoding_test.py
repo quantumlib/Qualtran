@@ -19,7 +19,6 @@ from qualtran.bloqs.block_encoding import (
     _black_box_prepare,
     _black_box_select,
     _chebyshev_poly,
-    _reflection,
 )
 from qualtran.testing import execute_notebook
 
@@ -34,16 +33,6 @@ def test_black_box_prepare(bloq_autotester):
 
 def test_black_box_select(bloq_autotester):
     bloq_autotester(_black_box_select)
-
-
-def test_reflection(bloq_autotester):
-    bloq_autotester(_reflection)
-
-
-def test_reflection_t_counts():
-    counts = _reflection().call_graph()[1]
-    counts_decomp = _reflection().decompose_bloq().call_graph()[1]
-    assert counts[TGate()] == counts_decomp[TGate()]
 
 
 def test_chebyshev(bloq_autotester):

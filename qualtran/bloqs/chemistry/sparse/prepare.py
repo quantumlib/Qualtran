@@ -33,9 +33,6 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
-from qualtran.bloqs.chemistry.black_boxes import (
-    PrepareUniformSuperposition as BBPrepareUniformSuperposition,
-)
 from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.bloqs.select_and_prepare import PrepareOracle
@@ -446,15 +443,12 @@ class PrepareSparse(PrepareOracle):
             )  # A14
         qrom_cost = (Toffoli(), num_toff_qrom)
         if self.adjoint:
-            return {
-                (BBPrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
-                qrom_cost,
-            }
+            return {(PrepareUniformSuperposition(self.num_non_zero), 1), qrom_cost}
         swap_cost_state_prep = (CSwap(num_bits_spat), 4 + 4)  # 2. pg 39
         ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
 
         return {
-            (BBPrepareUniformSuperposition(self.num_non_zero, self.num_bits_rot_aa), 1),
+            (PrepareUniformSuperposition(self.num_non_zero), 1),
             qrom_cost,
             swap_cost_state_prep,
             ineq_cost_state_prep,
