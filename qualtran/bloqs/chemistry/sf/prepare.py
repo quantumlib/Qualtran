@@ -21,7 +21,8 @@ from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.arithmetic.conversions import ToContiguousIndex
 from qualtran.bloqs.basic_gates import CSwap, Toffoli
-from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition, QROAM, QROAMTwoRegs
+from qualtran.bloqs.chemistry.black_boxes import QROAM, QROAMTwoRegs
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -139,7 +140,7 @@ class OuterPrepareSingleFactorization(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1.a
-        cost_uni = (PrepareUniformSuperposition(self.num_aux + 1, self.num_bits_rot_aa), 1)
+        cost_uni = (PrepareUniformSuperposition(self.num_aux + 1), 1)
         num_bits_l = (self.num_aux + 1).bit_length()
         output_size = num_bits_l + self.num_bits_state_prep + 2
         # 1.b

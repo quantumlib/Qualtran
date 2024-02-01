@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from openfermion.resource_estimates.df.compute_cost_df import compute_cost
+from openfermion.resource_estimates.utils import power_two
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.df.double_factorization import (
@@ -20,6 +21,7 @@ from qualtran.bloqs.chemistry.df.double_factorization import (
     DoubleFactorizationBlockEncoding,
     DoubleFactorizationOneBody,
 )
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.testing import execute_notebook
 
 
@@ -81,6 +83,15 @@ def test_compare_cost_to_openfermion():
     qual_cost = (
         counts[TGate()] - inner_prep_qrom_diff - prog_rot_qrom_diff + missing_toffoli - swap_cost
     )
+    # correct the expected cost by using a different uniform superposition algorithm
+    # see: https://github.com/quantumlib/Qualtran/issues/611
+    eta = power_two(num_aux + 1)
+    cost1a = 4 * 2 * (3 * nl - 3 * eta + 2 * 7 - 9)
+    prep = PrepareUniformSuperposition(num_aux + 1)
+    cost1a_mod = prep.call_graph()[1][TGate()]
+    cost1a_mod += prep.adjoint().call_graph()[1][TGate()]
+    delta_uni_prep = cost1a_mod - cost1a
+    qual_cost -= delta_uni_prep
     inner_refl = num_bits_state_prep + 1
     walk_refl = nl + nxi + num_bits_state_prep + 1
     qpe_toff = 2

@@ -210,7 +210,6 @@ target0_1: ───────────────X───────X�
 
 def test_qrom_wire_symbols():
     qrom = QROM.build([3, 3, 3, 3])
-
     assert_wire_symbols_match_expected(qrom, ['In', 'data_a'])
 
     qrom = QROM.build([3, 3, 3, 3], [2, 2, 2, 2])

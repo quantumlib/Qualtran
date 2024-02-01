@@ -45,17 +45,12 @@ def test_phase_gradient_state(n: int):
 
 
 @pytest.mark.parametrize('n', [6, 7, 8])
-def test_phase_gradient_state_tensor_contract(n: int):
-    state_coefs = np.array(
-        [np.exp(1j * 2 * np.pi * i / (2**n)) / np.power(2, n / 2) for i in range(2**n)]
-    )
-    gate = PhaseGradientState(n)
-    assert np.allclose(state_coefs, gate.tensor_contract())
-    bb = BloqBuilder()
-    wires = bb.add(PhaseGradientState(n))
-    bb.add(PhaseGradientState(bitsize=n, adjoint=True), phase_grad=wires)
-    circuit = bb.finalize()
-    assert np.isclose(circuit.tensor_contract(), 1)
+@pytest.mark.parametrize('t', [+0.124, -0.124, -1, +1])
+def test_phase_gradient_state_tensor_contract(n: int, t: float):
+    omega = np.exp(np.pi * 2 * t * 1j / (2**n))
+    state_coefs = 1 / np.sqrt(2**n) * np.array([omega**k for k in range(2**n)])
+    bloq = PhaseGradientState(n, t)
+    np.testing.assert_allclose(state_coefs, bloq.tensor_contract())
 
 
 @pytest.mark.parametrize('n', [6, 7, 8])
