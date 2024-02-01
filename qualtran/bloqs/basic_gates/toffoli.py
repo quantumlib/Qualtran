@@ -17,7 +17,7 @@ from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.drawing import WireSymbol
 
 
 @frozen
@@ -74,3 +75,11 @@ class Toffoli(Bloq):
 
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from qualtran.drawing import Circle, ModPlus
+        if soq.reg.name == 'ctrl':
+            return Circle(filled=True)
+        elif soq.reg.name == 'target':
+            return ModPlus()
+        raise ValueError(f'Bad wire symbol soquet: {soq}')
