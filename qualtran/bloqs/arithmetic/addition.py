@@ -24,14 +24,18 @@ from numpy.typing import NDArray
 from qualtran import (
     Bloq,
     bloq_example,
-    BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
+    QAny,
+    QBit,
+    QInt,
+    QUnsignedInt,
     Register,
     Side,
     Signature,
     SoquetT,
 )
+from qualtran._infra.data_types import QUnsignedInt
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
@@ -67,7 +71,7 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize)
+        return Signature.build(a=QInt(self.bitsize), b=QInt(self.bitsize))
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, [2] * self.bitsize
@@ -204,9 +208,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         side = Side.LEFT if self.adjoint else Side.RIGHT
         return Signature(
             [
-                Register('a', self.bitsize),
-                Register('b', self.bitsize),
-                Register('c', self.bitsize + 1, side=side),
+                Register('a', QInt(self.bitsize)),
+                Register('b', QInt(self.bitsize)),
+                Register('c', QInt(self.bitsize + 1), side=side),
             ]
         )
 
@@ -322,12 +326,12 @@ class SimpleAddConstant(Bloq):
         if len(self.cvs) > 0:
             return Signature(
                 [
-                    Register('ctrls', bitsize=1, shape=(len(self.cvs),)),
-                    Register('x', bitsize=self.bitsize),
+                    Register('ctrls', dtype=QBit(), shape=(len(self.cvs),)),
+                    Register('x', dtype=QInt(self.bitsize)),
                 ]
             )
         else:
-            return Signature([Register('x', bitsize=self.bitsize)])
+            return Signature([Register('x', dtype=QInt(self.bitsize))])
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'
@@ -351,7 +355,7 @@ class SimpleAddConstant(Bloq):
             ctrls = regs['ctrls']
         else:
             ctrls = None
-        k = bb.allocate(n=self.bitsize)
+        k = bb.allocate(dtype=QInt(self.bitsize))
 
         # Get binary representation of k and split k into separate wires.
         k_split = bb.split(k)
@@ -372,7 +376,7 @@ class SimpleAddConstant(Bloq):
                     k_split[i] = bb.add(XGate(), q=k_split[i])
 
         # Rejoin the qubits representing k for in-place addition.
-        k = bb.join(k_split)
+        k = bb.join(k_split, dtype=QInt(self.bitsize))
         k, x = bb.add(Add(bitsize=self.bitsize), a=k, b=x)
 
         # Resplit the k qubits in order to undo the original bit flips to go from the binary
@@ -388,7 +392,7 @@ class SimpleAddConstant(Bloq):
                     k_split[i] = bb.add(XGate(), q=k_split[i])
 
         # Free the ancilla qubits.
-        k = bb.join(k_split)
+        k = bb.join(k_split, dtype=QInt(self.bitsize))
         bb.free(k)
 
         # Return the output registers.
@@ -434,8 +438,8 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     @cached_property
     def signature(self) -> Signature:
         if self.cvs:
-            return Signature.build(ctrl=len(self.cvs), x=self.bitsize)
-        return Signature.build(x=self.bitsize)
+            return Signature.build(ctrl=QAny(len(self.cvs)), x=QUnsignedInt(self.bitsize))
+        return Signature.build(x=QUnsignedInt(self.bitsize))
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         add_reg = (2,) * self.bitsize

@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, QInt
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic.addition import (
     Add,
@@ -167,8 +167,8 @@ def test_add_call_classically(a: int, b: int, num_bits: int):
 def test_add():
     bb = BloqBuilder()
     bitsize = 4
-    q0 = bb.add_register('a', bitsize)
-    q1 = bb.add_register('b', bitsize)
+    q0 = bb.add_register('a', QInt(bitsize))
+    q1 = bb.add_register('b', QInt(bitsize))
     a, b = bb.add(Add(bitsize), a=q0, b=q1)
     cbloq = bb.finalize(a=a, b=b)
     cbloq.t_complexity()

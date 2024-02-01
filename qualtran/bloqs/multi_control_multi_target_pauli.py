@@ -27,6 +27,8 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
+    QAny,
+    QBit,
     Register,
     Signature,
     SoquetT,
@@ -189,7 +191,7 @@ class MultiControlX(Bloq):
     def signature(self) -> 'Signature':
         assert len(self.cvs) > 0
         return Signature(
-            [Register('ctrls', bitsize=1, shape=(len(self.cvs),)), Register('x', bitsize=1)]
+            [Register('ctrls', dtype=QBit(), shape=(len(self.cvs),)), Register('x', dtype=QBit())]
         )
 
     def on_classical_vals(
@@ -234,7 +236,7 @@ class MultiControlX(Bloq):
 
         # Iterative case: MultiControlledX
         # Allocate necessary ancilla bits.
-        ancillas = bb.allocate(n=(n - 2))
+        ancillas = bb.allocate(dtype=QAny(n - 2))
 
         # Split the ancilla bits for bloq decomposition connections.
         ancillas_split = bb.split(ancillas)
@@ -293,7 +295,7 @@ class MultiControlX(Bloq):
                 ctrls[i] = bb.add(XGate(), q=ctrls[i])
 
         # Join and free ancilla qubits.
-        ancillas = bb.join(ancillas_split)
+        ancillas = bb.join(ancillas_split, dtype=QAny(len(ancillas_split)))
         bb.free(ancillas)
 
         # Return the output registers.
