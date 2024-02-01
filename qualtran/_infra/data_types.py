@@ -139,8 +139,8 @@ class QFixedPoint(QDType):
     frac_bitsize: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        if self.bitsize == 1:
-            raise ValueError("bitsize must be greater than 1. Use QBit() instead.")
+        if self.num_qubits == 1:
+            raise ValueError("num_qubits must be greater than 1. Use QBit() instead.")
 
     @property
     def num_qubits(self):
