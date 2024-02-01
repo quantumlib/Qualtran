@@ -13,7 +13,7 @@
 #  limitations under the License.
 import cirq
 
-from qualtran import BloqBuilder, Register
+from qualtran import BloqBuilder, QFixedPoint, QInt, QUnsignedInt, Register
 from qualtran.bloqs.arithmetic import (
     MultiplyTwoReals,
     PlusEqualProduct,
@@ -47,7 +47,7 @@ def _make_product():
 def _make_scale_int_by_real():
     from qualtran.bloqs.arithmetic import ScaleIntByReal
 
-    return ScaleIntByReal(r_bitsize=8, i_bitsize=12)
+    return ScaleIntByReal(r_bitsize=8, i_bitsize=12, out_bitsizes=(12, 8))
 
 
 def _make_multiply_two_reals():
@@ -65,7 +65,7 @@ def _make_square_real_number():
 def test_square():
     bb = BloqBuilder()
     bitsize = 4
-    q0 = bb.add_register('a', bitsize)
+    q0 = bb.add_register('a', QUnsignedInt(bitsize))
     q0, q1 = bb.add(Square(bitsize), a=q0)
     cbloq = bb.finalize(a=q0, result=q1)
     cbloq.t_complexity()
@@ -75,7 +75,7 @@ def test_sum_of_squares():
     bb = BloqBuilder()
     bitsize = 4
     k = 3
-    inp = bb.add_register(Register("input", bitsize=bitsize, shape=(k,)))
+    inp = bb.add_register(Register("input", dtype=QUnsignedInt(bitsize), shape=(k,)))
     inp, out = bb.add(SumOfSquares(bitsize, k), input=inp)
     cbloq = bb.finalize(input=inp, result=out)
     assert SumOfSquares(bitsize, k).signature[1].bitsize == 2 * bitsize + 2
@@ -86,8 +86,8 @@ def test_product():
     bb = BloqBuilder()
     bitsize = 5
     mbits = 3
-    q0 = bb.add_register('a', bitsize)
-    q1 = bb.add_register('b', mbits)
+    q0 = bb.add_register('a', QUnsignedInt(bitsize))
+    q1 = bb.add_register('b', QUnsignedInt(mbits))
     q0, q1, q2 = bb.add(Product(bitsize, mbits), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     cbloq.t_complexity()
@@ -95,17 +95,17 @@ def test_product():
 
 def test_scale_int_by_real():
     bb = BloqBuilder()
-    q0 = bb.add_register('a', 15)
-    q1 = bb.add_register('b', 8)
-    q0, q1, q2 = bb.add(ScaleIntByReal(15, 8), real_in=q0, int_in=q1)
+    q0 = bb.add_register('a', QFixedPoint(0, 15))
+    q1 = bb.add_register('b', QInt(8))
+    q0, q1, q2 = bb.add(ScaleIntByReal(15, 8, (0, 15)), real_in=q0, int_in=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     cbloq.t_complexity()
 
 
 def test_multiply_two_reals():
     bb = BloqBuilder()
-    q0 = bb.add_register('a', 15)
-    q1 = bb.add_register('b', 15)
+    q0 = bb.add_register('a', QFixedPoint(0, 15))
+    q1 = bb.add_register('b', QFixedPoint(0, 15))
     q0, q1, q2 = bb.add(MultiplyTwoReals(15), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     cbloq.t_complexity()
@@ -113,8 +113,8 @@ def test_multiply_two_reals():
 
 def test_square_real_number():
     bb = BloqBuilder()
-    q0 = bb.add_register('a', 15)
-    q1 = bb.add_register('b', 15)
+    q0 = bb.add_register('a', QFixedPoint(0, 15))
+    q1 = bb.add_register('b', QFixedPoint(0, 15))
     q0, q1, q2 = bb.add(SquareRealNumber(15), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
 

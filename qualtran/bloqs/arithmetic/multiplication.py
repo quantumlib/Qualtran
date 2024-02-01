@@ -12,12 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 from attrs import frozen
 
-from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
+from qualtran import Bloq, GateWithRegisters, QInt, QUnsignedInt, Register, Side, Signature
+from qualtran._infra.data_types import QFixedPoint
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -41,7 +42,9 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
 
     @property
     def signature(self) -> 'Signature':
-        return Signature.build(a=self.a_bitsize, b=self.b_bitsize, result=self.result_bitsize)
+        return Signature.build(
+            a=QInt(self.a_bitsize), b=QInt(self.b_bitsize), result=QInt(self.result_bitsize)
+        )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
@@ -113,7 +116,10 @@ class Square(Bloq):
     @property
     def signature(self):
         return Signature(
-            [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=Side.RIGHT)]
+            [
+                Register("a", dtype=QUnsignedInt(self.bitsize)),
+                Register("result", dtype=QUnsignedInt(2 * self.bitsize), side=Side.RIGHT),
+            ]
         )
 
     def short_name(self) -> str:
@@ -162,9 +168,11 @@ class SumOfSquares(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("input", bitsize=self.bitsize, shape=(self.k,)),
+                Register("input", dtype=QUnsignedInt(self.bitsize), shape=(self.k,)),
                 Register(
-                    "result", bitsize=2 * self.bitsize + (self.k - 1).bit_length(), side=Side.RIGHT
+                    "result",
+                    dtype=QUnsignedInt(2 * self.bitsize + (self.k - 1).bit_length()),
+                    side=Side.RIGHT,
                 ),
             ]
         )
@@ -217,9 +225,13 @@ class Product(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("a", self.a_bitsize),
-                Register("b", self.b_bitsize),
-                Register("result", 2 * max(self.a_bitsize, self.b_bitsize), side=Side.RIGHT),
+                Register("a", dtype=QUnsignedInt(self.a_bitsize)),
+                Register("b", dtype=QUnsignedInt(self.b_bitsize)),
+                Register(
+                    "result",
+                    dtype=QUnsignedInt(2 * max(self.a_bitsize, self.b_bitsize)),
+                    side=Side.RIGHT,
+                ),
             ]
         )
 
@@ -253,6 +265,7 @@ class ScaleIntByReal(Bloq):
     Args:
         r_bitsize: Number of bits used to represent the real number.
         i_bitsize: Number of bits used to represent the integer.
+        out_bitsizes: Integer and decimal bitsizes for output register.
 
     Registers:
      - real_in: r_bitsize-sized input register.
@@ -266,14 +279,19 @@ class ScaleIntByReal(Bloq):
 
     r_bitsize: int
     i_bitsize: int
+    out_bitsizes: Tuple[int, int]
 
     @property
     def signature(self):
         return Signature(
             [
-                Register("real_in", self.r_bitsize),
-                Register("int_in", self.i_bitsize),
-                Register("result", self.r_bitsize, side=Side.RIGHT),
+                Register("real_in", dtype=QFixedPoint(0, self.r_bitsize)),
+                Register("int_in", dtype=QInt(self.i_bitsize)),
+                Register(
+                    "result",
+                    dtype=QFixedPoint(self.out_bitsizes[0], self.out_bitsizes[1]),
+                    side=Side.RIGHT,
+                ),
             ]
         )
 
@@ -325,9 +343,9 @@ class MultiplyTwoReals(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("a", self.bitsize),
-                Register("b", self.bitsize),
-                Register("result", self.bitsize, side=Side.RIGHT),
+                Register("a", QFixedPoint(0, self.bitsize)),
+                Register("b", QFixedPoint(0, self.bitsize)),
+                Register("result", QFixedPoint(0, self.bitsize), side=Side.RIGHT),
             ]
         )
 
@@ -380,9 +398,9 @@ class SquareRealNumber(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("a", self.bitsize),
-                Register("b", self.bitsize),
-                Register("result", self.bitsize, side=Side.RIGHT),
+                Register("a", QFixedPoint(0, self.bitsize)),
+                Register("b", QFixedPoint(0, self.bitsize)),
+                Register("result", QFixedPoint(0, self.bitsize), side=Side.RIGHT),
             ]
         )
 
