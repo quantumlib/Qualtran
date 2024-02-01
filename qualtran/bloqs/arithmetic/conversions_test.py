@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, QBit, QInt, QUnsignedInt
 from qualtran.bloqs.arithmetic import SignedIntegerToTwosComplement, ToContiguousIndex
 from qualtran.bloqs.basic_gates import TGate
 
@@ -32,9 +32,9 @@ def _make_signed_to_twos_complement():
 def test_to_contiguous_index():
     bb = BloqBuilder()
     bitsize = 5
-    q0 = bb.add_register('mu', bitsize)
-    q1 = bb.add_register('nu', bitsize)
-    out = bb.add_register('s', 1)
+    q0 = bb.add_register('mu', QUnsignedInt(bitsize))
+    q1 = bb.add_register('nu', QUnsignedInt(bitsize))
+    out = bb.add_register('s', QUnsignedInt(2 * bitsize))
     q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2 * bitsize), mu=q0, nu=q1, s=out)
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
     cbloq.t_complexity()
@@ -43,7 +43,7 @@ def test_to_contiguous_index():
 def test_signed_to_twos_complement():
     bb = BloqBuilder()
     bitsize = 5
-    q0 = bb.add_register('x', bitsize)
+    q0 = bb.add_register('x', QInt(bitsize))
     q0 = bb.add(SignedIntegerToTwosComplement(bitsize), x=q0)
     cbloq = bb.finalize(x=q0)
     _, sigma = cbloq.call_graph()

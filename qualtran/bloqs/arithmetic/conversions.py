@@ -17,8 +17,8 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
-from qualtran._infra.quantum_graph import Soquet
+from qualtran import Bloq, QInt, QUnsignedInt, Register, Signature, Soquet
+from qualtran._infra.data_types import QUnsignedInt
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
@@ -61,9 +61,9 @@ class ToContiguousIndex(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", bitsize=self.bitsize),
-                Register("nu", bitsize=self.bitsize),
-                Register("s", bitsize=self.s_bitsize),
+                Register("mu", dtype=QUnsignedInt(self.bitsize)),
+                Register("nu", dtype=QUnsignedInt(self.bitsize)),
+                Register("s", dtype=QUnsignedInt(self.s_bitsize)),
             ]
         )
 
@@ -112,7 +112,7 @@ class SignedIntegerToTwosComplement(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize)
+        return Signature.build(x=QInt(self.bitsize))
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Take the sign qubit as a control and cnot the remaining qubits, then
