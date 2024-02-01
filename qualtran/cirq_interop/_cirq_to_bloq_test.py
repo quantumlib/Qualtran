@@ -25,6 +25,7 @@ from qualtran import (
     BloqBuilder,
     DecomposeNotImplementedError,
     GateWithRegisters,
+    QAny,
     Register,
     Side,
     Signature,
@@ -146,9 +147,9 @@ def test_cirq_optree_to_cbloq():
         def signature(self) -> Signature:
             return Signature([self.reg])
 
-    reg1 = Register('x', shape=(3, 4), bitsize=2)
-    reg2 = Register('y', shape=12, bitsize=2)
-    anc_reg = Register('anc', shape=4, bitsize=2)
+    reg1 = Register('x', shape=(3, 4), dtype=QAny(2))
+    reg2 = Register('y', shape=12, bitsize=QAny(2))
+    anc_reg = Register('anc', shape=4, bitsize=QAny(2))
     qubits = cirq.LineQubit.range(24)
     anc_qubits = cirq.NamedQubit.range(4, prefix='anc')
     circuit = cirq.Circuit(

@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, QBit
 from qualtran.bloqs.basic_gates import (
     IntEffect,
     IntState,
@@ -115,7 +115,7 @@ def test_zero_effect_manual():
     assert ret == ()
 
     with pytest.raises(AssertionError):
-        bloq.call_classically(QBit())
+        bloq.call_classically(q=1)
 
     with pytest.raises(ValueError, match=r'.*q should be an integer, not \[0\, 0\, 0\]'):
         bloq.call_classically(q=[0, 0, 0])
@@ -130,7 +130,7 @@ def test_one_effect_manual():
     should_be = np.array([0, 1])
     np.testing.assert_allclose(should_be, vector)
 
-    ret = bloq.call_classically(QBit())
+    ret = bloq.call_classically(q=1)
     assert ret == ()
 
     with pytest.raises(AssertionError):

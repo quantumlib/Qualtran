@@ -32,12 +32,16 @@ from qualtran import (
     DecomposeNotImplementedError,
     DecomposeTypeError,
     GateWithRegisters,
+    QAny,
+    QBit,
+    QDTypeT,
     Register,
     Side,
     Signature,
     Soquet,
     SoquetT,
 )
+from qualtran._infra.data_types import QDTypeT
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
     get_named_qubits,
@@ -60,7 +64,14 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
 
 
 class CirqGateAsBloqBase(GateWithRegisters):
-    """A Bloq wrapper around a `cirq.Gate`"""
+    """A Bloq wrapper around a `cirq.Gate`
+
+    Args:
+        dtype_t: The type of the bloqs register. Optional, defaults to
+            QAny(bitsize), if bitsize > 1 where bitsize is the number of qubits the gate acts on.
+    """
+
+    dtype_t: QDTypeT = QAny
 
     @property
     @abc.abstractmethod
@@ -77,9 +88,9 @@ class CirqGateAsBloqBase(GateWithRegisters):
             return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
         return (
-            Signature([Register('q', shape=nqubits, bitsize=1)])
+            Signature([Register('q', shape=nqubits, dtype=QBit())])
             if nqubits > 1
-            else Signature.build(q=nqubits)
+            else Signature.build(q=self.dtype_t(nqubits))
         )
 
     def decompose_from_registers(
@@ -364,7 +375,7 @@ def cirq_optree_to_cbloq(
         if in_quregs is not None or out_quregs is not None:
             raise ValueError("`in_quregs` / `out_quregs` requires specifying `signature`.")
         all_qubits = sorted(circuit.all_qubits())
-        signature = Signature([Register('qubits', 1, shape=(len(all_qubits),))])
+        signature = Signature([Register('qubits', QBit(), shape=(len(all_qubits),))])
         in_quregs = out_quregs = {'qubits': np.array(all_qubits).reshape(len(all_qubits), 1)}
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")

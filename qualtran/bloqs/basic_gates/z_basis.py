@@ -304,7 +304,7 @@ class _IntVector(Bloq):
             xs.append(x)
         xs = np.array(xs)
 
-        return {'val': bb.join(xs, dtype=QUnsignedInt(2))}
+        return {'val': bb.join(xs, dtype=QUnsignedInt(len(xs)))}
 
     @staticmethod
     def _build_composite_effect(

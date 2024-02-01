@@ -17,7 +17,7 @@ from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
@@ -47,7 +47,7 @@ class Toffoli(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('ctrl', 1, shape=(2,)), Register('target', 1)])
+        return Signature([Register('ctrl', QBit(), shape=(2,)), Register('target', QBit())])
 
     def adjoint(self) -> 'Bloq':
         return self
