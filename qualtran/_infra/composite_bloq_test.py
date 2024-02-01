@@ -42,6 +42,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
+from qualtran._infra.data_types import QUnsignedInt
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
@@ -476,7 +477,7 @@ def test_final_soqs():
 
 def test_add_from_left_bloq():
     bb = BloqBuilder()
-    x = bb.add_register(Register('x', dtype=QAny(8), side=Side.LEFT))
+    x = bb.add_register(Register('x', dtype=QUnsignedInt(8), side=Side.LEFT))
 
     # The following exercises the special case of calling `final_soqs`
     # for a gate with left registers only

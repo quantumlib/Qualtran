@@ -641,6 +641,11 @@ def _process_soquets(
             idxed_soq = in_soq[li]
             assert isinstance(idxed_soq, Soquet), idxed_soq
             func(idxed_soq, reg, li)
+            if idxed_soq.reg.dtype != reg.dtype:
+                extra_debug_str = f"{idxed_soq.reg.dtype} vs {reg.dtype}"
+                raise TypeError(
+                    f"{debug_str} Soquet dtype does not match register: {extra_debug_str}"
+                )
 
     if in_soqs:
         raise BloqError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
