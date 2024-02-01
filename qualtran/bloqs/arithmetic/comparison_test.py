@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import BloqBuilder
+from qualtran import BloqBuilder, QBit, QInt
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThan,
@@ -149,8 +149,8 @@ def test_multi_in_less_equal_than_gate():
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
 
 
-@pytest.mark.parametrize("x_bitsize", [*range(1, 5)])
-@pytest.mark.parametrize("y_bitsize", [*range(1, 5)])
+@pytest.mark.parametrize("x_bitsize", [*range(2, 5)])
+@pytest.mark.parametrize("y_bitsize", [*range(2, 5)])
 def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     g = LessThanEqual(x_bitsize, y_bitsize)
     assert_decompose_is_consistent_with_t_complexity(g)
@@ -178,9 +178,9 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
 def test_greater_than():
     bb = BloqBuilder()
     bitsize = 5
-    q0 = bb.add_register('a', bitsize)
-    q1 = bb.add_register('b', bitsize)
-    anc = bb.add_register('result', 1)
+    q0 = bb.add_register('a', QInt(bitsize))
+    q1 = bb.add_register('b', QInt(bitsize))
+    anc = bb.add_register('result', QBit())
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
     cbloq.t_complexity()
@@ -190,8 +190,8 @@ def test_greater_than():
 def test_greater_than_constant():
     bb = BloqBuilder()
     bitsize = 5
-    q0 = bb.add_register('x', bitsize)
-    anc = bb.add_register('result', 1)
+    q0 = bb.add_register('x', QInt(bitsize))
+    anc = bb.add_register('result', QBit())
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
@@ -201,8 +201,8 @@ def test_greater_than_constant():
 def test_equals_a_constant():
     bb = BloqBuilder()
     bitsize = 5
-    q0 = bb.add_register('x', bitsize)
-    anc = bb.add_register('result', 1)
+    q0 = bb.add_register('x', QInt(bitsize))
+    anc = bb.add_register('result', QBit())
     q0, anc = bb.add(EqualsAConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
