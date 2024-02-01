@@ -192,10 +192,10 @@ def test_bloq_builder():
     assert len(cbloq.bloq_instances) == 2
 
 
-def _get_bb():
+def _get_bb(dtype=QBit()):
     bb = BloqBuilder()
-    x = bb.add_register('x', dtype=QBit())
-    y = bb.add_register('y', dtype=QBit())
+    x = bb.add_register('x', dtype=dtype)
+    y = bb.add_register('y', dtype=dtype)
     return bb, x, y
 
 
@@ -492,6 +492,23 @@ def test_add_duplicate_register():
     y = bb.add_register('control', QBit())
     with pytest.raises(ValueError):
         bb.finalize(control=y)
+
+
+def test_type_checking():
+    bb, x, y = _get_bb(dtype=QInt(1))
+    with pytest.raises(TypeError):
+        x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
+    # this is correct
+    bb, x, y = _get_bb(dtype=QAny(3))
+    x2 = bb.add(TestParallelCombo(), reg=x)
+    # this is not, expect a QAny register
+    bb, x, y = _get_bb(dtype=QInt(3))
+    with pytest.raises(TypeError):
+        x2 = bb.add(TestParallelCombo(), reg=x)
+    # this is not, expect a 3-bit QAny register
+    bb, x, y = _get_bb(dtype=QAny(4))
+    with pytest.raises(TypeError):
+        x2 = bb.add(TestParallelCombo(), reg=x)
 
 
 def test_flatten():
