@@ -44,6 +44,10 @@ class QAny(QDType):
 
     bitsize: Union[int, sympy.Expr]
 
+    def __attrs_post_init__(self):
+        if self.bitsize == 1:
+            raise ValueError("bitsize must be greater than 1. Use QBit() instead.")
+
     @property
     def num_qubits(self):
         return self.bitsize
@@ -58,6 +62,10 @@ class QInt(QDType):
     """
 
     bitsize: Union[int, sympy.Expr]
+
+    def __attrs_post_init__(self):
+        if self.bitsize == 1:
+            raise ValueError("bitsize must be greater than 1. Use QBit() instead.")
 
     @property
     def num_qubits(self):
@@ -75,6 +83,10 @@ class QUnsignedInt(QDType):
     """
 
     bitsize: int
+
+    def __attrs_post_init__(self):
+        if self.bitsize == 1:
+            raise ValueError("bitsize must be greater than 1. Use QBit() instead.")
 
     @property
     def num_qubits(self):
@@ -101,6 +113,8 @@ class BoundedQInt(QDType):
             raise ValueError(
                 f"BoundedQInt iteration length is too large for given bitsize. {len(self.iteration_range)} vs {2**self.bitsize}"
             )
+        if self.bitsize == 1:
+            raise ValueError("bitsize must be greater than 1. Use QBit() instead.")
 
     @property
     def num_qubits(self):
@@ -123,6 +137,10 @@ class QFixedPoint(QDType):
 
     int_bitsize: Union[int, sympy.Expr]
     frac_bitsize: Union[int, sympy.Expr]
+
+    def __attrs_post_init__(self):
+        if self.bitsize == 1:
+            raise ValueError("bitsize must be greater than 1. Use QBit() instead.")
 
     @property
     def num_qubits(self):
