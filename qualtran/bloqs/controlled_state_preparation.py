@@ -12,7 +12,7 @@ from qualtran.bloqs.basic_gates.rotation import Rx
 
 
 @attrs.frozen
-class ControlledRotStatePreparation(Bloq):
+class ControlledStatePreparationUsingRotations(Bloq):
     n_qubits: int
     rot_reg_size: int
     state: Tuple
