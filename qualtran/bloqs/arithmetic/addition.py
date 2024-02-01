@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import itertools
 from functools import cached_property
-from typing import Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -26,6 +26,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CompositeBloq,
     GateWithRegisters,
     Register,
     Side,
@@ -33,19 +34,22 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import Toffoli, XGate
+from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
-class Add(GateWithRegisters, cirq.ArithmeticGate):
+class Add(Bloq):
     r"""An n-bit addition gate.
 
     Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $4n - 4 T$ gates.
@@ -69,15 +73,26 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
     def signature(self):
         return Signature.build(a=self.bitsize, b=self.bitsize)
 
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        return [2] * self.bitsize, [2] * self.bitsize
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
 
-    def with_registers(self, *new_registers) -> 'Add':
-        return Add(len(new_registers[0]))
+        N = 2**self.bitsize
+        inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
+        unitary = np.zeros((N,) * len(inds), dtype=np.complex128)
+        for a, b in itertools.product(range(N), range(N)):
+            unitary[a, b, a, (a + b) % N] = 1
 
-    def apply(self, *register_values: int) -> Union[int, Iterable[int]]:
-        a, b = register_values
-        return a, a + b
+        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
@@ -97,27 +112,24 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         wire_symbols += ["In(y)/Out(x+y)"] * self.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def _has_unitary_(self):
-        return True
-
     def _left_building_block(self, inp, out, anc, depth):
         if depth == self.bitsize - 1:
             return
         else:
-            yield cirq.CX(anc[depth - 1], inp[depth])
-            yield cirq.CX(anc[depth - 1], out[depth])
+            yield CNOT().on(anc[depth - 1], inp[depth])
+            yield CNOT().on(anc[depth - 1], out[depth])
             yield And().on(inp[depth], out[depth], anc[depth])
-            yield cirq.CX(anc[depth - 1], anc[depth])
+            yield CNOT().on(anc[depth - 1], anc[depth])
             yield from self._left_building_block(inp, out, anc, depth + 1)
 
     def _right_building_block(self, inp, out, anc, depth):
         if depth == 0:
             return
         else:
-            yield cirq.CX(anc[depth - 1], anc[depth])
+            yield CNOT().on(anc[depth - 1], anc[depth])
             yield And().adjoint().on(inp[depth], out[depth], anc[depth])
-            yield cirq.CX(anc[depth - 1], inp[depth])
-            yield cirq.CX(inp[depth], out[depth])
+            yield CNOT().on(anc[depth - 1], inp[depth])
+            yield CNOT().on(inp[depth], out[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
 
     def decompose_from_registers(
@@ -131,12 +143,12 @@ class Add(GateWithRegisters, cirq.ArithmeticGate):
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
         # Left part of Fig.2
         yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
-        yield cirq.CX(ancillas[-1], output_bits[-1])
-        yield cirq.CX(input_bits[-1], output_bits[-1])
+        yield CNOT().on(ancillas[-1], output_bits[-1])
+        yield CNOT().on(input_bits[-1], output_bits[-1])
         # right part of Fig.2
         yield from self._right_building_block(input_bits, output_bits, ancillas, self.bitsize - 2)
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
-        yield cirq.CX(input_bits[0], output_bits[0])
+        yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
     def _t_complexity_(self):

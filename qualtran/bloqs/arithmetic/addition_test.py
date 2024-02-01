@@ -60,9 +60,6 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     # Test diagrams
     expected_wire_symbols = ("In(x)",) * num_bits + ("In(y)/Out(x+y)",) * num_bits
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
-    # Test with_registers
-    assert gate.with_registers([2] * 6, [2] * 6) == Add(6)
-    # test no decompose with same inputs
 
 
 def test_add_truncated():
@@ -135,17 +132,15 @@ def test_subtract(a, b, num_bits):
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_t_complexity(n: int):
     g = Add(n)
-    assert_decompose_is_consistent_with_t_complexity(g)
+    assert g.t_complexity() == g.decompose_bloq().t_complexity()
     assert_valid_bloq_decomposition(g)
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
 def test_add_no_decompose(a, b):
     num_bits = 5
-    qubits = cirq.LineQubit.range(2 * num_bits)
-    op = Add(num_bits).on(*qubits)
-    circuit = cirq.Circuit(op)
-    basis_map = {}
+    bloq = Add(num_bits)
+
     a_bin = format(a, f'0{num_bits}b')
     b_bin = format(b, f'0{num_bits}b')
     out_bin = format(a + b, f'0{num_bits}b')
@@ -153,8 +148,9 @@ def test_add_no_decompose(a, b):
     input_int = int(a_bin + b_bin, 2)
     output_int = int(a_bin + out_bin, 2)
     assert true_out_int == int(out_bin, 2)
-    basis_map[input_int] = output_int
-    cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
+
+    unitary = bloq.tensor_contract()
+    assert unitary[output_int, input_int] == 1
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
