@@ -345,7 +345,6 @@ class SimpleAddConstant(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: SoquetT, **regs: SoquetT
     ) -> Dict[str, 'SoquetT']:
-
         # Assign registers to variables and allocate ancilla bits for classical integer k.
         if len(self.cvs) > 0:
             ctrls = regs['ctrls']
