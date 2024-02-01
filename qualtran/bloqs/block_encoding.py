@@ -41,6 +41,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QAny,
     Register,
     Signature,
     Soquet,
@@ -91,7 +92,9 @@ class BlackBoxSelect(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(selection=self.selection_bitsize, system=self.system_bitsize)
+        return Signature.build(
+            selection=QAny(self.selection_bitsize), system=QAny(self.system_bitsize)
+        )
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', selection: 'SoquetT', system: 'SoquetT'
@@ -147,7 +150,10 @@ class BlackBoxPrepare(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register('selection', self.selection_bitsize), Register('junk', self.junk_bitsize)]
+            [
+                Register('selection', QAny(self.selection_bitsize)),
+                Register('junk', QAny(self.junk_bitsize)),
+            ]
         )
 
     def build_composite_bloq(
@@ -224,9 +230,9 @@ class BlackBoxBlockEncoding(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('selection', self.prepare.selection_bitsize),
-                Register('junk', self.prepare.junk_bitsize),
-                Register('system', self.select.system_bitsize),
+                Register('selection', QAny(self.prepare.selection_bitsize)),
+                Register('junk', QAny(self.prepare.junk_bitsize)),
+                Register('system', QAny(self.select.system_bitsize)),
             ]
         )
 
@@ -284,9 +290,9 @@ class ChebyshevPolynomial(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('selection', self.block_encoding.selection_bitsize),
-                Register('junk', self.block_encoding.junk_bitsize),
-                Register('system', self.block_encoding.system_bitsize),
+                Register('selection', QAny(self.block_encoding.selection_bitsize)),
+                Register('junk', QAny(self.block_encoding.junk_bitsize)),
+                Register('system', QAny(self.block_encoding.system_bitsize)),
             ]
         )
 
