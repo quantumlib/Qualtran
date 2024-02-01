@@ -41,7 +41,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran._infra.data_types import QDTypeT
+from qualtran._infra.data_types import QDType, QDTypeT
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
     get_named_qubits,
@@ -89,7 +89,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
         nqubits = cirq.num_qubits(self.cirq_gate)
         return (
             Signature([Register('q', shape=nqubits, dtype=QBit())])
-            if nqubits > 1
+            if nqubits >= 1
             else Signature.build(q=self.dtype_t(nqubits))
         )
 
@@ -262,13 +262,21 @@ class _QReg:
 
 
 def _ensure_in_reg_exists(
-    bb: BloqBuilder, in_reg: _QReg, qreg_to_qvar: Dict[_QReg, Soquet]
+    bb: BloqBuilder,
+    in_reg: _QReg,
+    qreg_to_qvar: Dict[_QReg, Soquet],
+    reg_dtype: Optional[QDType] = None,
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
+    from qualtran.bloqs.util_bloqs import Split
+
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
-        qreg_to_qvar[_QReg(qubits_to_allocate)] = bb.allocate(len(qubits_to_allocate))
+        nalloc = len(qubits_to_allocate)
+        qreg_to_qvar[_QReg(qubits_to_allocate)] = bb.allocate(
+            QAny(nalloc) if nalloc > 1 else QBit()
+        )
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
@@ -294,17 +302,28 @@ def _ensure_in_reg_exists(
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        qreg_to_qvar[in_reg] = bb.join(np.array(soqs_to_join))
+        for s in soqs_to_join:
+            if isinstance(s.binst.bloq, Split):
+                reg_dtype = s.binst.bloq.dtype
+        assert reg_dtype is not None, "joining registers requires a dtype"
+        reg_dtype_t = type(reg_dtype)
+        qreg_to_qvar[in_reg] = bb.join(np.array(soqs_to_join), dtype=reg_dtype_t(len(soqs_to_join)))
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]
+    bb: BloqBuilder,
+    op_quregs: Dict[str, NDArray[_QReg]],
+    qreg_to_qvar: Dict[_QReg, Soquet],
+    reg_dtypes: Optional[Dict[str, QDType]] = None,
 ) -> Dict[str, NDArray[Soquet]]:
     qvars_in: Dict[str, NDArray[Soquet]] = {}
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[Soquet] = []
         for qureg in quregs.flatten():
-            _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
+            if reg_dtypes is not None:
+                _ensure_in_reg_exists(bb, qureg, qreg_to_qvar, reg_dtype=reg_dtypes[reg_name])
+            else:
+                _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
             flat_soqs.append(qreg_to_qvar[qureg])
         qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
     return qvars_in
@@ -386,7 +405,7 @@ def cirq_optree_to_cbloq(
     bb, initial_soqs = BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
     # 1. Compute qreg_to_qvar for input qubits in the LEFT signature.
-    qreg_to_qvar: Dict[_QReg, Soquet] = {}
+    qreg_to_qvar: Dict[_QReg, Tuple[Soquet]] = {}
     for reg in signature.lefts():
         if reg.name not in in_quregs:
             raise ValueError(f"Register {reg.name} from signature must be present in in_quregs.")
@@ -437,7 +456,10 @@ def cirq_optree_to_cbloq(
 
     # 4. Combine Soquets to match the right signature.
     final_soqs_dict = _gather_input_soqs(
-        bb, {reg.name: out_quregs[reg.name] for reg in signature.rights()}, qreg_to_qvar
+        bb,
+        {reg.name: out_quregs[reg.name] for reg in signature.rights()},
+        qreg_to_qvar,
+        reg_dtypes={reg.name: reg.dtype for reg in signature.rights()},
     )
     final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
     # 5. Free all dangling Soquets which are not part of the final soquets set.
