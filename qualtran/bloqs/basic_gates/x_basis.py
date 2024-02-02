@@ -19,15 +19,15 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, Register, Side, Signature, SoquetT, Soquet
+from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.simulation.classical_sim import ClassicalValT
     from qualtran.drawing import WireSymbol
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 _PLUS = np.ones(2, dtype=np.complex128) / np.sqrt(2)
 _MINUS = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
@@ -198,4 +198,5 @@ class XGate(Bloq):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import ModPlus
+
         return ModPlus()

@@ -26,9 +26,9 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
-    from qualtran.drawing import WireSymbol
 
 
 @frozen
@@ -78,6 +78,7 @@ class Toffoli(Bloq):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import Circle, ModPlus
+
         if soq.reg.name == 'ctrl':
             return Circle(filled=True)
         elif soq.reg.name == 'target':

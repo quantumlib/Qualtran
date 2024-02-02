@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from qualtran import Bloq
 
 
-def show_bloq(bloq: 'Bloq', type: str = 'graph'):
+def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
     """Display a visual representation of the bloq in IPython.
 
     Args:
