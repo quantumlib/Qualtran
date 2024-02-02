@@ -354,8 +354,8 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
-    select = BlackBoxSelect(SelectHubbard(2, 2))
-    prepare = BlackBoxPrepare(PrepareHubbard(2, 2, 1, 4))
+    select = BlackBoxSelect(SelectHubbard(3, 3))
+    prepare = BlackBoxPrepare(PrepareHubbard(3, 3, 1, 4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
     chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, 3)
     return chebyshev_poly
