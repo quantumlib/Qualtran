@@ -67,7 +67,12 @@ class Add(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    bitsize: int
+    bitsize: int = field()
+
+    @bitsize.validator
+    def _bitsize_validate(self, a, v):
+        if v <= 1:
+            raise ValueError("Bitsize must be 2 or greater.")
 
     @property
     def signature(self):
