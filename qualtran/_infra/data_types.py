@@ -73,12 +73,12 @@ class QAny(QDType):
 
     bitsize: Union[int, sympy.Expr]
 
+    def __attrs_post_init__(self):
+        assert self.bitsize > 1, "bitsize must be > 1."
+
     @property
     def num_qubits(self):
         return self.bitsize
-
-    def __eq__(self, other) -> bool:
-        return other.num_qubits == self.num_qubits
 
 
 @attrs.frozen
@@ -92,6 +92,9 @@ class QInt(QDType):
     """
 
     bitsize: Union[int, sympy.Expr]
+
+    def __attrs_post_init__(self):
+        assert self.bitsize > 1, "bitsize must be > 1."
 
     @property
     def num_qubits(self):
@@ -109,6 +112,9 @@ class QIntOnesComp(QDType):
     """
 
     bitsize: Union[int, sympy.Expr]
+
+    def __attrs_post_init__(self):
+        assert self.bitsize > 1, "bitsize must be > 1."
 
     @property
     def num_qubits(self):
@@ -128,6 +134,9 @@ class QUnsignedInt(QDType):
 
     bitsize: int
 
+    def __attrs_post_init__(self):
+        assert self.bitsize > 1, "bitsize must be > 1."
+
     @property
     def num_qubits(self):
         return self.bitsize
@@ -146,12 +155,10 @@ class BoundedQInt(QDType):
     iteration_length: int
 
     def __attrs_post_init__(self):
-        if self.iteration_range.start > self.iteration_range.stop:
-            raise ValueError("iteration_range limits should be increasing in value.")
-
-        if len(self.iteration_range) > 2**self.bitsize:
+        assert self.bitsize > 1, "bitsize must be > 1."
+        if self.iteration_length > 2**self.bitsize:
             raise ValueError(
-                f"BoundedQInt iteration length is too large for given bitsize. {len(self.iteration_range)} vs {2**self.bitsize}"
+                f"BoundedQInt iteration length is too large for given bitsize. {self.iteration_length} vs {2**self.bitsize}"
             )
 
     @property
@@ -177,3 +184,6 @@ class QFixedPoint(QDType):
     @property
     def num_qubits(self):
         return self.int_bitsize + self.frac_bitsize + 1
+
+    def __attrs_post_init__(self):
+        assert self.num_qubits > 1, "Number of qubits must be > 1."

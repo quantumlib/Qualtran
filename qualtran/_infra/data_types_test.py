@@ -14,7 +14,7 @@
 
 import pytest
 
-from qualtran._infra.data_types import BoundedQInt, QFixedPoint, QInt, QUnsignedInt
+from qualtran._infra.data_types import BoundedQInt, QFixedPoint, QInt, QIntOnesComp, QUnsignedInt
 
 
 def test_qint():
@@ -22,22 +22,24 @@ def test_qint():
     assert qint_8.num_qubits == 8
 
 
-def test_qintmod():
+def test_qint_ones():
+    qint_8 = QIntOnesComp(8)
+    assert qint_8.num_qubits == 8
+
+
+def test_quint():
     qint_8 = QUnsignedInt(8)
     assert qint_8.num_qubits == 8
 
 
 def test_bounded_qint():
-    qint_3 = BoundedQInt(2, range(0, 3))
+    qint_3 = BoundedQInt(2, 3)
     assert qint_3.bitsize == 2
-    assert len(qint_3.iteration_range) == 3
-    qint_4 = BoundedQInt(3, range(-2, 2))
+    assert qint_3.iteration_length == 3
     with pytest.raises(ValueError):
-        BoundedQInt(3, range(0, 9))
-    with pytest.raises(ValueError):
-        BoundedQInt(3, range(2, -2))
+        BoundedQInt(4, 76)
 
 
 def test_qfixedpoint():
     qfp_16 = QFixedPoint(1, 15)
-    assert qfp_16.num_qubits == 16
+    assert qfp_16.num_qubits == 17
