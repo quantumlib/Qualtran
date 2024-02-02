@@ -69,7 +69,7 @@ class QBit(QDType):
 
 @attrs.frozen
 class QAny(QDType):
-    """Opaque bag-of-qbits type. Should be used sparingly"""
+    """Opaque bag-of-qbits type."""
 
     bitsize: Union[int, sympy.Expr]
 
@@ -83,7 +83,7 @@ class QAny(QDType):
 
 @attrs.frozen
 class QInt(QDType):
-    """Integer of a given width bitsize.
+    """Signed Integer of a given width bitsize.
 
     A two's complement representation is assumed for negative integers.
 
@@ -103,7 +103,7 @@ class QInt(QDType):
 
 @attrs.frozen
 class QIntOnesComp(QDType):
-    """Integer of a given width bitsize.
+    """Signed Integer of a given width bitsize.
 
     A ones' complement representation is assumed for negative integers.
 
@@ -123,7 +123,7 @@ class QIntOnesComp(QDType):
 
 @attrs.frozen
 class QUnsignedInt(QDType):
-    """Integer of a given width bitsize which wraps around upon overflow.
+    """Unsigned integer of a given width bitsize which wraps around upon overflow.
 
     Similar to unsigned integer types in C. Any intended wrap around effect is
     expected to be handled by the developer.
