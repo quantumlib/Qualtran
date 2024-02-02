@@ -98,9 +98,9 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
             control, target_state, rot_reg, phase_gradient = self.__preparePhases(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
             )
-            # control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
-            #     rom_vals, bb, control, target_state, rot_reg, phase_gradient
-            # )
+            control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
+                rom_vals, bb, control, target_state, rot_reg, phase_gradient
+            )
         else:
             control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
@@ -127,33 +127,43 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         rot_reg: SoquetT,
         phase_gradient: SoquetT,
     ):
+        # if it is the adjoint gate, load the modular negative values to undo the rotations that
+        # loaded the amplitudes
+        if self.adjoint:
+            rom_vals = RotationTree.extractRomValuesFromState(self.state, self.rot_reg_size, adjoint=True)
         state_qubits = bb.split(target_state)
         for i in range(self.n_qubits):
+            # for the normal gate loop from qubit 0 to n_qubits-1, if it is the adjoint
+            # then the process is run backwards with the opposite turn angles
+            if self.adjoint:
+                qi = self.n_qubits - i - 1
+            else:
+                qi = i
             ctrl_rot_q = ControlledQROMRotateQubit(
-                i, self.rot_reg_size, tuple(rom_vals[i])
+                qi, self.rot_reg_size, tuple(rom_vals[qi])
             )
-            state_qubits[i] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[i])
+            state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
             # first qubit does not have selection registers, only controls
-            if i == 0:
-                control, state_qubits[i], rot_reg, phase_gradient = bb.add(
+            if qi == 0:
+                control, state_qubits[qi], rot_reg, phase_gradient = bb.add(
                     ctrl_rot_q,
                     prepare_control=control,
-                    qubit=state_qubits[i],
+                    qubit=state_qubits[qi],
                     rot_reg=rot_reg,
                     phase_gradient=phase_gradient,
                 )
             else:
-                sel = bb.join(state_qubits[:i])
-                control, sel, state_qubits[i], rot_reg, phase_gradient = bb.add(
+                sel = bb.join(state_qubits[:qi])
+                control, sel, state_qubits[qi], rot_reg, phase_gradient = bb.add(
                     ctrl_rot_q,
                     prepare_control=control,
                     selection=sel,
-                    qubit=state_qubits[i],
+                    qubit=state_qubits[qi],
                     rot_reg=rot_reg,
                     phase_gradient=phase_gradient,
                 )
-                state_qubits[:i] = bb.split(sel)
-            state_qubits[i] = bb.add(Rx(angle=-np.pi / 2), q=state_qubits[i])
+                state_qubits[:qi] = bb.split(sel)
+            state_qubits[qi] = bb.add(Rx(angle=-np.pi / 2), q=state_qubits[qi])
 
         target_state = bb.join(state_qubits)
         return control, target_state, rot_reg, phase_gradient
@@ -306,7 +316,7 @@ class RotationTree:
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    def extractRomValuesFromState(state: ArrayLike, rot_reg_size: int):
+    def extractRomValuesFromState(state: ArrayLike, rot_reg_size: int, adjoint: bool = False):
         r"""Gives list in which the ith element is a list of the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
@@ -319,6 +329,8 @@ class RotationTree:
             rom_vals_this_layer = []
             for tree in this_layer:
                 angle = tree.getAngle0()
+                if adjoint:
+                    angle = 2*np.pi-angle
                 rom_val = RotationTree.angle2RomValue(angle, rot_reg_size)
                 rom_vals_this_layer.append(rom_val)
                 if tree.branch0 is not None:
