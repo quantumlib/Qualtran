@@ -303,6 +303,10 @@ class Allocate(Bloq):
 class Free(Bloq):
     """Free (i.e. de-allocate) an `n` bit register.
 
+    The tensor decomposition assumes the `n` bit register is uncomputed and is in the $|0^{n}>$
+    state before getting freed. To verify that is the case, one can compute the resulting state
+    vector after freeing qubits and make sure it is normalized.
+
     Attributes:
         n: the bitsize of the register to be freed.
     """
@@ -323,6 +327,18 @@ class Free(Bloq):
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        data = np.zeros(1 << self.n)
+        data[0] = 1
+        tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
 
 
 @frozen
