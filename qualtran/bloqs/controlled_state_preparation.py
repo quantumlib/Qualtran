@@ -1,21 +1,64 @@
+#  Copyright 2023 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
 from typing import Dict, Tuple
 import attrs
 
 import numpy as np
 from numpy.typing import ArrayLike
 
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT, Side, Register
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT, Side, Register, SelectionRegister
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import OneState, OneEffect, ZeroState, ZeroEffect
 from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.basic_gates.rotation import Rx
 
 
 @attrs.frozen
-class ControlledStatePreparationUsingRotations(Bloq):
+class ControlledStatePreparationUsingRotations(PrepareOracle):
+    r"""Class that implements controlled state preparation using Ry and Rz rotations from [1]. It
+    does not produce any entangled residual qubits.
+
+    Given a quantum state of which the list of coefficients $c_i$ is known
+    $$
+        |\psi \rangle = \sum_{i=0}^{N-1}c_{i}|i\rangle
+    $$
+    this gate prepares $|\psi\rangle$ from $|0\rangle$ conditioned by a control qubit
+    $$
+        U((|0\rangle + |1\rangle)|0\rangle) = |0\rangle |0\rangle + |1\rangle |\psi\rangle.
+    $$
+
+    Args:
+        n_qubits: number of qubits of the state.
+        rot_reg_size: size of the register that is used to store the rotation angles. Bigger values
+            increase the accuracy of the results.
+        state: tuple of length 2^n_qubits that contains the complex coefficients of the state.
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
+        (https://arxiv.org/abs/1812.00954).
+            Low, Kliuchnikov, Schaeffer. 2018.
+    """
+
     n_qubits: int
     rot_reg_size: int
     state: Tuple
+
+    @property
+    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+        return (SelectionRegister('target_state', bitsize=self.n_qubits, iteration_length=self.n_qubits),)
 
     @property
     def signature(self):
