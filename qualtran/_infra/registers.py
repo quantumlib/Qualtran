@@ -16,11 +16,14 @@
 import enum
 import itertools
 from collections import defaultdict
+from functools import cached_property
 from typing import Dict, Iterable, Iterator, List, overload, Tuple
 
 import attrs
 import numpy as np
 from attrs import field, frozen
+
+from .data_types import QAny, QBit
 
 
 class Side(enum.Flag):
@@ -62,6 +65,12 @@ class Register:
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
+
+    @cached_property
+    def dtype(self):
+        if self.bitsize == 1:
+            return QBit()
+        return QAny(self.n)
 
     def all_idxs(self) -> Iterable[Tuple[int, ...]]:
         """Iterate over all possible indices of a multidimensional register."""
