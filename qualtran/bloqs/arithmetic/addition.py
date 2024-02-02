@@ -67,10 +67,12 @@ class Add(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    bitsize: int = field()
+    bitsize: Union[int, sympy.Expr] = field()
 
     @bitsize.validator
     def _bitsize_validate(self, a, v):
+        if isinstance(v, sympy.Expr):
+            return
         if v <= 1:
             raise ValueError("Bitsize must be 2 or greater.")
 

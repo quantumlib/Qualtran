@@ -33,8 +33,7 @@ from qualtran.cirq_interop.testing import (
     assert_decompose_is_consistent_with_t_complexity,
     GateHelper,
 )
-from qualtran.testing import assert_valid_bloq_decomposition
-
+import qualtran.testing as qlt_testing
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add_decomposition(a: int, b: int, num_bits: int):
@@ -133,7 +132,7 @@ def test_subtract(a, b, num_bits):
 def test_addition_gate_t_complexity(n: int):
     g = Add(n)
     assert g.t_complexity() == g.decompose_bloq().t_complexity()
-    assert_valid_bloq_decomposition(g)
+    qlt_testing.assert_valid_bloq_decomposition(g)
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
@@ -240,8 +239,8 @@ def test_out_of_place_adder():
     assert gate.t_complexity().t == 3 * 4
     assert (gate**-1).t_complexity().t == 0
     assert_decompose_is_consistent_with_t_complexity(gate**-1)
-    assert_valid_bloq_decomposition(gate)
-    assert_valid_bloq_decomposition(gate**-1)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate**-1)
 
 
 @pytest.mark.parametrize('bitsize', [5])
@@ -249,7 +248,7 @@ def test_out_of_place_adder():
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
 def test_simple_add_constant_decomp_unsigned(bitsize, k, cvs):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
-    assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize('bitsize', [5])
@@ -257,7 +256,7 @@ def test_simple_add_constant_decomp_unsigned(bitsize, k, cvs):
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
 def test_simple_add_constant_decomp_signed(bitsize, k, cvs):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
-    assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize(
@@ -296,3 +295,6 @@ def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result)
         np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
     assert bloq_classical[-1] == result
+
+def test_notebook():
+    qlt_testing.execute_notebook('addition')
