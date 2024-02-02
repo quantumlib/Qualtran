@@ -63,6 +63,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     n_qubits: int
     rot_reg_size: int
     state: Tuple
+    adjoint: bool = False
 
     @property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
@@ -93,12 +94,20 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         rot_reg = bb.join(
             np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_size)])
         )
-        control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
-            rom_vals, bb, control, target_state, rot_reg, phase_gradient
-        )
-        control, target_state, rot_reg, phase_gradient = self.__preparePhases(
-            rom_vals, bb, control, target_state, rot_reg, phase_gradient
-        )
+        if self.adjoint:
+            control, target_state, rot_reg, phase_gradient = self.__preparePhases(
+                rom_vals, bb, control, target_state, rot_reg, phase_gradient
+            )
+            # control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
+            #     rom_vals, bb, control, target_state, rot_reg, phase_gradient
+            # )
+        else:
+            control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
+                rom_vals, bb, control, target_state, rot_reg, phase_gradient
+            )
+            control, target_state, rot_reg, phase_gradient = self.__preparePhases(
+                rom_vals, bb, control, target_state, rot_reg, phase_gradient
+            )
         # deallocate rotation register's qubits
         qs = bb.split(rot_reg)
         for q in qs:
@@ -186,7 +195,11 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                 offset = np.pi * (1 - amplitude_rom_vals[i][j] / (2**self.rot_reg_size))
                 for k in range(item_range * j, item_range * (j + 1)):
                     offset_angles[k] += offset
-        angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
+        # if the matrix is the adjoint, the angles have to be undone, thus just load -theta
+        if self.adjoint:
+            angles = [offset - np.angle(c) for c, offset in zip(self.state, offset_angles)]
+        else:
+            angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
         rom_values = [RotationTree.angle2RomValue(a, self.rot_reg_size) for a in angles]
         return rom_values
 
