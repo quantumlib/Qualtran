@@ -77,6 +77,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         phase_gradient: SoquetT,
     ) -> Dict[str, SoquetT]:
         rom_vals = RotationTree.extractRomValuesFromState(self.state, self.rot_reg_size)
+        # allocate the qubits for the rotation angle register
         rot_reg = bb.join(
             np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_size)])
         )
@@ -86,6 +87,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         control, target_state, rot_reg, phase_gradient = self.__preparePhases(
             rom_vals, bb, control, target_state, rot_reg, phase_gradient
         )
+        # deallocate rotation register's qubits
         qs = bb.split(rot_reg)
         for q in qs:
             bb.add(ZeroEffect(), q=q)
@@ -110,6 +112,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                 i, self.rot_reg_size, tuple(rom_vals[i])
             )
             state_qubits[i] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[i])
+            # first qubit does not have selection registers, only controls
             if i == 0:
                 control, state_qubits[i], rot_reg, phase_gradient = bb.add(
                     ctrl_rot_q,
@@ -162,7 +165,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     def __getPhaseROMValues(self, amplitude_rom_vals):
         """As we are using the equivalent to controlled Z to do the rotations instead of Rz, there
         is a phase offset for each coefficient that has to be corrected. This offset is half of the
-        turn angle applied.
+        turn angle applied, and is added to the phase for each coefficient.
         """
         offset_angles = [0]*(2**self.n_qubits)
         for i in range(self.n_qubits):
@@ -178,6 +181,26 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
 
 @attrs.frozen
 class ControlledQROMRotateQubit(Bloq):
+    r"""Class that performs an array of controlled rotations $Z^{\theta_i/2}$ for a list of angles
+    $\theta$. It uses phase kickback and thus needs a phase gradient state in order to work. This
+    state must be provided externally for efficiency, as it is unaffected and can thus be reused.
+    Refer to [1], section on arbitrary quantum state preparation on page 3.
+
+    Args:
+        n_selections: number of qubits used for encoding the selection register of the QROM, it
+            must be equal to $\lceil \log_2(l_{rv}) \rceil$, where $l_{rv}$ is the number of angles
+            provided.
+        rot_reg_size: size of the register that is used to store the rotation angles. Bigger values
+            increase the accuracy of the results.
+        rom_values: the tuple of values to be loaded in the rom, which correspond to the angle of
+            each rotation. In order to get the rom value that corresponds to a given angle use
+            RotationTree.angle2RomValue(angle, rot_reg_size).
+
+    References:
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
+        (https://arxiv.org/abs/1812.00954).
+            Low, Kliuchnikov, Schaeffer. 2018.
+    """
     n_selections: int
     rot_reg_size: int
     rom_values: Tuple
