@@ -15,10 +15,11 @@ import attrs
 import numpy as np
 import pytest
 from openfermion.resource_estimates.sparse.costing_sparse import cost_sparse
-from openfermion.resource_estimates.utils import QI
+from openfermion.resource_estimates.utils import power_two, QI
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.testing import execute_notebook
 
 
@@ -63,7 +64,16 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     cost_of = cost_sparse(
         num_spin_orb, unused_lambda, num_non_zero, unused_de, num_bits_state_prep, unused_stps
     )[0]
-    adjusted_cost_qualtran = (cost + refl_cost - delta_swap) // 4
+    # correct the expected cost by using a different uniform superposition algorithm
+    # see: https://github.com/quantumlib/Qualtran/issues/611
+    eta = power_two(bloq.num_non_zero)
+    cost_uni_prep = (
+        4 * 2 * (3 * (bloq.num_non_zero - 1).bit_length() + 3 * eta + 2 * num_bits_rot_aa - 9)
+    )
+    prep = PrepareUniformSuperposition(bloq.num_non_zero)
+    cost1a_mod = prep.call_graph()[1][TGate()]
+    cost1a_mod += prep.adjoint().call_graph()[1][TGate()]
+    adjusted_cost_qualtran = (cost - cost1a_mod + cost_uni_prep + refl_cost - delta_swap) // 4
     assert adjusted_cost_qualtran == cost_of
 
 

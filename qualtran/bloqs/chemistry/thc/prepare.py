@@ -41,6 +41,7 @@ from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.swap_network import CSwap
@@ -143,11 +144,15 @@ class UniformSuperpositionTHC(Bloq):
         # 7. Control off of 5 and 6 to not prepare if these conditions are met
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
         # 6. Reflect on comparitors, rotated qubit and |+>.
-        ctrls = bb.join(np.array([rot, lte_nu_mp1, lte_mu_nu]))
-        ctrls, junk = bb.add(
-            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.Z), controls=ctrls, target=junk
+        # ctrls = bb.join(np.array([rot, lte_nu_mp1, lte_mu_nu]))
+        rot, lte_nu_mp1, lte_mu_nu, junk = bb.add(
+            Reflection((1, 1, 1, 1), (1, 1, 1, 1)),
+            reg0=rot,
+            reg1=lte_nu_mp1,
+            reg2=lte_mu_nu,
+            reg3=junk,
         )
-        (rot, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
+        # (rot, lte_nu_mp1, lte_mu_nu) = bb.split(ctrls)
         # We now undo comparitors and rotations and repeat the steps
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
         mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
@@ -161,15 +166,10 @@ class UniformSuperpositionTHC(Bloq):
         rot = bb.add(Ry(-angle), q=rot)
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
-        ctrls, rot = bb.add(
-            MultiControlPauli(((1,) * num_bits_mu + (1,) * num_bits_mu), cirq.Z),
-            controls=bb.join(np.concatenate([bb.split(mu), bb.split(nu)])),
-            target=rot,
+        mu, nu, rot = bb.add(
+            Reflection((num_bits_mu, num_bits_mu, 1), (1, 1, 1)), reg0=mu, reg1=nu, reg2=rot
         )
         # amp = trg[0]
-        mu_nu = bb.split(ctrls)
-        mu = bb.join(mu_nu[:num_bits_mu])
-        nu = bb.join(mu_nu[num_bits_mu:])
         mu = bb.add(OnEach(num_bits_mu, Hadamard()), q=mu)
         nu = bb.add(OnEach(num_bits_mu, Hadamard()), q=nu)
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)

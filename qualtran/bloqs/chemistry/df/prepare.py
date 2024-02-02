@@ -21,7 +21,8 @@ from attrs import frozen
 from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.chemistry.black_boxes import PrepareUniformSuperposition, QROAM
+from qualtran.bloqs.chemistry.black_boxes import QROAM
+from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -129,7 +130,7 @@ class OuterPrepareDoubleFactorization(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Listing 1 steps a-d
         num_bits_l = self.num_aux.bit_length()
-        cost_a = (PrepareUniformSuperposition(self.num_aux + 1, self.num_bits_rot_aa), 1)
+        cost_a = (PrepareUniformSuperposition(self.num_aux + 1), 1)
         # QROAM for alt/keep
         output_size = num_bits_l + self.num_bits_state_prep
         cost_b = (QROAM(self.num_aux + 1, output_size), 1)

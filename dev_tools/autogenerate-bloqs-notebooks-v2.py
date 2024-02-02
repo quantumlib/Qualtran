@@ -71,6 +71,7 @@ import qualtran.bloqs.chemistry.trotter.qvr
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.reflection
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
 
@@ -207,6 +208,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC,
             qualtran.bloqs.block_encoding._CHEBYSHEV_BLOQ_DOC,
         ],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Reflection',
+        module=qualtran.bloqs.reflection,
+        bloq_specs=[qualtran.bloqs.reflection._REFLECTION_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
