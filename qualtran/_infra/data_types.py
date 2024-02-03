@@ -36,9 +36,13 @@ collections of QBits. A QUnsigedInt(32) is intended to represent a register
 encoding positive integers.
 4. To avoid too much overhead we have a QAny type, which is meant to represent
 an opaque bag of bits with no particular significance associated with them. A
-bloq defined with a QAny register (e.g. a n-bit CSwap) will accept any other type assuming the
-bitsizes match. QInt(32) == QAny(32), QInt(32) != QFixedPoint(16, 16). QInt(32) != QUnsignedInt(32).
-5. We assume a big endian convention for addressing QBits in registers throughout qualtran.
+bloq defined with a QAny register (e.g. a n-bit CSwap) will accept any other
+type assuming the bitsizes match. QInt(32) == QAny(32), QInt(32) !=
+QFixedPoint(16, 16). QInt(32) != QUnsignedInt(32).
+5. We assume a big endian convention for addressing QBits in registers
+throughout qualtran. Recall that in a big endian convention the most signficant
+bit is at index 0. If you iterate through the bits in a register they will be
+yielded from most significant to least significant.
 6. Ones' complement integers are used extensively in quantum algorithms. We have
 two types QInt and QIntOnesComp for integers using two's and ones' complement
 respectively.
@@ -52,6 +56,8 @@ import sympy
 
 
 class QDType:
+    """This defines the abstract interface for quantum data types."""
+
     @property
     @abc.abstractmethod
     def num_qubits(self):
@@ -74,7 +80,9 @@ class QAny(QDType):
     bitsize: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        assert self.bitsize > 1, "bitsize must be > 1."
+        if isinstance(self.bitsize, int):
+            if self.num_qubits == 1:
+                raise ValueError("num_qubits must be > 1.")
 
     @property
     def num_qubits(self):
@@ -94,7 +102,9 @@ class QInt(QDType):
     bitsize: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        assert self.bitsize > 1, "bitsize must be > 1."
+        if isinstance(self.bitsize, int):
+            if self.num_qubits == 1:
+                raise ValueError("num_qubits must be > 1.")
 
     @property
     def num_qubits(self):
@@ -114,7 +124,9 @@ class QIntOnesComp(QDType):
     bitsize: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        assert self.bitsize > 1, "bitsize must be > 1."
+        if isinstance(self.bitsize, int):
+            if self.num_qubits == 1:
+                raise ValueError("num_qubits must be > 1.")
 
     @property
     def num_qubits(self):
@@ -132,10 +144,12 @@ class QUnsignedInt(QDType):
         bitsize: The number of qubits used to represent the integer.
     """
 
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        assert self.bitsize > 1, "bitsize must be > 1."
+        if isinstance(self.bitsize, int):
+            if self.num_qubits == 1:
+                raise ValueError("num_qubits must be > 1.")
 
     @property
     def num_qubits(self):
@@ -152,14 +166,17 @@ class BoundedQInt(QDType):
     """
 
     bitsize: Union[int, sympy.Expr]
-    iteration_length: int
+    iteration_length: Union[int, sympy.Expr]
 
     def __attrs_post_init__(self):
-        assert self.bitsize > 1, "bitsize must be > 1."
-        if self.iteration_length > 2**self.bitsize:
-            raise ValueError(
-                f"BoundedQInt iteration length is too large for given bitsize. {self.iteration_length} vs {2**self.bitsize}"
-            )
+        if isinstance(self.bitsize, int):
+            if self.num_qubits == 1:
+                raise ValueError("num_qubits must be > 1.")
+            if self.iteration_length > 2**self.bitsize:
+                raise ValueError(
+                    "BoundedQInt iteration length is too large for given bitsize. "
+                    f"{self.iteration_length} vs {2**self.bitsize}"
+                )
 
     @property
     def num_qubits(self):
@@ -183,7 +200,12 @@ class QFixedPoint(QDType):
 
     @property
     def num_qubits(self):
-        return self.int_bitsize + self.frac_bitsize + 1
+        if isinstance(self.int_bitsize, sympy.Expr):
+            return self.int_bitsize + self.frac_bitsize + sympy.symbols("1")
+        else:
+            return self.int_bitsize + self.frac_bitsize + 1
 
     def __attrs_post_init__(self):
-        assert self.num_qubits > 1, "Number of qubits must be > 1."
+        if isinstance(self.num_qubits, int):
+            if self.num_qubits == 1:
+                raise ValueError("num_qubits must be > 1.")
