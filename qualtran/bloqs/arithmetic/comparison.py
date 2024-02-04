@@ -539,33 +539,34 @@ class GreaterThan(Bloq):
         if not self.signed:
             a_sign = bb.allocate(n=1)
             a_split = bb.split(a)
-            a = bb.join(np.concatenate([a_split, [a_sign]]))
+            a = bb.join(np.concatenate([[a_sign], a_split]))
 
             b_sign = bb.allocate(n=1)
             b_split = bb.split(b)
-            b = bb.join(np.concatenate([b_split, [b_sign]]))
+            b = bb.join(np.concatenate([[b_sign], b_split]))
+
+        # Create variable true_bitsize to account for sign bit in bloq construction.
+        true_bitsize = self.bitsize if self.signed else (self.bitsize + 1)
 
         # Flip all the bits in the x register.
         a_split = bb.split(a)
 
-        for i in range(self.bitsize):
+        for i in range(true_bitsize):
             a_split[i] = bb.add(XGate(), q=a_split[i])
-        if not self.signed:
-            a_split[-1] = bb.add(XGate(), q=a_split[-1])
         b_split = bb.split(b)
 
         # Iteratively implements the left adder circuit building block of the Gidney Adder. On
         # the first pair of qubits we only have to perform a logical-and operation. On all other
         # qubit pairs we perform two CNOTs, a logical-and, and a third CNOT operation.
-        for i in range(self.bitsize - 1):
+        for i in range(true_bitsize - 1):
             if i > 0:
                 carry_in = ancillas[i - 1]
-                carry_in, a_split[i] = bb.add(CNOT(), ctrl=carry_in, target=a_split[i])
-                carry_in, b_split[i] = bb.add(CNOT(), ctrl=carry_in, target=b_split[i])
+                carry_in, a_split[-1 - i] = bb.add(CNOT(), ctrl=carry_in, target=a_split[-1 - i])
+                carry_in, b_split[-1 - i] = bb.add(CNOT(), ctrl=carry_in, target=b_split[-1 - i])
 
             # Performs the logical-ands and stores all three bits' soquets in a list for later
             # uncomputing.
-            and_ctrl = [a_split[i], b_split[i]]
+            and_ctrl = [a_split[-1 - i], b_split[-1 - i]]
             and_ctrl, ancilla = bb.add(And(), ctrl=and_ctrl)
             and_ctrls.append(and_ctrl)
             ancillas.append(ancilla)
@@ -574,45 +575,43 @@ class GreaterThan(Bloq):
                 ancillas[i - 1], ancillas[i] = bb.add(CNOT(), ctrl=carry_in, target=ancillas[i])
 
         # Complete the addition in order to get the sign bit of (a' + b).
-        ancillas[-1], b_split[-1] = bb.add(CNOT(), ctrl=ancillas[-1], target=b_split[-1])
-        a_split[-1], b_split[-1] = bb.add(CNOT(), ctrl=a_split[-1], target=b_split[-1])
+        ancillas[-1], b_split[0] = bb.add(CNOT(), ctrl=ancillas[-1], target=b_split[0])
+        a_split[0], b_split[0] = bb.add(CNOT(), ctrl=a_split[0], target=b_split[0])
 
         # Use a 0-controlled NOT gate in order to flip the target bit if the sign bit of (a' + b)'
         # is 1. (a' + b)' = a - b therefore if b > a, then a - b < 0 and the sign bit of a - b will
         # be 1.
-        b_split[-1] = bb.add(XGate(), q=b_split[-1])
-        b_split[-1], target = bb.add(CNOT(), ctrl=b_split[-1], target=target)
-        b_split[-1] = bb.add(XGate(), q=b_split[-1])
+        b_split[0] = bb.add(XGate(), q=b_split[0])
+        b_split[0], target = bb.add(CNOT(), ctrl=b_split[0], target=target)
+        b_split[0] = bb.add(XGate(), q=b_split[0])
 
         # Uncompute the completion of addition on the last bit of b.
-        a_split[-1], b_split[-1] = bb.add(CNOT(), ctrl=a_split[-1], target=b_split[-1])
-        ancillas[-1], b_split[-1] = bb.add(CNOT(), ctrl=ancillas[-1], target=b_split[-1])
+        a_split[0], b_split[0] = bb.add(CNOT(), ctrl=a_split[0], target=b_split[0])
+        ancillas[-1], b_split[0] = bb.add(CNOT(), ctrl=ancillas[-1], target=b_split[0])
 
         # Iteratively uncomputes the left adder circuit building block by performing the operations
         # in reverse order. In a normal adder circuit we would use the right adder circuit building
         # block, but because we only need to compute the carry-out bit we uncompute the circuit to
         # restore a and b.
-        for i in reversed(range(self.bitsize - 1)):
+        for i in range(true_bitsize - 1):
             and_ctrl = and_ctrls.pop()
             ancilla = ancillas.pop()
 
-            if i > 0:
+            if i < true_bitsize - 2:
                 carry_in = ancillas[-1]
                 carry_in, ancilla = bb.add(CNOT(), ctrl=carry_in, target=ancilla)
 
             and_ctrl = bb.add(And(uncompute=True), ctrl=and_ctrl, target=ancilla)
-            a_split[i] = and_ctrl[0]
-            b_split[i] = and_ctrl[1]
+            a_split[i + 1] = and_ctrl[0]
+            b_split[i + 1] = and_ctrl[1]
 
-            if i > 0:
-                carry_in, b_split[i] = bb.add(CNOT(), ctrl=carry_in, target=b_split[i])
-                ancillas[i - 1], a_split[i] = bb.add(CNOT(), ctrl=carry_in, target=a_split[i])
+            if i < true_bitsize - 2:
+                carry_in, b_split[i + 1] = bb.add(CNOT(), ctrl=carry_in, target=b_split[i + 1])
+                ancillas[-1], a_split[i + 1] = bb.add(CNOT(), ctrl=carry_in, target=a_split[i + 1])
 
         # Uncompute the bitflips done to represent x'.
-        for i in range(self.bitsize):
+        for i in range(true_bitsize):
             a_split[i] = bb.add(XGate(), q=a_split[i])
-        if not self.signed:
-            a_split[-1] = bb.add(XGate(), q=a_split[-1])
 
         a = bb.join(a_split)
         b = bb.join(b_split)
@@ -620,13 +619,13 @@ class GreaterThan(Bloq):
         # If the input registers were unsigned we free the ancilla sign bits.
         if not self.signed:
             a_split = bb.split(a)
-            a_sign = a_split[-1]
-            a = bb.join(a_split[:-1])
+            a_sign = a_split[0]
+            a = bb.join(a_split[1:])
             bb.free(a_sign)
 
             b_split = bb.split(b)
-            b_sign = b_split[-1]
-            b = bb.join(b_split[:-1])
+            b_sign = b_split[0]
+            b = bb.join(b_split[1:])
             bb.free(b_sign)
 
         # Return the output registers.

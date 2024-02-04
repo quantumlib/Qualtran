@@ -38,12 +38,6 @@ from qualtran.testing import (
 )
 
 
-def _make_greater_than():
-    from qualtran.bloqs.arithmetic import GreaterThan
-
-    return GreaterThan(a_bitsize=4, b_bitsize=4)
-
-
 def _make_greater_than_constant():
     from qualtran.bloqs.arithmetic import GreaterThanConstant
 
@@ -182,13 +176,21 @@ def test_greater_than_decomp(bitsize, signed):
     assert_valid_bloq_decomposition(bloq)
 
 
+# TODO: write tests for signed integer comparison
+# https://github.com/quantumlib/Qualtran/issues/606
 @pytest.mark.parametrize(
     'bitsize,signed,a,b,target,result',
     [
         (1, False, 0, 1, 0, 1),
         (2, False, 3, 2, 0, 0),
-        (5, False, 4, 5, 1, 0),
-        (5, False, 1, 1, 0, 0),
+        (3, False, 3, 5, 1, 0),
+        (4, False, 8, 8, 0, 0),
+        (5, False, 16, 30, 1, 0),
+        (1, True, 1, 1, 0, 0),
+        (2, True, 0, 1, 1, 0),
+        (3, True, 0, 2, 0, 1),
+        (4, True, 7, 7, 1, 1),
+        (5, True, 12, 13, 1, 0),
     ],
 )
 def test_classical_greater_than(bitsize, signed, a, b, target, result):
