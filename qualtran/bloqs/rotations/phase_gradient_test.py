@@ -52,6 +52,12 @@ def test_phase_gradient_state_tensor_contract(n: int, t: float):
     bloq = PhaseGradientState(n, t)
     np.testing.assert_allclose(state_coefs, bloq.tensor_contract())
 
+    bb = BloqBuilder()
+    phase_reg = bb.add(bloq)
+    bb.add(PhaseGradientState(n, t, adjoint=True), phase_grad=phase_reg)
+    circuit = bb.finalize()
+    assert np.isclose(circuit.tensor_contract(), 1)
+
 
 @pytest.mark.parametrize('n', [6, 7, 8])
 @pytest.mark.parametrize('exponent', [-0.5, 1, 1 / 10])

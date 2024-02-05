@@ -24,7 +24,7 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import attrs
 import cirq
@@ -102,12 +102,16 @@ class And(GateWithRegisters):
         dag = '†' if self.uncompute else ''
         return f'And{dag}'
 
-    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        if self.uncompute:
-            raise NotImplementedError("Come back later.")
+    def on_classical_vals(
+        self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
+    ) -> Dict[str, NDArray[np.uint8]]:
+        out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
+        if not self.uncompute:
+            return {'ctrl': ctrl, 'target': out}
 
-        target = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
-        return {'ctrl': ctrl, 'target': target}
+        # Uncompute
+        assert target == out
+        return {'ctrl': ctrl}
 
     def add_my_tensors(
         self,

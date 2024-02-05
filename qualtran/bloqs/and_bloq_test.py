@@ -223,3 +223,6 @@ def test_multiand_adjoint():
 
     cbloq = bb.finalize(q0=qs[0], q1=qs[1], q2=qs[2])
     qlt_testing.assert_valid_cbloq(cbloq)
+
+    ret = cbloq.call_classically(q0=1, q1=1, q2=1)
+    assert ret == (1, 1, 1)

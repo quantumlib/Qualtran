@@ -39,7 +39,6 @@ from qualtran.bloqs.arithmetic import (
 )
 from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
 from qualtran.bloqs.basic_gates.swap import CSwap
-from qualtran.bloqs.chemistry.black_boxes import QROAM
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.reflection import Reflection
@@ -435,8 +434,11 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         nd = (data_size - 1).bit_length()
         cost_2 = (ToContiguousIndex(nmu, nd), 1)
-        m = 2 * nmu + 2 + self.keep_bitsize
-        cost_3 = (QROAM(data_size, m), 1)
+        qroam = SelectSwapQROM(
+            *(self.theta, self.alt_theta, self.alt_mu, self.alt_nu, self.keep),
+            target_bitsizes=(1, 1, nmu, nmu, self.keep_bitsize),
+        )
+        cost_3 = (qroam, 1)
         cost_4 = (OnEach(self.keep_bitsize, Hadamard()), 1)
         cost_5 = (LessThanEqual(self.keep_bitsize, self.keep_bitsize), 2)
         cost_6 = (CSwap(nmu), 3)
