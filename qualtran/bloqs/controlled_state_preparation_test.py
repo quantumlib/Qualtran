@@ -20,7 +20,13 @@ from qualtran.bloqs.controlled_state_preparation import (
 )
 from qualtran.drawing import show_bloq
 from qualtran import BloqBuilder
-from qualtran.bloqs.basic_gates import PlusState, OneEffect, OneState, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates import (
+    PlusState,
+    OneEffect,
+    OneState,
+    ZeroEffect,
+    ZeroState,
+)
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -138,7 +144,8 @@ def test_controlled_state_preparation_via_rotation_adjoint(
     assert np.isclose(result[0], 1)  # test that |result> = |0>
 
 
-#  these states can't be approximated exactly with the given rot_reg_size, check they are close enough
+# these states can't be approximated exactly with the given
+# rot_reg_size, check they are close enough
 @pytest.mark.parametrize(
     "n_qubits, rot_reg_size, state_coefs",
     [
