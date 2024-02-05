@@ -293,6 +293,8 @@ class _IntVector(Bloq):
     @cached_property
     def signature(self) -> Signature:
         side = Side.RIGHT if self.state else Side.LEFT
+        if self.bitsize == 1:
+            return Signature([Register('val', bitsize=QBit(), side=side)])
         return Signature([Register('val', bitsize=QAny(self.bitsize), side=side)])
 
     @staticmethod
