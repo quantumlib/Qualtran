@@ -204,7 +204,11 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         for i in range(self.n_qubits):
             for j in range(2**i):
                 item_range = 2 ** (self.n_qubits - i)
-                offset = np.pi * (1 - amplitude_rom_vals[i][j] / (2**self.rot_reg_size))
+                # if the rom has value 0 the formula gives 180, when it should be 0
+                if amplitude_rom_vals[i][j] == 0:
+                    offset = 0
+                else:
+                    offset = np.pi * (1 - amplitude_rom_vals[i][j] / (2**self.rot_reg_size))
                 for k in range(item_range * j, item_range * (j + 1)):
                     offset_angles[k] += offset
         # if the matrix is the adjoint, the angles have to be undone, thus just load -theta
