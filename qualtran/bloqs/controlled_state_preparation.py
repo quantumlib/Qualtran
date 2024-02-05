@@ -208,7 +208,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                 if amplitude_rom_vals[i][j] == 0:
                     offset = 0
                 else:
-                    offset = np.pi * (1 - amplitude_rom_vals[i][j] / (2**self.rot_reg_size))
+                    offset = np.pi * amplitude_rom_vals[i][j] / (2**self.rot_reg_size)
                 for k in range(item_range * j, item_range * (j + 1)):
                     offset_angles[k] += offset
         # if the matrix is the adjoint, the angles have to be undone, thus just load -theta
@@ -365,7 +365,7 @@ class RotationTree:
         r"""Returns the value to be loaded to a QROM to encode the given angle with a certain value
         of rot_reg_size.
         """
-        rom_value_decimal = 2**rot_reg_size * (1 - angle / (2 * np.pi))
+        rom_value_decimal = 2**rot_reg_size * angle / (2 * np.pi)
         return round(rom_value_decimal) % (2**rot_reg_size)
 
     # do not call, use rotationTreeFromState
