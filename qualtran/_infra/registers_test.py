@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import Register, SelectionRegister, Side, Signature
+from qualtran import QAny, QBit, QInt, Register, SelectionRegister, Side, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
 
 
@@ -170,3 +170,15 @@ def test_duplicate_names():
 
     with pytest.raises(ValueError, match=r'.*control is specified more than once per side.'):
         Signature([Register('control', 1), Register('control', 1)])
+
+
+def test_dtypes_converter():
+    r1 = Register("my_reg", 5)
+    r2 = Register("my_reg", QAny(5))
+    assert r1 == r2
+    r1 = Register("my_reg", 1)
+    r2 = Register("my_reg", QBit())
+    assert r1 == r2
+    r2 = Register("my_reg", 5)
+    r2 = Register("my_reg", QInt(5))
+    assert r1 != r2
