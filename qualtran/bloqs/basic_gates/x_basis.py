@@ -183,7 +183,7 @@ class XGate(Bloq):
         return 'X'
 
     def on_classical_vals(self, q: int) -> Dict[str, 'ClassicalValT']:
-        return {'q': (q + 1) % 2}
+        return {'q': np.uint64((q + 1) % 2)}
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'

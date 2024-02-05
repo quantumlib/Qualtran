@@ -507,12 +507,12 @@ class GreaterThan(Bloq):
         self, a: 'ClassicalValT', b: 'ClassicalValT', target: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         # target is a 1-bit register so we assert that it's classical value is binary.
-        assert target == (target % 2)
+        assert np.uint64(target) == (np.uint64(target) % 2)
 
         if b > a:
-            target = (target + 1) % 2
+            target = (np.uint64(target) + 1) % 2
 
-        return {'a': a, 'b': b, 'target': target}
+        return {'a': a, 'b': b, 'target': np.uint64(target)}
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: SoquetT, b: SoquetT, target: SoquetT
