@@ -130,7 +130,9 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         # if it is the adjoint gate, load the modular negative values to undo the rotations that
         # loaded the amplitudes
         if self.adjoint:
-            rom_vals = RotationTree.extractRomValuesFromState(self.state, self.rot_reg_size, adjoint=True)
+            rom_vals = RotationTree.extractRomValuesFromState(
+                self.state, self.rot_reg_size, adjoint=True
+            )
         state_qubits = bb.split(target_state)
         for i in range(self.n_qubits):
             # for the normal gate loop from qubit 0 to n_qubits-1, if it is the adjoint
@@ -207,9 +209,13 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                     offset_angles[k] += offset
         # if the matrix is the adjoint, the angles have to be undone, thus just load -theta
         if self.adjoint:
-            angles = [offset - np.angle(c) for c, offset in zip(self.state, offset_angles)]
+            angles = [
+                offset - np.angle(c) for c, offset in zip(self.state, offset_angles)
+            ]
         else:
-            angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
+            angles = [
+                np.angle(c) - offset for c, offset in zip(self.state, offset_angles)
+            ]
         rom_values = [RotationTree.angle2RomValue(a, self.rot_reg_size) for a in angles]
         return rom_values
 
@@ -267,39 +273,34 @@ class ControlledQROMRotateQubit(Bloq):
             target_bitsizes=(self.rot_reg_size,),
             num_controls=2,
         )
+        # both prepare_control and qubit will control the QROM so that this acts as a control Z
         qrom_control = bb.join(np.array([soqs["prepare_control"], soqs["qubit"]]))
-        if self.n_selections != 0:
-            qrom_control, soqs["selection"], soqs["rot_reg"] = bb.add(
-                qrom,
-                control=qrom_control,
-                selection=soqs["selection"],
-                target0_=soqs["rot_reg"],
-            )
-        else:
-            qrom_control, soqs["rot_reg"] = bb.add(
-                qrom, control=qrom_control, target0_=soqs["rot_reg"]
-            )
-
+        qrom_control, soqs = self.applyQROM(qrom, bb, qrom_control, soqs)
         soqs["rot_reg"], soqs["phase_gradient"] = bb.add(
             Add(bitsize=self.rot_reg_size), a=soqs["rot_reg"], b=soqs["phase_gradient"]
         )
-
-        if self.n_selections != 0:
-            qrom_control, soqs["selection"], soqs["rot_reg"] = bb.add(
-                qrom,
-                control=qrom_control,
-                selection=soqs["selection"],
-                target0_=soqs["rot_reg"],
-            )
-        else:
-            qrom_control, soqs["rot_reg"] = bb.add(
-                qrom, control=qrom_control, target0_=soqs["rot_reg"]
-            )
+        qrom_control, soqs = self.applyQROM(qrom, bb, qrom_control, soqs)
         separated = bb.split(qrom_control)
         soqs["prepare_control"] = separated[0]
         soqs["qubit"] = separated[1]
 
         return soqs
+
+    def applyQROM(
+        self, qrom: QROM, bb: BloqBuilder, qrom_control: SoquetT, soqs: Dict[str, SoquetT]
+    ):
+        if self.n_selections != 0:
+            qrom_control, soqs["selection"], soqs["rot_reg"] = bb.add(
+                qrom,
+                control=qrom_control,
+                selection=soqs["selection"],
+                target0_=soqs["rot_reg"],
+            )
+        else:
+            qrom_control, soqs["rot_reg"] = bb.add(
+                qrom, control=qrom_control, target0_=soqs["rot_reg"]
+            )
+        return qrom_control, soqs
 
 
 class RotationTree:
@@ -316,7 +317,9 @@ class RotationTree:
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    def extractRomValuesFromState(state: ArrayLike, rot_reg_size: int, adjoint: bool = False):
+    def extractRomValuesFromState(
+        state: ArrayLike, rot_reg_size: int, adjoint: bool = False
+    ):
         r"""Gives list in which the ith element is a list of the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
@@ -330,7 +333,7 @@ class RotationTree:
             for tree in this_layer:
                 angle = tree.getAngle0()
                 if adjoint:
-                    angle = 2*np.pi-angle
+                    angle = 2 * np.pi - angle
                 rom_val = RotationTree.angle2RomValue(angle, rot_reg_size)
                 rom_vals_this_layer.append(rom_val)
                 if tree.branch0 is not None:
@@ -351,8 +354,7 @@ class RotationTree:
         return RotationTree(dn_l.sum_total, dn_r.sum_total, dn_l, dn_r)
 
     def getAngle0(self):
-        r"""Get the angle that corresponds to p_0.
-        """
+        r"""Get the angle that corresponds to p_0."""
         return 2 * np.arccos(np.sqrt(self.__getP0()))
 
     def angle2RomValue(angle, rot_reg_size):
