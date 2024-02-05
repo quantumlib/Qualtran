@@ -17,12 +17,10 @@ from typing import Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
-import numpy as np
 from numpy.typing import NDArray
-import numpy as np
 
-from qualtran import BloqBuilder, GateWithRegisters, Register, Side, SoquetT, Signature
-from qualtran.bloqs.basic_gates import Hadamard, PlusState, PlusEffect, MinusState, MinusEffect, Toffoli
+from qualtran import GateWithRegisters, Register, Side, Signature
+from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
@@ -128,23 +126,6 @@ class PhaseGradientState(GateWithRegisters):
             )
         ]
         yield cirq.inverse(ops) if self.adjoint else ops
-
-    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
-        if self.adjoint:
-            qubits = bb.split(soqs['phase_grad'])
-            for i in range(1, self.bitsize):
-                qubits[i] = bb.add(ZPowGate(exponent=-1 / 2**i), q=qubits[i])
-                bb.add(PlusEffect(), q=qubits[i])
-            bb.add(MinusEffect(), q=qubits[0])
-            return {}
-        else:
-            qubits = [bb.add(MinusState())] + [
-                bb.add(PlusState()) for _ in range(self.bitsize - 1)
-            ]
-            for i in range(1, self.bitsize):
-                qubits[i] = bb.add(ZPowGate(exponent=1 / 2**i), q=qubits[i])
-            phase_grad = bb.join(np.array(qubits))
-            return {"phase_grad": phase_grad}
 
     def __pow__(self, power):
         if power == 1:
