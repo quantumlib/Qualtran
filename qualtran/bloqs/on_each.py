@@ -18,14 +18,14 @@ from typing import Dict
 
 import attrs
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, QAny, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, SoquetT
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
 
 
 @attrs.frozen
-class OnEach(GateWithRegisters):
+class OnEach(Bloq):
     """Add a single-qubit (unparameterized) bloq on each of n qubits.
 
     Args:
