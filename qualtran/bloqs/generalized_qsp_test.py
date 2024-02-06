@@ -130,10 +130,9 @@ def evaluate_polynomial_of_matrix(P: Sequence[complex], U: NDArray) -> NDArray:
     return result
 
 
-def assert_matrices_same_upto_global_phase(A: NDArray, B: NDArray):
+def assert_matrices_almost_equal(A: NDArray, B: NDArray):
     assert A.shape == B.shape
-    assert np.linalg.norm(A @ A.conj().T - B @ B.conj().T) <= 1e-5
-    assert np.linalg.norm(A.conj().T @ A - B.conj().T @ B) <= 1e-5
+    assert np.linalg.norm(A - B) <= 1e-5
 
 
 def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
@@ -144,11 +143,11 @@ def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
 
     expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)
     actual_top_left = result_unitary[:N, :N]
-    assert_matrices_same_upto_global_phase(expected_top_left, actual_top_left)
+    assert_matrices_almost_equal(expected_top_left, actual_top_left)
 
     expected_bottom_left = evaluate_polynomial_of_matrix(gqsp_U.Q, input_unitary)
     actual_bottom_left = result_unitary[N:, :N]
-    assert_matrices_same_upto_global_phase(expected_bottom_left, actual_bottom_left)
+    assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left)
 
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
