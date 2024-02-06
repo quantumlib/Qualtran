@@ -75,7 +75,7 @@ class SU2RotationGate(GateWithRegisters):
 
 
 def qsp_complementary_polynomial(
-    P: Sequence[complex], *, only_real_coeffs: bool = False, verify: bool = False
+    P: Sequence[complex], *, verify: bool = False
 ) -> Sequence[complex]:
     r"""Computes the Q polynomial given P
 
@@ -93,7 +93,6 @@ def qsp_complementary_polynomial(
 
     Args:
         P: Co-efficients of a complex polynomial.
-        only_real_coeffs: If the polynomials have all real coefficients.
         verify: sanity check the computed polynomial roots (defaults to False).
 
     References:
@@ -180,16 +179,11 @@ def qsp_complementary_polynomial(
 
     Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
 
-    coeffs = Q.coef
-    if only_real_coeffs:
-        if verify:
-            np.testing.assert_almost_equal(np.imag(coeffs).abs(), 0)
-        coeffs = np.real(coeffs)
-    return coeffs
+    return Q.coef
 
 
 def qsp_phase_factors(
-    P: Sequence[complex], Q: Sequence[complex], *, only_real_coeffs: bool = False
+    P: Sequence[complex], Q: Sequence[complex]
 ) -> Tuple[Sequence[float], Sequence[float], float]:
     """Computes the QSP signal rotations for a given pair of polynomials.
 
@@ -199,7 +193,6 @@ def qsp_phase_factors(
     Args:
         P: Co-efficients of a complex polynomial.
         Q: Co-efficients of a complex polynomial.
-        only_real_coeffs: If the polynomials have all real coefficients.
 
     Returns:
         A tuple (theta, phi, lambda).
@@ -229,29 +222,14 @@ def qsp_phase_factors(
         assert S.shape == (2, d + 1)
 
         a, b = S[:, d]
-        if only_real_coeffs:
-            theta[d] = np.arctan2(np.real(b), np.real(a))
-            phi[d] = 0
-        else:
-            theta[d] = np.arctan2(np.abs(b), np.abs(a))
-            # \phi_d = arg(a / b)
-            # TODO this is numerically unstable for values of a and b around 0,
-            #      np.angle(0) = 0, but for near-zero values it produces the "correct angle",
-            #      even though we want it to be 0.
-            #      There should be a more numerically stable way to compute the relevant phis
-            #      so that the final QSP sequence is valid.
-            phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a) - safe_angle(b)
+        theta[d] = np.arctan2(np.abs(b), np.abs(a))
+        # \phi_d = arg(a / b)
+        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a) - safe_angle(b)
 
         if d == 0:
             lambd = safe_angle(b)
         else:
             S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix.conj().T @ S
-
-            # check if the gate was actually correct
-            aa, bb = S[0][0], S[1][d]
-            np.testing.assert_almost_equal(aa, 0, decimal=6)
-            np.testing.assert_almost_equal(bb, 0, decimal=6)
-
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
@@ -281,7 +259,6 @@ class GeneralizedQSP(GateWithRegisters):
 
     U: GateWithRegisters
     P: Sequence[complex]
-    only_real_coeffs: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -289,11 +266,11 @@ class GeneralizedQSP(GateWithRegisters):
 
     @cached_property
     def Q(self):
-        return qsp_complementary_polynomial(self.P, only_real_coeffs=self.only_real_coeffs)
+        return qsp_complementary_polynomial(self.P)
 
     @cached_property
     def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:
-        return qsp_phase_factors(self.P, self.Q, only_real_coeffs=self.only_real_coeffs)
+        return qsp_phase_factors(self.P, self.Q)
 
     @cached_property
     def _theta(self) -> Sequence[float]:

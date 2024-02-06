@@ -136,12 +136,10 @@ def assert_matrices_same_upto_global_phase(A: NDArray, B: NDArray):
     assert np.linalg.norm(A.conj().T @ A - B.conj().T @ B) <= 1e-5
 
 
-def verify_generalized_qsp(
-    U: GateWithRegisters, P: Sequence[complex], *, only_real_coeffs: bool = False
-):
+def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
-    gqsp_U = GeneralizedQSP(U, P, only_real_coeffs=only_real_coeffs)
+    gqsp_U = GeneralizedQSP(U, P)
     result_unitary = cirq.unitary(gqsp_U)
 
     expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)
@@ -155,14 +153,24 @@ def verify_generalized_qsp(
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 150])
-@pytest.mark.parametrize("assume_real", [True, False])
-def test_generalized_real_qsp_on_random_unitaries(bitsize: int, degree: int, assume_real: bool):
+def test_generalized_real_qsp_on_random_unitaries(bitsize: int, degree: int):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
         U = RandomGate.create(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
-        verify_generalized_qsp(U, P, only_real_coeffs=assume_real)
+        verify_generalized_qsp(U, P)
+
+
+@pytest.mark.parametrize("bitsize", [1, 2, 3])
+@pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100])
+def test_generalized_qsp_on_random_unitaries(bitsize: int, degree: int):
+    random_state = np.random.RandomState(42)
+
+    for _ in range(10):
+        U = RandomGate.create(bitsize, random_state=random_state)
+        P = random_qsp_polynomial(degree, random_state=random_state)
+        verify_generalized_qsp(U, P)
 
 
 @define(slots=False)
