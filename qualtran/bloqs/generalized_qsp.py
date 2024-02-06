@@ -222,6 +222,9 @@ def qsp_phase_factors(
     phi = np.zeros(n)
     lambd = 0
 
+    def safe_angle(x):
+        return 0 if np.isclose(x, 0) else np.angle(x)
+
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
 
@@ -237,12 +240,18 @@ def qsp_phase_factors(
             #      even though we want it to be 0.
             #      There should be a more numerically stable way to compute the relevant phis
             #      so that the final QSP sequence is valid.
-            phi[d] = 0 if np.isclose(np.abs(b), 0) else np.angle(a) - np.angle(b)
+            phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a) - safe_angle(b)
 
         if d == 0:
-            lambd = np.angle(b)
+            lambd = safe_angle(b)
         else:
             S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix @ S
+
+            # check if the gate was actually correct
+            aa, bb = S[0][0], S[1][d]
+            np.testing.assert_almost_equal(aa, 0, decimal=6)
+            np.testing.assert_almost_equal(bb, 0, decimal=6)
+
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
