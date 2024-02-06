@@ -231,10 +231,10 @@ class SymbolicGQSP:
         assert abs(error_QU) <= 1e-5
 
 
-@pytest.mark.parametrize("degree", [2, 3, 4])
+@pytest.mark.parametrize("degree", [2, 3, 4, 5, 10])
 def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
     random_state = np.random.RandomState(102)
 
     for _ in range(10):
-        P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
+        P = random_qsp_polynomial(degree, random_state=random_state)
         SymbolicGQSP(P).verify()
