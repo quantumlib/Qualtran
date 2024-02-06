@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -96,7 +96,7 @@ class _ZVector(Bloq):
             )
         )
 
-    def on_classical_vals(self, **vals: int) -> Dict[str, int]:
+    def on_classical_vals(self, *, q: Optional[int] = None) -> Dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
 
         If `self.state`, we return a bit in the `q` register. Otherwise,
@@ -104,11 +104,9 @@ class _ZVector(Bloq):
         """
         bit_int = 1 if self.bit else 0  # guard against bad `self.bit` types.
         if self.state:
-            assert not vals, vals
+            assert q is None
             return {'q': bit_int}
 
-        q = vals.pop('q')
-        assert not vals, vals
         assert q == bit_int, q
         return {}
 
@@ -345,12 +343,12 @@ class _IntVector(Bloq):
 
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, int]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, int]:
         if self.state:
-            assert not vals
+            assert val is None
             return {'val': self.val}
 
-        assert vals['val'] == self.val, vals['val']
+        assert val == self.val, val
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
