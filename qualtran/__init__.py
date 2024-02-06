@@ -49,7 +49,7 @@ from ._infra.data_types import (
     QAny,
     QFixedPoint,
     QIntOnesComp,
-    QUnsignedInt,
+    QUInt,
     BoundedQInt,
 )
 

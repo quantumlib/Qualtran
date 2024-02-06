@@ -15,7 +15,7 @@
 import pytest
 import sympy
 
-from qualtran._infra.data_types import BoundedQInt, QFixedPoint, QInt, QIntOnesComp, QUnsignedInt
+from qualtran._infra.data_types import BoundedQInt, QFixedPoint, QInt, QIntOnesComp, QUInt
 
 
 def test_qint():
@@ -39,12 +39,12 @@ def test_qint_ones():
 
 
 def test_quint():
-    qint_8 = QUnsignedInt(8)
+    qint_8 = QUInt(8)
     assert qint_8.num_qubits == 8
     with pytest.raises(ValueError, match="num_qubits must be > 1."):
-        QUnsignedInt(1)
+        QUInt(1)
     n = sympy.symbols('x')
-    qint_8 = QUnsignedInt(n)
+    qint_8 = QUInt(n)
     assert qint_8.num_qubits == n
 
 
