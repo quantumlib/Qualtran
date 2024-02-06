@@ -68,15 +68,10 @@ class SU2RotationGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         qubit = q[0]
 
-        gates = cirq.single_qubit_matrix_to_gates(self.rotation_matrix)
-        matrix = np.eye(2)
-        for gate in gates:
-            yield gate.on(qubit)
-            matrix = cirq.unitary(gate) @ matrix
-
-        # `cirq.single_qubit_matrix_to_gates` does not preserve global phase
-        matrix = matrix @ self.rotation_matrix.conj().T
-        yield cirq.GlobalPhaseGate(matrix[0, 0].conj()).on()
+        yield cirq.Rz(rads=np.pi - self.lambd).on(qubit)
+        yield cirq.Ry(rads=2 * self.theta).on(qubit)
+        yield cirq.Rz(rads=-self.phi).on(qubit)
+        yield cirq.GlobalPhaseGate(np.exp(1j * (np.pi + self.lambd + self.phi) / 2)).on()
 
 
 def qsp_complementary_polynomial(
