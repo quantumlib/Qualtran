@@ -336,8 +336,9 @@ def _black_box_block_bloq() -> BlackBoxBlockEncoding:
     from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
-    select = BlackBoxSelect(SelectHubbard(2, 2))
-    prepare = BlackBoxPrepare(PrepareHubbard(2, 2, 1, 4))
+    dim = 3
+    select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
     return black_box_block_bloq
 
@@ -354,10 +355,11 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
-    select = BlackBoxSelect(SelectHubbard(2, 2))
-    prepare = BlackBoxPrepare(PrepareHubbard(2, 2, 1, 4))
+    dim = 3
+    select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
-    chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, 3)
+    chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
     return chebyshev_poly
 
 
