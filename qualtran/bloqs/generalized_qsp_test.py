@@ -152,7 +152,7 @@ def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 150, 180])
-def test_generalized_real_qsp_on_random_unitaries(bitsize: int, degree: int):
+def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree: int):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
@@ -163,7 +163,7 @@ def test_generalized_real_qsp_on_random_unitaries(bitsize: int, degree: int):
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 120])
-def test_generalized_qsp_on_random_unitaries(bitsize: int, degree: int):
+def test_generalized_qsp_with_complex_poly_on_random_unitaries(bitsize: int, degree: int):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
