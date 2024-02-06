@@ -42,15 +42,15 @@ class CtrlScaleModAdd(Bloq):
 
     k: Union[int, sympy.Expr]
     mod: Union[int, sympy.Expr]
-    bitsize: Union[int, sympy.Expr]
+     Union[int, sympy.Expr]
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('ctrl', bitsize=QBit()),
-                Register('x', bitsize=QUInt(self.bitsize)),
-                Register('y', bitsize=QUInt(self.bitsize)),
+                Register('ctrl', QBit()),
+                Register('x', QUInt(self.bitsize)),
+                Register('y', QUInt(self.bitsize)),
             ]
         )
 
@@ -134,7 +134,7 @@ class CtrlAddK(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature(
-            [Register('ctrl', bitsize=QBit()), Register('x', bitsize=QUInt(self.bitsize))]
+            [Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))]
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
