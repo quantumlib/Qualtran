@@ -76,9 +76,7 @@ class _ZVector(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [Register('q', bitsize=QBit(), side=Side.RIGHT if self.state else Side.LEFT)]
-        )
+        return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
 
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
@@ -294,8 +292,8 @@ class _IntVector(Bloq):
     def signature(self) -> Signature:
         side = Side.RIGHT if self.state else Side.LEFT
         if self.bitsize == 1:
-            return Signature([Register('val', bitsize=QBit(), side=side)])
-        return Signature([Register('val', bitsize=QAny(self.bitsize), side=side)])
+            return Signature([Register('val', QBit(), side=side)])
+        return Signature([Register('val', QAny(self.bitsize), side=side)])
 
     @staticmethod
     def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
