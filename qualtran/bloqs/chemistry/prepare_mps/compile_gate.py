@@ -33,6 +33,7 @@ class PrepareOracleCompileGateReflection(PrepareOracle):
     state_coefs: Tuple # state |u_i>
     rot_reg_size: int # number of ancilla qubits used to encode the state preparation's rotations
     index: int # i value in |i>
+    adjoint: bool = False
 
     @property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
@@ -52,16 +53,25 @@ class PrepareOracleCompileGateReflection(PrepareOracle):
         qubits = bb.split(target_reg)
         refl_ancilla = qubits[0]
         state = qubits[1:]
-        # prepare the ancilla from |0> to 1/sqrt(2)(|1> - |0>)
-        refl_ancilla = bb.add(Hadamard(), q=refl_ancilla)
-        refl_ancilla = bb.add(ZGate(), q=refl_ancilla)
-        refl_ancilla = bb.add(XGate(), q=refl_ancilla)
+        # if the gate is the adjoint, the |u> and |i> states should be prepared first and then the
+        # ancilla, if it is the normal version the ancilla is prepared first and then |u> and |i>
+        if not self.adjoint:
+            refl_ancilla = self.__prepareReflectionAncilla(bb, refl_ancilla)
         refl_ancilla, state = self.__prepareIState(bb, refl_ancilla, state)
         refl_ancilla, state, phase_grad = self.__prepareUState(bb, refl_ancilla, state, phase_grad)
+        if self.adjoint:
+            refl_ancilla = self.__prepareReflectionAncilla(bb, refl_ancilla)
         qubits[0] = refl_ancilla
         qubits[1:] = state
         target_reg = bb.join(qubits)
         return {"target_reg": target_reg, "phase_grad": phase_grad}
+    
+    def __prepareReflectionAncilla (self, bb: BloqBuilder, refl_ancilla: SoquetT):
+        # prepare/unprepare the ancilla from |0> to 1/sqrt(2)(|1> - |0>)
+        refl_ancilla = bb.add(Hadamard(), q=refl_ancilla)
+        refl_ancilla = bb.add(ZGate(), q=refl_ancilla)
+        refl_ancilla = bb.add(XGate(), q=refl_ancilla)
+        return refl_ancilla
     
     def __prepareIState(self, bb: BloqBuilder, refl_ancilla: SoquetT, state: List[SoquetT]):
         for i, bit in enumerate(f"{self.index:0{self.n_qubits}b}"):
@@ -72,7 +82,7 @@ class PrepareOracleCompileGateReflection(PrepareOracle):
     def __prepareUState(
             self, bb: BloqBuilder, refl_ancilla: SoquetT, state: List[SoquetT], phase_grad: SoquetT
     ):
-        csp = ControlledStatePreparationUsingRotations(n_qubits=self.n_qubits, rot_reg_size=self.rot_reg_size, state=self.state_coefs)
+        csp = ControlledStatePreparationUsingRotations(n_qubits=self.n_qubits, rot_reg_size=self.rot_reg_size, state=self.state_coefs, adjoint=self.adjoint)
         # for negative controlling on state preparation
         refl_ancilla = bb.add(XGate(), q=refl_ancilla)
         state_reg = bb.join(state)
