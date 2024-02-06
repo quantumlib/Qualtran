@@ -242,7 +242,7 @@ def qsp_phase_factors(
             #      even though we want it to be 0.
             #      There should be a more numerically stable way to compute the relevant phis
             #      so that the final QSP sequence is valid.
-            phi[d] = np.angle(a) - np.angle(b)
+            phi[d] = 0 if np.isclose(np.abs(b), 0) else np.angle(a) - np.angle(b)
 
         if d == 0:
             lambd = np.angle(b)

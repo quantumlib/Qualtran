@@ -155,13 +155,14 @@ def verify_generalized_qsp(
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 150])
-def test_generalized_real_qsp_on_random_unitaries(bitsize: int, degree: int):
+@pytest.mark.parametrize("assume_real", [True, False])
+def test_generalized_real_qsp_on_random_unitaries(bitsize: int, degree: int, assume_real: bool):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
         U = RandomGate.create(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
-        verify_generalized_qsp(U, P, only_real_coeffs=True)
+        verify_generalized_qsp(U, P, only_real_coeffs=assume_real)
 
 
 @define(slots=False)
