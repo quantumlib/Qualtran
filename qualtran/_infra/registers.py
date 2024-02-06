@@ -22,7 +22,7 @@ import attrs
 import numpy as np
 from attrs import field, frozen
 
-from .data_types import QAny, QBit, QDType, QBit
+from .data_types import QAny, QBit, QDType
 
 
 class Side(enum.Flag):
@@ -217,7 +217,11 @@ class Signature:
         regs = []
         for k, v in registers.items():
             if v.num_qubits:
-                regs.append(Register(name=k, bitsize=v) if v.num_qubits > 1 else Register(name=k, QBit()))
+                regs.append(
+                    Register(name=k, bitsize=v)
+                    if v.num_qubits > 1
+                    else Register(name=k, bitsize=QBit())
+                )
         return cls(regs)
 
     def lefts(self) -> Iterable[Register]:
