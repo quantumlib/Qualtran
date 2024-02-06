@@ -29,11 +29,11 @@ class SU2RotationGate(GateWithRegisters):
     phi: float
     lambd: float
 
-    @property
+    @cached_property
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    @property
+    @cached_property
     def rotation_matrix(self):
         r"""Implements an arbitrary SU(2) rotation.
 
@@ -80,7 +80,7 @@ class SU2RotationGate(GateWithRegisters):
 
 
 def qsp_complementary_polynomial(
-    P: Sequence[complex], *, verify: bool = False
+    P: Sequence[complex], *, only_real_coeffs: bool = False, verify: bool = False
 ) -> Sequence[complex]:
     r"""Computes the Q polynomial given P
 
@@ -98,6 +98,7 @@ def qsp_complementary_polynomial(
 
     Args:
         P: Co-efficients of a complex polynomial.
+        only_real_coeffs: If the polynomials have all real coefficients.
         verify: sanity check the computed polynomial roots (defaults to False).
 
     References:
@@ -184,11 +185,16 @@ def qsp_complementary_polynomial(
 
     Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
 
-    return Q.coef
+    coeffs = Q.coef
+    if only_real_coeffs:
+        if verify:
+            np.testing.assert_almost_equal(np.imag(coeffs).abs(), 0)
+        coeffs = np.real(coeffs)
+    return coeffs
 
 
 def qsp_phase_factors(
-    P: Sequence[complex], Q: Sequence[complex]
+    P: Sequence[complex], Q: Sequence[complex], *, only_real_coeffs: bool = False
 ) -> Tuple[Sequence[float], Sequence[float], float]:
     """Computes the QSP signal rotations for a given pair of polynomials.
 
@@ -198,6 +204,7 @@ def qsp_phase_factors(
     Args:
         P: Co-efficients of a complex polynomial.
         Q: Co-efficients of a complex polynomial.
+        only_real_coeffs: If the polynomials have all real coefficients.
 
     Returns:
         A tuple (theta, phi, lambda).
@@ -224,14 +231,18 @@ def qsp_phase_factors(
         assert S.shape == (2, d + 1)
 
         a, b = S[:, d]
-        theta[d] = np.arctan2(np.abs(b), np.abs(a))
-        # \phi_d = arg(a / b)
-        # TODO this is numerically unstable for values of a and b around 0,
-        #      np.angle(0) = 0, but for near-zero values it produces the "correct angle",
-        #      even though we want it to be 0.
-        #      There should be a more numerically stable way to compute the relevant phis
-        #      so that the final QSP sequence is valid.
-        phi[d] = np.angle(a) - np.angle(b)
+        if only_real_coeffs:
+            theta[d] = np.arctan2(np.real(b), np.real(a))
+            phi[d] = 0
+        else:
+            theta[d] = np.arctan2(np.abs(b), np.abs(a))
+            # \phi_d = arg(a / b)
+            # TODO this is numerically unstable for values of a and b around 0,
+            #      np.angle(0) = 0, but for near-zero values it produces the "correct angle",
+            #      even though we want it to be 0.
+            #      There should be a more numerically stable way to compute the relevant phis
+            #      so that the final QSP sequence is valid.
+            phi[d] = np.angle(a) - np.angle(b)
 
         if d == 0:
             lambd = np.angle(b)
@@ -266,18 +277,19 @@ class GeneralizedQSP(GateWithRegisters):
 
     U: GateWithRegisters
     P: Sequence[complex]
+    only_real_coeffs: bool = False
 
-    @property
+    @cached_property
     def signature(self) -> Signature:
         return Signature([Register(name='signal', bitsize=1), *self.U.signature])
 
     @cached_property
     def Q(self):
-        return qsp_complementary_polynomial(self.P)
+        return qsp_complementary_polynomial(self.P, only_real_coeffs=self.only_real_coeffs)
 
     @cached_property
     def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:
-        return qsp_phase_factors(self.P, self.Q)
+        return qsp_phase_factors(self.P, self.Q, only_real_coeffs=self.only_real_coeffs)
 
     @cached_property
     def _theta(self) -> Sequence[float]:
@@ -289,7 +301,7 @@ class GeneralizedQSP(GateWithRegisters):
 
     @cached_property
     def _lambda(self) -> float:
-        return self._qsp_phases[2]
+        return 0  # self._qsp_phases[2]
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
