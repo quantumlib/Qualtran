@@ -25,7 +25,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     DecomposeTypeError,
-    QAny,
+    QUInt,
     Register,
     Side,
     Signature,
@@ -70,8 +70,8 @@ class ModExp(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('exponent', bitsize=QAny(self.exp_bitsize)),
-                Register('x', bitsize=QAny(self.x_bitsize), side=Side.RIGHT),
+                Register('exponent', QUInt(self.exp_bitsize)),
+                Register('x', QUInt(self.x_bitsize), side=Side.RIGHT),
             ]
         )
 
