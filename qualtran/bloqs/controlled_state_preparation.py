@@ -13,25 +13,17 @@
 #  limitations under the License.
 
 from typing import Dict, Tuple
-import attrs
 
+import attrs
 import numpy as np
 from numpy.typing import ArrayLike
 
-from qualtran import (
-    Bloq,
-    BloqBuilder,
-    Signature,
-    SoquetT,
-    Side,
-    Register,
-    SelectionRegister,
-)
+from qualtran import Bloq, BloqBuilder, SelectionRegister, Signature, SoquetT
 from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.basic_gates import OneState, OneEffect, ZeroState, ZeroEffect
+from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.select_and_prepare import PrepareOracle
-from qualtran.bloqs.basic_gates.rotation import Rx
 
 
 @attrs.frozen
@@ -76,24 +68,15 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     @property
     def signature(self):
         return Signature.build(
-            control=1,
-            target_state=self.n_qubits,
-            phase_gradient=self.rot_reg_size,
+            control=1, target_state=self.n_qubits, phase_gradient=self.rot_reg_size
         )
 
     def build_composite_bloq(
-        self,
-        bb: BloqBuilder,
-        *,
-        control: SoquetT,
-        target_state: SoquetT,
-        phase_gradient: SoquetT,
+        self, bb: BloqBuilder, *, control: SoquetT, target_state: SoquetT, phase_gradient: SoquetT
     ) -> Dict[str, SoquetT]:
         rom_vals = RotationTree.extractRomValuesFromState(self.state, self.rot_reg_size)
         # allocate the qubits for the rotation angle register
-        rot_reg = bb.join(
-            np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_size)])
-        )
+        rot_reg = bb.join(np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_size)]))
         if self.adjoint:
             control, target_state, rot_reg, phase_gradient = self.__preparePhases(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
@@ -112,11 +95,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         qs = bb.split(rot_reg)
         for q in qs:
             bb.add(ZeroEffect(), q=q)
-        return {
-            "control": control,
-            "target_state": target_state,
-            "phase_gradient": phase_gradient,
-        }
+        return {"control": control, "target_state": target_state, "phase_gradient": phase_gradient}
 
     def __prepareAmplitudes(
         self,
@@ -141,9 +120,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                 qi = self.n_qubits - i - 1
             else:
                 qi = i
-            ctrl_rot_q = ControlledQROMRotateQubit(
-                qi, self.rot_reg_size, tuple(rom_vals[qi])
-            )
+            ctrl_rot_q = ControlledQROMRotateQubit(qi, self.rot_reg_size, tuple(rom_vals[qi]))
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
             # first qubit does not have selection registers, only controls
             if qi == 0:
@@ -181,9 +158,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     ):
         rot_ancilla = bb.add(OneState())
         rom_vals = self.__getPhaseROMValues(amplitude_rom_vals)
-        ctrl_rot = ControlledQROMRotateQubit(
-            self.n_qubits, self.rot_reg_size, tuple(rom_vals)
-        )
+        ctrl_rot = ControlledQROMRotateQubit(self.n_qubits, self.rot_reg_size, tuple(rom_vals))
         control, target_state, rot_ancilla, rot_reg, phase_gradient = bb.add(
             ctrl_rot,
             prepare_control=control,
@@ -213,13 +188,9 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                     offset_angles[k] += offset
         # if the matrix is the adjoint, the angles have to be undone, thus just load -theta
         if self.adjoint:
-            angles = [
-                offset - np.angle(c) for c, offset in zip(self.state, offset_angles)
-            ]
+            angles = [offset - np.angle(c) for c, offset in zip(self.state, offset_angles)]
         else:
-            angles = [
-                np.angle(c) - offset for c, offset in zip(self.state, offset_angles)
-            ]
+            angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
         rom_values = [RotationTree.angle2RomValue(a, self.rot_reg_size) for a in angles]
         return rom_values
 
@@ -261,9 +232,7 @@ class ControlledQROMRotateQubit(Bloq):
             phase_gradient=self.rot_reg_size,
         )
 
-    def build_composite_bloq(
-        self, bb: BloqBuilder, **soqs: SoquetT
-    ) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         """Parameters:
         * prepare_control
         * selection (not necessary if n_selections == 0)
@@ -295,10 +264,7 @@ class ControlledQROMRotateQubit(Bloq):
     ):
         if self.n_selections != 0:
             qrom_control, soqs["selection"], soqs["rot_reg"] = bb.add(
-                qrom,
-                control=qrom_control,
-                selection=soqs["selection"],
-                target0_=soqs["rot_reg"],
+                qrom, control=qrom_control, selection=soqs["selection"], target0_=soqs["rot_reg"]
             )
         else:
             qrom_control, soqs["rot_reg"] = bb.add(
@@ -321,9 +287,8 @@ class RotationTree:
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    def extractRomValuesFromState(
-        state: ArrayLike, rot_reg_size: int, adjoint: bool = False
-    ):
+    @staticmethod
+    def extractRomValuesFromState(state: ArrayLike, rot_reg_size: int, adjoint: bool = False):
         r"""Gives list in which the ith element is a list of the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
@@ -347,6 +312,7 @@ class RotationTree:
             rom_vals.append(rom_vals_this_layer)
         return rom_vals
 
+    @staticmethod
     def rotationTreeFromState(state):
         r"""Given a list of coefficients, returns a tree-like object that contains the angles for
         the rotations when preparing the state.
@@ -361,6 +327,7 @@ class RotationTree:
         r"""Get the angle that corresponds to p_0."""
         return 2 * np.arccos(np.sqrt(self.__getP0()))
 
+    @staticmethod
     def angle2RomValue(angle, rot_reg_size):
         r"""Returns the value to be loaded to a QROM to encode the given angle with a certain value
         of rot_reg_size.
