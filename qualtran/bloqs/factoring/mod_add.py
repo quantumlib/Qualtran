@@ -42,7 +42,7 @@ class CtrlScaleModAdd(Bloq):
 
     k: Union[int, sympy.Expr]
     mod: Union[int, sympy.Expr]
-    Union[int, sympy.Expr]
+    bitsize: Union[int, sympy.Expr]
 
     @cached_property
     def signature(self) -> 'Signature':
