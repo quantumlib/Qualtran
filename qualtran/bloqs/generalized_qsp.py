@@ -245,7 +245,7 @@ def qsp_phase_factors(
         if d == 0:
             lambd = safe_angle(b)
         else:
-            S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix @ S
+            S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix.conj().T @ S
 
             # check if the gate was actually correct
             aa, bb = S[0][0], S[1][d]
