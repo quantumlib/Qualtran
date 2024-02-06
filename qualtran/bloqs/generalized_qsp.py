@@ -282,7 +282,7 @@ class GeneralizedQSP(GateWithRegisters):
 
     @cached_property
     def _lambda(self) -> float:
-        return 0  # self._qsp_phases[2]
+        return self._qsp_phases[2]
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
