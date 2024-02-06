@@ -58,9 +58,7 @@ class _XVector(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)]
-        )
+        return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
 
     def add_my_tensors(
         self,
