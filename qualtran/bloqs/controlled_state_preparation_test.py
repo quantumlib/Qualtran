@@ -12,8 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import random
-
 import numpy as np
 import pytest
 
@@ -21,7 +19,6 @@ from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import OneEffect, OneState, PlusState, ZeroEffect, ZeroState
 from qualtran.bloqs.controlled_state_preparation import ControlledStatePreparationUsingRotations
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.drawing import show_bloq
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 

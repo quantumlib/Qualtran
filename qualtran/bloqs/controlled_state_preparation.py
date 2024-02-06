@@ -287,6 +287,7 @@ class RotationTree:
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
+    @staticmethod
     def extractRomValuesFromState(state: ArrayLike, rot_reg_size: int, adjoint: bool = False):
         r"""Gives list in which the ith element is a list of the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
@@ -311,6 +312,7 @@ class RotationTree:
             rom_vals.append(rom_vals_this_layer)
         return rom_vals
 
+    @staticmethod
     def rotationTreeFromState(state):
         r"""Given a list of coefficients, returns a tree-like object that contains the angles for
         the rotations when preparing the state.
@@ -325,6 +327,7 @@ class RotationTree:
         r"""Get the angle that corresponds to p_0."""
         return 2 * np.arccos(np.sqrt(self.__getP0()))
 
+    @staticmethod
     def angle2RomValue(angle, rot_reg_size):
         r"""Returns the value to be loaded to a QROM to encode the given angle with a certain value
         of rot_reg_size.
