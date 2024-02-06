@@ -38,6 +38,12 @@ from qualtran.testing import (
 )
 
 
+def _make_greater_than():
+    from qualtran.bloqs.arithmetic import GreaterThan
+
+    return GreaterThan(bitsize=4, signed=True)
+
+
 def _make_greater_than_constant():
     from qualtran.bloqs.arithmetic import GreaterThanConstant
 
@@ -181,16 +187,16 @@ def test_greater_than_decomp(bitsize, signed):
 @pytest.mark.parametrize(
     'bitsize,signed,a,b,target,result',
     [
-        (1, False, 0, 1, 0, 1),
-        (2, False, 3, 2, 0, 0),
-        (3, False, 3, 5, 1, 0),
+        (1, False, 1, 0, 0, 1),
+        (2, False, 2, 3, 0, 0),
+        (3, False, 5, 3, 1, 0),
         (4, False, 8, 8, 0, 0),
-        (5, False, 16, 30, 1, 0),
+        (5, False, 30, 16, 1, 0),
         (1, True, 1, 1, 0, 0),
-        (2, True, 0, 1, 1, 0),
-        (3, True, 0, 2, 0, 1),
+        (2, True, 1, 0, 1, 0),
+        (3, True, 2, 0, 0, 1),
         (4, True, 7, 7, 1, 1),
-        (5, True, 12, 13, 1, 0),
+        (5, True, 13, 12, 1, 0),
     ],
 )
 def test_classical_greater_than(bitsize, signed, a, b, target, result):
