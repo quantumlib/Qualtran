@@ -38,7 +38,7 @@ def test_poly_eval_inverse_sqrt(bloq_autotester):
 def test_newton_raphson_inverse_sqrt_bloq_counts():
     bloq = NewtonRaphsonApproxInverseSquareRoot(7, 8, 12)
     _, counts = bloq.call_graph()
-    assert counts[TGate()] == 1632
+    assert counts[TGate()] == 1424
 
 
 def test_poly_eval_inverse_sqrt_bloq_counts():

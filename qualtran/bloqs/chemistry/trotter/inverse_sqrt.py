@@ -169,9 +169,13 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         return 'y = x^{-1/2}'
 
     def t_complexity(self) -> 'TComplexity':
+        intg_part = self.x_sq_bitsize
+        frac_part = self.target_bitsize - intg_part
         return (
             SquareRealNumber(self.poly_bitsize).t_complexity()
-            + ScaleIntByReal(self.x_sq_bitsize, self.poly_bitsize).t_complexity()
+            + ScaleIntByReal(
+                self.poly_bitsize, self.x_sq_bitsize, (intg_part, frac_part)
+            ).t_complexity()
             + 2 * MultiplyTwoReals(self.target_bitsize).t_complexity()
             + Add(self.target_bitsize).t_complexity()
         )
@@ -183,9 +187,11 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         # 3. multiply y (2 + b^2 + delta)
         # 4. multiply y^2 x by y
         # 5. add 3. and 4.
+        intg_part = self.x_sq_bitsize
+        frac_part = self.target_bitsize - intg_part
         return {
             (SquareRealNumber(self.poly_bitsize), 1),
-            (ScaleIntByReal(self.target_bitsize, self.x_sq_bitsize), 1),
+            (ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize, (intg_part, frac_part)), 1),
             (MultiplyTwoReals(self.target_bitsize), 2),
             (Add(self.target_bitsize), 1),
         }
