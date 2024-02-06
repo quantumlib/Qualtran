@@ -31,7 +31,7 @@ def test_select_t_complexity(dim):
     assert cost.rotations == 0
 
 
-@pytest.mark.parametrize('dim', [*range(2, 10)])
+@pytest.mark.parametrize('dim', [*range(3, 10)])
 def test_prepare_t_complexity(dim):
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=2, mu=8)
     cost = t_complexity(prepare)

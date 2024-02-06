@@ -19,7 +19,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, QBit, Register, Side, Signature, Soquet, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ class _XVector(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
+        return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
 
     def add_my_tensors(
         self,

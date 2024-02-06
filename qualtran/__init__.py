@@ -42,6 +42,17 @@ from ._infra.composite_bloq import (
     SoquetT,
 )
 
+from ._infra.data_types import (
+    QDType,
+    QInt,
+    QBit,
+    QAny,
+    QFixedPoint,
+    QIntOnesComp,
+    QUnsignedInt,
+    BoundedQInt,
+)
+
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs

@@ -29,6 +29,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, ModPlus, WireSymbol
 
 if TYPE_CHECKING:
@@ -111,6 +112,9 @@ class CNOT(Bloq):
         elif soq.reg.name == 'target':
             return ModPlus()
         raise ValueError(f'Bad wire symbol soquet: {soq}')
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
 
 
 @bloq_example

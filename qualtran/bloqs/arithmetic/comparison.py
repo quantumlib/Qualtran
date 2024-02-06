@@ -60,8 +60,8 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
         input_val, less_than_val, target_register_val = register_vals
         return input_val, less_than_val, target_register_val ^ (input_val < less_than_val)
 
-    def on_classical_vals(self, x, target) -> Dict[str, 'ClassicalValT']:
-        return dict(zip(['x', 'target'], [x, target ^ (x < self.less_than_val)]))
+    def on_classical_vals(self, *, x: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'target': target ^ (x < self.less_than_val)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.bitsize
@@ -329,8 +329,8 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     def short_name(self) -> str:
         return 'x <= y'
 
-    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
-        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
+    def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'y': y, 'target': target ^ (x <= y)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.x_bitsize
