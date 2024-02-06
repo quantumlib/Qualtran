@@ -18,6 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic.addition import (
@@ -33,7 +34,7 @@ from qualtran.cirq_interop.testing import (
     assert_decompose_is_consistent_with_t_complexity,
     GateHelper,
 )
-import qualtran.testing as qlt_testing
+
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add_decomposition(a: int, b: int, num_bits: int):
@@ -295,6 +296,7 @@ def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result)
         np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
     assert bloq_classical[-1] == result
+
 
 def test_notebook():
     qlt_testing.execute_notebook('addition')
