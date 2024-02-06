@@ -38,7 +38,7 @@ encoding positive integers.
 an opaque bag of bits with no particular significance associated with them. A
 bloq defined with a QAny register (e.g. a n-bit CSwap) will accept any other
 type assuming the bitsizes match. QInt(32) == QAny(32), QInt(32) !=
-QFixedPoint(16, 16). QInt(32) != QUnsignedInt(32).
+QFixedPoint(16, 16). QInt(32) != QUInt(32).
 5. We assume a big endian convention for addressing QBits in registers
 throughout qualtran. Recall that in a big endian convention the most signficant
 bit is at index 0. If you iterate through the bits in a register they will be
@@ -134,7 +134,7 @@ class QIntOnesComp(QDType):
 
 
 @attrs.frozen
-class QUnsignedInt(QDType):
+class QUInt(QDType):
     """Unsigned integer of a given width bitsize which wraps around upon overflow.
 
     Similar to unsigned integer types in C. Any intended wrap around effect is
