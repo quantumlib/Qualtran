@@ -18,7 +18,7 @@ from typing import Dict
 
 import attrs
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, QAny, Register, Signature, SoquetT
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
@@ -46,7 +46,7 @@ class OnEach(GateWithRegisters):
 
     @cached_property
     def signature(self) -> Signature:
-        reg = Register('q', bitsize=self.n)
+        reg = Register('q', QAny(bitsize=self.n))
         return Signature([reg])
 
     def short_name(self) -> str:
