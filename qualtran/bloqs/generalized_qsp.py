@@ -224,7 +224,7 @@ def qsp_phase_factors(
         a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
         # \phi_d = arg(a / b)
-        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a) - safe_angle(b)
+        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a * np.conj(b))
 
         if d == 0:
             lambd = safe_angle(b)
