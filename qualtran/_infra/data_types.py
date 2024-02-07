@@ -175,18 +175,19 @@ class BoundedQUInt(QDType):
 class QFxp(QDType):
     r"""Fixed point type to represent real numbers.
 
-    A real number can be approximately represented in fixed point using num_int
-    bits for the integer part and num_frac bits for the fractional part. If the
+    A real number can be approximately represented in fixed point using `num_int`
+    bits for the integer part and `num_frac` bits for the fractional part. If the
     real number is signed we require an additional bit to store the sign (0 for
-    +, 1 for -). In total there are bitsize = (n_sign + num_int + num_frac) bits used
+    +, 1 for -). In total there are `bitsize = (n_sign + num_int + num_frac)` bits used
     to represent the number. E.g. Using `(bitsize = 8, num_frac = 6, signed = False)`
     then $\pi$ \approx 3.140625 = 11.001001, where the . represents the decimal place.
 
     We can specify a fixed point real number by the tuple bitsize, num_frac and
-    signed, with num_int determined as (bitsize - num_frac - n_sign).
+    signed, with num_int determined as `(bitsize - num_frac - n_sign)`.
 
     Attributes:
-        bitsize: The number of qubits used to represent the fixed point real number.
+        bitsize: The total number of qubits used to represent the integer and
+            fractional part combined.
         num_frac: The number of qubits used to represent the fractional part of the real number.
         signed: Whether the number is signed or not. If signed is true the
             number of integer bits is reduced by 1.
@@ -203,9 +204,6 @@ class QFxp(QDType):
     @property
     def num_int(self) -> Union[int, sympy.Expr]:
         return self.bitsize - self.num_frac - int(self.signed)
-        if self.signed:
-            num_int -= 1
-        return num_int
 
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):
