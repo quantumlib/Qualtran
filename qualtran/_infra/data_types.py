@@ -202,7 +202,7 @@ class QFxp(QDType):
 
     @property
     def num_int(self) -> Union[int, sympy.Expr]:
-        num_int = self.bitsize - self.num_frac
+        return self.bitsize - self.num_frac - int(self.signed)
         if self.signed:
             num_int -= 1
         return num_int
