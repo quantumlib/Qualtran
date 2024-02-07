@@ -19,12 +19,13 @@ import numpy as np
 import pytest
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.arithmetic import (
+from qualtran.bloqs.arithmetic.comparison import (
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
+    LinearDepthGreaterThan,
 )
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import (
@@ -41,7 +42,7 @@ from qualtran.testing import (
 def _make_greater_than():
     from qualtran.bloqs.arithmetic import GreaterThan
 
-    return GreaterThan(bitsize=4, signed=True)
+    return GreaterThan(a_bitsize=4, b_bitsize=4)
 
 
 def _make_greater_than_constant():
@@ -175,10 +176,22 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     assert g.with_registers([2] * 4, [2] * 5, [2]) == LessThanEqual(4, 5)
 
 
+def test_greater_than():
+    bb = BloqBuilder()
+    bitsize = 5
+    q0 = bb.add_register('a', bitsize)
+    q1 = bb.add_register('b', bitsize)
+    anc = bb.add_register('result', 1)
+    q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
+    cbloq = bb.finalize(a=q0, b=q1, result=anc)
+    cbloq.t_complexity()
+    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
+
+
 @pytest.mark.parametrize('bitsize', [1, 2, 5])
 @pytest.mark.parametrize('signed', [False, True])
-def test_greater_than_decomp(bitsize, signed):
-    bloq = GreaterThan(bitsize=bitsize, signed=signed)
+def test_linear_depth_greater_than_decomp(bitsize, signed):
+    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed)
     assert_valid_bloq_decomposition(bloq)
 
 
@@ -199,8 +212,8 @@ def test_greater_than_decomp(bitsize, signed):
         (5, True, 13, 12, 1, 0),
     ],
 )
-def test_classical_greater_than(bitsize, signed, a, b, target, result):
-    bloq = GreaterThan(bitsize=bitsize, signed=signed)
+def test_classical_linear_depth_greater_than(bitsize, signed, a, b, target, result):
+    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed)
     cbloq = bloq.decompose_bloq()
     bloq_classical = bloq.call_classically(a=a, b=b, target=target)
     cbloq_classical = cbloq.call_classically(a=a, b=b, target=target)

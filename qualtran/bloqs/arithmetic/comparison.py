@@ -467,6 +467,56 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
 class GreaterThan(Bloq):
     r"""Compare two integers.
 
+    Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
+    |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
+
+    The bloq_counts and t_complexity are derived from equivalent qualtran gates
+    assuming a clean decomposition which should yield identical costs.
+
+    See: https://github.com/quantumlib/Qualtran/pull/381 and
+    https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
+
+    Args:
+        bitsize: Number of bits used to represent the two integers a and b.
+
+    Registers:
+        a: n-bit-sized input registers.
+        b: n-bit-sized input registers.
+        target: A single bit output register to store the result of A > B.
+    """
+    a_bitsize: int
+    b_bitsize: int
+
+    @property
+    def signature(self):
+        return Signature.build(a=self.a_bitsize, b=self.b_bitsize, target=1)
+
+    def short_name(self) -> str:
+        return "a>b"
+
+    def t_complexity(self) -> 'TComplexity':
+        return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
+
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        if soq.reg.name == 'a':
+            return TextBox("In(a)")
+        if soq.reg.name == 'b':
+            return TextBox("In(b)")
+        elif soq.reg.name == 'target':
+            return TextBox("⨁(a > b)")
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
+        t_complexity = self.t_complexity()
+        return {(TGate(), t_complexity.t)}
+
+
+@frozen
+class LinearDepthGreaterThan(Bloq):
+    r"""Compare two integers.
+
     Implements |a>|b>|t> => |a>|b>|t ⨁ (a > b)> using $4n$ T gates.
 
     This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
