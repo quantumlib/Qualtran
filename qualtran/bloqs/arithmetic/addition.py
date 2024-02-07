@@ -31,6 +31,7 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.and_bloq import And
@@ -44,6 +45,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -118,6 +120,16 @@ class Add(Bloq):
         wire_symbols = ["In(x)"] * self.bitsize
         wire_symbols += ["In(y)/Out(x+y)"] * self.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box
+
+        if soq.reg.name == 'a':
+            return directional_text_box('a', side=soq.reg.side)
+        elif soq.reg.name == 'b':
+            return directional_text_box('a+b', side=soq.reg.side)
+        else:
+            raise ValueError()
 
     def _left_building_block(self, inp, out, anc, depth):
         if depth == self.bitsize - 1:
