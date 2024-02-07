@@ -54,8 +54,6 @@ class QFTPhaseGradient(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        if self.bitsize == 1:
-            return Signature([Register("q", QBit()), Register("phase_grad", QBit())])
         return Signature(
             [Register("q", QUInt(self.bitsize)), Register("phase_grad", QUInt(self.bitsize))]
         )
