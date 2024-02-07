@@ -179,7 +179,7 @@ class QFxp(QDType):
     bits for the integer part and num_frac bits for the fractional part. If the
     real number is signed we require an additional bit to store the sign (0 for
     +, 1 for -). In total there are bitsize = (n_sign + num_int + num_frac) bits used
-    to represent the number. E.g. n_sign = 0 if bitsize = 8, num_frac = 6, signed = False,
+    to represent the number. E.g. Using `(bitsize = 8, num_frac = 6, signed = False)`
     then $\pi$ \approx 3.140625 = 11.001001, where the . represents the decimal place.
 
     We can specify a fixed point real number by the tuple bitsize, num_frac and
