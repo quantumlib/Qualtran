@@ -2,29 +2,71 @@ from typing import Dict, Tuple, List
 import attrs
 
 import numpy as np
+import cirq
 
 from qualtran import Bloq, BloqBuilder, SelectionRegister, Signature, SoquetT
 from qualtran.bloqs.controlled_state_preparation import ControlledStatePreparationUsingRotations
 from qualtran.bloqs.basic_gates import Hadamard, ZGate, CNOT
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.basic_gates import ZeroState, OneState, ZeroEffect, OneEffect
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
 
 @attrs.frozen
-class CompileGateGivenVectors(Bloq):
+class CompileGateGivenVectorsWithoutPG(Bloq):
     n_qubits: int  # number of qubits that the gate acts on
+    rot_reg_size: int # number of ancilla qubits used to encode the state preparation's rotations
     gate_coefs: Tuple[Tuple] # tuple with the columns/rows of the gate that are specified
     adjoint: bool = False
 
     @property
     def signature(self):
-        return Signature.build(x=self.n_qubits)
+        return Signature.build(gate_input=self.n_qubits)
+    
+    def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT) -> Dict[str, SoquetT]:
+        gate_compiler = CompileGateGivenVectors(n_qubits=self.n_qubits, gate_coefs=self.gate_coefs, rot_reg_size=self.rot_reg_size)
+        phase_gradient = bb.add(PhaseGradientState(bitsize=self.rot_reg_size))
+        gate_input, phase_gradient = bb.add(gate_compiler, gate_input=gate_input, phase_grad=phase_gradient)
+        bb.add(PhaseGradientState(bitsize=self.rot_reg_size, adjoint=True), phase_grad=phase_gradient)
+        return {"gate_input": gate_input}
 
-    def build_composite_bloq(
-        self, bb: BloqBuilder, *, x: SoquetT
-    ) -> Dict[str, SoquetT]:
-            
-        return {"x": x}
+
+@attrs.frozen
+class CompileGateGivenVectors(Bloq):
+    n_qubits: int  # number of qubits that the gate acts on
+    rot_reg_size: int # number of ancilla qubits used to encode the state preparation's rotations
+    gate_coefs: Tuple[Tuple] # tuple with the columns of the gate that are specified
+    adjoint: bool = False
+
+    @property
+    def signature(self):
+        return Signature.build(gate_input=self.n_qubits, phase_grad=self.rot_reg_size)
+
+    def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT, phase_grad: SoquetT) -> Dict[str, SoquetT]:
+        reflection_reg = bb.join(np.array([bb.add(OneState()), *bb.split(gate_input)]))
+        for i in range(len(self.gate_coefs)):
+            reflection_reg, phase_grad = self.__ithReflection(bb, i, reflection_reg, phase_grad)
+        qubits = bb.split(reflection_reg)
+        bb.add(ZeroEffect(), q=qubits[0])
+        gate_input = bb.join(qubits[1:])
+        return {"gate_input": gate_input, "phase_grad": phase_grad}
+    
+    def __ithReflection(self, bb: BloqBuilder, i: int, reflection_reg: SoquetT, phase_grad: SoquetT):
+        reflection_prep = PrepareOracleCompileGateReflection(n_qubits=self.n_qubits, state_coefs=self.gate_coefs[i], rot_reg_size=self.rot_reg_size, index=i)
+        reflection_prep_adj = PrepareOracleCompileGateReflection(n_qubits=self.n_qubits, state_coefs=self.gate_coefs[i], rot_reg_size=self.rot_reg_size, index=i, adjoint=True)
+        reflection_reg, phase_grad = bb.add(reflection_prep_adj, target_reg=reflection_reg, phase_grad=phase_grad)
+        reflection_reg = self.__reflect(bb, reflection_reg)
+        reflection_reg, phase_grad = bb.add(reflection_prep, target_reg=reflection_reg, phase_grad=phase_grad)
+        return reflection_reg, phase_grad
+    
+    def __reflect(self, bb: BloqBuilder, reg: SoquetT):
+        mult_control_flip = MultiControlPauli(cvs=tuple([0]*(self.n_qubits+1)), target_gate=cirq.Z)
+        ancilla = bb.add(OneState())
+        reg, ancilla = bb.add(mult_control_flip, controls=reg, target=ancilla)
+        bb.add(OneEffect(), q=ancilla)
+        return reg
 
 
 @attrs.frozen
