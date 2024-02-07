@@ -15,7 +15,7 @@
 import pytest
 import sympy
 
-from qualtran._infra.data_types import BoundedQInt, QFixedPoint, QInt, QIntOnesComp, QUInt
+from qualtran._infra.data_types import BoundedQUInt, QFxp, QInt, QIntOnesComp, QUInt
 
 
 def test_qint():
@@ -61,12 +61,25 @@ def test_bounded_quint():
     assert qint_8.iteration_length == l
 
 
-def test_qfixedpoint():
-    qfp_16 = QFixedPoint(1, 15)
-    assert qfp_16.num_qubits == 17
+def test_qfxp():
+    qfp_16 = QFxp(16, 15)
+    assert qfp_16.num_qubits == 16
+    assert qfp_16.num_int == 1
+    qfp_16 = QFxp(16, 15, signed=True)
+    assert qfp_16.num_qubits == 16
+    assert qfp_16.num_int == 0
     with pytest.raises(ValueError, match="num_qubits must be > 1."):
-        QFixedPoint(0, 0)
-    i = sympy.symbols('i')
+        QFxp(1, 1, signed=True)
+    QFxp(1, 1, signed=False)
+    with pytest.raises(ValueError, match="num_frac must be less than.*"):
+        QFxp(4, 4, signed=True)
+    with pytest.raises(ValueError, match="bitsize must be >= .*"):
+        QFxp(4, 5)
+    b = sympy.symbols('b')
     f = sympy.symbols('f')
-    qint_8 = QFixedPoint(i, f)
-    assert qint_8.num_qubits == i + f + sympy.symbols('1')
+    qfp = QFxp(b, f)
+    assert qfp.num_qubits == b
+    assert qfp.num_int == b - f
+    qfp = QFxp(b, f, True)
+    assert qfp.num_qubits == b
+    assert qfp.num_int == b - f - 1
