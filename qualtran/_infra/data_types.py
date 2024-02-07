@@ -79,11 +79,6 @@ class QAny(QDType):
 
     bitsize: Union[int, sympy.Expr]
 
-    def __attrs_post_init__(self):
-        if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
-
     @property
     def num_qubits(self):
         return self.bitsize
@@ -146,19 +141,14 @@ class QUInt(QDType):
 
     bitsize: Union[int, sympy.Expr]
 
-    def __attrs_post_init__(self):
-        if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
-
     @property
     def num_qubits(self):
         return self.bitsize
 
 
 @attrs.frozen
-class BoundedQInt(QDType):
-    """Integer whose values are bounded within a range.
+class BoundedQUInt(QDType):
+    """Unsigned integer whose values are bounded within a range.
 
     Attributes:
         bitsize: The number of qubits used to represent the integer.
@@ -170,11 +160,9 @@ class BoundedQInt(QDType):
 
     def __attrs_post_init__(self):
         if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
             if self.iteration_length > 2**self.bitsize:
                 raise ValueError(
-                    "BoundedQInt iteration length is too large for given bitsize. "
+                    "BoundedQUInt iteration length is too large for given bitsize. "
                     f"{self.iteration_length} vs {2**self.bitsize}"
                 )
 
