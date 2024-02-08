@@ -26,7 +26,7 @@ class CompileGateGivenVectorsWithoutPG(Bloq):
         return Signature.build(gate_input=self.n_qubits)
     
     def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT) -> Dict[str, SoquetT]:
-        gate_compiler = CompileGateGivenVectors(n_qubits=self.n_qubits, gate_coefs=self.gate_coefs, rot_reg_size=self.rot_reg_size)
+        gate_compiler = CompileGateGivenVectors(n_qubits=self.n_qubits, gate_coefs=self.gate_coefs, rot_reg_size=self.rot_reg_size, adjoint=self.adjoint)
         phase_gradient = bb.add(PhaseGradientState(bitsize=self.rot_reg_size))
         gate_input, phase_gradient = bb.add(gate_compiler, gate_input=gate_input, phase_grad=phase_gradient)
         bb.add(PhaseGradientState(bitsize=self.rot_reg_size, adjoint=True), phase_grad=phase_gradient)
@@ -45,11 +45,17 @@ class CompileGateGivenVectors(Bloq):
         return Signature.build(gate_input=self.n_qubits, phase_grad=self.rot_reg_size)
 
     def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT, phase_grad: SoquetT) -> Dict[str, SoquetT]:
-        reflection_reg = bb.join(np.array([bb.add(OneState()), *bb.split(gate_input)]))
+        if self.adjoint:
+            reflection_reg = bb.join(np.array([bb.add(ZeroState()), *bb.split(gate_input)]))
+        else:
+            reflection_reg = bb.join(np.array([bb.add(OneState()), *bb.split(gate_input)]))
         for i in range(len(self.gate_coefs)):
             reflection_reg, phase_grad = self.__ithReflection(bb, i, reflection_reg, phase_grad)
         qubits = bb.split(reflection_reg)
-        bb.add(ZeroEffect(), q=qubits[0])
+        if self.adjoint:
+            bb.add(OneEffect(), q=qubits[0])
+        else:
+            bb.add(ZeroEffect(), q=qubits[0])
         gate_input = bb.join(qubits[1:])
         return {"gate_input": gate_input, "phase_grad": phase_grad}
     
