@@ -198,7 +198,7 @@ class Signature:
 
     @classmethod
     def build(cls, **registers: int) -> 'Signature':
-        """Construct a Signature comprised of simple thru registers.
+        """Construct a Signature comprised of simple thru registers given the register bitsizes.
 
         Args:
             registers: keyword arguments mapping register name to bitsize. All registers
@@ -208,7 +208,7 @@ class Signature:
 
     @classmethod
     def build_from_dtypes(cls, **registers: QDType) -> 'Signature':
-        """Construct a Signature comprised of simple thru registers.
+        """Construct a Signature comprised of simple thru registers given the register dtypes.
 
         Args:
             registers: keyword arguments mapping register name to QDType. All registers
