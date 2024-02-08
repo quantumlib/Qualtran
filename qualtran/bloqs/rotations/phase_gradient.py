@@ -19,7 +19,7 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QUFxP, QUInt, Register, Side, Signature
+from qualtran import GateWithRegisters, QFxp, QUInt, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
@@ -166,7 +166,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         return Signature(
             [
                 Register("x", QUInt(self.inp_bitsize)),
-                Register("phase_grad", QUFxP(0, self.phase_bitsize)),
+                Register("phase_grad", QFxp(self.phase_bitsize, self.phase_bitsize)),
             ]
         )
 
@@ -230,7 +230,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         return Signature(
             [
                 Register("x", QUInt(self.inp_bitsize)),
-                Register("phase_grad", QUFxP(0, self.phase_bitsize)),
+                Register("phase_grad", QFxp(self.phase_bitsize, self.phase_bitsize)),
             ]
         )
 
