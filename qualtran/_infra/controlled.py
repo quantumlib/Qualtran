@@ -40,11 +40,11 @@ class CtrlSpec:
     following two equivalent CtrlSpecs:
 
         CtrlSpec()
-        CtrlSpec(bitsize=1, cvs=1)
+        CtrlSpec(qdtype=QBit(), cvs=1)
 
     This class supports additional control specifications:
      1. 'negative' controls where the bloq is active if the input is |0>.
-     2. integer-equality controls where a `bitsize`-sized input must match an integer control value.
+     2. integer-equality controls where a QInt input must match an integer control value.
      3. ndarrays of control values, where the bloq is active if **all** inputs are active.
 
     For example: `CtrlSpec(cvs=[0, 1, 0, 1])` is active if the four input bits match the pattern.
@@ -53,9 +53,9 @@ class CtrlSpec:
     `activation_function_dtypes` and `is_active` are defined for future extensibility.
 
     Args:
-        bitsize: The bitsize of the control input.
+        qdtype: The quantum data type of the control input.
         cvs: The control value(s). If more than one value is provided, they must all be
-            compatible with `bitsize` and the bloq is implied to be active if **all** inputs
+            compatible with `qdtype` and the bloq is implied to be active if **all** inputs
             are active.
     """
 
@@ -258,8 +258,8 @@ class Controlled(Bloq):
     def signature(self) -> 'Signature':
         # Prepend register(s) corresponding to `ctrl_spec`.
         ctrl_regs = tuple(
-            Register(name=self.ctrl_reg_names[i], bitsize=bitsize, shape=shape, side=Side.THRU)
-            for i, (bitsize, shape) in enumerate(self.ctrl_spec.activation_function_dtypes())
+            Register(name=self.ctrl_reg_names[i], bitsize=qdtype, shape=shape, side=Side.THRU)
+            for i, (qdtype, shape) in enumerate(self.ctrl_spec.activation_function_dtypes())
         )
         return Signature(ctrl_regs + tuple(self.subbloq.signature))
 
