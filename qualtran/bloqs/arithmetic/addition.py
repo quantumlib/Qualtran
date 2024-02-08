@@ -468,10 +468,7 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     def signature(self) -> Signature:
         if self.cvs:
             return Signature(
-                [
-                    Register('ctrl', QUInt(len(self.cvs))),
-                    Register('x', QUInt(self.bitsize)),
-                ]
+                [Register('ctrl', QUInt(len(self.cvs))), Register('x', QUInt(self.bitsize))]
             )
         return Signature([Register('x', QUInt(self.bitsize))])
 
