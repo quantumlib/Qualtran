@@ -214,15 +214,7 @@ class Signature:
             registers: keyword arguments mapping register name to QDType. All registers
                 will be 0-dimensional and THRU.
         """
-        regs = []
-        for k, v in registers.items():
-            if v.num_qubits:
-                regs.append(
-                    Register(name=k, bitsize=v)
-                    if v.num_qubits > 1
-                    else Register(name=k, bitsize=QBit())
-                )
-        return cls(regs)
+        return cls(Register(name=k, bitsize=v) for k, v in registers.items() if v.num_qubits)
 
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
