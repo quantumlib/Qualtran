@@ -30,15 +30,15 @@ without explicitly typing registers.
 2. For algorithms or bloqs which expect registers which are meant to encode
 numeric types (integers, reals, etc.) then typing should be strictly enforced.
 For example, a bloq multiplying two fixed point reals should be built with an
-explicit QFixedPoint dtype.
+explicit QFxp dtype.
 3. The smallest addressable unit is a QBit. Other types are interpretations of
-collections of QBits. A QUnsigedInt(32) is intended to represent a register
+collections of QBits. A QUInt(32) is intended to represent a register
 encoding positive integers.
 4. To avoid too much overhead we have a QAny type, which is meant to represent
 an opaque bag of bits with no particular significance associated with them. A
 bloq defined with a QAny register (e.g. a n-bit CSwap) will accept any other
 type assuming the bitsizes match. QInt(32) == QAny(32), QInt(32) !=
-QFixedPoint(16, 16). QInt(32) != QUnsignedInt(32).
+QFxp(32, 16). QInt(32) != QUInt(32).
 5. We assume a big endian convention for addressing QBits in registers
 throughout qualtran. Recall that in a big endian convention the most signficant
 bit is at index 0. If you iterate through the bits in a register they will be
@@ -78,11 +78,6 @@ class QAny(QDType):
     """Opaque bag-of-qbits type."""
 
     bitsize: Union[int, sympy.Expr]
-
-    def __attrs_post_init__(self):
-        if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
 
     @property
     def num_qubits(self):
@@ -134,7 +129,7 @@ class QIntOnesComp(QDType):
 
 
 @attrs.frozen
-class QUnsignedInt(QDType):
+class QUInt(QDType):
     """Unsigned integer of a given width bitsize which wraps around upon overflow.
 
     Similar to unsigned integer types in C. Any intended wrap around effect is
@@ -146,19 +141,14 @@ class QUnsignedInt(QDType):
 
     bitsize: Union[int, sympy.Expr]
 
-    def __attrs_post_init__(self):
-        if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
-
     @property
     def num_qubits(self):
         return self.bitsize
 
 
 @attrs.frozen
-class BoundedQInt(QDType):
-    """Integer whose values are bounded within a range.
+class BoundedQUInt(QDType):
+    """Unsigned integer whose values are bounded within a range.
 
     Attributes:
         bitsize: The number of qubits used to represent the integer.
@@ -170,11 +160,9 @@ class BoundedQInt(QDType):
 
     def __attrs_post_init__(self):
         if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
             if self.iteration_length > 2**self.bitsize:
                 raise ValueError(
-                    "BoundedQInt iteration length is too large for given bitsize. "
+                    "BoundedQUInt iteration length is too large for given bitsize. "
                     f"{self.iteration_length} vs {2**self.bitsize}"
                 )
 
@@ -184,28 +172,44 @@ class BoundedQInt(QDType):
 
 
 @attrs.frozen
-class QFixedPoint(QDType):
-    """Fixed point type to represent real numbers.
+class QFxp(QDType):
+    r"""Fixed point type to represent real numbers.
 
-    The integer part of the float and the fractional part (the part after the
-    decimal plase) can be chosen to have different bitsizes. An additional sign bit is assumed.
+    A real number can be approximately represented in fixed point using `num_int`
+    bits for the integer part and `num_frac` bits for the fractional part. If the
+    real number is signed we require an additional bit to store the sign (0 for
+    +, 1 for -). In total there are `bitsize = (n_sign + num_int + num_frac)` bits used
+    to represent the number. E.g. Using `(bitsize = 8, num_frac = 6, signed = False)`
+    then $\pi$ \approx 3.140625 = 11.001001, where the . represents the decimal place.
+
+    We can specify a fixed point real number by the tuple bitsize, num_frac and
+    signed, with num_int determined as `(bitsize - num_frac - n_sign)`.
 
     Attributes:
-        int_bitsize: The number of qubits used to represent the integer part of the float.
-        frac_bitsize: The number of qubits used to represent the fractional part of the float.
+        bitsize: The total number of qubits used to represent the integer and
+            fractional part combined.
+        num_frac: The number of qubits used to represent the fractional part of the real number.
+        signed: Whether the number is signed or not. If signed is true the
+            number of integer bits is reduced by 1.
     """
 
-    int_bitsize: Union[int, sympy.Expr]
-    frac_bitsize: Union[int, sympy.Expr]
+    bitsize: Union[int, sympy.Expr]
+    num_frac: Union[int, sympy.Expr]
+    signed: bool = False
 
     @property
     def num_qubits(self):
-        if isinstance(self.int_bitsize, sympy.Expr):
-            return self.int_bitsize + self.frac_bitsize + sympy.symbols("1")
-        else:
-            return self.int_bitsize + self.frac_bitsize + 1
+        return self.bitsize
+
+    @property
+    def num_int(self) -> Union[int, sympy.Expr]:
+        return self.bitsize - self.num_frac - int(self.signed)
 
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):
-            if self.num_qubits == 1:
+            if self.num_qubits == 1 and self.signed:
                 raise ValueError("num_qubits must be > 1.")
+            if self.signed and self.bitsize == self.num_frac:
+                raise ValueError("num_frac must be less than bitsize if the QFxp is signed.")
+            if self.bitsize < self.num_frac:
+                raise ValueError("bitsize must be >= num_frac.")

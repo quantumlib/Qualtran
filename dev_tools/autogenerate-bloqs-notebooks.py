@@ -109,7 +109,7 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.arithmetic.multiplication_test._make_square_real_number),
             BloqNbSpec(qualtran.bloqs.arithmetic.conversions_test._make_signed_to_twos_complement),
         ],
-        directory=f'{SOURCE_DIR}/bloqs',
+        directory=f'{SOURCE_DIR}/bloqs/arithmetic',
     ),
     NotebookSpec(
         title='Modular arithmetic',

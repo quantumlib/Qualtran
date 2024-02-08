@@ -18,7 +18,7 @@ from typing import Dict, Set, Union
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, QBit, QUInt, Register, Signature
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -48,9 +48,9 @@ class CtrlScaleModAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('ctrl', bitsize=1),
-                Register('x', bitsize=self.bitsize),
-                Register('y', bitsize=self.bitsize),
+                Register('ctrl', QBit()),
+                Register('x', QUInt(self.bitsize)),
+                Register('y', QUInt(self.bitsize)),
             ]
         )
 
@@ -96,7 +96,7 @@ class CtrlModAddK(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
+        return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
@@ -131,7 +131,7 @@ class CtrlAddK(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
+        return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 2 * self.bitsize)}

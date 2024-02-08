@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -33,6 +33,7 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -44,8 +45,8 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -96,7 +97,7 @@ class _ZVector(Bloq):
             )
         )
 
-    def on_classical_vals(self, **vals: int) -> Dict[str, int]:
+    def on_classical_vals(self, *, q: Optional[int] = None) -> Dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
 
         If `self.state`, we return a bit in the `q` register. Otherwise,
@@ -104,11 +105,9 @@ class _ZVector(Bloq):
         """
         bit_int = 1 if self.bit else 0  # guard against bad `self.bit` types.
         if self.state:
-            assert not vals, vals
+            assert q is None
             return {'q': bit_int}
 
-        q = vals.pop('q')
-        assert not vals, vals
         assert q == bit_int, q
         return {}
 
@@ -345,12 +344,12 @@ class _IntVector(Bloq):
 
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, int]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, int]:
         if self.state:
-            assert not vals
+            assert val is None
             return {'val': self.val}
 
-        assert vals['val'] == self.val, vals['val']
+        assert val == self.val, val
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -364,6 +363,11 @@ class _IntVector(Bloq):
     def pretty_name(self) -> str:
         s = self.short_name()
         return f'|{s}>' if self.state else f'<{s}|'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box
+
+        return directional_text_box(text=f'{self.val}', side=soq.reg.side)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
