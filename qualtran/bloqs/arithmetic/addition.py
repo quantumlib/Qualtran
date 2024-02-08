@@ -83,7 +83,7 @@ class Add(Bloq):
 
     @property
     def signature(self):
-        return Signature([Register("a", QInt(self.bitsize)), Register("b", QInt(self.bitsize))])
+        return Signature([Register("a", QUInt(self.bitsize)), Register("b", QUInt(self.bitsize))])
 
     def add_my_tensors(
         self,
@@ -238,9 +238,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         side = Side.LEFT if self.adjoint else Side.RIGHT
         return Signature(
             [
-                Register('a', QInt(self.bitsize)),
-                Register('b', QInt(self.bitsize)),
-                Register('c', QInt(self.bitsize + 1), side=side),
+                Register('a', QUInt(self.bitsize)),
+                Register('b', QUInt(self.bitsize)),
+                Register('c', QUInt(self.bitsize + 1), side=side),
             ]
         )
 
@@ -469,8 +469,8 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
         if self.cvs:
             return Signature(
                 [
-                    Register('ctrl', QUInt(len(self.cvs)) if len(self.cvs) > 1 else QBit()),
-                    Register('x', QUInt(self.bitsize) if self.bitsize > 1 else QBit()),
+                    Register('ctrl', QUInt(len(self.cvs))),
+                    Register('x', QUInt(self.bitsize)),
                 ]
             )
         return Signature([Register('x', QUInt(self.bitsize))])
