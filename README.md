@@ -19,8 +19,16 @@ Documentation is available at https://qualtran.readthedocs.io/
 
 Qualtran is being actively developed. We recommend installing from source:
 
-    pip install git+https://github.com/quantumlib/Qualtran
+For a local editable copy:
+
+    git clone https://github.com/quantumlib/Qualtran.git
+    cd Qualtran/
+    pip install -e .
 
 You can also install the latest tagged release using `pip`:
 
     pip install qualtran
+
+You can also install the latest state of the main branch:
+
+    pip install git+https://github.com/quantumlib/Qualtran
