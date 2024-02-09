@@ -25,6 +25,68 @@ from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 
+"""
+        Outline of the algorithm and role of each class.
+
+This algorithm prepares a state $|\psi\rangle$ in a register initially at $|0\rangle$ by using
+rotations $R_y$ for encoding amplitudes and $R_z$ for encoding phases.
+
+Assume one wants to prepare the amplitude of a one qubit state
+
+$$
+\sqrt{p_0} |0\rangle + \sqrt{p_1} |1\rangle.
+$$
+
+This can be achieved by a rotation $R_y(\theta)$ where $\theta = \cos^{-1}(\sqrt{p_0})$.
+For encoding the amplitude of a n-qubit quantum state one could use a similar approach to this, but
+chaining conditional probabilities: first rotate qubit 1 by $\theta = \cos^{-1}(\sqrt{p_0})$, then
+the second qubit by $\theta_0 = \cos^{-1}(\sqrt{p_{00}/p_{0}})$, conditioned on the first one being
+in $|0\rangle$ and $\theta_1 = \cos^{-1}(\sqrt{p_{10}/p_{1}})$ conditioned by the first being in
+$|1\rangle$, and so on. Here $p_y$ means the probability that the first len(y) qubits of the
+original state are in the state $y$. Refer to equation (8) of [1] for the details.
+
+This general scheme is handled by ControlledStatePreparationUsingRotations. This class also uses
+RotationTree to get the angles of rotation needed (which are converted to the value to be loaded
+to the ROM to achieve such a rotation). RotationTree is a tree data structure which holds the
+accumulated probability of each substring, i.e., the root holds the probability of measuring the
+first qubit at 0, the branch1 node the probability of measuring the second qubit at 0 if the first
+was measured at 1 and so on. The $2^i$ rotations needed to prepare the ith qubit are performed by
+ControlledQROMRotateQubit. This essentially is a rotation gate array, that is, given a list of
+angles it performs the kth rotation when the selection register is on state $|k\rangle$. This
+rotation is done in the Z axis, but for encoding amplitude a rotation around Ry is needed, thus the
+need of a $R_x(\pm \pi/2)$ gate before and after encoding the amplitudes of each qubit.
+
+In order to perform the rotations as efficiently as possible, the angles are loaded into a register
+(rot\_reg) which is added into a phase gradient. Then phase kickback causes an overall offset of
+$e^{i2\pi x/2^b}$, where $x$ is the angle value loaded and $b$ the size of the rot\_reg. Below is an
+example for rot\_reg\_size=2.
+
+First there is the rot\_reg register with the value to be rotated (3 in this case) and the phase
+gradient
+
+$$
+|3\rangle(e^{2\pi i 0/4}|0\rangle + e^{2\pi i 1/4}|1\rangle +
+          e^{2\pi i 2/4}|2\rangle + e^{2\pi i 3/4}|3\rangle).
+$$
+
+Then the rot\_reg $|3\rangle$ register is added to the phase gradient and store the result in the
+phase gradient register
+
+$$
+|3\rangle(e^{2\pi i 0/4}|3\rangle + e^{2\pi i 1/4}|0\rangle +
+          e^{2\pi i 2/4}|1\rangle + e^{2\pi i 3/4}|2\rangle),
+$$
+
+but this is equivalent to the original state with a phase offset of $e^{2\pi i 1/4}$.
+
+
+References:
+    [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
+    (https://arxiv.org/abs/1812.00954).
+        Low, Kliuchnikov, Schaeffer. 2018.
+
+"""
+
 
 @attrs.frozen
 class ControlledStatePreparationUsingRotations(PrepareOracle):
