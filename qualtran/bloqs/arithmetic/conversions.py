@@ -17,7 +17,17 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    QInt,
+    QIntOnesComp,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -50,8 +60,8 @@ class ToContiguousIndex(Bloq):
         s: output contiguous register
 
     References:
-        (Even more efficient quantum computations of chemistry through
-        tensor hypercontraction)[https://arxiv.org/pdf/2011.03494.pdf] Eq. 29.
+        [Even more efficient quantum computations of chemistry through
+        tensor hypercontraction](https://arxiv.org/pdf/2011.03494.pdf) Eq. 29.
     """
 
     bitsize: int
@@ -61,9 +71,9 @@ class ToContiguousIndex(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", bitsize=self.bitsize),
-                Register("nu", bitsize=self.bitsize),
-                Register("s", bitsize=self.s_bitsize),
+                Register("mu", QUInt(self.bitsize)),
+                Register("nu", QUInt(bitsize=self.bitsize)),
+                Register("s", QUInt(bitsize=self.s_bitsize)),
             ]
         )
 
@@ -93,6 +103,19 @@ class ToContiguousIndex(Bloq):
         return {(Toffoli(), num_toffoli)}
 
 
+@bloq_example
+def _to_contg_index() -> ToContiguousIndex:
+    to_contg_index = ToContiguousIndex(bitsize=4, s_bitsize=8)
+    return to_contg_index
+
+
+_TO_CONTG_INDX = BloqDocSpec(
+    bloq_cls=ToContiguousIndex,
+    import_line='from qualtran.bloqs.arithmetic.conversions import ToContiguousIndex',
+    examples=(_to_contg_index,),
+)
+
+
 @frozen
 class SignedIntegerToTwosComplement(Bloq):
     """Convert a register storing the signed integer representation to two's complement inplace.
@@ -100,8 +123,9 @@ class SignedIntegerToTwosComplement(Bloq):
     Args:
         bitsize: size of the register.
 
-    Regs:
-        x: input signed integer register to convert to two-complement.
+    Registers:
+        x: input signed integer (ones' complement) register.
+        y: output signed integer register in two's complement.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
@@ -112,9 +136,27 @@ class SignedIntegerToTwosComplement(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize)
+        return Signature(
+            [
+                Register('x', QIntOnesComp(self.bitsize), side=Side.LEFT),
+                Register('y', QInt(self.bitsize), side=Side.RIGHT),
+            ]
+        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Take the sign qubit as a control and cnot the remaining qubits, then
         # add it to the remaining n-1 bits.
         return {(Toffoli(), (self.bitsize - 2))}
+
+
+@bloq_example
+def _signed_to_twos() -> SignedIntegerToTwosComplement:
+    signed_to_twos = SignedIntegerToTwosComplement(bitsize=10)
+    return signed_to_twos
+
+
+_SIGNED_TO_TWOS = BloqDocSpec(
+    bloq_cls=SignedIntegerToTwosComplement,
+    import_line='from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement',
+    examples=(_signed_to_twos,),
+)
