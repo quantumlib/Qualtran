@@ -21,15 +21,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    ControlledBloq,
-    Register,
-    SelectionRegister,
-    SoquetT,
-)
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, SelectionRegister, SoquetT
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
@@ -372,9 +364,9 @@ class PrepareSparse(PrepareOracle):
         # prepare uniform superposition over sigma
         sigma = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=sigma)
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
-        less_than, theta[1] = bb.add(ControlledBloq(ZGate()), control=less_than, q=theta[1])
+        less_than, theta[1] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[1])
         # TODO: This should be off control
-        less_than, theta[0] = bb.add(ControlledBloq(ZGate()), control=less_than, q=theta[0])
+        less_than, theta[0] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[0])
         # swap the ind and alt_pqrs values
         # TODO: These swaps are inverted at zero Toffoli cost in the reference.
         # The method is to copy all values being swapped before they are swapped. Then
