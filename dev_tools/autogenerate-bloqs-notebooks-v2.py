@@ -238,9 +238,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Controlled State Preparation Using Rotations',
         module=qualtran.bloqs.controlled_state_preparation,
-        bloq_specs=[
-            qualtran.bloqs.controlled_state_preparation._CONTROLLED_STATE_PREP_DOC,
-        ],
+        bloq_specs=[qualtran.bloqs.controlled_state_preparation._CONTROLLED_STATE_PREP_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
 ]
