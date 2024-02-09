@@ -74,21 +74,21 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     def build_composite_bloq(
         self, bb: BloqBuilder, *, control: SoquetT, target_state: SoquetT, phase_gradient: SoquetT
     ) -> Dict[str, SoquetT]:
-        rom_vals = RotationTree.extractRomValuesFromState(self.state, self.rot_reg_size)
+        rom_vals = RotationTree.extract_ROM_values_from_state(self.state, self.rot_reg_size)
         # allocate the qubits for the rotation angle register
         rot_reg = bb.join(np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_size)]))
         if self.adjoint:
-            control, target_state, rot_reg, phase_gradient = self.__preparePhases(
+            control, target_state, rot_reg, phase_gradient = self._prepare_phases(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
             )
-            control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
+            control, target_state, rot_reg, phase_gradient = self._prepare_amplitudes(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
             )
         else:
-            control, target_state, rot_reg, phase_gradient = self.__prepareAmplitudes(
+            control, target_state, rot_reg, phase_gradient = self._prepare_amplitudes(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
             )
-            control, target_state, rot_reg, phase_gradient = self.__preparePhases(
+            control, target_state, rot_reg, phase_gradient = self._prepare_phases(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
             )
         # deallocate rotation register's qubits
@@ -97,7 +97,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
             bb.add(ZeroEffect(), q=q)
         return {"control": control, "target_state": target_state, "phase_gradient": phase_gradient}
 
-    def __prepareAmplitudes(
+    def _prepare_amplitudes(
         self,
         rom_vals: ArrayLike,
         bb: BloqBuilder,
@@ -109,7 +109,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         # if it is the adjoint gate, load the modular negative values to undo the rotations that
         # loaded the amplitudes
         if self.adjoint:
-            rom_vals = RotationTree.extractRomValuesFromState(
+            rom_vals = RotationTree.extract_ROM_values_from_state(
                 self.state, self.rot_reg_size, adjoint=True
             )
         state_qubits = bb.split(target_state)
@@ -147,7 +147,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         target_state = bb.join(state_qubits)
         return control, target_state, rot_reg, phase_gradient
 
-    def __preparePhases(
+    def _prepare_phases(
         self,
         amplitude_rom_vals: ArrayLike,
         bb: BloqBuilder,
@@ -157,7 +157,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         phase_gradient: SoquetT,
     ):
         rot_ancilla = bb.add(OneState())
-        rom_vals = self.__getPhaseROMValues(amplitude_rom_vals)
+        rom_vals = self._get_phase_ROM_values(amplitude_rom_vals)
         ctrl_rot = ControlledQROMRotateQubit(self.n_qubits, self.rot_reg_size, tuple(rom_vals))
         control, target_state, rot_ancilla, rot_reg, phase_gradient = bb.add(
             ctrl_rot,
@@ -170,7 +170,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         bb.add(OneEffect(), q=rot_ancilla)
         return control, target_state, rot_reg, phase_gradient
 
-    def __getPhaseROMValues(self, amplitude_rom_vals):
+    def _get_phase_ROM_values(self, amplitude_rom_vals):
         """As we are using the equivalent to controlled Z to do the rotations instead of Rz, there
         is a phase offset for each coefficient that has to be corrected. This offset is half of the
         turn angle applied, and is added to the phase for each coefficient.
@@ -191,7 +191,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
             angles = [offset - np.angle(c) for c, offset in zip(self.state, offset_angles)]
         else:
             angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
-        rom_values = [RotationTree.angle2RomValue(a, self.rot_reg_size) for a in angles]
+        rom_values = [RotationTree.angle_2_ROM_value(a, self.rot_reg_size) for a in angles]
         return rom_values
 
 
@@ -210,7 +210,7 @@ class ControlledQROMRotateQubit(Bloq):
             increase the accuracy of the results.
         rom_values: the tuple of values to be loaded in the rom, which correspond to the angle of
             each rotation. In order to get the rom value that corresponds to a given angle use
-            RotationTree.angle2RomValue(angle, rot_reg_size).
+            RotationTree.angle_2_ROM_value(angle, rot_reg_size).
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
@@ -248,18 +248,18 @@ class ControlledQROMRotateQubit(Bloq):
         )
         # both prepare_control and qubit will control the QROM so that this acts as a control Z
         qrom_control = bb.join(np.array([soqs["prepare_control"], soqs["qubit"]]))
-        qrom_control, soqs = self.applyQROM(qrom, bb, qrom_control, soqs)
+        qrom_control, soqs = self._apply_QROM(qrom, bb, qrom_control, soqs)
         soqs["rot_reg"], soqs["phase_gradient"] = bb.add(
             Add(bitsize=self.rot_reg_size), a=soqs["rot_reg"], b=soqs["phase_gradient"]
         )
-        qrom_control, soqs = self.applyQROM(qrom, bb, qrom_control, soqs)
+        qrom_control, soqs = self._apply_QROM(qrom, bb, qrom_control, soqs)
         separated = bb.split(qrom_control)
         soqs["prepare_control"] = separated[0]
         soqs["qubit"] = separated[1]
 
         return soqs
 
-    def applyQROM(
+    def _apply_QROM(
         self, qrom: QROM, bb: BloqBuilder, qrom_control: SoquetT, soqs: Dict[str, SoquetT]
     ):
         if self.n_selections != 0:
@@ -278,8 +278,8 @@ class RotationTree:
     angles necessary to encode the amplitude of a state using the method described in [1], section
     on arbitrary quantum state preparation on page 3.
 
-    The only methods to be used externally are extractRomValuesFromState, angle2RomValue,
-    rotationTreeFromState and getAngle0.
+    The only methods to be used externally are extract_ROM_values_from_state, angle_2_ROM_value,
+    rotation_tree_from_state and get_angle_0.
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
@@ -288,11 +288,11 @@ class RotationTree:
     """
 
     @staticmethod
-    def extractRomValuesFromState(state: ArrayLike, rot_reg_size: int, adjoint: bool = False):
+    def extract_ROM_values_from_state(state: ArrayLike, rot_reg_size: int, adjoint: bool = False):
         r"""Gives list in which the ith element is a list of the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
-        rotation_tree = RotationTree.rotationTreeFromState(state)
+        rotation_tree = RotationTree.rotation_tree_from_state(state)
         next_layer = [rotation_tree]
         rom_vals = []
         while len(next_layer) != 0:
@@ -300,10 +300,10 @@ class RotationTree:
             next_layer = []
             rom_vals_this_layer = []
             for tree in this_layer:
-                angle = tree.getAngle0()
+                angle = tree.get_angle_0()
                 if adjoint:
                     angle = 2 * np.pi - angle
-                rom_val = RotationTree.angle2RomValue(angle, rot_reg_size)
+                rom_val = RotationTree.angle_2_ROM_value(angle, rot_reg_size)
                 rom_vals_this_layer.append(rom_val)
                 if tree.branch0 is not None:
                     next_layer.append(tree.branch0)
@@ -313,29 +313,29 @@ class RotationTree:
         return rom_vals
 
     @staticmethod
-    def rotationTreeFromState(state):
+    def rotation_tree_from_state(state):
         r"""Given a list of coefficients, returns a tree-like object that contains the angles for
         the rotations when preparing the state.
         """
         if len(state) == 2:
             return RotationTree(abs(state[0]) ** 2, abs(state[1]) ** 2, None, None)
-        dn_l = RotationTree.rotationTreeFromState(state[: len(state) // 2])
-        dn_r = RotationTree.rotationTreeFromState(state[len(state) // 2 :])
+        dn_l = RotationTree.rotation_tree_from_state(state[: len(state) // 2])
+        dn_r = RotationTree.rotation_tree_from_state(state[len(state) // 2 :])
         return RotationTree(dn_l.sum_total, dn_r.sum_total, dn_l, dn_r)
 
-    def getAngle0(self):
+    def get_angle_0(self):
         r"""Get the angle that corresponds to p_0."""
-        return 2 * np.arccos(np.sqrt(self.__getP0()))
+        return 2 * np.arccos(np.sqrt(self._get_p0()))
 
     @staticmethod
-    def angle2RomValue(angle, rot_reg_size):
+    def angle_2_ROM_value(angle, rot_reg_size):
         r"""Returns the value to be loaded to a QROM to encode the given angle with a certain value
         of rot_reg_size.
         """
         rom_value_decimal = 2**rot_reg_size * angle / (2 * np.pi)
         return round(rom_value_decimal) % (2**rot_reg_size)
 
-    # do not call, use rotationTreeFromState
+    # do not call, use rotation_tree_from_state
     def __init__(self, sum0, sum1, branch0, branch1):
         self.sum0 = sum0
         self.sum1 = sum1
@@ -343,7 +343,7 @@ class RotationTree:
         self.branch0 = branch0
         self.branch1 = branch1
 
-    def __getP0(self):
+    def _get_p0(self):
         if self.sum_total == 0:
             return 0
         return self.sum0 / self.sum_total
