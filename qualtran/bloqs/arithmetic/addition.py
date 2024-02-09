@@ -28,6 +28,9 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     GateWithRegisters,
+    QBit,
+    QInt,
+    QUInt,
     Register,
     Side,
     Signature,
@@ -80,7 +83,7 @@ class Add(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize)
+        return Signature([Register("a", QUInt(self.bitsize)), Register("b", QUInt(self.bitsize))])
 
     def add_my_tensors(
         self,
@@ -235,9 +238,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         side = Side.LEFT if self.adjoint else Side.RIGHT
         return Signature(
             [
-                Register('a', self.bitsize),
-                Register('b', self.bitsize),
-                Register('c', self.bitsize + 1, side=side),
+                Register('a', QUInt(self.bitsize)),
+                Register('b', QUInt(self.bitsize)),
+                Register('c', QUInt(self.bitsize + 1), side=side),
             ]
         )
 
@@ -353,8 +356,8 @@ class SimpleAddConstant(Bloq):
         if len(self.cvs) > 0:
             return Signature(
                 [
-                    Register('ctrls', bitsize=1, shape=(len(self.cvs),)),
-                    Register('x', bitsize=self.bitsize),
+                    Register('ctrls', QBit(), shape=(len(self.cvs),)),
+                    Register('x', QInt(self.bitsize) if self.signed else QUInt(self.bitsize)),
                 ]
             )
         else:
@@ -464,8 +467,10 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     @cached_property
     def signature(self) -> Signature:
         if self.cvs:
-            return Signature.build(ctrl=len(self.cvs), x=self.bitsize)
-        return Signature.build(x=self.bitsize)
+            return Signature(
+                [Register('ctrl', QUInt(len(self.cvs))), Register('x', QUInt(self.bitsize))]
+            )
+        return Signature([Register('x', QUInt(self.bitsize))])
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         add_reg = (2,) * self.bitsize
