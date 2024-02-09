@@ -47,7 +47,7 @@ def _make_product():
 def _make_scale_int_by_real():
     from qualtran.bloqs.arithmetic import ScaleIntByReal
 
-    return ScaleIntByReal(r_bitsize=8, i_bitsize=12)
+    return ScaleIntByReal(r_bitsize=12, i_bitsize=4, out_bitsizes=(4, 8))
 
 
 def _make_multiply_two_reals():
@@ -97,7 +97,7 @@ def test_scale_int_by_real():
     bb = BloqBuilder()
     q0 = bb.add_register('a', 15)
     q1 = bb.add_register('b', 8)
-    q0, q1, q2 = bb.add(ScaleIntByReal(15, 8), real_in=q0, int_in=q1)
+    q0, q1, q2 = bb.add(ScaleIntByReal(15, 8, out_bitsizes=(8, 7)), real_in=q0, int_in=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     cbloq.t_complexity()
 
