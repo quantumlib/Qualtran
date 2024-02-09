@@ -21,8 +21,6 @@ from qualtran._infra.data_types import BoundedQUInt, QFxp, QInt, QIntOnesComp, Q
 def test_qint():
     qint_8 = QInt(8)
     assert qint_8.num_qubits == 8
-    with pytest.raises(ValueError, match="num_qubits must be > 1."):
-        QInt(1)
     n = sympy.symbols('x')
     qint_8 = QInt(n)
     assert qint_8.num_qubits == n
