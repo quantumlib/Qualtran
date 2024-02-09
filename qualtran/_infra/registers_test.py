@@ -125,6 +125,12 @@ def test_signature_build():
     sig1 = Signature([Register("r1", 5), Register("r2", 2)])
     sig2 = Signature.build(r1=5, r2=2)
     assert sig1 == sig2
+    sig1 = Signature([Register("r1", QInt(7)), Register("r2", QBit())])
+    sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QBit())
+    assert sig1 == sig2
+    sig1 = Signature([Register("r1", QInt(7))])
+    sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QAny(0))
+    assert sig1 == sig2
 
 
 def test_and_regs():

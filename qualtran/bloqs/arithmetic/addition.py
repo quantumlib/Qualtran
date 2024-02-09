@@ -28,9 +28,13 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     GateWithRegisters,
+    QBit,
+    QInt,
+    QUInt,
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.and_bloq import And
@@ -44,6 +48,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -78,7 +83,7 @@ class Add(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize)
+        return Signature([Register("a", QUInt(self.bitsize)), Register("b", QUInt(self.bitsize))])
 
     def add_my_tensors(
         self,
@@ -118,6 +123,16 @@ class Add(Bloq):
         wire_symbols = ["In(x)"] * self.bitsize
         wire_symbols += ["In(y)/Out(x+y)"] * self.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box
+
+        if soq.reg.name == 'a':
+            return directional_text_box('a', side=soq.reg.side)
+        elif soq.reg.name == 'b':
+            return directional_text_box('a+b', side=soq.reg.side)
+        else:
+            raise ValueError()
 
     def _left_building_block(self, inp, out, anc, depth):
         if depth == self.bitsize - 1:
@@ -223,9 +238,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         side = Side.LEFT if self.adjoint else Side.RIGHT
         return Signature(
             [
-                Register('a', self.bitsize),
-                Register('b', self.bitsize),
-                Register('c', self.bitsize + 1, side=side),
+                Register('a', QUInt(self.bitsize)),
+                Register('b', QUInt(self.bitsize)),
+                Register('c', QUInt(self.bitsize + 1), side=side),
             ]
         )
 
@@ -341,8 +356,8 @@ class SimpleAddConstant(Bloq):
         if len(self.cvs) > 0:
             return Signature(
                 [
-                    Register('ctrls', bitsize=1, shape=(len(self.cvs),)),
-                    Register('x', bitsize=self.bitsize),
+                    Register('ctrls', QBit(), shape=(len(self.cvs),)),
+                    Register('x', QInt(self.bitsize) if self.signed else QUInt(self.bitsize)),
                 ]
             )
         else:
@@ -452,8 +467,10 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
     @cached_property
     def signature(self) -> Signature:
         if self.cvs:
-            return Signature.build(ctrl=len(self.cvs), x=self.bitsize)
-        return Signature.build(x=self.bitsize)
+            return Signature(
+                [Register('ctrl', QUInt(len(self.cvs))), Register('x', QUInt(self.bitsize))]
+            )
+        return Signature([Register('x', QUInt(self.bitsize))])
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         add_reg = (2,) * self.bitsize

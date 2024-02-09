@@ -33,6 +33,7 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -44,8 +45,8 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -362,6 +363,11 @@ class _IntVector(Bloq):
     def pretty_name(self) -> str:
         s = self.short_name()
         return f'|{s}>' if self.state else f'<{s}|'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box
+
+        return directional_text_box(text=f'{self.val}', side=soq.reg.side)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
