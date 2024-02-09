@@ -300,7 +300,7 @@ def _controlled_state_preparation():
     return ControlledStatePreparationUsingRotations(n_qubits=2, rot_reg_size=4, state=state_coefs)
 
 
-_controlled_state_prep_DOC = BloqDocSpec(
+_CONTROLLED_STATE_PREP_DOC = BloqDocSpec(
     bloq_cls=ControlledStatePreparationUsingRotations,
     import_line='from qualtran.bloqs.controlled_state_preparation import ControlledStatePreparationUsingRotations',
     examples=(_controlled_state_preparation,),
