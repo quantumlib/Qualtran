@@ -16,12 +16,12 @@ from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
 import attrs
-import numpy as np
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
+from qualtran.bloqs.rotations.phasing_via_cost_function import PhaseOraclePhaseGradient
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -60,11 +60,11 @@ class HammingWeightPhasing(GateWithRegisters):
 
     bitsize: int
     exponent: float
-    eps: int = 1e-10
+    eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=self.bitsize)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize))
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         soqs['x'], junk, out = bb.add(HammingWeightCompute(self.bitsize), x=soqs['x'])
@@ -87,7 +87,10 @@ class HammingWeightPhasing(GateWithRegisters):
         return {
             (HammingWeightCompute(self.bitsize), 1),
             (HammingWeightCompute(self.bitsize).adjoint(), 1),
-            (ZPowGate(exponent=self.exponent), self.bitsize.bit_length()),
+            (
+                ZPowGate(exponent=self.exponent, eps=self.eps / self.bitsize.bit_length()),
+                self.bitsize.bit_length(),
+            ),
         }
 
 
@@ -131,19 +134,33 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     bitsize: int
     exponent: float = 1
-    eps: int = 1e-10
+    eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=self.bitsize, phase_grad=self.b_grad)
+        return Signature.build_from_dtypes(
+            x=QUInt(self.bitsize), phase_grad=QFxp(self.b_grad, self.b_grad)
+        )
+
+    @cached_property
+    def phase_oracle(self) -> PhaseOraclePhaseGradient:
+        return PhaseOraclePhaseGradient(
+            Register('out', QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False)),
+            self.exponent / 2,
+            self.eps,
+        )
 
     @cached_property
     def b_phase(self) -> int:
-        return int(np.ceil(np.log2(1 / self.eps)))
+        return self.phase_oracle.b_phase
 
     @cached_property
     def b_grad(self) -> int:
-        return max(self.bitsize.bit_length(), self.b_phase + int(np.ceil(np.log2(self.b_phase))))
+        return self.phase_oracle.b_grad
+
+    @cached_property
+    def gamma_bitsize(self) -> int:
+        return self.phase_oracle.gamma_bitsize
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, x: 'SoquetT', phase_grad: 'SoquetT'
@@ -151,7 +168,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
         out, phase_grad = bb.add(
             AddScaledValIntoPhaseReg(
-                self.bitsize.bit_length(), self.b_grad, self.exponent / 2, self.b_phase
+                self.phase_oracle.cost_dtype, self.b_grad, self.exponent / 2, self.gamma_bitsize
             ),
             x=out,
             phase_grad=phase_grad,

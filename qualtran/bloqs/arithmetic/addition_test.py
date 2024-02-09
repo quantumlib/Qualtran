@@ -34,6 +34,10 @@ from qualtran.cirq_interop.testing import (
     assert_decompose_is_consistent_with_t_complexity,
     GateHelper,
 )
+from qualtran.simulation.classical_sim import (
+    format_classical_truth_table,
+    get_classical_truth_table,
+)
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
@@ -158,6 +162,33 @@ def test_add_call_classically(a: int, b: int, num_bits: int):
     bloq = Add(num_bits)
     ret = bloq.call_classically(a=a, b=b)
     assert ret == (a, a + b)
+
+
+def test_add_truth_table():
+    bloq = Add(bitsize=2)
+    classical_truth_table = format_classical_truth_table(*get_classical_truth_table(bloq))
+    assert (
+        classical_truth_table
+        == """\
+a  b  |  a  b
+--------------
+0, 0 -> 0, 0
+0, 1 -> 0, 1
+0, 2 -> 0, 2
+0, 3 -> 0, 3
+1, 0 -> 1, 1
+1, 1 -> 1, 2
+1, 2 -> 1, 3
+1, 3 -> 1, 0
+2, 0 -> 2, 2
+2, 1 -> 2, 3
+2, 2 -> 2, 0
+2, 3 -> 2, 1
+3, 0 -> 3, 3
+3, 1 -> 3, 0
+3, 2 -> 3, 1
+3, 3 -> 3, 2"""
+    )
 
 
 def test_add():
