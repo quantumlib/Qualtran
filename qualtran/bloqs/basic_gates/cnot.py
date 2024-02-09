@@ -14,21 +14,25 @@
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
+    BloqBuilder,
     CompositeBloq,
+    CtrlSpec,
     DecomposeTypeError,
     Signature,
     Soquet,
     SoquetT,
 )
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, ModPlus, WireSymbol
 
 if TYPE_CHECKING:
@@ -96,6 +100,27 @@ class CNOT(Bloq):
     def on_classical_vals(self, ctrl: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'ctrl': ctrl, 'target': (ctrl + target) % 2}
 
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.basic_gates.toffoli import Toffoli
+
+        if ctrl_spec is None or ctrl_spec == CtrlSpec():
+            bloq = Toffoli()
+
+            def add_controlled(
+                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+            ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+                (c2,) = ctrl_soqs
+                (c1, c2), target = bb.add(
+                    bloq, ctrl=np.array([in_soqs['ctrl'], c2]), target=in_soqs['target']
+                )
+                return (c1,), (c2, target)
+
+            return bloq, add_controlled
+
+        return super().get_ctrl_system(ctrl_spec=ctrl_spec)
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
@@ -111,6 +136,9 @@ class CNOT(Bloq):
         elif soq.reg.name == 'target':
             return ModPlus()
         raise ValueError(f'Bad wire symbol soquet: {soq}')
+
+    def t_complexity(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
 
 
 @bloq_example

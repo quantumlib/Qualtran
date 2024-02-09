@@ -16,11 +16,13 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple
+from typing import Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
 import numpy as np
 from attrs import field, frozen
+
+from .data_types import QAny, QBit, QDType
 
 
 class Side(enum.Flag):
@@ -49,7 +51,9 @@ class Register:
 
     Attributes:
         name: The string name of the register
-        bitsize: The number of (qu)bits in the register.
+        _bitsize: The number of (qu)bits in the register OR the quantum data type of the register.
+            If an integer is given it will be converted into either a QAny
+            dtype or QBit dtype (_bitsize = 1).
         shape: A tuple of integer dimensions to declare a multidimensional register. The
             total number of bits is the product of entries in this tuple times `bitsize`.
         side: Whether this is a left, right, or thru register. See the documentation for `Side`
@@ -57,11 +61,21 @@ class Register:
     """
 
     name: str
-    bitsize: int
+    _bitsize: Union[int, QDType] = field(
+        converter=lambda v: v if isinstance(v, QDType) else QBit() if v == 1 else QAny(v)
+    )
     shape: Tuple[int, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
+
+    @property
+    def dtype(self) -> QDType:
+        return self._bitsize
+
+    @property
+    def bitsize(self) -> int:
+        return self.dtype.num_qubits
 
     def all_idxs(self) -> Iterable[Tuple[int, ...]]:
         """Iterate over all possible indices of a multidimensional register."""
@@ -131,7 +145,9 @@ class SelectionRegister(Register):
     """
 
     name: str
-    bitsize: int
+    _bitsize: Union[int, QDType] = field(
+        converter=lambda v: v if isinstance(v, QDType) else QBit() if v == 1 else QAny(v)
+    )
     iteration_length: int = field()
     shape: Tuple[int, ...] = field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
@@ -182,13 +198,23 @@ class Signature:
 
     @classmethod
     def build(cls, **registers: int) -> 'Signature':
-        """Construct a Signature comprised of simple thru registers.
+        """Construct a Signature comprised of simple thru registers given the register bitsizes.
 
         Args:
             registers: keyword arguments mapping register name to bitsize. All registers
                 will be 0-dimensional and THRU.
         """
         return cls(Register(name=k, bitsize=v) for k, v in registers.items() if v)
+
+    @classmethod
+    def build_from_dtypes(cls, **registers: QDType) -> 'Signature':
+        """Construct a Signature comprised of simple thru registers given the register dtypes.
+
+        Args:
+            registers: keyword arguments mapping register name to QDType. All registers
+                will be 0-dimensional and THRU.
+        """
+        return cls(Register(name=k, bitsize=v) for k, v in registers.items() if v.num_qubits)
 
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""

@@ -11,19 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import itertools
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
 
+import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature, Soquet
+from qualtran import Bloq, QBit, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -48,7 +50,7 @@ class Toffoli(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('ctrl', 1, shape=(2,)), Register('target', 1)])
+        return Signature([Register('ctrl', QBit(), shape=(2,)), Register('target', QBit())])
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -58,6 +60,40 @@ class Toffoli(Bloq):
 
     def t_complexity(self):
         return TComplexity(t=4)
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
+
+        from qualtran.bloqs.basic_gates.cnot import XOR
+
+        # Set up the CTRL tensor which copies inputs to outputs and activates
+        # when a==1 and b==1
+        internal = qtn.rand_uuid()
+        inds = (
+            incoming['ctrl'][0],
+            incoming['ctrl'][1],
+            outgoing['ctrl'][0],
+            outgoing['ctrl'][1],
+            internal,
+        )
+        CTRL = np.zeros((2,) * 5, dtype=np.complex128)
+        for a, b in itertools.product([0, 1], repeat=2):
+            CTRL[a, b, a, b, int(a == 1 and b == 1)] = 1.0
+
+        # Wire up the CTRL tensor to XOR to flip `target` when active.
+        tn.add(qtn.Tensor(data=CTRL, inds=inds, tags=['COPY', tag]))
+        tn.add(
+            qtn.Tensor(
+                data=XOR, inds=(incoming['target'], outgoing['target'], internal), tags=['XOR']
+            )
+        )
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', target: 'ClassicalValT'

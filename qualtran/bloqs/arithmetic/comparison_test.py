@@ -19,12 +19,13 @@ import numpy as np
 import pytest
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.arithmetic import (
+from qualtran.bloqs.arithmetic.comparison import (
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
+    LinearDepthGreaterThan,
 )
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import (
@@ -195,6 +196,43 @@ def test_greater_than_decomp(bitsize, signed):
 )
 def test_classical_greater_than(bitsize, signed, a, b, target, result):
     bloq = GreaterThan(bitsize=bitsize, signed=signed)
+    cbloq = bloq.decompose_bloq()
+    bloq_classical = bloq.call_classically(a=a, b=b, target=target)
+    cbloq_classical = cbloq.call_classically(a=a, b=b, target=target)
+
+    assert len(bloq_classical) == len(cbloq_classical)
+    for i in range(len(bloq_classical)):
+        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
+
+    assert bloq_classical[-1] == result
+
+
+@pytest.mark.parametrize('bitsize', [1, 2, 5])
+@pytest.mark.parametrize('signed', [False, True])
+def test_linear_depth_greater_than_decomp(bitsize, signed):
+    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed)
+    assert_valid_bloq_decomposition(bloq)
+
+
+# TODO: write tests for signed integer comparison
+# https://github.com/quantumlib/Qualtran/issues/606
+@pytest.mark.parametrize(
+    'bitsize,signed,a,b,target,result',
+    [
+        (1, False, 1, 0, 0, 1),
+        (2, False, 2, 3, 0, 0),
+        (3, False, 5, 3, 1, 0),
+        (4, False, 8, 8, 0, 0),
+        (5, False, 30, 16, 1, 0),
+        (1, True, 1, 1, 0, 0),
+        (2, True, 1, 0, 1, 0),
+        (3, True, 2, 0, 0, 1),
+        (4, True, 7, 7, 1, 1),
+        (5, True, 13, 12, 1, 0),
+    ],
+)
+def test_classical_linear_depth_greater_than(bitsize, signed, a, b, target, result):
+    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed)
     cbloq = bloq.decompose_bloq()
     bloq_classical = bloq.call_classically(a=a, b=b, target=target)
     cbloq_classical = cbloq.call_classically(a=a, b=b, target=target)

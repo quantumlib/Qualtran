@@ -29,11 +29,11 @@ class SU2RotationGate(GateWithRegisters):
     phi: float
     lambd: float
 
-    @property
+    @cached_property
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    @property
+    @cached_property
     def rotation_matrix(self):
         r"""Implements an arbitrary SU(2) rotation.
 
@@ -68,15 +68,10 @@ class SU2RotationGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         qubit = q[0]
 
-        gates = cirq.single_qubit_matrix_to_gates(self.rotation_matrix)
-        matrix = np.eye(2)
-        for gate in gates:
-            yield gate.on(qubit)
-            matrix = cirq.unitary(gate) @ matrix
-
-        # `cirq.single_qubit_matrix_to_gates` does not preserve global phase
-        matrix = matrix @ self.rotation_matrix.conj().T
-        yield cirq.GlobalPhaseGate(matrix[0, 0].conj()).on()
+        yield cirq.Rz(rads=np.pi - self.lambd).on(qubit)
+        yield cirq.Ry(rads=2 * self.theta).on(qubit)
+        yield cirq.Rz(rads=-self.phi).on(qubit)
+        yield cirq.GlobalPhaseGate(np.exp(1j * (np.pi + self.lambd + self.phi) / 2)).on()
 
 
 def qsp_complementary_polynomial(
@@ -220,23 +215,21 @@ def qsp_phase_factors(
     phi = np.zeros(n)
     lambd = 0
 
+    def safe_angle(x):
+        return 0 if np.isclose(x, 0) else np.angle(x)
+
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
 
         a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
         # \phi_d = arg(a / b)
-        # TODO this is numerically unstable for values of a and b around 0,
-        #      np.angle(0) = 0, but for near-zero values it produces the "correct angle",
-        #      even though we want it to be 0.
-        #      There should be a more numerically stable way to compute the relevant phis
-        #      so that the final QSP sequence is valid.
-        phi[d] = np.angle(a) - np.angle(b)
+        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a * np.conj(b))
 
         if d == 0:
-            lambd = np.angle(b)
+            lambd = safe_angle(b)
         else:
-            S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix @ S
+            S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix.conj().T @ S
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
@@ -267,7 +260,7 @@ class GeneralizedQSP(GateWithRegisters):
     U: GateWithRegisters
     P: Sequence[complex]
 
-    @property
+    @cached_property
     def signature(self) -> Signature:
         return Signature([Register(name='signal', bitsize=1), *self.U.signature])
 

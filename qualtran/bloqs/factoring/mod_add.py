@@ -19,13 +19,13 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature, SoquetT
+from qualtran import Bloq, QBit, QUInt, Register, Signature, SoquetT
+from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
+from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
-from qualtran.bloqs.arithmetic.comparison import GreaterThan
 
 
 @frozen
@@ -51,9 +51,9 @@ class CtrlScaleModAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('ctrl', bitsize=1),
-                Register('x', bitsize=self.bitsize),
-                Register('y', bitsize=self.bitsize),
+                Register('ctrl', QBit()),
+                Register('x', QUInt(self.bitsize)),
+                Register('y', QUInt(self.bitsize)),
             ]
         )
 
@@ -99,7 +99,7 @@ class CtrlModAddK(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
+        return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
@@ -134,13 +134,14 @@ class CtrlAddK(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('ctrl', bitsize=1), Register('x', bitsize=self.bitsize)])
+        return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 2 * self.bitsize)}
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=2 * self.bitsize)
+
 
 @frozen
 class MontgomeryModAdd(Bloq):
@@ -169,7 +170,9 @@ class MontgomeryModAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
+    ) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
@@ -204,13 +207,17 @@ class MontgomeryModAdd(Bloq):
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize, k=self.p, signed=True, cvs=(1,)), x=y, ctrls=sign_split
+            SimpleAddConstant(bitsize=self.bitsize, k=self.p, signed=True, cvs=(1,)),
+            x=y,
+            ctrls=sign_split,
         )
         sign = bb.join(sign_split)
 
         # Check if x < y; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
-        y, x, sign = bb.add(GreaterThan(bitsize=self.bitsize, signed=False), a=y, b=x, target=sign)
+        y, x, sign = bb.add(
+            LinearDepthGreaterThan(bitsize=self.bitsize, signed=False), a=y, b=x, target=sign
+        )
         sign = bb.add(XGate(), q=sign)
 
         # Free the ancilla qubits.

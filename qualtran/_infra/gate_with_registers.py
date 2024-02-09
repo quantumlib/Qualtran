@@ -316,6 +316,21 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
+    # pylint: disable=arguments-renamed
+    def controlled(
+        self,
+        num_controls: Optional[int] = None,
+        control_values=None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+    ) -> 'cirq.Gate':
+        # Multiple inheritance: use the `cirq.Gate` method.
+        return cirq.Gate.controlled(
+            self,
+            num_controls=num_controls,
+            control_values=control_values,
+            control_qid_shape=control_qid_shape,
+        )
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Default diagram info that uses register names to name the boxes in multi-qubit gates.
 
