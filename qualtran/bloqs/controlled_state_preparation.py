@@ -28,9 +28,8 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 @attrs.frozen
 class ControlledStatePreparationUsingRotations(PrepareOracle):
-    r"""Class that implements controlled state preparation using Ry and Rz rotations from [1]. It
-    does not produce any entangled residual qubits.
-
+    r""" Controlled state preparation without entangled residual using Ry and Rz rotations from [1].
+    
     Given a quantum state of which the list of coefficients $c_i$ is known
     $$
         |\psi \rangle = \sum_{i=0}^{N-1}c_{i}|i\rangle
@@ -55,7 +54,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     n_qubits: int
     rot_reg_size: int
     state: Tuple
-    adjoint: bool = False
+    uncompute: bool = False
 
     @property
     def selection_registers(self) -> Tuple[SelectionRegister, ...]:
@@ -77,7 +76,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         rom_vals = RotationTree.extract_ROM_values_from_state(self.state, self.rot_reg_size)
         # allocate the qubits for the rotation angle register
         rot_reg = bb.join(np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_size)]))
-        if self.adjoint:
+        if self.uncompute:
             control, target_state, rot_reg, phase_gradient = self._prepare_phases(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
             )
@@ -108,15 +107,15 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     ):
         # if it is the adjoint gate, load the modular negative values to undo the rotations that
         # loaded the amplitudes
-        if self.adjoint:
+        if self.uncompute:
             rom_vals = RotationTree.extract_ROM_values_from_state(
-                self.state, self.rot_reg_size, adjoint=True
+                self.state, self.rot_reg_size, uncompute=True
             )
         state_qubits = bb.split(target_state)
         for i in range(self.n_qubits):
             # for the normal gate loop from qubit 0 to n_qubits-1, if it is the adjoint
             # then the process is run backwards with the opposite turn angles
-            if self.adjoint:
+            if self.uncompute:
                 qi = self.n_qubits - i - 1
             else:
                 qi = i
@@ -156,6 +155,27 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         rot_reg: SoquetT,
         phase_gradient: SoquetT,
     ):
+        """
+        Encodes the phase of each coefficient, taking into account both the phase of the original
+        coefficient and offsets caused by the amplitude preparation.
+
+        It applies a rotation to the target_state register through phase kickback. By using
+        target_register as the selection register for rotating an ancilla qubit that is then
+        erased, leaving the desired phase in target_register.
+
+        Args:
+            - amplitude_rom_vals: list of ROM values that correspond to the angles of the phases to
+                be encoded. The ith item contains the value of the ith coefficient. To get the ROM
+                value that corresponds to an angle use RotationTree.angle_2_ROM_value.
+            - control: control qubit for the gate. Gate only takes effect when control is at |1>
+            - target_state: register that holds the amplitudes of the state to be encoded. It is
+                used as the selection register for the ROM value to be loaded, thus for the
+                target_state |00>, the angle that corresponds to the phase of |00> is applied.
+            - rot_reg: register where the rotation angles are written (the target of the ROM gate).
+                Must be given in zero state, and is left in the zero state.
+            - phase_gradient: phase gradient state used to apply the rotation, can be obtained from
+                the PhaseGradientState class. It is left unaffected and can be reused.
+        """
         rot_ancilla = bb.add(OneState())
         rom_vals = self._get_phase_ROM_values(amplitude_rom_vals)
         ctrl_rot = ControlledQROMRotateQubit(self.n_qubits, self.rot_reg_size, tuple(rom_vals))
@@ -187,7 +207,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                 for k in range(item_range * j, item_range * (j + 1)):
                     offset_angles[k] += offset
         # if the matrix is the adjoint, the angles have to be undone, thus just load -theta
-        if self.adjoint:
+        if self.uncompute:
             angles = [offset - np.angle(c) for c, offset in zip(self.state, offset_angles)]
         else:
             angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
@@ -197,8 +217,9 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
 
 @attrs.frozen
 class ControlledQROMRotateQubit(Bloq):
-    r"""Class that performs an array of controlled rotations $Z^{\theta_i/2}$ for a list of angles
-    $\theta$. It uses phase kickback and thus needs a phase gradient state in order to work. This
+    r""" Array of controlled rotations $Z^{\theta_i/2}$ for a list of angles $\theta$.
+    
+    It uses phase kickback and thus needs a phase gradient state in order to work. This
     state must be provided externally for efficiency, as it is unaffected and can thus be reused.
     Refer to [1], section on arbitrary quantum state preparation on page 3.
 
@@ -274,9 +295,11 @@ class ControlledQROMRotateQubit(Bloq):
 
 
 class RotationTree:
-    r"""Class used by ControlledStatePreparationUsingRotations to get the corresponding rotation
-    angles necessary to encode the amplitude of a state using the method described in [1], section
-    on arbitrary quantum state preparation on page 3.
+    r""" Used by ControlledStatePreparationUsingRotations to get the corresponding rotation
+    angles.
+    
+    The rotation angles are used to encode the amplitude of a state using the method described in
+    [1], section on arbitrary quantum state preparation, page 3.
 
     The only methods to be used externally are extract_ROM_values_from_state, angle_2_ROM_value,
     rotation_tree_from_state and get_angle_0.
@@ -288,7 +311,7 @@ class RotationTree:
     """
 
     @staticmethod
-    def extract_ROM_values_from_state(state: ArrayLike, rot_reg_size: int, adjoint: bool = False):
+    def extract_ROM_values_from_state(state: ArrayLike, rot_reg_size: int, uncompute: bool = False):
         r"""Gives list in which the ith element is a list of the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
@@ -301,7 +324,7 @@ class RotationTree:
             rom_vals_this_layer = []
             for tree in this_layer:
                 angle = tree.get_angle_0()
-                if adjoint:
+                if uncompute:
                     angle = 2 * np.pi - angle
                 rom_val = RotationTree.angle_2_ROM_value(angle, rot_reg_size)
                 rom_vals_this_layer.append(rom_val)
