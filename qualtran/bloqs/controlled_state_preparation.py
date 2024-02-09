@@ -12,20 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, Tuple
-
-import attrs
-import numpy as np
-from numpy.typing import ArrayLike
-
-from qualtran import Bloq, BloqBuilder, SelectionRegister, Signature, SoquetT
-from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
-from qualtran.bloqs.basic_gates.rotation import Rx
-from qualtran.bloqs.qrom import QROM
-from qualtran.bloqs.select_and_prepare import PrepareOracle
-
-"""
+r"""
         Outline of the algorithm and role of each class.
 
 This algorithm prepares a state $|\psi\rangle$ in a register initially at $|0\rangle$ by using
@@ -87,11 +74,24 @@ References:
 
 """
 
+from typing import Dict, Tuple
+
+import attrs
+import numpy as np
+from numpy.typing import ArrayLike
+
+from qualtran import Bloq, BloqBuilder, SelectionRegister, Signature, SoquetT
+from qualtran.bloqs.arithmetic import Add
+from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates.rotation import Rx
+from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.select_and_prepare import PrepareOracle
+
 
 @attrs.frozen
 class ControlledStatePreparationUsingRotations(PrepareOracle):
-    r""" Controlled state preparation without entangled residual using Ry and Rz rotations from [1].
-    
+    r"""Controlled state preparation without entangled residual using Ry and Rz rotations from [1].
+
     Given a quantum state of which the list of coefficients $c_i$ is known
     $$
         |\psi \rangle = \sum_{i=0}^{N-1}c_{i}|i\rangle
@@ -279,8 +279,8 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
 
 @attrs.frozen
 class ControlledQROMRotateQubit(Bloq):
-    r""" Array of controlled rotations $Z^{\theta_i/2}$ for a list of angles $\theta$.
-    
+    r"""Array of controlled rotations $Z^{\theta_i/2}$ for a list of angles $\theta$.
+
     It uses phase kickback and thus needs a phase gradient state in order to work. This
     state must be provided externally for efficiency, as it is unaffected and can thus be reused.
     Refer to [1], section on arbitrary quantum state preparation on page 3.
@@ -358,9 +358,9 @@ class ControlledQROMRotateQubit(Bloq):
 
 # @attrs.frozen
 class RotationTree:
-    r""" Used by ControlledStatePreparationUsingRotations to get the corresponding rotation
+    r"""Used by ControlledStatePreparationUsingRotations to get the corresponding rotation
     angles.
-    
+
     The rotation angles are used to encode the amplitude of a state using the method described in
     [1], section on arbitrary quantum state preparation, page 3.
 
@@ -375,7 +375,9 @@ class RotationTree:
 
     @staticmethod
     def extract_ROM_values_from_state(state: ArrayLike, rot_reg_size: int, uncompute: bool = False):
-        r"""Gives list in which the ith element is a list of the rom values to be loaded when
+        r"""Gives a list of the ROM values to be loaded for preparing the amplitudes of a state.
+
+        The ith element of the returned list is another list with the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
         rotation_tree = RotationTree.build_rotation_tree_from_state(state)
