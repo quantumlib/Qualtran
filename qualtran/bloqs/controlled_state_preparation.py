@@ -80,7 +80,15 @@ import attrs
 import numpy as np
 from numpy.typing import ArrayLike
 
-from qualtran import Bloq, BloqBuilder, SelectionRegister, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    SelectionRegister,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.bloqs.basic_gates.rotation import Rx
@@ -275,6 +283,28 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
             angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
         rom_values = [RotationTree.angle_2_ROM_value(a, self.rot_reg_size) for a in angles]
         return rom_values
+
+
+@bloq_example
+def _controlled_state_preparation():
+    state_coefs = (
+        (-0.42677669529663675 - 0.1767766952966366j),
+        (0.17677669529663664 - 0.4267766952966367j),
+        (0.17677669529663675 - 0.1767766952966368j),
+        (0.07322330470336305 - 0.07322330470336309j),
+        (0.4267766952966366 - 0.17677669529663692j),
+        (0.42677669529663664 + 0.17677669529663675j),
+        (0.0732233047033631 + 0.17677669529663678j),
+        (-0.07322330470336308 - 0.17677669529663678j),
+    )
+    return ControlledStatePreparationUsingRotations(n_qubits=2, rot_reg_size=4, state=state_coefs)
+
+
+_controlled_state_prep_DOC = BloqDocSpec(
+    bloq_cls=ControlledStatePreparationUsingRotations,
+    import_line='from qualtran.bloqs.controlled_state_preparation import ControlledStatePreparationUsingRotations',
+    examples=(_controlled_state_preparation,),
+)
 
 
 @attrs.frozen
