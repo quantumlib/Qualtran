@@ -102,7 +102,7 @@ def test_controlled_state_preparation_via_rotation_adjoint(n_qubits, rot_reg_siz
         n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs)
     )
     qsp_adj = ControlledStatePreparationUsingRotations(
-        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs), adjoint=True
+        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs), uncompute=True
     )
 
     bb = BloqBuilder()
