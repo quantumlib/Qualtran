@@ -294,6 +294,7 @@ class ControlledQROMRotateQubit(Bloq):
         return qrom_control, soqs
 
 
+# @attrs.frozen
 class RotationTree:
     r""" Used by ControlledStatePreparationUsingRotations to get the corresponding rotation
     angles.
@@ -301,8 +302,8 @@ class RotationTree:
     The rotation angles are used to encode the amplitude of a state using the method described in
     [1], section on arbitrary quantum state preparation, page 3.
 
-    The only methods to be used externally are extract_ROM_values_from_state, angle_2_ROM_value,
-    rotation_tree_from_state and get_angle_0.
+    The only methods to be used externally are extract_ROM_values_from_state, angle_2_ROM_value and
+    build_rotation_tree_from_state.
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
@@ -315,7 +316,7 @@ class RotationTree:
         r"""Gives list in which the ith element is a list of the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
-        rotation_tree = RotationTree.rotation_tree_from_state(state)
+        rotation_tree = RotationTree.build_rotation_tree_from_state(state)
         next_layer = [rotation_tree]
         rom_vals = []
         while len(next_layer) != 0:
@@ -323,7 +324,7 @@ class RotationTree:
             next_layer = []
             rom_vals_this_layer = []
             for tree in this_layer:
-                angle = tree.get_angle_0()
+                angle = tree.angle_0
                 if uncompute:
                     angle = 2 * np.pi - angle
                 rom_val = RotationTree.angle_2_ROM_value(angle, rot_reg_size)
@@ -336,19 +337,20 @@ class RotationTree:
         return rom_vals
 
     @staticmethod
-    def rotation_tree_from_state(state):
+    def build_rotation_tree_from_state(state):
         r"""Given a list of coefficients, returns a tree-like object that contains the angles for
         the rotations when preparing the state.
         """
         if len(state) == 2:
             return RotationTree(abs(state[0]) ** 2, abs(state[1]) ** 2, None, None)
-        dn_l = RotationTree.rotation_tree_from_state(state[: len(state) // 2])
-        dn_r = RotationTree.rotation_tree_from_state(state[len(state) // 2 :])
+        dn_l = RotationTree.build_rotation_tree_from_state(state[: len(state) // 2])
+        dn_r = RotationTree.build_rotation_tree_from_state(state[len(state) // 2 :])
         return RotationTree(dn_l.sum_total, dn_r.sum_total, dn_l, dn_r)
 
-    def get_angle_0(self):
-        r"""Get the angle that corresponds to p_0."""
-        return 2 * np.arccos(np.sqrt(self._get_p0()))
+    @property
+    def angle_0(self):
+        r"""Angle that corresponds to p_0."""
+        return 2 * np.arccos(np.sqrt(self._p0))
 
     @staticmethod
     def angle_2_ROM_value(angle, rot_reg_size):
@@ -358,7 +360,7 @@ class RotationTree:
         rom_value_decimal = 2**rot_reg_size * angle / (2 * np.pi)
         return round(rom_value_decimal) % (2**rot_reg_size)
 
-    # do not call, use rotation_tree_from_state
+    # do not call, use build_rotation_tree_from_state
     def __init__(self, sum0, sum1, branch0, branch1):
         self.sum0 = sum0
         self.sum1 = sum1
@@ -366,7 +368,8 @@ class RotationTree:
         self.branch0 = branch0
         self.branch1 = branch1
 
-    def _get_p0(self):
+    @property
+    def _p0(self):
         if self.sum_total == 0:
             return 0
         return self.sum0 / self.sum_total
