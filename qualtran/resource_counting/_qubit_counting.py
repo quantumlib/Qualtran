@@ -31,13 +31,15 @@ def _cbloq_max_width(
     during-a-binst time point is the sum of the binst width (which is provided by the
     `_bloq_max_width` callable) and the bystander connections that are "in play". The max
     width is the maximum over all the time points.
+
+    If the dataflow graph has more than one connected component, we treat each component
+    independently.
     """
     max_width: Union[int, sympy.Expr] = 0
-    series_i: int = 0
     in_play: Set[Connection] = set()
 
-    for gen_i, binsts in enumerate(nx.topological_generations(binst_graph)):
-        for binst in binsts:
+    for cc in nx.weakly_connected_components(binst_graph):
+        for binst in nx.topological_sort(binst_graph.subgraph(cc)):
             pred_cxns, succ_cxns = _binst_to_cxns(binst, binst_graph=binst_graph)
 
             # Remove inbound connections from those that are 'in play'.
@@ -55,6 +57,5 @@ def _cbloq_max_width(
             in_play.update(succ_cxns)
             after_size = sum(s.shape for s in in_play)
             max_width = sympy.Max(max_width, after_size)
-            series_i += 1
 
     return max_width

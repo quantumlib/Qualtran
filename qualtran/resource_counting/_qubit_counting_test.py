@@ -15,7 +15,10 @@
 import sympy
 
 from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
-from qualtran.bloqs.for_testing.with_decomposition import TestSerialCombo
+from qualtran.bloqs.for_testing.with_decomposition import (
+    TestIndependentParallelCombo,
+    TestSerialCombo,
+)
 from qualtran.drawing import show_bloq
 from qualtran.resource_counting._qubit_counting import _cbloq_max_width
 
@@ -38,6 +41,13 @@ def test_max_width_interior_alloc_nums():
     binst_graph = bloq.decompose_bloq()._binst_graph
     max_width = _cbloq_max_width(binst_graph)
     assert max_width == 30
+
+
+def test_max_width_disconnected_components():
+    bloq = TestIndependentParallelCombo()
+    binst_graph = bloq.decompose_bloq()._binst_graph
+    max_width = _cbloq_max_width(binst_graph)
+    assert max_width == 1
 
 
 def test_max_width_simple():
