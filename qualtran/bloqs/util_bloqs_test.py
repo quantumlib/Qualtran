@@ -182,8 +182,10 @@ def test_classical_sim_dtypes():
     (xx,) = s.call_classically(reg=255)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
-    with pytest.raises(ValueError):
-        _ = s.call_classically(reg=256)
+    # TODO: Re-enable when Split/Join have real data types
+    #  https://github.com/quantumlib/Qualtran/issues/446
+    # with pytest.raises(ValueError):
+    #     _ = s.call_classically(reg=256)
 
     # with numpy types
     (xx,) = s.call_classically(reg=np.uint8(255))
@@ -193,8 +195,10 @@ def test_classical_sim_dtypes():
     (xx,) = s.call_classically(reg=np.uint8(256))
     assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
 
-    with pytest.raises(ValueError):
-        _ = s.call_classically(reg=np.uint16(256))
+    # TODO: Re-enable when Split/Join have real data types
+    #  https://github.com/quantumlib/Qualtran/issues/446
+    # with pytest.raises(ValueError):
+    #     _ = s.call_classically(reg=np.uint16(256))
 
 
 def test_notebook():

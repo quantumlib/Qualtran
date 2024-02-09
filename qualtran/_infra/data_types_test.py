@@ -12,10 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import numpy as np
 import pytest
 import sympy
 
-from qualtran._infra.data_types import BoundedQUInt, QFxp, QInt, QIntOnesComp, QUInt
+from qualtran import BoundedQUInt, QBit, QDType, QFxp, QInt, QIntOnesComp, QUInt
 
 
 def test_qint():
@@ -83,3 +84,45 @@ def test_qfxp():
     qfp = QFxp(b, f, True)
     assert qfp.num_qubits == b
     assert qfp.num_int == b - f - 1
+
+
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4)])
+def test_domain_and_validation(qdtype: QDType):
+    for v in qdtype.get_classical_domain():
+        qdtype.assert_valid_classical_val(v)
+
+
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4)])
+def test_domain_and_validation_arr(qdtype: QDType):
+    arr = np.array(list(qdtype.get_classical_domain()))
+    qdtype.assert_valid_classical_val_array(arr)
+
+
+def test_validation_errs():
+    with pytest.raises(ValueError):
+        QBit().assert_valid_classical_val(-1)
+
+    with pytest.raises(ValueError):
+        QBit().assert_valid_classical_val('|0>')
+
+    with pytest.raises(ValueError):
+        QUInt(3).assert_valid_classical_val(8)
+
+    with pytest.raises(ValueError):
+        QInt(4).assert_valid_classical_val(8)
+
+    with pytest.raises(ValueError):
+        QInt(4).assert_valid_classical_val(-9)
+
+    with pytest.raises(ValueError):
+        QUInt(3).assert_valid_classical_val(-1)
+
+
+def test_validate_arrays():
+    rs = np.random.RandomState(52)
+    arr = rs.choice([0, 1], size=(23, 4))
+    QBit().assert_valid_classical_val_array(arr)
+
+    arr = rs.choice([-1, 1], size=(23, 4))
+    with pytest.raises(ValueError):
+        QBit().assert_valid_classical_val_array(arr)

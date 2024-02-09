@@ -49,19 +49,50 @@ respectively.
 """
 
 import abc
-from typing import Union
+from typing import Any, Iterable, Union
 
 import attrs
+import numpy as np
 import sympy
+from numpy.typing import NDArray
 
 
-class QDType:
+class QDType(metaclass=abc.ABCMeta):
     """This defines the abstract interface for quantum data types."""
 
     @property
     @abc.abstractmethod
-    def num_qubits(self):
+    def num_qubits(self) -> int:
         """Number of qubits required to represent a single instance of this data type."""
+
+    @abc.abstractmethod
+    def get_classical_domain(self) -> Iterable[Any]:
+        """Yields all possible classical (computational basis state) values representable
+        by this type."""
+
+    @abc.abstractmethod
+    def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
+        """Raises an exception if `val` is not a valid classical value for this type.
+
+        Args:
+            val: A classical value that should be in the domain of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
+        """Raises an exception if `val_array` is not a valid array of classical values
+        for this type.
+
+        Often, validation on an array can be performed faster than validating each element
+        individually.
+
+        Args:
+            val_array: A numpy array of classical values. Each value should be in the domain
+                of this QDType.
+            debug_str: Optional debugging information to use in exception messages.
+        """
+        for val in val_array.reshape(-1):
+            self.assert_valid_classical_val(val)
 
 
 @attrs.frozen
@@ -71,6 +102,17 @@ class QBit(QDType):
     @property
     def num_qubits(self):
         return 1
+
+    def get_classical_domain(self) -> Iterable[int]:
+        yield from (0, 1)
+
+    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        if not (val == 0 or val == 1):
+            raise ValueError(f"Bad {self} value {val} in {debug_str}")
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+        if not np.all((val_array == 0) | (val_array == 1)):
+            raise ValueError(f"Bad {self} value array in {debug_str}")
 
 
 @attrs.frozen
@@ -82,6 +124,15 @@ class QAny(QDType):
     @property
     def num_qubits(self):
         return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
+
+    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
+        pass
+
+    def assert_valid_classical_val_array(self, val_array, debug_str: str = 'val'):
+        pass
 
 
 @attrs.frozen
@@ -105,6 +156,23 @@ class QInt(QDType):
     def num_qubits(self):
         return self.bitsize
 
+    def get_classical_domain(self) -> Iterable[int]:
+        return range(-(2 ** (self.bitsize - 1)), 2 ** (self.bitsize - 1))
+
+    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        if val < -(2 ** (self.bitsize - 1)):
+            raise ValueError(f"Too-small classical {self}: {val} encountered in {debug_str}")
+        if val >= 2 ** (self.bitsize - 1):
+            raise ValueError(f"Too-large classical {self}: {val} encountered in {debug_str}")
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+        if np.any(val_array < -(2 ** (self.bitsize - 1))):
+            raise ValueError(f"Too-small classical {self}s encountered in {debug_str}")
+        if np.any(val_array >= 2 ** (self.bitsize - 1)):
+            raise ValueError(f"Too-large classical {self}s encountered in {debug_str}")
+
 
 @attrs.frozen
 class QIntOnesComp(QDType):
@@ -127,6 +195,12 @@ class QIntOnesComp(QDType):
     def num_qubits(self):
         return self.bitsize
 
+    def get_classical_domain(self) -> Iterable[Any]:
+        raise NotImplementedError()
+
+    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
+        pass  # TODO: implement
+
 
 @attrs.frozen
 class QUInt(QDType):
@@ -144,6 +218,23 @@ class QUInt(QDType):
     @property
     def num_qubits(self):
         return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        return range(2 ** (self.bitsize))
+
+    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        if val < 0:
+            raise ValueError(f"Negative classical value encountered in {debug_str}")
+        if val >= 2**self.bitsize:
+            raise ValueError(f"Too-large classical value encountered in {debug_str}")
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+        if np.any(val_array < 0):
+            raise ValueError(f"Negative classical values encountered in {debug_str}")
+        if np.any(val_array >= 2**self.bitsize):
+            raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
 
 @attrs.frozen
@@ -169,6 +260,12 @@ class BoundedQUInt(QDType):
     @property
     def num_qubits(self):
         return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        raise NotImplementedError()
+
+    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
+        pass  # TODO: implement
 
 
 @attrs.frozen
@@ -213,3 +310,9 @@ class QFxp(QDType):
                 raise ValueError("num_frac must be less than bitsize if the QFxp is signed.")
             if self.bitsize < self.num_frac:
                 raise ValueError("bitsize must be >= num_frac.")
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        raise NotImplementedError()
+
+    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
+        pass  # TODO: implement

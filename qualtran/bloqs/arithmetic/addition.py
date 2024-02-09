@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import itertools
+import math
 from functools import cached_property
 from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
@@ -98,8 +99,9 @@ class Add(Bloq):
         N = 2**self.bitsize
         inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
         unitary = np.zeros((N,) * len(inds), dtype=np.complex128)
+        # TODO: Add a value-to-index method on dtype to make this easier.
         for a, b in itertools.product(range(N), range(N)):
-            unitary[a, b, a, (a + b) % N] = 1
+            unitary[a, b, a, int(math.fmod(a + b, N))] = 1
 
         tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
 
@@ -109,12 +111,9 @@ class Add(Bloq):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        # TODO: support classical value overflows behind the scenes
-        # https://github.com/quantumlib/Qualtran/issues/607
-        assert self.bitsize <= 64
-        # TODO: account for signed integer addition
-        # https://github.com/quantumlib/Qualtran/issues/606
-        return {'a': a, 'b': np.uint64(a) + np.uint64(b)}
+        unsigned = True  # TODO: derive from signature
+        N = 2**self.bitsize if unsigned else 2 ** (self.bitsize - 1)
+        return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
         return "a+b"
