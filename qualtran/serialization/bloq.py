@@ -23,7 +23,7 @@ from qualtran import (
     BloqInstance,
     CompositeBloq,
     Connection,
-    ControlledBloq,
+    Controlled,
     DanglingT,
     DecomposeNotImplementedError,
     DecomposeTypeError,
@@ -80,7 +80,7 @@ RESOLVER_DICT = {
     'Allocate': Allocate,
     'Free': Free,
     'ArbitraryClifford': ArbitraryClifford,
-    'ControlledBloq': ControlledBloq,
+    'Controlled': Controlled,
     'CirqGateAsBloq': CirqGateAsBloq,
 }
 

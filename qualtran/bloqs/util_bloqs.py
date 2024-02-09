@@ -15,7 +15,7 @@
 """Bloqs for virtual operations and register reshaping."""
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -23,7 +23,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
-from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, Register, Side, Signature, Soquet, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
@@ -31,6 +31,7 @@ from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+    from qualtran import AbstractCtrlSpec, AddControlledT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -81,6 +82,18 @@ class Split(Bloq):
                 tags=['Split', tag],
             )
         )
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['AbstractCtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            # ignore `ctrl_soq` and pass it through for bookkeeping operation.
+            out_soqs = bb.add_t(self, **in_soqs)
+            return ctrl_soqs, out_soqs
+
+        return self, add_controlled
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:
@@ -135,6 +148,18 @@ class Join(Bloq):
 
     def on_classical_vals(self, reg: 'NDArray[np.uint8]') -> Dict[str, int]:
         return {'reg': bits_to_ints(reg)[0]}
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['AbstractCtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            # ignore `ctrl_soq` and pass it through for bookkeeping operation.
+            out_soqs = bb.add_t(self, **in_soqs)
+            return ctrl_soqs, out_soqs
+
+        return self, add_controlled
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:
