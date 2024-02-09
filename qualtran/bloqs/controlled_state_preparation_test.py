@@ -26,7 +26,7 @@ def accuracy(state1, state2):
     return abs(np.dot(state1, state2.conj()))
 
 
-# these states can be approximated exactly with the given rot_reg_size
+# these states can be prepared exactly with the given rot_reg_size
 @pytest.mark.parametrize(
     "n_qubits, rot_reg_size, state_coefs",
     [
