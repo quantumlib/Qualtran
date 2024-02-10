@@ -12,11 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
@@ -123,28 +123,13 @@ def qsp_complementary_polynomial(
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
 
     for r in roots:
+        assert not (np.abs(r) <= 1e-5), "zero root!"
         if np.allclose(np.abs(r), 1):
             units.append(r)
         elif np.abs(r) > 1:
             larger_roots.append(r)
         else:
             smaller_roots.append(r)
-
-    if verify:
-        # verify that the non-unit roots indeed occur in conjugate pairs.
-        def is_permutation(A, B):
-            assert len(A) == len(B)
-            A = list(A)
-            for z in B:
-                for w in A:
-                    if np.allclose(z, w):
-                        A.remove(w)
-                        break
-                else:
-                    return False
-            return True
-
-        assert is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
     # pair up roots in `units`, claimed in Eq. 40 and the explanation preceding it.
     # all unit roots must have even multiplicity.
@@ -157,14 +142,45 @@ def qsp_complementary_polynomial(
                 matched_z = w
                 break
 
-        if matched_z:
+        if matched_z is not None:
             paired_units.append(z)
             unpaired_units.remove(matched_z)
         else:
             unpaired_units.append(z)
 
+    unpaired_conj_units: list[complex] = []
+    for z in unpaired_units:
+        matched_z_conj = None
+        for w in unpaired_conj_units:
+            if np.allclose(z.conjugate(), w):
+                matched_z_conj = w
+                break
+
+        if matched_z_conj is not None:
+            smaller_roots.append(z)
+            larger_roots.append(matched_z_conj)
+            unpaired_conj_units.remove(matched_z_conj)
+        else:
+            unpaired_conj_units.append(z)
+
     if verify:
-        assert len(unpaired_units) == 0
+        assert len(unpaired_conj_units) == 0
+
+        # verify that the non-unit roots indeed occur in conjugate pairs.
+        def assert_is_permutation(A, B):
+            assert len(A) == len(B)
+            A = list(A)
+            unmatched = []
+            for z in B:
+                for w in A:
+                    if np.allclose(z, w, rtol=1e-5, atol=1e-5):
+                        A.remove(w)
+                        break
+                else:
+                    unmatched.append(z)
+            assert len(unmatched) == 0
+
+        assert_is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
     # Q = G \hat{G}, where
     # - \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
@@ -239,9 +255,11 @@ def qsp_phase_factors(
 class GeneralizedQSP(GateWithRegisters):
     r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
 
+    Can optionally provide a negative power offset $k$ (defaults to 0),
+    to obtain $U^{-k} P(U)$. (Theorem 6)
     This gate represents the following unitary:
 
-        $$ \begin{bmatrix} P(U) & \cdot \\ \cdot & \cdot \end{bmatrix} $$
+        $$ \begin{bmatrix} U^{-k} P(U) & \cdot \\ \cdot & \cdot \end{bmatrix} $$
 
     The polynomial $P$ must satisfy:
     $\abs{P(e^{i \theta})}^2 \le 1$ for every $\theta \in \mathbb{R}$.
@@ -251,14 +269,17 @@ class GeneralizedQSP(GateWithRegisters):
     Args:
         U: Unitary operation.
         P: Co-efficients of a complex polynomial.
+        negative_power: value of $k$, which effectively applies $z^{-k} P(z)$. defaults to 0.
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-            Motlagh and Wiebe. (2023). Theorem 3; Figure 2.
+            Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
     """
 
     U: GateWithRegisters
     P: Sequence[complex]
+    _precomputed_Q: Optional[Sequence[complex]] = None
+    negative_power: int = field(default=0, kw_only=True)
 
     @cached_property
     def signature(self) -> Signature:
@@ -266,6 +287,8 @@ class GeneralizedQSP(GateWithRegisters):
 
     @cached_property
     def Q(self):
+        if self._precomputed_Q is not None:
+            return self._precomputed_Q
         return qsp_complementary_polynomial(self.P)
 
     @cached_property
@@ -290,7 +313,19 @@ class GeneralizedQSP(GateWithRegisters):
         assert len(signal) == 1
         signal_qubit = signal[0]
 
+        num_inverse_applications = self.negative_power
+
         yield SU2RotationGate(self._theta[0], self._phi[0], self._lambda).on(signal_qubit)
         for theta, phi in zip(self._theta[1:], self._phi[1:]):
-            yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
+            if num_inverse_applications > 0:
+                # apply C-U^\dagger
+                yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
+                num_inverse_applications -= 1
+            else:
+                # apply C[0]-U
+                yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
             yield SU2RotationGate(theta, phi, 0).on(signal_qubit)
+
+        while num_inverse_applications > 0:
+            yield self.U.adjoint().on_registers(**quregs)
+            num_inverse_applications -= 1

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Sequence, Union
+from typing import Optional, Sequence, Union
 
 import cirq
 import numpy as np
@@ -146,10 +146,12 @@ def assert_matrices_almost_equal(A: NDArray, B: NDArray):
     assert np.linalg.norm(A - B) <= 1e-5
 
 
-def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
+def verify_generalized_qsp(
+    U: GateWithRegisters, P: Sequence[complex], Q: Optional[Sequence[complex]] = None
+):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
-    gqsp_U = GeneralizedQSP(U, P)
+    gqsp_U = GeneralizedQSP(U, P, Q)
     result_unitary = cirq.unitary(gqsp_U)
 
     expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)
