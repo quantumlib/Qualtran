@@ -17,7 +17,7 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, QUInt, Register, Signature
+from qualtran import GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 
 
@@ -54,8 +54,8 @@ class QFTPhaseGradient(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [Register("q", QUInt(self.bitsize)), Register("phase_grad", QUInt(self.bitsize))]
+        return Signature.build_from_dtypes(
+            q=QUInt(self.bitsize), phase_grad=QFxp(self.bitsize, self.bitsize)
         )
 
     def decompose_from_registers(

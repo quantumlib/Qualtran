@@ -19,7 +19,7 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QFxp, QUInt, Register, Side, Signature
+from qualtran import GateWithRegisters, QBit, QFxp, QUInt, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
@@ -56,9 +56,9 @@ class PhaseGradientUnitary(GateWithRegisters):
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build(ctrl=1, phase_grad=self.bitsize)
+            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=QFxp(self.bitsize, self.bitsize))
             if self.controlled
-            else Signature.build(phase_grad=self.bitsize)
+            else Signature.build_from_dtypes(phase_grad=QFxp(self.bitsize, self.bitsize))
         )
 
     def decompose_from_registers(
@@ -112,7 +112,7 @@ class PhaseGradientState(GateWithRegisters):
     @cached_property
     def signature(self) -> 'Signature':
         side = Side.LEFT if self.adjoint else Side.RIGHT
-        return Signature([Register('phase_grad', self.bitsize, side=side)])
+        return Signature([Register('phase_grad', QFxp(self.bitsize, self.bitsize), side=side)])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -163,11 +163,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature(
-            [
-                Register("x", QUInt(self.inp_bitsize)),
-                Register("phase_grad", QFxp(self.phase_bitsize, self.phase_bitsize)),
-            ]
+        return Signature.build_from_dtypes(
+            x=QUInt(self.inp_bitsize), phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize)
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
