@@ -224,11 +224,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self):
-        return Signature(
-            [
-                Register("x", QUInt(self.inp_bitsize)),
-                Register("phase_grad", QFxp(self.phase_bitsize, self.phase_bitsize)),
-            ]
+        return Signature.build_from_dtypes(
+            x=QUInt(self.inp_bitsize), phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize)
         )
 
     def registers(self):
