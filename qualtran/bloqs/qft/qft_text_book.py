@@ -17,7 +17,7 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import GateWithRegisters, QUInt, Signature
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
 
 
@@ -40,7 +40,7 @@ class QFTTextBook(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(q=self.bitsize)
+        return Signature.build_from_dtypes(q=QUInt(self.bitsize))
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]

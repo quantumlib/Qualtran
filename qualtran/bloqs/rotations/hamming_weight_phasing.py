@@ -18,7 +18,7 @@ from typing import Dict, Set, TYPE_CHECKING
 import attrs
 import numpy as np
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
@@ -64,7 +64,7 @@ class HammingWeightPhasing(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=self.bitsize)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize))
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         soqs['x'], junk, out = bb.add(HammingWeightCompute(self.bitsize), x=soqs['x'])
@@ -135,7 +135,9 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=self.bitsize, phase_grad=self.b_grad)
+        return Signature.build_from_dtypes(
+            x=QUInt(self.bitsize), phase_grad=QFxp(self.b_grad, self.b_grad)
+        )
 
     @cached_property
     def b_phase(self) -> int:
