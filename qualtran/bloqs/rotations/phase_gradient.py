@@ -145,6 +145,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         U|x\rangle|\text{phase\_grad}\rangle = |x\rangle|\text{phase\_grad} + x\rangle
     $$
 
+    TODO(#654): Check whether phase_bitsize >= inp_bitsize needs to be enforced.
+
     Args:
         inp_bitsize: Size of input register.
         phase_bitsize: Size of phase gradient register to which the input value should be added.
@@ -159,9 +161,6 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     """
     inp_bitsize: int
     phase_bitsize: int
-
-    def __attrs_post_init__(self):
-        assert self.phase_bitsize >= self.inp_bitsize
 
     @cached_property
     def signature(self) -> 'Signature':

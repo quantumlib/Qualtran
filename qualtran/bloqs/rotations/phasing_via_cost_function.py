@@ -110,10 +110,13 @@ class PhaseOraclePhaseGradient(GateWithRegisters):
         eq_a7 = int(np.ceil(np.log2((self.gamma_bitsize + 2) * np.pi / self.eps)))
         # Using Equation 35 from https://arxiv.org/abs/2007.07391
         eq_35 = self.b_phase + int(np.ceil(np.log2(self.b_phase)))
-        # Note: Eq A7 will result in a bigger gradient bitsize and is probably the right size to use.
-        # However, we don't yet have a test that fails for Eq 35 but not for EqA7.
+        # TODO(#654): Eq A7 will result in a bigger gradient bitsize but blows up the cost
+        #   for doing phase gradient based cost computations significantly (which leads to
+        #   the cost using PhaseOracleZPow to be cheaper). Also, we don't yet have a test that
+        #   fails for Eq 35. The only concern is that value of `eq_35` can be smaller than
+        #   `cost_reg.bitsize`.
         assert eq_a7 >= eq_35
-        return eq_a7
+        return eq_35
 
     @cached_property
     def gamma_bitsize(self) -> int:

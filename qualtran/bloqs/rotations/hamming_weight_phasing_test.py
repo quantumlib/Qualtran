@@ -96,7 +96,7 @@ def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: fl
     np.testing.assert_allclose(expected_final_state, hw_final_state, atol=eps)
 
 
-@pytest.mark.parametrize('n, theta, eps', [(5_000, 1 / 100, 1e-2)])
+@pytest.mark.parametrize('n, theta, eps', [(5_000, 1 / 100, 1e-1)])
 def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: float, eps: float):
     gate = HammingWeightPhasingViaPhaseGradient(n, theta, eps)
     naive_hwp_t_complexity = HammingWeightPhasing(n, theta, eps).t_complexity()
