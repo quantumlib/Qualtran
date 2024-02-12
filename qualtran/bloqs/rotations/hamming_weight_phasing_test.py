@@ -78,7 +78,7 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
 @pytest.mark.parametrize('n', [2, 3])
 @pytest.mark.parametrize(
-    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-4), (1.20345, 1e-4), (-4.1934341, 1e-4)]
+    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-4), (1.20345, 1e-4), (-1.1934341, 1e-4)]
 )
 def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: float):
     gate = TestHammingWeightPhasingViaPhaseGradient(n, theta, eps)

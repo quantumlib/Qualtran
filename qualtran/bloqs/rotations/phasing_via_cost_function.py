@@ -110,15 +110,19 @@ class PhaseOraclePhaseGradient(GateWithRegisters):
         eq_a7 = int(np.ceil(np.log2((self.gamma_bitsize + 2) * np.pi / self.eps)))
         # Using Equation 35 from https://arxiv.org/abs/2007.07391
         eq_35 = self.b_phase + int(np.ceil(np.log2(self.b_phase)))
-        assert eq_a7 >= eq_35 >= self.cost_dtype.bitsize
-        return eq_35
+        # Note: Eq A7 will result in a bigger gradient bitsize and is probably the right size to use.
+        # However, we don't yet have a test that fails for Eq 35 but not for EqA7.
+        assert eq_a7 >= eq_35
+        return eq_a7
 
     @cached_property
     def gamma_bitsize(self) -> int:
-        # TODO: Verify that gamma_bitsize computation is correct. The +5 is currently arbitrary to
-        #  make tests pass. Paragraph b/w equation 34 & 35 of https://arxiv.org/abs/2007.07391
-        #  gives `gamma_bitsize` to be `log(gamma) + b_{phase} + O(1)`
-        return self.b_phase + self.cost_dtype.num_frac + 5
+        # Note: Paragraph b/w equation 34 & 35 of https://arxiv.org/abs/2007.07391 gives
+        # `gamma_bitsize` to be `log(gamma) + b_{phase} + O(1)`. However, this is incorrect, and
+        # we have tests that fail if you do `return self.b_phase`.
+        # The correct `gamma_bitsize` can be obtained using Equation D7 and is given below.
+        d_B = self.cost_dtype.bitsize
+        return d_B + int(np.ceil(np.log2(d_B / self.eps)))  # Using Equation D7
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         out, phase_grad = bb.add(

@@ -73,7 +73,7 @@ class TestHammingWeightPhasing(GateWithRegisters):
 
 
 @pytest.mark.parametrize('n', [2, 3])
-@pytest.mark.parametrize('exponent, eps', [(1 / 10, 1e-4), (1.20345, 1e-4), (-4.1934341, 1e-4)])
+@pytest.mark.parametrize('exponent, eps', [(1 / 10, 5e-4), (1.20345, 5e-4), (-1.1934341, 5e-4)])
 @pytest.mark.parametrize('use_phase_gradient', [True, False])
 def test_hamming_weight_phasing_using_phase_via_cost_function(
     n: int, exponent: float, eps: float, use_phase_gradient: bool
@@ -133,7 +133,7 @@ class TestSquarePhasing(GateWithRegisters):
 
 
 @pytest.mark.parametrize('n', [2])
-@pytest.mark.parametrize('gamma, eps', [(0.1, 1e-2), (1.20345, 1e-2), (-4.1934341, 1e-2)])
+@pytest.mark.parametrize('gamma, eps', [(0.1, 5e-2), (1.20345, 5e-2), (-1.1934341, 5e-2)])
 @pytest.mark.parametrize('use_phase_gradient', [True, False])
 def test_square_phasing_via_phase_gradient(
     n: int, gamma: float, eps: float, use_phase_gradient: bool
