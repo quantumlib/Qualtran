@@ -39,7 +39,7 @@ If you add additional cells to the notebook it will *preserve them* even when th
 re-run
 
 Usage as a script:
-    python dev_tools/autogenerate-bloqs-notebooks.py
+    python dev_tools/autogenerate-bloqs-notebooks-v2.py
 """
 
 from typing import List
