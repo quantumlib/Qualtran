@@ -28,6 +28,49 @@ if TYPE_CHECKING:
 
 @attrs.frozen
 class PhasingViaCostFunction(Bloq):
+    r"""Phases every basis state $|x\rangle$ by an amount proportional to a cost function $f(x)$
+
+    This Bloq implements a unitary $U_f(\gamma)$ which phases each computational state on which
+    the wave-function has support, by an amount proportional to a function of that computational
+    basis state. The general unitary can be defined as
+    $$
+        U_f(\gamma) = \sum_{x=0}^{N-1} e^{i 2 \pi \gamma f(x)} |x\rangle \langle x|
+    $$
+
+    The strategy to implement $U_f(\gamma)$ is to use two oracles $O_\text{direct}$
+    and $O_\text{phase}$ s.t.
+    $$
+    U_f(\gamma) = O_\text{direct}^\dagger(\mathbb{I}\otimes O_\text{phase})O_\text{direct}
+    $$
+
+    $O^\text{direct}$ evaluates a $b_\text{direct}$-bit approximation of the cost function $f(x)$
+    and stores it in a new output cost register. Note that the cost register can represent
+    arbitrary fixed point values and be of type `QFxp(b_direct, n_frac, signed)`.
+    $$
+    O^\text{direct}|x\rangle|0\rangle^{\otimes b_\text{direct}}_\text{cost}=|x\rangle|f(x)\rangle
+    $$
+
+    $O^\text{phase}$ acts on the cost register computed by $O^\text{direct}$ and phases the
+    state $|f(x)\rangle$ by $e^{i 2\pi \gamma f(x)}$
+    $$
+    O^\text{phase}(\gamma)=\sum_{k=0}^{2^{b_\text{direct}}-1}e^{i 2\pi\gamma k}|k\rangle\langle k|
+    $$
+
+
+    Different strategies for implementing the two oracles would give different costs tradeoffs.
+    See `PhaseOracleZPow` and `PhaseOraclePhaseGradient` for two different implementations of
+    phase oracles described in the reference.
+
+    Args:
+        cost_eval_oracle: Cost function evaluation oracle. Must compute the cost in a
+            newly allocated RIGHT register.
+        phase_oracle: Oracle to phase the cost register. Must consume the cost register
+            allocated by `cost_eval_oracle` as a THRU input.
+
+    References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
+        (https://arxiv.org/abs/2007.07391), Appendix C: Oracles for phasing by cost function
+    """
     cost_eval_oracle: Bloq
     phase_oracle: Bloq
 
@@ -55,6 +98,8 @@ class PhasingViaCostFunction(Bloq):
 
 @attrs.frozen
 class PhaseOracleZPow(GateWithRegisters):
+    """Phasing oracle that simply applies a ZPow rotation to every qubit in the cost register"""
+
     cost_reg: Register
     gamma: float = 1.0
     eps: Union[float, sympy.Expr] = 1e-9
@@ -86,6 +131,8 @@ class PhaseOracleZPow(GateWithRegisters):
 
 @attrs.frozen
 class PhaseOraclePhaseGradient(GateWithRegisters):
+    """Phasing oracle that applies a rotation via addition into the phase gradient register."""
+
     cost_reg: Register
     gamma: float = 1.0
     eps: Union[float, sympy.Expr] = 1e-9
