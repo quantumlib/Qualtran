@@ -17,7 +17,10 @@ import pytest
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import OneEffect, OneState, PlusState, ZeroEffect, ZeroState
-from qualtran.bloqs.controlled_state_preparation import ControlledStatePreparationUsingRotations
+from qualtran.bloqs.controlled_state_preparation import (
+    _controlled_state_prep,
+    ControlledStatePreparationUsingRotations,
+)
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -26,9 +29,13 @@ def accuracy(state1, state2):
     return abs(np.dot(state1, state2.conj()))
 
 
-# these states can be approximated exactly with the given rot_reg_size
+def test_controlled_state_prep(bloq_autotester):
+    bloq_autotester(_controlled_state_prep)
+
+
+# these states can be prepared exactly with the given rot_reg_bitsizes
 @pytest.mark.parametrize(
-    "n_qubits, rot_reg_size, state_coefs",
+    "state_bitsizes, rot_reg_bitsizes, state_coefs",
     [
         [1, 2, ((-0.5 - 0.5j), (0.5 - 0.5j))],
         [
@@ -55,27 +62,29 @@ def accuracy(state1, state2):
         ],
     ],
 )
-def test_exact_controlled_state_preparation_via_rotation(n_qubits, rot_reg_size, state_coefs):
+def test_exact_controlled_state_preparation_via_rotation(
+    state_bitsizes, rot_reg_bitsizes, state_coefs
+):
     qsp = ControlledStatePreparationUsingRotations(
-        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs)
+        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(OneState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(n_qubits)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_size))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
+    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(OneEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_size, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert np.isclose(accuracy(result, np.array(state_coefs)), 1)
 
 
 @pytest.mark.parametrize(
-    "n_qubits, rot_reg_size, state_coefs",
+    "state_bitsizes, rot_reg_bitsizes, state_coefs",
     [
         [
             1,
@@ -97,18 +106,23 @@ def test_exact_controlled_state_preparation_via_rotation(n_qubits, rot_reg_size,
         ],
     ],
 )
-def test_controlled_state_preparation_via_rotation_adjoint(n_qubits, rot_reg_size, state_coefs):
+def test_controlled_state_preparation_via_rotation_adjoint(
+    state_bitsizes, rot_reg_bitsizes, state_coefs
+):
     qsp = ControlledStatePreparationUsingRotations(
-        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs)
+        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     qsp_adj = ControlledStatePreparationUsingRotations(
-        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs), adjoint=True
+        state_bitsizes=state_bitsizes,
+        rot_reg_bitsizes=rot_reg_bitsizes,
+        state=tuple(state_coefs),
+        uncompute=True,
     )
 
     bb = BloqBuilder()
     control = bb.add(OneState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(n_qubits)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_size))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
+    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
@@ -116,16 +130,16 @@ def test_controlled_state_preparation_via_rotation_adjoint(n_qubits, rot_reg_siz
         qsp_adj, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(OneEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_size, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert np.isclose(result[0], 1)  # test that |result> = |0>
 
 
 # these states can't be approximated exactly with the given
-# rot_reg_size, check they are close enough
+# rot_reg_bitsizes, check they are close enough
 @pytest.mark.parametrize(
-    "n_qubits, rot_reg_size, state_coefs",
+    "state_bitsizes, rot_reg_bitsizes, state_coefs",
     [
         [
             1,
@@ -147,27 +161,29 @@ def test_controlled_state_preparation_via_rotation_adjoint(n_qubits, rot_reg_siz
         ],
     ],
 )
-def test_approximate_controlled_state_preparation_via_rotation(n_qubits, rot_reg_size, state_coefs):
+def test_approximate_controlled_state_preparation_via_rotation(
+    state_bitsizes, rot_reg_bitsizes, state_coefs
+):
     qsp = ControlledStatePreparationUsingRotations(
-        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs)
+        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(OneState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(n_qubits)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_size))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
+    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(OneEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_size, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert accuracy(result, np.array(state_coefs)) >= 0.95
 
 
 @pytest.mark.parametrize(
-    "n_qubits, rot_reg_size, state_coefs",
+    "state_bitsizes, rot_reg_bitsizes, state_coefs",
     [
         [
             2,
@@ -182,47 +198,49 @@ def test_approximate_controlled_state_preparation_via_rotation(n_qubits, rot_reg
     ],
 )
 def test_controlled_state_preparation_via_rotation_do_not_prepare(
-    n_qubits, rot_reg_size, state_coefs
+    state_bitsizes, rot_reg_bitsizes, state_coefs
 ):
     qsp = ControlledStatePreparationUsingRotations(
-        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs)
+        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(ZeroState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(n_qubits)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_size))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
+    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(ZeroEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_size, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
-    assert np.allclose(result, np.array([1] + [0] * (2**n_qubits - 1)))  # assert result = |0>
+    assert np.allclose(
+        result, np.array([1] + [0] * (2**state_bitsizes - 1))
+    )  # assert result = |0>
 
 
 @pytest.mark.parametrize(
-    "n_qubits, rot_reg_size, state_coefs", [[2, 2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
+    "state_bitsizes, rot_reg_bitsizes, state_coefs", [[2, 2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
 )
 def test_controlled_state_preparation_via_rotation_superposition_ctrl(
-    n_qubits, rot_reg_size, state_coefs
+    state_bitsizes, rot_reg_bitsizes, state_coefs
 ):
     qsp = ControlledStatePreparationUsingRotations(
-        n_qubits=n_qubits, rot_reg_size=rot_reg_size, state=tuple(state_coefs)
+        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(PlusState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(n_qubits)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_size))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
+    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
-    bb.add(PhaseGradientState(bitsize=rot_reg_size, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(control=control, state=state)
     result = network.tensor_contract()
-    correct = 1 / np.sqrt(2) * np.array([1] + [0] * (2**n_qubits - 1) + list(state_coefs))
+    correct = 1 / np.sqrt(2) * np.array([1] + [0] * (2**state_bitsizes - 1) + list(state_coefs))
     # assert result = 1/sqrt(2)*(|0, 0> + |1, state>)
     assert np.allclose(result, correct)
 
