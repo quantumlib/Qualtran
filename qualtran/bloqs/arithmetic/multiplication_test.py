@@ -23,7 +23,7 @@ from qualtran.bloqs.arithmetic import (
     SquareRealNumber,
     SumOfSquares,
 )
-from qualtran.bloqs.basic_gates import IntEffect, IntState
+from qualtran.bloqs.basic_gates import IntState
 from qualtran.testing import execute_notebook
 
 
