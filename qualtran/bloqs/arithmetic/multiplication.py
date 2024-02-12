@@ -119,9 +119,13 @@ class Square(Bloq):
             [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=side)]
         )
 
-    def on_classical_vals(self, a: int, result: int) -> Dict[str, 'ClassicalValT']:
-        result_out = (result + a**2) % (2 ** (2 * self.bitsize))
-        return {'a': a, 'result': result_out}
+    def on_classical_vals(self, **vals: int) -> Dict[str, 'ClassicalValT']:
+        if self.uncompute:
+            a, result = vals["a"], vals["result"]
+            assert result == a**2
+            return {'a': a}
+        a = vals["a"]
+        return {'a': a, 'result': a**2}
 
     def short_name(self) -> str:
         return "a^2"
