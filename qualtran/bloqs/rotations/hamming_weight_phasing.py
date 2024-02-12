@@ -87,7 +87,10 @@ class HammingWeightPhasing(GateWithRegisters):
         return {
             (HammingWeightCompute(self.bitsize), 1),
             (HammingWeightCompute(self.bitsize).adjoint(), 1),
-            (ZPowGate(exponent=self.exponent), self.bitsize.bit_length()),
+            (
+                ZPowGate(exponent=self.exponent, eps=self.eps / self.bitsize.bit_length()),
+                self.bitsize.bit_length(),
+            ),
         }
 
 
@@ -157,7 +160,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     @cached_property
     def gamma_bitsize(self) -> int:
-        return self.phase_oracle.b_grad
+        return self.phase_oracle.gamma_bitsize
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, x: 'SoquetT', phase_grad: 'SoquetT'
