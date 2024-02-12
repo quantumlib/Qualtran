@@ -241,12 +241,28 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_method
     def scaled_val(self, x: int) -> int:
+        """Computes `x*self.gamma` using fixed point arithmetic."""
         sign = np.sign(self.gamma)
-        x_fxp = Fxp(x, dtype=self.inp_dtype.fxp_dtype_str)
+        # `x` is an integer because we currently represent each bitstring as an integer during simulations.
+        # However, `x` should be interpreted as per the fixed point specification given in self.inp_dtype.
+        # If `self.inp_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
+        # 2**n_frac (in other words, right shifted by n_frac)
+        x_fxp = Fxp(x / 2**self.inp_dtype.num_frac, dtype=self.inp_dtype.fxp_dtype_str)
+        # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
+        # of bits for integer and fractional part.
         gamma_fxp = Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        # Compute the result = x_fxp * gamma_fxp
         result = x_fxp * gamma_fxp
+        # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
+        # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
+        # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
         result -= np.floor(result)
+        # Now that `result` is a number between [0, 1), represent the fraction using `self.phase_bitsize`
+        # bits.
         result = result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str))
+        # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
+        # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
+        # can be ignored during the fixed point arithmetic analysis.
         result <<= self.phase_dtype.bitsize
         return int(result) * int(sign)
 
