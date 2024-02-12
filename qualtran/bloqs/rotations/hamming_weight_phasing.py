@@ -153,7 +153,10 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
         out, phase_grad = bb.add(
             AddScaledValIntoPhaseReg(
-                self.bitsize.bit_length(), self.b_grad, self.exponent / 2, self.b_phase
+                QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False),
+                self.b_grad,
+                self.exponent / 2,
+                self.eps,
             ),
             x=out,
             phase_grad=phase_grad,

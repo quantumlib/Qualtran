@@ -205,6 +205,10 @@ class QFxp(QDType):
     def num_int(self) -> Union[int, sympy.Expr]:
         return self.bitsize - self.num_frac - int(self.signed)
 
+    @property
+    def fxp_dtype_str(self) -> str:
+        return f'fxp-{"us"[self.signed]}{self.bitsize}/{self.num_frac}'
+
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):
             if self.num_qubits == 1 and self.signed:

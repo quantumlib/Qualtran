@@ -17,13 +17,15 @@ from typing import Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
+import numpy as np
+from cirq._compat import cached_method
+from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, QFxp, QUInt, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
-from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -214,45 +216,54 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
     """
 
-    inp_bitsize: int
+    inp_dtype: QFxp
     phase_bitsize: int
     gamma: float
-    gamma_bitsize: int
-
-    def __attrs_post_init__(self):
-        assert 0 <= self.gamma <= 1
+    eps: float = 1e-9
 
     @cached_property
     def signature(self):
-        return Signature.build_from_dtypes(
-            x=QUInt(self.inp_bitsize), phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize)
-        )
+        return Signature.build_from_dtypes(x=self.inp_dtype, phase_grad=self.phase_dtype)
 
     def registers(self):
-        return [2] * self.inp_bitsize, [2] * self.phase_bitsize
+        return [2] * self.inp_dtype.num_qubits, [2] * self.phase_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("not needed.")
 
     @cached_property
-    def gamma_int_numerator(self) -> int:
-        _, gamma_fixed_width_int = float_as_fixed_width_int(self.gamma, self.gamma_bitsize + 1)
-        gamma_fixed_width_float = gamma_fixed_width_int / 2**self.gamma_bitsize
-        _, gamma_numerator = float_as_fixed_width_int(
-            gamma_fixed_width_float, self.phase_bitsize + 1
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.phase_bitsize, self.phase_bitsize)
+
+    @cached_property
+    def gamma_dtype(self) -> QFxp:
+        n_int = Fxp(abs(self.gamma), signed=False).n_int
+        # TODO: Verify that n_frac computation is correct.
+        n_frac = int(np.ceil(np.log2(1 / self.eps))) + 1
+        return QFxp(n_int + n_frac, n_frac, signed=False)
+
+    @cached_method
+    def scaled_val(self, x: int) -> int:
+        sign = np.sign(self.gamma)
+        x_fxp = Fxp(x, dtype=self.inp_dtype.fxp_dtype_str)
+        gamma_fxp = Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        result = x_fxp * gamma_fxp
+        result -= np.floor(result)
+        result = (
+            result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str)) << self.phase_dtype.bitsize
         )
-        return gamma_numerator
+        return int(result) * int(sign)
 
     def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
-        return x, phase_grad + self.gamma_int_numerator * x
+        return x, phase_grad + self.scaled_val(x)
 
     def on_classical_vals(self, x, phase_grad) -> Dict[str, 'ClassicalValT']:
-        phase_grad_out = (phase_grad + self.gamma_int_numerator * x) % 2**self.phase_bitsize
+        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_additions = (self.gamma_bitsize + 2) // 2
-        return {(AddIntoPhaseGrad(self.inp_bitsize, self.phase_bitsize), num_additions)}
+        num_additions = (self.gamma_dtype.bitsize + 2) // 2
+        return {(AddIntoPhaseGrad(self.inp_dtype.bitsize, self.phase_bitsize), num_additions)}
 
     def _t_complexity_(self):
         ((add_into_phase, n),) = self.bloq_counts().items()
