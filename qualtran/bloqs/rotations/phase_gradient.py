@@ -233,7 +233,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def phase_dtype(self) -> QFxp:
-        return QFxp(self.phase_bitsize, self.phase_bitsize)
+        return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
     @cached_property
     def gamma_dtype(self) -> QFxp:
@@ -247,9 +247,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         gamma_fxp = Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
         result = x_fxp * gamma_fxp
         result -= np.floor(result)
-        result = (
-            result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str)) << self.phase_dtype.bitsize
-        )
+        result = result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str))
+        result <<= self.phase_dtype.bitsize
         return int(result) * int(sign)
 
     def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:

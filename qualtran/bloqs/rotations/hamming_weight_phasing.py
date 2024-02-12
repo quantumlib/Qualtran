@@ -156,7 +156,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
                 QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False),
                 self.b_grad,
                 self.exponent / 2,
-                self.b_phase,
+                self.b_phase + 1,
             ),
             x=out,
             phase_grad=phase_grad,
