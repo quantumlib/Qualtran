@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import sympy
 from functools import cached_property
 from typing import Dict, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
+import sympy
 
-from qualtran import GateWithRegisters, QFxp, Signature, Bloq, BloqBuilder, Register
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 

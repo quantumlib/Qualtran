@@ -18,18 +18,18 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import GateWithRegisters, Signature, Bloq, BloqBuilder, SoquetT, Register
+from qualtran import Bloq, BloqBuilder, GateWithRegisters, Register, Signature, SoquetT
 from qualtran._infra.data_types import QFxp
-from qualtran.bloqs.rotations.phasing_via_cost_function import (
-    PhasingViaCostFunction,
-    PhaseOracleZPow,
-    PhaseOraclePhaseGradient,
-)
-from qualtran.bloqs.on_each import OnEach
-from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 from qualtran.bloqs.arithmetic.multiplication import Square
+from qualtran.bloqs.basic_gates import Hadamard
+from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
+from qualtran.bloqs.rotations.phasing_via_cost_function import (
+    PhaseOraclePhaseGradient,
+    PhaseOracleZPow,
+    PhasingViaCostFunction,
+)
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
 

@@ -15,8 +15,8 @@
 from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import cirq
-from attrs import frozen
 import numpy as np
+from attrs import frozen
 
 from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Toffoli
