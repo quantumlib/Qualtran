@@ -16,6 +16,7 @@ from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import cirq
 from attrs import frozen
+import numpy as np
 
 from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Toffoli
@@ -109,12 +110,18 @@ class Square(Bloq):
     """
 
     bitsize: int
+    uncompute: bool = False
 
     @property
     def signature(self):
+        side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
-            [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=Side.RIGHT)]
+            [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=side)]
         )
+
+    def on_classical_vals(self, a: int, result: int) -> Dict[str, 'ClassicalValT']:
+        result_out = (result + a**2) % (2 ** (2 * self.bitsize))
+        return {'a': a, 'result': result_out}
 
     def short_name(self) -> str:
         return "a^2"
@@ -129,6 +136,29 @@ class Square(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toff = self.bitsize * (self.bitsize - 1)
         return {(Toffoli(), num_toff)}
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
+
+        N = 2**self.bitsize
+        data = np.zeros((N, N, N**2), dtype=np.complex128)
+        for x in range(N):
+            data[x, x, x**2] = 1
+
+        trg = incoming['result'] if self.uncompute else outgoing['result']
+        tn.add(
+            qtn.Tensor(data=data, inds=(incoming['a'], outgoing['a'], trg), tags=['Square', tag])
+        )
+
+    def adjoint(self) -> 'Bloq':
+        return Square(self.bitsize, not self.uncompute)
 
 
 @frozen

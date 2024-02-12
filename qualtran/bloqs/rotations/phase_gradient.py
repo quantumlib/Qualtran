@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -203,8 +203,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     Args:
         inp_bitsize: Size of input register.
         phase_bitsize: Size of phase gradient register to which the scaled input should be added.
-        gamma: Floating point scaling factor in the range [0, 1].
-        gamma_bitsize: Number of bits of precisions to be used for `gamma`.
+        gamma: Floating point scaling factor.
+        eps: Number of bits of precisions to be used for fractional part of `gamma`.
 
     Registers:
         - x : Input THRU register storing input value x to be scaled and added to the phase
@@ -219,7 +219,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     inp_dtype: QFxp
     phase_bitsize: int
     gamma: float
-    eps: float = 1e-9
+    gamma_bitsize: int
 
     @cached_property
     def signature(self):
@@ -238,9 +238,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     @cached_property
     def gamma_dtype(self) -> QFxp:
         n_int = Fxp(abs(self.gamma), signed=False).n_int
-        # TODO: Verify that n_frac computation is correct.
-        n_frac = int(np.ceil(np.log2(1 / self.eps))) + 1
-        return QFxp(n_int + n_frac, n_frac, signed=False)
+        return QFxp(n_int + self.gamma_bitsize, self.gamma_bitsize, signed=False)
 
     @cached_method
     def scaled_val(self, x: int) -> int:
@@ -268,3 +266,17 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     def _t_complexity_(self):
         ((add_into_phase, n),) = self.bloq_counts().items()
         return n * add_into_phase.t_complexity()
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )

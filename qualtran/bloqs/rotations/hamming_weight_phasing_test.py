@@ -54,7 +54,7 @@ def test_hamming_weight_phasing(n: int, theta: float):
 class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
     bitsize: int
     exponent: float
-    eps: int = 1e-2
+    eps: float
 
     @property
     def signature(self) -> 'Signature':

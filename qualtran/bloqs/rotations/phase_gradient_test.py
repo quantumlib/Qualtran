@@ -95,7 +95,7 @@ def test_add_into_phase_grad():
 
 def test_add_scaled_val_into_phase_reg():
     x_bit, phase_bit, gamma, gamma_bit = 4, 7, 0.123, 6
-    bloq = AddScaledValIntoPhaseReg(QFxp(x_bit, 0), phase_bit, gamma, 1 / 2**5)
+    bloq = AddScaledValIntoPhaseReg(QFxp(x_bit, 0), phase_bit, gamma, gamma_bit)
     gamma_fixed_width_float = float_as_fixed_width_int(gamma, gamma_bit + 1)[1] / (2**gamma_bit)
     gamma_int = float_as_fixed_width_int(gamma_fixed_width_float, phase_bit + 1)[1]
     basis_map = {}

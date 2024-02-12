@@ -60,7 +60,7 @@ class HammingWeightPhasing(GateWithRegisters):
 
     bitsize: int
     exponent: float
-    eps: int = 1e-10
+    eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -131,7 +131,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 
     bitsize: int
     exponent: float = 1
-    eps: int = 1e-10
+    eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -156,7 +156,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
                 QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False),
                 self.b_grad,
                 self.exponent / 2,
-                self.eps,
+                self.b_phase,
             ),
             x=out,
             phase_grad=phase_grad,
