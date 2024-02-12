@@ -201,10 +201,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     The operation calls `AddIntoPhaseGrad` gate $(gamma_bitsize + 2) / 2$ times.
 
     Args:
-        inp_bitsize: Size of input register.
+        inp_dtype: Fixed point specification of the input register.
         phase_bitsize: Size of phase gradient register to which the scaled input should be added.
         gamma: Floating point scaling factor.
-        eps: Number of bits of precisions to be used for fractional part of `gamma`.
+        gamma_bitsize: Number of bits of precisions to be used for fractional part of `gamma`.
 
     Registers:
         - x : Input THRU register storing input value x to be scaled and added to the phase
