@@ -122,7 +122,7 @@ class Square(Bloq):
         return Signature(
             [
                 Register("a", QUInt(self.bitsize)),
-                Register("result", QUInt(2 * self.bitsize), side=Side.RIGHT),
+                Register("result", QUInt(2 * self.bitsize), side=side),
             ]
         )
 
