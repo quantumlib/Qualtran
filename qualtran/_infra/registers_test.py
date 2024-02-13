@@ -55,6 +55,8 @@ def test_selection_registers_indexing(n, N, m, M):
 
 
 def test_selection_registers_consistent():
+    with pytest.raises(ValueError, match="should be flat"):
+        _ = Register('a', BoundedQUInt(3, 5), shape=(3, 5))
     with pytest.raises(ValueError, match=".*iteration length is too large "):
         _ = Register('a', BoundedQUInt(3, 10))
 

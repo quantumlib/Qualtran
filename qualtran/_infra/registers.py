@@ -22,7 +22,7 @@ import attrs
 import numpy as np
 from attrs import field, frozen
 
-from .data_types import QAny, QBit, QDType
+from .data_types import BoundedQUInt, QAny, QBit, QDType
 
 
 class Side(enum.Flag):
@@ -68,6 +68,13 @@ class Register:
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
+
+    def __attrs_post_init__(self):
+        if isinstance(self._bitsize, BoundedQUInt):
+            if len(self.shape) != 0:
+                raise ValueError(
+                    f'{self.name} with BoundedQUInt dtype should be flat. Found {self.shape=}'
+                )
 
     @property
     def dtype(self) -> QDType:
