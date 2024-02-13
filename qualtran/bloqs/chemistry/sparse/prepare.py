@@ -21,7 +21,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, BoundedQUInt, SoquetT
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, Register, SoquetT
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
