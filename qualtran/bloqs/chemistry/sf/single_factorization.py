@@ -33,11 +33,12 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    BoundedQUInt,
     Register,
-    SelectionRegister,
     Signature,
     SoquetT,
 )
+from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.basic_gates import Hadamard
 from qualtran.bloqs.basic_gates.swap import CSwap
 from qualtran.bloqs.chemistry.sf.prepare import (
@@ -112,22 +113,27 @@ class SingleFactorizationOneBody(Bloq):
     @property
     def selection_registers(self) -> Iterable[Register]:
         return (
-            SelectionRegister(
-                "l", bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1
+            Register(
+                "l",
+                BoundedQUInt(bitsize=self.num_aux.bit_length(), iteration_length=self.num_aux + 1),
             ),
-            SelectionRegister(
+            Register(
                 "p",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "q",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            Register("rot_aa", bitsize=1),
-            Register("swap_pq", bitsize=1),
-            Register("spin", bitsize=1),
+            Register("rot_aa", BoundedQUInt(bitsize=1)),
+            Register("swap_pq", BoundedQUInt(bitsize=1)),
+            Register("spin", BoundedQUInt(bitsize=1)),
         )
 
     @property

@@ -20,7 +20,7 @@ import numpy as np
 from cirq._compat import cached_method, cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import BoundedQUInt, GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
@@ -104,8 +104,8 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         pass
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self._selection_bitsize, len(self.angles[0])),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', BoundedQUInt(self._selection_bitsize, len(self.angles[0]))),)
 
     @cached_property
     def kappa_load_target(self) -> Tuple[Register, ...]:
@@ -140,7 +140,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
         # 1. Find a convenient way to process batches of size kappa.
         num_bits = sum(max(thetas).bit_length() for thetas in self.angles)
-        iteration_length = self.selection_registers[0].iteration_length
+        iteration_length = self.selection_registers[0].dtype.iteration_length
         selection_bitsizes = [s.total_bits() for s in self.selection_registers]
         angles_bits = np.zeros(shape=(iteration_length, num_bits), dtype=int)
         angles_bit_pow = np.zeros(shape=(num_bits,), dtype=int)
