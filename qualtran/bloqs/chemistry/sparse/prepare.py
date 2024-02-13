@@ -21,7 +21,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, SelectionRegister, SoquetT
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, BoundedQUInt, SoquetT
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
@@ -165,47 +165,56 @@ class PrepareSparse(PrepareOracle):
     qroam_block_size: Optional[int] = None
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         # issue here in that pqrs should not be reflected on.
         # See: https://github.com/quantumlib/Qualtran/issues/549
         return (
-            SelectionRegister(
+            Register(
                 "d",
-                bitsize=(self.num_non_zero - 1).bit_length(),
-                iteration_length=self.num_non_zero,
+                BoundedQUInt(
+                    bitsize=(self.num_non_zero - 1).bit_length(), iteration_length=self.num_non_zero
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "p",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "q",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "r",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "s",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister("sigma", bitsize=self.num_bits_state_prep),
-            SelectionRegister("alpha", bitsize=1),
-            SelectionRegister("beta", bitsize=1),
-            SelectionRegister("rot_aa", bitsize=1),
-            SelectionRegister("swap_pq", bitsize=1),
-            SelectionRegister("swap_rs", bitsize=1),
-            SelectionRegister("swap_pqrs", bitsize=1),
-            SelectionRegister("flag_1b", bitsize=1),
+            Register("sigma", bitsize=BoundedQUInt(self.num_bits_state_prep)),
+            Register("alpha", bitsize=BoundedQUInt(1)),
+            Register("beta", bitsize=BoundedQUInt(1)),
+            Register("rot_aa", bitsize=BoundedQUInt(1)),
+            Register("swap_pq", bitsize=BoundedQUInt(1)),
+            Register("swap_rs", bitsize=BoundedQUInt(1)),
+            Register("swap_pqrs", bitsize=BoundedQUInt(1)),
+            Register("flag_1b", bitsize=BoundedQUInt(1)),
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
+    def junk_registers(self) -> Tuple[Register, ...]:
         return (
             Register('alt_pqrs', bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
             Register('theta', bitsize=1, shape=(2,)),

@@ -20,16 +20,8 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    Register,
-    SelectionRegister,
-    Signature,
-    SoquetT,
-)
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThanConstant,
@@ -306,23 +298,25 @@ class PrepareTHC(PrepareOracle):
         )
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister(
-                "mu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register(
+                "mu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister(
-                "nu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register(
+                "nu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister("plus_mn", bitsize=1),
-            SelectionRegister("plus_a", bitsize=1),
-            SelectionRegister("plus_b", bitsize=1),
-            SelectionRegister("sigma", bitsize=self.keep_bitsize),
-            SelectionRegister("rot", bitsize=1),
+            Register("plus_mn", BoundedQUInt(bitsize=1)),
+            Register("plus_a", BoundedQUInt(bitsize=1)),
+            Register("plus_b", BoundedQUInt(bitsize=1)),
+            Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
+            Register("rot", BoundedQUInt(bitsize=1)),
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
+    def junk_registers(self) -> Tuple[Register, ...]:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         return (

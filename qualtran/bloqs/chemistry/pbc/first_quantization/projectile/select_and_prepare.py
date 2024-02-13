@@ -23,10 +23,11 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    BoundedQUInt,
     Register,
-    SelectionRegister,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, Toffoli
@@ -121,7 +122,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
         return Signature(
             [
                 Register('ctrl', bitsize=1, shape=(len(self.cvs),)),
-                SelectionRegister('sel', bitsize=n_eta, iteration_length=self.eta),
+                Register('sel', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
                 Register('targets', bitsize=self.num_bits_p, shape=(self.eta, 3)),
                 Register('junk', bitsize=self.num_bits_n, shape=(3,)),
             ]
@@ -232,7 +233,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
     adjoint: bool = False
 
     @property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         n_nu = self.num_bits_n + 1
         n_eta = (self.eta - 1).bit_length()
         n_at = (self.num_atoms - 1).bit_length()
@@ -244,21 +245,21 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         # overflow: 3 * 2 qubits are missing.
         # l: should not be reflected on.
         return (
-            SelectionRegister('tuv', bitsize=1, iteration_length=2),
-            SelectionRegister('tepm', bitsize=2, iteration_length=3),
-            SelectionRegister('uv', bitsize=2, iteration_length=4),
-            SelectionRegister('i', bitsize=n_eta, iteration_length=self.eta),
-            SelectionRegister('j', bitsize=n_eta, iteration_length=self.eta),
-            SelectionRegister("w", iteration_length=3, bitsize=2),
-            SelectionRegister("w_mean", iteration_length=3, bitsize=2),
-            SelectionRegister("r", bitsize=self.num_bits_n),
-            SelectionRegister("s", bitsize=self.num_bits_n),
-            SelectionRegister("mu", bitsize=self.num_bits_n),
-            SelectionRegister("nu_x", bitsize=n_nu),
-            SelectionRegister("nu_y", bitsize=n_nu),
-            SelectionRegister("nu_z", bitsize=n_nu),
-            SelectionRegister("m", bitsize=n_m),
-            SelectionRegister("l", bitsize=n_at),
+            Register('tuv', BoundedQUInt(bitsize=1, iteration_length=2)),
+            Register('tepm', BoundedQUInt(bitsize=2, iteration_length=3)),
+            Register('uv', BoundedQUInt(bitsize=2, iteration_length=4)),
+            Register('i', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register('j', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register("w", BoundedQUInt(iteration_length=3, bitsize=2)),
+            Register("w_mean", BoundedQUInt(iteration_length=3, bitsize=2)),
+            Register("r", BoundedQUInt(bitsize=self.num_bits_n)),
+            Register("s", BoundedQUInt(bitsize=self.num_bits_n)),
+            Register("mu", BoundedQUInt(bitsize=self.num_bits_n)),
+            Register("nu_x", BoundedQUInt(bitsize=n_nu)),
+            Register("nu_y", BoundedQUInt(bitsize=n_nu)),
+            Register("nu_z", BoundedQUInt(bitsize=n_nu)),
+            Register("m", BoundedQUInt(bitsize=n_m)),
+            Register("l", BoundedQUInt(bitsize=n_at)),
         )
 
     @cached_property
@@ -431,24 +432,24 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         )
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         n_nu = self.num_bits_n + 1
         n_eta = (self.eta - 1).bit_length()
         n_at = (self.num_atoms - 1).bit_length()
         n_m = (self.m_param - 1).bit_length()
         return (
-            SelectionRegister('i', bitsize=n_eta, iteration_length=self.eta),
-            SelectionRegister('j', bitsize=n_eta, iteration_length=self.eta),
-            SelectionRegister("w", bitsize=3),
-            SelectionRegister("w_mean", bitsize=3),
-            SelectionRegister("r", bitsize=self.num_bits_n),
-            SelectionRegister("s", bitsize=self.num_bits_n),
-            SelectionRegister("mu", bitsize=self.num_bits_n),
-            SelectionRegister("nu_x", bitsize=n_nu),
-            SelectionRegister("nu_y", bitsize=n_nu),
-            SelectionRegister("nu_z", bitsize=n_nu),
-            SelectionRegister("m", bitsize=n_m),
-            SelectionRegister("l", bitsize=n_at),
+            Register('i', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register('j', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
+            Register("w", bitsize=3),
+            Register("w_mean", bitsize=3),
+            Register("r", bitsize=self.num_bits_n),
+            Register("s", bitsize=self.num_bits_n),
+            Register("mu", bitsize=self.num_bits_n),
+            Register("nu_x", bitsize=n_nu),
+            Register("nu_y", bitsize=n_nu),
+            Register("nu_z", bitsize=n_nu),
+            Register("m", bitsize=n_m),
+            Register("l", bitsize=n_at),
         )
 
     @cached_property

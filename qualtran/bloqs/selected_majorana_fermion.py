@@ -20,7 +20,8 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import Register, SelectionRegister
+from qualtran import Register
+from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 
@@ -35,8 +36,8 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
 
     Args:
-        selection_regs: Indexing `select` signature of type `SelectionRegister`. It also contains
-            information about the iteration length of each selection register.
+        selection_regs: Indexing `select` signature of type `Register(dtype=BoundedQUInt)`.
+            It also contains information about the iteration length of each selection register.
         control_regs: Control signature for constructing a controlled version of the gate.
         target_gate: Single qubit gate to be applied to the target qubits.
 
@@ -44,8 +45,8 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         See Fig 9 of https://arxiv.org/abs/1805.03662 for more details.
     """
 
-    selection_regs: Tuple[SelectionRegister, ...] = attrs.field(
-        converter=lambda v: (v,) if isinstance(v, SelectionRegister) else tuple(v)
+    selection_regs: Tuple[Register, ...] = attrs.field(
+        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     control_regs: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
@@ -62,8 +63,8 @@ class SelectedMajoranaFermion(UnaryIterationGate):
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce selection_regs attribute."""
         return SelectedMajoranaFermion(
-            selection_regs=SelectionRegister(
-                'selection', len(quregs['selection']), len(quregs['target'])
+            selection_regs=Register(
+                'selection', BoundedQUInt(len(quregs['selection']), len(quregs['target']))
             ),
             target_gate=target_gate,
         ).on_registers(**quregs)
@@ -73,13 +74,13 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         total_iteration_size = np.prod(
-            tuple(reg.iteration_length for reg in self.selection_registers)
+            tuple(reg.dtype.iteration_length for reg in self.selection_registers)
         )
         return (Register('target', int(total_iteration_size)),)
 
@@ -112,7 +113,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         accumulator: Sequence[cirq.Qid],
         **selection_indices: int,
     ) -> cirq.OP_TREE:
-        selection_shape = tuple(reg.iteration_length for reg in self.selection_regs)
+        selection_shape = tuple(reg.dtype.iteration_length for reg in self.selection_regs)
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = int(np.ravel_multi_index(selection_idx, selection_shape))
         yield cirq.CNOT(control, *accumulator)

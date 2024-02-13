@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from cirq._compat import cached_property
 
-from qualtran import bloq_example, BloqDocSpec, Register, SelectionRegister, Signature
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 
@@ -39,7 +39,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     `selection`-th qubit of `target` all controlled by the `control` register.
 
     Args:
-        selection_regs: Indexing `select` signature of type Tuple[`SelectionRegister`, ...].
+        selection_regs: Indexing `select` signature of type Tuple[`Register`, ...].
             It also contains information about the iteration length of each selection register.
         nth_gate: A function mapping the composite selection index to a single-qubit gate.
         control_regs: Control signature for constructing a controlled version of the gate.
@@ -48,8 +48,8 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.A. and Figure 7.
     """
-    selection_regs: Tuple[SelectionRegister, ...] = attrs.field(
-        converter=lambda v: (v,) if isinstance(v, SelectionRegister) else tuple(v)
+    selection_regs: Tuple[Register, ...] = attrs.field(
+        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     nth_gate: Callable[..., cirq.Gate]
     control_regs: Tuple[Register, ...] = attrs.field(
@@ -63,7 +63,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     ) -> cirq.Operation:
         """Helper constructor to automatically deduce bitsize attributes."""
         return ApplyGateToLthQubit(
-            SelectionRegister('selection', len(quregs['selection']), len(quregs['target'])),
+            Register('selection', BoundedQUInt(len(quregs['selection']), len(quregs['target']))),
             nth_gate=nth_gate,
             control_regs=Register('control', len(quregs['control'])),
         ).on_registers(**quregs)
@@ -73,20 +73,22 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         total_iteration_size = np.prod(
-            tuple(reg.iteration_length for reg in self.selection_registers)
+            tuple(reg.dtype.iteration_length for reg in self.selection_registers)
         )
         return (Register('target', int(total_iteration_size)),)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * total_bits(self.control_registers)
         wire_symbols += ["In"] * total_bits(self.selection_registers)
-        for it in itertools.product(*[range(reg.iteration_length) for reg in self.selection_regs]):
+        for it in itertools.product(
+            *[range(reg.dtype.iteration_length) for reg in self.selection_regs]
+        ):
             wire_symbols += [str(self.nth_gate(*it))]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
@@ -97,7 +99,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         target: Sequence[cirq.Qid],
         **selection_indices: int,
     ) -> cirq.OP_TREE:
-        selection_shape = tuple(reg.iteration_length for reg in self.selection_regs)
+        selection_shape = tuple(reg.dtype.iteration_length for reg in self.selection_regs)
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = int(np.ravel_multi_index(selection_idx, selection_shape))
         return self.nth_gate(*selection_idx).on(target[target_idx]).controlled_by(control)
@@ -105,7 +107,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
 
 @bloq_example
 def _apply_z_to_odd() -> ApplyGateToLthQubit:
-    from qualtran import SelectionRegister
+    from qualtran import BoundedQUInt, Register
 
     def _z_to_odd(n: int):
         if n % 2 == 1:
@@ -113,7 +115,7 @@ def _apply_z_to_odd() -> ApplyGateToLthQubit:
         return cirq.I
 
     apply_z_to_odd = ApplyGateToLthQubit(
-        SelectionRegister('selection', 3, 4),
+        Register('selection', BoundedQUInt(3, 4)),
         nth_gate=_z_to_odd,
         control_regs=Signature.build(control=2),
     )

@@ -21,7 +21,7 @@ import pytest
 import sympy
 
 import qualtran.cirq_interop.testing as cq_testing
-from qualtran import Bloq, BloqBuilder, SelectionRegister
+from qualtran import Bloq, BloqBuilder, BoundedQUInt, Register
 from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.basic_gates.z_basis import IntState
 from qualtran.bloqs.swap_network import (
@@ -216,7 +216,7 @@ def test_swap_with_zero_t_complexity(selection_bitsize, target_bitsize, n_target
 def test_cswap_lth_reg(selection_bitsize, iteration_length, target_bitsize):
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     gate = MultiplexedCSwap(
-        SelectionRegister('selection', selection_bitsize, iteration_length),
+        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
     g = GateHelper(gate, context=cirq.DecompositionContext(greedy_mm))
@@ -246,7 +246,7 @@ def test_multiplexed_cswap_bloq_has_consistent_decomposition(
     selection_bitsize, iteration_length, target_bitsize
 ):
     bloq = MultiplexedCSwap(
-        SelectionRegister('selection', selection_bitsize, iteration_length),
+        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
     assert_valid_bloq_decomposition(bloq)
@@ -257,7 +257,7 @@ def test_multiplexed_cswap_bloq_has_consistent_decomposition(
 )
 def test_multiplexed_cswap_t_counts(selection_bitsize, iteration_length, target_bitsize):
     bloq = MultiplexedCSwap(
-        SelectionRegister('selection', selection_bitsize, iteration_length),
+        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
     expected = 4 * (iteration_length - 2) + 7 * (iteration_length * target_bitsize)
