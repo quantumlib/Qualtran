@@ -117,7 +117,7 @@ def test_zero_effect_manual():
     with pytest.raises(AssertionError):
         bloq.call_classically(q=1)
 
-    with pytest.raises(ValueError, match=r'.*q should be an integer, not \[0\, 0\, 0\]'):
+    with pytest.raises(ValueError, match=r'Bad QBit\(\) value \[0\, 0\, 0\]'):
         bloq.call_classically(q=[0, 0, 0])
 
 

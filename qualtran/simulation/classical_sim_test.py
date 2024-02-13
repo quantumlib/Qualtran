@@ -90,7 +90,7 @@ def test_dtype_validation():
 
     # bad integer
     vals2 = {**vals, 'one_bit_int': 2}
-    with pytest.raises(ValueError, match=r'Too-large.*one_bit_int'):
+    with pytest.raises(ValueError, match=r'Bad QBit().*one_bit_int'):
         _update_assign_from_vals(regs, binst, vals2, soq_assign)
 
     # int is a numpy int
