@@ -304,10 +304,21 @@ class BoundedQUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        raise NotImplementedError()
+        return range(0, self.iteration_length)
 
-    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
-        pass  # TODO: implement
+    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        if val < 0:
+            raise ValueError(f"Negative classical value encountered in {debug_str}")
+        if val >= self.iteration_length:
+            raise ValueError(f"Too-large classical value encountered in {debug_str}")
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+        if np.any(val_array < 0):
+            raise ValueError(f"Negative classical values encountered in {debug_str}")
+        if np.any(val_array >= self.iteration_length):
+            raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
 
 @attrs.frozen
