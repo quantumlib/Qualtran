@@ -449,7 +449,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             Register("nu_y", BoundedQUInt(bitsize=n_nu)),
             Register("nu_z", BoundedQUInt(bitsize=n_nu)),
             Register("m", BoundedQUInt(bitsize=n_m)),
-            Register("l", BounededQUInt(bitsize=n_at)),
+            Register("l", BoundedQUInt(bitsize=n_at)),
         )
 
     @cached_property
