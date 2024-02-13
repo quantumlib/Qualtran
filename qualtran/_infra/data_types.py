@@ -287,7 +287,7 @@ class BoundedQUInt(QDType):
     bitsize: Union[int, sympy.Expr]
     iteration_length: Union[int, sympy.Expr] = attrs.field()
 
-   def __attrs_post_init__(self):
+    def __attrs_post_init__(self):
         if isinstance(self.bitsize, int):
             if self.iteration_length > 2**self.bitsize:
                 raise ValueError(
