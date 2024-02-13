@@ -203,14 +203,14 @@ class PrepareSparse(PrepareOracle):
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
-            Register("sigma", bitsize=BoundedQUInt(self.num_bits_state_prep)),
-            Register("alpha", bitsize=BoundedQUInt(1)),
-            Register("beta", bitsize=BoundedQUInt(1)),
-            Register("rot_aa", bitsize=BoundedQUInt(1)),
-            Register("swap_pq", bitsize=BoundedQUInt(1)),
-            Register("swap_rs", bitsize=BoundedQUInt(1)),
-            Register("swap_pqrs", bitsize=BoundedQUInt(1)),
-            Register("flag_1b", bitsize=BoundedQUInt(1)),
+            Register("sigma", BoundedQUInt(self.num_bits_state_prep)),
+            Register("alpha", BoundedQUInt(1)),
+            Register("beta", BoundedQUInt(1)),
+            Register("rot_aa", BoundedQUInt(1)),
+            Register("swap_pq", BoundedQUInt(1)),
+            Register("swap_rs", BoundedQUInt(1)),
+            Register("swap_pqrs", BoundedQUInt(1)),
+            Register("flag_1b", BoundedQUInt(1)),
         )
 
     @cached_property

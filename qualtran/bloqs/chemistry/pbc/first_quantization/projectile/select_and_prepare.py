@@ -440,16 +440,16 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         return (
             Register('i', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
             Register('j', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-            Register("w", bitsize=3),
-            Register("w_mean", bitsize=3),
-            Register("r", bitsize=self.num_bits_n),
-            Register("s", bitsize=self.num_bits_n),
-            Register("mu", bitsize=self.num_bits_n),
-            Register("nu_x", bitsize=n_nu),
-            Register("nu_y", bitsize=n_nu),
-            Register("nu_z", bitsize=n_nu),
-            Register("m", bitsize=n_m),
-            Register("l", bitsize=n_at),
+            Register("w", BoundedQUInt(bitsize=3)),
+            Register("w_mean", BoundedQUInt(bitsize=3)),
+            Register("r", BoundedQUInt(bitsize=self.num_bits_n)),
+            Register("s", BoundedQUInt(bitsize=self.num_bits_n)),
+            Register("mu", BoundedQUInt(bitsize=self.num_bits_n)),
+            Register("nu_x", BoundedQUInt(bitsize=n_nu)),
+            Register("nu_y", BoundedQUInt(bitsize=n_nu)),
+            Register("nu_z", BoundedQUInt(bitsize=n_nu)),
+            Register("m", BoundedQUInt(bitsize=n_m)),
+            Register("l", BounededQUInt(bitsize=n_at)),
         )
 
     @cached_property

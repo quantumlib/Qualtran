@@ -91,9 +91,9 @@ class SelectSparse(SelectOracle):
                     iteration_length=self.num_spin_orb // 2,
                 ),
             ),
-            Register("alpha", bitsize=BoundedQUInt(1)),
-            Register("beta", bitsize=BoundedQUInt(1)),
-            Register("flag_1b", bitsize=BoundedQUInt(1)),
+            Register("alpha", BoundedQUInt(1)),
+            Register("beta", BoundedQUInt(1)),
+            Register("flag_1b", BoundedQUInt(1)),
         )
 
     @cached_property
