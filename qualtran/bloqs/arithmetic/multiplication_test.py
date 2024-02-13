@@ -23,6 +23,7 @@ from qualtran.bloqs.arithmetic import (
     SquareRealNumber,
     SumOfSquares,
 )
+from qualtran.bloqs.basic_gates import IntState
 from qualtran.testing import execute_notebook
 
 
@@ -65,10 +66,20 @@ def _make_square_real_number():
 def test_square():
     bb = BloqBuilder()
     bitsize = 4
-    q0 = bb.add_register('a', bitsize)
+
+    q0 = bb.add(IntState(10, bitsize))
     q0, q1 = bb.add(Square(bitsize), a=q0)
-    cbloq = bb.finalize(a=q0, result=q1)
+    cbloq = bb.finalize(val=q0, result=q1)
     cbloq.t_complexity()
+    assert cbloq.on_classical_vals() == {'val': 10, 'result': 100}
+    assert cbloq.tensor_contract().reshape(2**bitsize, 4**bitsize)[10, 100] == 1
+
+    bb = BloqBuilder()
+    val, result = bb.add_from(cbloq)
+    a = bb.add(Square(bitsize).adjoint(), a=val, result=result)
+    cbloq = bb.finalize(a=a)
+    assert cbloq.on_classical_vals(a=10, result=100) == {'a': 10}
+    assert cbloq.tensor_contract()[10] == 1
 
 
 def test_sum_of_squares():

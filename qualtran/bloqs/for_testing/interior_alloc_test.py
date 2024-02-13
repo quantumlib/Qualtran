@@ -11,22 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.for_testing.with_decomposition import (
-    TestIndependentParallelCombo,
-    TestParallelCombo,
-    TestSerialCombo,
-)
+from qualtran.bloqs.basic_gates.swap import Swap
+from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
+from qualtran.bloqs.util_bloqs import Allocate, Free
 
 
-def test_test_serial_combo():
-    qlt_testing.assert_valid_bloq_decomposition(TestSerialCombo())
-
-
-def test_test_parallel_combo():
-    qlt_testing.assert_valid_bloq_decomposition(TestParallelCombo())
-
-
-def test_test_indep_parallel_combo():
-    qlt_testing.assert_valid_bloq_decomposition(TestIndependentParallelCombo())
+def test_interior_alloc():
+    ia = InteriorAlloc(10)
+    qlt_testing.assert_valid_bloq_decomposition(ia)
+    g, counts = ia.call_graph(max_depth=1)
+    assert counts == {Allocate(10): 1, Free(10): 1, Swap(10): 2}

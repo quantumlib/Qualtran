@@ -21,7 +21,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran import Bloq, GateWithRegisters, QAny, QBit, QUInt, Register, Side, Signature, SoquetT
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
@@ -45,7 +45,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, target=1)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def short_name(self) -> str:
         return f'x<{self.less_than_val}'
@@ -169,7 +169,11 @@ class BiQubitsMixer(GateWithRegisters):
     def signature(self) -> Signature:
         one_side = Side.RIGHT if not self.is_adjoint else Side.LEFT
         return Signature(
-            [Register('x', 2), Register('y', 2), Register('ancilla', 3, side=one_side)]
+            [
+                Register('x', QUInt(2)),
+                Register('y', QUInt(2)),
+                Register('ancilla', QAny(3), side=one_side),
+            ]
         )
 
     def decompose_from_registers(
@@ -244,10 +248,10 @@ class SingleQubitCompare(GateWithRegisters):
         one_side = Side.RIGHT if not self.is_adjoint else Side.LEFT
         return Signature(
             [
-                Register('a', 1),
-                Register('b', 1),
-                Register('less_than', 1, side=one_side),
-                Register('greater_than', 1, side=one_side),
+                Register('a', QBit()),
+                Register('b', QBit()),
+                Register('less_than', QBit(), side=one_side),
+                Register('greater_than', QBit(), side=one_side),
             ]
         )
 
@@ -314,7 +318,9 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=self.x_bitsize, y=self.y_bitsize, target=1)
+        return Signature.build_from_dtypes(
+            x=QUInt(self.x_bitsize), y=QUInt(self.y_bitsize), target=QBit()
+        )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.x_bitsize, [2] * self.y_bitsize, [2]
@@ -489,7 +495,9 @@ class GreaterThan(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(a=self.a_bitsize, b=self.b_bitsize, target=1)
+        return Signature.build_from_dtypes(
+            a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
+        )
 
     def short_name(self) -> str:
         return "a>b"
@@ -545,12 +553,8 @@ class LinearDepthGreaterThan(Bloq):
 
     @property
     def signature(self):
-        return Signature(
-            [
-                Register('a', bitsize=self.bitsize),
-                Register('b', bitsize=self.bitsize),
-                Register('target', bitsize=1),
-            ]
+        return Signature.build_from_dtypes(
+            a=QUInt(self.bitsize), b=QUInt(self.bitsize), target=QBit()
         )
 
     def on_classical_vals(
@@ -710,7 +714,7 @@ class GreaterThanConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, target=1)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def t_complexity(self) -> TComplexity:
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
@@ -753,7 +757,7 @@ class EqualsAConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, target=1)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
