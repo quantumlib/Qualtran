@@ -47,7 +47,7 @@ from ._infra.data_types import QDType, QInt, QBit, QAny, QFxp, QIntOnesComp, QUI
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from ._infra.registers import Register, SelectionRegister, Signature, Side
+from ._infra.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none

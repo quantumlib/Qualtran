@@ -86,13 +86,13 @@ def test_qfxp():
     assert qfp.num_int == b - f - 1
 
 
-@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4)])
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BoundedQUInt(3, 5)])
 def test_domain_and_validation(qdtype: QDType):
     for v in qdtype.get_classical_domain():
         qdtype.assert_valid_classical_val(v)
 
 
-@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4)])
+@pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BoundedQUInt(3, 5)])
 def test_domain_and_validation_arr(qdtype: QDType):
     arr = np.array(list(qdtype.get_classical_domain()))
     qdtype.assert_valid_classical_val_array(arr)
@@ -109,10 +109,16 @@ def test_validation_errs():
         QUInt(3).assert_valid_classical_val(8)
 
     with pytest.raises(ValueError):
-        QInt(4).assert_valid_classical_val(8)
+        BoundedQUInt(3, 5).assert_valid_classical_val(-1)
+
+    with pytest.raises(ValueError):
+        BoundedQUInt(3, 5).assert_valid_classical_val(6)
 
     with pytest.raises(ValueError):
         QInt(4).assert_valid_classical_val(-9)
+
+    with pytest.raises(ValueError):
+        QUInt(3).assert_valid_classical_val(-1)
 
     with pytest.raises(ValueError):
         QUInt(3).assert_valid_classical_val(-1)
