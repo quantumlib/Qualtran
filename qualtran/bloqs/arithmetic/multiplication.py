@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, GateWithRegisters, QFxp, QInt, QUInt, Register, Side, Signature
+from qualtran import Bloq, GateWithRegisters, QFxp, QUInt, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -43,7 +43,9 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
     @property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(
-            a=QInt(self.a_bitsize), b=QInt(self.b_bitsize), result=QInt(self.result_bitsize)
+            a=QUInt(self.a_bitsize),
+            b=QUInt(self.b_bitsize),
+            result=QFxp(self.result_bitsize, self.result_bitsize),
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
@@ -297,9 +299,9 @@ class ScaleIntByReal(Bloq):
         out_bitsizes: The output bitsize for the scaled fixed point real number.
 
     Registers:
-     - real_in: r_bitsize-sized input register.
-     - int_in: i_bitsize-sized input register.
-     - result: r_bitsize output register
+        real_in: r_bitsize-sized input register.
+        int_in: i_bitsize-sized input register.
+        result: r_bitsize output register
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -355,9 +357,9 @@ class MultiplyTwoReals(Bloq):
         bitsize: Number of bits used to represent the real number.
 
     Registers:
-     - a: bitsize-sized input register.
-     - b: bitsize-sized input register.
-     - result: bitsize output register
+        a: bitsize-sized input register.
+        b: bitsize-sized input register.
+        result: bitsize output register
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -406,9 +408,9 @@ class SquareRealNumber(Bloq):
         bitsize: Number of bits used to represent the real number.
 
     Registers:
-     - a: bitsize-sized input register.
-     - b: bitsize-sized input register.
-     - result: bitsize output register
+        a: bitsize-sized input register.
+        b: bitsize-sized input register.
+        result: bitsize output register
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
