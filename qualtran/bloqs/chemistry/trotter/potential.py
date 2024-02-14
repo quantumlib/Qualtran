@@ -19,7 +19,16 @@ from typing import Dict, Tuple
 import numpy as np
 from attrs import field, frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QAny,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
 from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
@@ -187,8 +196,8 @@ class PotentialEnergy(Bloq):
             [
                 Register(
                     'system',
+                    bitsize=QAny(((self.num_grid - 1).bit_length() + 1)),
                     shape=(self.num_elec, 3),
-                    bitsize=((self.num_grid - 1).bit_length() + 1),
                 )
             ]
         )

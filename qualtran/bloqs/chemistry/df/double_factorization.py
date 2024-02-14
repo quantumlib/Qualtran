@@ -132,7 +132,7 @@ class DoubleFactorizationOneBody(Bloq):
             Register("xi", QAny(bitsize=nxi)),
             Register("offset", QAny(bitsize=nlxi)),
             Register("rot", QAny(bitsize=self.num_bits_rot_aa)),
-            Register("rotations", bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
+            Register("rotations", QAny(bitsize=(self.num_spin_orb // 2) * self.num_bits_rot)),
         )
 
     @property
@@ -353,7 +353,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
             Register("xi", QAny(bitsize=nxi)),
             Register("offset", QAny(bitsize=nlxi)),
             Register("rot", QAny(bitsize=self.num_bits_rot_aa_inner)),
-            Register("rotations", bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
+            Register("rotations", QAny(bitsize=(self.num_spin_orb // 2) * self.num_bits_rot)),
         )
 
     @property
