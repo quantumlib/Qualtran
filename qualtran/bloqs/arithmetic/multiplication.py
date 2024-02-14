@@ -18,7 +18,17 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, GateWithRegisters, QFxp, QUInt, Register, Side, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    QFxp,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -92,6 +102,20 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
         _add_my_tensors_from_gate(
             self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
+
+
+@bloq_example
+def _plus_equal_product() -> PlusEqualProduct:
+    a_bit, b_bit, res_bit = 2, 2, 4
+    plus_equal_product = PlusEqualProduct(a_bit, b_bit, res_bit)
+    return plus_equal_product
+
+
+_PLUS_EQUALS_PRODUCT_DOC = BloqDocSpec(
+    bloq_cls=PlusEqualProduct,
+    import_line='from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct',
+    examples=(_plus_equal_product,),
+)
 
 
 @frozen
@@ -172,6 +196,19 @@ class Square(Bloq):
         return Square(self.bitsize, not self.uncompute)
 
 
+@bloq_example
+def _square() -> Square:
+    square = Square(bitsize=8)
+    return square
+
+
+_SQUARE_DOC = BloqDocSpec(
+    bloq_cls=Square,
+    import_line='from qualtran.bloqs.arithmetic.multiplication import Square',
+    examples=(_square,),
+)
+
+
 @frozen
 class SumOfSquares(Bloq):
     r"""Compute the sum of squares of k n-bit binary numbers.
@@ -231,11 +268,24 @@ class SumOfSquares(Bloq):
         return {(Toffoli(), num_toff)}
 
 
+@bloq_example
+def _sum_of_squares() -> SumOfSquares:
+    sum_of_squares = SumOfSquares(bitsize=8, k=4)
+    return sum_of_squares
+
+
+_SUM_OF_SQUARES_DOC = BloqDocSpec(
+    bloq_cls=SumOfSquares,
+    import_line='from qualtran.bloqs.arithmetic.multiplication import SumOfSquares',
+    examples=(_sum_of_squares,),
+)
+
+
 @frozen
 class Product(Bloq):
     r"""Compute the product of an `n` and `m` bit binary number.
 
-    Implements $U|a\rangle|b\rangle|0\rangle -\rightarrow
+    Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
     |a\rangle|b\rangle|a\times b\rangle$ using $2nm-n$ Toffolis.
 
     Args:
@@ -245,7 +295,7 @@ class Product(Bloq):
     Registers:
         a: a_bitsize-sized input register.
         b: b_bitsize-sized input register.
-        result: A 2*max(a_bitsize, b_bitsize) bit-sized output register to store the result a*b.
+        result: A 2*`max(a_bitsize, b_bitsize)` bit-sized output register to store the result a*b.
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
@@ -281,6 +331,19 @@ class Product(Bloq):
         return {(Toffoli(), num_toff)}
 
 
+@bloq_example
+def _product() -> Product:
+    product = Product(a_bitsize=4, b_bitsize=6)
+    return product
+
+
+_PRODUCT_DOC = BloqDocSpec(
+    bloq_cls=Product,
+    import_line='from qualtran.bloqs.arithmetic.multiplication import Product',
+    examples=(_product,),
+)
+
+
 @frozen
 class ScaleIntByReal(Bloq):
     r"""Scale an integer by fixed-point representation of a real number.
@@ -298,12 +361,13 @@ class ScaleIntByReal(Bloq):
         i_bitsize: Number of bits used to represent the integer.
 
     Registers:
-        real_in: r_bitsize-sized input register.
+        real_in: r_bitsize-sized input fixed-point register.
         int_in: i_bitsize-sized input register.
+        result: a r_bitsize sized output fixed-point register.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/pdf/2007.07391.pdf) pg 70.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
+            https://arxiv.org/pdf/2007.07391.pdf) pg 70.
     """
 
     r_bitsize: int
@@ -338,6 +402,19 @@ class ScaleIntByReal(Bloq):
         return {(Toffoli(), num_toff)}
 
 
+@bloq_example
+def _scale_int_by_real() -> ScaleIntByReal:
+    scale_int_by_real = ScaleIntByReal(r_bitsize=12, i_bitsize=4)
+    return scale_int_by_real
+
+
+_SCALE_INT_BY_REAL_DOC = BloqDocSpec(
+    bloq_cls=ScaleIntByReal,
+    import_line='from qualtran.bloqs.arithmetic.multiplication import ScaleIntByReal',
+    examples=(_scale_int_by_real,),
+)
+
+
 @frozen
 class MultiplyTwoReals(Bloq):
     r"""Multiply two fixed-point representations of real numbers
@@ -359,8 +436,8 @@ class MultiplyTwoReals(Bloq):
         result: bitsize output register
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-            (https://arxiv.org/pdf/2007.07391.pdf) pg 71.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
+            https://arxiv.org/pdf/2007.07391.pdf) pg 71.
     """
 
     bitsize: int
@@ -387,6 +464,19 @@ class MultiplyTwoReals(Bloq):
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
         num_toff = self.bitsize**2 - self.bitsize - 1
         return {(Toffoli(), num_toff)}
+
+
+@bloq_example
+def _multiply_two_reals() -> MultiplyTwoReals:
+    multiply_two_reals = MultiplyTwoReals(bitsize=10)
+    return multiply_two_reals
+
+
+_MULTIPLY_TWO_REALS_DOC = BloqDocSpec(
+    bloq_cls=MultiplyTwoReals,
+    import_line='from qualtran.bloqs.arithmetic.multiplication import MultiplyTwoReals',
+    examples=(_multiply_two_reals,),
+)
 
 
 @frozen
@@ -441,3 +531,16 @@ class SquareRealNumber(Bloq):
         # Bottom of page 74
         num_toff = self.bitsize**2 // 2 - 4
         return {(Toffoli(), num_toff)}
+
+
+@bloq_example
+def _square_real_number() -> SquareRealNumber:
+    square_real_number = SquareRealNumber(bitsize=10)
+    return square_real_number
+
+
+_SQUARE_REAL_NUMBER_DOC = BloqDocSpec(
+    bloq_cls=SquareRealNumber,
+    import_line='from qualtran.bloqs.arithmetic.multiplication import SquareRealNumber',
+    examples=(_square_real_number,),
+)
