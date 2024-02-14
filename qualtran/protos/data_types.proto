@@ -1,0 +1,62 @@
+/*
+  Copyright 2023 Google LLC
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+
+syntax = "proto3";
+
+package qualtran;
+
+message QDType {
+    oneof bitsize {
+        int64 bitsize_int = 1;
+        string bitsize_expr = 2;
+    }
+    oneof data_type {
+        QBit qbit = 3;
+        QAny qany = 4;
+        QInt qint = 5;
+        QOnesComp q_ones_comp = 6;
+        QUInt quint = 7;
+        BoundedQUInt bounded_q_int = 8;
+        QFixedPoint q_fxp = 9;
+    }
+}
+
+message QBit {
+}
+
+message QAny {
+}
+
+message QInt {
+}
+
+message QOnesComp {
+}
+message QUInt {
+}
+
+message BoundedQUInt {
+
+    int64 iteration_length = 1;
+}
+
+message QFixedPoint {
+    int64 num_frac = 1;
+    bool signed = 2;
+}
+
+
+
