@@ -205,7 +205,7 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
     class LeftOnlyGate(GateWithRegisters):
         @property
         def signature(self):
-            return Signature([Register('junk', 2, side=Side.LEFT)])
+            return Signature([Register('junk', QAny(2), side=Side.LEFT)])
 
         def decompose_from_registers(self, *, context, junk) -> cirq.OP_TREE:
             yield cirq.CNOT(*junk)

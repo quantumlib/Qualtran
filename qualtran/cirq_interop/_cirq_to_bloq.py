@@ -364,7 +364,7 @@ def cirq_optree_to_cbloq(
         if in_quregs is not None or out_quregs is not None:
             raise ValueError("`in_quregs` / `out_quregs` requires specifying `signature`.")
         all_qubits = sorted(circuit.all_qubits())
-        signature = Signature([Register('qubits', 1, shape=(len(all_qubits),))])
+        signature = Signature([Register('qubits', QBit(), shape=(len(all_qubits),))])
         in_quregs = out_quregs = {'qubits': np.array(all_qubits).reshape(len(all_qubits), 1)}
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")

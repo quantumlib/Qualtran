@@ -24,9 +24,9 @@ from qualtran.testing import execute_notebook
 class _TestGate(GateWithRegisters):
     @property
     def signature(self) -> Signature:
-        r1 = Register("r1", 5)
-        r2 = Register("r2", 2)
-        r3 = Register("r3", 1)
+        r1 = Register("r1", QAny(5))
+        r2 = Register("r2", QAny(2))
+        r3 = Register("r3", QBit())
         regs = Signature([r1, r2, r3])
         return regs
 
@@ -53,9 +53,9 @@ class BloqWithDecompose(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('l', 1, side=Side.LEFT),
-                Register('t', 1, side=Side.THRU),
-                Register('r', 1, side=Side.RIGHT),
+                Register('l', QBit(), side=Side.LEFT),
+                Register('t', QBit(), side=Side.THRU),
+                Register('r', QBit(), side=Side.RIGHT),
             ]
         )
 

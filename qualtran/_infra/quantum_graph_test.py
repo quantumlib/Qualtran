@@ -43,7 +43,7 @@ def test_dangling_hash():
 
 
 def test_soquet():
-    soq = Soquet(BloqInstance(TestTwoBitOp(), i=0), Register('x', 10))
+    soq = Soquet(BloqInstance(TestTwoBitOp(), i=0), Register('x', QAny(10)))
     assert soq.reg.side is Side.THRU
     assert soq.idx == ()
     assert soq.pretty() == 'x'

@@ -73,8 +73,8 @@ def test_dtype_validation():
 
     # set up different register dtypes
     regs = [
-        Register('one_bit_int', 1),
-        Register('int', 5),
+        Register('one_bit_int', QBit()),
+        Register('int', QAny(5)),
         Register('bit_arr', 1, shape=(5,)),
         Register('int_arr', 32, shape=(5,)),
     ]

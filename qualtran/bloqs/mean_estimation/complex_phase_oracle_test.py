@@ -36,7 +36,7 @@ class ExampleSelect(SelectOracle):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:

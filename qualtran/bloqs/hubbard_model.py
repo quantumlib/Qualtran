@@ -121,7 +121,7 @@ class SelectHubbard(SelectOracle):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -303,7 +303,7 @@ class PrepareHubbard(PrepareOracle):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (Register('temp', 2),)
+        return (Register('temp', QAny(2)),)
 
     @cached_property
     def signature(self) -> Signature:

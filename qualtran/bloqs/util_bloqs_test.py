@@ -143,7 +143,7 @@ TestMultiRegister─yy──────yy──────yy──────
 
 
 def test_partition_call_classically():
-    regs = (Register('xx', 2, shape=(2, 2)), Register('yy', 3))
+    regs = (Register('xx', 2, shape=(2, 2)), Register('yy', QAny(3)))
     bitsize = sum(reg.total_bits() for reg in regs)
     bloq = Partition(n=bitsize, regs=regs)
     out = bloq.call_classically(x=64)

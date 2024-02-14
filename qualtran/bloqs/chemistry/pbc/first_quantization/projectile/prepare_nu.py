@@ -68,7 +68,9 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("mu", self.bitsize_n), Register("flag", 1, side=Side.RIGHT)])
+        return Signature(
+            [Register("mu", self.bitsize_n), Register("flag", QBit(), side=Side.RIGHT)]
+        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:

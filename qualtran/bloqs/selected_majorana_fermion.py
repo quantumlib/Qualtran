@@ -50,7 +50,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
     )
     control_regs: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
-        default=(Register('control', 1),),
+        default=(Register('control', QBit()),),
     )
     target_gate: cirq.Gate = cirq.Y
 
@@ -86,7 +86,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
     @cached_property
     def extra_registers(self) -> Tuple[Register, ...]:
-        return (Register('accumulator', 1),)
+        return (Register('accumulator', QBit()),)
 
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]

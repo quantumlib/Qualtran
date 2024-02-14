@@ -52,7 +52,9 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("mu", self.num_bits_p), Register("flag", 1, side=Side.RIGHT)])
+        return Signature(
+            [Register("mu", self.num_bits_p), Register("flag", QBit(), side=Side.RIGHT)]
+        )
 
     def short_name(self) -> str:
         return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
@@ -125,7 +127,7 @@ class FlagZeroAsFailure(Bloq):
         return Signature(
             [
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("flag_minus_zero", 1, side=Side.RIGHT),
+                Register("flag_minus_zero", QBit(), side=Side.RIGHT),
             ]
         )
 
@@ -166,7 +168,7 @@ class TestNuLessThanMu(Bloq):
             [
                 Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("flag_nu_lt_mu", 1, side=Side.RIGHT),
+                Register("flag_nu_lt_mu", QBit(), side=Side.RIGHT),
             ]
         )
 
@@ -223,10 +225,10 @@ class TestNuInequality(Bloq):
                 Register("mu", self.num_bits_p),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
                 Register("m", self.num_bits_m),
-                Register("flag_minus_zero", 1, side=Side.LEFT),
-                Register("flag_mu_prep", 1, side=Side.LEFT),
-                Register("flag_ineq", 1, side=Side.LEFT),
-                Register("succ", 1),
+                Register("flag_minus_zero", QBit(), side=Side.LEFT),
+                Register("flag_mu_prep", QBit(), side=Side.LEFT),
+                Register("flag_ineq", QBit(), side=Side.LEFT),
+                Register("succ", QBit()),
             ]
         )
 

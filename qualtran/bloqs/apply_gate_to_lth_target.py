@@ -54,7 +54,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     nth_gate: Callable[..., cirq.Gate]
     control_regs: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
-        default=(Register('control', 1),),
+        default=(Register('control', QBit()),),
     )
 
     @classmethod

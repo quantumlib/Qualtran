@@ -52,7 +52,7 @@ class Comparator(Bloq):
             [
                 Register('a', self.bitsize),
                 Register('b', self.bitsize),
-                Register('out', 1, side=Side.RIGHT),
+                Register('out', QBit(), side=Side.RIGHT),
             ]
         )
 

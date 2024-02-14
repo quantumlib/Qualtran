@@ -142,7 +142,7 @@ def test_double_nest():
 class BloqWithNonTrivialInds(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('q0', 1), Register('q1', 1)])
+        return Signature([Register('q0', QBit()), Register('q1', QBit())])
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q0: Soquet, q1: Soquet

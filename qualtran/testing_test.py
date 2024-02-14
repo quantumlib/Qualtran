@@ -108,7 +108,7 @@ def test_assert_connections_compatible():
 
 def test_assert_soquets_belong_to_registers():
     cxns, signature = _manually_make_test_cbloq_cxns()
-    cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=Register('q3', 1)))
+    cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=Register('q3', QBit())))
     cbloq = CompositeBloq(cxns, signature)
     assert_registers_match_dangling(cbloq)
     assert_connections_compatible(cbloq)
