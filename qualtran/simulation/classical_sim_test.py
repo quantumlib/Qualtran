@@ -158,5 +158,6 @@ def test_apply_classical_cbloq():
     np.testing.assert_array_equal(z, xarr)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('classical_sim')
