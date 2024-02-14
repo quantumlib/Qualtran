@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
+from qualtran import Bloq, GateWithRegisters, QFxp, QUInt, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -42,7 +42,11 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
 
     @property
     def signature(self) -> 'Signature':
-        return Signature.build(a=self.a_bitsize, b=self.b_bitsize, result=self.result_bitsize)
+        return Signature.build_from_dtypes(
+            a=QUInt(self.a_bitsize),
+            b=QUInt(self.b_bitsize),
+            result=QFxp(self.result_bitsize, self.result_bitsize),
+        )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
@@ -116,7 +120,10 @@ class Square(Bloq):
     def signature(self):
         side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
-            [Register("a", self.bitsize), Register("result", 2 * self.bitsize, side=side)]
+            [
+                Register("a", QUInt(self.bitsize)),
+                Register("result", QUInt(2 * self.bitsize), side=side),
+            ]
         )
 
     def on_classical_vals(self, **vals: int) -> Dict[str, 'ClassicalValT']:
@@ -196,9 +203,11 @@ class SumOfSquares(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("input", bitsize=self.bitsize, shape=(self.k,)),
+                Register("input", QUInt(bitsize=self.bitsize), shape=(self.k,)),
                 Register(
-                    "result", bitsize=2 * self.bitsize + (self.k - 1).bit_length(), side=Side.RIGHT
+                    "result",
+                    QUInt(bitsize=2 * self.bitsize + (self.k - 1).bit_length()),
+                    side=Side.RIGHT,
                 ),
             ]
         )
@@ -251,9 +260,9 @@ class Product(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("a", self.a_bitsize),
-                Register("b", self.b_bitsize),
-                Register("result", 2 * max(self.a_bitsize, self.b_bitsize), side=Side.RIGHT),
+                Register("a", QUInt(self.a_bitsize)),
+                Register("b", QUInt(self.b_bitsize)),
+                Register("result", QUInt(2 * max(self.a_bitsize, self.b_bitsize)), side=Side.RIGHT),
             ]
         )
 
@@ -289,9 +298,8 @@ class ScaleIntByReal(Bloq):
         i_bitsize: Number of bits used to represent the integer.
 
     Registers:
-     - real_in: r_bitsize-sized input register.
-     - int_in: i_bitsize-sized input register.
-     - result: r_bitsize output register
+        real_in: r_bitsize-sized input register.
+        int_in: i_bitsize-sized input register.
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -305,9 +313,11 @@ class ScaleIntByReal(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("real_in", self.r_bitsize),
-                Register("int_in", self.i_bitsize),
-                Register("result", self.r_bitsize, side=Side.RIGHT),
+                Register("real_in", QFxp(self.r_bitsize, self.r_bitsize)),
+                Register("int_in", QUInt(self.i_bitsize)),
+                Register(
+                    "result", QFxp(self.r_bitsize, self.r_bitsize - self.i_bitsize), side=Side.RIGHT
+                ),
             ]
         )
 
@@ -344,9 +354,9 @@ class MultiplyTwoReals(Bloq):
         bitsize: Number of bits used to represent the real number.
 
     Registers:
-     - a: bitsize-sized input register.
-     - b: bitsize-sized input register.
-     - result: bitsize output register
+        a: bitsize-sized input register.
+        b: bitsize-sized input register.
+        result: bitsize output register
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -359,9 +369,9 @@ class MultiplyTwoReals(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("a", self.bitsize),
-                Register("b", self.bitsize),
-                Register("result", self.bitsize, side=Side.RIGHT),
+                Register("a", QFxp(self.bitsize, self.bitsize)),
+                Register("b", QFxp(self.bitsize, self.bitsize)),
+                Register("result", QFxp(self.bitsize, self.bitsize), side=Side.RIGHT),
             ]
         )
 
@@ -395,9 +405,9 @@ class SquareRealNumber(Bloq):
         bitsize: Number of bits used to represent the real number.
 
     Registers:
-     - a: bitsize-sized input register.
-     - b: bitsize-sized input register.
-     - result: bitsize output register
+        a: bitsize-sized input register.
+        b: bitsize-sized input register.
+        result: bitsize output register
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
@@ -414,9 +424,9 @@ class SquareRealNumber(Bloq):
     def signature(self):
         return Signature(
             [
-                Register("a", self.bitsize),
-                Register("b", self.bitsize),
-                Register("result", self.bitsize, side=Side.RIGHT),
+                Register("a", QFxp(self.bitsize, self.bitsize)),
+                Register("b", QFxp(self.bitsize, self.bitsize)),
+                Register("result", QFxp(self.bitsize, self.bitsize), side=Side.RIGHT),
             ]
         )
 

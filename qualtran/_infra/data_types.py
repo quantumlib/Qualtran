@@ -147,11 +147,6 @@ class QInt(QDType):
 
     bitsize: Union[int, sympy.Expr]
 
-    def __attrs_post_init__(self):
-        if isinstance(self.bitsize, int):
-            if self.num_qubits == 1:
-                raise ValueError("num_qubits must be > 1.")
-
     @property
     def num_qubits(self):
         return self.bitsize

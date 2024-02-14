@@ -48,7 +48,7 @@ def _make_product():
 def _make_scale_int_by_real():
     from qualtran.bloqs.arithmetic import ScaleIntByReal
 
-    return ScaleIntByReal(r_bitsize=8, i_bitsize=12)
+    return ScaleIntByReal(r_bitsize=12, i_bitsize=4)
 
 
 def _make_multiply_two_reals():
