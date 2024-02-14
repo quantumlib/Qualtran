@@ -161,9 +161,7 @@ def test_cirq_optree_to_cbloq():
     # Test-1: When no signature is specified, the method uses a default signature. Ancilla qubits
     # are also included in the signature itself, so no allocations / deallocations are needed.
     cbloq = cirq_optree_to_cbloq(circuit)
-    assert cbloq.signature == qualtran.Signature(
-        [qualtran.Register('qubits', QAny(bitsize=1), shape=(28,))]
-    )
+    assert cbloq.signature == qualtran.Signature([qualtran.Register('qubits', QBit(), shape=(28,))])
     bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
     assert all(bloq_instances[i].bloq == Join(2) for i in range(14))
     assert bloq_instances[14].bloq == CirqGateWithRegisters(reg1)
