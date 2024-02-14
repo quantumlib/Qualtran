@@ -248,5 +248,6 @@ def test_controlled_state_preparation_via_rotation_superposition_ctrl(
 def test_notebook():
     execute_notebook("controlled_state_preparation")
 
+
 def test_notebook_tutorial():
     execute_notebook("controlled_state_preparation_tutorial")
