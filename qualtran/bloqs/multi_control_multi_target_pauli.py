@@ -27,6 +27,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
+    QBit,
     Register,
     Signature,
     SoquetT,
@@ -188,9 +189,7 @@ class MultiControlX(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         assert len(self.cvs) > 0
-        return Signature(
-            [Register('ctrls', bitsize=1, shape=(len(self.cvs),)), Register('x', bitsize=1)]
-        )
+        return Signature([Register('ctrls', QBit(), shape=(len(self.cvs),)), Register('x', QBit())])
 
     def on_classical_vals(
         self, ctrls: 'ClassicalValT', x: 'ClassicalValT'

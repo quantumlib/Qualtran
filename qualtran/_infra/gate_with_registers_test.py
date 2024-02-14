@@ -16,7 +16,7 @@ from typing import Dict
 
 import cirq
 
-from qualtran import GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran import GateWithRegisters, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
 from qualtran.testing import execute_notebook
 

@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from cirq._compat import cached_property
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 

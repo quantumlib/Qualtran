@@ -16,7 +16,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Side, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Side, Signature
 from qualtran.bloqs.arithmetic import GreaterThan
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 

@@ -21,7 +21,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.composite_bloq import _get_dangling_soquets
 from qualtran.bloqs.basic_gates import CNOT, XGate, ZGate
 from qualtran.simulation.tensor import bloq_to_dense, get_right_and_left_inds
@@ -34,9 +34,9 @@ class TensorAdderTester(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('x', bitsize=2, side=Side.LEFT),
+                Register('x', QAny(bitsize=2), side=Side.LEFT),
                 Register('qubits', bitsize=1, shape=(2,)),
-                Register('y', bitsize=1, side=Side.RIGHT),
+                Register('y', QBit(), side=Side.RIGHT),
             ]
         )
 

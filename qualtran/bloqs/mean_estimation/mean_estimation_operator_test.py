@@ -20,7 +20,7 @@ import pytest
 from attrs import frozen
 from cirq._compat import cached_property
 
-from qualtran import BoundedQUInt, Register
+from qualtran import BoundedQUInt, QBit, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,

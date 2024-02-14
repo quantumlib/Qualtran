@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 
@@ -102,8 +102,8 @@ class SelectUVFirstQuantization(Bloq):
         n_nu = self.num_bits_p + 1
         return Signature(
             [
-                Register("flag_tuv", bitsize=1),
-                Register("flag_uv", bitsize=1),
+                Register("flag_tuv", QBit()),
+                Register("flag_uv", QBit()),
                 Register("l", bitsize=(self.num_atoms - 1).bit_length()),
                 Register("rl", bitsize=self.num_bits_nuc_pos),
                 Register("nu", bitsize=n_nu, shape=(3,)),

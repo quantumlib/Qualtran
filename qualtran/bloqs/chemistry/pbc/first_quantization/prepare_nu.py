@@ -17,7 +17,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
@@ -306,8 +306,8 @@ class PrepareNuState(Bloq):
             [
                 Register("mu", bitsize=self.num_bits_p),
                 Register("nu", bitsize=self.num_bits_p + 1, shape=(3,)),
-                Register("m", bitsize=n_m),
-                Register("flag_nu", bitsize=1),
+                Register("m", QAny(bitsize=n_m)),
+                Register("flag_nu", QBit()),
             ]
         )
 

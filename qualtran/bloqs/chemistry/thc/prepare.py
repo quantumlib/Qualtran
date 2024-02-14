@@ -20,7 +20,17 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
@@ -88,9 +98,9 @@ class UniformSuperpositionTHC(Bloq):
             [
                 Register("mu", bitsize=self.num_mu.bit_length()),
                 Register("nu", bitsize=self.num_mu.bit_length()),
-                Register("nu_eq_mp1", bitsize=1),
-                Register("succ", bitsize=1),
-                Register("rot", bitsize=1),
+                Register("nu_eq_mp1", QBit()),
+                Register("succ", QBit()),
+                Register("rot", QBit()),
             ]
         )
 
@@ -320,15 +330,15 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         return (
-            Register('succ', bitsize=1),
-            Register('nu_eq_mp1', bitsize=1),
-            Register('theta', bitsize=1),
+            Register('succ', QBit()),
+            Register('nu_eq_mp1', QBit()),
+            Register('theta', QBit()),
             Register('s', bitsize=(data_size - 1).bit_length()),
             Register('alt_mn', bitsize=log_mu, shape=(2,)),
-            Register('alt_theta', bitsize=1),
+            Register('alt_theta', QBit()),
             Register('keep', bitsize=self.keep_bitsize),
-            Register('less_than', bitsize=1),
-            Register('extra_ctrl', bitsize=1),
+            Register('less_than', QBit()),
+            Register('extra_ctrl', QBit()),
         )
 
     def build_composite_bloq(

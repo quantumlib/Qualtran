@@ -20,7 +20,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature
+from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,

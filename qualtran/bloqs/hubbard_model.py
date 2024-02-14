@@ -54,7 +54,7 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, Register, Signature
+from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit

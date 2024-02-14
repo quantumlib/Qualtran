@@ -21,7 +21,7 @@ import pytest
 from attrs import frozen
 from cirq._compat import cached_property
 
-from qualtran import Register
+from qualtran import QBit, Register
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import bit_tools

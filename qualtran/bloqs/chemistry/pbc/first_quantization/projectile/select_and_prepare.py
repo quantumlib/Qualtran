@@ -24,6 +24,8 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    QAny,
+    QBit,
     Register,
     Side,
     Signature,
@@ -84,11 +86,11 @@ class PrepareTUVSuperpositions(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('tuv', bitsize=1),
-                Register('tepm', bitsize=2),
-                Register('uv', bitsize=2),
+                Register('tuv', QBit()),
+                Register('tepm', QAny(bitsize=2)),
+                Register('uv', QAny(bitsize=2)),
                 Register(
-                    'flags', bitsize=1, shape=(4,), side=Side.LEFT if self.adjoint else Side.RIGHT
+                    'flags', QBit(), shape=(4,), side=Side.LEFT if self.adjoint else Side.RIGHT
                 ),
             ]
         )
@@ -121,7 +123,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
         n_eta = (self.eta - 1).bit_length()
         return Signature(
             [
-                Register('ctrl', bitsize=1, shape=(len(self.cvs),)),
+                Register('ctrl', QBit(), shape=(len(self.cvs),)),
                 Register('sel', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
                 Register('targets', bitsize=self.num_bits_p, shape=(self.eta, 3)),
                 Register('junk', bitsize=self.num_bits_n, shape=(3,)),
@@ -266,8 +268,8 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
     def junk_registers(self) -> Tuple[Register, ...]:
         left_right = Side.LEFT if self.adjoint else Side.RIGHT
         return (
-            Register("succ_nu", bitsize=1),
-            Register("plus_t", bitsize=1),
+            Register("succ_nu", QBit()),
+            Register("plus_t", QBit()),
             Register('flags', bitsize=1, shape=(4,), side=left_right),
         )
 
@@ -427,8 +429,8 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         return (
             # flags for which component of Hamiltonian to apply.
             Register("ham_ctrl", bitsize=1, shape=(4,)),
-            Register("i_ne_j", bitsize=1),
-            Register("plus_t", bitsize=1),
+            Register("i_ne_j", QBit()),
+            Register("plus_t", QBit()),
         )
 
     @cached_property

@@ -22,7 +22,7 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, Register
+from qualtran import BoundedQUInt, QBit, Register
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 

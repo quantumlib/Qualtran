@@ -14,7 +14,7 @@
 
 import pytest
 
-from qualtran import BloqInstance, DanglingT, LeftDangle, Register, RightDangle, Side, Soquet
+from qualtran import BloqInstance, DanglingT, LeftDangle, QAny, Register, RightDangle, Side, Soquet
 from qualtran.bloqs.for_testing import TestAtom, TestTwoBitOp
 
 

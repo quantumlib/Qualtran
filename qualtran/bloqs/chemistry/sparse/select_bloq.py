@@ -19,7 +19,7 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 import cirq
 from attrs import frozen
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, Register, SoquetT
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, QBit, Register, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion

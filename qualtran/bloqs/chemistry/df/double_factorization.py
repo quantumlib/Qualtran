@@ -37,7 +37,17 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.chemistry.df.prepare import (
@@ -101,17 +111,17 @@ class DoubleFactorizationOneBody(Bloq):
     @property
     def control_registers(self) -> Iterable[Register]:
         return (
-            Register("succ_l", bitsize=1),
-            Register("l_ne_zero", bitsize=1),
-            Register("succ_p", bitsize=1),
+            Register("succ_l", QBit()),
+            Register("l_ne_zero", QBit()),
+            Register("succ_p", QBit()),
         )
 
     @property
     def selection_registers(self) -> Iterable[Register]:
         return (
             Register("p", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
-            Register("rot_aa", bitsize=1),
-            Register("spin", bitsize=1),
+            Register("rot_aa", QBit()),
+            Register("spin", QBit()),
         )
 
     @property
@@ -119,8 +129,8 @@ class DoubleFactorizationOneBody(Bloq):
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return (
-            Register("xi", bitsize=nxi),
-            Register("offset", bitsize=nlxi),
+            Register("xi", QAny(bitsize=nxi)),
+            Register("offset", QAny(bitsize=nlxi)),
             Register("rot", bitsize=self.num_bits_rot_aa),
             Register("rotations", bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
         )
@@ -331,8 +341,8 @@ class DoubleFactorizationBlockEncoding(Bloq):
         return (
             Register("l", bitsize=self.num_aux.bit_length()),
             Register("p", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
-            Register("spin", bitsize=1),
-            Register('rot_aa', bitsize=1),
+            Register("spin", QBit()),
+            Register('rot_aa', QBit()),
         )
 
     @property
@@ -340,8 +350,8 @@ class DoubleFactorizationBlockEncoding(Bloq):
         nlxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
         nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return (
-            Register("xi", bitsize=nxi),
-            Register("offset", bitsize=nlxi),
+            Register("xi", QAny(bitsize=nxi)),
+            Register("offset", QAny(bitsize=nlxi)),
             Register("rot", bitsize=self.num_bits_rot_aa_inner),
             Register("rotations", bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
         )

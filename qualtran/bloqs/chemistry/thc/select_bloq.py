@@ -18,8 +18,18 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    BoundedQUInt,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.select_and_prepare import SelectOracle
@@ -69,7 +79,7 @@ class THCRotations(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("nu_eq_mp1", bitsize=1),
+                Register("nu_eq_mp1", QBit()),
                 Register("data", bitsize=self.num_bits_theta),
                 Register("sel", bitsize=self.num_mu.bit_length()),
                 Register("trg", bitsize=self.num_spin_orb // 2),

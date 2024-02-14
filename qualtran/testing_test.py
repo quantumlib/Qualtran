@@ -27,6 +27,7 @@ from qualtran import (
     CompositeBloq,
     Connection,
     LeftDangle,
+    QBit,
     Register,
     RightDangle,
     Signature,

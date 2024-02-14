@@ -25,6 +25,8 @@ from qualtran import (
     BloqBuilder,
     DecomposeNotImplementedError,
     GateWithRegisters,
+    QAny,
+    QBit,
     Register,
     Side,
     Signature,
@@ -166,7 +168,7 @@ def test_cirq_optree_to_cbloq():
     assert all(bloq_instances[i].bloq == Join(2) for i in range(14))
     assert bloq_instances[14].bloq == CirqGateWithRegisters(reg1)
     assert bloq_instances[14].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='x', bitsize=2, shape=(3, 4))]
+        [qualtran.Register('x', QAny(bitsize=2), shape=(3, 4))]
     )
     assert bloq_instances[15].bloq == CirqGateWithRegisters(anc_reg)
     assert bloq_instances[15].bloq.signature == qualtran.Signature(
@@ -181,8 +183,8 @@ def test_cirq_optree_to_cbloq():
     # matching the signature. The additional ancilla allocations are automatically handled.
     new_signature = qualtran.Signature(
         [
-            qualtran.Register('xx', bitsize=3, shape=(3, 2)),
-            qualtran.Register('yy', bitsize=1, shape=(2, 3)),
+            qualtran.Register('xx', QAny(bitsize=3), shape=(3, 2)),
+            qualtran.Register('yy', QBit(), shape=(2, 3)),
         ]
     )
     cirq_quregs = {

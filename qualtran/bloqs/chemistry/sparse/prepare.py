@@ -21,7 +21,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, Register, SoquetT
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, QBit, Register, SoquetT
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
@@ -219,8 +219,8 @@ class PrepareSparse(PrepareOracle):
             Register('alt_pqrs', bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
             Register('theta', bitsize=1, shape=(2,)),
             Register('keep', bitsize=self.num_bits_state_prep),
-            Register("less_than", bitsize=1),
-            Register("alt_flag_1b", bitsize=1),
+            Register("less_than", QBit()),
+            Register("alt_flag_1b", QBit()),
         )
 
     @classmethod

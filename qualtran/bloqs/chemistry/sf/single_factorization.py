@@ -34,6 +34,8 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    QAny,
+    QBit,
     Register,
     Signature,
     SoquetT,
@@ -105,9 +107,9 @@ class SingleFactorizationOneBody(Bloq):
     @property
     def control_registers(self) -> Iterable[Register]:
         return (
-            Register("succ_l", bitsize=1),
-            Register("l_ne_zero", bitsize=1),
-            Register('succ_pq', bitsize=1),
+            Register("succ_l", QBit()),
+            Register("l_ne_zero", QBit()),
+            Register('succ_pq', QBit()),
         )
 
     @property
@@ -299,8 +301,8 @@ class SingleFactorizationBlockEncoding(Bloq):
             Register("l", bitsize=self.num_aux.bit_length()),
             Register("pq", bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(2,)),
             Register("rot_aa", bitsize=1, shape=(2,)),
-            Register("swap_pq", bitsize=1),
-            Register("spin", bitsize=1),
+            Register("swap_pq", QBit()),
+            Register("spin", QBit()),
         )
 
     @property

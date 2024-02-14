@@ -20,7 +20,7 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import Register
+from qualtran import QBit, Register
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate

@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -48,9 +48,9 @@ class SelectTFirstQuantization(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("flag_T", bitsize=1),
-                Register("plus", bitsize=1),
-                Register("w", bitsize=3),
+                Register("flag_T", QBit()),
+                Register("plus", QBit()),
+                Register("w", QAny(bitsize=3)),
                 Register("r", bitsize=self.num_bits_p),
                 Register("s", bitsize=self.num_bits_p),
                 Register("p", bitsize=self.num_bits_p, shape=(3,)),
