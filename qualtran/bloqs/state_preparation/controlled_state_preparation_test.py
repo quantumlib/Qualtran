@@ -17,11 +17,11 @@ import pytest
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import OneEffect, OneState, PlusState, ZeroEffect, ZeroState
-from qualtran.bloqs.controlled_state_preparation import (
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
+from qualtran.bloqs.state_preparation.controlled_state_preparation import (
     _controlled_state_prep,
     ControlledStatePreparationUsingRotations,
 )
-from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
@@ -247,3 +247,6 @@ def test_controlled_state_preparation_via_rotation_superposition_ctrl(
 
 def test_notebook():
     execute_notebook("controlled_state_preparation")
+
+def test_notebook_tutorial():
+    execute_notebook("controlled_state_preparation_tutorial")

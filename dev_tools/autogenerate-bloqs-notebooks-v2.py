@@ -70,12 +70,12 @@ import qualtran.bloqs.chemistry.trotter.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.kinetic
 import qualtran.bloqs.chemistry.trotter.potential
 import qualtran.bloqs.chemistry.trotter.qvr
-import qualtran.bloqs.controlled_state_preparation
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.reflection
 import qualtran.bloqs.sorting
+import qualtran.bloqs.state_preparation.controlled_state_preparation
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
@@ -239,8 +239,10 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Controlled State Preparation Using Rotations',
-        module=qualtran.bloqs.controlled_state_preparation,
-        bloq_specs=[qualtran.bloqs.controlled_state_preparation._CONTROLLED_STATE_PREP_DOC],
+        module=qualtran.bloqs.state_preparation.controlled_state_preparation.controlled_state_preparation,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.controlled_state_preparation.controlled_state_preparation._CONTROLLED_STATE_PREP_DOC
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(

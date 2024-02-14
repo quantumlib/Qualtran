@@ -12,8 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-r"""
-        Outline of the algorithm and role of each class.
+r"""Controlled State preparation.
 
 This algorithm prepares a state $|\psi\rangle$ in a register initially at $|0\rangle$ by using
 rotations $R_y$ for encoding amplitudes and $R_z$ for encoding phases.
@@ -85,7 +84,8 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    SelectionRegister,
+    BoundedQUInt,
+    Register,
     Signature,
     SoquetT,
 )
@@ -127,10 +127,11 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     uncompute: bool = False
 
     @property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister(
-                "target_state", bitsize=self.state_bitsizes, iteration_length=self.state_bitsizes
+            Register(
+                "target_state",
+                BoundedQUInt(bitsize=self.state_bitsizes, iteration_length=self.state_bitsizes),
             ),
         )
 
@@ -307,7 +308,7 @@ def _controlled_state_prep() -> ControlledStatePreparationUsingRotations:
 
 _CONTROLLED_STATE_PREP_DOC = BloqDocSpec(
     bloq_cls=ControlledStatePreparationUsingRotations,
-    import_line='from qualtran.bloqs.controlled_state_preparation import ControlledStatePreparationUsingRotations',
+    import_line='from qualtran.bloqs.state_preparation.controlled_state_preparation import ControlledStatePreparationUsingRotations',
     examples=(_controlled_state_prep,),
 )
 
