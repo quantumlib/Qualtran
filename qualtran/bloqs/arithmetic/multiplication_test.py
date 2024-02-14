@@ -14,7 +14,14 @@
 import cirq
 
 from qualtran import BloqBuilder, Register
-from qualtran.bloqs.arithmetic import (
+from qualtran.bloqs.arithmetic.multiplication import (
+    _multiply_two_reals,
+    _plus_equal_product,
+    _product,
+    _scale_int_by_real,
+    _square,
+    _square_real_number,
+    _sum_of_squares,
     MultiplyTwoReals,
     PlusEqualProduct,
     Product,
@@ -27,40 +34,32 @@ from qualtran.bloqs.basic_gates import IntState
 from qualtran.testing import execute_notebook
 
 
-def _make_square():
-    from qualtran.bloqs.arithmetic import Square
-
-    return Square(bitsize=8)
+def test_square_auto(bloq_autotester):
+    bloq_autotester(_square)
 
 
-def _make_sum_of_squares():
-    from qualtran.bloqs.arithmetic import SumOfSquares
-
-    return SumOfSquares(bitsize=8, k=4)
+def test_sum_of_squares_auto(bloq_autotester):
+    bloq_autotester(_sum_of_squares)
 
 
-def _make_product():
-    from qualtran.bloqs.arithmetic import Product
-
-    return Product(a_bitsize=4, b_bitsize=6)
+def test_product_auto(bloq_autotester):
+    bloq_autotester(_product)
 
 
-def _make_scale_int_by_real():
-    from qualtran.bloqs.arithmetic import ScaleIntByReal
-
-    return ScaleIntByReal(r_bitsize=12, i_bitsize=4)
+def test_scale_int_by_real_auto(bloq_autotester):
+    bloq_autotester(_scale_int_by_real)
 
 
-def _make_multiply_two_reals():
-    from qualtran.bloqs.arithmetic import MultiplyTwoReals
-
-    return MultiplyTwoReals(bitsize=10)
+def test_multiply_two_reals_auto(bloq_autotester):
+    bloq_autotester(_multiply_two_reals)
 
 
-def _make_square_real_number():
-    from qualtran.bloqs.arithmetic import SquareRealNumber
+def test_square_real_number_auto(bloq_autotester):
+    bloq_autotester(_square_real_number)
 
-    return SquareRealNumber(bitsize=10)
+
+def test_plus_equals_product_auto(bloq_autotester):
+    bloq_autotester(_plus_equal_product)
 
 
 def test_square():
@@ -153,5 +152,5 @@ def test_plus_equal_product():
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
 
 
-def test_arithmetic_notebook():
-    execute_notebook('arithmetic')
+def test_multiplication_notebook():
+    execute_notebook('multiplication')
