@@ -81,8 +81,8 @@ class THCRotations(Bloq):
             [
                 Register("nu_eq_mp1", QBit()),
                 Register("data", QAny(bitsize=self.num_bits_theta)),
-                Register("sel", bitsize=self.num_mu.bit_length()),
-                Register("trg", bitsize=self.num_spin_orb // 2),
+                Register("sel", QAny(bitsize=self.num_mu.bit_length())),
+                Register("trg", QAny(bitsize=self.num_spin_orb // 2)),
             ]
         )
 

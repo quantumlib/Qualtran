@@ -305,7 +305,7 @@ class PrepareNuState(Bloq):
         return Signature(
             [
                 Register("mu", QAny(bitsize=self.num_bits_p)),
-                Register("nu", bitsize=self.num_bits_p + 1, shape=(3,)),
+                Register("nu", QAny(bitsize=self.num_bits_p + 1), shape=(3,)),
                 Register("m", QAny(bitsize=n_m)),
                 Register("flag_nu", QBit()),
             ]

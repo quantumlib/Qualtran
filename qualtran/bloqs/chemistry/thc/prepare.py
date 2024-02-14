@@ -96,8 +96,8 @@ class UniformSuperpositionTHC(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", bitsize=self.num_mu.bit_length()),
-                Register("nu", bitsize=self.num_mu.bit_length()),
+                Register("mu", QAny(bitsize=self.num_mu.bit_length())),
+                Register("nu", QAny(bitsize=self.num_mu.bit_length())),
                 Register("nu_eq_mp1", QBit()),
                 Register("succ", QBit()),
                 Register("rot", QBit()),
@@ -333,7 +333,7 @@ class PrepareTHC(PrepareOracle):
             Register('succ', QBit()),
             Register('nu_eq_mp1', QBit()),
             Register('theta', QBit()),
-            Register('s', bitsize=(data_size - 1).bit_length()),
+            Register('s', QAny(bitsize=(data_size - 1).bit_length())),
             Register('alt_mn', QAny(bitsize=log_mu), shape=(2,)),
             Register('alt_theta', QBit()),
             Register('keep', QAny(bitsize=self.keep_bitsize)),

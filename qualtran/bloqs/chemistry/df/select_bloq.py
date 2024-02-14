@@ -69,7 +69,7 @@ class ProgRotGateArray(Bloq):
                 Register('p', QAny(nxi)),
                 Register('rotations', bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
                 Register('spin', QBit()),
-                Register('sys', bitsize=self.num_spin_orb // 2, shape=(2,)),
+                Register('sys', QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),
             ]
         )
 

@@ -119,7 +119,7 @@ class DoubleFactorizationOneBody(Bloq):
     @property
     def selection_registers(self) -> Iterable[Register]:
         return (
-            Register("p", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
+            Register("p", QAny(bitsize=(self.num_spin_orb // 2 - 1).bit_length())),
             Register("rot_aa", QBit()),
             Register("spin", QBit()),
         )
@@ -137,7 +137,7 @@ class DoubleFactorizationOneBody(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", bitsize=self.num_spin_orb // 2, shape=(2,)),)
+        return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -339,8 +339,8 @@ class DoubleFactorizationBlockEncoding(Bloq):
     @property
     def selection_registers(self) -> Iterable[Register]:
         return (
-            Register("l", bitsize=self.num_aux.bit_length()),
-            Register("p", bitsize=(self.num_spin_orb // 2 - 1).bit_length()),
+            Register("l", QAny(bitsize=self.num_aux.bit_length())),
+            Register("p", QAny(bitsize=(self.num_spin_orb // 2 - 1).bit_length())),
             Register("spin", QBit()),
             Register('rot_aa', QBit()),
         )
@@ -358,7 +358,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", bitsize=self.num_spin_orb // 2, shape=(2,)),)
+        return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @cached_property
     def signature(self) -> Signature:

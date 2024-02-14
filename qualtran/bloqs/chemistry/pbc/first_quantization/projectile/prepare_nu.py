@@ -121,7 +121,7 @@ class PrepareNuStateWithProj(Bloq):
         return Signature(
             [
                 Register("mu", QAny(bitsize=self.num_bits_n)),
-                Register("nu", bitsize=self.num_bits_n + 1, shape=(3,)),
+                Register("nu", QAny(bitsize=self.num_bits_n + 1), shape=(3,)),
                 Register("m", QAny(bitsize=n_m)),
                 Register("flag_nu", QBit()),
             ]

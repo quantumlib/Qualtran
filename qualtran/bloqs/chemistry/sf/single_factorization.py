@@ -140,7 +140,7 @@ class SingleFactorizationOneBody(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", bitsize=QAny(self.num_spin_orb // 2), shape=(2,)),)
+        return (Register("sys", QAny(bitsize=QAny(self.num_spin_orb // 2)), shape=(2,)),)
 
     @property
     def junk_registers(self) -> Iterable[Register]:
@@ -298,8 +298,8 @@ class SingleFactorizationBlockEncoding(Bloq):
     @property
     def selection_registers(self) -> Iterable[Register]:
         return (
-            Register("l", bitsize=self.num_aux.bit_length()),
-            Register("pq", bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(2,)),
+            Register("l", QAny(bitsize=self.num_aux.bit_length())),
+            Register("pq", QAny(bitsize=(self.num_spin_orb // 2 - 1).bit_length()), shape=(2,)),
             Register("rot_aa", QBit(), shape=(2,)),
             Register("swap_pq", QBit()),
             Register("spin", QBit()),
@@ -311,7 +311,7 @@ class SingleFactorizationBlockEncoding(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", bitsize=self.num_spin_orb // 2, shape=(2,)),)
+        return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @cached_property
     def signature(self) -> Signature:
