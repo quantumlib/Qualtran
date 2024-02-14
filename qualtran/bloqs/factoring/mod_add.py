@@ -170,6 +170,18 @@ class MontgomeryModAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
 
+    def on_classical_vals(
+        self, x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+
+        y += x
+        y -= self.p
+
+        if y < 0:
+            y += self.p
+
+        return {'x': x, 'y': y}
+
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
     ) -> Dict[str, 'SoquetT']:
