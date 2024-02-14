@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -296,12 +296,10 @@ class ScaleIntByReal(Bloq):
     Args:
         r_bitsize: Number of bits used to represent the real number.
         i_bitsize: Number of bits used to represent the integer.
-        out_bitsizes: The output bitsize for the scaled fixed point real number.
 
     Registers:
         real_in: r_bitsize-sized input register.
         int_in: i_bitsize-sized input register.
-        result: r_bitsize output register
 
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
@@ -310,7 +308,6 @@ class ScaleIntByReal(Bloq):
 
     r_bitsize: int
     i_bitsize: int
-    out_bitsizes: Tuple[int, int]
 
     @property
     def signature(self):
@@ -319,7 +316,7 @@ class ScaleIntByReal(Bloq):
                 Register("real_in", QFxp(self.r_bitsize, self.r_bitsize)),
                 Register("int_in", QUInt(self.i_bitsize)),
                 Register(
-                    "result", QFxp(self.out_bitsizes[0], self.out_bitsizes[1]), side=Side.RIGHT
+                    "result", QFxp(self.r_bitsize, self.r_bitsize - self.i_bitsize), side=Side.RIGHT
                 ),
             ]
         )
