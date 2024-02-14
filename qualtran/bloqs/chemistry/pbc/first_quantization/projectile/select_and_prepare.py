@@ -125,8 +125,8 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
             [
                 Register('ctrl', QBit(), shape=(len(self.cvs),)),
                 Register('sel', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-                Register('targets', bitsize=self.num_bits_p, shape=(self.eta, 3)),
-                Register('junk', bitsize=self.num_bits_n, shape=(3,)),
+                Register('targets', QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),
+                Register('junk', QAny(bitsize=self.num_bits_n), shape=(3,)),
             ]
         )
 
@@ -428,7 +428,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     def control_registers(self) -> Tuple[Register, ...]:
         return (
             # flags for which component of Hamiltonian to apply.
-            Register("ham_ctrl", bitsize=1, shape=(4,)),
+            Register("ham_ctrl", QBit(), shape=(4,)),
             Register("i_ne_j", QBit()),
             Register("plus_t", QBit()),
         )
@@ -457,8 +457,8 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
-            Register('proj', bitsize=self.num_bits_n, shape=(3,)),
+            Register("sys", QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),
+            Register('proj', QAny(bitsize=self.num_bits_n), shape=(3,)),
         )
 
     @cached_property

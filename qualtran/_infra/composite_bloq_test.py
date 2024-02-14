@@ -316,7 +316,7 @@ class TestMultiCNOT(Bloq):
     # A minimal test-bloq with a complicated `target` register.
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('control', QBit()), Register('target', 1, shape=(2, 3))])
+        return Signature([Register('control', QBit()), Register('target', QBit(), shape=(2, 3))])
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']

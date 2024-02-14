@@ -334,9 +334,9 @@ class PrepareTHC(PrepareOracle):
             Register('nu_eq_mp1', QBit()),
             Register('theta', QBit()),
             Register('s', bitsize=(data_size - 1).bit_length()),
-            Register('alt_mn', bitsize=log_mu, shape=(2,)),
+            Register('alt_mn', QAny(bitsize=log_mu), shape=(2,)),
             Register('alt_theta', QBit()),
-            Register('keep', bitsize=self.keep_bitsize),
+            Register('keep', QAny(bitsize=self.keep_bitsize)),
             Register('less_than', QBit()),
             Register('extra_ctrl', QBit()),
         )

@@ -51,7 +51,7 @@ def test_soquet():
 
 def test_soquet_idxed():
     binst = BloqInstance(TestTwoBitOp(), i=0)
-    reg = Register('y', 10, shape=(10, 2))
+    reg = Register('y', QAny(10), shape=(10, 2))
 
     with pytest.raises(ValueError, match=r'Bad index.*'):
         _ = Soquet(binst, reg)

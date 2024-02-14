@@ -21,7 +21,7 @@ import pytest
 from attrs import frozen
 from cirq._compat import cached_property
 
-from qualtran import QBit, Register
+from qualtran import QAny, QBit, Register
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import bit_tools
@@ -40,11 +40,11 @@ class ExampleSelect(SelectOracle):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', self.bitsize),)
+        return (Register('selection', QAny(self.bitsize)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self.bitsize),)
+        return (Register('target', QAny(self.bitsize)),)
 
     def decompose_from_registers(self, context, selection, target):
         yield [cirq.CNOT(s, t) for s, t in zip(selection, target)]

@@ -63,9 +63,9 @@ class SelectTFirstQuantizationWithProj(Bloq):
                 Register("plus", QBit()),
                 Register("w", QAny(bitsize=3)),
                 Register("w_mean", QAny(bitsize=3)),
-                Register("r", bitsize=self.num_bits_n),
-                Register("s", bitsize=self.num_bits_n),
-                Register("p", bitsize=self.num_bits_n, shape=(3,)),
+                Register("r", QAny(bitsize=self.num_bits_n)),
+                Register("s", QAny(bitsize=self.num_bits_n)),
+                Register("p", QAny(bitsize=self.num_bits_n), shape=(3,)),
             ]
         )
 

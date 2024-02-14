@@ -99,7 +99,7 @@ class QROM(UnaryIterationGate):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if not self.num_controls else (Register('control', self.num_controls),)
+        return () if not self.num_controls else (Register('control', QAny(self.num_controls)),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:

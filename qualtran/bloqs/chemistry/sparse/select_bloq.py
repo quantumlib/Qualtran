@@ -19,7 +19,16 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 import cirq
 from attrs import frozen
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, QBit, Register, SoquetT
+from qualtran import (
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    BoundedQUInt,
+    QAny,
+    QBit,
+    Register,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
@@ -98,7 +107,7 @@ class SelectSparse(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register("sys", bitsize=self.num_spin_orb),)
+        return (Register("sys", QAny(bitsize=self.num_spin_orb)),)
 
     def build_composite_bloq(
         self,

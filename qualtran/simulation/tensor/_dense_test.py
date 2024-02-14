@@ -35,7 +35,7 @@ class TensorAdderTester(Bloq):
         return Signature(
             [
                 Register('x', QAny(bitsize=2), side=Side.LEFT),
-                Register('qubits', bitsize=1, shape=(2,)),
+                Register('qubits', QBit(), shape=(2,)),
                 Register('y', QBit(), side=Side.RIGHT),
             ]
         )

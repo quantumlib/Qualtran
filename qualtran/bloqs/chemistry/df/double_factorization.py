@@ -131,7 +131,7 @@ class DoubleFactorizationOneBody(Bloq):
         return (
             Register("xi", QAny(bitsize=nxi)),
             Register("offset", QAny(bitsize=nlxi)),
-            Register("rot", bitsize=self.num_bits_rot_aa),
+            Register("rot", QAny(bitsize=self.num_bits_rot_aa)),
             Register("rotations", bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
         )
 
@@ -334,7 +334,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
     @property
     def control_registers(self) -> Iterable[Register]:
-        return (Register('ctrl', bitsize=1, shape=(4,)),)
+        return (Register('ctrl', QBit(), shape=(4,)),)
 
     @property
     def selection_registers(self) -> Iterable[Register]:
@@ -352,7 +352,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
         return (
             Register("xi", QAny(bitsize=nxi)),
             Register("offset", QAny(bitsize=nlxi)),
-            Register("rot", bitsize=self.num_bits_rot_aa_inner),
+            Register("rot", QAny(bitsize=self.num_bits_rot_aa_inner)),
             Register("rotations", bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
         )
 

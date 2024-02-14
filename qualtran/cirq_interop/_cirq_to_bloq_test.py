@@ -148,9 +148,9 @@ def test_cirq_optree_to_cbloq():
         def signature(self) -> Signature:
             return Signature([self.reg])
 
-    reg1 = Register('x', shape=(3, 4), bitsize=2)
-    reg2 = Register('y', shape=12, bitsize=2)
-    anc_reg = Register('anc', shape=4, bitsize=2)
+    reg1 = Register('x', QAny(2), shape=(3, 4))
+    reg2 = Register('y', QAny(2), shape=12)
+    anc_reg = Register('anc', QAny(2), shape=4)
     qubits = cirq.LineQubit.range(24)
     anc_qubits = cirq.NamedQubit.range(4, prefix='anc')
     circuit = cirq.Circuit(
@@ -162,7 +162,7 @@ def test_cirq_optree_to_cbloq():
     # are also included in the signature itself, so no allocations / deallocations are needed.
     cbloq = cirq_optree_to_cbloq(circuit)
     assert cbloq.signature == qualtran.Signature(
-        [qualtran.Register(name='qubits', bitsize=1, shape=(28,))]
+        [qualtran.Register('qubits', QAny(bitsize=1), shape=(28,))]
     )
     bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
     assert all(bloq_instances[i].bloq == Join(2) for i in range(14))
@@ -172,11 +172,11 @@ def test_cirq_optree_to_cbloq():
     )
     assert bloq_instances[15].bloq == CirqGateWithRegisters(anc_reg)
     assert bloq_instances[15].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='anc', bitsize=2, shape=(4,))]
+        [qualtran.Register('anc', QAny(bitsize=2), shape=(4,))]
     )
     assert bloq_instances[16].bloq == CirqGateWithRegisters(reg2)
     assert bloq_instances[16].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='y', bitsize=2, shape=(12,))]
+        [qualtran.Register('y', QAny(bitsize=2), shape=(12,))]
     )
     assert all(bloq_instances[-i].bloq == Split(2) for i in range(1, 15))
     # Test-2: If you provide an explicit signature, you must also provide a mapping of cirq qubits

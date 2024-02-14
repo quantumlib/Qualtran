@@ -69,7 +69,7 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("mu", self.bitsize_n), Register("flag", QBit(), side=Side.RIGHT)]
+            [Register("mu", QAny(self.bitsize_n)), Register("flag", QBit(), side=Side.RIGHT)]
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -120,7 +120,7 @@ class PrepareNuStateWithProj(Bloq):
         n_m = (self.m_param - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=self.num_bits_n),
+                Register("mu", QAny(bitsize=self.num_bits_n)),
                 Register("nu", bitsize=self.num_bits_n + 1, shape=(3,)),
                 Register("m", QAny(bitsize=n_m)),
                 Register("flag_nu", QBit()),

@@ -50,9 +50,9 @@ class ApplyNuclearPhase(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("l", bitsize=self.num_bits_nuc),
-                Register("Rl", bitsize=self.num_bits_nuc),
-                Register("nu", bitsize=self.num_bits_p, shape=(3,)),
+                Register("l", QAny(bitsize=self.num_bits_nuc)),
+                Register("Rl", QAny(bitsize=self.num_bits_nuc)),
+                Register("nu", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 
@@ -105,10 +105,10 @@ class SelectUVFirstQuantization(Bloq):
                 Register("flag_tuv", QBit()),
                 Register("flag_uv", QBit()),
                 Register("l", bitsize=(self.num_atoms - 1).bit_length()),
-                Register("rl", bitsize=self.num_bits_nuc_pos),
-                Register("nu", bitsize=n_nu, shape=(3,)),
-                Register("p", bitsize=self.num_bits_p, shape=(3,)),
-                Register("q", bitsize=self.num_bits_p, shape=(3,)),
+                Register("rl", QAny(bitsize=self.num_bits_nuc_pos)),
+                Register("nu", QAny(bitsize=n_nu), shape=(3,)),
+                Register("p", QAny(bitsize=self.num_bits_p), shape=(3,)),
+                Register("q", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 

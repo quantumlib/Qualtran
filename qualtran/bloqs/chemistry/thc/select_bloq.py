@@ -80,7 +80,7 @@ class THCRotations(Bloq):
         return Signature(
             [
                 Register("nu_eq_mp1", QBit()),
-                Register("data", bitsize=self.num_bits_theta),
+                Register("data", QAny(bitsize=self.num_bits_theta)),
                 Register("sel", bitsize=self.num_mu.bit_length()),
                 Register("trg", bitsize=self.num_spin_orb // 2),
             ]

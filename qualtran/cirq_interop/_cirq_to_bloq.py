@@ -78,7 +78,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
             return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
         return (
-            Signature([Register('q', shape=nqubits, bitsize=1)])
+            Signature([Register('q', QBit(), shape=nqubits)])
             if nqubits > 1
             else Signature.build(q=nqubits)
         )

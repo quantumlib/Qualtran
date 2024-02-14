@@ -20,7 +20,7 @@ import pytest
 from attrs import frozen
 from cirq._compat import cached_property
 
-from qualtran import BoundedQUInt, QBit, Register
+from qualtran import BoundedQUInt, QAny, QBit, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
@@ -70,7 +70,7 @@ class BernoulliEncoder(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('t', self.target_bitsize),)
+        return (Register('t', QAny(self.target_bitsize)),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
@@ -184,7 +184,7 @@ class GroverSynthesizer(PrepareOracle):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', self.n),)
+        return (Register('selection', QAny(self.n)),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, *, context, selection: Sequence[cirq.Qid]
@@ -211,7 +211,7 @@ class GroverEncoder(SelectOracle):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (Register('selection', self.n),)
+        return (Register('selection', QAny(self.n)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

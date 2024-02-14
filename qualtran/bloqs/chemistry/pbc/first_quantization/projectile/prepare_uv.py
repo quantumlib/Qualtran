@@ -68,7 +68,7 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         n_atom = (self.num_atoms - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=self.num_bits_n),
+                Register("mu", QAny(bitsize=self.num_bits_n)),
                 Register("nu", bitsize=self.num_bits_n + 1, shape=(3,)),
                 Register("m", QAny(bitsize=n_m)),
                 Register("l", QAny(bitsize=n_atom)),

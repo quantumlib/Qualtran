@@ -53,7 +53,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("mu", self.num_bits_p), Register("flag", QBit(), side=Side.RIGHT)]
+            [Register("mu", QAny(self.num_bits_p)), Register("flag", QBit(), side=Side.RIGHT)]
         )
 
     def short_name(self) -> str:
@@ -93,7 +93,7 @@ class PrepareNuSuperPositionState(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("mu", self.num_bits_p), Register("nu", self.num_bits_p + 1, shape=(3,))]
+            [Register("mu", QAny(self.num_bits_p)), Register("nu", self.num_bits_p + 1, shape=(3,))]
         )
 
     def short_name(self) -> str:
@@ -166,7 +166,7 @@ class TestNuLessThanMu(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", self.num_bits_p),
+                Register("mu", QAny(self.num_bits_p)),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
                 Register("flag_nu_lt_mu", QBit(), side=Side.RIGHT),
             ]
@@ -222,9 +222,9 @@ class TestNuInequality(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", self.num_bits_p),
+                Register("mu", QAny(self.num_bits_p)),
                 Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("m", self.num_bits_m),
+                Register("m", QAny(self.num_bits_m)),
                 Register("flag_minus_zero", QBit(), side=Side.LEFT),
                 Register("flag_mu_prep", QBit(), side=Side.LEFT),
                 Register("flag_ineq", QBit(), side=Side.LEFT),
@@ -304,7 +304,7 @@ class PrepareNuState(Bloq):
         n_m = (self.m_param - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=self.num_bits_p),
+                Register("mu", QAny(bitsize=self.num_bits_p)),
                 Register("nu", bitsize=self.num_bits_p + 1, shape=(3,)),
                 Register("m", QAny(bitsize=n_m)),
                 Register("flag_nu", QBit()),

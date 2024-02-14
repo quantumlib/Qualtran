@@ -13,7 +13,7 @@
 #  limitations under the License.
 import cirq
 
-from qualtran import BloqBuilder, Register
+from qualtran import BloqBuilder, QUInt, Register
 from qualtran.bloqs.arithmetic.multiplication import (
     _multiply_two_reals,
     _plus_equal_product,
@@ -85,7 +85,7 @@ def test_sum_of_squares():
     bb = BloqBuilder()
     bitsize = 4
     k = 3
-    inp = bb.add_register(Register("input", bitsize=bitsize, shape=(k,)))
+    inp = bb.add_register(Register("input", QUInt(bitsize=bitsize), shape=(k,)))
     inp, out = bb.add(SumOfSquares(bitsize, k), input=inp)
     cbloq = bb.finalize(input=inp, result=out)
     assert SumOfSquares(bitsize, k).signature[1].bitsize == 2 * bitsize + 2

@@ -24,6 +24,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    QAny,
     QBit,
     Register,
     Signature,
@@ -127,8 +128,8 @@ class MultiplexedCSwap3D(Bloq):
         return Signature(
             [
                 Register('sel', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-                Register('targets', bitsize=self.num_bits_p, shape=(self.eta, 3)),
-                Register('junk', bitsize=self.num_bits_p, shape=(3,)),
+                Register('targets', QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),
+                Register('junk', QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 
@@ -442,7 +443,7 @@ class SelectFirstQuantization(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),)
+        return (Register("sys", QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),)
 
     @cached_property
     def signature(self) -> Signature:
