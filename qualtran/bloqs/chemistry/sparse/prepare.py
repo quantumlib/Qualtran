@@ -21,15 +21,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    ControlledBloq,
-    Register,
-    SelectionRegister,
-    SoquetT,
-)
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, Register, SoquetT
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.z_basis import ZGate
@@ -173,47 +165,56 @@ class PrepareSparse(PrepareOracle):
     qroam_block_size: Optional[int] = None
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         # issue here in that pqrs should not be reflected on.
         # See: https://github.com/quantumlib/Qualtran/issues/549
         return (
-            SelectionRegister(
+            Register(
                 "d",
-                bitsize=(self.num_non_zero - 1).bit_length(),
-                iteration_length=self.num_non_zero,
+                BoundedQUInt(
+                    bitsize=(self.num_non_zero - 1).bit_length(), iteration_length=self.num_non_zero
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "p",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "q",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "r",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "s",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister("sigma", bitsize=self.num_bits_state_prep),
-            SelectionRegister("alpha", bitsize=1),
-            SelectionRegister("beta", bitsize=1),
-            SelectionRegister("rot_aa", bitsize=1),
-            SelectionRegister("swap_pq", bitsize=1),
-            SelectionRegister("swap_rs", bitsize=1),
-            SelectionRegister("swap_pqrs", bitsize=1),
-            SelectionRegister("flag_1b", bitsize=1),
+            Register("sigma", BoundedQUInt(self.num_bits_state_prep)),
+            Register("alpha", BoundedQUInt(1)),
+            Register("beta", BoundedQUInt(1)),
+            Register("rot_aa", BoundedQUInt(1)),
+            Register("swap_pq", BoundedQUInt(1)),
+            Register("swap_rs", BoundedQUInt(1)),
+            Register("swap_pqrs", BoundedQUInt(1)),
+            Register("flag_1b", BoundedQUInt(1)),
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
+    def junk_registers(self) -> Tuple[Register, ...]:
         return (
             Register('alt_pqrs', bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(4,)),
             Register('theta', bitsize=1, shape=(2,)),
@@ -372,9 +373,9 @@ class PrepareSparse(PrepareOracle):
         # prepare uniform superposition over sigma
         sigma = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=sigma)
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
-        less_than, theta[1] = bb.add(ControlledBloq(ZGate()), control=less_than, q=theta[1])
+        less_than, theta[1] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[1])
         # TODO: This should be off control
-        less_than, theta[0] = bb.add(ControlledBloq(ZGate()), control=less_than, q=theta[0])
+        less_than, theta[0] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[0])
         # swap the ind and alt_pqrs values
         # TODO: These swaps are inverted at zero Toffoli cost in the reference.
         # The method is to copy all values being swapped before they are swapped. Then

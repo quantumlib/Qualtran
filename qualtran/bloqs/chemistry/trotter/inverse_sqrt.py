@@ -151,6 +151,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         [Faster quantum chemistry simulation on fault-tolerant quantum
             computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
+
     x_sq_bitsize: int
     poly_bitsize: int
     target_bitsize: int
@@ -171,7 +172,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
     def t_complexity(self) -> 'TComplexity':
         return (
             SquareRealNumber(self.poly_bitsize).t_complexity()
-            + ScaleIntByReal(self.x_sq_bitsize, self.poly_bitsize).t_complexity()
+            + ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize).t_complexity()
             + 2 * MultiplyTwoReals(self.target_bitsize).t_complexity()
             + Add(self.target_bitsize).t_complexity()
         )
@@ -185,7 +186,9 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
         # 5. add 3. and 4.
         return {
             (SquareRealNumber(self.poly_bitsize), 1),
-            (ScaleIntByReal(self.target_bitsize, self.x_sq_bitsize), 1),
+            # TODO: When decomposing we will potentially need to cast into a larger register.
+            # See: https://github.com/quantumlib/Qualtran/issues/655
+            (ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize), 1),
             (MultiplyTwoReals(self.target_bitsize), 2),
             (Add(self.target_bitsize), 1),
         }
@@ -207,6 +210,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         [Quantum computation of stopping power for inertial fusion target design](
             https://arxiv.org/pdf/2308.12352.pdf)
     """
+
     x_sq_bitsize: int
     poly_bitsize: int
     out_bitsize: int

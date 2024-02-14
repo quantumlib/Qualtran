@@ -91,4 +91,4 @@ less_than_equal: ─────────────────────
 
 
 def test_notebook():
-    execute_notebook('state_preparation')
+    execute_notebook('state_preparation_alias_sampling')

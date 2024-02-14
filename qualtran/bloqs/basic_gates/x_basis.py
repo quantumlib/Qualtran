@@ -13,13 +13,24 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, Register, Side, Signature, Soquet, SoquetT
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    BloqBuilder,
+    CtrlSpec,
+    QBit,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -58,7 +69,7 @@ class _XVector(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
+        return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
 
     def add_my_tensors(
         self,
@@ -178,6 +189,27 @@ class XGate(Bloq):
                 data=_PAULIX, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran.bloqs.basic_gates import CNOT, Toffoli
+
+        if ctrl_spec is None or ctrl_spec == CtrlSpec():
+            bloq = CNOT()
+        elif ctrl_spec == CtrlSpec(cvs=(1, 1)):
+            bloq = Toffoli()
+        else:
+            return super().get_ctrl_system(ctrl_spec)
+
+        def add_controlled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            (ctrl_soq,) = ctrl_soqs
+            ctrl_soq, target = bb.add(bloq, ctrl=ctrl_soq, target=in_soqs['q'])
+            return (ctrl_soq,), (target,)
+
+        return bloq, add_controlled
 
     def short_name(self) -> str:
         return 'X'

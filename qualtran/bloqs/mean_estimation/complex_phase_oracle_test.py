@@ -21,7 +21,7 @@ import pytest
 from attrs import frozen
 from cirq._compat import cached_property
 
-from qualtran import Register, SelectionRegister
+from qualtran import Register
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import bit_tools
@@ -39,8 +39,8 @@ class ExampleSelect(SelectOracle):
         return () if self.control_val is None else (Register('control', 1),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self.bitsize),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', self.bitsize),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

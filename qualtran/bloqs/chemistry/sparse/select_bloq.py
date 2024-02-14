@@ -19,7 +19,7 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 import cirq
 from attrs import frozen
 
-from qualtran import bloq_example, BloqBuilder, BloqDocSpec, Register, SelectionRegister, SoquetT
+from qualtran import bloq_example, BloqBuilder, BloqDocSpec, BoundedQUInt, Register, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
@@ -61,31 +61,39 @@ class SelectSparse(SelectOracle):
         return () if self.control_val is None else (Register('control', 1),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister(
+            Register(
                 "p",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "q",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "r",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister(
+            Register(
                 "s",
-                bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
-                iteration_length=self.num_spin_orb // 2,
+                BoundedQUInt(
+                    bitsize=(self.num_spin_orb // 2 - 1).bit_length(),
+                    iteration_length=self.num_spin_orb // 2,
+                ),
             ),
-            SelectionRegister("alpha", bitsize=1),
-            SelectionRegister("beta", bitsize=1),
-            SelectionRegister("flag_1b", bitsize=1),
+            Register("alpha", BoundedQUInt(1)),
+            Register("beta", BoundedQUInt(1)),
+            Register("flag_1b", BoundedQUInt(1)),
         )
 
     @cached_property

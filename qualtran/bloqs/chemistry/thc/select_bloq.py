@@ -18,16 +18,8 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    Register,
-    SelectionRegister,
-    Signature,
-    SoquetT,
-)
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.select_and_prepare import SelectOracle
@@ -155,19 +147,21 @@ class SelectTHC(SelectOracle):
         return () if self.control_val is None else (Register('control', 1),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister("succ", bitsize=1),
-            SelectionRegister("nu_eq_mp1", bitsize=1),
-            SelectionRegister(
-                "mu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register("succ", BoundedQUInt(bitsize=1)),
+            Register("nu_eq_mp1", BoundedQUInt(bitsize=1)),
+            Register(
+                "mu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister(
-                "nu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register(
+                "nu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister("plus_mn", bitsize=1),
-            SelectionRegister("plus_a", bitsize=1),
-            SelectionRegister("plus_b", bitsize=1),
+            Register("plus_mn", BoundedQUInt(bitsize=1)),
+            Register("plus_a", BoundedQUInt(bitsize=1)),
+            Register("plus_b", BoundedQUInt(bitsize=1)),
         )
 
     @cached_property

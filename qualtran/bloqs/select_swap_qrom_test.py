@@ -66,7 +66,7 @@ def test_select_swap_qrom(data, block_size):
         cirq.H.on_each(*dirty_target_ancilla),
     )
     all_qubits = sorted(circuit.all_qubits())
-    for selection_integer in range(qrom.selection_registers[0].iteration_length):
+    for selection_integer in range(qrom.selection_registers[0].dtype.iteration_length):
         svals_q = list(iter_bits(selection_integer // qrom.block_size, len(selection_q)))
         svals_r = list(iter_bits(selection_integer % qrom.block_size, len(selection_r)))
         qubit_vals = {x: 0 for x in all_qubits}

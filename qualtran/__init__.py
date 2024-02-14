@@ -42,10 +42,12 @@ from ._infra.composite_bloq import (
     SoquetT,
 )
 
+from ._infra.data_types import QDType, QInt, QBit, QAny, QFxp, QIntOnesComp, QUInt, BoundedQUInt
+
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from ._infra.registers import Register, SelectionRegister, Signature, Side
+from ._infra.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none
@@ -62,7 +64,7 @@ from ._infra.gate_with_registers import GateWithRegisters
 
 from ._infra.adjoint import Adjoint
 
-from ._infra.controlled import ControlledBloq
+from ._infra.controlled import Controlled, CtrlSpec, AddControlledT
 
 from ._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
 

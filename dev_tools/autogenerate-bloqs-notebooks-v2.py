@@ -50,6 +50,8 @@ from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_noteboo
 import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -240,6 +242,27 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.controlled_state_preparation,
         bloq_specs=[qualtran.bloqs.controlled_state_preparation._CONTROLLED_STATE_PREP_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Multiplication',
+        module=qualtran.bloqs.arithmetic.multiplication,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.multiplication._PLUS_EQUALS_PRODUCT_DOC,
+            qualtran.bloqs.arithmetic.multiplication._PRODUCT_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SQUARE_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SUM_OF_SQUARES_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
+            qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Conversions',
+        module=qualtran.bloqs.arithmetic.conversions,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
+            qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
+        ],
     ),
 ]
 

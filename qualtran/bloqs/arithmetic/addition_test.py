@@ -18,6 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.arithmetic.addition import (
@@ -33,7 +34,10 @@ from qualtran.cirq_interop.testing import (
     assert_decompose_is_consistent_with_t_complexity,
     GateHelper,
 )
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.simulation.classical_sim import (
+    format_classical_truth_table,
+    get_classical_truth_table,
+)
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
@@ -60,9 +64,6 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     # Test diagrams
     expected_wire_symbols = ("In(x)",) * num_bits + ("In(y)/Out(x+y)",) * num_bits
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
-    # Test with_registers
-    assert gate.with_registers([2] * 6, [2] * 6) == Add(6)
-    # test no decompose with same inputs
 
 
 def test_add_truncated():
@@ -135,17 +136,15 @@ def test_subtract(a, b, num_bits):
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_t_complexity(n: int):
     g = Add(n)
-    assert_decompose_is_consistent_with_t_complexity(g)
-    assert_valid_bloq_decomposition(g)
+    assert g.t_complexity() == g.decompose_bloq().t_complexity()
+    qlt_testing.assert_valid_bloq_decomposition(g)
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
 def test_add_no_decompose(a, b):
     num_bits = 5
-    qubits = cirq.LineQubit.range(2 * num_bits)
-    op = Add(num_bits).on(*qubits)
-    circuit = cirq.Circuit(op)
-    basis_map = {}
+    bloq = Add(num_bits)
+
     a_bin = format(a, f'0{num_bits}b')
     b_bin = format(b, f'0{num_bits}b')
     out_bin = format(a + b, f'0{num_bits}b')
@@ -153,8 +152,9 @@ def test_add_no_decompose(a, b):
     input_int = int(a_bin + b_bin, 2)
     output_int = int(a_bin + out_bin, 2)
     assert true_out_int == int(out_bin, 2)
-    basis_map[input_int] = output_int
-    cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
+
+    unitary = bloq.tensor_contract()
+    assert unitary[output_int, input_int] == 1
 
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
@@ -162,6 +162,33 @@ def test_add_call_classically(a: int, b: int, num_bits: int):
     bloq = Add(num_bits)
     ret = bloq.call_classically(a=a, b=b)
     assert ret == (a, a + b)
+
+
+def test_add_truth_table():
+    bloq = Add(bitsize=2)
+    classical_truth_table = format_classical_truth_table(*get_classical_truth_table(bloq))
+    assert (
+        classical_truth_table
+        == """\
+a  b  |  a  b
+--------------
+0, 0 -> 0, 0
+0, 1 -> 0, 1
+0, 2 -> 0, 2
+0, 3 -> 0, 3
+1, 0 -> 1, 1
+1, 1 -> 1, 2
+1, 2 -> 1, 3
+1, 3 -> 1, 0
+2, 0 -> 2, 2
+2, 1 -> 2, 3
+2, 2 -> 2, 0
+2, 3 -> 2, 1
+3, 0 -> 3, 3
+3, 1 -> 3, 0
+3, 2 -> 3, 1
+3, 3 -> 3, 2"""
+    )
 
 
 def test_add():
@@ -172,6 +199,13 @@ def test_add():
     a, b = bb.add(Add(bitsize), a=q0, b=q1)
     cbloq = bb.finalize(a=a, b=b)
     cbloq.t_complexity()
+
+
+def test_add_classical():
+    bloq = Add(bitsize=32)
+    ret1 = bloq.call_classically(a=10, b=3)
+    ret2 = bloq.decompose_bloq().call_classically(a=10, b=3)
+    assert ret1 == ret2
 
 
 @pytest.mark.parametrize('bitsize', [3])
@@ -237,8 +271,8 @@ def test_out_of_place_adder():
     assert gate.t_complexity().t == 3 * 4
     assert (gate**-1).t_complexity().t == 0
     assert_decompose_is_consistent_with_t_complexity(gate**-1)
-    assert_valid_bloq_decomposition(gate)
-    assert_valid_bloq_decomposition(gate**-1)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate**-1)
 
 
 @pytest.mark.parametrize('bitsize', [5])
@@ -246,7 +280,7 @@ def test_out_of_place_adder():
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
 def test_simple_add_constant_decomp_unsigned(bitsize, k, cvs):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=False)
-    assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize('bitsize', [5])
@@ -254,7 +288,7 @@ def test_simple_add_constant_decomp_unsigned(bitsize, k, cvs):
 @pytest.mark.parametrize('cvs', [[], [0, 1], [1, 0], [1, 1]])
 def test_simple_add_constant_decomp_signed(bitsize, k, cvs):
     bloq = SimpleAddConstant(bitsize=bitsize, k=k, cvs=cvs, signed=True)
-    assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize(
@@ -293,3 +327,7 @@ def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result)
         np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
 
     assert bloq_classical[-1] == result
+
+
+def test_notebook():
+    qlt_testing.execute_notebook('addition')

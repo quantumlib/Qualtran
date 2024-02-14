@@ -19,7 +19,7 @@ import cirq
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle
@@ -62,7 +62,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
         return () if self.control_val is None else (Register('control', 1),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return self.prepare_gate.selection_registers
 
     @cached_property
