@@ -140,7 +140,7 @@ class SingleFactorizationOneBody(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", QAny(bitsize=QAny(self.num_spin_orb // 2)), shape=(2,)),)
+        return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @property
     def junk_registers(self) -> Iterable[Register]:
