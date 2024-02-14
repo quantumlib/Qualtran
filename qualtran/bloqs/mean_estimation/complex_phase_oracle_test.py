@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import math
+from functools import cached_property
 from typing import Optional, Tuple
 
 import cirq
 import numpy as np
 import pytest
 from attrs import frozen
-from cirq._compat import cached_property
 
 from qualtran import Register
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
