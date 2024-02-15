@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 import itertools
+from functools import cached_property
 from typing import Callable, Sequence, Tuple
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits

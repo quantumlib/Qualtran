@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 import itertools
+from functools import cached_property
 from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import pytest
-from cirq._compat import cached_property
 
 from qualtran import BoundedQUInt, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits

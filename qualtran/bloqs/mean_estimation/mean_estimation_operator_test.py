@@ -12,13 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
 import pytest
 from attrs import frozen
-from cirq._compat import cached_property
 
 from qualtran import BoundedQUInt, QAny, QBit, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits

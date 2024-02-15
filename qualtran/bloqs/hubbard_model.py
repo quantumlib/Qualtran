@@ -46,12 +46,12 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
+from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, QAny, QBit, Register, Signature

@@ -12,12 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Callable, Sequence, Set, Tuple
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import ArrayLike, NDArray
 
 from qualtran import BoundedQUInt, QAny, Register, Soquet
