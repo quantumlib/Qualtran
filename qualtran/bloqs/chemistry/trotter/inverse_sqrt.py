@@ -19,7 +19,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -160,9 +160,9 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('x_sq', bitsize=self.x_sq_bitsize),
-                Register('poly', bitsize=self.poly_bitsize),
-                Register('target', self.target_bitsize),
+                Register('x_sq', QAny(bitsize=self.x_sq_bitsize)),
+                Register('poly', QAny(bitsize=self.poly_bitsize)),
+                Register('target', QAny(self.target_bitsize)),
             ]
         )
 
@@ -219,9 +219,9 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('x_sq', bitsize=self.x_sq_bitsize),
-                Register('in_coeff', bitsize=self.poly_bitsize, shape=(4,)),
-                Register('out', bitsize=self.out_bitsize),
+                Register('x_sq', QAny(bitsize=self.x_sq_bitsize)),
+                Register('in_coeff', QAny(bitsize=self.poly_bitsize), shape=(4,)),
+                Register('out', QAny(bitsize=self.out_bitsize)),
             ]
         )
 

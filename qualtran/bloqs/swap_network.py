@@ -28,6 +28,7 @@ from qualtran import (
     BloqDocSpec,
     BoundedQUInt,
     GateWithRegisters,
+    QAny,
     Register,
     Signature,
     Soquet,
@@ -198,7 +199,9 @@ class SwapWithZero(GateWithRegisters):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('targets', bitsize=self.target_bitsize, shape=self.n_target_registers),)
+        return (
+            Register('targets', QAny(bitsize=self.target_bitsize), shape=self.n_target_registers),
+        )
 
     @cached_property
     def signature(self) -> Signature:
@@ -317,8 +320,8 @@ class MultiplexedCSwap(UnaryIterationGate):
         target_shape = tuple(sreg.dtype.iteration_length for sreg in self.selection_registers)
         return tuple(
             [
-                Register('targets', bitsize=self.target_bitsize, shape=target_shape),
-                Register('output', bitsize=self.target_bitsize),
+                Register('targets', QAny(bitsize=self.target_bitsize), shape=target_shape),
+                Register('output', QAny(bitsize=self.target_bitsize)),
             ]
         )
 

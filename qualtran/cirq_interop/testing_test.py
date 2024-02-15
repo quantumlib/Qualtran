@@ -15,7 +15,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import Register, Side, Signature
+from qualtran import QBit, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.cirq_interop import testing
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -39,9 +39,9 @@ def test_gate_helper():
     assert g.gate == MultiAnd(cvs=(1, 0, 1, 0))
     assert g.r == Signature(
         [
-            Register('ctrl', bitsize=1, shape=4),
-            Register('junk', bitsize=1, shape=2, side=Side.RIGHT),
-            Register('target', bitsize=1, side=Side.RIGHT),
+            Register('ctrl', QBit(), shape=4),
+            Register('junk', QBit(), shape=2, side=Side.RIGHT),
+            Register('target', QBit(), side=Side.RIGHT),
         ]
     )
     expected_quregs = {

@@ -19,7 +19,7 @@ from typing import Sequence, Set, Tuple, TYPE_CHECKING
 import cirq
 import pytest
 
-from qualtran import BoundedQUInt, Register, Signature
+from qualtran import BoundedQUInt, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.unary_iteration_bloq import unary_iteration, UnaryIterationGate
@@ -41,7 +41,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return (Register('control', self._control_bitsize),)
+        return (Register('control', QAny(self._control_bitsize)),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -49,7 +49,7 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self._target_bitsize),)
+        return (Register('target', QAny(self._target_bitsize)),)
 
     def nth_operation(  # type: ignore[override]
         self,
