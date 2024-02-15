@@ -20,7 +20,7 @@ import attrs
 import cirq
 import numpy as np
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 
@@ -54,7 +54,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     nth_gate: Callable[..., cirq.Gate]
     control_regs: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
-        default=(Register('control', 1),),
+        default=(Register('control', QBit()),),
     )
 
     @classmethod
@@ -65,7 +65,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         return ApplyGateToLthQubit(
             Register('selection', BoundedQUInt(len(quregs['selection']), len(quregs['target']))),
             nth_gate=nth_gate,
-            control_regs=Register('control', len(quregs['control'])),
+            control_regs=Register('control', QAny(len(quregs['control']))),
         ).on_registers(**quregs)
 
     @cached_property
@@ -81,7 +81,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         total_iteration_size = np.prod(
             tuple(reg.dtype.iteration_length for reg in self.selection_registers)
         )
-        return (Register('target', int(total_iteration_size)),)
+        return (Register('target', QAny(int(total_iteration_size))),)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * total_bits(self.control_registers)

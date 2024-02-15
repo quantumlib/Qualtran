@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.for_testing import TestMultiRegister
@@ -143,7 +143,7 @@ TestMultiRegister─yy──────yy──────yy──────
 
 
 def test_partition_call_classically():
-    regs = (Register('xx', 2, shape=(2, 2)), Register('yy', 3))
+    regs = (Register('xx', QAny(2), shape=(2, 2)), Register('yy', QAny(3)))
     bitsize = sum(reg.total_bits() for reg in regs)
     bloq = Partition(n=bitsize, regs=regs)
     out = bloq.call_classically(x=64)

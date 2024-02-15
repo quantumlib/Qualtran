@@ -19,7 +19,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, Register, Signature, Soquet
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
@@ -154,7 +154,7 @@ class SelectSwapQROM(GateWithRegisters):
     def target_registers(self) -> Tuple[Register, ...]:
         # See https://github.com/quantumlib/Qualtran/issues/556 for unusual placement of underscore.
         return tuple(
-            Register(f'target{sequence_id}_', self._target_bitsizes[sequence_id])
+            Register(f'target{sequence_id}_', QAny(self._target_bitsizes[sequence_id]))
             for sequence_id in range(self._num_sequences)
         )
 

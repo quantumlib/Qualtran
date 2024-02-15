@@ -23,7 +23,7 @@ import cirq
 import numpy as np
 from attrs import field, frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.drawing import Circle, TextBox, WireSymbol
@@ -183,8 +183,8 @@ class ApplyControlledZs(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("ctrls", bitsize=1, shape=(len(self.cvs),)),
-                Register("system", bitsize=self.bitsize),
+                Register("ctrls", QBit(), shape=(len(self.cvs),)),
+                Register("system", QAny(bitsize=self.bitsize)),
             ]
         )
 
