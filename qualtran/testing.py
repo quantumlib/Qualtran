@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Tuple
+from typing import List, Tuple
 
 from qualtran import (
     Bloq,
@@ -29,6 +29,7 @@ from qualtran import (
     LeftDangle,
     RightDangle,
     Side,
+    Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 
@@ -242,17 +243,71 @@ class BloqCheckResult(Enum):
     """An unexpected error occurred during execution of the check."""
 
 
-def _check_bloq_example_make_impl(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
-    """Implementation for `check_bloq_example_make`.
+class BloqCheckException(AssertionError):
+    """An exception raised by the `assert_bloq_example_xxx` functions in this module.
 
-    This function may throw an uncaught exception, which is handled by the wrapping function.
+    These exceptions correspond to known failures due to assertion errors, non-applicable checks,
+    or unverified protocols.
+
+    Consider using the factory class methods `BloqCheckException.{fail, missing, na, unverified}`
+    for convenience.
+
+    Args:
+        check_result: The BloqCheckResult.
+        msg: A message providing details for the exception.
+    """
+
+    def __init__(self, check_result: BloqCheckResult, msg: str):
+        super().__init__(check_result, msg)
+        self._check_result = check_result
+        self._msg = msg
+
+    @property
+    def check_result(self) -> BloqCheckResult:
+        """The BloqCheckResult."""
+        return self._check_result
+
+    @property
+    def msg(self) -> str:
+        """A message providing details for the exception."""
+        return self._msg
+
+    @classmethod
+    def fail(cls, msg: str) -> 'BloqCheckException':
+        """Create an exception with a FAIL check result."""
+        return cls(BloqCheckResult.FAIL, msg=msg)
+
+    @classmethod
+    def missing(cls, msg: str) -> 'BloqCheckException':
+        """Create an exception with a MISSING check result."""
+        return cls(BloqCheckResult.MISSING, msg=msg)
+
+    @classmethod
+    def na(cls, msg: str) -> 'BloqCheckException':
+        """Create an exception with a NA check result."""
+        return cls(BloqCheckResult.NA, msg=msg)
+
+    @classmethod
+    def unverified(cls, msg: str) -> 'BloqCheckException':
+        """Create an exception with an UNVERIFIED check result."""
+        return cls(BloqCheckResult.UNVERIFIED, msg=msg)
+
+
+def assert_bloq_example_make(bloq_ex: BloqExample) -> None:
+    """Assert that the BloqExample returns the desired bloq.
+
+    Returns:
+        None if the assertions are satisfied.
+
+    Raises:
+        BloqCheckException if any assertions are violated.
     """
     bloq = bloq_ex.make()
     if not isinstance(bloq, Bloq):
-        return BloqCheckResult.FAIL, f'{bloq} is not an instance of Bloq'
+        raise BloqCheckException.fail(f'{bloq} is not an instance of Bloq')
     if not isinstance(bloq, bloq_ex.bloq_cls):
-        return BloqCheckResult.FAIL, f'{bloq} is not an instance of {bloq_ex.bloq_cls}'
-    return BloqCheckResult.PASS, ''
+        raise BloqCheckException.fail(f'{bloq} is not an instance of {bloq_ex.bloq_cls}')
+    return
 
 
 def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
@@ -263,26 +318,38 @@ def check_bloq_example_make(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]
         msg: A message providing details from the check.
     """
     try:
-        return _check_bloq_example_make_impl(bloq_ex)
-    except Exception as e:
+        assert_bloq_example_make(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
+    return BloqCheckResult.PASS, ''
 
-def _check_bloq_example_decompose_impl(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
-    """Implementation for `check_bloq_example_decompose`.
 
-    This function may throw an uncaught exception, which is handled by the wrapping function.
+def assert_bloq_example_decompose(bloq_ex: BloqExample) -> None:
+    """Assert that the BloqExample has a valid decomposition.
+
+    This will use `assert_valid_decomposition` which has a variety of sub-checks. A failure
+    in any of those checks will result in `FAIL`. `DecomposeTypeError` results in a
+    not-applicable `NA` status. `DecomposeNotImplementedError` results in a `MISSING` status.
+
+    Returns:
+        None if the assertions are satisfied.
+
+    Raises:
+        BloqCheckException if any assertions are violated, not applicable, or missing.
     """
     try:
         bloq = bloq_ex.make()
         assert_valid_bloq_decomposition(bloq)
-        return BloqCheckResult.PASS, ''
+        return
     except DecomposeTypeError as e:
-        return BloqCheckResult.NA, str(e)
+        raise BloqCheckException.na(str(e)) from e
     except DecomposeNotImplementedError as e:
-        return BloqCheckResult.MISSING, str(e)
+        raise BloqCheckException.missing(str(e)) from e
     except BloqError as e:
-        return BloqCheckResult.FAIL, str(e)
+        raise BloqCheckException.fail(str(e)) from e
 
 
 def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
@@ -297,6 +364,27 @@ def check_bloq_example_decompose(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
         msg: A message providing details from the check.
     """
     try:
-        return _check_bloq_example_decompose_impl(bloq_ex)
-    except Exception as e:
+        assert_bloq_example_decompose(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''
+
+
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
+    """Assert a bloq's wire symbols match the expected ones.
+
+    Args:
+        bloq: the bloq whose wire symbols we want to check.
+        expected_ws: A list of the expected wire symbols.
+    """
+    ws = []
+    regs = bloq.signature
+    for i, r in enumerate(regs):
+        # note this will only work if shape = ().
+        # See: https://github.com/quantumlib/Qualtran/issues/608
+        ws.append(bloq.wire_symbol(Soquet(i, r)).text)
+
+    assert ws == expected_ws

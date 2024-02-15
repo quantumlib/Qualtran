@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle
@@ -27,9 +27,9 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 @attrs.frozen(cache_hash=True)
 class ReflectionUsingPrepare(GateWithRegisters):
-    """Applies reflection around a state prepared by `prepare_gate`
+    r"""Applies reflection around a state prepared by `prepare_gate`
 
-    Applies $R_{s} = I - 2|s><s|$ using $R_{s} = P^†(I - 2|0><0|)P$ s.t. $P|0> = |s>$.
+    Applies $R_{s} = I - 2|s><s|$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$ s.t. $P|0> = |s>$.
     Here
         $|s>$: The state along which we want to reflect.
         $P$: Unitary that prepares that state $|s>$ from the zero state $|0>$
@@ -62,7 +62,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
         return () if self.control_val is None else (Register('control', 1),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return self.prepare_gate.selection_registers
 
     @cached_property

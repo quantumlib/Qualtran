@@ -19,7 +19,7 @@ from typing import Dict, Tuple
 import numpy as np
 from attrs import field, frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
 from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
@@ -45,12 +45,12 @@ class PairPotential(Bloq):
             different cases.
 
     Registers:
-     - system_i: The ith electron's register.
-     - system_j: The jth electron's register.
+        system_i: The ith electron's register.
+        system_j: The jth electron's register.
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     bitsize: int
@@ -79,14 +79,21 @@ class PairPotential(Bloq):
     ) -> Dict[str, SoquetT]:
         # compute r_i - r_j
         # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
-        diff_ij = np.array([bb.allocate(self.bitsize) for _ in range(3)])
+        diff_ij = [0, 0, 0]
         for xyz in range(3):
             system_i[xyz], system_j[xyz], diff_ij[xyz] = bb.add(
-                OutOfPlaceAdder(self.bitsize), a=system_i[xyz], b=system_j[xyz], c=diff_ij[xyz]
+                OutOfPlaceAdder(self.bitsize), a=system_i[xyz], b=system_j[xyz]
             )
         # Compute r_{ij}^2 = (x_i-x_j)^2 + ...
-        bitsize_rij_sq = 2 * self.bitsize + 2
-        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize, k=3), input=diff_ij)
+        bitsize_rij_sq = 2 * (self.bitsize + 1) + 2
+        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize + 1, k=3), input=diff_ij)
+        for xyz in range(3):
+            system_i[xyz], system_j[xyz] = bb.add(
+                OutOfPlaceAdder(self.bitsize, adjoint=True),
+                a=system_i[xyz],
+                b=system_j[xyz],
+                c=diff_ij[xyz],
+            )
         # Use rij^2 as the selection register for QROM to output a polynomial approximation to r_{ij}^{-1}.
         qrom_anc_c0 = bb.allocate(self.poly_bitsize)
         qrom_anc_c1 = bb.allocate(self.poly_bitsize)
@@ -100,10 +107,10 @@ class PairPotential(Bloq):
         sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3 = bb.add(
             qrom_bloq,
             selection=sos,
-            target0=qrom_anc_c0,
-            target1=qrom_anc_c1,
-            target2=qrom_anc_c2,
-            target3=qrom_anc_c3,
+            target0_=qrom_anc_c0,
+            target1_=qrom_anc_c1,
+            target2_=qrom_anc_c2,
+            target3_=qrom_anc_c3,
         )
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
@@ -140,8 +147,6 @@ class PairPotential(Bloq):
         bb.free(qrom_anc_c2)
         bb.free(qrom_anc_c3)
         bb.free(poly_out)
-        for x in diff_ij:
-            bb.free(x)
         return {'system_i': system_i, "system_j": system_j}
 
 
@@ -164,11 +169,11 @@ class PotentialEnergy(Bloq):
             different cases.
 
     Registers:
-     - system: The system register of size eta * 3 * nb
+        system: The system register of size eta * 3 * nb
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     num_elec: int
@@ -208,3 +213,38 @@ class PotentialEnergy(Bloq):
                 system_j=system[j],
             )
         return {'system': system}
+
+
+@bloq_example
+def _pair_potential() -> PairPotential:
+    bitsize = 7
+    poly_bitsize = 15
+    poly_coeffs = get_inverse_square_root_poly_coeffs()
+    qrom_data = build_qrom_data_for_poly_fit(2 * bitsize + 2, poly_bitsize, poly_coeffs)
+    qrom_data = tuple(tuple(int(k) for k in d) for d in qrom_data)
+    pair_potential = PairPotential(bitsize=bitsize, qrom_data=qrom_data, poly_bitsize=poly_bitsize)
+    return pair_potential
+
+
+@bloq_example
+def _potential_energy() -> PotentialEnergy:
+    nelec = 12
+    ngrid_x = 2 * 8 + 1
+    potential_energy = PotentialEnergy(nelec, ngrid_x)
+    return potential_energy
+
+
+_POTENTIAL_ENERGY = BloqDocSpec(
+    bloq_cls=PotentialEnergy,
+    import_line='from qualtran.bloqs.chemistry.trotter.potential import PotentialEnergy',
+    examples=(_potential_energy,),
+)
+
+_PAIR_POTENTIAL = BloqDocSpec(
+    bloq_cls=PairPotential,
+    import_line=(
+        'from qualtran.bloqs.chemistry.trotter.potential import PairPotential, build_qrom_data_for_poly_fit\n'
+        'from qualtran.bloqs.chemistry.trotter.inverse_sqrt import get_inverse_square_root_poly_coeffs'
+    ),
+    examples=(_pair_potential,),
+)

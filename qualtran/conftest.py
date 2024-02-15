@@ -30,35 +30,38 @@ import qualtran.testing as qlt_testing
 from qualtran import BloqExample
 
 
-def assert_bloq_example_make(bloq_ex: BloqExample):
-    """Wrap `check_bloq_example_make`.
+def assert_bloq_example_make_for_pytest(bloq_ex: BloqExample):
+    """Wrap `assert_bloq_example_make`.
 
     Anything other than PASS is a test failure.
     """
-    status, err = qlt_testing.check_bloq_example_make(bloq_ex)
-    if status is qlt_testing.BloqCheckResult.PASS:
-        return
+    try:
+        qlt_testing.assert_bloq_example_make(bloq_ex)
+    except qlt_testing.BloqCheckException as bce:
+        # No special skip logic
+        raise bce from bce
 
-    raise AssertionError(err)
 
-
-def assert_bloq_example_decompose(bloq_ex: BloqExample):
-    """Wrap `check_bloq_example_decompose`.
+def assert_bloq_example_decompose_for_pytest(bloq_ex: BloqExample):
+    """Wrap `assert_bloq_example_decompose`.
 
     `NA` or `MISSING` result in the test being skipped.
     """
-    status, err = qlt_testing.check_bloq_example_decompose(bloq_ex)
-    if status is qlt_testing.BloqCheckResult.PASS:
-        return
-    if status is qlt_testing.BloqCheckResult.NA:
-        pytest.skip(err)
-    if status is qlt_testing.BloqCheckResult.MISSING:
-        pytest.skip(err)
+    try:
+        qlt_testing.assert_bloq_example_decompose(bloq_ex)
+    except qlt_testing.BloqCheckException as bce:
+        if bce.check_result is qlt_testing.BloqCheckResult.NA:
+            pytest.skip(bce.msg)
+        if bce.check_result is qlt_testing.BloqCheckResult.MISSING:
+            pytest.skip(bce.msg)
 
-    raise AssertionError(err)
+        raise bce from bce
 
 
-_TESTFUNCS = [('make', assert_bloq_example_make), ('decompose', assert_bloq_example_decompose)]
+_TESTFUNCS = [
+    ('make', assert_bloq_example_make_for_pytest),
+    ('decompose', assert_bloq_example_decompose_for_pytest),
+]
 
 
 @pytest.fixture(

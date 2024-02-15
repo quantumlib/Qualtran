@@ -11,13 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Sequence, Tuple
 
 import cirq
 import numpy as np
 from attrs import frozen
+from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, Register, Signature
@@ -29,11 +29,11 @@ class SU2RotationGate(GateWithRegisters):
     phi: float
     lambd: float
 
-    @property
+    @cached_property
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    @property
+    @cached_property
     def rotation_matrix(self):
         r"""Implements an arbitrary SU(2) rotation.
 
@@ -68,15 +68,118 @@ class SU2RotationGate(GateWithRegisters):
     ) -> cirq.OP_TREE:
         qubit = q[0]
 
-        gates = cirq.single_qubit_matrix_to_gates(self.rotation_matrix)
-        matrix = np.eye(2)
-        for gate in gates:
-            yield gate.on(qubit)
-            matrix = cirq.unitary(gate) @ matrix
+        yield cirq.Rz(rads=np.pi - self.lambd).on(qubit)
+        yield cirq.Ry(rads=2 * self.theta).on(qubit)
+        yield cirq.Rz(rads=-self.phi).on(qubit)
+        yield cirq.GlobalPhaseGate(np.exp(1j * (np.pi + self.lambd + self.phi) / 2)).on()
 
-        # `cirq.single_qubit_matrix_to_gates` does not preserve global phase
-        matrix = matrix @ self.rotation_matrix.conj().T
-        yield cirq.GlobalPhaseGate(matrix[0, 0].conj()).on()
+
+def qsp_complementary_polynomial(
+    P: Sequence[complex], *, verify: bool = False
+) -> Sequence[complex]:
+    r"""Computes the Q polynomial given P
+
+    Computes polynomial $Q$ of degree at-most that of $P$, satisfying
+
+        $$ \abs{P(e^{i\theta})}^2 + \abs{Q(e^{i\theta})}^2 = 1 $$
+
+    for every $\theta \in \mathbb{R}$.
+
+    The exact method for computing $Q$ is described in the proof of Theorem 4.
+    The method computes an auxillary polynomial R, whose roots are computed
+    and re-interpolated to obtain the required polynomial Q.
+
+    TODO: Also implement the more efficient optimization-based method described in Eq. 52
+
+    Args:
+        P: Co-efficients of a complex polynomial.
+        verify: sanity check the computed polynomial roots (defaults to False).
+
+    References:
+        [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
+            Motlagh and Wiebe. (2023). Theorem 4.
+    """
+    d = len(P) - 1  # degree
+
+    # R(z) = z^d (1 - P^*(z) P(z))
+    # obtained on simplifying Eq. 34, Eq. 35 by substituting H, T.
+    # The definition of $R$ is given in the text from Eq.34 - Eq. 35,
+    # following the chain of definitions below:
+    #
+    #     $$
+    #     T(\theta) = \abs{P(e^{i\theta}),
+    #     H = I - T,
+    #     H = e^{-id\theta} R(e^{i\theta})
+    #     $$
+    #
+    # Here H and T are defined on reals, so the initial definition of R is only on the unit circle.
+    # We analytically continue this definition to the entire complex plane by replacing $e^{i\theta}$ by $z$.
+    R = Polynomial.basis(d) - Polynomial(P) * Polynomial(np.conj(P[::-1]))
+    roots = R.roots()
+
+    # R is self-inversive, so larger_roots and smaller_roots occur in conjugate pairs.
+    units: list[complex] = []  # roots r s.t. \abs{r} = 1
+    larger_roots: list[complex] = []  # roots r s.t. \abs{r} > 1
+    smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
+
+    for r in roots:
+        if np.allclose(np.abs(r), 1):
+            units.append(r)
+        elif np.abs(r) > 1:
+            larger_roots.append(r)
+        else:
+            smaller_roots.append(r)
+
+    if verify:
+        # verify that the non-unit roots indeed occur in conjugate pairs.
+        def is_permutation(A, B):
+            assert len(A) == len(B)
+            A = list(A)
+            for z in B:
+                for w in A:
+                    if np.allclose(z, w):
+                        A.remove(w)
+                        break
+                else:
+                    return False
+            return True
+
+        assert is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
+
+    # pair up roots in `units`, claimed in Eq. 40 and the explanation preceding it.
+    # all unit roots must have even multiplicity.
+    paired_units: list[complex] = []
+    unpaired_units: list[complex] = []
+    for z in units:
+        matched_z = None
+        for w in unpaired_units:
+            if np.allclose(z, w):
+                matched_z = w
+                break
+
+        if matched_z:
+            paired_units.append(z)
+            unpaired_units.remove(matched_z)
+        else:
+            unpaired_units.append(z)
+
+    if verify:
+        assert len(unpaired_units) == 0
+
+    # Q = G \hat{G}, where
+    # - \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
+    # - G*(z) G(z) is the interpolation of the conjugate paired non-unit roots of R,
+    #   described in Eq. 37 - Eq. 38
+
+    # Leading co-efficient of R described in Eq. 37.
+    # Note: In the paper, the polynomial is interpolated from larger_roots,
+    #       but this is swapped in our implementation to reduce the error in Q.
+    c = R.coef[-1]
+    scaling_factor = np.sqrt(np.abs(c * np.prod(larger_roots)))
+
+    Q = scaling_factor * Polynomial.fromroots(paired_units + smaller_roots)
+
+    return Q.coef
 
 
 def qsp_phase_factors(
@@ -112,17 +215,21 @@ def qsp_phase_factors(
     phi = np.zeros(n)
     lambd = 0
 
+    def safe_angle(x):
+        return 0 if np.isclose(x, 0) else np.angle(x)
+
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
 
-        a, b = np.around(S[:, d], decimals=10)
+        a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
-        phi[d] = (np.angle(a) - np.angle(b)) % (2 * np.pi)
+        # \phi_d = arg(a / b)
+        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a * np.conj(b))
 
         if d == 0:
-            lambd = np.angle(b)
+            lambd = safe_angle(b)
         else:
-            S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix @ S
+            S = SU2RotationGate(theta[d], phi[d], 0).rotation_matrix.conj().T @ S
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
@@ -132,19 +239,18 @@ def qsp_phase_factors(
 class GeneralizedQSP(GateWithRegisters):
     r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
 
-    Given a pair of QSP polynomials $P, Q$, this gate represents the following unitary:
+    This gate represents the following unitary:
 
-        $$ \begin{bmatrix} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix} $$
+        $$ \begin{bmatrix} P(U) & \cdot \\ \cdot & \cdot \end{bmatrix} $$
 
-    The polynomials $P, Q$ must satisfy:
-        $\abs{P(x)}^2 + \abs{Q(x)}^2 = 1$ for every $x \in \mathbb{C}$ such that $\abs{x} = 1$
+    The polynomial $P$ must satisfy:
+    $\abs{P(e^{i \theta})}^2 \le 1$ for every $\theta \in \mathbb{R}$.
 
     The exact circuit is described in Figure 2.
 
     Args:
         U: Unitary operation.
         P: Co-efficients of a complex polynomial.
-        Q: Co-efficients of a complex polynomial.
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -153,11 +259,14 @@ class GeneralizedQSP(GateWithRegisters):
 
     U: GateWithRegisters
     P: Sequence[complex]
-    Q: Sequence[complex]
 
-    @property
+    @cached_property
     def signature(self) -> Signature:
         return Signature([Register(name='signal', bitsize=1), *self.U.signature])
+
+    @cached_property
+    def Q(self):
+        return qsp_complementary_polynomial(self.P)
 
     @cached_property
     def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:

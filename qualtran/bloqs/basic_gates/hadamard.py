@@ -13,12 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Signature, SoquetT
+from qualtran import Bloq, bloq_example, CompositeBloq, DecomposeTypeError, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -49,10 +49,16 @@ class Hadamard(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     def add_my_tensors(
         self,
         tn: 'qtn.TensorNetwork',
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
@@ -61,7 +67,7 @@ class Hadamard(Bloq):
 
         tn.add(
             qtn.Tensor(
-                data=_HADAMARD, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+                data=_HADAMARD, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
 
@@ -78,3 +84,9 @@ class Hadamard(Bloq):
 
     def t_complexity(self):
         return TComplexity(clifford=1)
+
+
+@bloq_example
+def _hadamard() -> Hadamard:
+    hadamard = Hadamard()
+    return hadamard

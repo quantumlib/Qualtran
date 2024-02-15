@@ -31,10 +31,18 @@ extensions = ['myst_nb']
 
 nb_execution_mode = 'off'
 myst_enable_extensions = ['dollarmath', 'amsmath', 'deflist']
+myst_dmath_double_inline = True
 
-# The markdown parser myst gets mad when you skip to small headers
-# e.g. <h4> for "parameters" section.
-suppress_warnings = ["myst.header"]
+suppress_warnings = [
+    # The markdown parser myst gets mad when you skip to small headers
+    # e.g. <h4> for "parameters" section.
+    "myst.header",
+    # In `show_counts_sigma`, we use a <h4> inside an output cell.
+    # Myst handles this well now:
+    # https://myst-parser.readthedocs.io/en/v0.17.2/develop/_changelog.html#internal-improvements
+    # but still emits a warning
+    "myst.nested_header",
+]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']

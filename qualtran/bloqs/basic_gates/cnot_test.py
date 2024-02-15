@@ -12,15 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import itertools
-
 import cirq
 import numpy as np
 import pytest
 
 from qualtran import BloqBuilder, Signature
 from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
+from qualtran.bloqs.basic_gates.cnot import _cnot
 from qualtran.drawing import get_musical_score_data
+from qualtran.simulation.classical_sim import (
+    format_classical_truth_table,
+    get_classical_truth_table,
+)
 
 
 def _make_CNOT():
@@ -29,7 +32,7 @@ def _make_CNOT():
     return CNOT()
 
 
-def test_cnot():
+def test_cnot_tensor():
     bloq = CNOT()
     matrix = bloq.tensor_contract()
     # fmt: off
@@ -42,7 +45,7 @@ def test_cnot():
     np.testing.assert_allclose(should_be, matrix)
 
 
-def test_cnot_cbloq():
+def test_cnot_cbloq_tensor_vs_cirq():
     bb, soqs = BloqBuilder.from_signature(Signature.build(c=1, t=1))
     c, t = bb.add(CNOT(), ctrl=soqs['c'], target=soqs['t'])
     cbloq = bb.finalize(c=c, t=t)
@@ -55,7 +58,7 @@ def test_cnot_cbloq():
     np.testing.assert_allclose(c_matrix, matrix)
 
 
-def test_bell_state():
+def test_bell_statevector():
     bb = BloqBuilder()
 
     q0 = bb.add(PlusState())
@@ -70,16 +73,23 @@ def test_bell_state():
     np.testing.assert_allclose(should_be, matrix)
 
 
-def test_classical_truth_table():
-    truth_table = []
-    for c, t in itertools.product([0, 1], repeat=2):
-        out_c, out_t = CNOT().call_classically(ctrl=c, target=t)
-        truth_table.append(((c, t), (out_c, out_t)))
-
-    assert truth_table == [((0, 0), (0, 0)), ((0, 1), (0, 1)), ((1, 0), (1, 1)), ((1, 1), (1, 0))]
-
+def test_classical_validation():
     with pytest.raises(ValueError):
         CNOT().call_classically(ctrl=2, target=0)
+
+
+def test_cnot_truth_table():
+    classical_truth_table = format_classical_truth_table(*get_classical_truth_table(CNOT()))
+    assert (
+        classical_truth_table
+        == """\
+ctrl  target  |  ctrl  target
+------------------------------
+0, 0 -> 0, 0
+0, 1 -> 0, 1
+1, 0 -> 1, 1
+1, 1 -> 1, 0"""
+    )
 
 
 def test_cnot_musical_score():
@@ -88,3 +98,7 @@ def test_cnot_musical_score():
     # soq[0] and [1] are the dangling symbols
     assert msd.soqs[2].json_dict()['symb_cls'] == 'Circle'
     assert msd.soqs[3].json_dict()['symb_cls'] == 'ModPlus'
+
+
+def test_cnot(bloq_autotester):
+    bloq_autotester(_cnot)

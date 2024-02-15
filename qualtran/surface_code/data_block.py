@@ -17,7 +17,7 @@ import math
 
 from attrs import frozen
 
-from qualtran.surface_code.formulae import error_at
+import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
 
 
 class DataBlock(metaclass=abc.ABCMeta):
@@ -28,6 +28,7 @@ class DataBlock(metaclass=abc.ABCMeta):
     called the data block, and we provide its costs here.
     """
 
+    @abc.abstractmethod
     def footprint(self, n_algo_qubits: int) -> int:
         """The number of physical qubits used by the data block.
 
@@ -36,6 +37,7 @@ class DataBlock(metaclass=abc.ABCMeta):
                 accessed.
         """
 
+    @abc.abstractmethod
     def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
 
@@ -52,6 +54,7 @@ class SimpleDataBlock(DataBlock):
 
     data_d: int
     routing_overhead: float = 0.5
+    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
 
     def n_logical_qubits(self, n_algo_qubits: int) -> int:
         """Number of logical qubits including overhead.
@@ -64,10 +67,12 @@ class SimpleDataBlock(DataBlock):
 
     def footprint(self, n_algo_qubits: int) -> int:
         """The number of physical qubits used by the data block."""
-        n_phys_per_logical = 2 * self.data_d**2
+        n_phys_per_logical = self.qec_scheme.physical_qubits(self.data_d)
         return self.n_logical_qubits(n_algo_qubits) * n_phys_per_logical
 
     def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
         data_cells = self.n_logical_qubits(n_algo_qubits) * n_cycles
-        return data_cells * error_at(phys_err, d=self.data_d)
+        return data_cells * self.qec_scheme.logical_error_rate(
+            physical_error_rate=phys_err, code_distance=self.data_d
+        )

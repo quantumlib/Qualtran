@@ -22,10 +22,12 @@ from numpy.typing import NDArray
 from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
 from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran._infra.quantum_graph import Soquet
-from qualtran._infra.registers import Register
+from qualtran._infra.registers import Register, Side
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+    from qualtran.drawing import WireSymbol
 
 
 def total_bits(registers: Iterable[Register]) -> int:
@@ -93,6 +95,61 @@ def get_named_qubits(registers: Iterable[Register]) -> Dict[str, NDArray[cirq.Qi
         )
 
     return {reg.name: _qubits_for_reg(reg) for reg in registers}
+
+
+def _get_all_and_output_quregs_from_input(
+    registers: Iterable[Register],
+    qubit_manager: cirq.QubitManager,
+    in_quregs: Dict[str, 'CirqQuregT'],
+) -> Tuple[Dict[str, 'CirqQuregT'], Dict[str, 'CirqQuregT']]:
+    """Takes care of necessary (de-/)allocations to obtain output & all qubit registers from input.
+
+    For every register `reg` in `registers`, this method checks:
+    - If `reg.side == Side.LEFT`:
+        - Ensure that `in_quregs` has an entry corresponding to `reg`
+        - Deallocate the corresponding qubits using `qubit_manager.deallocate`.
+        - These qubits are part of `all_quregs` but not `out_quregs`.
+    - If `reg.side == Side.RIGHT`:
+        - Ensure that `in_quregs` does not have an entry corresponding to `reg`.
+        - Allocate new multi-dimensional qubit array of shape `(*reg.shape, reg.bitsize)`.
+        - These qubits are part of `all_quregs` and `out_quregs`.
+    - If `reg.side == Side.THRU`:
+        - Ensure that `in_quregs` has a an entry corresponding to `reg`
+        - These qubits are part of `all_quregs` and `out_quregs`.
+
+    Args:
+        registers: An iterable of `Register` objects specifying the signature of a Bloq.
+        qubit_manager: An instance of `cirq.QubitManager` to allocate/deallocate qubits.
+        in_quregs: A dictionary mapping LEFT register names from `registers` to corresponding
+            cirq-style multidimensional qubit array of shape `(*left_reg.shape, left_reg.bitsize)`.
+
+    Returns:
+        A tuple of `(all_quregs, out_quregs)`
+    """
+    all_quregs: Dict[str, 'CirqQuregT'] = {}
+    out_quregs: Dict[str, 'CirqQuregT'] = {}
+    for reg in registers:
+        full_shape = reg.shape + (reg.bitsize,)
+        if reg.side & Side.LEFT:
+            if reg.name not in in_quregs or in_quregs[reg.name].shape != full_shape:
+                # Left registers should exist as input to `as_cirq_op`.
+                raise ValueError(f'Compatible {reg=} must exist in {in_quregs=}')
+            all_quregs[reg.name] = in_quregs[reg.name]
+        if reg.side == Side.RIGHT:
+            # Right only registers will get allocated as part of `as_cirq_op`.
+            if reg.name in in_quregs:
+                raise ValueError(f"RIGHT register {reg=} shouldn't exist in {in_quregs=}.")
+            all_quregs[reg.name] = np.array(qubit_manager.qalloc(reg.total_bits())).reshape(
+                full_shape
+            )
+        if reg.side == Side.LEFT:
+            # LEFT only registers should be de-allocated and not be part of output.
+            qubit_manager.qfree(in_quregs[reg.name].flatten())
+
+        if reg.side & Side.RIGHT:
+            # Right registers should be part of the output.
+            out_quregs[reg.name] = all_quregs[reg.name]
+    return all_quregs, out_quregs
 
 
 class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
@@ -180,23 +237,30 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 - `build_composite_bloq` raises a `DecomposeNotImplementedError` and
                 - `decompose_from_registers` raises a `DecomposeNotImplementedError`.
         """
-        from qualtran.cirq_interop._cirq_to_bloq import decompose_from_cirq_op
+        from qualtran.cirq_interop._cirq_to_bloq import decompose_from_cirq_style_method
 
         try:
             return Bloq.decompose_bloq(self)
         except DecomposeNotImplementedError:
-            return decompose_from_cirq_op(self, decompose_once=True)
+            return decompose_from_cirq_style_method(self)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate
+        """Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
 
-        return _construct_op_from_gate(
-            self,
-            in_quregs={k: np.array(v) for k, v in cirq_quregs.items()},
-            qubit_manager=qubit_manager,
+        Args:
+            qubit_manager: For allocating/deallocating qubits for RIGHT/LEFT only registers.
+            in_quregs: Mapping from LEFT register names to corresponding cirq qubits.
+
+        Returns:
+            A cirq operation constructed using `self` and a mapping from RIGHT register names to
+            corresponding Cirq qubits.
+        """
+        all_quregs, out_quregs = _get_all_and_output_quregs_from_input(
+            self.signature, qubit_manager, in_quregs
         )
+        return self.on_registers(**all_quregs), out_quregs
 
     def t_complexity(self) -> 'TComplexity':
         from qualtran.cirq_interop.t_complexity_protocol import t_complexity
@@ -221,27 +285,51 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     def _decompose_with_context_(
         self, qubits: Sequence[cirq.Qid], context: Optional[cirq.DecompositionContext] = None
     ) -> cirq.OP_TREE:
-        qubit_regs = split_qubits(self.signature, qubits)
+        from qualtran.cirq_interop._bloq_to_cirq import _cirq_style_decompose_from_decompose_bloq
+
+        quregs = split_qubits(self.signature, qubits)
         if context is None:
             context = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
         try:
-            return self.decompose_from_registers(context=context, **qubit_regs)
-        except DecomposeNotImplementedError as e:
+            return self.decompose_from_registers(context=context, **quregs)
+        except DecomposeNotImplementedError:
             pass
         try:
-            qm = context.qubit_manager
-            return Bloq.decompose_bloq(self).to_cirq_circuit(qubit_manager=qm, **qubit_regs)[0]
-        except DecomposeNotImplementedError as e:
+            return _cirq_style_decompose_from_decompose_bloq(
+                bloq=self, quregs=quregs, context=context
+            )
+        except DecomposeNotImplementedError:
             pass
         return NotImplemented
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
 
+    def on(self, *qubits) -> 'cirq.Operation':
+        import cirq
+
+        # Multiple inheritance: use `cirq.Gate.on()`, not the bloq method.
+        return cirq.Gate.on(self, *qubits)
+
     def on_registers(
         self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
+
+    # pylint: disable=arguments-renamed
+    def controlled(
+        self,
+        num_controls: Optional[int] = None,
+        control_values=None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+    ) -> 'cirq.Gate':
+        # Multiple inheritance: use the `cirq.Gate` method.
+        return cirq.Gate.controlled(
+            self,
+            num_controls=num_controls,
+            control_values=control_values,
+            control_qid_shape=control_qid_shape,
+        )
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Default diagram info that uses register names to name the boxes in multi-qubit gates.

@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
+import abc
 import itertools
 from collections import defaultdict
 from functools import cached_property
@@ -30,13 +31,18 @@ from qualtran import (
     CompositeBloq,
     DecomposeNotImplementedError,
     DecomposeTypeError,
+    GateWithRegisters,
     Register,
     Side,
     Signature,
     Soquet,
     SoquetT,
 )
-from qualtran._infra.gate_with_registers import split_qubits
+from qualtran._infra.gate_with_registers import (
+    _get_all_and_output_quregs_from_input,
+    get_named_qubits,
+    split_qubits,
+)
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
@@ -47,35 +53,47 @@ CirqQuregT = NDArray[cirq.Qid]
 CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
 
 
-def get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
-    ret = signature.get_cirq_quregs()
+def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
+    ret = get_named_qubits(signature.lefts())
     qm.manage_qubits(itertools.chain.from_iterable(qreg.flatten() for qreg in ret.values()))
     return ret
 
 
-@frozen
-class CirqGateAsBloq(Bloq):
-    """A Bloq wrapper around a `cirq.Gate`, preserving signature if gate is a `GateWithRegisters`."""
+class CirqGateAsBloqBase(GateWithRegisters):
+    """A Bloq wrapper around a `cirq.Gate`"""
 
-    gate: cirq.Gate
+    @property
+    @abc.abstractmethod
+    def cirq_gate(self) -> cirq.Gate:
+        ...
 
     def pretty_name(self) -> str:
-        g = min(self.gate.__class__.__name__, str(self.gate), key=len)
+        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
         return f'cirq.{g}'
 
     @cached_property
     def signature(self) -> 'Signature':
-        if isinstance(self.gate, Bloq):
-            return self.gate.signature
-        nqubits = cirq.num_qubits(self.gate)
+        if isinstance(self.cirq_gate, Bloq):
+            return self.cirq_gate.signature
+        nqubits = cirq.num_qubits(self.cirq_gate)
         return (
-            Signature([Register('qubits', shape=nqubits, bitsize=1)])
-            if nqubits > 0
-            else Signature([])
+            Signature([Register('q', shape=nqubits, bitsize=1)])
+            if nqubits > 1
+            else Signature.build(q=nqubits)
         )
 
-    def decompose_bloq(self) -> 'CompositeBloq':
-        return decompose_from_cirq_op(self, decompose_once=True)
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        op = (
+            self.cirq_gate.on_registers(**quregs)
+            if isinstance(self.cirq_gate, GateWithRegisters)
+            else self.cirq_gate.on(*quregs.get('q', np.array(())).flatten())
+        )
+        try:
+            return cirq.decompose_once(op)
+        except TypeError as e:
+            raise DecomposeNotImplementedError(f"{self} does not declare a decomposition.") from e
 
     def add_my_tensors(
         self,
@@ -86,7 +104,7 @@ class CirqGateAsBloq(Bloq):
         outgoing: Dict[str, 'SoquetT'],
     ):
         _add_my_tensors_from_gate(
-            self.gate,
+            self.cirq_gate,
             self.signature,
             self.short_name(),
             tn=tn,
@@ -95,25 +113,41 @@ class CirqGateAsBloq(Bloq):
             outgoing=outgoing,
         )
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        from qualtran import GateWithRegisters
-        from qualtran.cirq_interop._bloq_to_cirq import _construct_op_from_gate
-
-        if not isinstance(self.gate, GateWithRegisters):
-            return self.gate.on(*cirq_quregs['qubits'].flatten()), cirq_quregs
-        return _construct_op_from_gate(
-            self.gate,
-            in_quregs={k: np.array(v) for k, v in cirq_quregs.items()},
-            qubit_manager=qubit_manager,
-        )
-
     def t_complexity(self) -> 'TComplexity':
-        return t_complexity(self.gate)
+        return t_complexity(self.cirq_gate)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        return _wire_symbol_from_gate(self.gate, self.signature, soq)
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **in_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        if isinstance(self.cirq_gate, GateWithRegisters):
+            return self.cirq_gate.as_cirq_op(qubit_manager, **in_quregs)
+        qubits = in_quregs.get('q', ()).flatten()
+        return self.cirq_gate.on(*qubits), in_quregs
+
+    # Delegate all cirq-style protocols to underlying gate
+    def _unitary_(self):
+        return cirq.unitary(self.cirq_gate, default=None)
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        return cirq.circuit_diagram_info(self.cirq_gate)
+
+    def __str__(self):
+        return str(self.cirq_gate)
+
+    def __pow__(self, power):
+        return CirqGateAsBloq(gate=cirq.pow(self.cirq_gate, power))
+
+    def adjoint(self) -> 'Bloq':
+        return CirqGateAsBloq(gate=cirq.inverse(self.cirq_gate))
+
+
+@frozen
+class CirqGateAsBloq(CirqGateAsBloqBase):
+    gate: cirq.Gate
+
+    @property
+    def cirq_gate(self) -> cirq.Gate:
+        return self.gate
 
 
 def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet') -> 'WireSymbol':
@@ -123,9 +157,23 @@ def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet')
     begin = 0
     symbol: str = soq.pretty()
     for reg in signature:
-        finish = begin + int(np.prod(reg.shape))
+        reg_size = int(np.prod(reg.shape))
+        finish = begin + reg.bitsize * int(np.prod(reg.shape))
         if reg == soq.reg:
-            symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
+            if reg_size == 1:
+                # either shape = () or shape = (1,), wire_symbols is a list of
+                # size reg.bitsize, we only want one label for the register.
+                symbol = wire_symbols[begin]
+            elif reg.bitsize > 1:
+                # If the bitsize > 1 AND the shape of the register is non
+                # trivial then we only want to index into the shape, (not shape
+                # * bitsize)
+                symbol = np.array(wire_symbols[begin : begin + reg_size]).reshape(reg.shape)[
+                    soq.idx
+                ]
+            else:
+                # bitsize = 1 and shape is non trivial, index into the array of wireshapes.
+                symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
         begin = finish
     return directional_text_box(text=symbol, side=soq.reg.side)
 
@@ -251,6 +299,29 @@ def _gather_input_soqs(
     return qvars_in
 
 
+def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
+    """Get a `Bloq` out of a cirq Operation.
+
+    Unwrap BloqAsCirqGate, pass through any GateWithRegisters, and wrap
+    true cirq gates with `CirqGateAsBloq`.
+    """
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+
+    if op.gate is None:
+        raise ValueError(f"Only gate operations are supported, not {op}.")
+
+    gate = op.gate
+    if isinstance(gate, BloqAsCirqGate):
+        # Perhaps this operation was constructed from `Bloq.on()`.
+        return gate.bloq
+    if isinstance(gate, Bloq):
+        # I.e., `GateWithRegisters`.
+        return gate
+
+    # A base cirq gate.
+    return CirqGateAsBloq(gate)
+
+
 def cirq_optree_to_cbloq(
     optree: cirq.OP_TREE,
     *,
@@ -320,11 +391,8 @@ def cirq_optree_to_cbloq(
 
     # 2. Add each operation to the composite Bloq.
     for op in circuit.all_operations():
-        if op.gate is None:
-            raise ValueError(f"Only gate operations are supported, not {op}.")
-
-        bloq = op.gate if isinstance(op.gate, Bloq) else CirqGateAsBloq(op.gate)
-        if cirq.num_qubits(op.gate) == 0:
+        bloq = _extract_bloq_from_op(op)
+        if bloq.signature == Signature([]):
             bb.add(bloq)
             continue
 
@@ -368,32 +436,43 @@ def cirq_optree_to_cbloq(
     return bb.finalize(**final_soqs_dict)
 
 
-def decompose_from_cirq_op(bloq: 'Bloq', *, decompose_once: bool = False) -> 'CompositeBloq':
-    """Returns a CompositeBloq constructed using Cirq operations obtained via `bloq.as_cirq_op`.
+def decompose_from_cirq_style_method(
+    bloq: Bloq, method_name: str = 'decompose_from_registers'
+) -> CompositeBloq:
+    """Return a `CompositeBloq` decomposition using a cirq-style decompose method.
 
-    This method first checks whether `bloq.signature` is parameterized. If yes, it raises a
-    NotImplementedError. If not, it uses `cirq_optree_to_cbloq` to wrap the operations obtained
-    from `bloq.as_cirq_op` into a `CompositeBloq` which has the same signature as `bloq` and returns
-    the corresponding `CompositeBloq`.
+    The bloq must have a method with the given name (by default: "decompose_from_registers") that
+    satisfies the following function signature:
+
+        def decompose_from_registers(
+            self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        ) -> cirq.OP_TREE:
+
+    This must yield a list of `cirq.Operation`s using `cirq.Gate.on(...)`, `Bloq.on(...)`,
+    `GateWithRegisters.on_registers(...)`, or `Bloq.on_registers(...)`.
+
+    If `Bloq.on()` is used, the bloqs will be retained in their native form in the returned
+    composite bloq. If `cirq.Gate.on()` is used, the gates will be wrapped in `CirqGateAsBloq`.
+
+    Args:
+        bloq: The bloq to decompose.
+        method_name: The string name of the method that can be found on the bloq that
+            yields the cirq-style decomposition.
     """
-
     if any(
         cirq.is_parameterized(reg.bitsize) or cirq.is_parameterized(reg.side)
         for reg in bloq.signature
     ):
+        # pylint: disable=raise-missing-from
         raise DecomposeTypeError(f"Cannot decompose parameterized {bloq}.")
 
-    qubit_manager = InteropQubitManager()
-    in_quregs = get_cirq_quregs(bloq.signature, qubit_manager)
-    cirq_op, out_quregs = bloq.as_cirq_op(qubit_manager, **in_quregs)
-    context = cirq.DecompositionContext(qubit_manager=qubit_manager)
-    decomposed_optree = (
-        cirq.decompose_once(cirq_op, context=context, default=None) if decompose_once else cirq_op
-    )
-
-    if decomposed_optree is None:
-        raise DecomposeNotImplementedError(f"{bloq} does not have a decomposition.")
-
+    qm = InteropQubitManager()
+    in_quregs = get_named_qubits(bloq.signature.lefts())
+    qm.manage_qubits(itertools.chain.from_iterable(qreg.flatten() for qreg in in_quregs.values()))
+    all_quregs, out_quregs = _get_all_and_output_quregs_from_input(bloq.signature, qm, in_quregs)
+    context = cirq.DecompositionContext(qubit_manager=qm)
+    dfr_method = getattr(bloq, method_name)
+    decomposed_optree = dfr_method(context=context, **all_quregs)
     return cirq_optree_to_cbloq(
         decomposed_optree, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
     )

@@ -1,17 +1,26 @@
-cirq-core==1.3.0.dev20231018023458
+# core dependencies
 attrs
 cachetools>=5.3
+networkx
+numpy
+sympy
+cirq-core==1.3.0.dev20231018023458
+fxpmath
 
-# docs
-ipywidgets
+# qualtran/testing.py
 nbconvert
 nbformat
 
 # drawing
 pydot
 ipython
+matplotlib
+ipywidgets
 
-# quimb and its tensor dependencies
+# quimb simulation
 quimb
-opt_einsum
-autoray
+
+# serialization
+protobuf
+
+# Note: use `pipreqs` to generate a list of dependencies based on the imports in our files.

@@ -30,10 +30,12 @@ from qualtran import (
     DecomposeTypeError,
     GateWithRegisters,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Circle, TextBox, WireSymbol
 
 from .t_gate import TGate
 
@@ -162,6 +164,69 @@ class TwoBitCSwap(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 7), (ArbitraryClifford(n=3), 10)}
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
+
+@frozen
+class Swap(Bloq):
+    """Swap two registers
+
+    Args:
+        bitsize: The bitsize of each of the two registers being swapped.
+
+    Registers:
+        x: the first register
+        y: the second register
+    """
+
+    bitsize: Union[int, sympy.Expr]
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature.build(x=self.bitsize, y=self.bitsize)
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: 'Soquet', y: 'Soquet'
+    ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise DecomposeTypeError("`bitsize` must be a concrete value.")
+
+        xs = bb.split(x)
+        ys = bb.split(y)
+
+        for i in range(self.bitsize):
+            xs[i], ys[i] = bb.add(TwoBitSwap(), x=xs[i], y=ys[i])
+
+        return {'x': bb.join(xs), 'y': bb.join(ys)}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TwoBitSwap(), self.bitsize)}
+
+    def on_classical_vals(
+        self, x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'x': y, 'y': x}
+
+    def short_name(self) -> str:
+        return 'swap'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'x':
+            return TextBox('×(x)')
+        elif soq.reg.name == 'y':
+            return TextBox('×(y)')
+        raise ValueError(f"Bad register name {soq.reg.name}")
+
+    def adjoint(self) -> 'Bloq':
+        return self
+
+
+@bloq_example
+def _swap_small() -> Swap:
+    swap_small = Swap(bitsize=4)
+    return swap_small
+
 
 @frozen
 class CSwap(GateWithRegisters):
@@ -213,7 +278,7 @@ class CSwap(GateWithRegisters):
         raise ValueError("Bad control value for CSwap classical simulation.")
 
     def short_name(self) -> str:
-        return 'swap'
+        return r'$x\leftrightarrow y$'
 
     @classmethod
     def make_on(
@@ -229,8 +294,19 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'x':
+            return TextBox('×(x)')
+        elif soq.reg.name == 'y':
+            return TextBox('×(y)')
+        else:
+            return Circle(filled=True)
+
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
+
+    def adjoint(self) -> 'Bloq':
+        return self
 
 
 @bloq_example

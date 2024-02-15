@@ -15,9 +15,9 @@ import importlib
 import inspect
 import subprocess
 from pathlib import Path
-from typing import Callable, Iterable, List, Type
+from typing import Callable, Iterable, List, Tuple, Type
 
-from qualtran import Bloq
+from qualtran import Bloq, BloqExample
 
 from .git_tools import get_git_root
 
@@ -25,7 +25,11 @@ from .git_tools import get_git_root
 def _get_paths(bloqs_root: Path, filter_func: Callable[[Path], bool]) -> List[Path]:
     """Get *.py files based on `filter_func`."""
     cp = subprocess.run(
-        ['git', 'ls-files', '*.py'], capture_output=True, universal_newlines=True, cwd=bloqs_root
+        ['git', 'ls-files', '*.py'],
+        capture_output=True,
+        universal_newlines=True,
+        cwd=bloqs_root,
+        check=True,
     )
     outs = cp.stdout.splitlines()
     paths = [Path(out) for out in outs]
@@ -84,7 +88,16 @@ def modpath_to_bloqs(path: Path) -> Iterable[Type[Bloq]]:
         yield cls
 
 
-def get_bloq_classes():
+def modpath_to_bloq_exs(path: Path) -> Iterable[Tuple[str, str, BloqExample]]:
+    """Given a module path, return all the `BloqExample`s defined within."""
+    modname = _bloq_modpath_to_modname(path)
+    mod = importlib.import_module(modname)
+
+    for name, obj in inspect.getmembers(mod, lambda x: isinstance(x, BloqExample)):
+        yield modname, name, obj
+
+
+def get_bloq_classes() -> List[Type[Bloq]]:
     reporoot = get_git_root()
     bloqs_root = reporoot / 'qualtran/bloqs'
     paths = get_bloq_module_paths(bloqs_root)
@@ -92,3 +105,16 @@ def get_bloq_classes():
     for path in paths:
         bloq_clss.extend(modpath_to_bloqs(path))
     return bloq_clss
+
+
+def get_bloq_examples() -> List[BloqExample]:
+    reporoot = get_git_root()
+    bloqs_root = reporoot / 'qualtran/bloqs'
+    paths = get_bloq_module_paths(bloqs_root)
+
+    bexamples: List[BloqExample] = []
+    for path in paths:
+        for modname, name, be in modpath_to_bloq_exs(path):
+            bexamples.append(be)
+
+    return bexamples

@@ -13,8 +13,8 @@
 #  limitations under the License.
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
-
-from typing import Dict, Iterable, Sequence, Tuple, Union
+import itertools
+from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -22,6 +22,7 @@ import sympy
 from numpy.typing import NDArray
 
 from qualtran import (
+    Bloq,
     BloqInstance,
     Connection,
     DanglingT,
@@ -110,40 +111,35 @@ def _update_assign_from_vals(
     ranges.
     """
     for reg in regs:
+        debug_str = f'{binst}.{reg.name}'
         try:
-            arr = vals[reg.name]
-        except KeyError:
-            raise ValueError(f"{binst} requires an input register named {reg.name}")
+            val = vals[reg.name]
+        except KeyError as e:
+            raise ValueError(f"{binst} requires an input register named {reg.name}") from e
 
         if reg.shape:
-            arr = np.asarray(arr)
-            if arr.shape != reg.shape:
+            # `val` is an array
+            val = np.asarray(val)
+            if val.shape != reg.shape:
                 raise ValueError(
-                    f"Incorrect shape {arr.shape} received for {binst}.{reg.name}. "
-                    f"Want {reg.shape}."
+                    f"Incorrect shape {val.shape} received for {debug_str}. " f"Want {reg.shape}."
                 )
-            if np.any(arr < 0):
-                raise ValueError(f"Negative classical values encountered in {binst}.{reg.name}")
-            if np.any(arr >= 2**reg.bitsize):
-                raise ValueError(f"Too-large classical values encountered in {binst}.{reg.name}")
+            reg.dtype.assert_valid_classical_val_array(val, debug_str)
 
             for idx in reg.all_idxs():
                 soq = Soquet(binst, reg, idx=idx)
-                soq_assign[soq] = arr[idx]
-        else:
-            if isinstance(arr, sympy.Expr):
-                soq = Soquet(binst, reg)
-                soq_assign[soq] = arr
-                continue
+                soq_assign[soq] = val[idx]
 
-            if not isinstance(arr, (int, np.integer)):
-                raise ValueError(f"{binst}.{reg.name} should be an integer, not {arr!r}")
-            if arr < 0:
-                raise ValueError(f"Negative classical value encountered in {binst}.{reg.name}")
-            if arr >= 2**reg.bitsize:
-                raise ValueError(f"Too-large classical value encountered in {binst}.{reg.name}")
+        elif isinstance(val, sympy.Expr):
+            # `val` is symbolic
             soq = Soquet(binst, reg)
-            soq_assign[soq] = arr
+            soq_assign[soq] = val
+
+        else:
+            # `val` is one value.
+            reg.dtype.assert_valid_classical_val(val, debug_str)
+            soq = Soquet(binst, reg)
+            soq_assign[soq] = val
 
 
 def _binst_on_classical_vals(
@@ -173,7 +169,7 @@ def _binst_on_classical_vals(
     _update_assign_from_vals(bloq.signature.rights(), binst, out_vals, soq_assign)
 
 
-def _cbloq_call_classically(
+def call_cbloq_classically(
     signature: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
@@ -215,3 +211,55 @@ def _cbloq_call_classically(
 
     final_vals = {reg.name: _f_vals(reg) for reg in signature.rights()}
     return final_vals, soq_assign
+
+
+def get_classical_truth_table(
+    bloq: 'Bloq',
+) -> Tuple[List[str], List[str], List[Tuple[Sequence[Any], Sequence[Any]]]]:
+    """Get a 'truth table' for a classical-reversible bloq.
+
+    Args:
+        bloq: The classical-reversible bloq to create a truth table for.
+
+    Returns:
+        in_names: The names of the left, input registers to serve as truth table headings for
+            the input side of the truth table.
+        out_names: The names of the right, output registers to serve as truth table headings
+            for the output side of the truth table.
+        truth_table: A list of table entries. Each entry is a tuple of (in_vals, out_vals).
+            The vals sequences are ordered according to the `in_names` and `out_names` return
+            values.
+    """
+    for reg in bloq.signature.lefts():
+        if reg.shape:
+            raise NotImplementedError()
+
+    in_names: List[str] = []
+    iters = []
+    for reg in bloq.signature.lefts():
+        in_names.append(reg.name)
+        iters.append(reg.dtype.get_classical_domain())
+    out_names: List[str] = [reg.name for reg in bloq.signature.rights()]
+
+    truth_table: List[Tuple[Sequence[Any], Sequence[Any]]] = []
+    for in_val_tuple in itertools.product(*iters):
+        in_val_d = {name: val for name, val in zip(in_names, in_val_tuple)}
+        out_val_tuple = bloq.call_classically(**in_val_d)
+        # out_val_d = {name: val for name, val in zip(out_names, out_val_tuple)}
+        truth_table.append((in_val_tuple, out_val_tuple))
+    return in_names, out_names, truth_table
+
+
+def format_classical_truth_table(
+    in_names: Sequence[str],
+    out_names: Sequence[str],
+    truth_table: Sequence[Tuple[Sequence[Any], Sequence[Any]]],
+) -> str:
+    """Get a formatted tabular representation of the classical truth table."""
+    heading = '  '.join(in_names) + '  |  ' + '  '.join(out_names) + '\n'
+    heading += '-' * len(heading)
+    entries = [
+        ', '.join(f'{v}' for v in invals) + ' -> ' + ', '.join(f'{v}' for v in outvals)
+        for invals, outvals in truth_table
+    ]
+    return '\n'.join([heading] + entries)

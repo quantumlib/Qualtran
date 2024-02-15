@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 import numpy as np
+import sympy
 from attrs import frozen
 
-from qualtran import Bloq, Register, Side, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Side, Signature
 from qualtran.bloqs.arithmetic import GreaterThan
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -49,8 +50,8 @@ class Comparator(Bloq):
     def signature(self):
         return Signature(
             [
-                Register('a', 1, shape=(self.bitsize,)),
-                Register('b', 1, shape=(self.bitsize,)),
+                Register('a', self.bitsize),
+                Register('b', self.bitsize),
                 Register('out', 1, side=Side.RIGHT),
             ]
         )
@@ -61,10 +62,24 @@ class Comparator(Bloq):
     def t_complexity(self):
         # complexity is from less than on two n qubit numbers + controlled swap
         # Hard code for now until CSwap-Bloq is merged.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/219
         t_complexity = GreaterThan(self.bitsize, self.bitsize).t_complexity()
         t_complexity += TComplexity(t=14 * self.bitsize)
         return t_complexity
+
+
+@bloq_example
+def _cmp_symb() -> Comparator:
+    n = sympy.Symbol('n')
+    cmp_symb = Comparator(bitsize=n)
+    return cmp_symb
+
+
+_COMPARATOR_DOC = BloqDocSpec(
+    bloq_cls=Comparator,
+    import_line='from qualtran.bloqs.sorting import Comparator',
+    examples=(_cmp_symb,),
+)
 
 
 @frozen
@@ -79,7 +94,7 @@ class BitonicSort(Bloq):
         k: Number of integers to sort.
 
     Registers:
-        input: A k-nbit-sized input register (register a above). List of integers we want to sort.
+        input: List of k integers we want to sort.
 
     References:
         [Improved techniques for preparing eigenstates of fermionic
@@ -92,7 +107,7 @@ class BitonicSort(Bloq):
 
     @property
     def signature(self):
-        return Signature([Register("input", bitsize=self.bitsize, shape=(self.bitsize,))])
+        return Signature([Register("input", bitsize=self.bitsize, shape=(self.k,))])
 
     def short_name(self) -> str:
         return "BSort"
@@ -101,9 +116,23 @@ class BitonicSort(Bloq):
         # Need O(k * log^2(k)) comparisons.
         # TODO: This is Big-O complexity.
         # Should work out constant factors or
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/219
         return (
             self.k
             * int(np.ceil(max(np.log2(self.k) ** 2.0, 1)))
             * Comparator(self.bitsize).t_complexity()
         )
+
+
+@bloq_example
+def _bitonic_sort() -> BitonicSort:
+    n = sympy.Symbol('n')
+    bitonic_sort = BitonicSort(bitsize=n, k=3)
+    return bitonic_sort
+
+
+_BITONIC_SORT_DOC = BloqDocSpec(
+    bloq_cls=BitonicSort,
+    import_line='from qualtran.bloqs.sorting import BitonicSort',
+    examples=(_bitonic_sort,),
+)

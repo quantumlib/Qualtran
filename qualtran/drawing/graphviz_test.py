@@ -13,43 +13,17 @@
 #  limitations under the License.
 
 import re
-from functools import cached_property
-from typing import Dict
 
 import IPython.display
 import pytest
-from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, DecomposeTypeError, Signature, Soquet
+from qualtran.bloqs.for_testing import TestParallelCombo
 from qualtran.drawing.graphviz import _assign_ids_to_bloqs_and_soqs, GraphDrawer, PrettyGraphDrawer
 from qualtran.testing import execute_notebook
 
 
-@frozen
-class Atom(Bloq):
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(q=1)
-
-    def decompose_bloq(self) -> 'CompositeBloq':
-        raise DecomposeTypeError(f"{self} is atomic")
-
-
-class TestParallelBloq(Bloq):
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(stuff=3)
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', stuff: 'SoquetT') -> Dict[str, 'Soquet']:
-
-        qs = bb.split(stuff)
-        for i in range(3):
-            qs[i] = bb.add(Atom(), q=qs[i])
-        return {'stuff': bb.join(qs)}
-
-
 def test_assign_ids():
-    cbloq = TestParallelBloq().decompose_bloq()
+    cbloq = TestParallelCombo().decompose_bloq()
     id_map = _assign_ids_to_bloqs_and_soqs(cbloq.bloq_instances, cbloq.all_soquets)
 
     ids = sorted(id_map.values())
@@ -68,12 +42,12 @@ def test_assign_ids():
             prefixes.add(v)
             continue
         prefixes.add(ma.group(1))
-    assert sorted(prefixes) == ['Atom', 'Join', 'Split', 'join', 'q', 'split', 'stuff']
+    assert sorted(prefixes) == ['Join', 'Split', 'TestAtom', 'q', 'reg']
 
 
 @pytest.mark.parametrize('draw_cls', [GraphDrawer, PrettyGraphDrawer])
 def test_graphviz(draw_cls):
-    bloq = TestParallelBloq().decompose_bloq()
+    bloq = TestParallelCombo().decompose_bloq()
     drawer = draw_cls(bloq)
     graph = drawer.get_graph()
     assert len(graph.get_nodes()) == 1 + 3 + 1  # split, atoms, join

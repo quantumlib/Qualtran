@@ -68,8 +68,6 @@ else
     rev="${base}"
 fi
 
-#source dev_tools/pypath
-
 # Run tests while producing coverage files.
 check/pytest --cov \
              --cov-config=dev_tools/conf/.coveragerc \

@@ -16,11 +16,12 @@
 import abc
 import inspect
 import textwrap
+from pathlib import Path
 from types import ModuleType
 from typing import List, Optional
 
 import nbformat
-from attrs import frozen
+from attrs import field, frozen
 
 from qualtran import BloqDocSpec, BloqExample
 
@@ -49,8 +50,12 @@ class NotebookSpecV2:
     title: str
     module: ModuleType
     bloq_specs: List[BloqDocSpec]
-    directory: str = '.'
+    directory: str = field()
     _path_stem: Optional[str] = None
+
+    @directory.default
+    def _default_directory(self) -> str:
+        return str(Path(self.module.__file__).parent)
 
     @property
     def path_stem(self):
@@ -134,7 +139,7 @@ def get_bloq_doc_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_MarkdownC
     ]
 
 
-def _get_one_ex_instance_cell(bloq_ex: 'BloqExample', cid_prefix):
+def _get_one_ex_instance_cell(bloq_ex: BloqExample, cid_prefix):
     """Code cell for one example instance."""
     return _PyCell(
         text='\n'.join(_get_bloq_example_source_lines(bloq_ex)),
@@ -173,12 +178,34 @@ def get_graphical_signature_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List
     ]
 
 
+def get_call_graph_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
+    """Cells showing a call graph for one of the bloq examples."""
+    if bloqdoc.call_graph_example is None:
+        return []
+
+    ex = bloqdoc.call_graph_example
+    graphvar = f'{ex.name}_g'
+    sigmavar = f'{ex.name}_sigma'
+
+    code = [
+        f'{graphvar}, {sigmavar} = {ex.name}.call_graph()',
+        f'show_call_graph({graphvar})',
+        f'show_counts_sigma({sigmavar})',
+    ]
+
+    return [
+        _MarkdownCell(text='### Call Graph', cell_id=f'{cid_prefix}.call_graph.md'),
+        _PyCell(text='\n'.join(code), cell_id=f'{cid_prefix}.call_graph.py'),
+    ]
+
+
 def get_cells(bloqdoc: BloqDocSpec) -> List[_Cell]:
     cells = []
     cid_prefix = f'{bloqdoc.bloq_cls.__name__}'
     cells += get_bloq_doc_cells(bloqdoc, cid_prefix)
     cells += get_example_instances_cells(bloqdoc, cid_prefix)
     cells += get_graphical_signature_cells(bloqdoc, cid_prefix)
+    cells += get_call_graph_cells(bloqdoc, cid_prefix)
     return cells
 
 

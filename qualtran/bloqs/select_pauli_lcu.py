@@ -14,15 +14,15 @@
 
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
+from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import Register, SelectionRegister
+from qualtran import BoundedQUInt, Register
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 
@@ -70,8 +70,10 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
         return () if self.control_val is None else (Register('control', 1),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self.selection_bitsize, len(self.select_unitaries)),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (
+            Register('selection', BoundedQUInt(self.selection_bitsize, len(self.select_unitaries))),
+        )
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

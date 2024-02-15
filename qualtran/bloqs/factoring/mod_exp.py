@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Optional, Set, Union
 
 import numpy as np
 import sympy
@@ -25,6 +25,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     DecomposeTypeError,
+    QUInt,
     Register,
     Side,
     Signature,
@@ -69,13 +70,13 @@ class ModExp(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('exponent', bitsize=self.exp_bitsize),
-                Register('x', bitsize=self.x_bitsize, side=Side.RIGHT),
+                Register('exponent', QUInt(self.exp_bitsize)),
+                Register('x', QUInt(self.x_bitsize), side=Side.RIGHT),
             ]
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: int, g=None):
+    def make_for_shor(cls, big_n: int, g: Optional[int] = None):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
@@ -131,21 +132,19 @@ def _modexp_small() -> ModExp:
 
 @bloq_example
 def _modexp() -> ModExp:
-    modexp = ModExp(base=3, mod=15, exp_bitsize=8, x_bitsize=2048)
+    modexp = ModExp.make_for_shor(big_n=15 * 17, g=9)
     return modexp
 
 
 @bloq_example
 def _modexp_symb() -> ModExp:
-    import sympy
-
-    g, N = sympy.symbols('g N')
-    modexp_symb = ModExp.make_for_shor(big_n=N, g=g)
+    g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
+    modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     return modexp_symb
 
 
 _MODEXP_DOC = BloqDocSpec(
     bloq_cls=ModExp,
     import_line='from qualtran.bloqs.factoring.mod_exp import ModExp',
-    examples=(_modexp_small, _modexp, _modexp_symb),
+    examples=(_modexp_symb, _modexp_small, _modexp),
 )

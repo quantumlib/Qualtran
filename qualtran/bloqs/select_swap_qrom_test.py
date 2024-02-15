@@ -17,15 +17,26 @@ import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
-from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
+from qualtran.bloqs.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-@pytest.mark.parametrize("data", [[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
-@pytest.mark.parametrize("block_size", [None, 1, 2, 3])
+@pytest.mark.parametrize(
+    "data,block_size",
+    [
+        pytest.param(
+            data,
+            block_size,
+            id=f"{block_size}-data{didx}",
+            marks=pytest.mark.slow if block_size == 3 and didx == 0 else (),
+        )
+        for didx, data in enumerate([[[1, 2, 3, 4, 5]], [[1, 2, 3], [3, 2, 1]]])
+        for block_size in [None, 1, 2, 3]
+    ],
+)
 def test_select_swap_qrom(data, block_size):
     qrom = SelectSwapQROM(*data, block_size=block_size)
 
@@ -34,7 +45,7 @@ def test_select_swap_qrom(data, block_size):
     qubit_regs = get_named_qubits(qrom.signature)
     selection = qubit_regs["selection"]
     selection_q, selection_r = selection[: qrom.selection_q], selection[qrom.selection_q :]
-    targets = [qubit_regs[f"target{i}"] for i in range(len(data))]
+    targets = [qubit_regs[f"target{i}_"] for i in range(len(data))]
 
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     context = cirq.DecompositionContext(greedy_mm)
@@ -55,7 +66,7 @@ def test_select_swap_qrom(data, block_size):
         cirq.H.on_each(*dirty_target_ancilla),
     )
     all_qubits = sorted(circuit.all_qubits())
-    for selection_integer in range(qrom.selection_registers[0].iteration_length):
+    for selection_integer in range(qrom.selection_registers[0].dtype.iteration_length):
         svals_q = list(iter_bits(selection_integer // qrom.block_size, len(selection_q)))
         svals_r = list(iter_bits(selection_integer % qrom.block_size, len(selection_r)))
         qubit_vals = {x: 0 for x in all_qubits}
@@ -108,3 +119,27 @@ def test_qroam_hashable():
     qrom = SelectSwapQROM([1, 2, 5, 6, 7, 8])
     assert hash(qrom) is not None
     assert t_complexity(qrom) == TComplexity(32, 160, 0)
+
+
+def test_qroam_many_registers():
+    # Test > 10 registers which resulted in https://github.com/quantumlib/Qualtran/issues/556
+    target_bitsizes = (3,) * 10 + (1,) * 2 + (3,)
+    block_size = 2 ** find_optimal_log_block_size(10, sum(target_bitsizes))
+    qrom = SelectSwapQROM(
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (1,) * 10,
+        (0,) * 10,
+        (1,) * 10,
+        (3,) * 10,
+        target_bitsizes=target_bitsizes,
+        block_size=block_size,
+    )
+    qrom.call_graph()

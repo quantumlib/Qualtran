@@ -350,10 +350,15 @@ class WireSymbol(metaclass=abc.ABCMeta):
     A symbol is a particular visual representation of a bloq's register.
     """
 
-    def draw(self, ax, x, y):
+    @abc.abstractmethod
+    def draw(self, ax, x, y) -> None:
         """Draw this symbol using matplotlib."""
 
-    def json_dict(self):
+    def adjoint(self) -> 'WireSymbol':
+        """Return a symbol that is the adjoint of this."""
+        return self
+
+    def json_dict(self) -> Dict[str, Any]:
         return {'symb_cls': self.__class__.__name__, 'symb_attributes': attrs.asdict(self)}
 
 
@@ -407,6 +412,9 @@ class RarrowTextBox(WireSymbol):
             bbox={'boxstyle': 'rarrow', 'fc': 'white'},
         )
 
+    def adjoint(self):
+        return LarrowTextBox(text=self.text)
+
 
 @frozen
 class LarrowTextBox(WireSymbol):
@@ -423,6 +431,9 @@ class LarrowTextBox(WireSymbol):
             va='center',
             bbox={'boxstyle': 'larrow', 'fc': 'white'},
         )
+
+    def adjoint(self) -> 'WireSymbol':
+        return RarrowTextBox(text=self.text)
 
 
 @frozen
@@ -623,8 +634,38 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
     return msd
 
 
-def draw_musical_score(msd: MusicalScoreData):
-    fig, ax = plt.subplots(figsize=(max(5.0, 0.2 + 0.6 * msd.max_x), 5))
+def draw_musical_score(
+    msd: MusicalScoreData,
+    unit_to_inches: float = 0.8,
+    max_width: float = 8.0,
+    max_height: float = 8.0,
+):
+    # First, set up data coordinate limits and figure size.
+    # X coordinates go from -1 to max_x
+    #    with 1 unit of padding it goes from -2 to max_x+1
+    xlim = (-2, msd.max_x + 1)
+    x_extent = msd.max_x + 3.0
+    # Y coordinates of non-labels goes from 0 to -max_y;
+    #     with the bloq label above it goes from 0.5 to -max_y
+    #     with 0.5 units of padding it goes from 1 to -(max_y+0.5)
+    ylim = (-msd.max_y - 0.5, 1)
+    y_extent = msd.max_y + 1.5
+
+    # The width and height are proportional.
+    width = unit_to_inches * x_extent
+    height = unit_to_inches * y_extent
+
+    # But we cap width and height (but keep it proportional).
+    if width > height and width > max_width:
+        scale = max_width / width
+        width *= scale
+        height *= scale
+    elif height > max_height:
+        scale = max_height / height
+        height *= scale
+        width *= scale
+
+    fig, ax = plt.subplots(figsize=(width, height))
 
     for hline in msd.hlines:
         ax.hlines(-hline.y, hline.seq_x_start, hline.seq_x_end, color='k', zorder=-1)
@@ -637,8 +678,9 @@ def draw_musical_score(msd: MusicalScoreData):
         symb = soq.symb
         symb.draw(ax, soq.rpos.seq_x, soq.rpos.y)
 
-    ax.set_xlim((-2, msd.max_x + 1))
-    ax.set_ylim((-msd.max_y - 0.5, 1))
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    ax.axis('off')
     fig.tight_layout()
     return fig, ax
 

@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import SelectionRegister
+from qualtran import BoundedQUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop.bit_tools import iter_bits
@@ -28,7 +28,8 @@ from qualtran.testing import assert_valid_bloq_decomposition
 @pytest.mark.parametrize("target_gate", [cirq.X, cirq.Y])
 def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, target_gate):
     gate = SelectedMajoranaFermion(
-        SelectionRegister('selection', selection_bitsize, target_bitsize), target_gate=target_gate
+        Register('selection', BoundedQUInt(selection_bitsize, target_bitsize)),
+        target_gate=target_gate,
     )
     assert_valid_bloq_decomposition(gate)
 
@@ -69,7 +70,7 @@ def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, targe
 def test_selected_majorana_fermion_gate_diagram():
     selection_bitsize, target_bitsize = 3, 5
     gate = SelectedMajoranaFermion(
-        SelectionRegister('selection', selection_bitsize, target_bitsize), target_gate=cirq.X
+        Register('selection', BoundedQUInt(selection_bitsize, target_bitsize)), target_gate=cirq.X
     )
     circuit = cirq.Circuit(gate.on_registers(**get_named_qubits(gate.signature)))
     qubits = list(q for v in get_named_qubits(gate.signature).values() for q in v)
@@ -101,7 +102,7 @@ target4: ──────ZX───
 def test_selected_majorana_fermion_gate_decomposed_diagram():
     selection_bitsize, target_bitsize = 2, 3
     gate = SelectedMajoranaFermion(
-        SelectionRegister('selection', selection_bitsize, target_bitsize), target_gate=cirq.X
+        Register('selection', BoundedQUInt(selection_bitsize, target_bitsize)), target_gate=cirq.X
     )
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     g = GateHelper(gate)
@@ -143,7 +144,7 @@ target2: ───────────────────────�
 def test_selected_majorana_fermion_gate_make_on():
     selection_bitsize, target_bitsize = 3, 5
     gate = SelectedMajoranaFermion(
-        SelectionRegister('selection', selection_bitsize, target_bitsize), target_gate=cirq.X
+        Register('selection', BoundedQUInt(selection_bitsize, target_bitsize)), target_gate=cirq.X
     )
     op = gate.on_registers(**get_named_qubits(gate.signature))
     op2 = SelectedMajoranaFermion.make_on(target_gate=cirq.X, **get_named_qubits(gate.signature))
