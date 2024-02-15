@@ -89,10 +89,10 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic import Add
-from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
@@ -144,9 +144,9 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
     def build_composite_bloq(
         self, bb: BloqBuilder, *, control: SoquetT, target_state: SoquetT, phase_gradient: SoquetT
     ) -> Dict[str, SoquetT]:
-        rom_vals = RotationTree.extract_rom_values_from_state(self.state, self.rot_reg_bitsizes)
+        rom_vals = RotationTree(self.state).get_rom_values(self.rot_reg_bitsizes)
         # allocate the qubits for the rotation angle register
-        rot_reg = bb.join(np.array([bb.add(ZeroState()) for _ in range(self.rot_reg_bitsizes)]))
+        rot_reg = bb.allocate(self.rot_reg_bitsizes)
         if self.uncompute:
             control, target_state, rot_reg, phase_gradient = self._prepare_phases(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
@@ -162,9 +162,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
             )
         # deallocate rotation register's qubits
-        qs = bb.split(rot_reg)
-        for q in qs:
-            bb.add(ZeroEffect(), q=q)
+        bb.free(rot_reg)
         return {"control": control, "target_state": target_state, "phase_gradient": phase_gradient}
 
     def _prepare_amplitudes(
@@ -179,10 +177,11 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
         # if it is the adjoint gate, load the modular negative values to undo the rotations that
         # loaded the amplitudes
         if self.uncompute:
-            rom_vals = RotationTree.extract_rom_values_from_state(
-                self.state, self.rot_reg_bitsizes, uncompute=True
+            rom_vals = RotationTree(self.state).get_rom_values(
+                self.rot_reg_bitsizes, uncompute=True
             )
         state_qubits = bb.split(target_state)
+        soqs = {"prepare_control": control, "rot_reg": rot_reg, "phase_gradient": phase_gradient}
         for i in range(self.state_bitsizes):
             # for the normal gate loop from qubit 0 to state_bitsizes-1, if it is the adjoint
             # then the process is run backwards with the opposite turn angles
@@ -192,30 +191,16 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
                 qi = i
             ctrl_rot_q = ControlledQROMRotateQubit(qi, self.rot_reg_bitsizes, tuple(rom_vals[qi]))
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
-            # first qubit does not have selection registers, only controls
-            if qi == 0:
-                control, state_qubits[qi], rot_reg, phase_gradient = bb.add(
-                    ctrl_rot_q,
-                    prepare_control=control,
-                    qubit=state_qubits[qi],
-                    rot_reg=rot_reg,
-                    phase_gradient=phase_gradient,
-                )
-            else:
-                sel = bb.join(state_qubits[:qi])
-                control, sel, state_qubits[qi], rot_reg, phase_gradient = bb.add(
-                    ctrl_rot_q,
-                    prepare_control=control,
-                    selection=sel,
-                    qubit=state_qubits[qi],
-                    rot_reg=rot_reg,
-                    phase_gradient=phase_gradient,
-                )
-                state_qubits[:qi] = bb.split(sel)
-            state_qubits[qi] = bb.add(Rx(angle=-np.pi / 2), q=state_qubits[qi])
+            if qi:
+                # first qubit does not have selection registers, only controls
+                soqs["selection"] = bb.join(state_qubits[:qi])
+            soqs = bb.add_d(ctrl_rot_q, **soqs, qubit=state_qubits[qi])
+            if qi:
+                state_qubits[:qi] = bb.split(soqs.pop("selection"))
+            state_qubits[qi] = bb.add(Rx(angle=-np.pi / 2), q=soqs.pop("qubit"))
 
         target_state = bb.join(state_qubits)
-        return control, target_state, rot_reg, phase_gradient
+        return soqs["prepare_control"], target_state, soqs["rot_reg"], soqs["phase_gradient"]
 
     def _prepare_phases(
         self,
@@ -247,7 +232,8 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
             phase_gradient: phase gradient state used to apply the rotation, can be obtained from
                 the PhaseGradientState class. It is left unaffected and can be reused.
         """
-        rot_ancilla = bb.add(OneState())
+        rot_ancilla = bb.allocate(1)
+        rot_ancilla = bb.add(XGate(), q=rot_ancilla)
         rom_vals = self._get_phase_rom_values(amplitude_rom_vals)
         ctrl_rot = ControlledQROMRotateQubit(
             self.state_bitsizes, self.rot_reg_bitsizes, tuple(rom_vals)
@@ -260,7 +246,8 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
             rot_reg=rot_reg,
             phase_gradient=phase_gradient,
         )
-        bb.add(OneEffect(), q=rot_ancilla)
+        rot_ancilla = bb.add(XGate(), q=rot_ancilla)
+        bb.free(rot_ancilla)
         return control, target_state, rot_reg, phase_gradient
 
     def _get_phase_rom_values(self, amplitude_rom_vals):
@@ -366,39 +353,30 @@ class ControlledQROMRotateQubit(Bloq):
             num_controls=2,
         )
         # both prepare_control and qubit will control the QROM so that this acts as a control Z
-        qrom_control = bb.join(np.array([soqs["prepare_control"], soqs["qubit"]]))
+        qrom_control = bb.join(np.array([soqs.pop("prepare_control"), soqs.pop("qubit")]))
+        phase_grad = soqs.pop("phase_gradient")
         # load angles in rot_reg (line 1 of eq (8) in [1])
-        qrom_control, soqs = self._apply_qrom(qrom, bb, qrom_control, soqs)
+        soqs = bb.add_d(qrom, control=qrom_control, target0_=soqs.pop("rot_reg"), **soqs)
         # phase kickback via phase_grad += rot_reg (line 2 of eq (8) in [1])
-        soqs["rot_reg"], soqs["phase_gradient"] = bb.add(
-            Add(bitsize=self.rot_reg_bitsizes), a=soqs["rot_reg"], b=soqs["phase_gradient"]
+        soqs["target0_"], phase_grad = bb.add(
+            AddIntoPhaseGrad(self.rot_reg_bitsizes, self.rot_reg_bitsizes),
+            x=soqs["target0_"],
+            phase_grad=phase_grad,
         )
         # uncompute angle load in rot_reg to disentangle it from selection register
         # (line 1 of eq (8) in [1])
-        qrom_control, soqs = self._apply_qrom(qrom, bb, qrom_control, soqs)
-        separated = bb.split(qrom_control)
-        soqs["prepare_control"] = separated[0]
-        soqs["qubit"] = separated[1]
-        return soqs
-
-    def _apply_qrom(
-        self, qrom: QROM, bb: BloqBuilder, qrom_control: SoquetT, soqs: Dict[str, SoquetT]
-    ):
-        if self.selection_bitsizes != 0:
-            qrom_control, soqs["selection"], soqs["rot_reg"] = bb.add(
-                qrom, control=qrom_control, selection=soqs["selection"], target0_=soqs["rot_reg"]
-            )
-        else:
-            qrom_control, soqs["rot_reg"] = bb.add(
-                qrom, control=qrom_control, target0_=soqs["rot_reg"]
-            )
-        return qrom_control, soqs
+        soqs = bb.add_d(qrom, **soqs)
+        separated = bb.split(soqs.pop('control'))
+        return {
+            "prepare_control": separated[0],
+            "qubit": separated[1],
+            "phase_gradient": phase_grad,
+            "rot_reg": soqs.pop('target0_'),
+        } | soqs
 
 
-# @attrs.frozen
 class RotationTree:
-    r"""Used by ControlledStatePreparationUsingRotations to get the corresponding rotation
-    angles.
+    r"""Used by `StatePreparationUsingRotations` to get the corresponding rotation angles.
 
     The rotation angles are used to encode the amplitude of a state using the method described in
     [1], section on arbitrary quantum state preparation, page 3.
@@ -412,73 +390,48 @@ class RotationTree:
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    @staticmethod
-    def extract_rom_values_from_state(
-        state: ArrayLike, rot_reg_bitsizes: int, uncompute: bool = False
-    ):
+    def __init__(self, state: ArrayLike):
+        n = len(state)
+        self.n_qubits = (n - 1).bit_length()
+        self.sum_total = np.zeros(2 * n)
+        for i in range(n):
+            self.sum_total[i + n] = abs(state[i]) ** 2
+        for i in range(n - 1, 0, -1):
+            self.sum_total[i] = self.sum_total[i << 1] + self.sum_total[(i << 1) | 1]
+
+    def get_rom_values(self, rot_reg_bitsizes: int, uncompute: bool = False):
         r"""Gives a list of the ROM values to be loaded for preparing the amplitudes of a state.
 
         The ith element of the returned list is another list with the rom values to be loaded when
         preparing the amplitudes of the ith qubit for the given state.
         """
-        rotation_tree = RotationTree.build_rotation_tree_from_state(state)
-        next_layer = [rotation_tree]
         rom_vals = []
-        while len(next_layer) != 0:
-            this_layer = next_layer
-            next_layer = []
+        for i in range(self.n_qubits):
             rom_vals_this_layer = []
-            for tree in this_layer:
-                angle = tree.angle_0
+            for node in range(1 << i, 1 << (i + 1)):
+                angle = self.angle_0(node)
                 if uncompute:
                     angle = 2 * np.pi - angle
                 rom_val = RotationTree.angle_to_rom_value(angle, rot_reg_bitsizes)
                 rom_vals_this_layer.append(rom_val)
-                if tree.branch0 is not None:
-                    next_layer.append(tree.branch0)
-                if tree.branch1 is not None:
-                    next_layer.append(tree.branch1)
             rom_vals.append(rom_vals_this_layer)
         return rom_vals
 
-    @staticmethod
-    def build_rotation_tree_from_state(state):
-        r"""Computes the rotation tree for a given list of coefficients (state).
-
-        Given a list of coefficients, returns a tree-like object that contains the conditional
-        probabilities of each substring and angles for the rotations when preparing the state.
-        """
-        if len(state) == 2:
-            return RotationTree(abs(state[0]) ** 2, abs(state[1]) ** 2, None, None)
-        dn_l = RotationTree.build_rotation_tree_from_state(state[: len(state) // 2])
-        dn_r = RotationTree.build_rotation_tree_from_state(state[len(state) // 2 :])
-        return RotationTree(dn_l.sum_total, dn_r.sum_total, dn_l, dn_r)
-
-    @property
-    def angle_0(self):
+    def angle_0(self, idx: int):
         r"""Angle that corresponds to p_0."""
-        return 2 * np.arccos(np.sqrt(self._p0))
+        return 2 * np.arccos(np.sqrt(self._p0(idx)))
+
+    def _p0(self, idx: int):
+        if self.sum_total[idx] == 0:
+            return 0
+        return self.sum_total[idx << 1] / self.sum_total[idx]
 
     @staticmethod
-    def angle_to_rom_value(angle, rot_reg_bitsizes):
+    def angle_to_rom_value(angle: float, rot_reg_bitsize: int):
         r"""Given an angle, returns the value to be loaded in ROM.
 
         Returns the value to be loaded to a QROM to encode the given angle with a certain value of
         rot_reg_bitsizes.
         """
-        rom_value_decimal = 2**rot_reg_bitsizes * angle / (2 * np.pi)
-        return round(rom_value_decimal) % (2**rot_reg_bitsizes)
-
-    # do not call, use build_rotation_tree_from_state
-    def __init__(self, sum0, sum1, branch0, branch1):
-        self.sum0 = sum0
-        self.sum1 = sum1
-        self.sum_total = sum0 + sum1
-        self.branch0 = branch0
-        self.branch1 = branch1
-
-    @property
-    def _p0(self):
-        if self.sum_total == 0:
-            return 0
-        return self.sum0 / self.sum_total
+        rom_value_decimal = 2**rot_reg_bitsize * angle / (2 * np.pi)
+        return round(rom_value_decimal) % (2**rot_reg_bitsize)
