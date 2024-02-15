@@ -22,6 +22,8 @@ from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, Register, Signature, Adjoint
 
+# TODO refactor using Bloq instead of cirq-ft infra
+
 
 @frozen
 class SU2RotationGate(GateWithRegisters):
