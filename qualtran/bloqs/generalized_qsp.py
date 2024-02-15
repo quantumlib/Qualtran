@@ -20,7 +20,7 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, Register, Signature
+from qualtran import GateWithRegisters, QBit, Register, Signature, Adjoint
 
 
 @frozen
@@ -317,15 +317,20 @@ class GeneralizedQSP(GateWithRegisters):
 
         yield SU2RotationGate(self._theta[0], self._phi[0], self._lambda).on(signal_qubit)
         for theta, phi in zip(self._theta[1:], self._phi[1:]):
-            if num_inverse_applications > 0:
-                # apply C-U^\dagger
-                yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
-                num_inverse_applications -= 1
-            else:
-                # apply C[0]-U
-                yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
+            # TODO debug controlled adjoint bloq serialization
+            # if num_inverse_applications > 0:
+            #     # apply C-U^\dagger
+            #     yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
+            #     num_inverse_applications -= 1
+            # else:
+            # apply C[0]-U
+            yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
             yield SU2RotationGate(theta, phi, 0).on(signal_qubit)
 
         while num_inverse_applications > 0:
             yield self.U.adjoint().on_registers(**quregs)
             num_inverse_applications -= 1
+
+    def __hash__(self):
+        # TODO hash properly
+        return hash((self.U, *list(self.P), *list(self.Q), self.negative_power))
