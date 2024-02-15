@@ -72,8 +72,8 @@ class PairPotential(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('system_i', shape=(3,), bitsize=self.bitsize),
-                Register('system_j', shape=(3,), bitsize=self.bitsize),
+                Register('system_i', shape=(3,), dtype=QAny(self.bitsize)),
+                Register('system_j', shape=(3,), dtype=QAny(self.bitsize)),
             ]
         )
 
@@ -196,7 +196,7 @@ class PotentialEnergy(Bloq):
             [
                 Register(
                     'system',
-                    bitsize=QAny(((self.num_grid - 1).bit_length() + 1)),
+                    dtype=QAny(((self.num_grid - 1).bit_length() + 1)),
                     shape=(self.num_elec, 3),
                 )
             ]

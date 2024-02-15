@@ -177,8 +177,8 @@ class SelectTHC(SelectOracle):
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("sys_a", bitsize=self.num_spin_orb // 2),
-            Register("sys_b", bitsize=self.num_spin_orb // 2),
+            Register("sys_a", QAny(bitsize=self.num_spin_orb // 2)),
+            Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
     def build_composite_bloq(

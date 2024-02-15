@@ -138,7 +138,7 @@ class SelectHubbard(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self.x_dim * self.y_dim * 2),)
+        return (Register('target', QAny(self.x_dim * self.y_dim * 2)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -208,7 +208,7 @@ class SelectHubbard(SelectOracle):
                 ),
             ),
             nth_gate=lambda *_: cirq.Z,
-            control_regs=Register('control', 1 + total_bits(self.control_registers)),
+            control_regs=Register('control', QAny(1 + total_bits(self.control_registers))),
         ).on_registers(
             q_x=q_x, q_y=q_y, control=[*V, *control], target=target_qubits_for_apply_to_lth_gate
         )

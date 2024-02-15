@@ -20,7 +20,7 @@ import numpy as np
 from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import QBit, Register
+from qualtran import QAny, QBit, Register
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
@@ -82,7 +82,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         total_iteration_size = np.prod(
             tuple(reg.dtype.iteration_length for reg in self.selection_registers)
         )
-        return (Register('target', int(total_iteration_size)),)
+        return (Register('target', QAny(int(total_iteration_size))),)
 
     @cached_property
     def extra_registers(self) -> Tuple[Register, ...]:

@@ -108,7 +108,7 @@ class ApplyClassicalTest(Bloq):
     @property
     def signature(self) -> 'Signature':
         return Signature(
-            [Register('x', QBit(), shape=(5,)), Register('z', 1, shape=(5,), side=Side.RIGHT)]
+            [Register('x', QBit(), shape=(5,)), Register('z', QBit(), shape=(5,), side=Side.RIGHT)]
         )
 
     def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:

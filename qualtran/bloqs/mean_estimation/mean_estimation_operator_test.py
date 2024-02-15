@@ -215,7 +215,7 @@ class GroverEncoder(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self.marked_val.bit_length()),)
+        return (Register('target', QAny(self.marked_val.bit_length())),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, *, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]

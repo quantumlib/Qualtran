@@ -270,7 +270,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         return (
             Register("succ_nu", QBit()),
             Register("plus_t", QBit()),
-            Register('flags', bitsize=1, shape=(4,), side=left_right),
+            Register('flags', QBit(), shape=(4,), side=left_right),
         )
 
     def short_name(self) -> str:

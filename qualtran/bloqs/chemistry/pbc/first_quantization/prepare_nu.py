@@ -93,7 +93,10 @@ class PrepareNuSuperPositionState(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("mu", QAny(self.num_bits_p)), Register("nu", self.num_bits_p + 1, shape=(3,))]
+            [
+                Register("mu", QAny(self.num_bits_p)),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
+            ]
         )
 
     def short_name(self) -> str:
@@ -126,7 +129,7 @@ class FlagZeroAsFailure(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("nu", self.num_bits_p + 1, shape=(3,)),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
                 Register("flag_minus_zero", QBit(), side=Side.RIGHT),
             ]
         )
@@ -167,7 +170,7 @@ class TestNuLessThanMu(Bloq):
         return Signature(
             [
                 Register("mu", QAny(self.num_bits_p)),
-                Register("nu", self.num_bits_p + 1, shape=(3,)),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
                 Register("flag_nu_lt_mu", QBit(), side=Side.RIGHT),
             ]
         )
@@ -223,7 +226,7 @@ class TestNuInequality(Bloq):
         return Signature(
             [
                 Register("mu", QAny(self.num_bits_p)),
-                Register("nu", self.num_bits_p + 1, shape=(3,)),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
                 Register("m", QAny(self.num_bits_m)),
                 Register("flag_minus_zero", QBit(), side=Side.LEFT),
                 Register("flag_mu_prep", QBit(), side=Side.LEFT),
