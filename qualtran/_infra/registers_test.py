@@ -166,7 +166,7 @@ def test_agg_split():
 
 
 def test_get_named_qubits_multidim():
-    regs = Signature([Register('q', shape=(2, 3), bitsize=4)])
+    regs = Signature([Register('q', shape=(2, 3), dtype=QAny(4))])
     quregs = get_named_qubits(regs.lefts())
     assert quregs['q'].shape == (2, 3, 4)
     assert quregs['q'][1, 2, 3] == cirq.NamedQubit('q[1, 2][3]')
