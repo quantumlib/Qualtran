@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L157-L247">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L120-L217">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -44,7 +44,7 @@ register must have a unique name.
 
 <h3 id="build"><code>build</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L176-L184">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L139-L147">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -53,7 +53,7 @@ register must have a unique name.
 ) -> 'Signature'
 </code></pre>
 
-Construct a Signature comprised of simple thru registers.
+Construct a Signature comprised of simple thru registers given the register bitsizes.
 
 
 Args
@@ -65,9 +65,32 @@ Args
 
 
 
+<h3 id="build_from_dtypes"><code>build_from_dtypes</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L149-L157">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>@classmethod</code>
+<code>build_from_dtypes(
+    **registers
+) -> 'Signature'
+</code></pre>
+
+Construct a Signature comprised of simple thru registers given the register dtypes.
+
+
+Args
+
+`registers`
+: keyword arguments mapping register name to QDType. All registers
+  will be 0-dimensional and THRU.
+
+
+
+
 <h3 id="lefts"><code>lefts</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L186-L188">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L159-L161">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>lefts() -> Iterable[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>]
@@ -78,7 +101,7 @@ Iterable over all registers that appear on the LEFT as input.
 
 <h3 id="rights"><code>rights</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L190-L192">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L163-L165">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>rights() -> Iterable[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>]
@@ -89,7 +112,7 @@ Iterable over all registers that appear on the RIGHT as output.
 
 <h3 id="get_left"><code>get_left</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L194-L196">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L167-L169">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_left(
@@ -102,7 +125,7 @@ Get a left register by name.
 
 <h3 id="get_right"><code>get_right</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L198-L200">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L171-L173">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_right(
@@ -115,7 +138,7 @@ Get a right register by name.
 
 <h3 id="groups"><code>groups</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L202-L211">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L175-L184">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>groups() -> Iterable[Tuple[str, List[Register]]]
@@ -125,9 +148,20 @@ Iterate over register groups by name.
 
 Registers with shared names (but differing `side` attributes) can be implicitly grouped.
 
+<h3 id="adjoint"><code>adjoint</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L186-L188">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>adjoint() -> 'Signature'
+</code></pre>
+
+Swap all RIGHT and LEFT registers in this collection.
+
+
 <h3 id="__getitem__"><code>__getitem__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L224-L225">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L201-L202">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__getitem__(
@@ -140,7 +174,7 @@ Registers with shared names (but differing `side` attributes) can be implicitly 
 
 <h3 id="__contains__"><code>__contains__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L227-L228">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L204-L205">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__contains__(
@@ -153,7 +187,7 @@ Registers with shared names (but differing `side` attributes) can be implicitly 
 
 <h3 id="__iter__"><code>__iter__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L230-L231">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L207-L208">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__iter__() -> Iterator[<a href="../qualtran/Register.html"><code>qualtran.Register</code></a>]
@@ -164,7 +198,7 @@ Registers with shared names (but differing `side` attributes) can be implicitly 
 
 <h3 id="__len__"><code>__len__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L233-L234">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L210-L211">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__len__() -> int
@@ -173,20 +207,9 @@ Registers with shared names (but differing `side` attributes) can be implicitly 
 
 
 
-<h3 id="get_cirq_quregs"><code>get_cirq_quregs</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L236-L241">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>get_cirq_quregs() -> Dict[str, 'NDArray[cirq.Qid]']
-</code></pre>
-
-Get arrays of cirq qubits for these registers.
-
-
 <h3 id="__eq__"><code>__eq__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/registers.py#L246-L247">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L216-L217">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__eq__(

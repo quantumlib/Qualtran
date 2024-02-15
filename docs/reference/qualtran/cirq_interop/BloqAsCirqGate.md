@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L39-L157">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L71-L193">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -14,8 +14,6 @@
 
 
 A shim for using bloqs in a Cirq circuit.
-
-Inherits From: [`GateWithRegisters`](../../qualtran/GateWithRegisters.md), [`Bloq`](../../qualtran/Bloq.md)
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.cirq_interop.BloqAsCirqGate(
@@ -58,7 +56,7 @@ Inherits From: [`GateWithRegisters`](../../qualtran/GateWithRegisters.md), [`Blo
 
 <h3 id="bloq_on"><code>bloq_on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L68-L89">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L100-L122">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -100,41 +98,35 @@ Returns
 
 
 
-<h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
+<h3 id="on_registers"><code>on_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L91-L118">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L148-L151">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>decompose_from_registers(
-    context: cirq.DecompositionContext, **quregs
-) -> cirq.OP_TREE
+<code>on_registers(
+    **qubit_regs
+) -> cirq.Operation
 </code></pre>
 
-Implementation of the GatesWithRegisters decompose method.
-
-This delegates to `self.bloq.decompose_bloq()` and converts the result to a cirq circuit.
-
-Args
-
-`context`
-: `cirq.DecompositionContext` stores options for decomposing gates (eg:
-  cirq.QubitManager).
-
-`**quregs`
-: Appropriately shaped qubit arrays corresponding to Cirq-FT registers defined
-  as per `self.signature`.
 
 
 
+<h3 id="__pow__"><code>__pow__</code></h3>
 
-Returns
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L174-L179">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>__pow__(
+    power, modulo=None
+)
+</code></pre>
 
 
 
 
 <h3 id="__eq__"><code>__eq__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L145-L148">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_bloq_to_cirq.py#L181-L184">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>__eq__(

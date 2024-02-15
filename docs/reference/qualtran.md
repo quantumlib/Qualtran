@@ -13,9 +13,17 @@ isort:skip_file
 
 [`drawing`](./qualtran/drawing.md): Draw and visualize bloqs
 
+[`linalg`](./qualtran/linalg.md) module
+
 [`resource_counting`](./qualtran/resource_counting.md): Counting resource usage (bloqs, qubits)
 
+[`serialization`](./qualtran/serialization.md) module
+
 [`simulation`](./qualtran/simulation.md) module
+
+[`surface_code`](./qualtran/surface_code.md) module
+
+[`testing`](./qualtran/testing.md) module
 
 ## Classes
 
@@ -33,9 +41,23 @@ isort:skip_file
 
 [`class DidNotFlattenAnythingError`](./qualtran/DidNotFlattenAnythingError.md): An exception raised if `flatten_once()` did not find anything to flatten.
 
-[`class Register`](./qualtran/Register.md): A data type describing a register of qubits.
+[`class QDType`](./qualtran/QDType.md): This defines the abstract interface for quantum data types.
 
-[`class SelectionRegister`](./qualtran/SelectionRegister.md): Register used to represent SELECT register for various LCU methods.
+[`class QInt`](./qualtran/QInt.md): Signed Integer of a given width bitsize.
+
+[`class QBit`](./qualtran/QBit.md): A single qubit. The smallest addressable unit of quantum data.
+
+[`class QAny`](./qualtran/QAny.md): Opaque bag-of-qbits type.
+
+[`class QFxp`](./qualtran/QFxp.md): Fixed point type to represent real numbers.
+
+[`class QIntOnesComp`](./qualtran/QIntOnesComp.md): Signed Integer of a given width bitsize.
+
+[`class QUInt`](./qualtran/QUInt.md): Unsigned integer of a given width bitsize which wraps around upon overflow.
+
+[`class BoundedQUInt`](./qualtran/BoundedQUInt.md): Unsigned integer whose values are bounded within a range.
+
+[`class Register`](./qualtran/Register.md): A data type describing a register of qubits.
 
 [`class Signature`](./qualtran/Signature.md): An ordered sequence of `Register`s that follow the rules for a bloq signature.
 
@@ -50,6 +72,14 @@ isort:skip_file
 [`class Soquet`](./qualtran/Soquet.md): One half of a connection.
 
 [`class GateWithRegisters`](./qualtran/GateWithRegisters.md): `cirq.Gate`s extension with support for composite gates acting on multiple qubit registers.
+
+[`class Adjoint`](./qualtran/Adjoint.md): The standard adjoint of `subbloq`.
+
+[`class Controlled`](./qualtran/Controlled.md): A controlled version of `subbloq`.
+
+[`class CtrlSpec`](./qualtran/CtrlSpec.md): A specification for how to control a bloq.
+
+[`class AddControlledT`](./qualtran/AddControlledT.md): The signature for the `add_controlled` callback part of `ctrl_system`.
 
 [`class BloqExample`](./qualtran/BloqExample.md): An instantiation of a bloq and its metadata.
 

@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/simulation/quimb_sim.py#L65-L141">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/simulation/tensor/_quimb.py#L38-L114">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -16,7 +16,7 @@ Convert a composite bloq into a Quimb tensor network.
 
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>qualtran.simulation.quimb_sim.cbloq_to_quimb(
+<code>qualtran.simulation.tensor.cbloq_to_quimb(
     cbloq: <a href="../../../qualtran/CompositeBloq.html"><code>qualtran.CompositeBloq</code></a>,
     pos: Optional[Dict[BloqInstance, Tuple[float, float]]] = None
 ) -> Tuple[qtn.TensorNetwork, Dict]

@@ -65,7 +65,7 @@ isort:skip_file
 
 [`get_musical_score_data(...)`](../qualtran/drawing/get_musical_score_data.md): Get the musical score data for a (composite) bloq.
 
-[`show_bloq(...)`](../qualtran/drawing/show_bloq.md): Display a graph representation of the bloq in IPython.
+[`show_bloq(...)`](../qualtran/drawing/show_bloq.md): Display a visual representation of the bloq in IPython.
 
 [`show_bloqs(...)`](../qualtran/drawing/show_bloqs.md): Display multiple bloqs side-by-side in IPython.
 

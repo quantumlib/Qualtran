@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/resource_counting/bloq_counts.py#L135-L177">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/bloq_counts.py#L181-L227">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -26,7 +26,7 @@ Recursively build the bloq call graph and call totals.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.resource_counting.get_bloq_call_graph(
     bloq: <a href="../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>,
-    generalizer: Callable[[Bloq], Optional[Bloq]] = None,
+    generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
     ssa: Optional[<a href="../../qualtran/resource_counting/SympySymbolAllocator.html"><code>qualtran.resource_counting.SympySymbolAllocator</code></a>] = None,
     keep: Optional[Callable[[Bloq], bool]] = None,
     max_depth: Optional[int] = None
@@ -47,7 +47,8 @@ See <a href="../../qualtran/Bloq.html#call_graph"><code>Bloq.call_graph()</code>
 `generalizer`<a id="generalizer"></a>
 : If provided, run this function on each (sub)bloq to replace attributes
   that do not affect resource estimates with generic sympy symbols. If the function
-  returns `None`, the bloq is omitted from the counts graph.
+  returns `None`, the bloq is omitted from the counts graph. If a sequence of
+  generalizers is provided, each generalizer will be run in order.
 
 `ssa`<a id="ssa"></a>
 : a `SympySymbolAllocator` that will be passed to the <a href="../../qualtran/Bloq.html#build_call_graph"><code>Bloq.build_call_graph</code></a> method. If

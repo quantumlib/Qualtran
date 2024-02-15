@@ -4,29 +4,97 @@
    :hidden:
    :caption: qualtran
 
+   qualtran/AddControlledT.md
+   qualtran/Adjoint.md
    qualtran/Bloq.md
    qualtran/BloqBuilder.md
    qualtran/BloqDocSpec.md
    qualtran/BloqError.md
    qualtran/BloqExample.md
    qualtran/BloqInstance.md
+   qualtran/BoundedQUInt.md
    qualtran/CompositeBloq.md
    qualtran/Connection.md
+   qualtran/Controlled.md
+   qualtran/CtrlSpec.md
    qualtran/DanglingT.md
    qualtran/DecomposeNotImplementedError.md
    qualtran/DecomposeTypeError.md
    qualtran/DidNotFlattenAnythingError.md
    qualtran/GateWithRegisters.md
+   qualtran/QAny.md
+   qualtran/QBit.md
+   qualtran/QDType.md
+   qualtran/QFxp.md
+   qualtran/QInt.md
+   qualtran/QIntOnesComp.md
+   qualtran/QUInt.md
    qualtran/Register.md
-   qualtran/SelectionRegister.md
    qualtran/Side.md
    qualtran/Signature.md
    qualtran/Soquet.md
    qualtran/bloq_example.md
    qualtran/cirq_interop.md
    qualtran/drawing.md
+   qualtran/linalg.md
    qualtran/resource_counting.md
+   qualtran/serialization.md
    qualtran/simulation.md
+   qualtran/surface_code.md
+   qualtran/testing.md
+
+.. toctree::
+   :hidden:
+   :caption: simulation
+
+   qualtran/simulation/classical_sim.md
+   qualtran/simulation/tensor.md
+
+.. toctree::
+   :hidden:
+   :caption: testing
+
+   qualtran/testing/BloqCheckException.md
+   qualtran/testing/BloqCheckResult.md
+   qualtran/testing/assert_bloq_example_decompose.md
+   qualtran/testing/assert_bloq_example_make.md
+   qualtran/testing/assert_connections_compatible.md
+   qualtran/testing/assert_registers_match_dangling.md
+   qualtran/testing/assert_registers_match_parent.md
+   qualtran/testing/assert_soquets_belong_to_registers.md
+   qualtran/testing/assert_soquets_used_exactly_once.md
+   qualtran/testing/assert_valid_bloq_decomposition.md
+   qualtran/testing/assert_valid_cbloq.md
+   qualtran/testing/assert_wire_symbols_match_expected.md
+   qualtran/testing/check_bloq_example_decompose.md
+   qualtran/testing/check_bloq_example_make.md
+   qualtran/testing/execute_notebook.md
+
+.. toctree::
+   :hidden:
+   :caption: cirq_interop
+
+   qualtran/cirq_interop/BloqAsCirqGate.md
+   qualtran/cirq_interop/CirqGateAsBloq.md
+   qualtran/cirq_interop/CirqGateAsBloqBase.md
+   qualtran/cirq_interop/cirq_optree_to_cbloq.md
+   qualtran/cirq_interop/decompose_from_cirq_style_method.md
+   qualtran/cirq_interop/decompose_protocol.md
+   qualtran/cirq_interop/t_complexity_protocol.md
+
+.. toctree::
+   :hidden:
+   :caption: resource_counting
+
+   qualtran/resource_counting/BloqCountT.md
+   qualtran/resource_counting/GeneralizerT.md
+   qualtran/resource_counting/SympySymbolAllocator.md
+   qualtran/resource_counting/big_O.md
+   qualtran/resource_counting/bloq_counts.md
+   qualtran/resource_counting/build_cbloq_call_graph.md
+   qualtran/resource_counting/generalizers.md
+   qualtran/resource_counting/get_bloq_call_graph.md
+   qualtran/resource_counting/print_counts_graph.md
 
 .. toctree::
    :hidden:
@@ -65,40 +133,25 @@
 
 .. toctree::
    :hidden:
-   :caption: cirq_interop
+   :caption: tensor
 
-   qualtran/cirq_interop/BloqAsCirqGate.md
-   qualtran/cirq_interop/CirqGateAsBloq.md
-   qualtran/cirq_interop/cirq_optree_to_cbloq.md
-   qualtran/cirq_interop/decompose_from_cirq_op.md
-   qualtran/cirq_interop/decompose_protocol.md
-   qualtran/cirq_interop/t_complexity_protocol.md
-
-.. toctree::
-   :hidden:
-   :caption: simulation
-
-   qualtran/simulation/classical_sim.md
-   qualtran/simulation/quimb_sim.md
+   qualtran/simulation/tensor/bloq_has_custom_tensors.md
+   qualtran/simulation/tensor/bloq_to_dense.md
+   qualtran/simulation/tensor/cbloq_as_contracted_tensor.md
+   qualtran/simulation/tensor/cbloq_to_quimb.md
+   qualtran/simulation/tensor/flatten_for_tensor_contraction.md
+   qualtran/simulation/tensor/get_right_and_left_inds.md
 
 .. toctree::
    :hidden:
-   :caption: resource_counting
+   :caption: classical_sim
 
-   qualtran/resource_counting/BloqCountT.md
-   qualtran/resource_counting/SympySymbolAllocator.md
-   qualtran/resource_counting/big_O.md
-   qualtran/resource_counting/bloq_counts.md
-   qualtran/resource_counting/get_bloq_call_graph.md
-   qualtran/resource_counting/print_counts_graph.md
-
-.. toctree::
-   :hidden:
-   :caption: musical_score
-
-   qualtran/drawing/musical_score/MusicalScoreEncoder.md
-   qualtran/drawing/musical_score/SoqData.md
-   qualtran/drawing/musical_score/frozen.md
+   qualtran/simulation/classical_sim/ClassicalValT.md
+   qualtran/simulation/classical_sim/bits_to_ints.md
+   qualtran/simulation/classical_sim/call_cbloq_classically.md
+   qualtran/simulation/classical_sim/format_classical_truth_table.md
+   qualtran/simulation/classical_sim/get_classical_truth_table.md
+   qualtran/simulation/classical_sim/ints_to_bits.md
 
 .. toctree::
    :hidden:
@@ -116,18 +169,20 @@
 
 .. toctree::
    :hidden:
-   :caption: classical_sim
+   :caption: generalizers
 
-   qualtran/simulation/classical_sim/ClassicalValT.md
-   qualtran/simulation/classical_sim/bits_to_ints.md
-   qualtran/simulation/classical_sim/ints_to_bits.md
+   qualtran/resource_counting/generalizers/cirq_to_bloqs.md
+   qualtran/resource_counting/generalizers/generalize_cvs.md
+   qualtran/resource_counting/generalizers/generalize_rotation_angle.md
+   qualtran/resource_counting/generalizers/ignore_alloc_free.md
+   qualtran/resource_counting/generalizers/ignore_cliffords.md
+   qualtran/resource_counting/generalizers/ignore_split_join.md
 
 .. toctree::
    :hidden:
-   :caption: quimb_sim
+   :caption: musical_score
 
-   qualtran/simulation/quimb_sim/bloq_has_custom_tensors.md
-   qualtran/simulation/quimb_sim/cbloq_to_quimb.md
-   qualtran/simulation/quimb_sim/flatten_for_tensor_contraction.md
-   qualtran/simulation/quimb_sim/get_right_and_left_inds.md
+   qualtran/drawing/musical_score/MusicalScoreEncoder.md
+   qualtran/drawing/musical_score/SoqData.md
+   qualtran/drawing/musical_score/frozen.md
 

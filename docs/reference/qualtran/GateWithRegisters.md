@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/gate_with_registers.py#L98-L256">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L155-L344">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -77,7 +77,7 @@ y1: ─────y──────────────────
   programming. For example, it is analogous to function declarations in a
   C header (`*.h`) file.
   
-  This is the only manditory method (property) you must implement to inherit from
+  This is the only mandatory method (property) you must implement to inherit from
   `Bloq`. You can optionally implement additional methods to encode more information
   about this bloq.
 
@@ -88,7 +88,7 @@ y1: ─────y──────────────────
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/gate_with_registers.py#L148-L188">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L205-L245">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -137,51 +137,36 @@ Raises
 
 <h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/gate_with_registers.py#L190-L199">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L247-L263">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>as_cirq_op(
-    qubit_manager: 'cirq.QubitManager', **cirq_quregs
+    qubit_manager: 'cirq.QubitManager', **in_quregs
 ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]
 </code></pre>
 
-Override this method to support conversion to a Cirq operation.
+Allocates/Deallocates qubits for RIGHT/LEFT only registers to construct a Cirq operation
 
-If this method is not overriden, the default implementation will wrap this bloq
-in a `BloqAsCirqGate` shim.
 
 Args
 
 `qubit_manager`
-: A `cirq.QubitManager` for allocating `cirq.Qid`s.
+: For allocating/deallocating qubits for RIGHT/LEFT only registers.
 
-`**cirq_quregs`
-: kwargs mapping from this bloq's left register names to an ndarray of
-  `cirq.Qid`. The final dimension of this array corresponds to the registers
-  `bitsize` size. Any additional dimensions come first and correspond to the
-  register `shape` sizes.
+`in_quregs`
+: Mapping from LEFT register names to corresponding cirq qubits.
 
 
 
 
 Returns
 
-`op`
-: A cirq operation corresponding to this bloq acting on the provided cirq qubits or
-  None. This method should return None if and only if the bloq instance truly should
-  not be included in the Cirq circuit (e.g. for reshaping bloqs). A bloq with no cirq
-  equivalent should raise an exception instead.
-
-`cirq_quregs`
-: A mapping from this bloq's right register of the same format as the
-  `cirq_quregs` argument. The returned dictionary corresponds to the output qubits.
-
 
 
 
 <h3 id="t_complexity"><code>t_complexity</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/gate_with_registers.py#L201-L204">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L265-L268">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>t_complexity() -> 'TComplexity'
@@ -194,7 +179,7 @@ method can be overriden with a known value.
 
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/gate_with_registers.py#L206-L209">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L270-L273">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(
@@ -214,7 +199,7 @@ attribute.
 
 <h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/gate_with_registers.py#L216-L219">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L280-L283">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_from_registers(
@@ -225,15 +210,95 @@ attribute.
 
 
 
+<h3 id="on"><code>on</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L308-L312">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>on(
+    *qubits
+) -> 'cirq.Operation'
+</code></pre>
+
+A `cirq.Operation` of this bloq operating on the given qubits.
+
+This method supports an alternative decomposition backend that follows a 'Cirq-style'
+association of gates with qubits to form operations. Instead of wiring up `Soquet`s,
+each gate operates on qubit addresses (`cirq.Qid`s), which are reused by multiple
+gates. This method lets you operate this bloq on qubits and returns a `cirq.Operation`.
+
+The primary, bloq-native way of writing decompositions is to override
+`build_composite_bloq`. If this is what you're doing, do not use this method.
+
+To provide a Cirq-style decomposition for this bloq, implement a method (typically named
+`decompose_from_registers` for historical reasons) that yields a list of `cirq.Operation`s
+using `cirq.Gate.on(...)`, <a href="../qualtran/Bloq.html#on"><code>Bloq.on(...)</code></a>, <a href="../qualtran/GateWithRegisters.html#on_registers"><code>GateWithRegisters.on_registers(...)</code></a>, or
+<a href="../qualtran/Bloq.html#on_registers"><code>Bloq.on_registers(...)</code></a>.
+
+See Also
+
+
+
+
 <h3 id="on_registers"><code>on_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/_infra/gate_with_registers.py#L241-L244">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L314-L317">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_registers(
     **qubit_regs
 ) -> cirq.Operation
 </code></pre>
+
+A `cirq.Operation` of this bloq operating on the given qubit registers.
+
+This method supports an alternative decomposition backend that follows a 'Cirq-style'
+association of gates with qubit registers to form operations. See <a href="../qualtran/Bloq.html#on"><code>Bloq.on()</code></a> for
+more details.
+
+Args
+
+`**qubit_regs`
+: A mapping of register name to the qubits comprising that register.
+
+
+
+
+See Also
+
+
+
+
+<h3 id="controlled"><code>controlled</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L320-L332">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>controlled(
+    num_controls: Optional[int] = None,
+    control_values=None,
+    control_qid_shape: Optional[Tuple[int, ...]] = None
+) -> 'cirq.Gate'
+</code></pre>
+
+Return a controlled version of this bloq.
+
+By default, the system will use the <a href="../qualtran/Controlled.html"><code>qualtran.Controlled</code></a> meta-bloq to wrap this
+bloq. Bloqs authors can declare their own, custom controlled versions by overriding
+<a href="../qualtran/Bloq.html#get_ctrl_system"><code>Bloq.get_ctrl_system</code></a> in the bloq.
+
+Args
+
+`ctrl_spec`
+: an optional `CtrlSpec`, which specifies how to control the bloq. The
+  default spec means the bloq will be active when one control qubit is in the |1>
+  state. See the CtrlSpec documentation for more possibilities including
+  negative controls, integer-equality control, and ndarrays of control values.
+
+
+
+
+Returns
 
 
 

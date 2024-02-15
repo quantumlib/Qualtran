@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/cirq-qubitization/blob/main/qualtran/simulation/quimb_sim.py#L144-L161">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/simulation/tensor/_dense.py#L25-L42">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -12,11 +12,11 @@
 
 
 
-Return right and left indices.
+Return right and left tensor indices.
 
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>qualtran.simulation.quimb_sim.get_right_and_left_inds(
+<code>qualtran.simulation.tensor.get_right_and_left_inds(
     signature: <a href="../../../qualtran/Signature.html"><code>qualtran.Signature</code></a>
 ) -> List[List[Soquet]]
 </code></pre>
