@@ -564,7 +564,7 @@ class LinearDepthGreaterThan(Bloq):
         assert target == (target % 2)
 
         if a > b:
-            target = np.uint64((target + 1) % 2)
+            target = (target + 1) % 2
 
         return {'a': a, 'b': b, 'target': target}
 

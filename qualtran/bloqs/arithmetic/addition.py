@@ -369,10 +369,10 @@ class SimpleAddConstant(Bloq):
         if len(self.cvs) > 0:
             ctrls = vals['ctrls']
         else:
-            return {'x': np.uint64(x) + np.uint64(self.k)}
+            return {'x': x + self.k}
 
         if (self.cvs == ctrls).all():
-            x = np.uint64(x) + np.uint64(self.k)
+            x = x + self.k
 
         return {'ctrls': ctrls, 'x': x}
 
