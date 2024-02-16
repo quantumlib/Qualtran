@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
@@ -28,5 +29,6 @@ def test_reflection_t_counts():
     assert counts[TGate()] == counts_decomp[TGate()]
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('reflection')

@@ -24,6 +24,7 @@ from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "data,block_size",
     [

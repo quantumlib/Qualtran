@@ -15,6 +15,7 @@
 from typing import Dict
 
 import cirq
+import pytest
 
 from qualtran import GateWithRegisters, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
@@ -86,5 +87,6 @@ t: ───t───────────────────Y───
     )
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('gate_with_registers')

@@ -21,6 +21,8 @@ filterwarnings = [
 # so if you really want to collect a class as a test use '*TestSuite'.
 # (but please stick to the convention of test_* functions)
 python_classes = '*TestSuite'
+addopts = '--strict-markers'
 markers = [
-    "slow: slow tests that should be skipped by default.",
+    "slow: slow tests.",
+    "notebook: unit tests that execute a notebook."
 ]

@@ -77,5 +77,6 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     assert adjusted_cost_qualtran == cost_of
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook("sparse")

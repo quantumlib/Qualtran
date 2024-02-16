@@ -503,5 +503,6 @@ def test_t_complexity():
     assert TestParallelCombo().t_complexity().t == 3 * 100
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('composite_bloq')

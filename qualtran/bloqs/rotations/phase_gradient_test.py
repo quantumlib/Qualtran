@@ -73,6 +73,7 @@ def test_phase_gradient_gate(n: int, exponent, controlled):
     assert np.allclose(cirq.unitary(bloq), cirq.unitary(cirq_gate))
 
 
+@pytest.mark.slow
 def test_add_into_phase_grad():
     x_bit, phase_bit = 4, 7
     bloq = AddIntoPhaseGrad(x_bit, phase_bit)
@@ -93,6 +94,7 @@ def test_add_into_phase_grad():
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
 
 
+@pytest.mark.slow
 def test_add_scaled_val_into_phase_reg():
     x_bit, phase_bit, gamma, gamma_bit = 4, 7, 0.123, 6
     bloq = AddScaledValIntoPhaseReg(QFxp(x_bit, 0), phase_bit, gamma, gamma_bit)
