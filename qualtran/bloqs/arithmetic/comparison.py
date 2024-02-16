@@ -474,34 +474,24 @@ class GreaterThan(Bloq):
     r"""Compare two integers.
 
     Implements $U|a\rangle|b\rangle|0\rangle \rightarrow
-    |a\rangle|b\rangle|b > a\rangle$ using $4n$ T gates.
+    |a\rangle|b\rangle|a > b\rangle$ using $8n T$  gates.
 
-    This comparator relies on the fact that (a' + b)' = a - b. If b > a, then a - b < 0. We
-    implement it by flipping all the bits in a, computing the first half of the addition circuit,
-    copying out the carry, and uncomputing the addition circuit.
+    The bloq_counts and t_complexity are derived from equivalent qualtran gates
+    assuming a clean decomposition which should yield identical costs.
 
     See: https://github.com/quantumlib/Qualtran/pull/381 and
     https://qualtran.readthedocs.io/en/latest/bloqs/comparison_gates.html
 
     Args:
         bitsize: Number of bits used to represent the two integers a and b.
-        signed: A boolean condition which controls whether the a and b registers are represented
-            in 2's Complement or Unsigned. This effects the decomposition of the comparison because
-            it relies on the 1's complement trick described above which only works for signed
-            values. If the input registers are unsigned we use 2 ancilla bits to represent the
-            registers in 2's complement.
 
     Registers:
         a: n-bit-sized input registers.
         b: n-bit-sized input registers.
         target: A single bit output register to store the result of A > B.
-
-    References:
-        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
-        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585)
     """
-    bitsize: int
-    signed: bool
+    a_bitsize: int
+    b_bitsize: int
 
     @property
     def signature(self):
@@ -510,9 +500,10 @@ class GreaterThan(Bloq):
         )
 
     def short_name(self) -> str:
-        return "b > a"
+        return "a>b"
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+    def t_complexity(self) -> 'TComplexity':
+        return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def wire_symbol(self, soq: Soquet) -> WireSymbol:
         if soq.reg.name == 'a':
