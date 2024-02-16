@@ -12,6 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import itertools
+import math
 from functools import cached_property
 from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
@@ -187,6 +189,24 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     def _t_complexity_(self) -> 'TComplexity':
         ((toffoli, n),) = self.bloq_counts().items()
         return n * toffoli.t_complexity()
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
+
+        N, M = 2**self.inp_bitsize, 2**self.phase_bitsize
+        inds = (incoming['x'], incoming['phase_grad'], outgoing['x'], outgoing['phase_grad'])
+        unitary = np.zeros((N, M) * 2, dtype=np.complex128)
+        for a, b in itertools.product(range(N), range(M)):
+            unitary[a, b, a, int(math.fmod(a + b, M))] = 1
+
+        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
 
 
 @attrs.frozen
