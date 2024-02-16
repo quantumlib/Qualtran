@@ -21,14 +21,6 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-<<<<<<< HEAD
-from qualtran import Bloq, GateWithRegisters, Register, Side, Signature, SoquetT
-from qualtran.bloqs.and_bloq import And, MultiAnd
-from qualtran.bloqs.basic_gates import TGate, XGate
-from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
-=======
 from qualtran import Bloq, GateWithRegisters, QAny, QBit, QUInt, Register, Side, Signature, SoquetT
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.and_bloq import And, MultiAnd
@@ -38,7 +30,6 @@ from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

@@ -294,14 +294,6 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
 
-<<<<<<< HEAD
-@frozen
-class SimpleAddConstant(Bloq):
-    r"""Applies U_{k}|x> = |x + k>.
-
-    Applies addition to input register `|x>` given classical integer 'k'.
-    
-=======
 @bloq_example
 def _add_oop_symb() -> OutOfPlaceAdder:
     n = sympy.Symbol('n')
@@ -334,7 +326,6 @@ class SimpleAddConstant(Bloq):
 
     Applies addition to input register `|x>` given classical integer 'k'.
 
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
     This is the simple version of constant addition because it involves simply converting the
     classical integer into a quantum parameter and using quantum-quantum addition as opposed to
     designing a bespoke circuit for constant addition based on the classical parameter.
@@ -342,13 +333,8 @@ class SimpleAddConstant(Bloq):
     Args:
         bitsize: Number of bits used to represent each integer.
         k: The classical integer value to be added to x.
-<<<<<<< HEAD
-        cvs: A tuple of control variable settings. Each entry specifies whether that
-            control line is a "positive" control (`cv[i]=1`) or a "negative" control `0`.
-=======
         cvs: A tuple of control values. Each entry specifies whether that control line is a
             "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
         signed: A boolean condition which controls whether the x register holds a value represented
             in 2's Complement or Unsigned. This affects the ability to add a negative constant.
 
@@ -368,41 +354,6 @@ class SimpleAddConstant(Bloq):
     def signature(self) -> 'Signature':
         if len(self.cvs) > 0:
             return Signature(
-<<<<<<< HEAD
-            [Register('ctrl', bitsize=len(self.cvs)), Register('x', bitsize=self.bitsize)]
-        )
-        else:
-            return Signature(
-            [Register('x', bitsize=self.bitsize)]
-        )
-
-    def binary_rep(self, num: int, num_bits: int):
-        # If the registers are interpreting signed bits, represent the output in 2's complement.
-        # Otherwise make sure the classical value k is > 0.
-        if self.signed:
-            num &= (2 << num_bits - 1) - 1
-        else:
-            assert self.k >= 0
-        format_str = '{:0' + str(num_bits) + 'b}'
-        return format_str.format(int(num))
-
-    def on_classical_vals(
-        self, ctrl: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
-        if ctrl == 0:
-            return {'ctrl': 0, 'x': x}
-
-        assert ctrl == 1, 'Bad ctrl value.'
-        x_out = x + self.k
-        return {'ctrl': ctrl, 'x': x_out}
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
-
-        # Assign registers to variables and allocate ancilla bits for classical integer k.
-        x = regs['x']
-        if len(self.cvs) > 0:
-            ctrls = regs['ctrl']
-=======
                 [
                     Register('ctrls', QBit(), shape=(len(self.cvs),)),
                     Register('x', QInt(self.bitsize) if self.signed else QUInt(self.bitsize)),
@@ -432,38 +383,24 @@ class SimpleAddConstant(Bloq):
         # Assign registers to variables and allocate ancilla bits for classical integer k.
         if len(self.cvs) > 0:
             ctrls = regs['ctrls']
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
         else:
             ctrls = None
         k = bb.allocate(n=self.bitsize)
 
         # Get binary representation of k and split k into separate wires.
         k_split = bb.split(k)
-<<<<<<< HEAD
-        binary_str = "".join(reversed(self.binary_rep(self.k, self.bitsize)))
-=======
         if self.signed:
             binary_rep = list(iter_bits_twos_complement(self.k, self.bitsize))
         else:
             binary_rep = list(iter_bits(self.k, self.bitsize))
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
 
         # Apply XGates to qubits in k where the bitstring has value 1. Apply CNOTs when the gate is
         # controlled.
         for i in range(self.bitsize):
-<<<<<<< HEAD
-            if binary_str[i] == '1':
-                if len(self.cvs) > 0:
-                    ctrls, k_split[i] = bb.add(
-                        MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
-                        controls=ctrls,
-                        target=k_split[i],
-=======
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
                         MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -476,19 +413,10 @@ class SimpleAddConstant(Bloq):
         # representation back to the zero state.
         k_split = bb.split(k)
         for i in range(self.bitsize):
-<<<<<<< HEAD
-            if binary_str[i] == '1':
-                if len(self.cvs) > 0:
-                    ctrls, k_split[i] = bb.add(
-                        MultiControlPauli(cvs=self.cvs, target_gate=XGate()),
-                        controls=ctrls,
-                        target=k_split[i],
-=======
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
                         MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -499,20 +427,12 @@ class SimpleAddConstant(Bloq):
 
         # Return the output registers.
         if len(self.cvs) > 0:
-<<<<<<< HEAD
-            return {'x': x, 'ctrl': ctrls}
-=======
             return {'ctrls': ctrls, 'x': x}
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
         else:
             return {'x': x}
 
     def short_name(self) -> str:
-<<<<<<< HEAD
-        return f'x = x + {self.k}'
-=======
         return f'x += {self.k}'
->>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
 
 
 @frozen(auto_attribs=True)

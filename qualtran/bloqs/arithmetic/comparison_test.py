@@ -39,6 +39,12 @@ from qualtran.testing import (
 )
 
 
+def _make_greater_than():
+    from qualtran.bloqs.arithmetic import GreaterThan
+
+    return GreaterThan(a_bitsize=4, b_bitsize=4)
+
+
 def _make_greater_than_constant():
     from qualtran.bloqs.arithmetic import GreaterThanConstant
 
