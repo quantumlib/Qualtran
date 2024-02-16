@@ -114,6 +114,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         phase_bitsize: size of the register that is used to store the rotation angles. Bigger values
             increase the accuracy of the results.
         state_coefficients: tuple of length 2^state_bitsizes that contains the complex coefficients of the state.
+        control_bitsize: number of qubits of the control register. Set to zero for an uncontrolled gate.
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
@@ -124,6 +125,7 @@ class StatePreparationViaRotations(GateWithRegisters):
     state_bitsize: int
     phase_bitsize: int
     state_coefficients: Tuple[complex, ...]
+    control_bitsize: int = 0
     uncompute: bool = False
 
     @property
@@ -138,50 +140,44 @@ class StatePreparationViaRotations(GateWithRegisters):
     @property
     def signature(self)  -> Signature:
         return Signature.build(
-            control=1, target_state=self.state_bitsize, phase_gradient=self.phase_bitsize
+            prepare_control=self.control_bitsize, target_state=self.state_bitsize, phase_gradient=self.phase_bitsize
         )
 
-    def build_composite_bloq(
-        self, bb: BloqBuilder, *, control: SoquetT, target_state: SoquetT, phase_gradient: SoquetT
-    ) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
+        r"""Parameters:
+            * prepare_control: only if control_bitsize != 0
+            * target_state: register where the state is written
+            * phase_gradient: phase gradient state (will be left unaffected)
+        """
         rom_vals = RotationTree(self.state_coefficients).get_rom_values(self.phase_bitsize)
         # allocate the qubits for the rotation angle register
-        rot_reg = bb.allocate(self.phase_bitsize)
+        soqs["rot_reg"] = bb.allocate(self.phase_bitsize)
         if self.uncompute:
-            control, target_state, rot_reg, phase_gradient = self._prepare_phases(
-                rom_vals, bb, control, target_state, rot_reg, phase_gradient
-            )
-            control, target_state, rot_reg, phase_gradient = self._prepare_amplitudes(
-                rom_vals, bb, control, target_state, rot_reg, phase_gradient
-            )
+            soqs = self._prepare_phases(rom_vals, bb, **soqs)
+            soqs = self._prepare_amplitudes(rom_vals, bb, **soqs)
         else:
-            control, target_state, rot_reg, phase_gradient = self._prepare_amplitudes(
-                rom_vals, bb, control, target_state, rot_reg, phase_gradient
-            )
-            control, target_state, rot_reg, phase_gradient = self._prepare_phases(
-                rom_vals, bb, control, target_state, rot_reg, phase_gradient
-            )
+            soqs = self._prepare_amplitudes(rom_vals, bb, **soqs)
+            soqs = self._prepare_phases(rom_vals, bb, **soqs)
         # deallocate rotation register's qubits
-        bb.free(rot_reg)
-        return {"control": control, "target_state": target_state, "phase_gradient": phase_gradient}
+        bb.free(soqs.pop("rot_reg"))
+        return soqs
 
     def _prepare_amplitudes(
-        self,
-        rom_vals: ArrayLike,
-        bb: BloqBuilder,
-        control: SoquetT,
-        target_state: SoquetT,
-        rot_reg: SoquetT,
-        phase_gradient: SoquetT,
-    ):
+        self, rom_vals: ArrayLike, bb: BloqBuilder, **soqs: SoquetT
+    ) -> Dict[str, SoquetT]:
+        r"""Parameters into soqs:
+            * prepare_control: only if control_bitsize != 0
+            * target_state: register where the state is written
+            * phase_gradient: phase gradient state (will be left unaffected)
+            * rot_reg: register in the zero state to store the rotation angles
+        """
         # if it is the adjoint gate, load the modular negative values to undo the rotations that
         # loaded the amplitudes
         if self.uncompute:
             rom_vals = RotationTree(self.state_coefficients).get_rom_values(
                 self.phase_bitsize, uncompute=True
             )
-        state_qubits = bb.split(target_state)
-        soqs = {"prepare_control": control, "rot_reg": rot_reg, "phase_gradient": phase_gradient}
+        state_qubits = bb.split(soqs.pop("target_state"))
         for i in range(self.state_bitsize):
             # for the normal gate loop from qubit 0 to state_bitsizes-1, if it is the adjoint
             # then the process is run backwards with the opposite turn angles
@@ -189,7 +185,7 @@ class StatePreparationViaRotations(GateWithRegisters):
                 qi = self.state_bitsize - i - 1
             else:
                 qi = i
-            ctrl_rot_q = ControlledQROMRotateQubit(qi, self.phase_bitsize, tuple(rom_vals[qi]))
+            ctrl_rot_q = ControlledQROMRotateQubit(qi, self.phase_bitsize, tuple(rom_vals[qi]), self.control_bitsize)
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
             if qi:
                 # first qubit does not have selection registers, only controls
@@ -199,17 +195,14 @@ class StatePreparationViaRotations(GateWithRegisters):
                 state_qubits[:qi] = bb.split(soqs.pop("selection"))
             state_qubits[qi] = bb.add(Rx(angle=-np.pi / 2), q=soqs.pop("qubit"))
 
-        target_state = bb.join(state_qubits)
-        return soqs["prepare_control"], target_state, soqs["rot_reg"], soqs["phase_gradient"]
+        soqs["target_state"] = bb.join(state_qubits)
+        return soqs
 
     def _prepare_phases(
         self,
         amplitude_rom_vals: ArrayLike,
         bb: BloqBuilder,
-        control: SoquetT,
-        target_state: SoquetT,
-        rot_reg: SoquetT,
-        phase_gradient: SoquetT,
+        **soqs: SoquetT
     ):
         """
         Encodes the phase of each coefficient, taking into account both the phase of the original
@@ -223,7 +216,7 @@ class StatePreparationViaRotations(GateWithRegisters):
             amplitude_rom_vals: list of ROM values that correspond to the angles of the phases to
                 be encoded. The ith item contains the value of the ith coefficient. To get the ROM
                 value that corresponds to an angle use RotationTree.angle_to_rom_value.
-            control: control qubit for the gate. Gate only takes effect when control is at |1>
+            prepare_control: control qubit for the gate. Gate only takes effect when control is at |1>
             target_state: register that holds the amplitudes of the state to be encoded. It is
                 used as the selection register for the ROM value to be loaded, thus for the
                 target_state |00>, the angle that corresponds to the phase of |00> is applied.
@@ -232,23 +225,20 @@ class StatePreparationViaRotations(GateWithRegisters):
             phase_gradient: phase gradient state used to apply the rotation, can be obtained from
                 the PhaseGradientState class. It is left unaffected and can be reused.
         """
-        rot_ancilla = bb.allocate(1)
-        rot_ancilla = bb.add(XGate(), q=rot_ancilla)
+        # the "qubit" register is the rotation ancilla
+        soqs["qubit"] = bb.allocate(1)
+        soqs["qubit"] = bb.add(XGate(), q=soqs["qubit"])
         rom_vals = self._get_phase_rom_values(amplitude_rom_vals)
         ctrl_rot = ControlledQROMRotateQubit(
-            self.state_bitsize, self.phase_bitsize, tuple(rom_vals)
+            self.state_bitsize, self.phase_bitsize, tuple(rom_vals), self.control_bitsize
         )
-        control, target_state, rot_ancilla, rot_reg, phase_gradient = bb.add(
-            ctrl_rot,
-            prepare_control=control,
-            selection=target_state,
-            qubit=rot_ancilla,
-            rot_reg=rot_reg,
-            phase_gradient=phase_gradient,
-        )
-        rot_ancilla = bb.add(XGate(), q=rot_ancilla)
-        bb.free(rot_ancilla)
-        return control, target_state, rot_reg, phase_gradient
+        # rename some registers to make them compatible with ControlledQROMRotateQubit
+        soqs["selection"] = soqs.pop("target_state")
+        soqs = bb.add_d(ctrl_rot, **soqs)
+        soqs["target_state"] = soqs.pop("selection")
+        soqs["qubit"] = bb.add(XGate(), q=soqs["qubit"])
+        bb.free(soqs.pop("qubit"))
+        return soqs
 
     def _get_phase_rom_values(self, amplitude_rom_vals) -> List[int]:
         """As we are using the equivalent to controlled Z to do the rotations instead of Rz, there
@@ -317,6 +307,7 @@ class ControlledQROMRotateQubit(Bloq):
         rom_values: the tuple of values to be loaded in the rom, which correspond to the angle of
             each rotation. In order to get the rom value that corresponds to a given angle use
             RotationTree.angle_to_rom_value(angle, rot_reg_bitsizes).
+        control_bitsize: number of qubits of the control register. Set to zero for an uncontrolled gate.
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
@@ -327,11 +318,12 @@ class ControlledQROMRotateQubit(Bloq):
     selection_bitsizes: int
     rot_reg_bitsizes: int
     rom_values: Tuple[int, ...]
+    control_bitsize: int
 
     @property
     def signature(self) -> Signature:
         return Signature.build(
-            prepare_control=1,
+            prepare_control=self.control_bitsize,
             selection=self.selection_bitsizes,
             qubit=1,
             rot_reg=self.rot_reg_bitsizes,
@@ -340,7 +332,7 @@ class ControlledQROMRotateQubit(Bloq):
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         """Parameters:
-        * prepare_control
+        * prepare_control (not necessary if selection_bitsizes == 0)
         * selection (not necessary if selection_bitsizes == 0)
         * qubit
         * rot_reg
@@ -350,10 +342,13 @@ class ControlledQROMRotateQubit(Bloq):
             [np.array(self.rom_values)],
             selection_bitsizes=(self.selection_bitsizes,),
             target_bitsizes=(self.rot_reg_bitsizes,),
-            num_controls=2,
+            num_controls=self.control_bitsize+1,
         )
-        # both prepare_control and qubit will control the QROM so that this acts as a control Z
-        qrom_control = bb.join(np.array([soqs.pop("prepare_control"), soqs.pop("qubit")]))
+        if self.control_bitsize == 0:
+            qrom_control = soqs.pop("qubit")
+        else:
+            # both prepare_control and qubit will control the QROM so that this acts as a control Z
+            qrom_control = bb.join(np.array([*bb.split(soqs.pop("prepare_control")), soqs.pop("qubit")]))
         phase_grad = soqs.pop("phase_gradient")
         # load angles in rot_reg (line 1 of eq (8) in [1])
         soqs = bb.add_d(qrom, control=qrom_control, target0_=soqs.pop("rot_reg"), **soqs)
@@ -367,9 +362,10 @@ class ControlledQROMRotateQubit(Bloq):
         # (line 1 of eq (8) in [1])
         soqs = bb.add_d(qrom, **soqs)
         separated = bb.split(soqs.pop('control'))
+        if self.control_bitsize != 0:
+            soqs["prepare_control"] = bb.join(separated[:-1])
         return {
-            "prepare_control": separated[0],
-            "qubit": separated[1],
+            "qubit": separated[-1],
             "phase_gradient": phase_grad,
             "rot_reg": soqs.pop('target0_'),
         } | soqs
