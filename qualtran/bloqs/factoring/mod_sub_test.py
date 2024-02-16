@@ -14,29 +14,17 @@
 
 import pytest
 
-from qualtran.bloqs.factoring.mod_sub import ModNeg, ModSub
+from qualtran.bloqs.factoring.mod_sub import MontgomeryModNeg, MontgomeryModSub
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-def test_mod_sub():
-    bloq = ModSub(bitsize=8, p=3)
-    assert bloq.short_name() == 'y = y - x mod 3'
-
-
-def test_mod_neg():
-    bloq = ModNeg(bitsize=8, p=3)
-    assert bloq.short_name() == 'x = -x mod 3'
-
-
-@pytest.mark.parametrize('bitsize', [3])
-@pytest.mark.parametrize('p', [5, 8])
-def test_mod_sub_decomp(bitsize, p):
-    bloq = ModSub(bitsize=bitsize, p=p)
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_neg_decomp(bitsize, p):
+    bloq = MontgomeryModNeg(bitsize=bitsize, p=p)
     assert_valid_bloq_decomposition(bloq)
 
 
-@pytest.mark.parametrize('bitsize', [3])
-@pytest.mark.parametrize('p', [5, 8])
-def test_mod_neg_decomp(bitsize, p):
-    bloq = ModNeg(bitsize=bitsize, p=p)
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_sub_decomp(bitsize, p):
+    bloq = MontgomeryModSub(bitsize=bitsize, p=p)
     assert_valid_bloq_decomposition(bloq)

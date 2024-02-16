@@ -21,9 +21,8 @@ import sympy
 
 from qualtran import Bloq
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul, ModDbl
+from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul, MontgomeryModDbl
 from qualtran.bloqs.util_bloqs import Allocate, Free
-from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -133,15 +132,9 @@ def test_consistent_counts():
     assert counts1 == counts2
 
 
-def test_mod_dbl():
-    bloq = ModDbl(bitsize=8, p=3)
-    assert bloq.short_name() == 'x = 2 * x mod 3'
-
-
-@pytest.mark.parametrize('bitsize', [3])
-@pytest.mark.parametrize('p', [5, 8])
-def test_mod_dbl_decomp(bitsize, p):
-    bloq = ModDbl(bitsize=bitsize, p=p)
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_dbl_decomp(bitsize, p):
+    bloq = MontgomeryModDbl(bitsize=bitsize, p=p)
     assert_valid_bloq_decomposition(bloq)
 
 
