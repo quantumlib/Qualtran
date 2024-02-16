@@ -51,6 +51,7 @@ import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
@@ -233,6 +234,19 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.addition._ADD_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Multiplication',
+        module=qualtran.bloqs.arithmetic.multiplication,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.multiplication._PLUS_EQUALS_PRODUCT_DOC,
+            qualtran.bloqs.arithmetic.multiplication._PRODUCT_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SQUARE_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SUM_OF_SQUARES_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
+            qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
         ],
     ),
     NotebookSpecV2(

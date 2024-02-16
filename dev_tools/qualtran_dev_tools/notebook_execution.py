@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import asyncio
+import multiprocessing
 import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+import filelock
 import nbconvert
 import nbformat
 from attrs import frozen
@@ -145,9 +147,17 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
     linkify(nb)
 
     # Run it
-    ep = ExecutePreprocessor(timeout=600, kernel_name="python3", record_timing=False)
+    executor = ExecutePreprocessor(timeout=600, kernel_name="python3", record_timing=False)
+    # Must manually lock the creation of the jupyter client to avoid a race condition.
+    # https://github.com/jupyter/jupyter_client/issues/487#issuecomment-956206611
+    executor.km = executor.create_kernel_manager()
+    with filelock.FileLock("jupyter_kernel.lock", timeout=300):
+        asyncio.run(executor.async_start_new_kernel())
+        asyncio.run(executor.async_start_new_kernel_client())
+
+    print(f"Executing {paths.nb_in.stem}")
     try:
-        nb, resources = ep.preprocess(nb)
+        nb, resources = executor.preprocess(nb)
     except Exception as e:  # pylint: disable=broad-except
         print(f'{paths.nb_in} failed!')
         print(e)
@@ -167,6 +177,29 @@ def execute_and_export_notebook(paths: _NBInOutPaths) -> Optional[Exception]:
             f.write(html)
 
 
+class _NotebookRunClosure:
+    """Used to run notebook execution logic in subprocesses."""
+
+    def __init__(self, reporoot: Path, output_nbs: bool, output_html: bool, only_out_of_date: bool):
+        self.reporoot = reporoot
+        self.output_nbs = output_nbs
+        self.output_html = output_html
+        self.only_out_of_date = only_out_of_date
+
+    def __call__(self, nb_rel_path: Path) -> Tuple[Path, Optional[Exception]]:
+        paths = _NBInOutPaths.from_nb_rel_path(
+            nb_rel_path, self.reporoot, output_html=self.output_html, output_nbs=self.output_nbs
+        )
+
+        if self.only_out_of_date and not paths.needs_reexport():
+            print(f'{nb_rel_path} up to date')
+            return paths.nb_in, None
+
+        err = execute_and_export_notebook(paths)
+        print(f"Exported {nb_rel_path}")
+        return paths.nb_in, err
+
+
 def execute_and_export_notebooks(
     output_nbs: bool, output_html: bool, only_out_of_date: bool = True
 ):
@@ -181,20 +214,15 @@ def execute_and_export_notebooks(
     reporoot = get_git_root()
     sourceroot = reporoot / 'qualtran'
     nb_rel_paths = get_nb_rel_paths(sourceroot=sourceroot)
-    bad_nbs = []
-    for nb_rel_path in nb_rel_paths:
-        paths = _NBInOutPaths.from_nb_rel_path(
-            nb_rel_path, reporoot, output_html=output_html, output_nbs=output_nbs
-        )
-
-        if only_out_of_date and not paths.needs_reexport():
-            print(f'{nb_rel_path} up to date')
-            continue
-
-        print(f"Exporting {nb_rel_path}")
-        err = execute_and_export_notebook(paths)
-        if err is not None:
-            bad_nbs.append(paths.nb_in)
+    func = _NotebookRunClosure(
+        reporoot=reporoot,
+        output_nbs=output_nbs,
+        output_html=output_html,
+        only_out_of_date=only_out_of_date,
+    )
+    with multiprocessing.Pool() as pool:
+        results = pool.map(func, nb_rel_paths)
+    bad_nbs = [nbname for nbname, err in results if err is not None]
 
     if len(bad_nbs) > 0:
         print()

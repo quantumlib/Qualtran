@@ -20,15 +20,15 @@ database) with a number of T gates scaling as 4L + O(log(1/eps)) where eps is th
 largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
+from functools import cached_property
 from typing import List, Tuple
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import Register, SelectionRegister, Signature
+from qualtran import BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
 from qualtran.bloqs.basic_gates.swap import CSwap
@@ -84,8 +84,8 @@ class StatePreparationAliasSampling(PrepareOracle):
         (https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.D. and Figure 11.
     """
-    selection_registers: Tuple[SelectionRegister, ...] = attrs.field(
-        converter=lambda v: (v,) if isinstance(v, SelectionRegister) else tuple(v)
+    selection_registers: Tuple[Register, ...] = attrs.field(
+        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     alt: NDArray[np.int_]
     keep: NDArray[np.int_]
@@ -109,7 +109,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         )
         N = len(lcu_probabilities)
         return StatePreparationAliasSampling(
-            selection_registers=SelectionRegister('selection', (N - 1).bit_length(), N),
+            selection_registers=Register('selection', BoundedQUInt((N - 1).bit_length(), N)),
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
@@ -158,7 +158,7 @@ class StatePreparationAliasSampling(PrepareOracle):
     ) -> cirq.OP_TREE:
         selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
         sigma_mu, alt, keep = quregs.get('sigma_mu', ()), quregs['alt'], quregs.get('keep', ())
-        N = self.selection_registers[0].iteration_length
+        N = self.selection_registers[0].dtype.iteration_length
         yield PrepareUniformSuperposition(N).on(*selection)
         yield cirq.H.on_each(*sigma_mu)
         qrom_gate = QROM(

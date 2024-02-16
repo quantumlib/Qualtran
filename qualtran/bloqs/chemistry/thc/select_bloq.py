@@ -23,8 +23,10 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    BoundedQUInt,
+    QAny,
+    QBit,
     Register,
-    SelectionRegister,
     Signature,
     SoquetT,
 )
@@ -77,10 +79,10 @@ class THCRotations(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("nu_eq_mp1", bitsize=1),
-                Register("data", bitsize=self.num_bits_theta),
-                Register("sel", bitsize=self.num_mu.bit_length()),
-                Register("trg", bitsize=self.num_spin_orb // 2),
+                Register("nu_eq_mp1", QBit()),
+                Register("data", QAny(bitsize=self.num_bits_theta)),
+                Register("sel", QAny(bitsize=self.num_mu.bit_length())),
+                Register("trg", QAny(bitsize=self.num_spin_orb // 2)),
             ]
         )
 
@@ -152,29 +154,31 @@ class SelectTHC(SelectOracle):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister("succ", bitsize=1),
-            SelectionRegister("nu_eq_mp1", bitsize=1),
-            SelectionRegister(
-                "mu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register("succ", BoundedQUInt(bitsize=1)),
+            Register("nu_eq_mp1", BoundedQUInt(bitsize=1)),
+            Register(
+                "mu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister(
-                "nu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register(
+                "nu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister("plus_mn", bitsize=1),
-            SelectionRegister("plus_a", bitsize=1),
-            SelectionRegister("plus_b", bitsize=1),
+            Register("plus_mn", BoundedQUInt(bitsize=1)),
+            Register("plus_a", BoundedQUInt(bitsize=1)),
+            Register("plus_b", BoundedQUInt(bitsize=1)),
         )
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("sys_a", bitsize=self.num_spin_orb // 2),
-            Register("sys_b", bitsize=self.num_spin_orb // 2),
+            Register("sys_a", QAny(bitsize=self.num_spin_orb // 2)),
+            Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
     def build_composite_bloq(

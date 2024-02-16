@@ -20,7 +20,7 @@ import pytest
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature
+from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.simulation.classical_sim import (
     _update_assign_from_vals,
@@ -73,10 +73,10 @@ def test_dtype_validation():
 
     # set up different register dtypes
     regs = [
-        Register('one_bit_int', 1),
-        Register('int', 5),
-        Register('bit_arr', 1, shape=(5,)),
-        Register('int_arr', 32, shape=(5,)),
+        Register('one_bit_int', QBit()),
+        Register('int', QAny(5)),
+        Register('bit_arr', QBit(), shape=(5,)),
+        Register('int_arr', QAny(32), shape=(5,)),
     ]
 
     # base case: vals are as-expected.
@@ -90,7 +90,7 @@ def test_dtype_validation():
 
     # bad integer
     vals2 = {**vals, 'one_bit_int': 2}
-    with pytest.raises(ValueError, match=r'Too-large.*one_bit_int'):
+    with pytest.raises(ValueError, match=r'Bad QBit().*one_bit_int'):
         _update_assign_from_vals(regs, binst, vals2, soq_assign)
 
     # int is a numpy int
@@ -108,7 +108,7 @@ class ApplyClassicalTest(Bloq):
     @property
     def signature(self) -> 'Signature':
         return Signature(
-            [Register('x', 1, shape=(5,)), Register('z', 1, shape=(5,), side=Side.RIGHT)]
+            [Register('x', QBit(), shape=(5,)), Register('z', QBit(), shape=(5,), side=Side.RIGHT)]
         )
 
     def on_classical_vals(self, *, x: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
@@ -146,7 +146,7 @@ def test_cnot_assign_dict():
 
 def test_apply_classical_cbloq():
     bb = BloqBuilder()
-    x = bb.add_register(Register('x', 1, shape=(5,)))
+    x = bb.add_register(Register('x', QBit(), shape=(5,)))
     x, y = bb.add(ApplyClassicalTest(), x=x)
     y, z = bb.add(ApplyClassicalTest(), x=y)
     cbloq = bb.finalize(x=x, y=y, z=z)

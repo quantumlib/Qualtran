@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
@@ -107,7 +107,7 @@ class MeanEstimationOperator(GateWithRegisters):
         return self.code.encoder.control_registers
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return self.code.encoder.selection_registers
 
     @cached_property

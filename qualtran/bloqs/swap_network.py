@@ -26,9 +26,10 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    BoundedQUInt,
     GateWithRegisters,
+    QAny,
     Register,
-    SelectionRegister,
     Signature,
     Soquet,
     SoquetT,
@@ -186,18 +187,21 @@ class SwapWithZero(GateWithRegisters):
         assert self.n_target_registers <= 2**self.selection_bitsize
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister(
+            Register(
                 'selection',
-                bitsize=self.selection_bitsize,
-                iteration_length=self.n_target_registers,
+                BoundedQUInt(
+                    bitsize=self.selection_bitsize, iteration_length=self.n_target_registers
+                ),
             ),
         )
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('targets', bitsize=self.target_bitsize, shape=self.n_target_registers),)
+        return (
+            Register('targets', QAny(bitsize=self.target_bitsize), shape=self.n_target_registers),
+        )
 
     @cached_property
     def signature(self) -> Signature:
@@ -279,14 +283,14 @@ class MultiplexedCSwap(UnaryIterationGate):
     the registers to swap, and $n_c$ is the number of controls.
 
     Args:
-        selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
+        selection_regs: Indexing `select` signature of type Tuple[`Register`, ...].
             It also contains information about the iteration length of each selection register.
         target_bitsize: The size of the registers we want to swap.
         control_regs: Control registers for constructing a controlled version of the gate.
 
     Registers:
         control_registers: Control registers
-        selection_regs: Indexing `select` signature of type Tuple[`SelectionRegisters`, ...].
+        selection_regs: Indexing `select` signature of type Tuple[`Register`, ...].
             It also contains information about the iteration length of each selection register.
         target_registers: Target registers to swap. We swap FROM registers
             labelled x`i`, where i is an integer and TO a single register called y
@@ -295,8 +299,8 @@ class MultiplexedCSwap(UnaryIterationGate):
         [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
             https://arxiv.org/abs/2105.12767) page 20 paragraph 2.
     """
-    selection_regs: Tuple[SelectionRegister, ...] = field(
-        converter=lambda v: (v,) if isinstance(v, SelectionRegister) else tuple(v)
+    selection_regs: Tuple[Register, ...] = field(
+        converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
     )
     target_bitsize: int
     control_regs: Tuple[Register, ...] = field(
@@ -308,16 +312,16 @@ class MultiplexedCSwap(UnaryIterationGate):
         return self.control_regs
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return self.selection_regs
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        target_shape = tuple(sreg.iteration_length for sreg in self.selection_registers)
+        target_shape = tuple(sreg.dtype.iteration_length for sreg in self.selection_registers)
         return tuple(
             [
-                Register('targets', bitsize=self.target_bitsize, shape=target_shape),
-                Register('output', bitsize=self.target_bitsize),
+                Register('targets', QAny(bitsize=self.target_bitsize), shape=target_shape),
+                Register('output', QAny(bitsize=self.target_bitsize)),
             ]
         )
 
@@ -344,13 +348,13 @@ class MultiplexedCSwap(UnaryIterationGate):
 
 @bloq_example
 def _multiplexed_cswap() -> MultiplexedCSwap:
-    from qualtran import SelectionRegister
+    from qualtran import BoundedQUInt
 
     selection_bitsize = 3
     iteration_length = 5
     target_bitsize = 2
     multiplexed_cswap = MultiplexedCSwap(
-        SelectionRegister('selection', selection_bitsize, iteration_length),
+        Register('selection', BoundedQUInt(selection_bitsize, iteration_length)),
         target_bitsize=target_bitsize,
     )
 

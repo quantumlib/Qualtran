@@ -20,7 +20,7 @@ import attrs
 import cirq
 import numpy as np
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, Soquet
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.drawing import Circle, WireSymbol
@@ -54,7 +54,9 @@ class Reflection(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register(name=f'reg{i}', bitsize=b) for i, b in enumerate(self.bitsizes)])
+        return Signature(
+            [Register(f'reg{i}', QAny(bitsize=b)) for i, b in enumerate(self.bitsizes)]
+        )
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         idx = int(soq.pretty()[3:])

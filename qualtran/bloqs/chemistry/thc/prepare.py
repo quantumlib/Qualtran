@@ -25,11 +25,13 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QAny,
+    QBit,
     Register,
-    SelectionRegister,
     Signature,
     SoquetT,
 )
+from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
     GreaterThanConstant,
@@ -94,11 +96,11 @@ class UniformSuperpositionTHC(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", bitsize=self.num_mu.bit_length()),
-                Register("nu", bitsize=self.num_mu.bit_length()),
-                Register("nu_eq_mp1", bitsize=1),
-                Register("succ", bitsize=1),
-                Register("rot", bitsize=1),
+                Register("mu", QAny(bitsize=self.num_mu.bit_length())),
+                Register("nu", QAny(bitsize=self.num_mu.bit_length())),
+                Register("nu_eq_mp1", QBit()),
+                Register("succ", QBit()),
+                Register("rot", QBit()),
             ]
         )
 
@@ -306,35 +308,37 @@ class PrepareTHC(PrepareOracle):
         )
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister(
-                "mu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register(
+                "mu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister(
-                "nu", bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1
+            Register(
+                "nu",
+                BoundedQUInt(bitsize=(self.num_mu).bit_length(), iteration_length=self.num_mu + 1),
             ),
-            SelectionRegister("plus_mn", bitsize=1),
-            SelectionRegister("plus_a", bitsize=1),
-            SelectionRegister("plus_b", bitsize=1),
-            SelectionRegister("sigma", bitsize=self.keep_bitsize),
-            SelectionRegister("rot", bitsize=1),
+            Register("plus_mn", BoundedQUInt(bitsize=1)),
+            Register("plus_a", BoundedQUInt(bitsize=1)),
+            Register("plus_b", BoundedQUInt(bitsize=1)),
+            Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
+            Register("rot", BoundedQUInt(bitsize=1)),
         )
 
     @cached_property
-    def junk_registers(self) -> Tuple[SelectionRegister, ...]:
+    def junk_registers(self) -> Tuple[Register, ...]:
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         return (
-            Register('succ', bitsize=1),
-            Register('nu_eq_mp1', bitsize=1),
-            Register('theta', bitsize=1),
-            Register('s', bitsize=(data_size - 1).bit_length()),
-            Register('alt_mn', bitsize=log_mu, shape=(2,)),
-            Register('alt_theta', bitsize=1),
-            Register('keep', bitsize=self.keep_bitsize),
-            Register('less_than', bitsize=1),
-            Register('extra_ctrl', bitsize=1),
+            Register('succ', QBit()),
+            Register('nu_eq_mp1', QBit()),
+            Register('theta', QBit()),
+            Register('s', QAny(bitsize=(data_size - 1).bit_length())),
+            Register('alt_mn', QAny(bitsize=log_mu), shape=(2,)),
+            Register('alt_theta', QBit()),
+            Register('keep', QAny(bitsize=self.keep_bitsize)),
+            Register('less_than', QBit()),
+            Register('extra_ctrl', QBit()),
         )
 
     def build_composite_bloq(

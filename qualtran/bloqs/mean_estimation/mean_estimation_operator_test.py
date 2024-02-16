@@ -12,15 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
 import pytest
 from attrs import frozen
-from cirq._compat import cached_property
 
-from qualtran import Register, SelectionRegister
+from qualtran import BoundedQUInt, QAny, QBit, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
@@ -39,8 +39,8 @@ class BernoulliSynthesizer(PrepareOracle):
     nqubits: int
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('q', self.nqubits, 2),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('q', BoundedQUInt(self.nqubits, 2)),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid]
@@ -62,15 +62,15 @@ class BernoulliEncoder(SelectOracle):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('q', self.selection_bitsize, 2),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('q', BoundedQUInt(self.selection_bitsize, 2)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('t', self.target_bitsize),)
+        return (Register('t', QAny(self.target_bitsize)),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
@@ -183,8 +183,8 @@ class GroverSynthesizer(PrepareOracle):
     n: int
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self.n),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', QAny(self.n)),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, *, context, selection: Sequence[cirq.Qid]
@@ -210,12 +210,12 @@ class GroverEncoder(SelectOracle):
         return ()
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self.n),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', QAny(self.n)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self.marked_val.bit_length()),)
+        return (Register('target', QAny(self.marked_val.bit_length())),)
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, *, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
