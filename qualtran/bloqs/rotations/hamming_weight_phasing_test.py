@@ -102,7 +102,10 @@ def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: f
     gate = HammingWeightPhasingViaPhaseGradient(n, theta, eps)
     naive_hwp_t_complexity = HammingWeightPhasing(n, theta, eps).t_complexity()
     assert (
-        gate.t_complexity().t
+        gate.t_complexity().t_incl_rotations()
         < naive_hwp_t_complexity.t
-        + naive_hwp_t_complexity.rotations * ZPowGate(eps=eps / n.bit_length()).t_complexity().t
+        + naive_hwp_t_complexity.rotations
+        * ZPowGate(eps=eps / n.bit_length())
+        .t_complexity()
+        .t_incl_rotations(eps=eps / n.bit_length())
     )

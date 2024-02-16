@@ -114,7 +114,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
             outgoing=outgoing,
         )
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return t_complexity(self.cirq_gate)
 
     def as_cirq_op(

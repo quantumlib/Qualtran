@@ -14,19 +14,15 @@
 
 import abc
 from functools import cached_property
-from typing import Protocol, Set, TYPE_CHECKING
+from typing import Protocol
 
 import cirq
 import numpy as np
 from attrs import frozen
 
 from qualtran import bloq_example
-from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 class _HasEps(Protocol):
@@ -36,18 +32,8 @@ class _HasEps(Protocol):
 
 
 class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
-    def t_complexity(self: _HasEps):
-        # TODO Determine precise clifford count and/or ignore.
-        # This is an improvement over Ref. 2 from the docstring which provides
-        # a bound of 3 log(1/eps).
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
-        return TComplexity(t=num_t)
-
-    def build_call_graph(self: _HasEps, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_t = _RotationBloq.t_complexity(self).t
-        return {(TGate(), num_t)}
+    def _t_complexity_(self: _HasEps):
+        return TComplexity(rotations=1)
 
 
 @frozen

@@ -56,7 +56,7 @@ class QuantumVariableRotation(Bloq):
     def short_name(self) -> str:
         return 'e^{i*phi}'
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         # Upper bounding for the moment with just phi_bitsize * Rz rotation gates.
         return self.phi_bitsize * Rz(0.0).t_complexity()
 

@@ -42,9 +42,9 @@ def _make_Rz():
 def test_rotation_gates():
     angle = np.pi / 4.0
     tcount = 52
-    assert Rx(angle).t_complexity().t == tcount
-    assert Ry(angle).t_complexity().t == tcount
-    assert Rz(angle).t_complexity().t == tcount
+    assert Rx(angle).t_complexity().t_incl_rotations() == tcount
+    assert Ry(angle).t_complexity().t_incl_rotations() == tcount
+    assert Rz(angle).t_complexity().t_incl_rotations() == tcount
 
 
 def test_as_cirq_op():
