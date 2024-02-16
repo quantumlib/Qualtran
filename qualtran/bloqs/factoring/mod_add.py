@@ -19,8 +19,10 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QUInt, Register, Signature
-from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran import Bloq, QBit, QUInt, Register, Signature, SoquetT
+from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
+from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
+from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
@@ -144,12 +146,11 @@ class CtrlAddK(Bloq):
 
 
 @frozen
-class ModAdd(Bloq):
+class MontgomeryModAdd(Bloq):
     r"""An n-bit modular addition gate.
 
-    This gate is designed to operate on integers in the Montogomery form.
-
-    Implements $U|x\rangle|y\rangle \rightarrow |x\rangle|y + x \mod p\rangle$ using $4n$ Toffoli
+    This gate is designed to operate on integers in the Montgomery form.
+    Implements |x>|y> => |x>|y + x % p> using $4n$ Toffoli
     gates.
 
     Args:
@@ -171,11 +172,23 @@ class ModAdd(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
+    def on_classical_vals(
+        self, x: 'ClassicalValT', y: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
 
-        # Assign registers to variables and allocate ancilla bits for use in addition.
-        x = regs['x']
-        y = regs['y']
+        y += x
+        y -= self.p
+
+        if y < 0:
+            y += self.p
+
+        return {'x': x, 'y': y}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+
+        # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
 
@@ -184,16 +197,16 @@ class ModAdd(Bloq):
         # constant subtraction circuit.
         x_split = bb.split(x)
         y_split = bb.split(y)
-        x = bb.join(np.concatenate([x_split, [junk_bit]]))
-        y = bb.join(np.concatenate([y_split, [sign]]))
+        x = bb.join(np.concatenate([[junk_bit], x_split]))
+        y = bb.join(np.concatenate([[sign], y_split]))
 
         # Perform in-place addition on quantum register y.
         x, y = bb.add(Add(bitsize=self.bitsize + 1), a=x, b=y)
 
         # Temporary solution to equalize the bitlength of the x and y registers for Add().
         x_split = bb.split(x)
-        junk_bit = x_split[-1]
-        x = bb.join(x_split[0:-1])
+        junk_bit = x_split[0]
+        x = bb.join(x_split[1:])
 
         # Add constant -p to the y register.
         y = bb.add(
@@ -203,15 +216,22 @@ class ModAdd(Bloq):
         # Controlled addition of classical constant p if the sign of y after the last addition is
         # negative.
         y_split = bb.split(y)
-        sign = y_split[-1]
-        y = bb.join(y_split[0:-1])
-        sign, y = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize, k=self.p, signed=True, cvs=(1)), ctrl=sign, x=y
-        )
+        sign = y_split[0]
+        y = bb.join(y_split[1:])
 
-        # Check if x < y; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
+        sign_split = bb.split(sign)
+        sign_split, y = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize, k=self.p, signed=True, cvs=(1,)),
+            x=y,
+            ctrls=sign_split,
+        )
+        sign = bb.join(sign_split)
+
+        # Check if y < x; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
-        x, y, sign = bb.add(GreaterThan(bitsize=self.bitsize, signed=False), a=x, b=y, target=sign)
+        x, y, sign = bb.add(
+            LinearDepthGreaterThan(bitsize=self.bitsize, signed=False), a=x, b=y, target=sign
+        )
         sign = bb.add(XGate(), q=sign)
 
         # Free the ancilla qubits.

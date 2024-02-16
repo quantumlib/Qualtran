@@ -14,9 +14,7 @@
 
 import pytest
 
-from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd, ModAdd
-from qualtran.resource_counting import SympySymbolAllocator
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd, MontgomeryModAdd
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -38,13 +36,7 @@ def test_ctrl_mod_add_k():
     assert n == 5
 
 
-def test_mod_add():
-    bloq = ModAdd(bitsize=8, p=3)
-    assert bloq.short_name() == 'y = y + x mod 3'
-
-
-@pytest.mark.parametrize('bitsize', [3])
-@pytest.mark.parametrize('p', [5, 8])
-def test_mod_add_decomp(bitsize, p):
-    bloq = ModAdd(bitsize=bitsize, p=p)
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_add_decomp(bitsize, p):
+    bloq = MontgomeryModAdd(bitsize=bitsize, p=p)
     assert_valid_bloq_decomposition(bloq)
