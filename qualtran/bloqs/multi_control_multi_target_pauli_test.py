@@ -38,7 +38,7 @@ def test_multi_target_cnot(num_targets):
     assert_valid_bloq_decomposition(op.gate)
 
 
-@pytest.mark.parametrize("num_controls", [*range(7, 17)])
+@pytest.mark.parametrize("num_controls", [0, 1, *range(7, 17)])
 @pytest.mark.parametrize("pauli", [cirq.X, cirq.Y, cirq.Z])
 @pytest.mark.parametrize('cv', [0, 1])
 def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
