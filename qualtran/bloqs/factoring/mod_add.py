@@ -19,7 +19,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QUInt, Register, Signature, SoquetT
+from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
@@ -168,7 +168,12 @@ class MontgomeryModAdd(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
+        return Signature(
+            [
+                Register('x', QMontgomeryUInt(self.bitsize)),
+                Register('y', QMontgomeryUInt(self.bitsize)),
+            ]
+        )
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
