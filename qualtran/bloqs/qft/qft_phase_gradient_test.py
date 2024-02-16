@@ -42,7 +42,7 @@ class TestQFTWithPhaseGradient(GateWithRegisters):
         q, phase_grad = bb.add(
             QFTPhaseGradient(self.bitsize, self.with_reverse), q=q, phase_grad=phase_grad
         )
-        bb.add(PhaseGradientState(self.bitsize, adjoint=True), phase_grad=phase_grad)
+        bb.add(PhaseGradientState(self.bitsize).adjoint(), phase_grad=phase_grad)
         return {'q': q}
 
 
