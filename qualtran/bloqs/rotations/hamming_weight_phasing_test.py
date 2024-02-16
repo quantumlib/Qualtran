@@ -72,7 +72,7 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
             x=x,
             phase_grad=phase_grad,
         )
-        bb.add(PhaseGradientState(b_grad, adjoint=True), phase_grad=phase_grad)
+        bb.add(PhaseGradientState(b_grad).adjoint(), phase_grad=phase_grad)
         return {'x': x}
 
 

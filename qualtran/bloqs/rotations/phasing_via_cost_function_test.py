@@ -66,7 +66,7 @@ class TestHammingWeightPhasing(GateWithRegisters):
         soqs = bb.add_d(PhasingViaCostFunction(self.cost_eval_oracle, self.phase_oracle), **soqs)
         if self.use_phase_gradient:
             bb.add(
-                PhaseGradientState(self.phase_oracle.b_grad, adjoint=True),
+                PhaseGradientState(self.phase_oracle.b_grad).adjoint(),
                 phase_grad=soqs.pop('phase_grad'),
             )
         return soqs
@@ -126,7 +126,7 @@ class TestSquarePhasing(GateWithRegisters):
         soqs = bb.add_d(PhasingViaCostFunction(self.cost_eval_oracle, self.phase_oracle), **soqs)
         if self.use_phase_gradient:
             bb.add(
-                PhaseGradientState(self.phase_oracle.b_grad, adjoint=True),
+                PhaseGradientState(self.phase_oracle.b_grad).adjoint(),
                 phase_grad=soqs.pop('phase_grad'),
             )
         return soqs

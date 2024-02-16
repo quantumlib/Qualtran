@@ -31,7 +31,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 def test_phase_gradient_state(n: int):
     gate = PhaseGradientState(n)
     assert_valid_bloq_decomposition(gate)
-    assert_valid_bloq_decomposition(gate**-1)
+    assert_valid_bloq_decomposition(gate.adjoint())
 
     q = cirq.LineQubit.range(n)
     state_prep_cirq_circuit = cirq.Circuit(
@@ -39,7 +39,7 @@ def test_phase_gradient_state(n: int):
     )
     assert np.allclose(cirq.unitary(gate), cirq.unitary(state_prep_cirq_circuit))
     assert np.allclose(
-        cirq.unitary(gate**-1), cirq.unitary(cirq.inverse(state_prep_cirq_circuit))
+        cirq.unitary(gate.adjoint()), cirq.unitary(cirq.inverse(state_prep_cirq_circuit))
     )
     assert gate.t_complexity().rotations == n - 2
     assert gate.t_complexity().clifford == n + 2
@@ -55,7 +55,7 @@ def test_phase_gradient_state_tensor_contract(n: int, t: float):
 
     bb = BloqBuilder()
     phase_reg = bb.add(bloq)
-    bb.add(PhaseGradientState(n, t, adjoint=True), phase_grad=phase_reg)
+    bb.add(PhaseGradientState(n, t).adjoint(), phase_grad=phase_reg)
     circuit = bb.finalize()
     assert np.isclose(circuit.tensor_contract(), 1)
 
