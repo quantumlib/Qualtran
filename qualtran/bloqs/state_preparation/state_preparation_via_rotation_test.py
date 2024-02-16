@@ -18,9 +18,9 @@ import pytest
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import OneEffect, OneState, PlusState, ZeroEffect, ZeroState
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.bloqs.state_preparation.controlled_state_preparation import (
-    _controlled_state_prep,
-    ControlledStatePreparationUsingRotations,
+from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
+    _state_prep_via_rotation,
+    StatePreparationViaRotations,
 )
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -29,8 +29,8 @@ def accuracy(state1, state2):
     return abs(np.dot(state1, state2.conj()))
 
 
-def test_controlled_state_prep(bloq_autotester):
-    bloq_autotester(_controlled_state_prep)
+def test_state_prep_via_rotation(bloq_autotester):
+    bloq_autotester(_state_prep_via_rotation)
 
 
 # these states can be prepared exactly with the given rot_reg_bitsizes
@@ -62,10 +62,10 @@ def test_controlled_state_prep(bloq_autotester):
         ],
     ],
 )
-def test_exact_controlled_state_preparation_via_rotation(
+def test_exact_state_prep_via_rotation_(
     state_bitsizes, rot_reg_bitsizes, state_coefs
 ):
-    qsp = ControlledStatePreparationUsingRotations(
+    qsp = StatePreparationViaRotations(
         state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
@@ -106,13 +106,13 @@ def test_exact_controlled_state_preparation_via_rotation(
         ],
     ],
 )
-def test_controlled_state_preparation_via_rotation_adjoint(
+def test_state_prep_via_rotation_adjoint(
     state_bitsizes, rot_reg_bitsizes, state_coefs
 ):
-    qsp = ControlledStatePreparationUsingRotations(
+    qsp = StatePreparationViaRotations(
         state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
-    qsp_adj = ControlledStatePreparationUsingRotations(
+    qsp_adj = StatePreparationViaRotations(
         state_bitsizes=state_bitsizes,
         rot_reg_bitsizes=rot_reg_bitsizes,
         state=tuple(state_coefs),
@@ -161,10 +161,10 @@ def test_controlled_state_preparation_via_rotation_adjoint(
         ],
     ],
 )
-def test_approximate_controlled_state_preparation_via_rotation(
+def test_approximate_state_prep_via_rotation(
     state_bitsizes, rot_reg_bitsizes, state_coefs
 ):
-    qsp = ControlledStatePreparationUsingRotations(
+    qsp = StatePreparationViaRotations(
         state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
@@ -200,7 +200,7 @@ def test_approximate_controlled_state_preparation_via_rotation(
 def test_controlled_state_preparation_via_rotation_do_not_prepare(
     state_bitsizes, rot_reg_bitsizes, state_coefs
 ):
-    qsp = ControlledStatePreparationUsingRotations(
+    qsp = StatePreparationViaRotations(
         state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
@@ -223,10 +223,10 @@ def test_controlled_state_preparation_via_rotation_do_not_prepare(
 @pytest.mark.parametrize(
     "state_bitsizes, rot_reg_bitsizes, state_coefs", [[2, 2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
 )
-def test_controlled_state_preparation_via_rotation_superposition_ctrl(
+def test_state_preparation_via_rotation_superposition_ctrl(
     state_bitsizes, rot_reg_bitsizes, state_coefs
 ):
-    qsp = ControlledStatePreparationUsingRotations(
+    qsp = StatePreparationViaRotations(
         state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
@@ -246,8 +246,8 @@ def test_controlled_state_preparation_via_rotation_superposition_ctrl(
 
 
 def test_notebook():
-    execute_notebook("controlled_state_preparation")
+    execute_notebook("state_preparation_via_rotation")
 
 
 def test_notebook_tutorial():
-    execute_notebook("controlled_state_preparation_tutorial")
+    execute_notebook("state_preparation_via_rotation_tutorial")

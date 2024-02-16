@@ -97,7 +97,7 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
 @attrs.frozen
-class ControlledStatePreparationUsingRotations(PrepareOracle):
+class StatePreparationViaRotations(PrepareOracle):
     r"""Controlled state preparation without entangled residual using Ry and Rz rotations from [1].
 
     Given a quantum state of which the list of coefficients $c_i$ is known
@@ -289,7 +289,7 @@ class ControlledStatePreparationUsingRotations(PrepareOracle):
 
 
 @bloq_example
-def _controlled_state_prep() -> ControlledStatePreparationUsingRotations:
+def _state_prep_via_rotation() -> StatePreparationViaRotations:
     state_coefs = (
         (-0.42677669529663675 - 0.1767766952966366j),
         (0.17677669529663664 - 0.4267766952966367j),
@@ -300,16 +300,16 @@ def _controlled_state_prep() -> ControlledStatePreparationUsingRotations:
         (0.0732233047033631 + 0.17677669529663678j),
         (-0.07322330470336308 - 0.17677669529663678j),
     )
-    controlled_state_prep = ControlledStatePreparationUsingRotations(
+    state_prep_via_rotation = StatePreparationViaRotations(
         state_bitsizes=2, rot_reg_bitsizes=4, state=state_coefs
     )
-    return controlled_state_prep
+    return state_prep_via_rotation
 
 
 _CONTROLLED_STATE_PREP_DOC = BloqDocSpec(
-    bloq_cls=ControlledStatePreparationUsingRotations,
-    import_line='from qualtran.bloqs.state_preparation.controlled_state_preparation import ControlledStatePreparationUsingRotations',
-    examples=(_controlled_state_prep,),
+    bloq_cls=StatePreparationViaRotations,
+    import_line='from qualtran.bloqs.state_preparation.state_preparation_via_rotation import StatePreparationViaRotations',
+    examples=(_state_prep_via_rotation,),
 )
 
 

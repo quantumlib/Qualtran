@@ -75,7 +75,7 @@ import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.reflection
 import qualtran.bloqs.sorting
-import qualtran.bloqs.state_preparation.controlled_state_preparation
+import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
@@ -238,12 +238,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
-        title='Controlled State Preparation Using Rotations',
-        module=qualtran.bloqs.state_preparation.controlled_state_preparation.controlled_state_preparation,
+        title='State Preparation Using Rotations',
+        module=qualtran.bloqs.state_preparation.state_preparation_via_rotation,
         bloq_specs=[
-            qualtran.bloqs.state_preparation.controlled_state_preparation.controlled_state_preparation._CONTROLLED_STATE_PREP_DOC
+            qualtran.bloqs.state_preparation.state_preparation_via_rotation._CONTROLLED_STATE_PREP_DOC
         ],
-        directory=f'{SOURCE_DIR}/bloqs/',
+        directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
     ),
     NotebookSpecV2(
         title='Multiplication',
