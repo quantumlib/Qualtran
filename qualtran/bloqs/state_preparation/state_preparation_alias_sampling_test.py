@@ -90,5 +90,6 @@ less_than_equal: ─────────────────────
     )
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('state_preparation_alias_sampling')

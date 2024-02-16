@@ -16,6 +16,7 @@ from typing import Optional
 
 import attrs
 import numpy as np
+import pytest
 import sympy
 
 from qualtran import Bloq
@@ -70,7 +71,6 @@ def test_modexp_symb_manual():
 
 
 def test_mod_exp_consistent_counts():
-
     bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
     counts1 = bloq.bloq_counts()
 
@@ -99,9 +99,11 @@ def test_modexp_symb(bloq_autotester):
     bloq_autotester(_modexp_symb)
 
 
+@pytest.mark.notebook
 def test_intro_notebook():
     execute_notebook('factoring-via-modexp')
 
 
+@pytest.mark.notebook
 def test_ref_notebook():
     execute_notebook('ref-factoring')

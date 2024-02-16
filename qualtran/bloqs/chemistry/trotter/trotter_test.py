@@ -11,12 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
+
 import qualtran.testing as qlt_testing
 
 
+@pytest.mark.notebook
 def test_costing_notebook():
     qlt_testing.execute_notebook('trotter_costs')
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('trotter')
