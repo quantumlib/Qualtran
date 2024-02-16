@@ -30,6 +30,7 @@ from qualtran.bloqs.generalized_qsp import (
     qsp_phase_factors,
     SU2RotationGate,
 )
+from qualtran.cirq_interop import BloqAsCirqGate
 
 
 def assert_angles_almost_equal(
@@ -50,7 +51,7 @@ def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
         gate = SU2RotationGate(theta, phi, lambd)
 
         expected = gate.rotation_matrix
-        actual = cirq.unitary(gate)
+        actual = cirq.unitary(BloqAsCirqGate(gate))
         np.testing.assert_allclose(actual, expected)
 
 
@@ -151,7 +152,10 @@ def verify_generalized_qsp(
 ):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
-    gqsp_U = GeneralizedQSP(U, P, Q)
+    if Q is None:
+        gqsp_U = GeneralizedQSP.from_qsp_polynomial(U, P)
+    else:
+        gqsp_U = GeneralizedQSP(U, P, Q)
     result_unitary = cirq.unitary(gqsp_U)
 
     expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)

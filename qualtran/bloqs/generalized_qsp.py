@@ -12,21 +12,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import Dict, Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
+import scipy
 from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, Register, Signature, Adjoint
+from qualtran import Bloq, GateWithRegisters, QBit, Register, Signature
+from qualtran.bloqs.basic_gates import Ry, ZPowGate
+from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 
-# TODO refactor using Bloq instead of cirq-ft infra
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
-class SU2RotationGate(GateWithRegisters):
+class SU2RotationGate(Bloq):
     theta: float
     phi: float
     lambd: float
@@ -65,15 +70,12 @@ class SU2RotationGate(GateWithRegisters):
             ]
         )
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
-        qubit = q[0]
-
-        yield cirq.Rz(rads=np.pi - self.lambd).on(qubit)
-        yield cirq.Ry(rads=2 * self.theta).on(qubit)
-        yield cirq.Rz(rads=-self.phi).on(qubit)
-        yield cirq.GlobalPhaseGate(np.exp(1j * (np.pi + self.lambd + self.phi) / 2)).on()
+    def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+        q = bb.add(ZPowGate(exponent=2, global_shift=0.5), q=q)
+        q = bb.add(ZPowGate(exponent=1 - self.lambd / np.pi, global_shift=-1), q=q)
+        q = bb.add(Ry(angle=2 * self.theta), q=q)
+        q = bb.add(ZPowGate(exponent=-self.phi / np.pi, global_shift=-1), q=q)
+        return {'q': q}
 
 
 def qsp_complementary_polynomial(
@@ -261,7 +263,7 @@ class GeneralizedQSP(GateWithRegisters):
     to obtain $U^{-k} P(U)$. (Theorem 6)
     This gate represents the following unitary:
 
-        $$ \begin{bmatrix} U^{-k} P(U) & \cdot \\ \cdot & \cdot \end{bmatrix} $$
+        $$ \begin{bmatrix} U^{-k} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix} $$
 
     The polynomial $P$ must satisfy:
     $\abs{P(e^{i \theta})}^2 \le 1$ for every $\theta \in \mathbb{R}$.
@@ -280,18 +282,19 @@ class GeneralizedQSP(GateWithRegisters):
 
     U: GateWithRegisters
     P: Sequence[complex]
-    _precomputed_Q: Optional[Sequence[complex]] = None
+    Q: Sequence[complex]
     negative_power: int = field(default=0, kw_only=True)
 
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('signal', QBit()), *self.U.signature])
 
-    @cached_property
-    def Q(self):
-        if self._precomputed_Q is not None:
-            return self._precomputed_Q
-        return qsp_complementary_polynomial(self.P)
+    @staticmethod
+    def from_qsp_polynomial(
+        U: GateWithRegisters, P: Sequence[complex], *, negative_power: int = 0
+    ) -> 'GeneralizedQSP':
+        Q = qsp_complementary_polynomial(P)
+        return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
     def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:
@@ -309,16 +312,24 @@ class GeneralizedQSP(GateWithRegisters):
     def _lambda(self) -> float:
         return self._qsp_phases[2]
 
+    @cached_property
+    def signal_rotations(self) -> NDArray[SU2RotationGate]:
+        return np.array(
+            [
+                SU2RotationGate(theta, phi, self._lambda if i == 0 else 0)
+                for i, (theta, phi) in enumerate(zip(self._theta, self._phi))
+            ]
+        )
+
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        assert len(signal) == 1
         signal_qubit = signal[0]
 
         num_inverse_applications = self.negative_power
 
-        yield SU2RotationGate(self._theta[0], self._phi[0], self._lambda).on(signal_qubit)
-        for theta, phi in zip(self._theta[1:], self._phi[1:]):
+        yield self.signal_rotations[0].on(signal_qubit)
+        for signal_rotation in self.signal_rotations[1:]:
             # TODO debug controlled adjoint bloq serialization
             # if num_inverse_applications > 0:
             #     # apply C-U^\dagger
@@ -327,12 +338,49 @@ class GeneralizedQSP(GateWithRegisters):
             # else:
             # apply C[0]-U
             yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
-            yield SU2RotationGate(theta, phi, 0).on(signal_qubit)
+            yield signal_rotation.on(signal_qubit)
 
-        while num_inverse_applications > 0:
+        for _ in range(num_inverse_applications):
             yield self.U.adjoint().on_registers(**quregs)
-            num_inverse_applications -= 1
 
     def __hash__(self):
-        # TODO hash properly
-        return hash((self.U, *list(self.P), *list(self.Q), self.negative_power))
+        return hash((self.U, *self.signal_rotations, self.negative_power))
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(self.U, max(len(self.P), self.negative_power))} | {
+            (rotation, 1) for rotation in self.signal_rotations
+        }
+
+
+@frozen
+class HamiltonianSimulationByGQSP(GateWithRegisters):
+    WalkOperator: QubitizationWalkOperator
+    t: float = field(kw_only=True)
+    alpha: float = field(kw_only=True)
+    precision: float = field(kw_only=True)
+
+    @cached_property
+    def degree(self) -> int:
+        log_precision = np.log(1 / self.precision)
+        degree = self.t * self.alpha + log_precision / np.log(log_precision)
+        return int(np.ceil(degree))
+
+    @cached_property
+    def gqsp(self) -> GeneralizedQSP:
+        coeff_indices = np.arange(-self.degree, self.degree + 1)
+        approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
+
+        return GeneralizedQSP(
+            self.WalkOperator, approx_cos, np.zeros(2 * self.degree + 1), negative_power=self.degree
+        )
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return self.gqsp.signature
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        # TODO call prepare oracle
+        # soqs |= bb.add_d(self.WalkOperator.prepare, selection=soqs['selection'])
+        soqs = bb.add_d(self.gqsp, **soqs)
+        # soqs |= bb.add_d(self.WalkOperator.prepare.adjoint(), selection=soqs['selection'])
+        return soqs
