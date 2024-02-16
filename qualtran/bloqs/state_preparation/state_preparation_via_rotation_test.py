@@ -33,9 +33,9 @@ def test_state_prep_via_rotation(bloq_autotester):
     bloq_autotester(_state_prep_via_rotation)
 
 
-# these states can be prepared exactly with the given rot_reg_bitsizes
+# these states can be prepared exactly with the given phase_bitsize
 @pytest.mark.parametrize(
-    "state_bitsizes, rot_reg_bitsizes, state_coefs",
+    "state_bitsize, phase_bitsize, state_coefs",
     [
         [1, 2, ((-0.5 - 0.5j), (0.5 - 0.5j))],
         [
@@ -63,28 +63,28 @@ def test_state_prep_via_rotation(bloq_autotester):
     ],
 )
 def test_exact_state_prep_via_rotation_(
-    state_bitsizes, rot_reg_bitsizes, state_coefs
+    state_bitsize, phase_bitsize, state_coefs
 ):
     qsp = StatePreparationViaRotations(
-        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
+        state_bitsize=state_bitsize, phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(OneState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsize)]))
+    phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(OneEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=phase_bitsize, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert np.isclose(accuracy(result, np.array(state_coefs)), 1)
 
 
 @pytest.mark.parametrize(
-    "state_bitsizes, rot_reg_bitsizes, state_coefs",
+    "state_bitsize, phase_bitsize, state_coefs",
     [
         [
             1,
@@ -107,22 +107,22 @@ def test_exact_state_prep_via_rotation_(
     ],
 )
 def test_state_prep_via_rotation_adjoint(
-    state_bitsizes, rot_reg_bitsizes, state_coefs
+    state_bitsize, phase_bitsize, state_coefs
 ):
     qsp = StatePreparationViaRotations(
-        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
+        state_bitsize=state_bitsize, phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     qsp_adj = StatePreparationViaRotations(
-        state_bitsizes=state_bitsizes,
-        rot_reg_bitsizes=rot_reg_bitsizes,
-        state=tuple(state_coefs),
+        state_bitsize=state_bitsize,
+        phase_bitsize=phase_bitsize,
+        state_coefficients=tuple(state_coefs),
         uncompute=True,
     )
 
     bb = BloqBuilder()
     control = bb.add(OneState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsize)]))
+    phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
@@ -130,16 +130,16 @@ def test_state_prep_via_rotation_adjoint(
         qsp_adj, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(OneEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=phase_bitsize, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert np.isclose(result[0], 1)  # test that |result> = |0>
 
 
 # these states can't be approximated exactly with the given
-# rot_reg_bitsizes, check they are close enough
+# phase_bitsize, check they are close enough
 @pytest.mark.parametrize(
-    "state_bitsizes, rot_reg_bitsizes, state_coefs",
+    "state_bitsize, phase_bitsize, state_coefs",
     [
         [
             1,
@@ -162,28 +162,28 @@ def test_state_prep_via_rotation_adjoint(
     ],
 )
 def test_approximate_state_prep_via_rotation(
-    state_bitsizes, rot_reg_bitsizes, state_coefs
+    state_bitsize, phase_bitsize, state_coefs
 ):
     qsp = StatePreparationViaRotations(
-        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
+        state_bitsize=state_bitsize, phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(OneState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsize)]))
+    phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(OneEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=phase_bitsize, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert accuracy(result, np.array(state_coefs)) >= 0.95
 
 
 @pytest.mark.parametrize(
-    "state_bitsizes, rot_reg_bitsizes, state_coefs",
+    "state_bitsize, phase_bitsize, state_coefs",
     [
         [
             2,
@@ -198,49 +198,49 @@ def test_approximate_state_prep_via_rotation(
     ],
 )
 def test_controlled_state_preparation_via_rotation_do_not_prepare(
-    state_bitsizes, rot_reg_bitsizes, state_coefs
+    state_bitsize, phase_bitsize, state_coefs
 ):
     qsp = StatePreparationViaRotations(
-        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
+        state_bitsize=state_bitsize, phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(ZeroState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsize)]))
+    phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
     bb.add(ZeroEffect(), q=control)
-    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=phase_bitsize, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert np.allclose(
-        result, np.array([1] + [0] * (2**state_bitsizes - 1))
+        result, np.array([1] + [0] * (2**state_bitsize - 1))
     )  # assert result = |0>
 
 
 @pytest.mark.parametrize(
-    "state_bitsizes, rot_reg_bitsizes, state_coefs", [[2, 2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
+    "state_bitsize, phase_bitsize, state_coefs", [[2, 2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
 )
 def test_state_preparation_via_rotation_superposition_ctrl(
-    state_bitsizes, rot_reg_bitsizes, state_coefs
+    state_bitsize, phase_bitsize, state_coefs
 ):
     qsp = StatePreparationViaRotations(
-        state_bitsizes=state_bitsizes, rot_reg_bitsizes=rot_reg_bitsizes, state=tuple(state_coefs)
+        state_bitsize=state_bitsize, phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     control = bb.add(PlusState())
-    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsizes)]))
-    phase_gradient = bb.add(PhaseGradientState(rot_reg_bitsizes))
+    state = bb.join(np.array([bb.add(ZeroState()) for _ in range(state_bitsize)]))
+    phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     control, state, phase_gradient = bb.add(
         qsp, control=control, target_state=state, phase_gradient=phase_gradient
     )
-    bb.add(PhaseGradientState(bitsize=rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
+    bb.add(PhaseGradientState(bitsize=phase_bitsize, adjoint=True), phase_grad=phase_gradient)
     network = bb.finalize(control=control, state=state)
     result = network.tensor_contract()
-    correct = 1 / np.sqrt(2) * np.array([1] + [0] * (2**state_bitsizes - 1) + list(state_coefs))
+    correct = 1 / np.sqrt(2) * np.array([1] + [0] * (2**state_bitsize - 1) + list(state_coefs))
     # assert result = 1/sqrt(2)*(|0, 0> + |1, state>)
     assert np.allclose(result, correct)
 

@@ -73,7 +73,7 @@ References:
 
 """
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import attrs
 import numpy as np
@@ -88,16 +88,16 @@ from qualtran import (
     Register,
     Signature,
     SoquetT,
+    GateWithRegisters
 )
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
-from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
 @attrs.frozen
-class StatePreparationViaRotations(PrepareOracle):
+class StatePreparationViaRotations(GateWithRegisters):
     r"""Controlled state preparation without entangled residual using Ry and Rz rotations from [1].
 
     Given a quantum state of which the list of coefficients $c_i$ is known
@@ -110,10 +110,10 @@ class StatePreparationViaRotations(PrepareOracle):
     $$
 
     Args:
-        state_bitsizes: number of qubits of the state.
-        rot_reg_bitsizes: size of the register that is used to store the rotation angles. Bigger values
+        state_bitsize: number of qubits of the state.
+        phase_bitsize: size of the register that is used to store the rotation angles. Bigger values
             increase the accuracy of the results.
-        state: tuple of length 2^state_bitsizes that contains the complex coefficients of the state.
+        state_coefficients: tuple of length 2^state_bitsizes that contains the complex coefficients of the state.
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
@@ -121,9 +121,9 @@ class StatePreparationViaRotations(PrepareOracle):
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    state_bitsizes: int
-    rot_reg_bitsizes: int
-    state: Tuple
+    state_bitsize: int
+    phase_bitsize: int
+    state_coefficients: Tuple[complex, ...]
     uncompute: bool = False
 
     @property
@@ -131,22 +131,22 @@ class StatePreparationViaRotations(PrepareOracle):
         return (
             Register(
                 "target_state",
-                BoundedQUInt(bitsize=self.state_bitsizes, iteration_length=self.state_bitsizes),
+                BoundedQUInt(bitsize=self.state_bitsize, iteration_length=len(self.state_coefficients)),
             ),
         )
 
     @property
-    def signature(self):
+    def signature(self)  -> Signature:
         return Signature.build(
-            control=1, target_state=self.state_bitsizes, phase_gradient=self.rot_reg_bitsizes
+            control=1, target_state=self.state_bitsize, phase_gradient=self.phase_bitsize
         )
 
     def build_composite_bloq(
         self, bb: BloqBuilder, *, control: SoquetT, target_state: SoquetT, phase_gradient: SoquetT
     ) -> Dict[str, SoquetT]:
-        rom_vals = RotationTree(self.state).get_rom_values(self.rot_reg_bitsizes)
+        rom_vals = RotationTree(self.state_coefficients).get_rom_values(self.phase_bitsize)
         # allocate the qubits for the rotation angle register
-        rot_reg = bb.allocate(self.rot_reg_bitsizes)
+        rot_reg = bb.allocate(self.phase_bitsize)
         if self.uncompute:
             control, target_state, rot_reg, phase_gradient = self._prepare_phases(
                 rom_vals, bb, control, target_state, rot_reg, phase_gradient
@@ -177,19 +177,19 @@ class StatePreparationViaRotations(PrepareOracle):
         # if it is the adjoint gate, load the modular negative values to undo the rotations that
         # loaded the amplitudes
         if self.uncompute:
-            rom_vals = RotationTree(self.state).get_rom_values(
-                self.rot_reg_bitsizes, uncompute=True
+            rom_vals = RotationTree(self.state_coefficients).get_rom_values(
+                self.phase_bitsize, uncompute=True
             )
         state_qubits = bb.split(target_state)
         soqs = {"prepare_control": control, "rot_reg": rot_reg, "phase_gradient": phase_gradient}
-        for i in range(self.state_bitsizes):
+        for i in range(self.state_bitsize):
             # for the normal gate loop from qubit 0 to state_bitsizes-1, if it is the adjoint
             # then the process is run backwards with the opposite turn angles
             if self.uncompute:
-                qi = self.state_bitsizes - i - 1
+                qi = self.state_bitsize - i - 1
             else:
                 qi = i
-            ctrl_rot_q = ControlledQROMRotateQubit(qi, self.rot_reg_bitsizes, tuple(rom_vals[qi]))
+            ctrl_rot_q = ControlledQROMRotateQubit(qi, self.phase_bitsize, tuple(rom_vals[qi]))
             state_qubits[qi] = bb.add(Rx(angle=np.pi / 2), q=state_qubits[qi])
             if qi:
                 # first qubit does not have selection registers, only controls
@@ -236,7 +236,7 @@ class StatePreparationViaRotations(PrepareOracle):
         rot_ancilla = bb.add(XGate(), q=rot_ancilla)
         rom_vals = self._get_phase_rom_values(amplitude_rom_vals)
         ctrl_rot = ControlledQROMRotateQubit(
-            self.state_bitsizes, self.rot_reg_bitsizes, tuple(rom_vals)
+            self.state_bitsize, self.phase_bitsize, tuple(rom_vals)
         )
         control, target_state, rot_ancilla, rot_reg, phase_gradient = bb.add(
             ctrl_rot,
@@ -250,28 +250,28 @@ class StatePreparationViaRotations(PrepareOracle):
         bb.free(rot_ancilla)
         return control, target_state, rot_reg, phase_gradient
 
-    def _get_phase_rom_values(self, amplitude_rom_vals):
+    def _get_phase_rom_values(self, amplitude_rom_vals) -> List[int]:
         """As we are using the equivalent to controlled Z to do the rotations instead of Rz, there
         is a phase offset for each coefficient that has to be corrected. This offset is half of the
         turn angle applied, and is added to the phase for each coefficient.
         """
-        offset_angles = [0] * (2**self.state_bitsizes)
-        for i in range(self.state_bitsizes):
+        offset_angles = [0] * (2**self.state_bitsize)
+        for i in range(self.state_bitsize):
             for j in range(2**i):
-                item_range = 2 ** (self.state_bitsizes - i)
+                item_range = 2 ** (self.state_bitsize - i)
                 # if the rom has value 0 the formula gives 180, when it should be 0
                 if amplitude_rom_vals[i][j] == 0:
                     offset = 0
                 else:
-                    offset = np.pi * amplitude_rom_vals[i][j] / (2**self.rot_reg_bitsizes)
+                    offset = np.pi * amplitude_rom_vals[i][j] / (2**self.phase_bitsize)
                 for k in range(item_range * j, item_range * (j + 1)):
                     offset_angles[k] += offset
         # if the matrix is the adjoint, the angles have to be undone, thus just load -theta
         if self.uncompute:
-            angles = [offset - np.angle(c) for c, offset in zip(self.state, offset_angles)]
+            angles = [offset - np.angle(c) for c, offset in zip(self.state_coefficients, offset_angles)]
         else:
-            angles = [np.angle(c) - offset for c, offset in zip(self.state, offset_angles)]
-        rom_values = [RotationTree.angle_to_rom_value(a, self.rot_reg_bitsizes) for a in angles]
+            angles = [np.angle(c) - offset for c, offset in zip(self.state_coefficients, offset_angles)]
+        rom_values = [RotationTree.angle_to_rom_value(a, self.phase_bitsize) for a in angles]
         return rom_values
 
 
@@ -288,7 +288,7 @@ def _state_prep_via_rotation() -> StatePreparationViaRotations:
         (-0.07322330470336308 - 0.17677669529663678j),
     )
     state_prep_via_rotation = StatePreparationViaRotations(
-        state_bitsizes=2, rot_reg_bitsizes=4, state=state_coefs
+        state_bitsize=2, phase_bitsize=4, state_coefficients=state_coefs
     )
     return state_prep_via_rotation
 
@@ -326,10 +326,10 @@ class ControlledQROMRotateQubit(Bloq):
 
     selection_bitsizes: int
     rot_reg_bitsizes: int
-    rom_values: Tuple
+    rom_values: Tuple[int, ...]
 
     @property
-    def signature(self):
+    def signature(self) -> Signature:
         return Signature.build(
             prepare_control=1,
             selection=self.selection_bitsizes,
@@ -399,7 +399,7 @@ class RotationTree:
         for i in range(n - 1, 0, -1):
             self.sum_total[i] = self.sum_total[i << 1] + self.sum_total[(i << 1) | 1]
 
-    def get_rom_values(self, rot_reg_bitsizes: int, uncompute: bool = False):
+    def get_rom_values(self, rot_reg_bitsizes: int, uncompute: bool = False) -> List[int]:
         r"""Gives a list of the ROM values to be loaded for preparing the amplitudes of a state.
 
         The ith element of the returned list is another list with the rom values to be loaded when
@@ -417,17 +417,17 @@ class RotationTree:
             rom_vals.append(rom_vals_this_layer)
         return rom_vals
 
-    def angle_0(self, idx: int):
+    def angle_0(self, idx: int) -> float:
         r"""Angle that corresponds to p_0."""
         return 2 * np.arccos(np.sqrt(self._p0(idx)))
 
-    def _p0(self, idx: int):
+    def _p0(self, idx: int) -> float:
         if self.sum_total[idx] == 0:
             return 0
         return self.sum_total[idx << 1] / self.sum_total[idx]
 
     @staticmethod
-    def angle_to_rom_value(angle: float, rot_reg_bitsize: int):
+    def angle_to_rom_value(angle: float, rot_reg_bitsize: int) -> int:
         r"""Given an angle, returns the value to be loaded in ROM.
 
         Returns the value to be loaded to a QROM to encode the given angle with a certain value of
