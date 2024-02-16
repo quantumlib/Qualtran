@@ -13,23 +13,24 @@
 #  limitations under the License.
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.arithmetic import SignedIntegerToTwosComplement, ToContiguousIndex
+from qualtran.bloqs.arithmetic.conversions import (
+    _signed_to_twos,
+    _to_contg_index,
+    SignedIntegerToTwosComplement,
+    ToContiguousIndex,
+)
 from qualtran.bloqs.basic_gates import TGate
 
 
-def _make_to_contiguous_index():
-    from qualtran.bloqs.arithmetic import ToContiguousIndex
-
-    return ToContiguousIndex(bitsize=4, s_bitsize=8)
+def test_to_contigous_index(bloq_autotester):
+    bloq_autotester(_to_contg_index)
 
 
-def _make_signed_to_twos_complement():
-    from qualtran.bloqs.arithmetic import SignedIntegerToTwosComplement
-
-    return SignedIntegerToTwosComplement(bitsize=10)
+def test_signed_to_twos(bloq_autotester):
+    bloq_autotester(_signed_to_twos)
 
 
-def test_to_contiguous_index():
+def test_to_contiguous_index_t_complexity():
     bb = BloqBuilder()
     bitsize = 5
     q0 = bb.add_register('mu', bitsize)
@@ -37,10 +38,10 @@ def test_to_contiguous_index():
     out = bb.add_register('s', 1)
     q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2 * bitsize), mu=q0, nu=q1, s=out)
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
-    cbloq.t_complexity()
+    assert cbloq.t_complexity().t == 4 * 29
 
 
-def test_signed_to_twos_complement():
+def test_signed_to_twos_complement_t_complexity():
     bb = BloqBuilder()
     bitsize = 5
     q0 = bb.add_register('x', bitsize)

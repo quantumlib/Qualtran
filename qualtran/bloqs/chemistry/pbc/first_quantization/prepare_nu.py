@@ -17,7 +17,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
@@ -52,7 +52,12 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("mu", self.num_bits_p), Register("flag", 1, side=Side.RIGHT)])
+        return Signature(
+            [Register("mu", QAny(self.num_bits_p)), Register("flag", QBit(), side=Side.RIGHT)]
+        )
+
+    def short_name(self) -> str:
+        return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Toffoli(), (self.num_bits_p - 1))}
@@ -88,8 +93,14 @@ class PrepareNuSuperPositionState(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register("mu", self.num_bits_p), Register("nu", self.num_bits_p + 1, shape=(3,))]
+            [
+                Register("mu", QAny(self.num_bits_p)),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
+            ]
         )
+
+    def short_name(self) -> str:
+        return r'PREP $2^{-\mu}|\mu\rangle|\nu\rangle$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # controlled hadamards which cannot be inverted at zero Toffoli cost.
@@ -118,10 +129,13 @@ class FlagZeroAsFailure(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("flag_minus_zero", 1, side=Side.RIGHT),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
+                Register("flag_minus_zero", QBit(), side=Side.RIGHT),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$\nu\ne -0$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
@@ -155,11 +169,14 @@ class TestNuLessThanMu(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", self.num_bits_p),
-                Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("flag_nu_lt_mu", 1, side=Side.RIGHT),
+                Register("mu", QAny(self.num_bits_p)),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
+                Register("flag_nu_lt_mu", QBit(), side=Side.RIGHT),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$\nu < 2^{\mu-2}$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
@@ -208,15 +225,18 @@ class TestNuInequality(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", self.num_bits_p),
-                Register("nu", self.num_bits_p + 1, shape=(3,)),
-                Register("m", self.num_bits_m),
-                Register("flag_minus_zero", 1, side=Side.LEFT),
-                Register("flag_mu_prep", 1, side=Side.LEFT),
-                Register("flag_ineq", 1, side=Side.LEFT),
-                Register("succ", 1),
+                Register("mu", QAny(self.num_bits_p)),
+                Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
+                Register("m", QAny(self.num_bits_m)),
+                Register("flag_minus_zero", QBit(), side=Side.LEFT),
+                Register("flag_mu_prep", QBit(), side=Side.LEFT),
+                Register("flag_ineq", QBit(), side=Side.LEFT),
+                Register("succ", QBit()),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$(2^{\mu-2})^2\mathcal{M} > m \nu^2 $'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
@@ -287,12 +307,15 @@ class PrepareNuState(Bloq):
         n_m = (self.m_param - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=self.num_bits_p),
-                Register("nu", bitsize=self.num_bits_p + 1, shape=(3,)),
-                Register("m", bitsize=n_m),
-                Register("flag_nu", bitsize=1),
+                Register("mu", QAny(bitsize=self.num_bits_p)),
+                Register("nu", QAny(bitsize=self.num_bits_p + 1), shape=(3,)),
+                Register("m", QAny(bitsize=n_m)),
+                Register("flag_nu", QBit()),
             ]
         )
+
+    def short_name(self) -> str:
+        return r"PREP $\frac{1}{\lVert \nu \rVert} |\nu\rangle $"
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT

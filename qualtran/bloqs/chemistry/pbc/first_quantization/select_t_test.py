@@ -12,16 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization
+from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import (
+    _select_t,
+    SelectTFirstQuantization,
+)
 
 
-def _make_select_t():
-    from qualtran.bloqs.chemistry.pbc.first_quantization import SelectTFirstQuantization
-
-    num_bits_p = 5
-    eta = 10
-
-    return SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+def test_select_t(bloq_autotester):
+    bloq_autotester(_select_t)
 
 
 def test_select_kinetic_t_counts():

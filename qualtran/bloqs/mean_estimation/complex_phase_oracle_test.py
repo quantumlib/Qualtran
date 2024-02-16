@@ -13,15 +13,15 @@
 #  limitations under the License.
 
 import math
+from functools import cached_property
 from typing import Optional, Tuple
 
 import cirq
 import numpy as np
 import pytest
 from attrs import frozen
-from cirq._compat import cached_property
 
-from qualtran import Register, SelectionRegister
+from qualtran import QAny, QBit, Register
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import bit_tools
@@ -30,21 +30,21 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @frozen
-class DummySelect(SelectOracle):
+class ExampleSelect(SelectOracle):
     bitsize: int
     control_val: Optional[int] = None
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self.bitsize),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', QAny(self.bitsize)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self.bitsize),)
+        return (Register('target', QAny(self.bitsize)),)
 
     def decompose_from_registers(self, context, selection, target):
         yield [cirq.CNOT(s, t) for s, t in zip(selection, target)]
@@ -53,7 +53,7 @@ class DummySelect(SelectOracle):
 @pytest.mark.parametrize('bitsize', [2, 3, 4, 5])
 @pytest.mark.parametrize('arctan_bitsize', [5, 6, 7])
 def test_phase_oracle(bitsize: int, arctan_bitsize: int):
-    phase_oracle = ComplexPhaseOracle(DummySelect(bitsize), arctan_bitsize)
+    phase_oracle = ComplexPhaseOracle(ExampleSelect(bitsize), arctan_bitsize)
     g = cq_testing.GateHelper(phase_oracle)
 
     assert_valid_bloq_decomposition(phase_oracle)
@@ -83,6 +83,6 @@ def test_phase_oracle(bitsize: int, arctan_bitsize: int):
 
 def test_phase_oracle_consistent_protocols():
     bitsize, arctan_bitsize = 3, 5
-    gate = ComplexPhaseOracle(DummySelect(bitsize, 1), arctan_bitsize)
+    gate = ComplexPhaseOracle(ExampleSelect(bitsize, 1), arctan_bitsize)
     expected_symbols = ('@',) + ('ROTy',) * bitsize
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_symbols

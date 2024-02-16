@@ -12,10 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Bloqs for doing "AND" logical operations.
+
+The behavior is modified by the 'control variable' attributes. A traditional value of '1'
+means that a bit value of '1' is logical true for the and operation. A control value of
+'0' means that a bit value of '0' is the logical true.
+
+The `Toffoli` bloq is similar to the `And` bloq. Toffoli will flip the target bit according
+to the and of its control registers. `And` will output the result into a fresh register.
+"""
+
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
+import attrs
 import cirq
 import numpy as np
 import quimb.tensor as qtn
@@ -23,9 +34,22 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Side, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    GateWithRegisters,
+    QBit,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
@@ -44,45 +68,51 @@ class And(GateWithRegisters):
         target [right]: The output bit.
 
     References:
-        (Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity)[https://arxiv.org/abs/1805.03662].
+     - [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
             Babbush et. al. 2018. Section III.A. and Fig. 4.
-        (Verifying Measurement Based Uncomputation)[https://algassert.com/post/1903].
-            Gidney, C. 2019.
+     - [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
     cv1: int = 1
     cv2: int = 1
-    adjoint: bool = False
+    uncompute: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('ctrl', 1, shape=(2,)),
-                Register('target', 1, side=Side.RIGHT if not self.adjoint else Side.LEFT),
+                Register('ctrl', QBit(), shape=(2,)),
+                Register('target', QBit(), side=Side.RIGHT if not self.uncompute else Side.LEFT),
             ]
         )
+
+    def adjoint(self) -> 'And':
+        return attrs.evolve(self, uncompute=not self.uncompute)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
             pre_post_cliffords = big_O(1)
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
-        if self.adjoint:
+        if self.uncompute:
             return {(ArbitraryClifford(n=2), 4 + 2 * pre_post_cliffords)}
 
         return {(ArbitraryClifford(n=2), 9 + 2 * pre_post_cliffords), (TGate(), 4)}
 
     def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
+        dag = '†' if self.uncompute else ''
         return f'And{dag}'
 
-    def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        if self.adjoint:
-            raise NotImplementedError("Come back later.")
+    def on_classical_vals(
+        self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
+    ) -> Dict[str, NDArray[np.uint8]]:
+        out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
+        if not self.uncompute:
+            return {'ctrl': ctrl, 'target': out}
 
-        target = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
-        return {'ctrl': ctrl, 'target': target}
+        # Uncompute
+        assert target == out
+        return {'ctrl': ctrl}
 
     def add_my_tensors(
         self,
@@ -100,8 +130,8 @@ class And(GateWithRegisters):
             else:
                 data[c1, c2, c1, c2, 0] = 1
 
-        # Here: adjoint just switches the direction of the target index.
-        if self.adjoint:
+        # Here: uncompute just switches the direction of the target index.
+        if self.uncompute:
             trg = incoming['target']
         else:
             trg = outgoing['target']
@@ -140,7 +170,7 @@ class And(GateWithRegisters):
         (c1, c2), (target,) = (quregs['ctrl'].flatten(), quregs['target'].flatten())
         pre_post_ops = [cirq.X(q) for (q, v) in zip([c1, c2], [self.cv1, self.cv2]) if v == 0]
         yield pre_post_ops
-        if self.adjoint:
+        if self.uncompute:
             yield cirq.H(target)
             yield cirq.measure(target, key=f"{target}")
             yield cirq.CZ(c1, c2).with_classical_controls(f"{target}")
@@ -154,32 +184,43 @@ class And(GateWithRegisters):
             yield [cirq.H(target), cirq.S(target)]
         yield pre_post_ops
 
-    def __pow__(self, power: int) -> "And":
+    def __pow__(self, power: int) -> 'And':
         if power == 1:
             return self
         if power == -1:
-            return And(self.cv1, self.cv2, adjoint=self.adjoint ^ True)
+            return self.adjoint()
         return NotImplemented  # pragma: no cover
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
-        target = "And†" if self.adjoint else "And"
+        target = "And†" if self.uncompute else "And"
         wire_symbols = [controls[self.cv1], controls[self.cv2], target]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _has_unitary_(self) -> bool:
-        return not self.adjoint
+        return not self.uncompute
 
     def _t_complexity_(self) -> TComplexity:
         pre_post_cliffords = 2 - self.cv1 - self.cv2  # number of zeros in self.cv
-        if self.adjoint:
+        if self.uncompute:
             return TComplexity(clifford=4 + 2 * pre_post_cliffords)
         else:
             return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
 
 
+@bloq_example
+def _and_bloq() -> And:
+    and_bloq = And()
+    return and_bloq
+
+
+_AND_DOC = BloqDocSpec(
+    bloq_cls=And, import_line='from qualtran.bloqs.and_bloq import And', examples=(_and_bloq,)
+)
+
+
 @frozen
-class MultiAnd(GateWithRegisters):
+class MultiAnd(Bloq):
     """A many-bit (multi-control) 'and' operation.
 
     Args:
@@ -192,28 +233,24 @@ class MultiAnd(GateWithRegisters):
         target [right]: The output bit.
     """
 
-    cvs: Tuple[int, ...] = field(validator=lambda i, f, v: len(v) >= 3, converter=tuple)
-    adjoint: bool = False
+    cvs: Tuple[int, ...] = field(converter=tuple)
+
+    @cvs.validator
+    def _validate_cvs(self, field, val):
+        if len(val) < 3:
+            raise ValueError("MultiAnd must have at least 3 control values `cvs`.")
 
     @cached_property
     def signature(self) -> Signature:
-        one_side = Side.RIGHT if not self.adjoint else Side.LEFT
         return Signature(
             [
-                Register('ctrl', 1, shape=(len(self.cvs),)),
-                Register('junk', 1, shape=(len(self.cvs) - 2,), side=one_side),
-                Register('target', 1, side=one_side),
+                Register('ctrl', QBit(), shape=(len(self.cvs),)),
+                Register('junk', QBit(), shape=(len(self.cvs) - 2,), side=Side.RIGHT),
+                Register('target', QBit(), side=Side.RIGHT),
             ]
         )
 
-    def pretty_name(self) -> str:
-        dag = '†' if self.adjoint else ''
-        return f'And{dag}'
-
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        if self.adjoint:
-            raise NotImplementedError("Come back later.")
-
         accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
@@ -222,19 +259,16 @@ class MultiAnd(GateWithRegisters):
         if power == 1:
             return self
         if power == -1:
-            return MultiAnd(self.cvs, adjoint=self.adjoint ^ True)
+            return self.adjoint()
         return NotImplemented  # pragma: no cover
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
-        target = "And†" if self.adjoint else "And"
+        target = "And"
         wire_symbols = [controls[c] for c in self.cvs]
         wire_symbols += ["Anc"] * (len(self.cvs) - 2)
         wire_symbols += [target]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def _has_unitary_(self) -> bool:
-        return not self.adjoint
 
     def _decompose_via_tree(
         self,
@@ -246,21 +280,14 @@ class MultiAnd(GateWithRegisters):
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
 
         if len(controls) == 2:
-            yield And(*control_values, adjoint=self.adjoint).on(*controls, target)
+            yield And(*control_values).on(*controls, target)
             return
         new_controls = np.concatenate([ancillas[0:1], controls[2:]])
         new_control_values = (1, *control_values[2:])
-        and_op = And(*control_values[:2], adjoint=self.adjoint).on(*controls[:2], ancillas[0])
-        if self.adjoint:
-            yield from self._decompose_via_tree(
-                new_controls, new_control_values, ancillas[1:], target
-            )
-            yield and_op
-        else:
-            yield and_op
-            yield from self._decompose_via_tree(
-                new_controls, new_control_values, ancillas[1:], target
-            )
+        and_op = And(*control_values[:2]).on(*controls[:2], ancillas[0])
+
+        yield and_op
+        yield from self._decompose_via_tree(new_controls, new_control_values, ancillas[1:], target)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -272,12 +299,30 @@ class MultiAnd(GateWithRegisters):
         )
         yield self._decompose_via_tree(control, self.cvs, ancilla, *target)
 
-    def _t_complexity_(self) -> TComplexity:
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
+
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
         pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
         num_single_and = len(self.cvs) - 1
-        if self.adjoint:
+        if adjoint:
             return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
-        else:
-            return TComplexity(
-                t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
-            )
+        return TComplexity(
+            t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
+        )
+
+    def short_name(self) -> str:
+        return 'And'
+
+
+@bloq_example
+def _multi_and() -> MultiAnd:
+    multi_and = MultiAnd(cvs=(1,) * 4)
+    return multi_and
+
+
+_MULTI_AND_DOC = BloqDocSpec(
+    bloq_cls=MultiAnd,
+    import_line='from qualtran.bloqs.and_bloq import MultiAnd',
+    examples=(_multi_and,),
+)

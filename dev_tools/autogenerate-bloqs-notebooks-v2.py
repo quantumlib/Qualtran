@@ -47,15 +47,37 @@ from typing import List
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
+import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
+import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.conversions
+import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.basic_gates.swap
+import qualtran.bloqs.block_encoding
+import qualtran.bloqs.chemistry.df.double_factorization
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
+import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
+import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
+import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
+import qualtran.bloqs.chemistry.sf.single_factorization
+import qualtran.bloqs.chemistry.sparse.prepare
+import qualtran.bloqs.chemistry.sparse.select_bloq
+import qualtran.bloqs.chemistry.thc.prepare
+import qualtran.bloqs.chemistry.thc.select_bloq
+import qualtran.bloqs.chemistry.trotter.inverse_sqrt
+import qualtran.bloqs.chemistry.trotter.kinetic
+import qualtran.bloqs.chemistry.trotter.potential
+import qualtran.bloqs.chemistry.trotter.qvr
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.reflection
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
-
 
 NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     NotebookSpecV2(
@@ -95,6 +117,28 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
+        title='First Quantized Hamiltonian',
+        module=qualtran.bloqs.chemistry.pbc.first_quantization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare._FIRST_QUANTIZED_PREPARE_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare._FIRST_QUANTIZED_SELECT_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t._PREPARE_T,
+            qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv._PREPARE_UV,
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_t._SELECT_T,
+            qualtran.bloqs.chemistry.pbc.first_quantization.select_uv._SELECT_UV,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization',
+    ),
+    NotebookSpecV2(
+        title='First Quantized Hamiltonian with Quantum Projectile',
+        module=qualtran.bloqs.chemistry.pbc.first_quantization.projectile,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_PREPARE_DOC,
+            qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare._FIRST_QUANTIZED_WITH_PROJ_SELECT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization/projectile',
+    ),
+    NotebookSpecV2(
         title='Sorting',
         module=qualtran.bloqs.sorting,
         bloq_specs=[
@@ -102,6 +146,116 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.sorting._BITONIC_SORT_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Double Factorization',
+        module=qualtran.bloqs.chemistry.df.double_factorization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.df.double_factorization._DF_ONE_BODY,
+            qualtran.bloqs.chemistry.df.double_factorization._DF_BLOCK_ENCODING,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/df',
+    ),
+    NotebookSpecV2(
+        title='Sparse',
+        module=qualtran.bloqs.chemistry.sparse,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.sparse.prepare._SPARSE_PREPARE,
+            qualtran.bloqs.chemistry.sparse.select_bloq._SPARSE_SELECT,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
+    ),
+    NotebookSpecV2(
+        title='And',
+        module=qualtran.bloqs.and_bloq,
+        bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Single Factorization',
+        module=qualtran.bloqs.chemistry.sf.single_factorization,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.sf.single_factorization._SF_ONE_BODY,
+            qualtran.bloqs.chemistry.sf.single_factorization._SF_BLOCK_ENCODING,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/sf',
+    ),
+    NotebookSpecV2(
+        title='Trotter Bloqs',
+        module=qualtran.bloqs.chemistry.trotter,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.inverse_sqrt._POLY_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.inverse_sqrt._NR_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.qvr._QVR,
+            qualtran.bloqs.chemistry.trotter.kinetic._KINETIC_ENERGY,
+            qualtran.bloqs.chemistry.trotter.potential._PAIR_POTENTIAL,
+            qualtran.bloqs.chemistry.trotter.potential._POTENTIAL_ENERGY,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
+    ),
+    NotebookSpecV2(
+        title='Tensor Hypercontraction',
+        module=qualtran.bloqs.chemistry.thc,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.thc.prepare._THC_UNI_PREP,
+            qualtran.bloqs.chemistry.thc.prepare._THC_PREPARE,
+            qualtran.bloqs.chemistry.thc.select_bloq._THC_SELECT,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
+    ),
+    NotebookSpecV2(
+        title='Block Encoding',
+        module=qualtran.bloqs.block_encoding,
+        bloq_specs=[
+            qualtran.bloqs.block_encoding._BLACK_BOX_BLOCK_BLOQ_DOC,
+            qualtran.bloqs.block_encoding._CHEBYSHEV_BLOQ_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Reflection',
+        module=qualtran.bloqs.reflection,
+        bloq_specs=[qualtran.bloqs.reflection._REFLECTION_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Multi-Paulis',
+        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        bloq_specs=[
+            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='Addition',
+        module=qualtran.bloqs.arithmetic.addition,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.addition._ADD_DOC,
+            qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
+            qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Multiplication',
+        module=qualtran.bloqs.arithmetic.multiplication,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.multiplication._PLUS_EQUALS_PRODUCT_DOC,
+            qualtran.bloqs.arithmetic.multiplication._PRODUCT_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SQUARE_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SUM_OF_SQUARES_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
+            qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
+            qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Conversions',
+        module=qualtran.bloqs.arithmetic.conversions,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
+            qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
+        ],
     ),
 ]
 

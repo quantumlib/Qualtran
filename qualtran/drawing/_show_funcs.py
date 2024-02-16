@@ -21,6 +21,7 @@ import ipywidgets
 
 from .bloq_counts_graph import format_counts_sigma, GraphvizCounts
 from .graphviz import PrettyGraphDrawer
+from .musical_score import draw_musical_score, get_musical_score_data
 
 if TYPE_CHECKING:
     import networkx as nx
@@ -29,9 +30,20 @@ if TYPE_CHECKING:
     from qualtran import Bloq
 
 
-def show_bloq(bloq: 'Bloq'):
-    """Display a graph representation of the bloq in IPython."""
-    IPython.display.display(PrettyGraphDrawer(bloq).get_svg())
+def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-builtin
+    """Display a visual representation of the bloq in IPython.
+
+    Args:
+        bloq: The bloq to show
+        type: Either 'graph' or 'musical_score'. By default, display a directed acyclic
+            graph of the bloq connectivity. Otherwise, draw a musical score diagram.
+    """
+    if type.lower() == 'graph':
+        IPython.display.display(PrettyGraphDrawer(bloq).get_svg())
+    elif type.lower() == 'musical_score':
+        draw_musical_score(get_musical_score_data(bloq))
+    else:
+        raise ValueError(f"Unknown `show_bloq` type: {type}.")
 
 
 def show_bloqs(bloqs: Sequence['Bloq'], labels: Sequence[str] = None):

@@ -17,7 +17,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 
@@ -52,6 +52,9 @@ class PreparePowerTwoState(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(r=self.bitsize)
+
+    def short_name(self) -> str:
+        return r'PREP $2^{r/2} |r\rangle$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Toffoli(), (self.bitsize - 2))}
@@ -98,6 +101,9 @@ class PrepareTFirstQuantization(Bloq):
     def signature(self) -> Signature:
         return Signature.build(w=2, r=self.num_bits_p, s=self.num_bits_p)
 
+    def short_name(self) -> str:
+        return r'PREP $T$'
+
     def build_composite_bloq(
         self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT
     ) -> Dict[str, 'SoquetT']:
@@ -114,3 +120,19 @@ class PrepareTFirstQuantization(Bloq):
         uni_prep_w = (Toffoli(), 13)
         # Factor of two for r and s registers.
         return {uni_prep_w, (PreparePowerTwoState(bitsize=self.num_bits_p), 2)}
+
+
+@bloq_example
+def _prepare_t() -> PrepareTFirstQuantization:
+    num_bits_p = 5
+    eta = 10
+
+    prepare_t = PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+    return prepare_t
+
+
+_PREPARE_T = BloqDocSpec(
+    bloq_cls=PrepareTFirstQuantization,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization',
+    examples=(_prepare_t,),
+)

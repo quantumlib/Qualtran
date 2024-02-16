@@ -1,14 +1,12 @@
 # dependencies to run pytest
-
 pytest
 pytest-asyncio
 pytest-cov
 pytest-xdist
 
 # test executing notebooks
-nbformat
-nbconvert
 ipykernel
+filelock
 
 # chemistry resource estimates
 openfermion[resources]

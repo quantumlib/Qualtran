@@ -14,6 +14,7 @@
 import itertools
 
 import cirq
+import numpy as np
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import TGate, Toffoli, ZeroState
@@ -75,3 +76,10 @@ def test_classical_sim_2():
     assert b0 == 0
     assert b1 == 0
     assert b2 == 0
+
+
+def test_toffoli_tensors():
+    tof = Toffoli()
+    unitary = tof.tensor_contract()
+    cirq_unitary = cirq.unitary(cirq.TOFFOLI)
+    np.testing.assert_allclose(cirq_unitary, unitary)

@@ -19,7 +19,16 @@ from typing import Dict, Tuple
 import numpy as np
 from attrs import field, frozen
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QAny,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
 from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
@@ -45,12 +54,12 @@ class PairPotential(Bloq):
             different cases.
 
     Registers:
-     - system_i: The ith electron's register.
-     - system_j: The jth electron's register.
+        system_i: The ith electron's register.
+        system_j: The jth electron's register.
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     bitsize: int
@@ -63,8 +72,8 @@ class PairPotential(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('system_i', shape=(3,), bitsize=self.bitsize),
-                Register('system_j', shape=(3,), bitsize=self.bitsize),
+                Register('system_i', QAny(self.bitsize), shape=(3,)),
+                Register('system_j', QAny(self.bitsize), shape=(3,)),
             ]
         )
 
@@ -107,10 +116,10 @@ class PairPotential(Bloq):
         sos, qrom_anc_c0, qrom_anc_c1, qrom_anc_c2, qrom_anc_c3 = bb.add(
             qrom_bloq,
             selection=sos,
-            target0=qrom_anc_c0,
-            target1=qrom_anc_c1,
-            target2=qrom_anc_c2,
-            target3=qrom_anc_c3,
+            target0_=qrom_anc_c0,
+            target1_=qrom_anc_c1,
+            target2_=qrom_anc_c2,
+            target3_=qrom_anc_c3,
         )
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
@@ -169,11 +178,11 @@ class PotentialEnergy(Bloq):
             different cases.
 
     Registers:
-     - system: The system register of size eta * 3 * nb
+        system: The system register of size eta * 3 * nb
 
     References:
-        (Faster quantum chemistry simulation on fault-tolerant quantum
-            computers)[https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta]
+        [Faster quantum chemistry simulation on fault-tolerant quantum
+            computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
     """
 
     num_elec: int
@@ -186,9 +195,7 @@ class PotentialEnergy(Bloq):
         return Signature(
             [
                 Register(
-                    'system',
-                    shape=(self.num_elec, 3),
-                    bitsize=((self.num_grid - 1).bit_length() + 1),
+                    'system', QAny(((self.num_grid - 1).bit_length() + 1)), shape=(self.num_elec, 3)
                 )
             ]
         )
@@ -213,3 +220,38 @@ class PotentialEnergy(Bloq):
                 system_j=system[j],
             )
         return {'system': system}
+
+
+@bloq_example
+def _pair_potential() -> PairPotential:
+    bitsize = 7
+    poly_bitsize = 15
+    poly_coeffs = get_inverse_square_root_poly_coeffs()
+    qrom_data = build_qrom_data_for_poly_fit(2 * bitsize + 2, poly_bitsize, poly_coeffs)
+    qrom_data = tuple(tuple(int(k) for k in d) for d in qrom_data)
+    pair_potential = PairPotential(bitsize=bitsize, qrom_data=qrom_data, poly_bitsize=poly_bitsize)
+    return pair_potential
+
+
+@bloq_example
+def _potential_energy() -> PotentialEnergy:
+    nelec = 12
+    ngrid_x = 2 * 8 + 1
+    potential_energy = PotentialEnergy(nelec, ngrid_x)
+    return potential_energy
+
+
+_POTENTIAL_ENERGY = BloqDocSpec(
+    bloq_cls=PotentialEnergy,
+    import_line='from qualtran.bloqs.chemistry.trotter.potential import PotentialEnergy',
+    examples=(_potential_energy,),
+)
+
+_PAIR_POTENTIAL = BloqDocSpec(
+    bloq_cls=PairPotential,
+    import_line=(
+        'from qualtran.bloqs.chemistry.trotter.potential import PairPotential, build_qrom_data_for_poly_fit\n'
+        'from qualtran.bloqs.chemistry.trotter.inverse_sqrt import get_inverse_square_root_poly_coeffs'
+    ),
+    examples=(_pair_potential,),
+)

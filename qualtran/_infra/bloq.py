@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -25,11 +25,19 @@ if TYPE_CHECKING:
     import sympy
     from numpy.typing import NDArray
 
-    from qualtran import BloqBuilder, CompositeBloq, Signature, Soquet, SoquetT
+    from qualtran import (
+        AddControlledT,
+        BloqBuilder,
+        CompositeBloq,
+        CtrlSpec,
+        Signature,
+        Soquet,
+        SoquetT,
+    )
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -89,7 +97,7 @@ class Bloq(metaclass=abc.ABCMeta):
         programming. For example, it is analogous to function declarations in a
         C header (`*.h`) file.
 
-        This is the only manditory method (property) you must implement to inherit from
+        This is the only mandatory method (property) you must implement to inherit from
         `Bloq`. You can optionally implement additional methods to encode more information
         about this bloq.
         """
@@ -157,6 +165,20 @@ class Bloq(metaclass=abc.ABCMeta):
         bb, initial_soqs = BloqBuilder.from_signature(self.signature, add_registers_allowed=False)
         return bb.finalize(**bb.add_d(self, **initial_soqs))
 
+    def adjoint(self) -> 'Bloq':
+        """The adjoint of this bloq.
+
+        Bloq authors can override this method in certain circumstances. Otherwise, the default
+        fallback wraps this bloq in `Adjoint`.
+
+        Please see the documentation for `Adjoint` and the `Adjoint.ipynb` notebook for full
+        details.
+        """
+
+        from qualtran import Adjoint
+
+        return Adjoint(self)
+
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
@@ -181,7 +203,7 @@ class Bloq(metaclass=abc.ABCMeta):
         try:
             return self.decompose_bloq().on_classical_vals(**vals)
         except NotImplementedError as e:
-            raise NotImplementedError(f"{self} does not support classical simulation: {e}")
+            raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Call this bloq on classical data.
@@ -267,7 +289,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
     def call_graph(
         self,
-        generalizer: Callable[['Bloq'], Optional['Bloq']] = None,
+        generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
         keep: Optional[Sequence['Bloq']] = None,
         max_depth: Optional[int] = None,
     ) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]:
@@ -280,7 +302,8 @@ class Bloq(metaclass=abc.ABCMeta):
         Args:
             generalizer: If provided, run this function on each (sub)bloq to replace attributes
                 that do not affect resource estimates with generic sympy symbols. If the function
-                returns `None`, the bloq is omitted from the counts graph.
+                returns `None`, the bloq is omitted from the counts graph. If a sequence of
+                generalizers is provided, each generalizer will be run in order.
             keep: If this function evaluates to True for the current bloq, keep the bloq as a leaf
                 node in the call graph instead of recursing into it.
             max_depth: If provided, build a call graph with at most this many layers.
@@ -297,7 +320,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return get_bloq_call_graph(self, generalizer=generalizer, keep=keep, max_depth=max_depth)
 
     def bloq_counts(
-        self, generalizer: Callable[['Bloq'], Optional['Bloq']] = None
+        self, generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None
     ) -> Dict['Bloq', Union[int, 'sympy.Expr']]:
         """The number of subbloqs directly called by this bloq.
 
@@ -308,13 +331,76 @@ class Bloq(metaclass=abc.ABCMeta):
         Args:
             generalizer: If provided, run this function on each (sub)bloq to replace attributes
                 that do not affect resource estimates with generic sympy symbols. If the function
-                returns `None`, the bloq is omitted from the counts graph.
+                returns `None`, the bloq is omitted from the counts graph. If a sequence of
+                generalizers is provided, each generalizer will be run in order.
 
         Returns:
             A dictionary mapping subbloq to the number of times they appear in the decomposition.
         """
         _, sigma = self.call_graph(generalizer=generalizer, max_depth=1)
         return sigma
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        """Get a controlled version of this bloq and a function to wire it up correctly.
+
+        Users should likely call `Bloq.controlled(...)` which uses this method behind-the-scenes.
+        Intrepid bloq authors can override this method to provide a custom controlled version of
+        this bloq. By default, this will use the `qualtran.Controlled` meta-bloq to control any
+        bloq.
+
+        This method must return both a controlled version of this bloq and a callable that
+        'wires up' soquets correctly.
+
+        A controlled version of this bloq has all the registers from the original bloq plus
+        any additional control registers to support the activation function specified by
+        the `ctrl_spec`. In the simplest case, this could be one additional 1-qubit register
+        that activates the bloq if the input is in the |1> state, but additional logic is possible.
+        See the documentation for `CtrlSpec` for more information.
+
+        The second return value ensures we can accurately wire up soquets into the added registers.
+        It must have the following signature:
+
+            def _my_add_controlled(
+                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+            ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+
+        Which takes a bloq builder (for adding the controlled bloq), the new control soquets,
+        input soquets for the existing registers; and returns a sequence of the output control
+        soquets and a sequence of the output soquets for the existing registers. This complexity
+        is sadly unavoidable due to the variety of ways of wiring up custom controlled bloqs.
+
+        Returns:
+            controlled_bloq: A controlled version of this bloq
+            add_controlled: A function with the signature documented above that the system
+                can use to automatically wire up the new control registers.
+        """
+        from qualtran import Controlled, CtrlSpec
+
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
+
+        return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
+
+    def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'Bloq':
+        """Return a controlled version of this bloq.
+
+        By default, the system will use the `qualtran.Controlled` meta-bloq to wrap this
+        bloq. Bloqs authors can declare their own, custom controlled versions by overriding
+        `Bloq.get_ctrl_system` in the bloq.
+
+        Args:
+            ctrl_spec: an optional `CtrlSpec`, which specifies how to control the bloq. The
+                default spec means the bloq will be active when one control qubit is in the |1>
+                state. See the CtrlSpec documentation for more possibilities including
+                negative controls, integer-equality control, and ndarrays of control values.
+
+        Returns:
+            A controlled version of the bloq.
+        """
+        controlled_bloq, _ = self.get_ctrl_system(ctrl_spec=ctrl_spec)
+        return controlled_bloq
 
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.
@@ -352,6 +438,56 @@ class Bloq(metaclass=abc.ABCMeta):
         return BloqAsCirqGate.bloq_on(
             bloq=self, cirq_quregs=cirq_quregs, qubit_manager=qubit_manager
         )
+
+    def on(self, *qubits: 'cirq.Qid') -> 'cirq.Operation':
+        """A `cirq.Operation` of this bloq operating on the given qubits.
+
+        This method supports an alternative decomposition backend that follows a 'Cirq-style'
+        association of gates with qubits to form operations. Instead of wiring up `Soquet`s,
+        each gate operates on qubit addresses (`cirq.Qid`s), which are reused by multiple
+        gates. This method lets you operate this bloq on qubits and returns a `cirq.Operation`.
+
+        The primary, bloq-native way of writing decompositions is to override
+        `build_composite_bloq`. If this is what you're doing, do not use this method.
+
+        To provide a Cirq-style decomposition for this bloq, implement a method (typically named
+        `decompose_from_registers` for historical reasons) that yields a list of `cirq.Operation`s
+        using `cirq.Gate.on(...)`, `Bloq.on(...)`, `GateWithRegisters.on_registers(...)`, or
+        `Bloq.on_registers(...)`.
+
+        See Also:
+            `Bloq.on_registers`: Provides the same functionality, but with named registers
+                instead of a flat list of qubits.
+            `decompose_from_cirq_style_method`: More details on how to write a cirq-style
+                decomposition.
+        """
+        import cirq
+
+        from qualtran.cirq_interop import BloqAsCirqGate
+
+        return cirq.Gate.on(BloqAsCirqGate(bloq=self), *qubits)
+
+    def on_registers(
+        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], 'NDArray[cirq.Qid]']
+    ) -> 'cirq.Operation':
+        """A `cirq.Operation` of this bloq operating on the given qubit registers.
+
+        This method supports an alternative decomposition backend that follows a 'Cirq-style'
+        association of gates with qubit registers to form operations. See `Bloq.on()` for
+        more details.
+
+        Args:
+            **qubit_regs: A mapping of register name to the qubits comprising that register.
+
+        See Also:
+            `Bloq.on`: Provides the same functionality, but with a flat list of qubits.
+                instead of named registers.
+            `decompose_from_cirq_style_method`: More details on how to write a cirq-style
+                decomposition.
+        """
+        from qualtran._infra.gate_with_registers import merge_qubits
+
+        return self.on(*merge_qubits(self.signature, **qubit_regs))
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         """On a musical score visualization, use this `WireSymbol` to represent `soq`.

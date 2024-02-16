@@ -16,33 +16,14 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare import (
     UniformSuperpostionIJFirstQuantization,
 )
-from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import PrepareTFirstQuantization
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t import (
+    _prepare_t,
+    PrepareTFirstQuantization,
+)
 
 
-def _make_prepare_t():
-    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareTFirstQuantization
-
-    num_bits_p = 5
-    eta = 10
-
-    return PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
-
-
-def test_prepare_t():
-    num_bits_p = 6
-    eta = 10
-    prep = PrepareTFirstQuantization(num_bits_p, eta)
-    assert_valid_bloq_decomposition(prep)
-
-
-def _make_prepare_t():
-    from qualtran.bloqs.chemistry.pbc.first_quantization import PrepareTFirstQuantization
-
-    num_bits_p = 5
-    eta = 10
-
-    return PrepareTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+def test_prepare_t(bloq_autotester):
+    bloq_autotester(_prepare_t)
 
 
 def test_prepare_kinetic_t_counts():

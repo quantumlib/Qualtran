@@ -12,12 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Tuple
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
@@ -55,6 +55,9 @@ class PrepareUniformSuperposition(GateWithRegisters):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=len(self.cvs), target=(self.n - 1).bit_length())
+
+    def short_name(self) -> str:
+        return r'$\sum_l |l\rangle$'
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         control_symbols = ["@" if cv else "@(0)" for cv in self.cvs]
@@ -108,9 +111,6 @@ class PrepareUniformSuperposition(GateWithRegisters):
 
         yield cirq.H.on_each(*logL_qubits)
         context.qubit_manager.qfree([*and_target, *and_ancilla])
-
-    def short_name(self) -> str:
-        return 'uniform'
 
 
 @bloq_example

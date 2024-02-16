@@ -13,14 +13,15 @@
 #  limitations under the License.
 
 import abc
+from functools import cached_property
 from typing import Sequence, Tuple
 
 import cirq
 import numpy as np
-from cirq._compat import cached_method, cached_property
+from cirq._compat import cached_method
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
@@ -104,16 +105,16 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
         pass
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self._selection_bitsize, len(self.angles[0])),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', BoundedQUInt(self._selection_bitsize, len(self.angles[0]))),)
 
     @cached_property
     def kappa_load_target(self) -> Tuple[Register, ...]:
-        return (Register('kappa_load_target', self.kappa),)
+        return (Register('kappa_load_target', QAny(self.kappa)),)
 
     @cached_property
     def rotations_target(self) -> Tuple[Register, ...]:
-        return (Register('rotations_target', self._target_bitsize),)
+        return (Register('rotations_target', QAny(self._target_bitsize)),)
 
     @property
     @abc.abstractmethod
@@ -140,7 +141,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
         # 1. Find a convenient way to process batches of size kappa.
         num_bits = sum(max(thetas).bit_length() for thetas in self.angles)
-        iteration_length = self.selection_registers[0].iteration_length
+        iteration_length = self.selection_registers[0].dtype.iteration_length
         selection_bitsizes = [s.total_bits() for s in self.selection_registers]
         angles_bits = np.zeros(shape=(iteration_length, num_bits), dtype=int)
         angles_bit_pow = np.zeros(shape=(num_bits,), dtype=int)
@@ -162,7 +163,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
             data ^= angles_bits[:, st:en].dot(power_of_2s[: en - st])
             yield QROM(
                 [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
-            ).on_registers(selection=selection, target0=kappa_load_target)
+            ).on_registers(selection=selection, target0_=kappa_load_target)
             data = angles_bits[:, st:en].dot(power_of_2s[: en - st])
             for cqid, bpow, idx in zip(kappa_load_target, angles_bit_pow[st:en], angles_idx[st:en]):
                 if idx != last_id:
@@ -173,7 +174,7 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
                 yield self.rotation_gate(bpow).on(*rotations_target).controlled_by(cqid)
         yield QROM(
             [data], selection_bitsizes=tuple(selection_bitsizes), target_bitsizes=(self.kappa,)
-        ).on_registers(selection=selection, target0=kappa_load_target)
+        ).on_registers(selection=selection, target0_=kappa_load_target)
 
 
 class ProgrammableRotationGateArray(ProgrammableRotationGateArrayBase):

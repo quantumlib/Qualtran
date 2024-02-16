@@ -36,8 +36,16 @@ Whereas stage 1 is executed by contributors and committed to `main`; and whereas
 is executed by readthedocs and hosted on the web; stage 2 is more tricky.
 
 Roughly, the goal is to take a clean version of `main`, run the generation functionality
-to output the content to `docs/` and commit the result somewhere so that readthedocs can find it.
-Specifically, we use the `docs` branch to commit the latest stage-2 outputs.
+to output the content to `docs/` and either:
+ 1. commit the result somewhere so that readthedocs can find it.
+ 2. use sphinx to build the docs locally to preview them.
+
+The two generation scripts are `execute-notebooks.py` and `build-reference-docs.py` in `dev_tools/`.
+
+### Production: building and committing the stage 2 outputs.
+
+We use the `docs` branch to commit the latest stage-2 outputs. This branch
+has a different `docs/.gitignore` file so we can commit the stage-2 outputs.
 
     git switch docs 
     git fetch origin && git merge origin/main
@@ -51,6 +59,17 @@ Specifically, we use the `docs` branch to commit the latest stage-2 outputs.
     # .. verify the staged diff looks good ..
     git commit -m 'Generate docs'
     git push
-    
-    
-    
+
+
+### Local Preview: building and previewing the stage 2 outputs.
+
+If you don't want to deploy the docs and just want to preview the html output locally,
+you can stay on the `main` branch.
+
+    cd docs/
+    git clean -ndX  # delete all generated outputs: change -n to -f to actually do it.
+    cd ../dev_tools/
+    python execute-notebooks.py --no-only-out-of-date
+    python build-reference-docs.py
+    cd ../docs
+    make clean && make html

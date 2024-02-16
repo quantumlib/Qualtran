@@ -40,8 +40,8 @@ class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
         # TODO Determine precise clifford count and/or ignore.
         # This is an improvement over Ref. 2 from the docstring which provides
         # a bound of 3 log(1/eps).
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
         return TComplexity(t=num_t)
 
@@ -98,6 +98,28 @@ class ZPowGate(_RotationBloq):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def __pow__(self, power):
+        g = self.cirq_gate**power
+        return ZPowGate(g.exponent, g.global_shift, self.eps)
+
+
+@frozen
+class CZPowGate(CirqGateAsBloqBase):
+    exponent: float = 1.0
+    global_shift: float = 0.0
+    eps: float = 1e-11
+
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(rotations=1)
+
+    def __pow__(self, power):
+        g = self.cirq_gate**power
+        return CZPowGate(g.exponent, g.global_shift, self.eps)
 
 
 @frozen

@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -48,11 +48,17 @@ class SelectTFirstQuantization(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),
-                Register("plus", bitsize=1),
-                Register("flag_T", bitsize=1),
+                Register("flag_T", QBit()),
+                Register("plus", QBit()),
+                Register("w", QAny(bitsize=3)),
+                Register("r", QAny(bitsize=self.num_bits_p)),
+                Register("s", QAny(bitsize=self.num_bits_p)),
+                Register("p", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'SEL $T$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Cost is $5(n_{p} - 1) + 2$ which comes from copying each $w$ component of $p$
@@ -63,3 +69,19 @@ class SelectTFirstQuantization(Bloq):
         # of $T$ thus we come to our total.
         # Eq 73. page
         return {(Toffoli(), (5 * (self.num_bits_p - 1) + 2))}
+
+
+@bloq_example
+def _select_t() -> SelectTFirstQuantization:
+    num_bits_p = 5
+    eta = 10
+
+    select_t = SelectTFirstQuantization(num_bits_p=num_bits_p, eta=eta)
+    return select_t
+
+
+_SELECT_T = BloqDocSpec(
+    bloq_cls=SelectTFirstQuantization,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirstQuantization',
+    examples=(_select_t,),
+)

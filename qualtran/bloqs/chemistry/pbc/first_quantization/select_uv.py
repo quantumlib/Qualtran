@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 
@@ -50,11 +50,14 @@ class ApplyNuclearPhase(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("l", bitsize=self.num_bits_nuc),
-                Register("Rl", bitsize=self.num_bits_nuc),
-                Register("nu", bitsize=self.num_bits_p, shape=(3,)),
+                Register("l", QAny(bitsize=self.num_bits_nuc)),
+                Register("Rl", QAny(bitsize=self.num_bits_nuc)),
+                Register("nu", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'$-e^{-k_\nu\cdot R_l$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n_p = self.num_bits_p
@@ -78,6 +81,7 @@ class SelectUVFirstQuantization(Bloq):
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
         eta: The number of electrons.
+        num_atoms: The number of atoms.
         num_bits_nuc_pos: The number of bits to store each component of the
             nuclear positions. $n_R$ in the reference.
 
@@ -90,6 +94,7 @@ class SelectUVFirstQuantization(Bloq):
 
     num_bits_p: int
     eta: int
+    num_atoms: int
     num_bits_nuc_pos: int
 
     @cached_property
@@ -97,14 +102,18 @@ class SelectUVFirstQuantization(Bloq):
         n_nu = self.num_bits_p + 1
         return Signature(
             [
-                Register("flag_UVT", bitsize=2),
-                Register("plus", bitsize=1),
-                Register("l", bitsize=self.num_bits_nuc_pos),
-                Register("Rl", bitsize=self.num_bits_nuc_pos),
-                Register("nu", bitsize=n_nu, shape=(3,)),
-                # + some ancilla for the controlled swaps of system registers.
+                Register("flag_tuv", QBit()),
+                Register("flag_uv", QBit()),
+                Register("l", QAny(bitsize=(self.num_atoms - 1).bit_length())),
+                Register("rl", QAny(bitsize=self.num_bits_nuc_pos)),
+                Register("nu", QAny(bitsize=n_nu), shape=(3,)),
+                Register("p", QAny(bitsize=self.num_bits_p), shape=(3,)),
+                Register("q", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
+
+    def short_name(self) -> str:
+        return r'SEL UV'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost_tc = (SignedIntegerToTwosComplement(self.num_bits_p), 6)
@@ -115,3 +124,22 @@ class SelectUVFirstQuantization(Bloq):
         # 2. Phase by $e^{ik\cdot R}$ in the case of $U$ only.
         cost_phase = (ApplyNuclearPhase(self.num_bits_p, self.num_bits_nuc_pos), 1)
         return {cost_tc, cost_add, cost_ctrl_add, cost_inv_tc, cost_phase}
+
+
+@bloq_example
+def _select_uv() -> SelectUVFirstQuantization:
+    num_bits_p = 5
+    eta = 10
+    num_bits_nuc_pos = 16
+
+    select_uv = SelectUVFirstQuantization(
+        num_bits_p=num_bits_p, eta=eta, num_atoms=eta, num_bits_nuc_pos=num_bits_nuc_pos
+    )
+    return select_uv
+
+
+_SELECT_UV = BloqDocSpec(
+    bloq_cls=SelectUVFirstQuantization,
+    import_line='from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization',
+    examples=(_select_uv,),
+)

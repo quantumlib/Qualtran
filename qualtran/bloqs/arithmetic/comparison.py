@@ -15,17 +15,30 @@
 from functools import cached_property
 from typing import Dict, Iterable, Iterator, List, Sequence, Set, TYPE_CHECKING, Union
 
+import attrs
 import cirq
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
+<<<<<<< HEAD
 from qualtran import Bloq, GateWithRegisters, Register, Side, Signature, SoquetT
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+=======
+from qualtran import Bloq, GateWithRegisters, QAny, QBit, QUInt, Register, Side, Signature, SoquetT
+from qualtran._infra.quantum_graph import Soquet
+from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.cirq_interop.bit_tools import iter_bits
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.drawing import WireSymbol
+from qualtran.drawing.musical_score import TextBox
+>>>>>>> da01be168e9cc31c50fab9aa74093d2df2c69f0f
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -41,7 +54,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, target=1)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def short_name(self) -> str:
         return f'x<{self.less_than_val}'
@@ -56,12 +69,12 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
         input_val, less_than_val, target_register_val = register_vals
         return input_val, less_than_val, target_register_val ^ (input_val < less_than_val)
 
-    def on_classical_vals(self, x, target) -> Dict[str, 'ClassicalValT']:
-        return dict(zip(['x', 'target'], [x, target ^ (x < self.less_than_val)]))
+    def on_classical_vals(self, *, x: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'target': target ^ (x < self.less_than_val)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.bitsize
-        wire_symbols += [f'+(x < {self.less_than_val})']
+        wire_symbols += [f'⨁(x < {self.less_than_val})']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power: int):
@@ -111,7 +124,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
                 # ancilla[i] = are_equal so far and (q_i != _val[i]).
                 #            = equivalent to: Is the current prefix of qubits < prefix of `_val`?
                 yield And().on(q, are_equal, a)
-                adjoint.append(And(adjoint=True).on(q, are_equal, a))
+                adjoint.append(And().adjoint().on(q, are_equal, a))
 
                 # target ^= is the current prefix of the qubit sequence < current prefix of `_val`
                 yield cirq.CNOT(a, target)
@@ -123,7 +136,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
             else:
                 # ancilla[i] = are_equal so far and (q = 1).
                 yield And().on(q, are_equal, a)
-                adjoint.append(And(adjoint=True).on(q, are_equal, a))
+                adjoint.append(And().adjoint().on(q, are_equal, a))
 
                 # if `a=1` then we need to flip `are_equal` since this means that are_equal=1,
                 # b_i=0, q_i=1 => current prefixes are not equal so we need to flip `are_equal`.
@@ -157,15 +170,19 @@ class BiQubitsMixer(GateWithRegisters):
     should clean the qubits at a later point in time with the adjoint gate.
     See: https://github.com/quantumlib/Cirq/pull/6313 and
     https://github.com/quantumlib/Qualtran/issues/389
-    """  # pylint: disable=line-too-long
+    """
 
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
-        one_side = Side.RIGHT if not self.adjoint else Side.LEFT
+        one_side = Side.RIGHT if not self.is_adjoint else Side.LEFT
         return Signature(
-            [Register('x', 2), Register('y', 2), Register('ancilla', 3, side=one_side)]
+            [
+                Register('x', QUInt(2)),
+                Register('y', QUInt(2)),
+                Register('ancilla', QAny(3), side=one_side),
+            ]
         )
 
     def decompose_from_registers(
@@ -183,7 +200,7 @@ class BiQubitsMixer(GateWithRegisters):
             a T complexity of zero.
             """
             yield cirq.CNOT(a, b)
-            yield And(adjoint=self.adjoint).on(control, b, aux)
+            yield And(uncompute=self.is_adjoint).on(control, b, aux)
             yield cirq.CNOT(aux, a)
             yield cirq.CNOT(a, b)
 
@@ -202,25 +219,28 @@ class BiQubitsMixer(GateWithRegisters):
             yield from _cswap(x_msb, y_msb, y_lsb, ancilla[2])
             yield cirq.CNOT(y_lsb, x_lsb)
 
-        if self.adjoint:
+        if self.is_adjoint:
             yield from reversed(tuple(cirq.flatten_to_ops(_decomposition())))
         else:
             yield from _decomposition()
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def __pow__(self, power: int) -> cirq.Gate:
         if power == 1:
             return self
         if power == -1:
-            return BiQubitsMixer(adjoint=not self.adjoint)
+            return self.adjoint()
         return NotImplemented  # pragma: no cover
 
     def _t_complexity_(self) -> TComplexity:
-        if self.adjoint:
+        if self.is_adjoint:
             return TComplexity(clifford=18)
         return TComplexity(t=8, clifford=28)
 
     def _has_unitary_(self):
-        return not self.adjoint
+        return not self.is_adjoint
 
 
 @frozen
@@ -230,17 +250,17 @@ class SingleQubitCompare(GateWithRegisters):
     Source: (FIG. 3) in https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
     """  # pylint: disable=line-too-long
 
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
-        one_side = Side.RIGHT if not self.adjoint else Side.LEFT
+        one_side = Side.RIGHT if not self.is_adjoint else Side.LEFT
         return Signature(
             [
-                Register('a', 1),
-                Register('b', 1),
-                Register('less_than', 1, side=one_side),
-                Register('greater_than', 1, side=one_side),
+                Register('a', QBit()),
+                Register('b', QBit()),
+                Register('less_than', QBit(), side=one_side),
+                Register('greater_than', QBit(), side=one_side),
             ]
         )
 
@@ -253,29 +273,32 @@ class SingleQubitCompare(GateWithRegisters):
         greater_than = quregs['greater_than']
 
         def _decomposition() -> Iterator[cirq.Operation]:
-            yield And(0, 1, adjoint=self.adjoint).on(*a, *b, *less_than)
+            yield And(0, 1, uncompute=self.is_adjoint).on(*a, *b, *less_than)
             yield cirq.CNOT(*less_than, *greater_than)
             yield cirq.CNOT(*b, *greater_than)
             yield cirq.CNOT(*a, *b)
             yield cirq.CNOT(*a, *greater_than)
             yield cirq.X(*b)
 
-        if self.adjoint:
+        if self.is_adjoint:
             yield from reversed(tuple(_decomposition()))
         else:
             yield from _decomposition()
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def __pow__(self, power: int) -> cirq.Gate:
         if not isinstance(power, int):
             raise ValueError('SingleQubitCompare is only defined for integer powers.')
         if power % 2 == 0:
             return cirq.IdentityGate(4)
-        if power < 0:
-            return SingleQubitCompare(adjoint=not self.adjoint)
+        if power == -1:
+            return self.adjoint()
         return self
 
     def _t_complexity_(self) -> TComplexity:
-        if self.adjoint:
+        if self.is_adjoint:
             return TComplexity(clifford=11)
         return TComplexity(t=4, clifford=16)
 
@@ -304,7 +327,9 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=self.x_bitsize, y=self.y_bitsize, target=1)
+        return Signature.build_from_dtypes(
+            x=QUInt(self.x_bitsize), y=QUInt(self.y_bitsize), target=QBit()
+        )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.x_bitsize, [2] * self.y_bitsize, [2]
@@ -316,13 +341,16 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
-    def on_classical_vals(self, *args) -> Dict[str, 'ClassicalValT']:
-        return dict(zip([reg.name for reg in self.signature], self.apply(*args)))
+    def short_name(self) -> str:
+        return 'x <= y'
+
+    def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
+        return {'x': x, 'y': y, 'target': target ^ (x <= y)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * self.x_bitsize
         wire_symbols += ["In(y)"] * self.y_bitsize
-        wire_symbols += ['+(x <= y)']
+        wire_symbols += ['⨁(x <= y)']
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power: int):
@@ -406,9 +434,9 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
             a=lhs[-1], b=rhs[-1], less_than=less_than, greater_than=greater_than
         )
         adjoint.append(
-            SingleQubitCompare(adjoint=True).on_registers(
-                a=lhs[-1], b=rhs[-1], less_than=less_than, greater_than=greater_than
-            )
+            SingleQubitCompare()
+            .adjoint()
+            .on_registers(a=lhs[-1], b=rhs[-1], less_than=less_than, greater_than=greater_than)
         )
 
         if prefix_equality is None:
@@ -418,7 +446,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
             (less_than_or_equal,) = context.qubit_manager.qalloc(1)
             yield And(1, 0).on(prefix_equality, greater_than, less_than_or_equal)
             adjoint.append(
-                And(1, 0, adjoint=True).on(prefix_equality, greater_than, less_than_or_equal)
+                And(1, 0).adjoint().on(prefix_equality, greater_than, less_than_or_equal)
             )
 
             yield cirq.CNOT(less_than_or_equal, target)
@@ -486,18 +514,95 @@ class GreaterThan(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(a=self.bitsize, b=self.bitsize, target=1)
+        return Signature.build_from_dtypes(
+            a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
+        )
 
     def short_name(self) -> str:
         return "b > a"
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs: SoquetT) -> Dict[str, 'SoquetT']:
 
-        # Assign registers to variables and allocate lists to store ancillas generated by the
-        # logical-and and control pairs input into logical-ands.
-        a = regs['a']
-        b = regs['b']
-        target = regs['target']
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        if soq.reg.name == 'a':
+            return TextBox("In(a)")
+        if soq.reg.name == 'b':
+            return TextBox("In(b)")
+        elif soq.reg.name == 'target':
+            return TextBox("⨁(a > b)")
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
+        t_complexity = self.t_complexity()
+        return {(TGate(), t_complexity.t)}
+
+
+@frozen
+class LinearDepthGreaterThan(Bloq):
+    r"""Compare two integers.
+
+    Implements |a>|b>|t> => |a>|b>|t ⨁ (a > b)> using $4n$ T gates.
+
+    This comparator relies on the fact that (b' + a)' = b - a. If a > b, then b - a < 0. We
+    implement it by flipping all the bits in b, computing the first half of the addition circuit,
+    copying out the carry, and uncomputing the addition circuit.
+
+    Args:
+        bitsize: Number of bits used to represent the two integers a and b.
+        signed: A boolean condition which controls whether the a and b registers are represented
+            in 2's Complement or Unsigned. This effects the decomposition of the comparison because
+            it relies on the 1's complement trick described above which only works for signed
+            values. If the input registers are unsigned we use 2 ancilla bits to represent the
+            registers in 2's complement.
+
+    Registers:
+        a: n-bit-sized input registers.
+        b: n-bit-sized input registers.
+        target: A single bit output register to store the result of a > b.
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585)
+    """
+    bitsize: int
+    signed: bool
+
+    @property
+    def signature(self):
+        return Signature.build_from_dtypes(
+            a=QUInt(self.bitsize), b=QUInt(self.bitsize), target=QBit()
+        )
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT', target: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        # target is a 1-bit register so we assert that it's classical value is binary.
+        assert target == (target % 2)
+
+        if a > b:
+            target = (target + 1) % 2
+
+        return {'a': a, 'b': b, 'target': target}
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: SoquetT, b: SoquetT, target: SoquetT
+    ) -> Dict[str, 'SoquetT']:
+
+        # Base Case: Comparing two qubits.
+        # Signed doesn't matter because we can't represent signed integers with 1 qubit.
+        if self.bitsize == 1:
+            # We use a specially controlled Toffolli gate to implement GreaterThan.
+            # If a is 1 and b is 0 then a > b and we can flip the target bit.
+            ctrls = [a, b]
+            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
+            a, b = ctrls
+            # Return the output registers.
+            return {'a': a, 'b': b, 'target': target}
+
+        # Allocate lists to store ancillas generated by the logical-and and control pairs input
+        # into logical-ands.
         ancillas = []
         and_ctrls = []
 
@@ -506,115 +611,79 @@ class GreaterThan(Bloq):
         if not self.signed:
             a_sign = bb.allocate(n=1)
             a_split = bb.split(a)
-            a = bb.join(np.concatenate([a_split, [a_sign]]))
+            a = bb.join(np.concatenate([[a_sign], a_split]))
 
             b_sign = bb.allocate(n=1)
             b_split = bb.split(b)
-            b = bb.join(np.concatenate([b_split, [b_sign]]))
+            b = bb.join(np.concatenate([[b_sign], b_split]))
 
-        # Flip all the bits in the x register.
-        a_split = bb.split(a)
-        for i in range(self.bitsize):
-            a_split[i] = bb.add(XGate(), q=a_split[i])
+        # Create variable true_bitsize to account for sign bit in bloq construction.
+        true_bitsize = self.bitsize if self.signed else (self.bitsize + 1)
+
+        # Flip all the bits in the b register.
         b_split = bb.split(b)
+
+        for i in range(true_bitsize):
+            b_split[i] = bb.add(XGate(), q=b_split[i])
+        a_split = bb.split(a)
 
         # Iteratively implements the left adder circuit building block of the Gidney Adder. On
         # the first pair of qubits we only have to perform a logical-and operation. On all other
         # qubit pairs we perform two CNOTs, a logical-and, and a third CNOT operation.
-        for i in range(self.bitsize - 1):
+        for i in range(true_bitsize - 1):
             if i > 0:
                 carry_in = ancillas[i - 1]
-                carry_in, a_split[i] = bb.add(
-                    MultiControlPauli(cvs=(1,), target_gate=XGate()),
-                    controls=carry_in,
-                    target=a_split[i],
-                )
-                carry_in, b_split[i] = bb.add(
-                    MultiControlPauli(cvs=(1,), target_gate=XGate()),
-                    controls=carry_in,
-                    target=b_split[i],
-                )
+                carry_in, b_split[-1 - i] = bb.add(CNOT(), ctrl=carry_in, target=b_split[-1 - i])
+                carry_in, a_split[-1 - i] = bb.add(CNOT(), ctrl=carry_in, target=a_split[-1 - i])
 
             # Performs the logical-ands and stores all three bits' soquets in a list for later
             # uncomputing.
-            and_ctrl = [a_split[i], b_split[i]]
+            and_ctrl = [b_split[-1 - i], a_split[-1 - i]]
             and_ctrl, ancilla = bb.add(And(), ctrl=and_ctrl)
             and_ctrls.append(and_ctrl)
             ancillas.append(ancilla)
 
             if i > 0:
-                ancillas[i - 1], ancillas[i] = bb.add(
-                    MultiControlPauli(cvs=(1,), target_gate=XGate()),
-                    controls=carry_in,
-                    target=ancillas[i],
-                )
+                ancillas[i - 1], ancillas[i] = bb.add(CNOT(), ctrl=carry_in, target=ancillas[i])
 
         # Complete the addition in order to get the sign bit of (a' + b).
-        ancillas[-1], b_split[-1] = bb.add(
-            MultiControlPauli(cvs=(1,), target_gate=XGate()),
-            controls=ancillas[-1],
-            target=b_split[-1],
-        )
-        a_split[-1], b_split[-1] = bb.add(
-            MultiControlPauli(cvs=(1,), target_gate=XGate()),
-            controls=a_split[-1],
-            target=b_split[-1],
-        )
+        ancillas[-1], a_split[0] = bb.add(CNOT(), ctrl=ancillas[-1], target=a_split[0])
+        b_split[0], a_split[0] = bb.add(CNOT(), ctrl=b_split[0], target=a_split[0])
 
-        # Use a 0-controlled NOT gate in order to flip the target bit if the sign bit of (a' + b)'
-        # is 1. (a' + b)' = a - b therefore if b > a, then a - b < 0 and the sign bit of a - b will
+        # Use a 0-controlled NOT gate in order to flip the target bit if the sign bit of (b' + a)'
+        # is 1. (b' + a)' = b - a therefore if a > b, then b - a < 0 and the sign bit of b - a will
         # be 1.
-        b_split[-1], target = bb.add(
-            MultiControlPauli(cvs=(0,), target_gate=XGate()), controls=b_split[-1], target=target
-        )
+        a_split[0] = bb.add(XGate(), q=a_split[0])
+        a_split[0], target = bb.add(CNOT(), ctrl=a_split[0], target=target)
+        a_split[0] = bb.add(XGate(), q=a_split[0])
 
-        # Uncompute the completion of addition on the last bit of b.
-        a_split[-1], b_split[-1] = bb.add(
-            MultiControlPauli(cvs=(1,), target_gate=XGate()),
-            controls=a_split[-1],
-            target=b_split[-1],
-        )
-        ancillas[-1], b_split[-1] = bb.add(
-            MultiControlPauli(cvs=(1,), target_gate=XGate()),
-            controls=ancillas[-1],
-            target=b_split[-1],
-        )
+        # Uncompute the completion of addition on the last bit of a.
+        b_split[0], a_split[0] = bb.add(CNOT(), ctrl=b_split[0], target=a_split[0])
+        ancillas[-1], a_split[0] = bb.add(CNOT(), ctrl=ancillas[-1], target=a_split[0])
 
         # Iteratively uncomputes the left adder circuit building block by performing the operations
         # in reverse order. In a normal adder circuit we would use the right adder circuit building
         # block, but because we only need to compute the carry-out bit we uncompute the circuit to
         # restore a and b.
-        for i in reversed(range(self.bitsize - 1)):
+        for i in range(true_bitsize - 1):
             and_ctrl = and_ctrls.pop()
             ancilla = ancillas.pop()
 
-            if i > 0:
+            if i < true_bitsize - 2:
                 carry_in = ancillas[-1]
-                carry_in, ancilla = bb.add(
-                    MultiControlPauli(cvs=(1,), target_gate=XGate()),
-                    controls=carry_in,
-                    target=ancilla,
-                )
+                carry_in, ancilla = bb.add(CNOT(), ctrl=carry_in, target=ancilla)
 
-            and_ctrl = bb.add(And(adjoint=True), ctrl=and_ctrl, target=ancilla)
-            a_split[i] = and_ctrl[0]
-            b_split[i] = and_ctrl[1]
+            and_ctrl = bb.add(And(uncompute=True), ctrl=and_ctrl, target=ancilla)
+            b_split[i + 1] = and_ctrl[0]
+            a_split[i + 1] = and_ctrl[1]
 
-            if i > 0:
-                carry_in, b_split[i] = bb.add(
-                    MultiControlPauli(cvs=(1,), target_gate=XGate()),
-                    controls=carry_in,
-                    target=b_split[i],
-                )
-                ancillas[i - 1], a_split[i] = bb.add(
-                    MultiControlPauli(cvs=(1,), target_gate=XGate()),
-                    controls=carry_in,
-                    target=a_split[i],
-                )
+            if i < true_bitsize - 2:
+                carry_in, a_split[i + 1] = bb.add(CNOT(), ctrl=carry_in, target=a_split[i + 1])
+                ancillas[-1], b_split[i + 1] = bb.add(CNOT(), ctrl=carry_in, target=b_split[i + 1])
 
         # Uncompute the bitflips done to represent x'.
-        for i in range(self.bitsize):
-            a_split[i] = bb.add(XGate(), q=a_split[i])
+        for i in range(true_bitsize):
+            b_split[i] = bb.add(XGate(), q=b_split[i])
 
         a = bb.join(a_split)
         b = bb.join(b_split)
@@ -622,17 +691,20 @@ class GreaterThan(Bloq):
         # If the input registers were unsigned we free the ancilla sign bits.
         if not self.signed:
             a_split = bb.split(a)
-            a_sign = a_split[-1]
-            a = bb.join(a_split[:-1])
+            a_sign = a_split[0]
+            a = bb.join(a_split[1:])
             bb.free(a_sign)
 
             b_split = bb.split(b)
-            b_sign = b_split[-1]
-            b = bb.join(b_split[:-1])
+            b_sign = b_split[0]
+            b = bb.join(b_split[1:])
             bb.free(b_sign)
 
         # Return the output registers.
         return {'a': a, 'b': b, 'target': target}
+
+    def short_name(self) -> str:
+        return "a > b"
 
 
 @frozen
@@ -660,15 +732,24 @@ class GreaterThanConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, target=1)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def t_complexity(self) -> TComplexity:
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
+    def short_name(self) -> str:
+        return f"x > {self.val}"
+
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        if soq.reg.name == 'x':
+            return TextBox("In(x)")
+        elif soq.reg.name == 'target':
+            return TextBox(f"⨁(x > {self.val})")
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         t_complexity = self.t_complexity()
         return {(TGate(), t_complexity.t)}
 
@@ -694,12 +775,21 @@ class EqualsAConstant(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(x=self.bitsize, target=1)
+        return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
 
+    def short_name(self) -> str:
+        return f"x == {self.val}"
+
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        if soq.reg.name == 'x':
+            return TextBox("In(x)")
+        elif soq.reg.name == 'target':
+            return TextBox(f"⨁(x = {self.val})")
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/219
-        # See: https://github.com/quantumlib/cirq-qubitization/issues/217
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         return {(TGate(), 4 * (self.bitsize - 1))}

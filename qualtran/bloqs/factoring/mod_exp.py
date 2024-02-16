@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Optional, Set, Union
 
 import numpy as np
 import sympy
@@ -25,6 +25,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     DecomposeTypeError,
+    QUInt,
     Register,
     Side,
     Signature,
@@ -69,13 +70,13 @@ class ModExp(Bloq):
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('exponent', bitsize=self.exp_bitsize),
-                Register('x', bitsize=self.x_bitsize, side=Side.RIGHT),
+                Register('exponent', QUInt(self.exp_bitsize)),
+                Register('x', QUInt(self.x_bitsize), side=Side.RIGHT),
             ]
         )
 
     @classmethod
-    def make_for_shor(cls, big_n: int, g=None):
+    def make_for_shor(cls, big_n: int, g: Optional[int] = None):
         """Factory method that sets up the modular exponentiation for a factoring run.
 
         Args:
@@ -137,8 +138,6 @@ def _modexp() -> ModExp:
 
 @bloq_example
 def _modexp_symb() -> ModExp:
-    import sympy
-
     g, N, n_e, n_x = sympy.symbols('g N n_e, n_x')
     modexp_symb = ModExp(base=g, mod=N, exp_bitsize=n_e, x_bitsize=n_x)
     return modexp_symb

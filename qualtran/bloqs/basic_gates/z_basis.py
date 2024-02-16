@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -28,9 +28,12 @@ from qualtran import (
     BloqBuilder,
     CompositeBloq,
     DecomposeTypeError,
+    QAny,
+    QBit,
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -42,8 +45,8 @@ if TYPE_CHECKING:
     import cirq
 
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.simulation.classical_sim import ClassicalValT
 
 _ZERO = np.array([1, 0], dtype=np.complex128)
 _ONE = np.array([0, 1], dtype=np.complex128)
@@ -74,7 +77,7 @@ class _ZVector(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('q', bitsize=1, side=Side.RIGHT if self.state else Side.LEFT)])
+        return Signature([Register('q', QBit(), side=Side.RIGHT if self.state else Side.LEFT)])
 
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
@@ -82,7 +85,7 @@ class _ZVector(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
@@ -90,11 +93,11 @@ class _ZVector(Bloq):
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), binst]
+                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), tag]
             )
         )
 
-    def on_classical_vals(self, **vals: int) -> Dict[str, int]:
+    def on_classical_vals(self, *, q: Optional[int] = None) -> Dict[str, int]:
         """Return or consume 1 or 0 depending on `self.state` and `self.bit`.
 
         If `self.state`, we return a bit in the `q` register. Otherwise,
@@ -102,18 +105,15 @@ class _ZVector(Bloq):
         """
         bit_int = 1 if self.bit else 0  # guard against bad `self.bit` types.
         if self.state:
-            assert not vals, vals
+            assert q is None
             return {'q': bit_int}
 
-        q = vals.pop('q')
-        assert not vals, vals
         assert q == bit_int, q
         return {}
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -149,6 +149,9 @@ class ZeroState(_ZVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return ZeroEffect()
+
 
 @bloq_example
 def _zero_state() -> ZeroState:
@@ -162,6 +165,9 @@ class ZeroEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=False, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return ZeroState()
 
 
 @bloq_example
@@ -177,6 +183,9 @@ class OneState(_ZVector):
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=True, n=n)
 
+    def adjoint(self) -> 'Bloq':
+        return OneEffect()
+
 
 @bloq_example
 def _one_state() -> OneState:
@@ -190,6 +199,9 @@ class OneEffect(_ZVector):
 
     def __init__(self, n: int = 1):
         self.__attrs_init__(bit=True, state=False, n=n)
+
+    def adjoint(self) -> 'Bloq':
+        return OneState()
 
 
 @bloq_example
@@ -209,6 +221,9 @@ class ZGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
     def short_name(self) -> 'str':
         return 'Z'
 
@@ -218,14 +233,14 @@ class ZGate(Bloq):
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
-        binst,
+        tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
         tn.add(
             qtn.Tensor(
-                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), binst]
+                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
             )
         )
 
@@ -275,7 +290,9 @@ class _IntVector(Bloq):
     @cached_property
     def signature(self) -> Signature:
         side = Side.RIGHT if self.state else Side.LEFT
-        return Signature([Register('val', bitsize=self.bitsize, side=side)])
+        if self.bitsize == 1:
+            return Signature([Register('val', QBit(), side=side)])
+        return Signature([Register('val', QAny(self.bitsize), side=side)])
 
     @staticmethod
     def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
@@ -327,12 +344,12 @@ class _IntVector(Bloq):
 
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, int]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, int]:
         if self.state:
-            assert not vals
+            assert val is None
             return {'val': self.val}
 
-        assert vals['val'] == self.val, vals['val']
+        assert val == self.val, val
 
     def t_complexity(self) -> 'TComplexity':
         return TComplexity()
@@ -346,6 +363,11 @@ class _IntVector(Bloq):
     def pretty_name(self) -> str:
         s = self.short_name()
         return f'|{s}>' if self.state else f'<{s}|'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box
+
+        return directional_text_box(text=f'{self.val}', side=soq.reg.side)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)

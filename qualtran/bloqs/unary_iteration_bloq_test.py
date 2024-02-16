@@ -13,18 +13,24 @@
 #  limitations under the License.
 
 import itertools
-from typing import Sequence, Tuple
+from functools import cached_property
+from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import pytest
-from cirq._compat import cached_property
 
-from qualtran import Register, SelectionRegister, Signature
+from qualtran import BoundedQUInt, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.unary_iteration_bloq import unary_iteration, UnaryIterationGate
+from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
+from qualtran.resource_counting.generalizers import cirq_to_bloqs
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+
+if TYPE_CHECKING:
+    from qualtran import Bloq
 
 
 class ApplyXToLthQubit(UnaryIterationGate):
@@ -35,15 +41,15 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return (Register('control', self._control_bitsize),)
+        return (Register('control', QAny(self._control_bitsize)),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self._selection_bitsize, self._target_bitsize),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', BoundedQUInt(self._selection_bitsize, self._target_bitsize)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self._target_bitsize),)
+        return (Register('target', QAny(self._target_bitsize)),)
 
     def nth_operation(  # type: ignore[override]
         self,
@@ -53,6 +59,9 @@ class ApplyXToLthQubit(UnaryIterationGate):
         target: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         return cirq.CNOT(control, target[-(selection + 1)])
+
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
+        return {(CNOT(), 1)}
 
 
 @pytest.mark.parametrize(
@@ -88,10 +97,11 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         return ()
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return tuple(
-            SelectionRegister(
-                'ijk'[i], (self._target_shape[i] - 1).bit_length(), self._target_shape[i]
+            Register(
+                'ijk'[i],
+                BoundedQUInt((self._target_shape[i] - 1).bit_length(), self._target_shape[i]),
             )
             for i in range(3)
         )
@@ -116,6 +126,9 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         t3: Sequence[cirq.Qid],
     ) -> cirq.OP_TREE:
         yield [cirq.CNOT(control, t1[i]), cirq.CNOT(control, t2[j]), cirq.CNOT(control, t3[k])]
+
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
+        return {(CNOT(), 3)}
 
 
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
@@ -146,7 +159,7 @@ def test_multi_dimensional_unary_iteration_gate(target_shape: Tuple[int, int, in
 
 def test_unary_iteration_loop():
     n_range, m_range = (3, 5), (6, 8)
-    selection_registers = [SelectionRegister('n', 3, 5), SelectionRegister('m', 3, 8)]
+    selection_registers = [Register('n', BoundedQUInt(3, 5)), Register('m', BoundedQUInt(3, 8))]
     selection = get_named_qubits(selection_registers)
     target = {(n, m): cirq.q(f't({n}, {m})') for n in range(*n_range) for m in range(*m_range)}
     qm = cirq.GreedyQubitManager("ancilla", maximize_reuse=True)
@@ -188,6 +201,16 @@ def test_unary_iteration_loop_empty_range():
     assert list(unary_iteration(4, 3, [], [], [cirq.q('s')], qm)) == []
 
 
+def verify_bloq_has_consistent_build_callgraph(bloq: 'Bloq'):
+    _, sigma_call = bloq.call_graph()
+    _, sigma_decomp_call = bloq.decompose_bloq().call_graph(generalizer=cirq_to_bloqs)
+    for key in sigma_decomp_call.keys():
+        if key in sigma_call:
+            assert sigma_call[key] == sigma_decomp_call[key]
+        else:
+            assert isinstance(key, (Split, Join))
+
+
 @pytest.mark.parametrize(
     "selection_bitsize, target_bitsize, control_bitsize",
     [(3, 5, 1), (2, 4, 2), (1, 2, 3), (3, 4, 0)],
@@ -196,12 +219,14 @@ def test_bloq_has_consistent_decomposition(selection_bitsize, target_bitsize, co
     bloq = ApplyXToLthQubit(selection_bitsize, target_bitsize, control_bitsize)
     assert_valid_bloq_decomposition(bloq)
     assert bloq.t_complexity().t == 4 * (target_bitsize - 2 + control_bitsize)
+    verify_bloq_has_consistent_build_callgraph(bloq)
 
 
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
 def test_multi_dimensional_bloq_has_consistent_decomposition(target_shape: Tuple[int, int, int]):
     bloq = ApplyXToIJKthQubit(target_shape)
     assert_valid_bloq_decomposition(bloq)
+    verify_bloq_has_consistent_build_callgraph(bloq)
 
 
 def test_notebook():

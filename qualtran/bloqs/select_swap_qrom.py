@@ -12,17 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import List, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
+from qualtran.drawing import Circle, TextBox, WireSymbol
 
 
 def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> int:
@@ -141,17 +142,19 @@ class SelectSwapQROM(GateWithRegisters):
         self._data = tuple(tuple(d) for d in data)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister(
-                'selection', self.selection_q + self.selection_r, self._iteration_length
+            Register(
+                'selection',
+                BoundedQUInt(self.selection_q + self.selection_r, self._iteration_length),
             ),
         )
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
+        # See https://github.com/quantumlib/Qualtran/issues/556 for unusual placement of underscore.
         return tuple(
-            Register(f'target{sequence_id}', self._target_bitsizes[sequence_id])
+            Register(f'target{sequence_id}_', QAny(self._target_bitsizes[sequence_id]))
             for sequence_id in range(self._num_sequences)
         )
 
@@ -234,6 +237,21 @@ class SelectSwapQROM(GateWithRegisters):
         for i, target in enumerate(self.target_registers):
             wire_symbols += [f"QROAM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        name = soq.reg.name
+        if name == 'selection':
+            return TextBox('In')
+        elif 'target' in name:
+            trg_indx = int(name.replace('target', '').replace('_', ''))
+            # match the sel index
+            subscript = chr(ord('a') + trg_indx)
+            return TextBox(f'data_{subscript}')
+        elif name == 'control':
+            return Circle()
+
+    def short_name(self) -> str:
+        return 'QROAM'
 
     def _value_equality_values_(self):
         return self.block_size, self._target_bitsizes, self.data

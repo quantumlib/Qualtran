@@ -18,7 +18,10 @@ from typing import Dict
 
 import attrs
 
-from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, SoquetT
+from qualtran._infra.quantum_graph import Soquet
+from qualtran.drawing import WireSymbol
+from qualtran.drawing.musical_score import TextBox
 
 
 @attrs.frozen
@@ -43,14 +46,16 @@ class OnEach(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        reg = Register('q', bitsize=self.n)
+        reg = Register('q', QAny(bitsize=self.n))
         return Signature([reg])
 
     def short_name(self) -> str:
         return rf'{self.gate.short_name()}⨂{self.n}'
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> Dict[str, SoquetT]:
+    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+        return TextBox(self.gate.short_name())
 
+    def build_composite_bloq(self, bb: BloqBuilder, *, q: SoquetT) -> Dict[str, SoquetT]:
         qs = bb.split(q)
         for i in range(self.n):
             qs[i] = bb.add(self.gate, q=qs[i])
