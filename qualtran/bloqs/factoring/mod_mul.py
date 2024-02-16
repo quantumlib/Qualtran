@@ -24,6 +24,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QMontgomeryUInt,
     Register,
     Signature,
     Soquet,
@@ -138,7 +139,7 @@ class MontgomeryModDbl(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize)])
+        return Signature([Register('x', QMontgomeryUInt(self.bitsize))])
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
 

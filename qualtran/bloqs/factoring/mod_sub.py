@@ -17,7 +17,7 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature, SoquetT
+from qualtran import Bloq, QMontgomeryUInt, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.factoring.mod_add import MontgomeryModAdd
@@ -49,7 +49,12 @@ class MontgomeryModSub(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize), Register('y', bitsize=self.bitsize)])
+        return Signature(
+            [
+                Register('x', QMontgomeryUInt(self.bitsize)),
+                Register('y', QMontgomeryUInt(self.bitsize)),
+            ]
+        )
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
@@ -109,7 +114,7 @@ class MontgomeryModNeg(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', bitsize=self.bitsize)])
+        return Signature([Register('x', QMontgomeryUInt(self.bitsize))])
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
 
