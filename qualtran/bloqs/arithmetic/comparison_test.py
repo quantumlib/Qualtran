@@ -18,6 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran.bloqs.arithmetic.comparison import (
     EqualsAConstant,
@@ -31,11 +32,6 @@ from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
-)
-from qualtran.testing import (
-    assert_valid_bloq_decomposition,
-    assert_wire_symbols_match_expected,
-    execute_notebook,
 )
 
 
@@ -125,7 +121,7 @@ def test_less_than_consistent_protocols(n: int, val: int):
     # Test the unitary is self-inverse
     u = cirq.unitary(g)
     np.testing.assert_allclose(u @ u, np.eye(2 ** (n + 1)))
-    assert_valid_bloq_decomposition(g)
+    qlt_testing.assert_valid_bloq_decomposition(g)
 
 
 def test_multi_in_less_equal_than_gate():
@@ -155,7 +151,7 @@ def test_multi_in_less_equal_than_gate():
 def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     g = LessThanEqual(x_bitsize, y_bitsize)
     assert_decompose_is_consistent_with_t_complexity(g)
-    assert_valid_bloq_decomposition(g)
+    qlt_testing.assert_valid_bloq_decomposition(g)
 
     # Decomposition works even when context is None.
     qubits = cirq.LineQid.range(x_bitsize + y_bitsize + 1, dimension=2)
@@ -185,14 +181,16 @@ def test_greater_than():
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
     cbloq.t_complexity()
-    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
+    qlt_testing.assert_wire_symbols_match_expected(
+        GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
+    )
 
 
 @pytest.mark.parametrize('bitsize', [1, 2, 5])
 @pytest.mark.parametrize('signed', [False, True])
 def test_linear_depth_greater_than_decomp(bitsize, signed):
     bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed)
-    assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 # TODO: write tests for signed integer comparison
@@ -233,7 +231,9 @@ def test_greater_than_constant():
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
-    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
+    qlt_testing.assert_wire_symbols_match_expected(
+        GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
+    )
 
 
 def test_equals_a_constant():
@@ -244,12 +244,16 @@ def test_equals_a_constant():
     q0, anc = bb.add(EqualsAConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
-    assert_wire_symbols_match_expected(EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)'])
+    qlt_testing.assert_wire_symbols_match_expected(
+        EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)']
+    )
 
 
+@pytest.mark.notebook
 def test_comparison_gates_notebook():
-    execute_notebook('comparison_gates')
+    qlt_testing.execute_notebook('comparison_gates')
 
 
+@pytest.mark.notebook
 def test_arithmetic_notebook():
-    execute_notebook('arithmetic')
+    qlt_testing.execute_notebook('arithmetic')

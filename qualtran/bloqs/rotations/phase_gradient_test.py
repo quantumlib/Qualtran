@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 from qualtran import BloqBuilder
+from qualtran._infra.data_types import QFxp
 from qualtran.bloqs.rotations.phase_gradient import (
     AddIntoPhaseGrad,
     AddScaledValIntoPhaseReg,
@@ -30,7 +31,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 def test_phase_gradient_state(n: int):
     gate = PhaseGradientState(n)
     assert_valid_bloq_decomposition(gate)
-    assert_valid_bloq_decomposition(gate**-1)
+    assert_valid_bloq_decomposition(gate.adjoint())
 
     q = cirq.LineQubit.range(n)
     state_prep_cirq_circuit = cirq.Circuit(
@@ -38,7 +39,7 @@ def test_phase_gradient_state(n: int):
     )
     assert np.allclose(cirq.unitary(gate), cirq.unitary(state_prep_cirq_circuit))
     assert np.allclose(
-        cirq.unitary(gate**-1), cirq.unitary(cirq.inverse(state_prep_cirq_circuit))
+        cirq.unitary(gate.adjoint()), cirq.unitary(cirq.inverse(state_prep_cirq_circuit))
     )
     assert gate.t_complexity().rotations == n - 2
     assert gate.t_complexity().clifford == n + 2
@@ -54,7 +55,7 @@ def test_phase_gradient_state_tensor_contract(n: int, t: float):
 
     bb = BloqBuilder()
     phase_reg = bb.add(bloq)
-    bb.add(PhaseGradientState(n, t, adjoint=True), phase_grad=phase_reg)
+    bb.add(PhaseGradientState(n, t).adjoint(), phase_grad=phase_reg)
     circuit = bb.finalize()
     assert np.isclose(circuit.tensor_contract(), 1)
 
@@ -72,6 +73,7 @@ def test_phase_gradient_gate(n: int, exponent, controlled):
     assert np.allclose(cirq.unitary(bloq), cirq.unitary(cirq_gate))
 
 
+@pytest.mark.slow
 def test_add_into_phase_grad():
     x_bit, phase_bit = 4, 7
     bloq = AddIntoPhaseGrad(x_bit, phase_bit)
@@ -92,9 +94,10 @@ def test_add_into_phase_grad():
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
 
 
+@pytest.mark.slow
 def test_add_scaled_val_into_phase_reg():
     x_bit, phase_bit, gamma, gamma_bit = 4, 7, 0.123, 6
-    bloq = AddScaledValIntoPhaseReg(x_bit, phase_bit, gamma, gamma_bit)
+    bloq = AddScaledValIntoPhaseReg(QFxp(x_bit, 0), phase_bit, gamma, gamma_bit)
     gamma_fixed_width_float = float_as_fixed_width_int(gamma, gamma_bit + 1)[1] / (2**gamma_bit)
     gamma_int = float_as_fixed_width_int(gamma_fixed_width_float, phase_bit + 1)[1]
     basis_map = {}

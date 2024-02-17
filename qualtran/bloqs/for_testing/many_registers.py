@@ -18,7 +18,7 @@ from typing import Dict
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, QAny, QBit, Register, Signature
 
 from .atom import TestAtom, TestTwoBitOp
 
@@ -35,7 +35,9 @@ class TestMultiRegister(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('xx', 1), Register('yy', 2, shape=(2, 2)), Register('zz', 3)])
+        return Signature(
+            [Register('xx', QBit()), Register('yy', QAny(2), shape=(2, 2)), Register('zz', QAny(3))]
+        )
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT', zz: 'SoquetT'

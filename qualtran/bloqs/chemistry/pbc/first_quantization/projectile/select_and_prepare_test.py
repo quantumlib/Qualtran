@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import numpy as np
+import pytest
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
@@ -24,6 +25,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepa
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('projectile')
 

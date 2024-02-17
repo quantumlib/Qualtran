@@ -13,17 +13,19 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
+import numpy as np
+from cirq._compat import cached_method
+from fxpmath import Fxp
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Side, Signature
+from qualtran import GateWithRegisters, QBit, QFxp, QUInt, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
-from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -49,16 +51,16 @@ class PhaseGradientUnitary(GateWithRegisters):
     The implementation simply decomposes into $n$ (controlled-) rotations, one on each qubit.
     """
     bitsize: int
-    exponent: int = 1
+    exponent: float = 1
     controlled: bool = False
     eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
         return (
-            Signature.build(ctrl=1, phase_grad=self.bitsize)
+            Signature.build_from_dtypes(ctrl=QBit(), phase_grad=QFxp(self.bitsize, self.bitsize))
             if self.controlled
-            else Signature.build(phase_grad=self.bitsize)
+            else Signature.build_from_dtypes(phase_grad=QFxp(self.bitsize, self.bitsize))
         )
 
     def decompose_from_registers(
@@ -105,34 +107,24 @@ class PhaseGradientState(GateWithRegisters):
     """
 
     bitsize: int
-    exponent: int = -1
-    adjoint: bool = False
+    exponent: float = -1
     eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
-        side = Side.LEFT if self.adjoint else Side.RIGHT
-        return Signature([Register('phase_grad', self.bitsize, side=side)])
+        return Signature(
+            [Register('phase_grad', QFxp(self.bitsize, self.bitsize), side=Side.RIGHT)]
+        )
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         # Assumes `phase_grad` is in big-endian representation.
         phase_grad = quregs['phase_grad']
-        ops = [OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)]
-        ops += [
-            PhaseGradientUnitary(self.bitsize, exponent=self.exponent).on_registers(
-                phase_grad=phase_grad
-            )
-        ]
-        yield cirq.inverse(ops) if self.adjoint else ops
-
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return PhaseGradientState(self.bitsize, self.exponent, not self.adjoint, self.eps)
-        raise NotImplementedError(f"Power is only defined for +1/-1. Found {self.power}.")
+        yield OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)
+        yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent).on_registers(
+            phase_grad=phase_grad
+        )
 
 
 @attrs.frozen
@@ -142,6 +134,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     $$
         U|x\rangle|\text{phase\_grad}\rangle = |x\rangle|\text{phase\_grad} + x\rangle
     $$
+
+    TODO(#654): Check whether phase_bitsize >= inp_bitsize needs to be enforced.
 
     Args:
         inp_bitsize: Size of input register.
@@ -158,12 +152,11 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     inp_bitsize: int
     phase_bitsize: int
 
-    def __attrs_post_init__(self):
-        assert self.phase_bitsize >= self.inp_bitsize
-
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build(x=self.inp_bitsize, phase_grad=self.phase_bitsize)
+        return Signature.build_from_dtypes(
+            x=QUInt(self.inp_bitsize), phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize)
+        )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.inp_bitsize, [2] * self.phase_bitsize
@@ -197,10 +190,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     The operation calls `AddIntoPhaseGrad` gate $(gamma_bitsize + 2) / 2$ times.
 
     Args:
-        inp_bitsize: Size of input register.
+        inp_dtype: Fixed point specification of the input register.
         phase_bitsize: Size of phase gradient register to which the scaled input should be added.
-        gamma: Floating point scaling factor in the range [0, 1].
-        gamma_bitsize: Number of bits of precisions to be used for `gamma`.
+        gamma: Floating point scaling factor.
+        gamma_bitsize: Number of bits of precisions to be used for fractional part of `gamma`.
 
     Registers:
         - x : Input THRU register storing input value x to be scaled and added to the phase
@@ -212,44 +205,82 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
     """
 
-    inp_bitsize: int
+    inp_dtype: QFxp
     phase_bitsize: int
     gamma: float
     gamma_bitsize: int
 
-    def __attrs_post_init__(self):
-        assert 0 <= self.gamma <= 1
-
     @cached_property
     def signature(self):
-        return Signature.build(x=self.inp_bitsize, phase_grad=self.phase_bitsize)
+        return Signature.build_from_dtypes(x=self.inp_dtype, phase_grad=self.phase_dtype)
 
     def registers(self):
-        return [2] * self.inp_bitsize, [2] * self.phase_bitsize
+        return [2] * self.inp_dtype.num_qubits, [2] * self.phase_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("not needed.")
 
     @cached_property
-    def gamma_int_numerator(self) -> int:
-        _, gamma_fixed_width_int = float_as_fixed_width_int(self.gamma, self.gamma_bitsize + 1)
-        gamma_fixed_width_float = gamma_fixed_width_int / 2**self.gamma_bitsize
-        _, gamma_numerator = float_as_fixed_width_int(
-            gamma_fixed_width_float, self.phase_bitsize + 1
-        )
-        return gamma_numerator
+    def phase_dtype(self) -> QFxp:
+        return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
+
+    @cached_property
+    def gamma_dtype(self) -> QFxp:
+        n_int = Fxp(abs(self.gamma), signed=False).n_int
+        return QFxp(n_int + self.gamma_bitsize, self.gamma_bitsize, signed=False)
+
+    @cached_method
+    def scaled_val(self, x: int) -> int:
+        """Computes `x*self.gamma` using fixed point arithmetic."""
+        sign = np.sign(self.gamma)
+        # `x` is an integer because we currently represent each bitstring as an integer during simulations.
+        # However, `x` should be interpreted as per the fixed point specification given in self.inp_dtype.
+        # If `self.inp_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
+        # 2**n_frac (in other words, right shifted by n_frac)
+        x_fxp = Fxp(x / 2**self.inp_dtype.num_frac, dtype=self.inp_dtype.fxp_dtype_str)
+        # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
+        # of bits for integer and fractional part.
+        gamma_fxp = Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
+        # Compute the result = x_fxp * gamma_fxp
+        result = x_fxp * gamma_fxp
+        # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
+        # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
+        # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
+        result -= np.floor(result)
+        # Now that `result` is a number between [0, 1), represent the fraction using `self.phase_bitsize`
+        # bits.
+        result = result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str))
+        # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
+        # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
+        # can be ignored during the fixed point arithmetic analysis.
+        result <<= self.phase_dtype.bitsize
+        return int(result) * int(sign)
 
     def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
-        return x, phase_grad + self.gamma_int_numerator * x
+        return x, phase_grad + self.scaled_val(x)
 
     def on_classical_vals(self, x, phase_grad) -> Dict[str, 'ClassicalValT']:
-        phase_grad_out = (phase_grad + self.gamma_int_numerator * x) % 2**self.phase_bitsize
+        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_additions = (self.gamma_bitsize + 2) // 2
-        return {(AddIntoPhaseGrad(self.inp_bitsize, self.phase_bitsize), num_additions)}
+        num_additions = (self.gamma_dtype.bitsize + 2) // 2
+        return {(AddIntoPhaseGrad(self.inp_dtype.bitsize, self.phase_bitsize), num_additions)}
 
     def _t_complexity_(self):
         ((add_into_phase, n),) = self.bloq_counts().items()
         return n * add_into_phase.t_complexity()
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )

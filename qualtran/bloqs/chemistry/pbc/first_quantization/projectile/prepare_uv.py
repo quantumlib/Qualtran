@@ -18,7 +18,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, Register, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, QAny, QBit, Register, Signature, SoquetT
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
 from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
     PrepareNuStateWithProj,
@@ -68,11 +68,11 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         n_atom = (self.num_atoms - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=self.num_bits_n),
-                Register("nu", bitsize=self.num_bits_n + 1, shape=(3,)),
-                Register("m", bitsize=n_m),
-                Register("l", bitsize=n_atom),
-                Register("flag_nu", bitsize=1),
+                Register("mu", QAny(bitsize=self.num_bits_n)),
+                Register("nu", QAny(bitsize=self.num_bits_n + 1), shape=(3,)),
+                Register("m", QAny(bitsize=n_m)),
+                Register("l", QAny(bitsize=n_atom)),
+                Register("flag_nu", QBit()),
             ]
         )
 

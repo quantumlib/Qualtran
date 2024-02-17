@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import List, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature, Soquet
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
@@ -142,10 +142,11 @@ class SelectSwapQROM(GateWithRegisters):
         self._data = tuple(tuple(d) for d in data)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return (
-            SelectionRegister(
-                'selection', self.selection_q + self.selection_r, self._iteration_length
+            Register(
+                'selection',
+                BoundedQUInt(self.selection_q + self.selection_r, self._iteration_length),
             ),
         )
 
@@ -153,7 +154,7 @@ class SelectSwapQROM(GateWithRegisters):
     def target_registers(self) -> Tuple[Register, ...]:
         # See https://github.com/quantumlib/Qualtran/issues/556 for unusual placement of underscore.
         return tuple(
-            Register(f'target{sequence_id}_', self._target_bitsizes[sequence_id])
+            Register(f'target{sequence_id}_', QAny(self._target_bitsizes[sequence_id]))
             for sequence_id in range(self._num_sequences)
         )
 

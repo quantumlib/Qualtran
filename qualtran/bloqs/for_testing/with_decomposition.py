@@ -17,7 +17,7 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, Signature, Soquet
+from qualtran import Bloq, BloqBuilder, Signature, Soquet
 from qualtran.bloqs.for_testing.atom import TestAtom
 
 
@@ -49,3 +49,20 @@ class TestParallelCombo(Bloq):
             reg[i] = bb.add(TestAtom(), q=reg[i])
 
         return {'reg': bb.join(reg)}
+
+
+@frozen
+class TestIndependentParallelCombo(Bloq):
+    """Made up of three independent alloc/bloq/free lines."""
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build()
+
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'Soquet']:
+        for _ in range(3):
+            reg = bb.allocate(1)
+            reg = bb.add(TestAtom(), q=reg)
+            bb.free(reg)
+
+        return {}

@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Any, Dict, List, Sequence, Tuple
 
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
 from qualtran import Signature

@@ -285,5 +285,6 @@ def test_select_pauli_lcu_consistent_protocols_and_controlled():
         _ = gate.controlled(num_controls=2)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('select_pauli_lcu')

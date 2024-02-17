@@ -16,6 +16,10 @@ import numpy as np
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import MinusState, PlusEffect, PlusState, XGate
+from qualtran.simulation.classical_sim import (
+    format_classical_truth_table,
+    get_classical_truth_table,
+)
 
 
 def _make_plus_state():
@@ -79,3 +83,15 @@ def test_to_cirq():
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)
     np.testing.assert_allclose(vec1, vec2)
+
+
+def test_x_truth_table():
+    classical_truth_table = format_classical_truth_table(*get_classical_truth_table(XGate()))
+    assert (
+        classical_truth_table
+        == """\
+q  |  q
+--------
+0 -> 1
+1 -> 0"""
+    )

@@ -391,7 +391,11 @@ def render_notebook(nbspec: NotebookSpec) -> None:
         if _K_CQ_AUTOGEN in cell.metadata:
             cqid: str = cell.metadata[_K_CQ_AUTOGEN]
             print(f"[{nbspec.path_stem}] Replacing {cqid} cell.")
-            new_cell = cells.get_cell_from_cqid(cqid)
+            try:
+                new_cell = cells.get_cell_from_cqid(cqid)
+            except KeyError:
+                print(f"[{nbspec.path_stem}] WARNING vestigial cell: {cqid}.")
+                continue
             new_cell.id = cell.id  # keep id from existing cell
             nb.cells[i] = new_cell
             cqids_to_render.remove(cqid)

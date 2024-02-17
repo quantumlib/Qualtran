@@ -13,11 +13,10 @@
 #  limitations under the License.
 
 import abc
+from functools import cached_property
 from typing import Tuple
 
-from cirq._compat import cached_property
-
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import GateWithRegisters, Register, Signature
 
 
 class SelectOracle(GateWithRegisters):
@@ -45,7 +44,7 @@ class SelectOracle(GateWithRegisters):
 
     @property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         ...
 
     @property
@@ -77,7 +76,7 @@ class PrepareOracle(GateWithRegisters):
 
     @property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         ...
 
     @cached_property

@@ -39,6 +39,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
+from qualtran._infra.data_types import QAny, QBit
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
@@ -199,7 +200,7 @@ def test_wrong_soquet():
     bb, x, y = _get_bb()
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*target.*'):
-        bad_target_arg = Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', 2))
+        bad_target_arg = Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2)))
         bb.add(TestTwoBitOp(), ctrl=x, target=bad_target_arg)
 
 
@@ -244,7 +245,7 @@ def test_finalize_wrong_soquet():
     assert y != y2
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet for .*y.*'):
-        bb.finalize(x=x2, y=Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', 2)))
+        bb.finalize(x=x2, y=Soquet(BloqInstance(TestTwoBitOp(), i=12), Register('target', QAny(2))))
 
 
 def test_finalize_double_use_1():
@@ -277,7 +278,7 @@ def test_finalize_strict_too_many_args():
 
     bb.add_register_allowed = False
     with pytest.raises(BloqError, match=r'Finalizing does not accept Soquets.*z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', 1)))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', QBit())))
 
 
 def test_finalize_bad_args():
@@ -285,7 +286,7 @@ def test_finalize_bad_args():
     x2, y2 = bb.add(TestTwoBitOp(), ctrl=x, target=y)
 
     with pytest.raises(BloqError, match=r'.*is not an available Soquet.*RightDangle\.z.*'):
-        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', 1)))
+        bb.finalize(x=x2, y=y2, z=Soquet(RightDangle, Register('asdf', QBit())))
 
 
 def test_finalize_alloc():
@@ -315,7 +316,7 @@ class TestMultiCNOT(Bloq):
     # A minimal test-bloq with a complicated `target` register.
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('control', 1), Register('target', 1, shape=(2, 3))])
+        return Signature([Register('control', QBit()), Register('target', QBit(), shape=(2, 3))])
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', control: 'Soquet', target: NDArray['Soquet']
@@ -457,7 +458,7 @@ def test_final_soqs():
 
 def test_add_from_left_bloq():
     bb = BloqBuilder()
-    x = bb.add_register(Register('x', 8, side=Side.LEFT))
+    x = bb.add_register(Register('x', QAny(8), side=Side.LEFT))
 
     # The following exercises the special case of calling `final_soqs`
     # for a gate with left registers only
@@ -502,5 +503,6 @@ def test_t_complexity():
     assert TestParallelCombo().t_complexity().t == 3 * 100
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('composite_bloq')

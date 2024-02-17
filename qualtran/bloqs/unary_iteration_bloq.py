@@ -14,14 +14,14 @@
 
 import abc
 from collections import defaultdict
+from functools import cached_property
 from typing import Callable, Dict, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs import and_bloq
 from qualtran.bloqs.basic_gates import CNOT, XGate
@@ -414,7 +414,7 @@ class UnaryIterationGate(GateWithRegisters):
 
     @cached_property
     @abc.abstractmethod
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         pass
 
     @cached_property
@@ -508,7 +508,7 @@ class UnaryIterationGate(GateWithRegisters):
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         if total_bits(self.selection_registers) == 0 or self._break_early(
-            (), 0, self.selection_registers[0].iteration_length
+            (), 0, self.selection_registers[0].dtype.iteration_length
         ):
             return self.decompose_zero_selection(context=context, **quregs)
 
@@ -555,7 +555,7 @@ class UnaryIterationGate(GateWithRegisters):
             selection_index_prefix = tuple(selection_reg_name_to_val.values())
             ith_for_loop = unary_iteration(
                 l_iter=0,
-                r_iter=self.selection_registers[nested_depth].iteration_length,
+                r_iter=self.selection_registers[nested_depth].dtype.iteration_length,
                 flanking_ops=ops,
                 controls=controls,
                 selection=[*quregs[self.selection_registers[nested_depth].name]],
@@ -591,7 +591,7 @@ class UnaryIterationGate(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if total_bits(self.selection_registers) == 0 or self._break_early(
-            (), 0, self.selection_registers[0].iteration_length
+            (), 0, self.selection_registers[0].dtype.iteration_length
         ):
             return self.decompose_bloq().build_call_graph(ssa)
         num_loops = len(self.selection_registers)
@@ -608,7 +608,7 @@ class UnaryIterationGate(GateWithRegisters):
             selection_index_prefix = tuple(selection_reg_name_to_val.values())
             ith_for_loop = _unary_iteration_callgraph(
                 l_iter=0,
-                r_iter=self.selection_registers[nested_depth].iteration_length,
+                r_iter=self.selection_registers[nested_depth].dtype.iteration_length,
                 selection_bitsize=self.selection_registers[nested_depth].bitsize,
                 control_bitsize=num_controls,
                 break_early=lambda l, r: self._break_early(selection_index_prefix, l, r),

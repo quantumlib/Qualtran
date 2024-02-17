@@ -35,6 +35,7 @@ from qualtran.bloqs.basic_gates.swap import (
     _cswap_small,
     _cswap_symb,
     _swap_matrix,
+    _swap_small,
 )
 from qualtran.resource_counting.generalizers import ignore_split_join
 
@@ -196,6 +197,10 @@ def test_cswap_symbolic():
     assert counts[TwoBitCSwap()] == n
     with pytest.raises(DecomposeTypeError):
         cswap.decompose_bloq()
+
+
+def test_swap_small(bloq_autotester):
+    bloq_autotester(_swap_small)
 
 
 def test_cswap_small(bloq_autotester):
