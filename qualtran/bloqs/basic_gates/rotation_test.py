@@ -44,7 +44,7 @@ def test_rotation_gates():
     tcount = 52
     assert Rx(angle).t_complexity().t_incl_rotations() == tcount
     assert Ry(angle).t_complexity().t_incl_rotations() == tcount
-    assert Rz(angle).t_complexity().t_incl_rotations() == tcount
+    assert Rz(angle).t_complexity().t_incl_rotations() == 1
 
 
 def test_as_cirq_op():

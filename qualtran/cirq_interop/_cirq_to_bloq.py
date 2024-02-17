@@ -60,7 +60,7 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-class CirqGateAsBloqBase(GateWithRegisters):
+class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     """A Bloq wrapper around a `cirq.Gate`"""
 
     @property

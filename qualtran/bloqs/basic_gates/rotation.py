@@ -31,13 +31,8 @@ class _HasEps(Protocol):
     eps: float
 
 
-class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
-    def _t_complexity_(self: _HasEps):
-        return TComplexity(rotations=1)
-
-
 @frozen
-class ZPowGate(_RotationBloq):
+class ZPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
 
     The unitary matrix of `ZPowGate(exponent=t, global_shift=s)` is:
@@ -109,7 +104,7 @@ class CZPowGate(CirqGateAsBloqBase):
 
 
 @frozen
-class XPowGate(_RotationBloq):
+class XPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the X axis of the Bloch sphere.
 
     The unitary matrix of `XPowGate(exponent=t, global_shift=s)` is:
@@ -158,7 +153,7 @@ class XPowGate(_RotationBloq):
 
 
 @frozen
-class YPowGate(_RotationBloq):
+class YPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
 
     The unitary matrix of `YPowGate(exponent=t)` is:
@@ -207,7 +202,7 @@ class YPowGate(_RotationBloq):
 
 
 @frozen
-class Rz(_RotationBloq):
+class Rz(CirqGateAsBloqBase):
     """Single-qubit Rz gate.
 
     Args:
@@ -233,7 +228,7 @@ class Rz(_RotationBloq):
 
 
 @frozen
-class Rx(_RotationBloq):
+class Rx(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
@@ -243,7 +238,7 @@ class Rx(_RotationBloq):
 
 
 @frozen
-class Ry(_RotationBloq):
+class Ry(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
