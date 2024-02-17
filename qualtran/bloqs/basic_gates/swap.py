@@ -278,7 +278,7 @@ class CSwap(GateWithRegisters):
         raise ValueError("Bad control value for CSwap classical simulation.")
 
     def short_name(self) -> str:
-        return r'$x\leftrightarrow y$'
+        return r'x↔y'
 
     @classmethod
     def make_on(

@@ -21,7 +21,19 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, QAny, QBit, QUInt, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    QAny,
+    QBit,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
@@ -521,6 +533,19 @@ class GreaterThan(Bloq):
         return {(TGate(), t_complexity.t)}
 
 
+@bloq_example
+def _greater_than() -> GreaterThan:
+    greater_than = GreaterThan(a_bitsize=4, b_bitsize=4)
+    return greater_than
+
+
+_GREATER_THAN_DOC = BloqDocSpec(
+    bloq_cls=GreaterThan,
+    import_line='from qualtran.bloqs.arithmetic.comparison import GreaterThan',
+    examples=[_greater_than],
+)
+
+
 @frozen
 class LinearDepthGreaterThan(Bloq):
     r"""Compare two integers.
@@ -736,6 +761,19 @@ class GreaterThanConstant(Bloq):
         return {(TGate(), t_complexity.t)}
 
 
+@bloq_example
+def _gt_k() -> GreaterThanConstant:
+    gt_k = GreaterThanConstant(bitsize=4, val=13)
+    return gt_k
+
+
+_GREATER_THAN_K_DOC = BloqDocSpec(
+    bloq_cls=GreaterThanConstant,
+    import_line='from qualtran.bloqs.arithmetic.comparison import GreaterThanConstant',
+    examples=[_gt_k],
+)
+
+
 @frozen
 class EqualsAConstant(Bloq):
     r"""Implements $U_a|x\rangle = U_a|x\rangle|z\rangle = |x\rangle |z \land (x = a)\rangle$
@@ -775,3 +813,22 @@ class EqualsAConstant(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return {(TGate(), 4 * (self.bitsize - 1))}
+
+
+def _make_equals_a_constant():
+    from qualtran.bloqs.arithmetic import EqualsAConstant
+
+    return EqualsAConstant(bitsize=4, val=13)
+
+
+@bloq_example
+def _eq_k() -> EqualsAConstant:
+    eq_k = EqualsAConstant(bitsize=4, val=13)
+    return eq_k
+
+
+_EQUALS_K_DOC = BloqDocSpec(
+    bloq_cls=EqualsAConstant,
+    import_line='from qualtran.bloqs.arithmetic.comparison import EqualsAConstant',
+    examples=[_eq_k],
+)

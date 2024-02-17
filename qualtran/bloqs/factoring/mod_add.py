@@ -18,9 +18,10 @@ from typing import Dict, Set, Union
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QUInt, Register, Signature
+from qualtran import Bloq, QBit, QUInt, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -74,6 +75,15 @@ class CtrlScaleModAdd(Bloq):
 
     def short_name(self) -> str:
         return f'y += x*{self.k} % {self.mod}'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'ctrl':
+            return Circle()
+        if soq.reg.name == 'x':
+            return TextBox('x')
+        if soq.reg.name == 'y':
+            return TextBox(f'y += x*{self.k}')
+        raise ValueError(f"Unknown soquet {soq}")
 
 
 @frozen

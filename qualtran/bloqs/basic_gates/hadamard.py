@@ -18,8 +18,18 @@ from typing import Any, Dict, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, CompositeBloq, DecomposeTypeError, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    CompositeBloq,
+    DecomposeTypeError,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
@@ -71,9 +81,6 @@ class Hadamard(Bloq):
             )
         )
 
-    def short_name(self) -> 'str':
-        return 'H'
-
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
@@ -85,8 +92,21 @@ class Hadamard(Bloq):
     def t_complexity(self):
         return TComplexity(clifford=1)
 
+    def short_name(self) -> 'str':
+        return 'H'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        return TextBox('H')
+
 
 @bloq_example
 def _hadamard() -> Hadamard:
     hadamard = Hadamard()
     return hadamard
+
+
+_HADAMARD_DOC = BloqDocSpec(
+    bloq_cls=Hadamard,
+    import_line='from qualtran.bloqs.basic_gates import Hadamard',
+    examples=[_hadamard],
+)

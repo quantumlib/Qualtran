@@ -35,24 +35,6 @@ from qualtran.cirq_interop.testing import (
 )
 
 
-def _make_greater_than():
-    from qualtran.bloqs.arithmetic import GreaterThan
-
-    return GreaterThan(a_bitsize=4, b_bitsize=4)
-
-
-def _make_greater_than_constant():
-    from qualtran.bloqs.arithmetic import GreaterThanConstant
-
-    return GreaterThanConstant(bitsize=4, val=13)
-
-
-def _make_equals_a_constant():
-    from qualtran.bloqs.arithmetic import EqualsAConstant
-
-    return EqualsAConstant(bitsize=4, val=13)
-
-
 def identity_map(n: int):
     """Returns a dict of size `2**n` mapping each integer in range [0, 2**n) to itself."""
     return {i: i for i in range(2**n)}
