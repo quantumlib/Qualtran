@@ -24,6 +24,7 @@ from qualtran.bloqs.rotations.phase_gradient import (
 )
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
+from fxpmath import Fxp
 
 
 @pytest.mark.parametrize('n', [6, 7, 8])
@@ -72,14 +73,17 @@ def test_phase_gradient_gate(n: int, exponent, controlled):
     assert np.allclose(cirq.unitary(bloq), cirq.unitary(cirq_gate))
 
 
-@pytest.mark.slow
 def test_add_into_phase_grad():
+    from qualtran.bloqs.rotations.phase_gradient import _fxp
+
     x_bit, phase_bit = 4, 7
     bloq = AddIntoPhaseGrad(x_bit, phase_bit)
     basis_map = {}
     for x in range(2**x_bit):
         for phase_grad in range(2**phase_bit):
-            phase_grad_out = (phase_grad + x) % 2**phase_bit
+            phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
+            x_fxp = _fxp(x / 2**x_bit, x_bit).like(phase_fxp)
+            phase_grad_out = int((phase_fxp + x_fxp).astype(float) * 2**phase_bit)
             # Test Bloq style classical simulation.
             assert bloq.call_classically(x=x, phase_grad=phase_grad) == (x, phase_grad_out)
             # Prepare basis states mapping for cirq-style simulation.

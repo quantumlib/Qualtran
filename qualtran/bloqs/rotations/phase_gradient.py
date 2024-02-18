@@ -177,18 +177,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     def scaled_val(self, x: int) -> int:
         """Computes `phase_grad + x` using fixed point arithmetic."""
         x_width = self.x_bitsize + self.right_shift
-        x_fxp = Fxp(x / 2**x_width, n_word=x_width, n_frac=x_width, signed=False)
-        # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
-        # part of `x_fxp`. This is okay because the adding `x.y` to the phase gradient register will impart
-        # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
-        result = x_fxp - np.floor(x_fxp)
-        # Now that `x_fxp` is a number between [0, 1), represent the fraction using `self.phase_bitsize`
-        # bits.
-        result = result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str))
-        # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
-        # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
-        # can be ignored during the fixed point arithmetic analysis.
-        return int(np.floor(result.astype(float) * 2**self.phase_bitsize))
+        x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
+        return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
     def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
@@ -207,13 +197,15 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         return n * toffoli.t_complexity()
 
 
-def _fxp(x, out):
+def _fxp(x: float, out: int):
+    assert 0 <= x < 1
     return Fxp(
-        x - np.floor(x),
+        x,
         dtype=f'fxp-u{out}/{out}',
         op_sizing='same',
         const_op_sizing='same',
         shifting='trunc',
+        overflow='wrap',
     )
 
 
@@ -222,16 +214,13 @@ def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
 
     x_bitsize = x_fxp.n_word
     res = _fxp(0, out)
-    x_val = x_fxp.astype(float)
     for i, bit in enumerate(gamma_fxp.bin()):
         if bit == '0':
             continue
         shift = gamma_fxp.n_int - i - 1
         if -out <= shift < x_bitsize:
             # Left/Right shift by `shift` bits.
-            add_val = x_val * 2**shift
-            add_val -= np.floor(add_val)
-            res = _fxp(res.astype(float) + add_val, out)
+            res += x_fxp << shift if shift > 0 else x_fxp >> abs(shift)
     return res
 
 
