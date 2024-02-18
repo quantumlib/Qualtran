@@ -379,8 +379,31 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return self.gqsp.signature
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        # TODO call prepare oracle
-        # soqs |= bb.add_d(self.WalkOperator.prepare, selection=soqs['selection'])
+        prepare = self.WalkOperator.prepare
+        state_prep_ancilla = {
+            reg.name: bb.allocate(reg.total_bits()) for reg in prepare.junk_registers
+        }
+
+        # PREPARE
+        prepare_soqs = bb.add_d(
+            self.WalkOperator.prepare, selection=soqs['selection'], **state_prep_ancilla
+        )
+        soqs['selection'] = prepare_soqs['selection']
+        del prepare_soqs['selection']
+        state_prep_ancilla = prepare_soqs
+
+        # GQSP
         soqs = bb.add_d(self.gqsp, **soqs)
-        # soqs |= bb.add_d(self.WalkOperator.prepare.adjoint(), selection=soqs['selection'])
+
+        # PREPARE†
+        prepare_soqs = bb.add_d(
+            self.WalkOperator.prepare.adjoint(), selection=soqs['selection'], **state_prep_ancilla
+        )
+        soqs['selection'] = prepare_soqs['selection']
+        del prepare_soqs['selection']
+        state_prep_ancilla = prepare_soqs
+
+        for soq in state_prep_ancilla.values():
+            bb.free(soq)
+
         return soqs
