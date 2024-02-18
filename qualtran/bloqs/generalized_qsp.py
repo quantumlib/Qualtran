@@ -21,7 +21,7 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, QBit, Register, Signature, CtrlSpec
+from qualtran import Bloq, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Ry, ZPowGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 
