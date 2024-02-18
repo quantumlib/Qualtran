@@ -100,6 +100,7 @@ def test_hamming_weight_phasing_using_phase_via_cost_function_quick():
     np.testing.assert_allclose(expected_final_state, hw_final_state, atol=eps)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('normalize_cost_function', [True, False])
 @pytest.mark.parametrize('use_phase_gradient', [True, False])
 @pytest.mark.parametrize('exponent, eps', [(1 / 10, 5e-4), (1.20345, 5e-4), (-1.1934341, 5e-4)])

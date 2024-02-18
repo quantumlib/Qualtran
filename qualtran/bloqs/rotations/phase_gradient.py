@@ -22,7 +22,7 @@ from cirq._compat import cached_method
 from fxpmath import Fxp
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, QFxp, QUInt, Register, Side, Signature
+from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
