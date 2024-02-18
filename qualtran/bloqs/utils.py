@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import numbers
 from typing import Union
 
 import numpy as np
@@ -28,12 +27,12 @@ document(SymbolicFloat, """A floating point value or a sympy expression.""")
 def log2(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log2
 
-    if isinstance(x, numbers.Number):
+    if not isinstance(x, sympy.Basic):
         return np.log2(x)
     return log2(x)
 
 
 def ceil(x: SymbolicFloat) -> SymbolicInt:
-    if isinstance(x, numbers.Number):
+    if not isinstance(x, sympy.Basic):
         return int(np.ceil(x))
     return sympy.ceiling(x)

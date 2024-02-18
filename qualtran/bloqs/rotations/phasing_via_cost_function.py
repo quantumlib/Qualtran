@@ -15,6 +15,7 @@ from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
+import numpy as np
 import sympy
 
 from qualtran import Bloq, BloqBuilder, GateWithRegisters, QFxp, Register, Signature
@@ -162,7 +163,8 @@ class PhaseOraclePhaseGradient(GateWithRegisters):
     @cached_property
     def b_grad(self) -> int:
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
-        return utils.ceil(utils.log2((self.gamma_bitsize + 2) * sympy.pi / self.eps))
+        pi = sympy.pi if isinstance(self.eps, sympy.Basic) else np.pi
+        return utils.ceil(utils.log2((self.gamma_bitsize + 2) * pi / self.eps))
 
     @cached_property
     def gamma_bitsize(self) -> int:

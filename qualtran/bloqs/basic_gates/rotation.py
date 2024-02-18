@@ -18,7 +18,6 @@ from typing import Protocol, Set, TYPE_CHECKING
 
 import cirq
 import numpy as np
-import sympy
 from attrs import frozen
 
 from qualtran import bloq_example
