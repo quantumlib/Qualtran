@@ -21,7 +21,7 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, QBit, Register, Signature
+from qualtran import Bloq, GateWithRegisters, QBit, Register, Signature, CtrlSpec
 from qualtran.bloqs.basic_gates import Ry, ZPowGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 
@@ -330,14 +330,13 @@ class GeneralizedQSP(GateWithRegisters):
 
         yield self.signal_rotations[0].on(signal_qubit)
         for signal_rotation in self.signal_rotations[1:]:
-            # TODO debug controlled adjoint bloq serialization
-            # if num_inverse_applications > 0:
-            #     # apply C-U^\dagger
-            #     yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
-            #     num_inverse_applications -= 1
-            # else:
-            # apply C[0]-U
-            yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
+            if num_inverse_applications > 0:
+                # apply C-U^\dagger
+                yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
+                num_inverse_applications -= 1
+            else:
+                # apply C[0]-U
+                yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
             yield signal_rotation.on(signal_qubit)
 
         for _ in range(num_inverse_applications):
@@ -347,9 +346,12 @@ class GeneralizedQSP(GateWithRegisters):
         return hash((self.U, *self.signal_rotations, self.negative_power))
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(self.U, max(len(self.P), self.negative_power))} | {
-            (rotation, 1) for rotation in self.signal_rotations
-        }
+        degree = len(self.P)
+        return {
+            (self.U.adjoint().controlled(), min(degree, self.negative_power)),
+            (self.U.controlled(control_values=[0]), max(0, degree - self.negative_power)),
+            (self.U.adjoint(), max(0, self.negative_power - degree)),
+        } | {(rotation, 1) for rotation in self.signal_rotations}
 
 
 @frozen
