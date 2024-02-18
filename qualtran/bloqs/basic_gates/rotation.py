@@ -18,9 +18,11 @@ from typing import Protocol, Set, TYPE_CHECKING
 
 import cirq
 import numpy as np
+import sympy
 from attrs import frozen
 
 from qualtran import bloq_example
+from qualtran.bloqs import utils
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -42,7 +44,7 @@ class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
         # a bound of 3 log(1/eps).
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
+        num_t = utils.ceil(1.149 * utils.log2(1.0 / self.eps) + 9.2)
         return TComplexity(t=num_t)
 
     def build_call_graph(self: _HasEps, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -115,7 +117,19 @@ class CZPowGate(CirqGateAsBloqBase):
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(rotations=1)
+        from qualtran.bloqs.and_bloq import And
+
+        return (
+            And().t_complexity()
+            + And().adjoint().t_complexity()
+            + ZPowGate(exponent=self.exponent, eps=self.eps).t_complexity()
+        )
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        from qualtran.bloqs.and_bloq import And
+
+        zpow = ZPowGate(exponent=self.exponent, global_shift=self.global_shift, eps=self.eps)
+        return {(And(), 1), (zpow, 1), (And().adjoint(), 1)}
 
     def __pow__(self, power):
         g = self.cirq_gate**power

@@ -12,13 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING, Union
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
-import numpy as np
 import sympy
 
 from qualtran import Bloq, BloqBuilder, GateWithRegisters, QFxp, Register, Signature
+from qualtran.bloqs import utils
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
@@ -128,6 +128,10 @@ class PhaseOracleZPow(GateWithRegisters):
             )
         return {self.cost_reg.name: bb.join(out)}
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        zpow = ZPowGate(exponent=self.gamma, eps=self.eps / self.cost_dtype.bitsize)
+        return {(zpow, self.cost_dtype.bitsize)}
+
 
 @attrs.frozen
 class PhaseOraclePhaseGradient(GateWithRegisters):
@@ -153,12 +157,12 @@ class PhaseOraclePhaseGradient(GateWithRegisters):
 
     @cached_property
     def b_phase(self) -> int:
-        return int(np.ceil(np.log2(1 / self.eps)))
+        return utils.ceil(utils.log2(1 / self.eps))
 
     @cached_property
     def b_grad(self) -> int:
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
-        return int(np.ceil(np.log2((self.gamma_bitsize + 2) * np.pi / self.eps)))
+        return utils.ceil(utils.log2((self.gamma_bitsize + 2) * sympy.pi / self.eps))
 
     @cached_property
     def gamma_bitsize(self) -> int:
@@ -175,3 +179,9 @@ class PhaseOraclePhaseGradient(GateWithRegisters):
             add_scaled_val, x=soqs[self.cost_reg.name], phase_grad=soqs['phase_grad']
         )
         return {self.cost_reg.name: out, 'phase_grad': phase_grad}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        add_scaled_bloq = AddScaledValIntoPhaseReg(
+            self.cost_dtype, self.b_grad, self.gamma, self.gamma_bitsize
+        )
+        return {(add_scaled_bloq, 1)}

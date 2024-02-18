@@ -23,6 +23,7 @@ from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
+from qualtran.bloqs import utils
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.bloqs.on_each import OnEach
@@ -82,6 +83,10 @@ class PhaseGradientUnitary(GateWithRegisters):
             return self
         return PhaseGradientUnitary(self.bitsize, self.exponent * power, self.controlled, self.eps)
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        rot_bloq = CZPowGate if self.controlled else ZPowGate
+        return {(rot_bloq(exponent=1, eps=self.eps / self.bitsize), self.bitsize)}
+
 
 @attrs.frozen
 class PhaseGradientState(GateWithRegisters):
@@ -121,10 +126,17 @@ class PhaseGradientState(GateWithRegisters):
     ) -> cirq.OP_TREE:
         # Assumes `phase_grad` is in big-endian representation.
         phase_grad = quregs['phase_grad']
+
         yield OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)
-        yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent).on_registers(
+        yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent, eps=self.eps).on_registers(
             phase_grad=phase_grad
         )
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (Hadamard(), self.bitsize),
+            (PhaseGradientUnitary(self.bitsize, exponent=self.exponent, eps=self.eps), 1),
+        }
 
 
 @attrs.frozen
@@ -337,7 +349,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_additions = (self.gamma_dtype.bitsize + 2) // 2
+        num_additions = (self.gamma_bitsize + utils.ceil(utils.log2(self.gamma))) // 2
         return {(AddIntoPhaseGrad(self.x_bitsize, self.phase_bitsize), num_additions)}
 
     def _t_complexity_(self):
