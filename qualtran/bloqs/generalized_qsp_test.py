@@ -128,6 +128,9 @@ class RandomGate(GateWithRegisters):
     def _unitary_(self):
         return self.matrix
 
+    def adjoint(self) -> GateWithRegisters:
+        return RandomGate(self.bitsize, self.matrix.conj().T)
+
 
 def evaluate_polynomial_of_matrix(
     P: Sequence[complex], U: NDArray, *, negative_power: int = 0
