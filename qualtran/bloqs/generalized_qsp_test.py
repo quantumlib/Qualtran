@@ -129,10 +129,12 @@ class RandomGate(GateWithRegisters):
         return self.matrix
 
 
-def evaluate_polynomial_of_matrix(P: Sequence[complex], U: NDArray) -> NDArray:
+def evaluate_polynomial_of_matrix(
+    P: Sequence[complex], U: NDArray, *, negative_power: int = 0
+) -> NDArray:
     assert U.ndim == 2 and U.shape[0] == U.shape[1]
 
-    pow_U = np.identity(U.shape[0], dtype=U.dtype)
+    pow_U = np.linalg.matrix_power(U.conjugate().T, negative_power)
     result = np.zeros(U.shape, dtype=U.dtype)
 
     for c in P:
@@ -148,14 +150,18 @@ def assert_matrices_almost_equal(A: NDArray, B: NDArray):
 
 
 def verify_generalized_qsp(
-    U: GateWithRegisters, P: Sequence[complex], Q: Optional[Sequence[complex]] = None
+    U: GateWithRegisters,
+    P: Sequence[complex],
+    Q: Optional[Sequence[complex]] = None,
+    *,
+    negative_power: int = 0,
 ):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
     if Q is None:
-        gqsp_U = GeneralizedQSP.from_qsp_polynomial(U, P)
+        gqsp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
     else:
-        gqsp_U = GeneralizedQSP(U, P, Q)
+        gqsp_U = GeneralizedQSP(U, P, Q, negative_power=negative_power)
     result_unitary = cirq.unitary(gqsp_U)
 
     expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)
@@ -182,13 +188,16 @@ def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree
 @pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 120])
-def test_generalized_qsp_with_complex_poly_on_random_unitaries(bitsize: int, degree: int):
+@pytest.mark.parametrize("negative_power", [0, 1, 2])
+def test_generalized_qsp_with_complex_poly_on_random_unitaries(
+    bitsize: int, degree: int, negative_power: int
+):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
         U = RandomGate.create(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state)
-        verify_generalized_qsp(U, P)
+        verify_generalized_qsp(U, P, negative_power=negative_power)
 
 
 @define(slots=False)
