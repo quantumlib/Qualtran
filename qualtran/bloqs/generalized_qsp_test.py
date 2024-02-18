@@ -137,7 +137,7 @@ def evaluate_polynomial_of_matrix(
 ) -> NDArray:
     assert U.ndim == 2 and U.shape[0] == U.shape[1]
 
-    pow_U = np.linalg.matrix_power(U.conjugate().T, negative_power)
+    pow_U = np.linalg.matrix_power(U.conj().T, negative_power)
     result = np.zeros(U.shape, dtype=U.dtype)
 
     for c in P:
@@ -167,11 +167,15 @@ def verify_generalized_qsp(
         gqsp_U = GeneralizedQSP(U, P, Q, negative_power=negative_power)
     result_unitary = cirq.unitary(gqsp_U)
 
-    expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)
+    expected_top_left = evaluate_polynomial_of_matrix(
+        P, input_unitary, negative_power=negative_power
+    )
     actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left)
 
-    expected_bottom_left = evaluate_polynomial_of_matrix(gqsp_U.Q, input_unitary)
+    expected_bottom_left = evaluate_polynomial_of_matrix(
+        gqsp_U.Q, input_unitary, negative_power=negative_power
+    )
     actual_bottom_left = result_unitary[N:, :N]
     assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left)
 
