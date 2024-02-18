@@ -137,6 +137,10 @@ class PhaseOraclePhaseGradient(GateWithRegisters):
     gamma: float = 1.0
     eps: Union[float, sympy.Expr] = 1e-9
 
+    def __attrs_post_init__(self):
+        dtype = self.cost_reg.dtype
+        assert isinstance(dtype, QFxp) and dtype.bitsize == dtype.num_frac
+
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([self.cost_reg, Register('phase_grad', QFxp(self.b_grad, self.b_grad))])
@@ -154,30 +158,20 @@ class PhaseOraclePhaseGradient(GateWithRegisters):
     @cached_property
     def b_grad(self) -> int:
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
-        eq_a7 = int(np.ceil(np.log2((self.gamma_bitsize + 2) * np.pi / self.eps)))
-        # Using Equation 35 from https://arxiv.org/abs/2007.07391
-        eq_35 = self.b_phase + int(np.ceil(np.log2(self.b_phase)))
-        # TODO(#654): Eq A7 will result in a bigger gradient bitsize but blows up the cost
-        #   for doing phase gradient based cost computations significantly (which leads to
-        #   the cost using PhaseOracleZPow to be cheaper). Also, we don't yet have a test that
-        #   fails for Eq 35. The only concern is that value of `eq_35` can be smaller than
-        #   `cost_reg.bitsize`.
-        assert eq_a7 >= eq_35
-        return eq_35
+        return int(np.ceil(np.log2((self.gamma_bitsize + 2) * np.pi / self.eps)))
 
     @cached_property
     def gamma_bitsize(self) -> int:
-        # Note: Paragraph b/w equation 34 & 35 of https://arxiv.org/abs/2007.07391 gives
-        # `gamma_bitsize` to be `log(gamma) + b_{phase} + O(1)`. However, this is incorrect, and
-        # we have tests that fail if you do `return self.b_phase`.
-        # The correct `gamma_bitsize` can be obtained using Equation D7 and is given below.
-        d_B = self.cost_dtype.bitsize
-        return d_B + int(np.ceil(np.log2(d_B / self.eps)))  # Using Equation D7
+        # Using `gamma_bitsize = log(gamma) + b_{phase} + O(1)` defined b/w equation 34 & 35
+        # of https://arxiv.org/abs/2007.07391. Note that the `log(gamma)` here means ignoring
+        # leading digits of `gamma` which are 0
+        return self.b_phase
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        add_scaled_val = AddScaledValIntoPhaseReg(
+            self.cost_dtype.bitsize, self.b_grad, self.gamma, self.gamma_bitsize
+        )
         out, phase_grad = bb.add(
-            AddScaledValIntoPhaseReg(self.cost_dtype, self.b_grad, self.gamma, self.gamma_bitsize),
-            x=soqs[self.cost_reg.name],
-            phase_grad=soqs['phase_grad'],
+            add_scaled_val, x=soqs[self.cost_reg.name], phase_grad=soqs['phase_grad']
         )
         return {self.cost_reg.name: out, 'phase_grad': phase_grad}

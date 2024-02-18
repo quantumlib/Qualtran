@@ -145,7 +145,14 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
     @cached_property
     def phase_oracle(self) -> PhaseOraclePhaseGradient:
         return PhaseOraclePhaseGradient(
-            Register('out', QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False)),
+            Register(
+                'out',
+                QFxp(
+                    bitsize=self.bitsize.bit_length(),
+                    num_frac=self.bitsize.bit_length(),
+                    signed=False,
+                ),
+            ),
             self.exponent / 2,
             self.eps,
         )
@@ -168,7 +175,10 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
         out, phase_grad = bb.add(
             AddScaledValIntoPhaseReg(
-                self.phase_oracle.cost_dtype, self.b_grad, self.exponent / 2, self.gamma_bitsize
+                self.phase_oracle.cost_dtype.bitsize,
+                self.b_grad,
+                (self.exponent / 2) * (2 ** self.bitsize.bit_length()),
+                self.gamma_bitsize,
             ),
             x=out,
             phase_grad=phase_grad,

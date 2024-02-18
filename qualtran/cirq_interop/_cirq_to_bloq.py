@@ -276,15 +276,15 @@ def _ensure_in_reg_exists(
     qreg_to_qvar.clear()
 
     # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
-    soqs_to_join = []
+    soqs_to_join: Dict[cirq.Qid, Soquet] = {}
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            soqs_to_join.append(soq)
+            soqs_to_join[qreg.qubits[0]] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        qreg_to_qvar[in_reg] = bb.join(np.array(soqs_to_join))
+        qreg_to_qvar[in_reg] = bb.join(np.array([soqs_to_join[q] for q in in_reg.qubits]))
 
 
 def _gather_input_soqs(
