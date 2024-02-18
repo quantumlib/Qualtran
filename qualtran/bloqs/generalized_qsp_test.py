@@ -131,6 +131,9 @@ class RandomGate(GateWithRegisters):
     def adjoint(self) -> GateWithRegisters:
         return RandomGate(self.bitsize, self.matrix.conj().T)
 
+    def __hash__(self):
+        return hash(tuple(np.ravel(self.matrix)))
+
 
 def evaluate_polynomial_of_matrix(
     P: Sequence[complex], U: NDArray, *, negative_power: int = 0
