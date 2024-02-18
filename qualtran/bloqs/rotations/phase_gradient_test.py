@@ -24,7 +24,6 @@ from qualtran.bloqs.rotations.phase_gradient import (
 )
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
-from fxpmath import Fxp
 
 
 @pytest.mark.parametrize('n', [6, 7, 8])
