@@ -116,13 +116,7 @@ class CZPowGate(CirqGateAsBloqBase):
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def _t_complexity_(self) -> 'TComplexity':
-        from qualtran.bloqs.and_bloq import And
-
-        return (
-            And().t_complexity()
-            + And().adjoint().t_complexity()
-            + ZPowGate(exponent=self.exponent, eps=self.eps).t_complexity()
-        )
+        return TComplexity(rotations=1)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         from qualtran.bloqs.and_bloq import And
