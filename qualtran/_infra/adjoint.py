@@ -170,6 +170,10 @@ class Adjoint(GateWithRegisters):
         """The subbloq's pretty_name with a dagger."""
         return self.subbloq.pretty_name() + '†'
 
+    def __str__(self) -> str:
+        """Delegate to subbloq's `__str__` method."""
+        return f'Adjoint(subbloq={str(self.subbloq)})'
+
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
