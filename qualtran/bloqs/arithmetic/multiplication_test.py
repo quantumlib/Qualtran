@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import cirq
+import pytest
 
 from qualtran import BloqBuilder, QUInt, Register
 from qualtran.bloqs.arithmetic.multiplication import (
@@ -152,5 +153,6 @@ def test_plus_equal_product():
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
 
 
+@pytest.mark.notebook
 def test_multiplication_notebook():
     execute_notebook('multiplication')

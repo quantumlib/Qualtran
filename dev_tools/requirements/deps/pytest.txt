@@ -6,6 +6,7 @@ pytest-xdist
 
 # test executing notebooks
 ipykernel
+filelock
 
 # chemistry resource estimates
 openfermion[resources]

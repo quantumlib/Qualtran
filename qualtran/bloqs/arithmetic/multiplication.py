@@ -161,7 +161,7 @@ class Square(Bloq):
     def short_name(self) -> str:
         return "a^2"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -252,7 +252,7 @@ class SumOfSquares(Bloq):
     def short_name(self) -> str:
         return "SOS"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -319,7 +319,7 @@ class Product(Bloq):
     def short_name(self) -> str:
         return "a*b"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -388,7 +388,7 @@ class ScaleIntByReal(Bloq):
     def short_name(self) -> str:
         return "r*i"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # Eq. D8, we are assuming dA and dB there are assumed as inputs and the
         # user has ensured these are large enough for their desired precision.
         num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
@@ -455,7 +455,7 @@ class MultiplyTwoReals(Bloq):
     def short_name(self) -> str:
         return "a*b"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
         num_toff = self.bitsize**2 - self.bitsize - 1
         return TComplexity(t=4 * num_toff)
@@ -523,7 +523,7 @@ class SquareRealNumber(Bloq):
     def short_name(self) -> str:
         return "a^2"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         num_toff = self.bitsize**2 // 2 - 4
         return TComplexity(t=4 * num_toff)
 

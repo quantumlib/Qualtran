@@ -176,15 +176,6 @@ class CompositeBloq(Bloq):
         out_vals, _ = call_cbloq_classically(self.signature, vals, self._binst_graph)
         return tuple(out_vals[reg.name] for reg in self.signature.rights())
 
-    def t_complexity(self) -> 'TComplexity':
-        """The `TComplexity` for a composite bloq is the sum of its components' counts."""
-        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-        rc = TComplexity()
-        for binst in self.bloq_instances:
-            rc += binst.bloq.t_complexity()
-        return rc
-
     def as_composite_bloq(self) -> 'CompositeBloq':
         """This override just returns the present composite bloq."""
         return self

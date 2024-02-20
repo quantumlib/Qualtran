@@ -13,9 +13,11 @@ Bloqs Library
 
     unary_iteration.ipynb
     arithmetic/comparison_gates.ipynb
+    arithmetic/error_analysis_for_fxp_arithmetic.ipynb
     phase_estimation_of_quantum_walk.ipynb
     chemistry/trotter/trotter_costs.ipynb
     chemistry/resource_estimation.ipynb
+    chemistry/writing_algorithms.ipynb
     factoring/factoring-via-modexp.ipynb
 
 .. toctree::
@@ -50,8 +52,10 @@ Bloqs Library
     :maxdepth: 2
     :caption: Arithmetic:
 
-    arithmetic/arithmetic.ipynb
     arithmetic/addition.ipynb
+    arithmetic/multiplication.ipynb
+    arithmetic/conversions.ipynb
+    arithmetic/arithmetic.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -64,8 +68,9 @@ Bloqs Library
     qubitization_walk_operator.ipynb
     select_pauli_lcu.ipynb
     sorting.ipynb
-    state_preparation.ipynb
+    state_preparation/state_preparation_alias_sampling.ipynb
     util_bloqs.ipynb
     generalized_qsp.ipynb
     multi_control_multi_target_pauli.ipynb
     block_encoding.ipynb
+    reflection.ipynb

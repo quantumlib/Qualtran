@@ -117,7 +117,10 @@ class MultiControlPauli(GateWithRegisters):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
     ) -> cirq.OP_TREE:
-        controls, target = quregs['controls'], quregs['target']
+        controls, target = quregs.get('controls', ()), quregs['target']
+        if len(self.cvs) < 2:
+            yield self.target_gate.on(*target).controlled_by(*controls)
+            return
         qm = context.qubit_manager
         and_ancilla, and_target = np.array(qm.qalloc(len(self.cvs) - 2)), qm.qalloc(1)
         ctrl, junk = controls[:, np.newaxis], and_ancilla[:, np.newaxis]
@@ -139,6 +142,8 @@ class MultiControlPauli(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _t_complexity_(self) -> TComplexity:
+        if len(self.cvs) < 2:
+            return TComplexity(clifford=1)
         and_gate = And(*self.cvs) if len(self.cvs) == 2 else MultiAnd(self.cvs)
         and_cost = t_complexity(and_gate)
         controlled_pauli_cost = t_complexity(self.target_gate.controlled(1))
@@ -202,7 +207,6 @@ class MultiControlX(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', ctrls: SoquetT, x: SoquetT
     ) -> Dict[str, 'SoquetT']:
-
         # n = number of controls in the bloq.
         n = len(self.cvs)
 

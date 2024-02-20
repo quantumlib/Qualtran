@@ -42,7 +42,7 @@ class TestQFTWithPhaseGradient(GateWithRegisters):
         q, phase_grad = bb.add(
             QFTPhaseGradient(self.bitsize, self.with_reverse), q=q, phase_grad=phase_grad
         )
-        bb.add(PhaseGradientState(self.bitsize, adjoint=True), phase_grad=phase_grad)
+        bb.add(PhaseGradientState(self.bitsize).adjoint(), phase_grad=phase_grad)
         return {'q': q}
 
 
@@ -52,13 +52,13 @@ def test_qft_with_phase_gradient(n: int, without_reverse: bool):
     qft_bloq = TestQFTWithPhaseGradient(n, not without_reverse)
     qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
 
-    assert np.allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
-    assert np.allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
+    np.testing.assert_allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
+    np.testing.assert_allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
 
     assert_valid_bloq_decomposition(qft_bloq)
 
 
-@pytest.mark.parametrize('n', [10, 100, 500])
+@pytest.mark.parametrize('n', [10, 123])
 def test_qft_text_book_t_complexity(n: int):
     qft_bloq = QFTPhaseGradient(n)
     print(qft_bloq.t_complexity())

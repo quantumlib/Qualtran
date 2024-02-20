@@ -72,8 +72,8 @@ class PairPotential(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('system_i', shape=(3,), dtype=QAny(self.bitsize)),
-                Register('system_j', shape=(3,), dtype=QAny(self.bitsize)),
+                Register('system_i', dtype=QAny(self.bitsize), shape=(3,)),
+                Register('system_j', dtype=QAny(self.bitsize), shape=(3,)),
             ]
         )
 

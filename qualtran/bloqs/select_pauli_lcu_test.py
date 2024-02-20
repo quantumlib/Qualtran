@@ -64,7 +64,7 @@ def get_1d_Ising_lcu_coeffs(
     spins = cirq.LineQubit.range(n_spins)
     ham = get_1d_Ising_hamiltonian(spins, j_zz_strength, gamma_x_strength)
     coeffs = np.array([term.coefficient.real for term in ham])
-    lcu_coeffs = coeffs / np.sum(coeffs)
+    lcu_coeffs = coeffs / np.sum(abs(coeffs))
     return lcu_coeffs
 
 
@@ -285,5 +285,6 @@ def test_select_pauli_lcu_consistent_protocols_and_controlled():
         _ = gate.controlled(num_controls=2)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('select_pauli_lcu')

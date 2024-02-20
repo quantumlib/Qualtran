@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
@@ -146,6 +147,7 @@ def test_names():
     adj_atom = Adjoint(atom)
     assert adj_atom.pretty_name() == "TestAtom†"
     assert adj_atom.short_name() == "Atom†"
+    assert str(adj_atom) == "Adjoint(subbloq=TestAtom())"
 
 
 def test_wire_symbol():
@@ -159,5 +161,6 @@ def test_wire_symbol():
     assert isinstance(adj_ws, RarrowTextBox)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('../Adjoint')

@@ -27,6 +27,7 @@ def test_apply_z_to_odd(bloq_autotester):
     bloq_autotester(_apply_z_to_odd)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('apply_gate_to_lth_target')
 
