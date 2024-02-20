@@ -262,11 +262,6 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         )
         return self.on_registers(**all_quregs), out_quregs
 
-    def t_complexity(self) -> 'TComplexity':
-        from qualtran.cirq_interop.t_complexity_protocol import t_complexity
-
-        return t_complexity(self)
-
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.cirq_interop._cirq_to_bloq import _wire_symbol_from_gate
 
