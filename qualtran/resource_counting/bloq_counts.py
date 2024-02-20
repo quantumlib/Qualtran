@@ -15,15 +15,20 @@
 """Functionality for the `Bloq.call_graph()` protocol."""
 
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
+from enum import Enum
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import networkx as nx
 import sympy
 
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
+from ._cost_key import BloqCount, CostKey
+from ._cost_val import AddCostVal, CostVal, CostValT
+
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
 GeneralizerT = Callable[[Bloq], Optional[Bloq]]
+CostKV = Tuple[CostKey[CostValT], CostValT]
 
 
 def big_O(expr) -> sympy.Order:
@@ -85,6 +90,21 @@ def _generalize_callees(
     return callee_counts
 
 
+class _CallGraphNodeType(Enum):
+    ALREADY_VISITED = 1
+    LEAF = 2
+    LEAF_FROM_GENERALIZATION = 3
+    INTERNAL = 4
+
+
+def _add_costs(g: nx.DiGraph, bloq: Bloq, costs: Iterable[CostKV]) -> None:
+    data = g.nodes[bloq]
+    if 'costs' in data:
+        data['costs'].extend(costs)
+    else:
+        data['costs'] = list(costs)
+
+
 def _build_call_graph(
     bloq: Bloq,
     generalizer: GeneralizerT,
@@ -93,7 +113,7 @@ def _build_call_graph(
     max_depth: Optional[int],
     g: nx.DiGraph,
     depth: int,
-) -> None:
+) -> _CallGraphNodeType:
     """Recursively build the call graph.
 
     Arguments are the same as `get_bloq_call_graph`, except `g` is the graph we're building
@@ -101,19 +121,20 @@ def _build_call_graph(
     """
     if bloq in g:
         # We already visited this node.
-        return
+        return _CallGraphNodeType.ALREADY_VISITED
 
-    # Make sure this node is present in the graph. You could annotate
-    # additional node properties here, too.
+    # Make sure this node is present in the graph and annotate
+    # static costs.
     g.add_node(bloq)
+    _add_costs(g, bloq, costs=bloq.my_static_costs())
 
     # Base case 1: This node is requested by the user to be a leaf node via the `keep` parameter.
     if keep(bloq):
-        return
+        return _CallGraphNodeType.LEAF
 
     # Base case 2: Max depth exceeded
     if max_depth is not None and depth >= max_depth:
-        return
+        return _CallGraphNodeType.LEAF
 
     # Prep for recursion: get the callees and modify them according to `generalizer`.
     try:
@@ -121,11 +142,11 @@ def _build_call_graph(
     except (DecomposeNotImplementedError, DecomposeTypeError):
         # Base case 3: Decomposition (or `bloq_counts`) is not implemented. This is left as a
         #              leaf node.
-        return
+        return _CallGraphNodeType.LEAF
 
     # Base case 3: Empty list of callees
     if not callee_counts:
-        return
+        return _CallGraphNodeType.LEAF_FROM_GENERALIZATION
 
     for callee, n in callee_counts:
         # Quite important: we do the recursive call first before adding in the edges.
@@ -133,7 +154,9 @@ def _build_call_graph(
         # virtue of it being added to the graph with the `g.add_edge` call.
 
         # Do the recursive step, which will continue to mutate `g`
-        _build_call_graph(callee, generalizer, ssa, keep, max_depth, g, depth + 1)
+        callee_t = _build_call_graph(callee, generalizer, ssa, keep, max_depth, g, depth + 1)
+        if callee_t == _CallGraphNodeType.LEAF:
+            _add_costs(g, callee, costs=callee.my_leaf_costs())
 
         # Update edge in `g`
         if (bloq, callee) in g.edges:
@@ -142,27 +165,45 @@ def _build_call_graph(
             g.add_edge(bloq, callee, n=n)
 
 
+def _sum_up_costs(g: nx.DiGraph) -> Dict[Bloq, Dict[CostKey, CostVal]]:
+    """..."""
+    costs: Dict[Bloq, Dict[CostKey, CostVal]] = {}
+    for caller in reversed(list(nx.topological_sort(g))):
+        bloq_costs: Dict[CostKey, CostVal] = {}
+
+        # Accumulate contributions from callee costs, which have already been filled in
+        # due to the reversed topological sort.
+        for callee in g.successors(caller):
+            n = g.edges[caller, callee]['n']
+            existing_bloq_costs: Dict[CostKey, CostVal] = costs[callee]
+
+            # caller_cost = sum(n * callee_cost)
+            for k, v in existing_bloq_costs.items():
+                if k not in bloq_costs:
+                    bloq_costs[k] = k.identity_val()
+                bloq_costs[k] += v * n
+
+        # static costs
+        for k, v in g.nodes[caller]['costs']:
+            if k not in bloq_costs:
+                bloq_costs[k] = v
+            else:
+                bloq_costs[k] += v
+
+        costs[caller] = bloq_costs
+
+    return costs
+
+
 def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, sympy.Expr]]:
-    """Iterate over nodes to sum up the counts of leaf bloqs."""
-    bloq_sigmas: Dict[Bloq, Dict[Bloq, Union[int, sympy.Expr]]] = defaultdict(
-        lambda: defaultdict(lambda: 0)
-    )
-    for bloq in reversed(list(nx.topological_sort(g))):
-        callees = list(g.successors(bloq))
-        sigma = bloq_sigmas[bloq]
-        if not callees:
-            # 1. `bloq` is a leaf node. Its count is one of itself.
-            sigma[bloq] = 1
-            continue
+    costs = _sum_up_costs(g)
+    sigma = {}
+    for cost_key, cost_val in costs[root_bloq].items():
+        if isinstance(cost_key, BloqCount):
+            assert isinstance(cost_val, AddCostVal)
+            sigma[cost_key.bloq] = cost_val.qty
 
-        for callee in callees:
-            callee_sigma = bloq_sigmas[callee]
-            # 2. Otherwise, sigma of the caller is sum(n * sigma of callee) for all the callees.
-            n = g.edges[bloq, callee]['n']
-            for k in callee_sigma.keys():
-                sigma[k] += callee_sigma[k] * n
-
-    return dict(bloq_sigmas[root_bloq])
+    return sigma
 
 
 def _make_composite_generalizer(*funcs: GeneralizerT) -> GeneralizerT:
