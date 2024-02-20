@@ -86,6 +86,15 @@ def test_as_cirq_op():
     )
 
 
+def test_pretty_name():
+    assert ZPowGate().pretty_name() == "ZPowGate"
+    assert XPowGate().pretty_name() == "XPowGate"
+    assert YPowGate().pretty_name() == "YPowGate"
+    assert _ry().pretty_name() == "Ry"
+    assert _rx().pretty_name() == "Rx"
+    assert _rz().pretty_name() == "Rz"
+
+
 def test_rx(bloq_autotester):
     bloq_autotester(_rx)
 
