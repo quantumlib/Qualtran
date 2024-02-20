@@ -13,14 +13,15 @@
 #  limitations under the License.
 
 import abc
+from functools import cached_property
 from typing import Sequence, Tuple
 
 import cirq
 import numpy as np
-from cirq._compat import cached_method, cached_property
+from cirq._compat import cached_method
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, Register, Signature
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
@@ -109,11 +110,11 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
 
     @cached_property
     def kappa_load_target(self) -> Tuple[Register, ...]:
-        return (Register('kappa_load_target', self.kappa),)
+        return (Register('kappa_load_target', QAny(self.kappa)),)
 
     @cached_property
     def rotations_target(self) -> Tuple[Register, ...]:
-        return (Register('rotations_target', self._target_bitsize),)
+        return (Register('rotations_target', QAny(self._target_bitsize)),)
 
     @property
     @abc.abstractmethod

@@ -7,3 +7,4 @@ openfermion[resources]
 # dev tools
 tensorflow-docs
 sphinx
+filelock

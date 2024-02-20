@@ -42,5 +42,6 @@ def test_bitonic_sort_manual():
         bloq.decompose_bloq()
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('sorting')

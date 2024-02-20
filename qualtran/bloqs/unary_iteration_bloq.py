@@ -14,11 +14,11 @@
 
 import abc
 from collections import defaultdict
+from functools import cached_property
 from typing import Callable, Dict, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, Register, Signature

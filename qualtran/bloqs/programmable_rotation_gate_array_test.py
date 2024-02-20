@@ -12,12 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Tuple
 
 import cirq
 import numpy as np
 import pytest
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
 from qualtran import Register, Signature
@@ -60,6 +60,7 @@ def construct_prga_with_identity(*args, **kwargs) -> ProgrammableRotationGateArr
     return ProgrammableRotationGateArray(*args, **kwargs)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "angles", [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]], [[3, 4, 5], [10, 11, 12]]]
 )

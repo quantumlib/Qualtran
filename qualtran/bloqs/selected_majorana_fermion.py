@@ -12,15 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Sequence, Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import Register
+from qualtran import QAny, QBit, Register
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
@@ -50,7 +50,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
     )
     control_regs: Tuple[Register, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v),
-        default=(Register('control', 1),),
+        default=(Register('control', QBit()),),
     )
     target_gate: cirq.Gate = cirq.Y
 
@@ -82,11 +82,11 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         total_iteration_size = np.prod(
             tuple(reg.dtype.iteration_length for reg in self.selection_registers)
         )
-        return (Register('target', int(total_iteration_size)),)
+        return (Register('target', QAny(int(total_iteration_size))),)
 
     @cached_property
     def extra_registers(self) -> Tuple[Register, ...]:
-        return (Register('accumulator', 1),)
+        return (Register('accumulator', QBit()),)
 
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]

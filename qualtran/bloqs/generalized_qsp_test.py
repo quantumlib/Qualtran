@@ -78,6 +78,17 @@ def random_qsp_polynomial(
     return poly
 
 
+@pytest.mark.parametrize("degree", [4, 5])
+def test_complementary_polynomial_quick(degree: int):
+    random_state = np.random.RandomState(42)
+
+    for _ in range(2):
+        P = random_qsp_polynomial(degree, random_state=random_state)
+        Q = qsp_complementary_polynomial(P, verify=True)
+        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
 def test_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
@@ -150,6 +161,7 @@ def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
     assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 150, 180])
 def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree: int):
@@ -161,6 +173,7 @@ def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree
         verify_generalized_qsp(U, P)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 120])
 def test_generalized_qsp_with_complex_poly_on_random_unitaries(bitsize: int, degree: int):
@@ -230,6 +243,7 @@ class SymbolicGQSP:
         assert abs(error_QU) <= 1e-5
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 10])
 def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
     random_state = np.random.RandomState(102)

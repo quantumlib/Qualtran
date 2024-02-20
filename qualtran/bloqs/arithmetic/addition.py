@@ -360,7 +360,9 @@ class SimpleAddConstant(Bloq):
                 ]
             )
         else:
-            return Signature([Register('x', bitsize=self.bitsize)])
+            return Signature(
+                [Register('x', QInt(bitsize=self.bitsize) if self.signed else QUInt(self.bitsize))]
+            )
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'

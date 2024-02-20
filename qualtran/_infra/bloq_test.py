@@ -47,5 +47,6 @@ def test_as_composite_bloq():
     assert cb is cb2
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('Bloqs-Tutorial')

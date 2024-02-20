@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Signature
+from qualtran import GateWithRegisters, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle
@@ -59,7 +59,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:

@@ -46,15 +46,15 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
+from functools import cached_property
 from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, Register, Signature
+from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.and_bloq import MultiAnd
 from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit
@@ -121,7 +121,7 @@ class SelectHubbard(SelectOracle):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -138,7 +138,7 @@ class SelectHubbard(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self.x_dim * self.y_dim * 2),)
+        return (Register('target', QAny(self.x_dim * self.y_dim * 2)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -208,7 +208,7 @@ class SelectHubbard(SelectOracle):
                 ),
             ),
             nth_gate=lambda *_: cirq.Z,
-            control_regs=Register('control', 1 + total_bits(self.control_registers)),
+            control_regs=Register('control', QAny(1 + total_bits(self.control_registers))),
         ).on_registers(
             q_x=q_x, q_y=q_y, control=[*V, *control], target=target_qubits_for_apply_to_lth_gate
         )
@@ -303,7 +303,7 @@ class PrepareHubbard(PrepareOracle):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (Register('temp', 2),)
+        return (Register('temp', QAny(2)),)
 
     @cached_property
     def signature(self) -> Signature:

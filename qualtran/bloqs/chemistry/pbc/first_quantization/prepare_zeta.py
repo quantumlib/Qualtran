@@ -19,7 +19,7 @@ from typing import Set, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -51,7 +51,7 @@ class PrepareZetaState(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("l", bitsize=(self.num_atoms - 1).bit_length())])
+        return Signature([Register("l", QAny(bitsize=(self.num_atoms - 1).bit_length()))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
