@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasing,
     HammingWeightPhasingViaPhaseGradient,
