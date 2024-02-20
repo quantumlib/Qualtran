@@ -25,7 +25,7 @@ def round_trip(data: QDType):
     assert data.num_qubits == original_qbit.num_qubits
     if isinstance(serialized_qbit, BoundedQUInt):        
         assert data.iteration_length == original_qbit.iteration_length
-    elif isinstance(serialized_qbit, QFxp):
+    if isinstance(serialized_qbit, QFxp):
         assert data.num_frac == original_qbit.num_frac
         assert data.signed == original_qbit.signed
 
@@ -49,7 +49,7 @@ def test_basic_data_types(num_qbits:int):
     (sympy.Symbol("a") * sympy.Symbol("b"), 10), 
     (sympy.Symbol("a"),  sympy.Symbol("b"))
    ])
-def test_bounded_q_u_int(num_qbits: int, iteration_length):
+def test_bounded_quint(num_qbits: int, iteration_length):
     round_trip(BoundedQUInt(num_qbits, iteration_length))
     
 @pytest.mark.parametrize("num_qbits, num_frac, signed", [

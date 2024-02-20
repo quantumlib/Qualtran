@@ -46,11 +46,12 @@ def data_type_to_proto(data: QDType) -> SerializedDataTypes:
                                    num_frac=num_frac,
                                    signed=data.signed)
     else:
-        raise TypeError("Data must be of one of the following subtypes: " \
-                        "QBit, QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt,"\
-                            " QFixedPoint")
+        raise TypeError(f"Data type {type(serialized)} is not recognized."\
+                        " It must be of one of the following subtypes: QBit, "\
+                            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "\
+                                "QFixedPoint")
 
-def data_type_from_proto(serialized):
+def data_type_from_proto(serialized: SerializedDataTypes) -> QDType:
     if isinstance(serialized, data_types_pb2.QBit):
         return QBit()
     
@@ -76,9 +77,8 @@ def data_type_from_proto(serialized):
         return QFxp(bitsize=bitsize, num_frac=num_frac,
                     signed=serialized.signed)
     else:
-        raise TypeError("Data type {} is not recognized."\
+        raise TypeError(f"Data type {type(serialized)} is not recognized."\
                         " It must be of one of the following subtypes: QBit, "\
                             "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "\
-                                "QFixedPoint".format(str(type(serialized))))
-        
+                                "QFixedPoint")
     
