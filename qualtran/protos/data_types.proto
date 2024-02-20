@@ -17,7 +17,6 @@ package qualtran;
 import "qualtran/protos/args.proto";
 
 message QBit {
-    optional int64 bitsize = 1;
 }
 
 message QAny {
