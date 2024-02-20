@@ -356,7 +356,7 @@ class GeneralizedQSP(GateWithRegisters):
 
 @frozen
 class HamiltonianSimulationByGQSP(GateWithRegisters):
-    WalkOperator: QubitizationWalkOperator
+    walk_operator: QubitizationWalkOperator
     t: float = field(kw_only=True)
     alpha: float = field(kw_only=True)
     precision: float = field(kw_only=True)
@@ -373,7 +373,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
 
         return GeneralizedQSP(
-            self.WalkOperator, approx_cos, np.zeros(2 * self.degree + 1), negative_power=self.degree
+            self.walk_operator, approx_cos, np.zeros(2 * self.degree + 1), negative_power=self.degree
         )
 
     @cached_property
@@ -381,14 +381,14 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return self.gqsp.signature
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        prepare = self.WalkOperator.prepare
+        prepare = self.walk_operator.prepare
         state_prep_ancilla = {
             reg.name: bb.allocate(reg.total_bits()) for reg in prepare.junk_registers
         }
 
         # PREPARE
         prepare_soqs = bb.add_d(
-            self.WalkOperator.prepare, selection=soqs['selection'], **state_prep_ancilla
+            self.walk_operator.prepare, selection=soqs['selection'], **state_prep_ancilla
         )
         soqs['selection'] = prepare_soqs['selection']
         del prepare_soqs['selection']
@@ -399,7 +399,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
         # PREPARE†
         prepare_soqs = bb.add_d(
-            self.WalkOperator.prepare.adjoint(), selection=soqs['selection'], **state_prep_ancilla
+            self.walk_operator.prepare.adjoint(), selection=soqs['selection'], **state_prep_ancilla
         )
         soqs['selection'] = prepare_soqs['selection']
         del prepare_soqs['selection']
