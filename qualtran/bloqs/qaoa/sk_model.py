@@ -36,6 +36,7 @@ from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState, AddScale
 from qualtran.bloqs.basic_gates import TGate, Hadamard, Rx
 from qualtran.bloqs.on_each import OnEach
 from typing import Dict, Optional, Set
+from qualtran.bloqs import utils
 
 
 def _cost(n: int, x: int, w: Sequence[int]) -> int:
@@ -86,7 +87,11 @@ class SKModelCostEval(GateWithRegisters):
                 Register('x', self.n),
                 Register(
                     'cost_reg',
-                    QFxp(2 * self.n.bit_length(), 2 * self.n.bit_length(), signed=False),
+                    QFxp(
+                        2 * utils.ceil(utils.log2(self.n)),
+                        2 * utils.ceil(utils.log2(self.n)),
+                        signed=False,
+                    ),
                     side=side,
                 ),
             ]
@@ -102,3 +107,6 @@ class SKModelCostEval(GateWithRegisters):
             _ = vals.pop('cost_reg')
             return vals
         return {'x': x, 'cost_reg': _cost(self.n, x, self.w)}
+
+    def __str__(self) -> str:
+        return f'SKModelCostEval({self.n})' + ('†' if self.uncompute else '')
