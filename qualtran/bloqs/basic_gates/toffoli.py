@@ -58,7 +58,7 @@ class Toffoli(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 4)}
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         return TComplexity(t=4)
 
     def add_my_tensors(

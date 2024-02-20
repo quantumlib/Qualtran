@@ -147,6 +147,7 @@ def test_names():
     adj_atom = Adjoint(atom)
     assert adj_atom.pretty_name() == "TestAtom†"
     assert adj_atom.short_name() == "Atom†"
+    assert str(adj_atom) == "Adjoint(subbloq=TestAtom())"
 
 
 def test_wire_symbol():

@@ -17,7 +17,9 @@ from typing import Any, Callable, Hashable, Iterable, Literal, Optional, overloa
 import attrs
 import cachetools
 import cirq
+import numpy as np
 
+from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
@@ -30,6 +32,17 @@ class TComplexity:
     t: int = 0
     clifford: int = 0
     rotations: int = 0
+
+    def t_incl_rotations(self, eps: float = 1e-11) -> int:
+        """Return the total number of T gates after compiling rotations"""
+
+        # TODO Determine precise clifford count and/or ignore.
+        # This is an improvement over Ref. 2 from the docstring which provides
+        # a bound of 3 log(1/eps).
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
+        t_per_rot = int(np.ceil(1.149 * np.log2(1.0 / eps) + 9.2))
+        return self.t + t_per_rot * self.rotations
 
     def __add__(self, other: 'TComplexity') -> 'TComplexity':
         return TComplexity(
@@ -81,7 +94,7 @@ def _is_clifford_or_t(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     if isinstance(stc, cirq.ClassicallyControlledOperation):
         stc = stc.without_classical_controls()
 
-    if cirq.has_stabilizer_effect(stc):
+    if cirq.num_qubits(stc) <= 2 and cirq.has_stabilizer_effect(stc):
         # Clifford operation.
         return TComplexity(clifford=1)
 
@@ -107,7 +120,21 @@ def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
     return t
 
 
-def _from_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+def _from_bloq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    # Decompose the object and recursively compute the complexity.
+    if not isinstance(stc, Bloq):
+        return None
+
+    if isinstance(stc, CompositeBloq):
+        return _is_iterable((binst.bloq for binst in stc.bloq_instances), fail_quietly=fail_quietly)
+
+    try:
+        return _from_bloq_decomposition(stc.decompose_bloq(), fail_quietly=fail_quietly)
+    except (DecomposeNotImplementedError, DecomposeTypeError):
+        return None
+
+
+def _from_cirq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
     decomposition = _decompose_once_considering_known_decomposition(stc)
     if decomposition is None:
@@ -149,9 +176,14 @@ def _t_complexity_from_strategies(
 
 @cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
 def _t_complexity_for_gate_or_op(
-    gate_or_op: Union[cirq.Gate, cirq.Operation], fail_quietly: bool
+    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq], fail_quietly: bool
 ) -> Optional[TComplexity]:
-    strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition]
+    strategies = [
+        _has_t_complexity,
+        _is_clifford_or_t,
+        _from_bloq_decomposition,
+        _from_cirq_decomposition,
+    ]
     return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
 
 
@@ -178,10 +210,16 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     Raises:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    if isinstance(stc, (cirq.Gate, cirq.Operation)) and isinstance(stc, Hashable):
+    if isinstance(stc, (cirq.Gate, cirq.Operation, Bloq)) and isinstance(stc, Hashable):
         ret = _t_complexity_for_gate_or_op(stc, fail_quietly)
     else:
-        strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition, _is_iterable]
+        strategies = [
+            _has_t_complexity,
+            _is_clifford_or_t,
+            _from_bloq_decomposition,
+            _from_cirq_decomposition,
+            _is_iterable,
+        ]
         ret = _t_complexity_from_strategies(stc, fail_quietly, strategies)
 
     if ret is None and not fail_quietly:

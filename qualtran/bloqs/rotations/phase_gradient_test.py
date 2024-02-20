@@ -37,12 +37,13 @@ def test_phase_gradient_state(n: int):
     state_prep_cirq_circuit = cirq.Circuit(
         cirq.H.on_each(*q), cirq.PhaseGradientGate(num_qubits=n, exponent=-1).on(*q)
     )
-    assert np.allclose(cirq.unitary(gate), cirq.unitary(state_prep_cirq_circuit))
-    assert np.allclose(
+    np.testing.assert_allclose(cirq.unitary(gate), cirq.unitary(state_prep_cirq_circuit))
+    np.testing.assert_allclose(
         cirq.unitary(gate.adjoint()), cirq.unitary(cirq.inverse(state_prep_cirq_circuit))
     )
-    assert gate.t_complexity().rotations == n - 2
-    assert gate.t_complexity().clifford == n + 2
+    assert gate.t_complexity().t == 1  # one of the rotations is a T gate
+    assert gate.t_complexity().rotations == n - 3
+    assert gate.t_complexity().clifford == n + 2  # two of the rotations are clifford
 
 
 @pytest.mark.parametrize('n', [6, 7, 8])
