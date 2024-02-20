@@ -156,10 +156,12 @@ class StatePreparationAliasSampling(PrepareOracle):
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> cirq.OP_TREE:
-        selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
-        sigma_mu, alt, keep = quregs.get('sigma_mu', ()), quregs['alt'], quregs.get('keep', ())
         N = self.selection_registers[0].dtype.iteration_length
-        yield PrepareUniformSuperposition(N).on(*selection)
+        yield PrepareUniformSuperposition(N).on(*quregs['selection'])
+        if self.mu == 0:
+            return
+        selection, less_than_equal = quregs['selection'], quregs['less_than_equal']
+        sigma_mu, alt, keep = quregs['sigma_mu'], quregs['alt'], quregs['keep']
         yield cirq.H.on_each(*sigma_mu)
         qrom_gate = QROM(
             [self.alt, self.keep],
