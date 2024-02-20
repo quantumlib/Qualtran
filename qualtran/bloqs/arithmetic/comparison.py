@@ -502,7 +502,7 @@ class GreaterThan(Bloq):
     def short_name(self) -> str:
         return "a>b"
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def wire_symbol(self, soq: Soquet) -> WireSymbol:
@@ -716,7 +716,7 @@ class GreaterThanConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
     def short_name(self) -> str:
@@ -759,7 +759,7 @@ class EqualsAConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
 
     def short_name(self) -> str:

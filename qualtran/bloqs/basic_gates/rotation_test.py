@@ -42,9 +42,9 @@ def _make_Rz():
 def test_rotation_gates():
     angle = np.pi / 4.0
     tcount = 52
-    assert Rx(angle).t_complexity().t == tcount
-    assert Ry(angle).t_complexity().t == tcount
-    assert Rz(angle).t_complexity().t == tcount
+    assert Rx(angle).t_complexity().t_incl_rotations() == tcount
+    assert Ry(angle).t_complexity().t_incl_rotations() == tcount
+    assert Rz(angle).t_complexity().t_incl_rotations() == 1
 
 
 def test_as_cirq_op():
@@ -84,6 +84,15 @@ def test_as_cirq_op():
     assert circuit == cirq.Circuit(
         cirq.ZPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
     )
+
+
+def test_pretty_name():
+    assert ZPowGate().pretty_name() == "ZPowGate"
+    assert XPowGate().pretty_name() == "XPowGate"
+    assert YPowGate().pretty_name() == "YPowGate"
+    assert _ry().pretty_name() == "Ry"
+    assert _rx().pretty_name() == "Rx"
+    assert _rz().pretty_name() == "Rz"
 
 
 def test_rx(bloq_autotester):
