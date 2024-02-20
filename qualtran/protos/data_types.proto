@@ -13,50 +13,37 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-
 syntax = "proto3";
-
 package qualtran;
-
-message QDType {
-    oneof bitsize {
-        int64 bitsize_int = 1;
-        string bitsize_expr = 2;
-    }
-    oneof data_type {
-        QBit qbit = 3;
-        QAny qany = 4;
-        QInt qint = 5;
-        QOnesComp q_ones_comp = 6;
-        QUInt quint = 7;
-        BoundedQUInt bounded_q_int = 8;
-        QFixedPoint q_fxp = 9;
-    }
-}
+import "qualtran/protos/args.proto";
 
 message QBit {
+    optional int64 bitsize = 1;
 }
 
 message QAny {
+    optional IntOrSympy bitsize = 1;
 }
 
 message QInt {
+    optional IntOrSympy bitsize = 1;
 }
 
-message QOnesComp {
+message QIntOnesComp {
+    optional IntOrSympy bitsize = 1;
 }
+
 message QUInt {
+    optional IntOrSympy bitsize = 1;
 }
 
 message BoundedQUInt {
-
-    int64 iteration_length = 1;
+    optional IntOrSympy bitsize = 1;
+    optional IntOrSympy iteration_length = 2;
 }
 
-message QFixedPoint {
-    int64 num_frac = 1;
-    bool signed = 2;
+message QFxp {
+    optional IntOrSympy bitsize = 1;
+    optional IntOrSympy num_frac = 2;
+    optional bool signed = 3;
 }
-
-
-

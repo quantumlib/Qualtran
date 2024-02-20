@@ -12,13 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.serialization.data_types import data_type_from_proto, data_type_to_proto
 import pytest
-
 import sympy
-
 from typing import Union
-
+from qualtran.serialization.data_types import data_type_from_proto, data_type_to_proto
 from qualtran import QDType, QBit, QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, QFxp
 
 def round_trip(data: QDType):
