@@ -68,10 +68,6 @@ class CirqGateAsBloqBase(GateWithRegisters):
     def cirq_gate(self) -> cirq.Gate:
         ...
 
-    def pretty_name(self) -> str:
-        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
-        return f'cirq.{g}'
-
     @cached_property
     def signature(self) -> 'Signature':
         if isinstance(self.cirq_gate, Bloq):
@@ -145,6 +141,10 @@ class CirqGateAsBloqBase(GateWithRegisters):
 @frozen
 class CirqGateAsBloq(CirqGateAsBloqBase):
     gate: cirq.Gate
+
+    def pretty_name(self) -> str:
+        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
+        return f'cirq.{g}'
 
     @property
     def cirq_gate(self) -> cirq.Gate:

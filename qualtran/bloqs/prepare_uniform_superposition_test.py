@@ -34,6 +34,7 @@ def test_c_prep_uniform(bloq_autotester):
     bloq_autotester(_c_prep_uniform)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('prepare_uniform_superposition')
 

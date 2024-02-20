@@ -329,5 +329,6 @@ def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result)
     assert bloq_classical[-1] == result
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('addition')

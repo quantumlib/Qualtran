@@ -75,6 +75,7 @@ def test_swap_with_zero_decomp():
     assert_valid_bloq_decomposition(swz)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "selection_bitsize, target_bitsize, n_target_registers",
     [[3, 5, 1], [2, 2, 3], [2, 3, 4], [3, 2, 5], [4, 1, 10]],
@@ -289,5 +290,6 @@ def test_swz(bloq_autotester):
     bloq_autotester(_swz)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('swap_network')

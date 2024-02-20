@@ -289,5 +289,6 @@ exponent3: ───exponent─────────CtrlModMul─────
     )
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('cirq_interop')
