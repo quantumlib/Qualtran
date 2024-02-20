@@ -21,6 +21,9 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran.bloqs.arithmetic.comparison import (
+    _eq_k,
+    _greater_than,
+    _gt_k,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
@@ -33,6 +36,18 @@ from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
 )
+
+
+def test_greater_than(bloq_autotester):
+    bloq_autotester(_greater_than)
+
+
+def test_gt_k(bloq_autotester):
+    bloq_autotester(_gt_k)
+
+
+def test_eq_k(bloq_autotester):
+    bloq_autotester(_eq_k)
 
 
 def identity_map(n: int):
@@ -232,10 +247,10 @@ def test_equals_a_constant():
 
 
 @pytest.mark.notebook
-def test_comparison_gates_notebook():
-    qlt_testing.execute_notebook('comparison_gates')
+def test_t_complexity_of_comparison_gates_notebook():
+    qlt_testing.execute_notebook('t_complexity_of_comparison_gates')
 
 
 @pytest.mark.notebook
-def test_arithmetic_notebook():
-    qlt_testing.execute_notebook('arithmetic')
+def test_comparison_notebook():
+    qlt_testing.execute_notebook('comparison')
