@@ -1,3 +1,16 @@
+#  Copyright 2023 Google LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 from typing import List, Union, Tuple
 
 import numpy as np
@@ -5,13 +18,7 @@ import qualtran
 from qualtran import Soquet
 from qualtran.bloqs.basic_gates.rotation import CZPowGate
 import pyqir
-from pyqir import (
-    BasicBlock,
-    Builder,
-    Context,
-    Function,
-    Linkage,
-)
+from pyqir import BasicBlock, Builder, Context, Function, Linkage
 from pyqir._native import Type, Function, FunctionType
 
 PYQIR_OP_MAP = {
@@ -53,8 +60,9 @@ def get_num_qubits_for_bloq(bloq: qualtran.Bloq) -> int:
     return num_qubits
 
 
-def create_func_for_bloq(bloq: qualtran.Bloq, name: str, qubit_type: Type, void_type,
-                         mod: pyqir.Module) -> Function:
+def create_func_for_bloq(
+    bloq: qualtran.Bloq, name: str, qubit_type: Type, void_type, mod: pyqir.Module
+) -> Function:
     """
     Create a QIR function for the given Bloq.
 
@@ -68,12 +76,7 @@ def create_func_for_bloq(bloq: qualtran.Bloq, name: str, qubit_type: Type, void_
         The QIR function for the given Bloq.
     """
     num_qubits = get_num_qubits_for_bloq(bloq)
-    return Function(
-        FunctionType(void_type, [qubit_type] * num_qubits),
-        Linkage.EXTERNAL,
-        name,
-        mod
-    )
+    return Function(FunctionType(void_type, [qubit_type] * num_qubits), Linkage.EXTERNAL, name, mod)
 
 
 def create_ir_map(bloq: qualtran.Bloq) -> dict:
@@ -99,12 +102,17 @@ def create_ir_map(bloq: qualtran.Bloq) -> dict:
     ir_map = {}
     # Loop through all registers in signature
     for register in bloq.signature.lefts():
-        shape = register.shape[0] if len(
-            register.shape) != 0 else 1  # get the shape as an int (we are asumming its 1d for simplicity)
+        shape = (
+            register.shape[0] if len(register.shape) != 0 else 1
+        )  # get the shape as an int (we are asumming its 1d for simplicity)
         # map the (register_name, index_in_register) to the overall index
         ir_map.update(
-            {(register.name, i * register.bitsize + j): param_counter + i * register.bitsize + j for
-             i in range(shape) for j in range(register.bitsize)})
+            {
+                (register.name, i * register.bitsize + j): param_counter + i * register.bitsize + j
+                for i in range(shape)
+                for j in range(register.bitsize)
+            }
+        )
         param_counter += register.bitsize * shape
     return ir_map
 
@@ -160,7 +168,9 @@ def bloq_decomposes(bloq: qualtran.Bloq) -> bool:
         return False
 
 
-def map_soquet_to_param_indices(soq: Union[Soquet, np.ndarray], soq_map: dict, ir_map: dict) -> List[int]:
+def map_soquet_to_param_indices(
+    soq: Union[Soquet, np.ndarray], soq_map: dict, ir_map: dict
+) -> List[int]:
     """
     Map a soquet to the corresponding list of parameter indices.
 
@@ -175,8 +185,11 @@ def map_soquet_to_param_indices(soq: Union[Soquet, np.ndarray], soq_map: dict, i
     if isinstance(soq, np.ndarray):
         # renaming to soqs for clarity
         soqs = soq
-        return [el for soq in soqs for el in map_single_soquet_to_param_indices(soq, soq_map, ir_map)]
+        return [
+            el for soq in soqs for el in map_single_soquet_to_param_indices(soq, soq_map, ir_map)
+        ]
     return map_single_soquet_to_param_indices(soq, soq_map, ir_map)
+
 
 def map_single_soquet_to_param_indices(soquet, soq_map, ir_map) -> List[int]:
     """
@@ -196,6 +209,7 @@ def map_single_soquet_to_param_indices(soquet, soq_map, ir_map) -> List[int]:
     irs = irs_from_soquet(soquet)
     return [ir_map[ir] for ir in irs]
 
+
 def irs_from_soquet(soq) -> List[Tuple[str, int]]:
     """
     Get the IRs from a soquet.
@@ -211,8 +225,16 @@ def irs_from_soquet(soq) -> List[Tuple[str, int]]:
     return [(reg_name, starting_index * soq.reg.bitsize + i) for i in range(soq.reg.bitsize)]
 
 
-def compile_bloq(bloq: qualtran.Bloq, qubit_type: Type, void_type: Type, module: pyqir.Module, context: pyqir.Context, builder: Builder, qubit_alloc: Function,
-                 func_dict=dict()) -> Tuple[Function, dict]:
+def compile_bloq(
+    bloq: qualtran.Bloq,
+    qubit_type: Type,
+    void_type: Type,
+    module: pyqir.Module,
+    context: pyqir.Context,
+    builder: Builder,
+    qubit_alloc: Function,
+    func_dict=dict(),
+) -> Tuple[Function, dict]:
     """
     Compile a Bloq into a QIR function.
 
@@ -264,29 +286,51 @@ def compile_bloq(bloq: qualtran.Bloq, qubit_type: Type, void_type: Type, module:
 
         if type(bloq_instance.bloq) == CZPowGate:
             builder.insert_at_end(basic_block)
-            param_indexes = [param for soquet in inputs.values() for param in
-                             map_soquet_to_param_indices(soquet, soq_map, ir_map)]
+            param_indexes = [
+                param
+                for soquet in inputs.values()
+                for param in map_soquet_to_param_indices(soquet, soq_map, ir_map)
+            ]
             params = [bloq_func.params[i] for i in param_indexes]
             cz_power(bloq_instance.bloq.exponent, params, builder, qubit_alloc)
         elif bloq_instance.bloq.pretty_name() in PYQIR_OP_MAP:
             builder.insert_at_end(basic_block)
-            param_indexes = [param for soquet in inputs.values() for param in
-                             map_soquet_to_param_indices(soquet, soq_map, ir_map)]
+            param_indexes = [
+                param
+                for soquet in inputs.values()
+                for param in map_soquet_to_param_indices(soquet, soq_map, ir_map)
+            ]
             params = [bloq_func.params[i] for i in param_indexes]
             PYQIR_OP_MAP[bloq_instance.bloq.pretty_name()](builder, *params)
         else:
             param_indexes = [None for _ in range(get_num_qubits_for_bloq(bloq_instance.bloq))]
 
-            sub_bloq_func, sub_bloq_ir_map = compile_bloq(bloq_instance.bloq, qubit_type, void_type,
-                                                          module, context, builder, qubit_alloc,
-                                                          func_dict)
-            sub_func_name = f"{bloq_instance.bloq.pretty_name()}_{get_num_qubits_for_bloq(bloq_instance.bloq)}"
+            sub_bloq_func, sub_bloq_ir_map = compile_bloq(
+                bloq_instance.bloq,
+                qubit_type,
+                void_type,
+                module,
+                context,
+                builder,
+                qubit_alloc,
+                func_dict,
+            )
+            sub_func_name = (
+                f"{bloq_instance.bloq.pretty_name()}_{get_num_qubits_for_bloq(bloq_instance.bloq)}"
+            )
             func_dict[sub_func_name] = sub_bloq_func, sub_bloq_ir_map
             for key in inputs.keys():
-                caller_param_indices_for_key = map_soquet_to_param_indices(inputs[key], soq_map, ir_map)
-                callee_param_indices_for_key = [sub_bloq_ir_map[(reg_name, i)] for (reg_name, i) in sub_bloq_ir_map.keys() if reg_name == key]
+                caller_param_indices_for_key = map_soquet_to_param_indices(
+                    inputs[key], soq_map, ir_map
+                )
+                callee_param_indices_for_key = [
+                    sub_bloq_ir_map[(reg_name, i)]
+                    for (reg_name, i) in sub_bloq_ir_map.keys()
+                    if reg_name == key
+                ]
                 for param_index, qubit_param_index in list(
-                        zip(callee_param_indices_for_key, caller_param_indices_for_key)):
+                    zip(callee_param_indices_for_key, caller_param_indices_for_key)
+                ):
                     param_indexes[param_index] = qubit_param_index
 
             builder.insert_at_end(basic_block)
@@ -325,19 +369,14 @@ def bloq_to_qir(bloq: qualtran.Bloq) -> pyqir.Module:
         bloq.pretty_name(),
         qir_major_version=1,
         qir_minor_version=0,
-        dynamic_qubit_management=True
+        dynamic_qubit_management=True,
     )
     builder = Builder(context)
     qubit_type = pyqir.qubit_type(context)
     void_type = pyqir.Type.void(context)
-    entry = pyqir.entry_point(
-        mod, "main", get_num_qubits_for_bloq(bloq), 0
-    )
+    entry = pyqir.entry_point(mod, "main", get_num_qubits_for_bloq(bloq), 0)
     qubit_allocate = Function(
-        pyqir.FunctionType(qubit_type, []),
-        Linkage.EXTERNAL,
-        "__quantum__rt__qubit_allocate",
-        mod,
+        pyqir.FunctionType(qubit_type, []), Linkage.EXTERNAL, "__quantum__rt__qubit_allocate", mod
     )
     entry_block = BasicBlock(context, "entry", entry)
     builder.insert_at_end(entry_block)
