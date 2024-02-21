@@ -25,12 +25,7 @@ def round_trip(data: QDType):
     serialized_qbit = data_type_to_proto(data)
     original_qbit = data_type_from_proto(serialized_qbit)
 
-    assert data.num_qubits == original_qbit.num_qubits
-    if isinstance(serialized_qbit, BoundedQUInt):
-        assert data.iteration_length == original_qbit.iteration_length
-    if isinstance(serialized_qbit, QFxp):
-        assert data.num_frac == original_qbit.num_frac
-        assert data.signed == original_qbit.signed
+    assert data == original_qbit
 
 
 def test_qbit():
