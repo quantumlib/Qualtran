@@ -4,11 +4,10 @@ import attrs
 import numpy as np
 import cirq
 
-from qualtran import Bloq, BloqBuilder, SelectionRegister, Signature, SoquetT
-from qualtran.bloqs.controlled_state_preparation import ControlledStatePreparationUsingRotations
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran.bloqs.state_preparation.state_preparation_via_rotation import StatePreparationViaRotations
 from qualtran.bloqs.basic_gates import Hadamard, ZGate, CNOT
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.basic_gates import ZeroState, OneState, ZeroEffect, OneEffect
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
@@ -16,84 +15,103 @@ from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
 @attrs.frozen
 class CompileGateGivenVectorsWithoutPG(Bloq):
-    gate_bitsizes: int  # number of qubits that the gate acts on
-    rot_reg_bitsizes: int # number of ancilla qubits used to encode the state preparation's rotations
-    gate_coefs: Tuple[Tuple] # tuple with the columns/rows of the gate that are specified
+    phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
+    gate_cols: Tuple[Tuple] # tuple with the columns/rows of the gate that are specified
     uncompute: bool = False
 
     @property
     def signature(self):
-        return Signature.build(gate_input=self.gate_bitsizes)
+        return Signature.build(gate_input=self.gate_bitsize)
+
+    @property
+    def gate_bitsize(self):
+        return (len(self.gate_cols[0])-1).bit_length()
     
     def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT) -> Dict[str, SoquetT]:
-        gate_compiler = CompileGateGivenVectors(gate_bitsizes=self.gate_bitsizes, gate_coefs=self.gate_coefs, rot_reg_bitsizes=self.rot_reg_bitsizes, uncompute=self.uncompute)
-        phase_gradient = bb.add(PhaseGradientState(bitsize=self.rot_reg_bitsizes))
+        gate_compiler = CompileGateGivenVectors(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=self.uncompute)
+        phase_gradient = bb.add(PhaseGradientState(bitsize=self.phase_bitsize))
         gate_input, phase_gradient = bb.add(gate_compiler, gate_input=gate_input, phase_grad=phase_gradient)
-        bb.add(PhaseGradientState(bitsize=self.rot_reg_bitsizes, adjoint=True), phase_grad=phase_gradient)
+        bb.add(PhaseGradientState(bitsize=self.phase_bitsize).adjoint(), phase_grad=phase_gradient)
         return {"gate_input": gate_input}
 
 
 @attrs.frozen
 class CompileGateGivenVectors(Bloq):
-    gate_bitsizes: int  # number of qubits that the gate acts on
-    rot_reg_bitsizes: int # number of ancilla qubits used to encode the state preparation's rotations
-    gate_coefs: Tuple[Tuple] # tuple with the columns of the gate that are specified
+    phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
+    gate_cols: Tuple[Tuple] # tuple with the columns of the gate that are specified
     uncompute: bool = False
+
+    def __attrs_post_init__(self):
+        # at least one column has to be specified
+        assert len(self.gate_cols) > 0
+        # there can't be more columns that rows
+        assert len(self.gate_cols) <= len(self.gate_cols[0])
 
     @property
     def signature(self):
-        return Signature.build(gate_input=self.gate_bitsizes, phase_grad=self.rot_reg_bitsizes)
+        return Signature.build(gate_input=self.gate_bitsize, phase_grad=self.phase_bitsize)
+    
+    @property
+    def gate_bitsize(self):
+        return (len(self.gate_cols[0])-1).bit_length()
 
     def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT, phase_grad: SoquetT) -> Dict[str, SoquetT]:
-        if self.uncompute:
-            reflection_reg = bb.join(np.array([bb.add(ZeroState()), *bb.split(gate_input)]))
+        reflection_ancilla = bb.allocate(1)
+        if not self.uncompute:
+            reflection_ancilla = bb.add(XGate(), q=reflection_ancilla)
+        if self.gate_bitsize == 1:
+            reflection_reg = bb.join(np.array([reflection_ancilla, gate_input]))
         else:
-            reflection_reg = bb.join(np.array([bb.add(OneState()), *bb.split(gate_input)]))
-        for i in range(len(self.gate_coefs)):
+            reflection_reg = bb.join(np.array([reflection_ancilla, *bb.split(gate_input)]))
+        for i in range(len(self.gate_cols)):
             reflection_reg, phase_grad = self._ith_reflection(bb, i, reflection_reg, phase_grad)
         qubits = bb.split(reflection_reg)
         if self.uncompute:
-            bb.add(OneEffect(), q=qubits[0])
-        else:
-            bb.add(ZeroEffect(), q=qubits[0])
+            qubits[0] = bb.add(XGate(), q=qubits[0])
+        bb.free(qubits[0])
         gate_input = bb.join(qubits[1:])
         return {"gate_input": gate_input, "phase_grad": phase_grad}
     
     def _ith_reflection(self, bb: BloqBuilder, i: int, reflection_reg: SoquetT, phase_grad: SoquetT):
-        reflection_prep = PrepareOracleCompileGateReflection(state_bitsizes=self.gate_bitsizes, state_coefs=self.gate_coefs[i], rot_reg_bitsizes=self.rot_reg_bitsizes, index=i)
-        reflection_prep_adj = PrepareOracleCompileGateReflection(state_bitsizes=self.gate_bitsizes, state_coefs=self.gate_coefs[i], rot_reg_bitsizes=self.rot_reg_bitsizes, index=i, uncompute=True)
+        reflection_prep = PrepareOracleCompileGateReflection(state_coefs=self.gate_cols[i], phase_bitsize=self.phase_bitsize, index=i)
+        reflection_prep_adj = PrepareOracleCompileGateReflection(state_coefs=self.gate_cols[i], phase_bitsize=self.phase_bitsize, index=i, uncompute=True)
         reflection_reg, phase_grad = bb.add(reflection_prep_adj, target_reg=reflection_reg, phase_grad=phase_grad)
         reflection_reg = self._reflect(bb, reflection_reg)
         reflection_reg, phase_grad = bb.add(reflection_prep, target_reg=reflection_reg, phase_grad=phase_grad)
         return reflection_reg, phase_grad
     
     def _reflect(self, bb: BloqBuilder, reg: SoquetT):
-        mult_control_flip = MultiControlPauli(cvs=tuple([0]*(self.gate_bitsizes+1)), target_gate=cirq.Z)
-        ancilla = bb.add(OneState())
+        mult_control_flip = MultiControlPauli(cvs=tuple([0]*(self.gate_bitsize+1)), target_gate=cirq.Z)
+        ancilla = bb.allocate(1)
+        ancilla = bb.add(XGate(), q=ancilla)
         reg, ancilla = bb.add(mult_control_flip, controls=reg, target=ancilla)
-        bb.add(OneEffect(), q=ancilla)
+        ancilla = bb.add(XGate(), q=ancilla)
+        bb.free(ancilla)
         return reg
 
 
 @attrs.frozen
-class PrepareOracleCompileGateReflection(PrepareOracle):
-    state_bitsizes: int # length in qubits of the state |u_i> (without the reflection ancilla!)
+class PrepareOracleCompileGateReflection(Bloq):
     state_coefs: Tuple # state |u_i>
-    rot_reg_bitsizes: int # number of ancilla qubits used to encode the state preparation's rotations
+    phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
     index: int # i value in |i>
     uncompute: bool = False
 
+    # @property
+    # def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    #     return (
+    #         SelectionRegister(
+    #             "target_reg", bitsize=self.state_bitsize+1, iteration_length=self.state_bitsize+1
+    #         ),
+    #     )
+    
     @property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (
-            SelectionRegister(
-                "target_reg", bitsize=self.state_bitsizes+1, iteration_length=self.state_bitsizes+1
-            ),
-        )
+    def state_bitsize(self):
+        return (len(self.state_coefs)-1).bit_length()
     
     @property
     def signature (self):
-        return Signature.build(target_reg=self.state_bitsizes+1, phase_grad=self.rot_reg_bitsizes)
+        return Signature.build(target_reg=self.state_bitsize+1, phase_grad=self.phase_bitsize)
 
     def build_composite_bloq(
             self, bb: BloqBuilder, *, target_reg: SoquetT, phase_grad: SoquetT
@@ -122,7 +140,7 @@ class PrepareOracleCompileGateReflection(PrepareOracle):
         return refl_ancilla
     
     def _prepare_i_state(self, bb: BloqBuilder, refl_ancilla: SoquetT, state: List[SoquetT]):
-        for i, bit in enumerate(f"{self.index:0{self.state_bitsizes}b}"):
+        for i, bit in enumerate(f"{self.index:0{self.state_bitsize}b}"):
             if bit == '1':
                 refl_ancilla, state[i] = bb.add(CNOT(), ctrl=refl_ancilla, target=state[i])
         return refl_ancilla, state
@@ -130,11 +148,11 @@ class PrepareOracleCompileGateReflection(PrepareOracle):
     def _prepare_u_state(
             self, bb: BloqBuilder, refl_ancilla: SoquetT, state: List[SoquetT], phase_grad: SoquetT
     ):
-        csp = ControlledStatePreparationUsingRotations(state_bitsizes=self.state_bitsizes, rot_reg_bitsizes=self.rot_reg_bitsizes, state=self.state_coefs, uncompute=self.uncompute)
+        csp = StatePreparationViaRotations(phase_bitsize=self.phase_bitsize, state_coefficients=self.state_coefs, control_bitsize=1, uncompute=self.uncompute)
         # for negative controlling on state preparation
         refl_ancilla = bb.add(XGate(), q=refl_ancilla)
         state_reg = bb.join(state)
-        refl_ancilla, state_reg, phase_grad = bb.add(csp, control=refl_ancilla, target_state=state_reg, phase_gradient=phase_grad)
+        refl_ancilla, state_reg, phase_grad = bb.add(csp, prepare_control=refl_ancilla, target_state=state_reg, phase_gradient=phase_grad)
         state = bb.split(state_reg)
         refl_ancilla = bb.add(XGate(), q=refl_ancilla)
         return refl_ancilla, state, phase_grad

@@ -36,40 +36,40 @@ def formatU (U):
 
 # these gates can be approximated exactly with the given rot_reg_size
 @pytest.mark.parametrize(
-    "n_qubits, rot_reg_size, gate_cols",
+    "rot_reg_size, gate_cols",
     [
-        [1, 2, (((0.5+0.5j), (0.5-0.5j)),
-                ((-0.5-0.5j), (0.5-0.5j)))],
-        [1, 4, (((-0.191341716182545+0.961939766255644j), (-0.038060233744357+0.191341716182545j)),
-                ((0.038060233744356-0.191341716182545j), (-0.191341716182545+0.961939766255644j)))],
-        [2, 2,  (((0.5625+0.125j), (-0.125-0.4375j), (0.0625-0.25j), (0.5-0.0625j)),
-                 ((0.375+0.0625j), (0.4375-0.125j), (-0.25+0.0625j), (-0.4375-0.5j)),
-                 ((-0.375-0.125j), (0.125-0.375j), (-0.625-0.375j), (0.125+0.125j)),
-                 ((-0.5+0j), (-0-0.5j), (0.5-0j), -0.5j))]
+        [2, (((0.5+0.5j), (0.5-0.5j)),
+             ((-0.5-0.5j), (0.5-0.5j)))],
+        [4, (((-0.191341716182545+0.961939766255644j), (-0.038060233744357+0.191341716182545j)),
+             ((0.038060233744356-0.191341716182545j), (-0.191341716182545+0.961939766255644j)))],
+        [2,  (((0.5625+0.125j), (-0.125-0.4375j), (0.0625-0.25j), (0.5-0.0625j)),
+              ((0.375+0.0625j), (0.4375-0.125j), (-0.25+0.0625j), (-0.4375-0.5j)),
+              ((-0.375-0.125j), (0.125-0.375j), (-0.625-0.375j), (0.125+0.125j)),
+              ((-0.5+0j), (-0-0.5j), (0.5-0j), -0.5j))]
     ],
 )
-def test_exact_gate_compilation(n_qubits, rot_reg_size, gate_cols):
-    gate_compiler = CompileGateGivenVectorsWithoutPG(n_qubits, rot_reg_size, tuple(gate_cols))
+def test_exact_gate_compilation(rot_reg_size, gate_cols):
+    gate_compiler = CompileGateGivenVectorsWithoutPG(rot_reg_size, tuple(gate_cols))
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate, np.array(gate_cols))
 
 
 @pytest.mark.parametrize(
-    "n_qubits, rot_reg_size, gate_cols",
+    "rot_reg_size, gate_cols",
     [
-        [1, 2, (((0.5+0.5j), (0.5-0.5j)),
-                ((-0.5-0.5j), (0.5-0.5j)))],
-        [1, 4, (((-0.191341716182545+0.961939766255644j), (-0.038060233744357+0.191341716182545j)),
-                ((0.038060233744356-0.191341716182545j), (-0.191341716182545+0.961939766255644j)))],
-        [2, 2,  (((0.5625+0.125j), (-0.125-0.4375j), (0.0625-0.25j), (0.5-0.0625j)),
-                 ((0.375+0.0625j), (0.4375-0.125j), (-0.25+0.0625j), (-0.4375-0.5j)),
-                 ((-0.375-0.125j), (0.125-0.375j), (-0.625-0.375j), (0.125+0.125j)),
-                 ((-0.5+0j), (-0-0.5j), (0.5-0j), -0.5j))]
+        [2, (((0.5+0.5j), (0.5-0.5j)),
+             ((-0.5-0.5j), (0.5-0.5j)))],
+        [4, (((-0.191341716182545+0.961939766255644j), (-0.038060233744357+0.191341716182545j)),
+             ((0.038060233744356-0.191341716182545j), (-0.191341716182545+0.961939766255644j)))],
+        [2,  (((0.5625+0.125j), (-0.125-0.4375j), (0.0625-0.25j), (0.5-0.0625j)),
+              ((0.375+0.0625j), (0.4375-0.125j), (-0.25+0.0625j), (-0.4375-0.5j)),
+              ((-0.375-0.125j), (0.125-0.375j), (-0.625-0.375j), (0.125+0.125j)),
+              ((-0.5+0j), (-0-0.5j), (0.5-0j), -0.5j))]
     ],
 )
-def test_partial_gate_compilation(n_qubits, rot_reg_size, gate_cols):
-    gate_compiler = CompileGateGivenVectorsWithoutPG(n_qubits, rot_reg_size, tuple(gate_cols))
+def test_partial_gate_compilation(rot_reg_size, gate_cols):
+    gate_compiler = CompileGateGivenVectorsWithoutPG(rot_reg_size, tuple(gate_cols))
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate[range(len(gate_cols)),:], np.array(gate_cols))
