@@ -47,9 +47,9 @@ def test_registers_to_proto(bitsize, shape, side):
     else:
         assert tuple(s.int_val for s in reg_proto.shape) == shape
     if isinstance(bitsize, int):
-        assert reg_proto.bitsize.int_val == bitsize
+        assert reg_proto.dtype.qany.bitsize.int_val == bitsize
     else:
-        assert sympy.parse_expr(reg_proto.bitsize.sympy_expr) == bitsize
+        assert sympy.parse_expr(reg_proto.dtype.qany.bitsize.sympy_expr) == bitsize
     assert reg_proto.side == side.value
 
     assert register_from_proto(reg_proto) == reg
