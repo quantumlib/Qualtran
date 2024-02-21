@@ -46,4 +46,4 @@ def test_compare_with_paper(test: TestCase):
     factory = FifteenToOne(test.d_X, test.d_Z, test.d_m)
     assert f'{factory.distillation_error(MagicCount(n_t=1), test.phys_err):.1e}' == str(test.p_out)
     assert round(factory.footprint(), -1) == test.footprint  # rounding to the 10s digit.
-    assert round(factory.n_cycles(MagicCount(n_t=1), test.phys_err), 1) == test.cycles
+    assert factory.n_cycles(MagicCount(n_t=1), test.phys_err) == math.ceil(test.cycles + 1e-9)

@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import lru_cache
 
 import cirq
@@ -74,10 +73,10 @@ class FifteenToOne(MagicStateFactory):
         target_density = np.kron(T_state.T.conj() @ T_state, np.ones((16, 16)) / 16)
         return np.real(1 - np.trace(selector @ target_density))
 
-    def n_cycles(self, n_magic: MagicCount, phys_err: float) -> int | float:
+    def n_cycles(self, n_magic: MagicCount, phys_err: float) -> int:
         """The number of cycles (time) required to produce the requested number of magic states."""
         num_t = n_magic.n_t + 4 * n_magic.n_ccz
-        return num_t * 6 * self.d_m / (1 - self.p_fail(phys_err))
+        return np.ceil(num_t * 6 * self.d_m / (1 - self.p_fail(phys_err)))
 
     def distillation_error(self, n_magic: MagicCount, phys_err: float) -> float:
         """The total error expected from distilling magic states with a given physical error rate."""
