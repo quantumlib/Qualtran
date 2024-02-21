@@ -14,10 +14,11 @@ import os
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from pathlib import Path
+from typing import Dict
 
 import attrs
-from typing import Dict
-from qualtran import Bloq, BloqBuilder, SoquetT, Signature, Register
+
+from qualtran import Bloq, BloqBuilder, Register, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.qir_interop.bloq_to_qir import bloq_to_qir

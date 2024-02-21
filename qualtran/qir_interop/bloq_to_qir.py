@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List, Union, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
+import pyqir
+from pyqir import BasicBlock, Builder, Context, Function, Linkage
+from pyqir._native import Function, FunctionType, Type
+
 import qualtran
 from qualtran import Soquet
 from qualtran.bloqs.basic_gates.rotation import CZPowGate
-import pyqir
-from pyqir import BasicBlock, Builder, Context, Function, Linkage
-from pyqir._native import Type, Function, FunctionType
 
 PYQIR_OP_MAP = {
     # Single-Qubit Clifford Gates
