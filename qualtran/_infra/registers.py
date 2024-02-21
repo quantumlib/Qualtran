@@ -22,7 +22,7 @@ import attrs
 import numpy as np
 from attrs import field, frozen
 
-from .data_types import BoundedQUInt, QAny, QBit, QDType
+from .data_types import QAny, QBit, QDType
 
 
 class Side(enum.Flag):
