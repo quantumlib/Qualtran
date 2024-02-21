@@ -171,6 +171,7 @@ def test_multi_validate():
         _ = MultiAnd(cvs=(0, 0))
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('and_bloq')
 

@@ -131,6 +131,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         return {(CNOT(), 3)}
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
 def test_multi_dimensional_unary_iteration_gate(target_shape: Tuple[int, int, int]):
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -229,5 +230,6 @@ def test_multi_dimensional_bloq_has_consistent_decomposition(target_shape: Tuple
     verify_bloq_has_consistent_build_callgraph(bloq)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('unary_iteration')

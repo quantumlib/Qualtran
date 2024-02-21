@@ -118,7 +118,7 @@ def test_partition_tensor_contract():
     bloq = TestPartition(test_bloq=TestMultiRegister())
     tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
     assert len(tn.tensors) == 3
-    assert bloq_to_dense(bloq).shape == (4096, 4096)
+    assert tn.shape == (4096, 4096)
 
 
 def test_partition_as_cirq_op():
@@ -201,5 +201,6 @@ def test_classical_sim_dtypes():
     #     _ = s.call_classically(reg=np.uint16(256))
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('util_bloqs')

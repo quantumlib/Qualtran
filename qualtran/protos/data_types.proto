@@ -11,11 +11,37 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
 
-from qualtran.testing import execute_notebook
+syntax = "proto3";
+package qualtran;
+import "qualtran/protos/args.proto";
 
+message QBit {
+}
 
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('musical_score')
+message QAny {
+    optional IntOrSympy bitsize = 1;
+}
+
+message QInt {
+    optional IntOrSympy bitsize = 1;
+}
+
+message QIntOnesComp {
+    optional IntOrSympy bitsize = 1;
+}
+
+message QUInt {
+    optional IntOrSympy bitsize = 1;
+}
+
+message BoundedQUInt {
+    optional IntOrSympy bitsize = 1;
+    optional IntOrSympy iteration_length = 2;
+}
+
+message QFxp {
+    optional IntOrSympy bitsize = 1;
+    optional IntOrSympy num_frac = 2;
+    optional bool signed = 3;
+}

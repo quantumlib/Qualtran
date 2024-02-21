@@ -70,7 +70,7 @@ class TestCSwap(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
 
