@@ -24,6 +24,7 @@ from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -61,7 +62,7 @@ class CtrlScaleModAdd(Bloq):
         k = ssa.new_symbol('k')
         return {(CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod), self.bitsize)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         ((bloq, n),) = self.bloq_counts().items()
         return n * bloq.t_complexity()
 
@@ -77,6 +78,15 @@ class CtrlScaleModAdd(Bloq):
 
     def short_name(self) -> str:
         return f'y += x*{self.k} % {self.mod}'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'ctrl':
+            return Circle()
+        if soq.reg.name == 'x':
+            return TextBox('x')
+        if soq.reg.name == 'y':
+            return TextBox(f'y += x*{self.k}')
+        raise ValueError(f"Unknown soquet {soq}")
 
 
 @frozen
@@ -105,7 +115,7 @@ class CtrlModAddK(Bloq):
         k = ssa.new_symbol('k')
         return {(CtrlAddK(k=k, bitsize=self.bitsize), 5)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         ((bloq, n),) = self.bloq_counts().items()
         return n * bloq.t_complexity()
 
@@ -139,7 +149,7 @@ class CtrlAddK(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 2 * self.bitsize)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=2 * self.bitsize)
 
 

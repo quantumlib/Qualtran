@@ -59,7 +59,7 @@ class Comparator(Bloq):
     def short_name(self) -> str:
         return "Cmprtr"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # complexity is from less than on two n qubit numbers + controlled swap
         # Hard code for now until CSwap-Bloq is merged.
         # See: https://github.com/quantumlib/Qualtran/issues/219
@@ -112,7 +112,7 @@ class BitonicSort(Bloq):
     def short_name(self) -> str:
         return "BSort"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # Need O(k * log^2(k)) comparisons.
         # TODO: This is Big-O complexity.
         # Should work out constant factors or

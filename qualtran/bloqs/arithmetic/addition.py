@@ -274,7 +274,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         ]
         return cirq.inverse(optree) if self.adjoint else optree
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         and_t = And(uncompute=self.adjoint).t_complexity()
         num_clifford = self.bitsize * (5 + and_t.clifford)
         num_t = self.bitsize * and_t.t

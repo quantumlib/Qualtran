@@ -225,7 +225,7 @@ class XGate(Bloq):
         (q,) = q
         return cirq.X(q), {'q': [q]}
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         return TComplexity(clifford=1)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
