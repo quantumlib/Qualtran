@@ -61,9 +61,6 @@ class Register:
     """
 
     name: str
-    # _bitsize: Union[int, QDType] = field(
-    #     converter=lambda v: v if isinstance(v, QDType) else QBit() if v == 1 else QAny(v)
-    # )
     dtype: QDType
     shape: Tuple[int, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
@@ -73,11 +70,6 @@ class Register:
     def __attrs_post_init__(self):
         if not isinstance(self.dtype, QDType):
             raise ValueError(f'dtype must be a QDType: found {type(self.dtype)}')
-        if isinstance(self.dtype, BoundedQUInt):
-            if len(self.shape) != 0:
-                raise ValueError(
-                    f'{self.name} with BoundedQUInt dtype should be flat. Found {self.shape=}'
-                )
 
     @property
     def bitsize(self) -> int:
