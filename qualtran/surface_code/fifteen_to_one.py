@@ -63,13 +63,15 @@ class FifteenToOne(MagicStateFactory):
     def p_out(self, phys_err: float) -> float:
         projector = np.kron(
             np.eye(2), np.ones((16, 16)) / 16
-        )  # I \otimes H \otimes H \otimes H \otimes H
+        )  # I \otimes ones \otimes ones \otimes ones \otimes ones / 16
         selector = (
             1
             / (1 - self.p_fail(phys_err))
             * (projector @ self._final_state(phys_err) @ projector.T.conj())
         )
-        T_state = np.array([1, np.exp(-1j * np.pi / 4)]).reshape((1, 2)) / np.sqrt(2)
+        T_state = np.array([1, np.exp(-1j * np.pi / 4)]).reshape((1, 2)) / np.sqrt(
+            2
+        )  # |T><T| \otimes ones \otimes ones \otimes ones \otimes ones / 16
         target_density = np.kron(T_state.T.conj() @ T_state, np.ones((16, 16)) / 16)
         return np.real(1 - np.trace(selector @ target_density))
 
