@@ -62,7 +62,7 @@ def get_num_qubits_for_bloq(bloq: qualtran.Bloq) -> int:
 
 
 def create_func_for_bloq(
-    bloq: qualtran.Bloq, name: str, qubit_type: Type, void_type, mod: pyqir.Module
+    bloq: qualtran.Bloq, name: str, qubit_type: Type, void_type: Type, mod: pyqir.Module
 ) -> Function:
     """
     Create a QIR function for the given Bloq.
@@ -132,10 +132,10 @@ def find_ir_for_index(i: int, ir_map: dict) -> Tuple[str, int]:
     for key, val in ir_map.items():
         if i == val:
             return key
-    raise Exception(f"Error in find_ir_for_index: No IR for index {i}")
+    raise ValueError(f"Error in find_ir_for_index: No IR for index {i}")
 
 
-def cz_power(angle: float, params: List[pyqir._native.Constant], builder, qubit_alloc):
+def cz_power(angle: float, params: List[pyqir._native.Constant], builder: Builder, qubit_alloc: Function):
     """
     Controlled-Z power gate implementation in QIR
 
@@ -165,7 +165,7 @@ def bloq_decomposes(bloq: qualtran.Bloq) -> bool:
     try:
         bloq.decompose_bloq()
         return True
-    except:
+    except NotImplementedError:
         return False
 
 
@@ -234,7 +234,7 @@ def compile_bloq(
     context: pyqir.Context,
     builder: Builder,
     qubit_alloc: Function,
-    func_dict=dict(),
+    func_dict: dict,
 ) -> Tuple[Function, dict]:
     """
     Compile a Bloq into a QIR function.
@@ -382,7 +382,7 @@ def bloq_to_qir(bloq: qualtran.Bloq) -> pyqir.Module:
     entry_block = BasicBlock(context, "entry", entry)
     builder.insert_at_end(entry_block)
     qubits = [pyqir.qubit(context, n) for n in range(get_num_qubits_for_bloq(bloq))]
-    bloq_func, _ = compile_bloq(bloq, qubit_type, void_type, mod, context, builder, qubit_allocate)
+    bloq_func, _ = compile_bloq(bloq, qubit_type, void_type, mod, context, builder, qubit_allocate, dict())
     builder.insert_at_end(entry_block)
     builder.call(bloq_func, qubits)
     builder.ret(None)
