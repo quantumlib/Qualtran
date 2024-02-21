@@ -192,7 +192,7 @@ def map_soquet_to_param_indices(
     return map_single_soquet_to_param_indices(soq, soq_map, ir_map)
 
 
-def map_single_soquet_to_param_indices(soquet, soq_map, ir_map) -> List[int]:
+def map_single_soquet_to_param_indices(soquet: Soquet, soq_map: dict, ir_map: dict) -> List[int]:
     """
     Map a single soquet to the corresponding list of parameter indices.
 
@@ -211,7 +211,7 @@ def map_single_soquet_to_param_indices(soquet, soq_map, ir_map) -> List[int]:
     return [ir_map[ir] for ir in irs]
 
 
-def irs_from_soquet(soq) -> List[Tuple[str, int]]:
+def irs_from_soquet(soq: Soquet) -> List[Tuple[str, int]]:
     """
     Get the IRs from a soquet.
 
