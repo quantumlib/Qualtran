@@ -91,5 +91,6 @@ def test_musical_score():
     assert isinstance(msd, MusicalScoreData)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('thc')

@@ -13,7 +13,11 @@
 #  limitations under the License.
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
+from qualtran.bloqs.for_testing.with_decomposition import (
+    TestIndependentParallelCombo,
+    TestParallelCombo,
+    TestSerialCombo,
+)
 
 
 def test_test_serial_combo():
@@ -22,3 +26,7 @@ def test_test_serial_combo():
 
 def test_test_parallel_combo():
     qlt_testing.assert_valid_bloq_decomposition(TestParallelCombo())
+
+
+def test_test_indep_parallel_combo():
+    qlt_testing.assert_valid_bloq_decomposition(TestIndependentParallelCombo())

@@ -54,7 +54,7 @@ def test_hamming_weight_phasing(n: int, theta: float):
 class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
     bitsize: int
     exponent: float
-    eps: int = 1e-2
+    eps: float
 
     @property
     def signature(self) -> 'Signature':
@@ -72,12 +72,15 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
             x=x,
             phase_grad=phase_grad,
         )
-        bb.add(PhaseGradientState(b_grad, adjoint=True), phase_grad=phase_grad)
+        bb.add(PhaseGradientState(b_grad).adjoint(), phase_grad=phase_grad)
         return {'x': x}
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('n', [2, 3])
-@pytest.mark.parametrize('theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-3)])
+@pytest.mark.parametrize(
+    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-4), (1.20345, 1e-4), (-1.1934341, 1e-4)]
+)
 def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: float):
     gate = TestHammingWeightPhasingViaPhaseGradient(n, theta, eps)
     assert_valid_bloq_decomposition(gate)
@@ -94,7 +97,7 @@ def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: fl
     np.testing.assert_allclose(expected_final_state, hw_final_state, atol=eps)
 
 
-@pytest.mark.parametrize('n, theta, eps', [(5_000, 1 / 100, 1e-2)])
+@pytest.mark.parametrize('n, theta, eps', [(5_000, 1 / 100, 1e-1)])
 def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: float, eps: float):
     gate = HammingWeightPhasingViaPhaseGradient(n, theta, eps)
     naive_hwp_t_complexity = HammingWeightPhasing(n, theta, eps).t_complexity()

@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 import itertools
+from functools import cached_property
 from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import pytest
-from cirq._compat import cached_property
 
-from qualtran import Register, SelectionRegister, Signature
+from qualtran import BoundedQUInt, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.unary_iteration_bloq import unary_iteration, UnaryIterationGate
@@ -41,15 +41,15 @@ class ApplyXToLthQubit(UnaryIterationGate):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return (Register('control', self._control_bitsize),)
+        return (Register('control', QAny(self._control_bitsize)),)
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-        return (SelectionRegister('selection', self._selection_bitsize, self._target_bitsize),)
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', BoundedQUInt(self._selection_bitsize, self._target_bitsize)),)
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self._target_bitsize),)
+        return (Register('target', QAny(self._target_bitsize)),)
 
     def nth_operation(  # type: ignore[override]
         self,
@@ -97,10 +97,11 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         return ()
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return tuple(
-            SelectionRegister(
-                'ijk'[i], (self._target_shape[i] - 1).bit_length(), self._target_shape[i]
+            Register(
+                'ijk'[i],
+                BoundedQUInt((self._target_shape[i] - 1).bit_length(), self._target_shape[i]),
             )
             for i in range(3)
         )
@@ -130,6 +131,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         return {(CNOT(), 3)}
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("target_shape", [(2, 3, 2), (2, 2, 2)])
 def test_multi_dimensional_unary_iteration_gate(target_shape: Tuple[int, int, int]):
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -158,7 +160,7 @@ def test_multi_dimensional_unary_iteration_gate(target_shape: Tuple[int, int, in
 
 def test_unary_iteration_loop():
     n_range, m_range = (3, 5), (6, 8)
-    selection_registers = [SelectionRegister('n', 3, 5), SelectionRegister('m', 3, 8)]
+    selection_registers = [Register('n', BoundedQUInt(3, 5)), Register('m', BoundedQUInt(3, 8))]
     selection = get_named_qubits(selection_registers)
     target = {(n, m): cirq.q(f't({n}, {m})') for n in range(*n_range) for m in range(*m_range)}
     qm = cirq.GreedyQubitManager("ancilla", maximize_reuse=True)
@@ -228,5 +230,6 @@ def test_multi_dimensional_bloq_has_consistent_decomposition(target_shape: Tuple
     verify_bloq_has_consistent_build_callgraph(bloq)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('unary_iteration')

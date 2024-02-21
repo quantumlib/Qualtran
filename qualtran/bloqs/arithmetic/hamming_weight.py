@@ -20,7 +20,7 @@ import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, Register, Side, Signature
+from qualtran import Bloq, GateWithRegisters, QAny, QUInt, Register, Side, Signature
 from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -58,11 +58,13 @@ class HammingWeightCompute(GateWithRegisters):
     @cached_property
     def signature(self):
         side = Side.LEFT if self.uncompute else Side.RIGHT
+        jnk_size = self.bitsize - self.bitsize.bit_count()
+        out_size = self.bitsize.bit_length()
         return Signature(
             [
-                Register('x', self.bitsize),
-                Register('junk', self.bitsize - self.bitsize.bit_count(), side=side),
-                Register('out', self.bitsize.bit_length(), side=side),
+                Register('x', QUInt(self.bitsize)),
+                Register('junk', QAny(jnk_size), side=side),
+                Register('out', QUInt(out_size), side=side),
             ]
         )
 

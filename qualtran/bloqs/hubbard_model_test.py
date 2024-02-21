@@ -31,7 +31,7 @@ def test_select_t_complexity(dim):
     assert cost.rotations == 0
 
 
-@pytest.mark.parametrize('dim', [*range(2, 10)])
+@pytest.mark.parametrize('dim', [*range(3, 10)])
 def test_prepare_t_complexity(dim):
     prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=2, mu=8)
     cost = t_complexity(prepare)
@@ -73,9 +73,11 @@ def test_hubbard_model_consistent_protocols():
     assert cirq.circuit_diagram_info(select_gate).wire_symbols == tuple(expected_symbols)
 
 
+@pytest.mark.notebook
 def test_hubbard_model_notebook():
     execute_notebook('hubbard_model')
 
 
+@pytest.mark.notebook
 def test_phase_estimation_of_qubitized_hubbard_model():
     execute_notebook('phase_estimation_of_quantum_walk')

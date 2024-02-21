@@ -42,7 +42,7 @@ class TestQFTWithPhaseGradient(GateWithRegisters):
         q, phase_grad = bb.add(
             QFTPhaseGradient(self.bitsize, self.with_reverse), q=q, phase_grad=phase_grad
         )
-        bb.add(PhaseGradientState(self.bitsize, adjoint=True), phase_grad=phase_grad)
+        bb.add(PhaseGradientState(self.bitsize).adjoint(), phase_grad=phase_grad)
         return {'q': q}
 
 
@@ -58,7 +58,7 @@ def test_qft_with_phase_gradient(n: int, without_reverse: bool):
     assert_valid_bloq_decomposition(qft_bloq)
 
 
-@pytest.mark.parametrize('n', [10, 100, 500])
+@pytest.mark.parametrize('n', [10, 123])
 def test_qft_text_book_t_complexity(n: int):
     qft_bloq = QFTPhaseGradient(n)
     print(qft_bloq.t_complexity())

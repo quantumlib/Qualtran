@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Tuple
 
 import attrs
 import cirq
-from cirq._compat import cached_property
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, SelectionRegister, Signature
+from qualtran import GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.mean_estimation.arctan import ArcTan
 from qualtran.bloqs.select_and_prepare import SelectOracle
@@ -44,7 +44,7 @@ class ComplexPhaseOracle(GateWithRegisters):
         return self.encoder.control_registers
 
     @cached_property
-    def selection_registers(self) -> Tuple[SelectionRegister, ...]:
+    def selection_registers(self) -> Tuple[Register, ...]:
         return self.encoder.selection_registers
 
     @cached_property

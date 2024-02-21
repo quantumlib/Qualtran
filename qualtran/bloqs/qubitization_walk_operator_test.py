@@ -222,5 +222,6 @@ def test_qubitization_walk_operator_consistent_protocols_and_controlled():
         _ = gate.controlled(num_controls=2)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('qubitization_walk_operator')

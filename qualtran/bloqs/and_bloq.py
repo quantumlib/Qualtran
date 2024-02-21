@@ -40,6 +40,7 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     GateWithRegisters,
+    QBit,
     Register,
     Side,
     Signature,
@@ -80,8 +81,8 @@ class And(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('ctrl', 1, shape=(2,)),
-                Register('target', 1, side=Side.RIGHT if not self.uncompute else Side.LEFT),
+                Register('ctrl', QBit(), shape=(2,)),
+                Register('target', QBit(), side=Side.RIGHT if not self.uncompute else Side.LEFT),
             ]
         )
 
@@ -243,9 +244,9 @@ class MultiAnd(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('ctrl', 1, shape=(len(self.cvs),)),
-                Register('junk', 1, shape=(len(self.cvs) - 2,), side=Side.RIGHT),
-                Register('target', 1, side=Side.RIGHT),
+                Register('ctrl', QBit(), shape=(len(self.cvs),)),
+                Register('junk', QBit(), shape=(len(self.cvs) - 2,), side=Side.RIGHT),
+                Register('target', QBit(), side=Side.RIGHT),
             ]
         )
 

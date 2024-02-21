@@ -25,7 +25,15 @@ if TYPE_CHECKING:
     import sympy
     from numpy.typing import NDArray
 
-    from qualtran import BloqBuilder, CompositeBloq, Signature, Soquet, SoquetT
+    from qualtran import (
+        AddControlledT,
+        BloqBuilder,
+        CompositeBloq,
+        CtrlSpec,
+        Signature,
+        Soquet,
+        SoquetT,
+    )
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
@@ -331,6 +339,68 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         _, sigma = self.call_graph(generalizer=generalizer, max_depth=1)
         return sigma
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        """Get a controlled version of this bloq and a function to wire it up correctly.
+
+        Users should likely call `Bloq.controlled(...)` which uses this method behind-the-scenes.
+        Intrepid bloq authors can override this method to provide a custom controlled version of
+        this bloq. By default, this will use the `qualtran.Controlled` meta-bloq to control any
+        bloq.
+
+        This method must return both a controlled version of this bloq and a callable that
+        'wires up' soquets correctly.
+
+        A controlled version of this bloq has all the registers from the original bloq plus
+        any additional control registers to support the activation function specified by
+        the `ctrl_spec`. In the simplest case, this could be one additional 1-qubit register
+        that activates the bloq if the input is in the |1> state, but additional logic is possible.
+        See the documentation for `CtrlSpec` for more information.
+
+        The second return value ensures we can accurately wire up soquets into the added registers.
+        It must have the following signature:
+
+            def _my_add_controlled(
+                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+            ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+
+        Which takes a bloq builder (for adding the controlled bloq), the new control soquets,
+        input soquets for the existing registers; and returns a sequence of the output control
+        soquets and a sequence of the output soquets for the existing registers. This complexity
+        is sadly unavoidable due to the variety of ways of wiring up custom controlled bloqs.
+
+        Returns:
+            controlled_bloq: A controlled version of this bloq
+            add_controlled: A function with the signature documented above that the system
+                can use to automatically wire up the new control registers.
+        """
+        from qualtran import Controlled, CtrlSpec
+
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
+
+        return Controlled.make_ctrl_system(self, ctrl_spec=ctrl_spec)
+
+    def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'Bloq':
+        """Return a controlled version of this bloq.
+
+        By default, the system will use the `qualtran.Controlled` meta-bloq to wrap this
+        bloq. Bloqs authors can declare their own, custom controlled versions by overriding
+        `Bloq.get_ctrl_system` in the bloq.
+
+        Args:
+            ctrl_spec: an optional `CtrlSpec`, which specifies how to control the bloq. The
+                default spec means the bloq will be active when one control qubit is in the |1>
+                state. See the CtrlSpec documentation for more possibilities including
+                negative controls, integer-equality control, and ndarrays of control values.
+
+        Returns:
+            A controlled version of the bloq.
+        """
+        controlled_bloq, _ = self.get_ctrl_system(ctrl_spec=ctrl_spec)
+        return controlled_bloq
 
     def t_complexity(self) -> 'TComplexity':
         """The `TComplexity` for this bloq.

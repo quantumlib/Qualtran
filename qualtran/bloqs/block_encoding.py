@@ -41,6 +41,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QAny,
     Register,
     Signature,
     Soquet,
@@ -147,7 +148,10 @@ class BlackBoxPrepare(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature(
-            [Register('selection', self.selection_bitsize), Register('junk', self.junk_bitsize)]
+            [
+                Register('selection', QAny(self.selection_bitsize)),
+                Register('junk', QAny(self.junk_bitsize)),
+            ]
         )
 
     def build_composite_bloq(
@@ -224,9 +228,9 @@ class BlackBoxBlockEncoding(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('selection', self.prepare.selection_bitsize),
-                Register('junk', self.prepare.junk_bitsize),
-                Register('system', self.select.system_bitsize),
+                Register('selection', QAny(self.prepare.selection_bitsize)),
+                Register('junk', QAny(self.prepare.junk_bitsize)),
+                Register('system', QAny(self.select.system_bitsize)),
             ]
         )
 
@@ -284,9 +288,9 @@ class ChebyshevPolynomial(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('selection', self.block_encoding.selection_bitsize),
-                Register('junk', self.block_encoding.junk_bitsize),
-                Register('system', self.block_encoding.system_bitsize),
+                Register('selection', QAny(self.block_encoding.selection_bitsize)),
+                Register('junk', QAny(self.block_encoding.junk_bitsize)),
+                Register('system', QAny(self.block_encoding.system_bitsize)),
             ]
         )
 
@@ -336,8 +340,9 @@ def _black_box_block_bloq() -> BlackBoxBlockEncoding:
     from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
-    select = BlackBoxSelect(SelectHubbard(2, 2))
-    prepare = BlackBoxPrepare(PrepareHubbard(2, 2, 1, 4))
+    dim = 3
+    select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
     return black_box_block_bloq
 
@@ -354,10 +359,11 @@ def _chebyshev_poly() -> ChebyshevPolynomial:
     from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
-    select = BlackBoxSelect(SelectHubbard(2, 2))
-    prepare = BlackBoxPrepare(PrepareHubbard(2, 2, 1, 4))
+    dim = 3
+    select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
+    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
     black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
-    chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, 3)
+    chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
     return chebyshev_poly
 
 

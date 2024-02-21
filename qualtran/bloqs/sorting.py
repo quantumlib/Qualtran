@@ -16,7 +16,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Side, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Side, Signature
 from qualtran.bloqs.arithmetic import GreaterThan
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -50,9 +50,9 @@ class Comparator(Bloq):
     def signature(self):
         return Signature(
             [
-                Register('a', self.bitsize),
-                Register('b', self.bitsize),
-                Register('out', 1, side=Side.RIGHT),
+                Register('a', QAny(self.bitsize)),
+                Register('b', QAny(self.bitsize)),
+                Register('out', QBit(), side=Side.RIGHT),
             ]
         )
 
@@ -107,7 +107,7 @@ class BitonicSort(Bloq):
 
     @property
     def signature(self):
-        return Signature([Register("input", bitsize=self.bitsize, shape=(self.k,))])
+        return Signature([Register("input", QAny(self.bitsize), shape=(self.k,))])
 
     def short_name(self) -> str:
         return "BSort"

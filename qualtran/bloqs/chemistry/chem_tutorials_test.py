@@ -14,17 +14,20 @@
 
 
 import numpy as np
+import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.chemistry.chem_tutorials import fit_linear, gen_random_chem_ham
-from qualtran.testing import execute_notebook
 
 
+@pytest.mark.notebook
 def test_resource_estimation_notebook():
-    execute_notebook('resource_estimation')
+    qlt_testing.execute_notebook('resource_estimation')
 
 
+@pytest.mark.notebook
 def test_writing_algorithms_notebook():
-    execute_notebook('writing_algorithms')
+    qlt_testing.execute_notebook('writing_algorithms')
 
 
 def test_rand_ham():
