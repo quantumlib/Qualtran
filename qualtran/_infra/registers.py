@@ -16,7 +16,7 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple, Union
+from typing import Dict, Iterable, Iterator, List, overload, Tuple
 
 import attrs
 import numpy as np
@@ -78,10 +78,6 @@ class Register:
                 raise ValueError(
                     f'{self.name} with BoundedQUInt dtype should be flat. Found {self.shape=}'
                 )
-
-    # @property
-    # def dtype(self) -> QDType:
-    #     return self._bitsize
 
     @property
     def bitsize(self) -> int:
