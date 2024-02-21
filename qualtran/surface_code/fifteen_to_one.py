@@ -64,7 +64,7 @@ class FifteenToOne(MagicStateFactory):
         projector = np.kron(
             np.eye(2), np.ones((16, 16)) / 16
         )  # I \otimes ones \otimes ones \otimes ones \otimes ones / 16
-        selector = (
+        project_state = (
             1
             / (1 - self.p_fail(phys_err))
             * (projector @ self._final_state(phys_err) @ projector.T.conj())
@@ -73,7 +73,7 @@ class FifteenToOne(MagicStateFactory):
             2
         )  # |T><T| \otimes ones \otimes ones \otimes ones \otimes ones / 16
         target_density = np.kron(T_state.T.conj() @ T_state, np.ones((16, 16)) / 16)
-        return np.real(1 - np.trace(selector @ target_density))
+        return np.real(1 - np.trace(project_state @ target_density))
 
     def n_cycles(self, n_magic: MagicCount, phys_err: float) -> int:
         """The number of cycles (time) required to produce the requested number of magic states."""
