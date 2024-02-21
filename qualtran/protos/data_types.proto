@@ -47,3 +47,15 @@ message QFxp {
     optional IntOrSympy num_frac = 2;
     optional bool signed = 3;
 }
+
+message QDataType {
+  oneof val {
+    QBit qbit = 1;
+    QAny qany = 2;
+    QInt qint = 3;
+    QIntOnesComp qintoc = 4;
+    QUInt quint = 5;
+    BoundedQUInt bquint = 6;
+    QFxp qfxp = 7;
+  }
+}
