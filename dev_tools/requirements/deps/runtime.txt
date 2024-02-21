@@ -23,4 +23,8 @@ quimb
 # serialization
 protobuf
 
+# qir interop
+pyqir
+azure-quantum[qiskit]
+
 # Note: use `pipreqs` to generate a list of dependencies based on the imports in our files.
