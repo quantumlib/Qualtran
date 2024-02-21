@@ -31,7 +31,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
-from qualtran.bloqs.basic_gates import CNOT, CSwap
+from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -141,6 +141,16 @@ class MontgomeryModDbl(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', QMontgomeryUInt(self.bitsize))])
 
+    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+
+        x *= 2
+        x -= self.p
+
+        if x < 0:
+            x += self.p
+
+        return {'x': x}
+
     def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for sign and double.
@@ -164,17 +174,21 @@ class MontgomeryModDbl(Bloq):
         x = bb.join(x_split[1:])
 
         # Add constant p to the x register if the result of the last modular reduction is negative.
-        # sign, x = bb.add(
-        #    SimpleAddConstant(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)),
-        #    ctrls=sign,
-        #    x=x,
-        # )
+        sign_split = bb.split(sign)
+        sign_split, x = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)),
+            ctrls=sign_split,
+            x=x,
+        )
+        sign = bb.join(sign_split)
 
         # Split the lower bit ancilla from the x register for use in resetting the other ancilla bit
         # before freeing them both.
         x_split = bb.split(x)
         lower_bit = x_split[-1]
+        lower_bit = bb.add(XGate(), q=lower_bit)
         lower_bit, sign = bb.add(CNOT(), ctrl=lower_bit, target=sign)
+        lower_bit = bb.add(XGate(), q=lower_bit)
 
         free_bit = x_split[0]
         x = bb.join(np.concatenate([x_split[1:-1], [lower_bit]]))
