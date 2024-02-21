@@ -76,7 +76,7 @@ def create_func_for_bloq(bloq: qualtran.Bloq, name: str, qubit_type: Type, void_
     )
 
 
-def create_ir_map(bloq: qualtran.Bloq):
+def create_ir_map(bloq: qualtran.Bloq) -> dict:
     """
     Creates a dictionary which maps the IR of qubits to an index.
 
@@ -109,7 +109,7 @@ def create_ir_map(bloq: qualtran.Bloq):
     return ir_map
 
 
-def find_ir_for_index(i: int, ir_map: dict):
+def find_ir_for_index(i: int, ir_map: dict) -> Tuple[str, int]:
     """
     Given an index i, find the IR for that index.
 
@@ -143,7 +143,7 @@ def cz_power(angle: float, params: List[pyqir._native.Constant], builder, qubit_
     pyqir._native.ccx(builder, *params, ancilla)
 
 
-def bloq_decomposes(bloq: qualtran.Bloq):
+def bloq_decomposes(bloq: qualtran.Bloq) -> bool:
     """
     Check if a bloq decomposes into sub-bloqs.
 
@@ -160,7 +160,7 @@ def bloq_decomposes(bloq: qualtran.Bloq):
         return False
 
 
-def map_soquet_to_param_indices(soq: Union[Soquet, np.ndarray], soq_map: dict, ir_map: dict):
+def map_soquet_to_param_indices(soq: Union[Soquet, np.ndarray], soq_map: dict, ir_map: dict) -> List[int]:
     """
     Map a soquet to the corresponding list of parameter indices.
 
@@ -178,14 +178,34 @@ def map_soquet_to_param_indices(soq: Union[Soquet, np.ndarray], soq_map: dict, i
         return [el for soq in soqs for el in map_single_soquet_to_param_indices(soq, soq_map, ir_map)]
     return map_single_soquet_to_param_indices(soq, soq_map, ir_map)
 
-def map_single_soquet_to_param_indices(soquet, soq_map, ir_map):
+def map_single_soquet_to_param_indices(soquet, soq_map, ir_map) -> List[int]:
+    """
+    Map a single soquet to the corresponding list of parameter indices.
+
+    Args:
+        soquet: The soquet to map.
+        soq_map: The soquet map to use.
+        ir_map: The IR map to use.
+
+    Returns:
+        List of parameter indices corresponding to the soquet.
+    """
     if soquet in soq_map:
         irs = soq_map[soquet]
         return [ir_map[ir] for ir in irs]
-    irs = generate_irs_from_soquet(soquet)
+    irs = irs_from_soquet(soquet)
     return [ir_map[ir] for ir in irs]
 
-def generate_irs_from_soquet(soq):
+def irs_from_soquet(soq) -> List[Tuple[str, int]]:
+    """
+    Get the IRs from a soquet.
+
+    Args:
+        soq: The soquet to get the IRs from.
+
+    Returns:
+        List of IRs from the soquet.
+    """
     reg_name = soq.reg.name
     starting_index = soq.idx[0] if len(soq.idx) != 0 else 0
     return [(reg_name, starting_index * soq.reg.bitsize + i) for i in range(soq.reg.bitsize)]
