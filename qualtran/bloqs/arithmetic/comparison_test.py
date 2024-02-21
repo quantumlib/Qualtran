@@ -169,7 +169,7 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     assert g.with_registers([2] * 4, [2] * 5, [2]) == LessThanEqual(4, 5)
 
 
-def test_greater_than():
+def test_greater_than_manual():
     bb = BloqBuilder()
     bitsize = 5
     q0 = bb.add_register('a', bitsize)

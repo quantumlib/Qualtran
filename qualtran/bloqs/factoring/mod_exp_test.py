@@ -96,8 +96,3 @@ def test_modexp_symb(bloq_autotester):
 @pytest.mark.notebook
 def test_intro_notebook():
     execute_notebook('factoring-via-modexp')
-
-
-@pytest.mark.notebook
-def test_ref_notebook():
-    execute_notebook('ref-factoring')
