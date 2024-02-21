@@ -49,7 +49,7 @@ def data_type_to_proto(data: QDType) -> SerializedDataTypes:
         return data_types_pb2.QFxp(bitsize=bitsize, num_frac=num_frac, signed=data.signed)
     else:
         raise TypeError(
-            f"Data type {type(serialized)} is not recognized."
+            f"Data type {type(data)} is not recognized."
             " It must be of one of the following subtypes: QBit, "
             "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
             "QFixedPoint"
