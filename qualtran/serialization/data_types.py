@@ -13,20 +13,25 @@
 #  limitations under the License.
 from typing import Union
 
-from qualtran import QDType, QBit, QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, QFxp
+from qualtran import BoundedQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp, QUInt
 from qualtran.protos import data_types_pb2
-from qualtran.serialization.args import int_or_sympy_from_proto,int_or_sympy_to_proto
+from qualtran.serialization.args import int_or_sympy_from_proto, int_or_sympy_to_proto
 
+SerializedDataTypes = Union[
+    data_types_pb2.QBit,
+    data_types_pb2.QAny,
+    data_types_pb2.QInt,
+    data_types_pb2.QIntOnesComp,
+    data_types_pb2.QUInt,
+    data_types_pb2.BoundedQUInt,
+    data_types_pb2.QFxp,
+]
 
-SerializedDataTypes = Union[data_types_pb2.QBit, data_types_pb2.QAny,
-                            data_types_pb2.QInt, data_types_pb2.QIntOnesComp,
-                            data_types_pb2.QUInt, data_types_pb2.BoundedQUInt,
-                            data_types_pb2.QFxp]
 
 def data_type_to_proto(data: QDType) -> SerializedDataTypes:
     if isinstance(data, QBit):
         return data_types_pb2.QBit()
-    
+
     bitsize = int_or_sympy_to_proto(data.bitsize)
     if isinstance(data, QAny):
         return data_types_pb2.QAny(bitsize=bitsize)
@@ -38,23 +43,23 @@ def data_type_to_proto(data: QDType) -> SerializedDataTypes:
         return data_types_pb2.QUInt(bitsize=bitsize)
     elif isinstance(data, BoundedQUInt):
         iteration_length = int_or_sympy_to_proto(data.iteration_length)
-        return data_types_pb2.BoundedQUInt(bitsize=bitsize,
-                                           iteration_length=iteration_length)
+        return data_types_pb2.BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
     elif isinstance(data, QFxp):
         num_frac = int_or_sympy_to_proto(data.num_frac)
-        return data_types_pb2.QFxp(bitsize=bitsize,
-                                   num_frac=num_frac,
-                                   signed=data.signed)
+        return data_types_pb2.QFxp(bitsize=bitsize, num_frac=num_frac, signed=data.signed)
     else:
-        raise TypeError(f"Data type {type(serialized)} is not recognized."\
-                        " It must be of one of the following subtypes: QBit, "\
-                            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "\
-                                "QFixedPoint")
+        raise TypeError(
+            f"Data type {type(serialized)} is not recognized."
+            " It must be of one of the following subtypes: QBit, "
+            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
+            "QFixedPoint"
+        )
+
 
 def data_type_from_proto(serialized: SerializedDataTypes) -> QDType:
     if isinstance(serialized, data_types_pb2.QBit):
         return QBit()
-    
+
     bitsize = int_or_sympy_from_proto(serialized.bitsize)
     if isinstance(serialized, data_types_pb2.QAny):
         return QAny(bitsize=bitsize)
@@ -70,15 +75,14 @@ def data_type_from_proto(serialized: SerializedDataTypes) -> QDType:
         return QUInt(bitsize=bitsize)
     elif isinstance(serialized, data_types_pb2.BoundedQUInt):
         iteration_length = int_or_sympy_from_proto(serialized.iteration_length)
-        return BoundedQUInt(bitsize=bitsize,
-            iteration_length=iteration_length)
+        return BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
     elif isinstance(serialized, data_types_pb2.QFxp):
         num_frac = int_or_sympy_from_proto(serialized.num_frac)
-        return QFxp(bitsize=bitsize, num_frac=num_frac,
-                    signed=serialized.signed)
+        return QFxp(bitsize=bitsize, num_frac=num_frac, signed=serialized.signed)
     else:
-        raise TypeError(f"Data type {type(serialized)} is not recognized."\
-                        " It must be of one of the following subtypes: QBit, "\
-                            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "\
-                                "QFixedPoint")
-    
+        raise TypeError(
+            f"Data type {type(serialized)} is not recognized."
+            " It must be of one of the following subtypes: QBit, "
+            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
+            "QFixedPoint"
+        )
