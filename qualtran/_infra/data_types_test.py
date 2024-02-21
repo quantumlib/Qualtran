@@ -16,7 +16,18 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import BoundedQUInt, QBit, QDType, QFxp, QInt, QIntOnesComp, QMontgomeryUInt, QUInt
+from .data_types import (
+    BoundedQUInt,
+    check_dtypes_consistent,
+    QAny,
+    QBit,
+    QDType,
+    QFxp,
+    QInt,
+    QIntOnesComp,
+    QMontgomeryUInt,
+    QUInt,
+)
 
 
 def test_qint():
@@ -142,3 +153,54 @@ def test_validate_arrays():
     arr = rs.choice([-1, 1], size=(23, 4))
     with pytest.raises(ValueError):
         QBit().assert_valid_classical_val_array(arr)
+
+
+@pytest.mark.parametrize(
+    'qdtype', [QIntOnesComp(4), QFxp(4, 4), QInt(4), QUInt(4), BoundedQUInt(4, 5)]
+)
+def test_qany_consistency(qdtype):
+    # All Types with correct bitsize are ok with QAny
+    assert check_dtypes_consistent(qdtype, QAny(4))
+
+
+@pytest.mark.parametrize('qdtype', [QUInt(4), BoundedQUInt(4, 5), QMontgomeryUInt(4)])
+def test_type_errors_fxp_uint(qdtype):
+    assert check_dtypes_consistent(qdtype, QFxp(4, 4))
+    assert check_dtypes_consistent(qdtype, QFxp(4, 0))
+    assert not check_dtypes_consistent(qdtype, QFxp(4, 2))
+    assert not check_dtypes_consistent(qdtype, QFxp(4, 3, True))
+    assert not check_dtypes_consistent(qdtype, QFxp(4, 0, True))
+
+
+@pytest.mark.parametrize('qdtype', [QInt(4), QIntOnesComp(4)])
+def test_type_errors_fxp_int(qdtype):
+    assert not check_dtypes_consistent(qdtype, QFxp(4, 0))
+    assert not check_dtypes_consistent(qdtype, QFxp(4, 4))
+
+
+def test_type_errors_fxp():
+    assert not check_dtypes_consistent(QFxp(4, 4), QFxp(4, 0))
+    assert not check_dtypes_consistent(QFxp(4, 3, signed=True), QFxp(4, 0))
+    assert not check_dtypes_consistent(QFxp(4, 3), QFxp(4, 0))
+
+
+@pytest.mark.parametrize(
+    'qdtype_a', [QUInt(4), BoundedQUInt(4, 5), QMontgomeryUInt(4), QInt(4), QIntOnesComp(4)]
+)
+@pytest.mark.parametrize(
+    'qdtype_b', [QUInt(4), BoundedQUInt(4, 5), QMontgomeryUInt(4), QInt(4), QIntOnesComp(4)]
+)
+def test_type_errors_matrix(qdtype_a, qdtype_b):
+    if qdtype_a == qdtype_b:
+        assert check_dtypes_consistent(qdtype_a, qdtype_b)
+    else:
+        assert not check_dtypes_consistent(qdtype_a, qdtype_b)
+
+
+def test_single_qubit_consistency():
+    assert check_dtypes_consistent(QBit(), QBit())
+    assert check_dtypes_consistent(QBit(), QInt(1))
+    assert check_dtypes_consistent(QInt(1), QBit())
+    assert check_dtypes_consistent(QAny(1), QBit())
+    assert check_dtypes_consistent(BoundedQUInt(1), QBit())
+    assert check_dtypes_consistent(QFxp(1, 1), QBit())

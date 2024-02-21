@@ -420,3 +420,51 @@ class QMontgomeryUInt(QDType):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+
+QAnyInt = (QInt, QUInt, BoundedQUInt, QMontgomeryUInt)
+QAnyUInt = (QUInt, BoundedQUInt, QMontgomeryUInt)
+
+
+def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
+    """A uint is consistent with a whole or totally fractional unsigned QFxp."""
+    if b.signed:
+        return False
+    return a.num_qubits == b.num_qubits and (b.num_frac == 0 or b.num_int == 0)
+
+
+def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType) -> bool:
+    """Check if two types are consistent given our current definition on consistent types.
+
+    If the the reference type is a QAny type then any dtype is consistent with
+    this assuming the bitsizes match. The opposite is not true to prevent
+    silently casting to a numeric type. Registers of size 1 are all consistent with QBit.
+
+    Args:
+        dtype_a: The dtype to check against the reference.
+        dtype_b: The reference dtype.
+
+    Returns:
+        true
+    """
+    same_n_qubits = dtype_a.num_qubits == dtype_b.num_qubits
+    if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
+        # QAny -> any dtype and any dtype -> QAny
+        return same_n_qubits
+    elif isinstance(dtype_a, type(dtype_b)):
+        # The same types with the same number is ok.
+        return dtype_a == dtype_b
+    elif dtype_a.num_qubits == 1 and same_n_qubits:
+        # Single qubit types are ok.
+        return True
+    elif isinstance(dtype_a, QAnyInt) and isinstance(dtype_b, QAnyInt):
+        # A subset of the integers should be freely interchangeable.
+        return same_n_qubits
+    elif isinstance(dtype_a, QAnyUInt) and isinstance(dtype_b, QFxp):
+        # unsigned Fxp which is wholy an integer or < 1 part is a uint.
+        return _check_uint_fxp_consistent(dtype_a, dtype_b)
+    elif isinstance(dtype_b, QAnyUInt) and isinstance(dtype_a, QFxp):
+        # unsigned Fxp which is wholy an integer or < 1 part is a uint.
+        return _check_uint_fxp_consistent(dtype_b, dtype_a)
+    else:
+        return False

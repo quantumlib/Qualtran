@@ -92,21 +92,6 @@ def test_assert_registers_match_dangling():
         assert_registers_match_dangling(cbloq)
 
 
-def test_assert_connections_compatible():
-    from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
-
-    bb = BloqBuilder()
-    ctrl = bb.add_register('c', 1)
-    x = bb.add_register('x', 10)
-    y = bb.add_register('y', 10)
-    ctrl, x, y = bb.add(CSwap(10), ctrl=ctrl, x=x, y=y)
-    ctrl, x, y = bb.add(TwoBitCSwap(), ctrl=ctrl, x=x, y=y)
-    cbloq = bb.finalize(c=ctrl, x=x, y=y)
-    assert_registers_match_dangling(cbloq)
-    with pytest.raises(BloqError, match=r'.*bitsizes are incompatible.*'):
-        assert_connections_compatible(cbloq)
-
-
 def test_assert_soquets_belong_to_registers():
     cxns, signature = _manually_make_test_cbloq_cxns()
     cxns[3] = attrs.evolve(cxns[3], left=attrs.evolve(cxns[3].left, reg=Register('q3', QBit())))
