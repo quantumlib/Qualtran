@@ -62,12 +62,11 @@ def test_state_prep_via_rotation(bloq_autotester):
 )
 def test_exact_state_prep_via_rotation_(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize,
-        state_coefficients=tuple(state_coefs),
+        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
-    state = bb.allocate((len(state_coefs)-1).bit_length())
+    state = bb.allocate((len(state_coefs) - 1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     state, phase_gradient = bb.add(qsp, target_state=state, phase_gradient=phase_gradient)
     bb.add(PhaseGradientState(bitsize=phase_bitsize).adjoint(), phase_grad=phase_gradient)
@@ -99,17 +98,14 @@ def test_exact_state_prep_via_rotation_(phase_bitsize, state_coefs):
 )
 def test_state_prep_via_rotation_adjoint(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize,
-        state_coefficients=tuple(state_coefs),
+        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     qsp_adj = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize,
-        state_coefficients=tuple(state_coefs),
-        uncompute=True,
+        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), uncompute=True
     )
 
     bb = BloqBuilder()
-    state = bb.allocate((len(state_coefs)-1).bit_length())
+    state = bb.allocate((len(state_coefs) - 1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     state, phase_gradient = bb.add(qsp, target_state=state, phase_gradient=phase_gradient)
     state, phase_gradient = bb.add(qsp_adj, target_state=state, phase_gradient=phase_gradient)
@@ -144,12 +140,11 @@ def test_state_prep_via_rotation_adjoint(phase_bitsize, state_coefs):
 )
 def test_approximate_state_prep_via_rotation(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize,
-        state_coefficients=tuple(state_coefs),
+        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
-    state = bb.allocate((len(state_coefs)-1).bit_length())
+    state = bb.allocate((len(state_coefs) - 1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     state, phase_gradient = bb.add(qsp, target_state=state, phase_gradient=phase_gradient)
     bb.add(PhaseGradientState(bitsize=phase_bitsize).adjoint(), phase_grad=phase_gradient)
@@ -174,14 +169,12 @@ def test_approximate_state_prep_via_rotation(phase_bitsize, state_coefs):
 )
 def test_controlled_state_preparation_via_rotation_do_not_prepare(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize,
-        state_coefficients=tuple(state_coefs),
-        control_bitsize=1,
+        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=1
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     prepare_control = bb.allocate(1)
-    state = bb.allocate((len(state_coefs)-1).bit_length())
+    state = bb.allocate((len(state_coefs) - 1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     prepare_control, state, phase_gradient = bb.add(
         qsp, prepare_control=prepare_control, target_state=state, phase_gradient=phase_gradient
@@ -191,25 +184,19 @@ def test_controlled_state_preparation_via_rotation_do_not_prepare(phase_bitsize,
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert np.allclose(
-        result, np.array([1] + [0] * (2**(len(state_coefs)-1).bit_length() - 1))
+        result, np.array([1] + [0] * (2 ** (len(state_coefs) - 1).bit_length() - 1))
     )  # assert result = |0>
 
 
-@pytest.mark.parametrize(
-    "phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
-)
-def test_state_preparation_via_rotation_superposition_ctrl(
-    phase_bitsize, state_coefs
-):
+@pytest.mark.parametrize("phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]])
+def test_state_preparation_via_rotation_superposition_ctrl(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize,
-        state_coefficients=tuple(state_coefs),
-        control_bitsize=1,
+        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=1
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     prepare_control = bb.add(PlusState())
-    state = bb.allocate((len(state_coefs)-1).bit_length())
+    state = bb.allocate((len(state_coefs) - 1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     prepare_control, state, phase_gradient = bb.add(
         qsp, prepare_control=prepare_control, target_state=state, phase_gradient=phase_gradient
@@ -217,21 +204,21 @@ def test_state_preparation_via_rotation_superposition_ctrl(
     bb.add(PhaseGradientState(bitsize=phase_bitsize).adjoint(), phase_grad=phase_gradient)
     network = bb.finalize(prepare_control=prepare_control, state=state)
     result = network.tensor_contract()
-    correct = 1 / np.sqrt(2) * np.array([1] + [0] * (2**(len(state_coefs)-1).bit_length() - 1) + list(state_coefs))
+    correct = (
+        1
+        / np.sqrt(2)
+        * np.array([1] + [0] * (2 ** (len(state_coefs) - 1).bit_length() - 1) + list(state_coefs))
+    )
     # assert result = 1/sqrt(2)*(|0, 0> + |1, state>)
     assert np.allclose(result, correct)
 
 
-@pytest.mark.parametrize(
-    "phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
-)
+@pytest.mark.parametrize("phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]])
 def test_state_preparation_via_rotation_multi_qubit_ctrl(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize,
-        state_coefficients=tuple(state_coefs),
-        control_bitsize=2,
+        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=2
     )
-    state_bitsize = (len(state_coefs)-1).bit_length()
+    state_bitsize = (len(state_coefs) - 1).bit_length()
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     # set prepare control to |00> + |11>

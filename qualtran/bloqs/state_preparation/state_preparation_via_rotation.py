@@ -383,7 +383,9 @@ class RotationTree:
     def get_rom_vals(self):
         return self.amplitude_rom_values, self.phase_rom_values
 
-    def _calc_amplitude_angles_and_rv(self, state: ArrayLike, phase_bitsize: int, uncompute: bool) -> List[int]:
+    def _calc_amplitude_angles_and_rv(
+        self, state: ArrayLike, phase_bitsize: int, uncompute: bool
+    ) -> List[int]:
         r"""Gives a list of the ROM values to be loaded for preparing the amplitudes of a state.
 
         The ith element of the returned list is another list with the rom values to be loaded when
@@ -401,7 +403,7 @@ class RotationTree:
             for node in range(1 << i, 1 << (i + 1)):
                 angle = self._angle_0(node)
                 if uncompute:
-                    angle = 2*np.pi - angle
+                    angle = 2 * np.pi - angle
                 rom_val = RotationTree._angle_to_rom_value(angle, phase_bitsize)
                 rom_vals_this_layer.append(rom_val)
             self.amplitude_rom_values.append(rom_vals_this_layer)
@@ -421,15 +423,12 @@ class RotationTree:
             for j in range(2**i):
                 arv = self.amplitude_rom_values[i][j]
                 if uncompute:
-                    arv = -arv%2**phase_bitsize
-                offsets[j * rang : (j + 1) * rang] += (np.pi * arv / (2**phase_bitsize))%np.pi
+                    arv = -arv % 2**phase_bitsize
+                offsets[j * rang : (j + 1) * rang] += (np.pi * arv / (2**phase_bitsize)) % np.pi
         angles = np.array([np.angle(c) for c in state])
         # flip angle if uncompute
-        angles = [(1-2*uncompute)*(a - o) for a, o in zip(angles, offsets)]
-        self.phase_rom_values = [
-            RotationTree._angle_to_rom_value(a, phase_bitsize) for a in angles
-        ]
-        pass
+        angles = [(1 - 2 * uncompute) * (a - o) for a, o in zip(angles, offsets)]
+        self.phase_rom_values = [RotationTree._angle_to_rom_value(a, phase_bitsize) for a in angles]
 
     def _angle_0(self, idx: int) -> float:
         r"""Angle that corresponds to p_0."""
