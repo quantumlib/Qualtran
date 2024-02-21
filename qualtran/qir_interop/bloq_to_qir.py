@@ -135,7 +135,9 @@ def find_ir_for_index(i: int, ir_map: dict) -> Tuple[str, int]:
     raise ValueError(f"Error in find_ir_for_index: No IR for index {i}")
 
 
-def cz_power(angle: float, params: List[pyqir._native.Constant], builder: Builder, qubit_alloc: Function):
+def cz_power(
+    angle: float, params: List[pyqir._native.Constant], builder: Builder, qubit_alloc: Function
+):
     """
     Controlled-Z power gate implementation in QIR
 
@@ -382,7 +384,9 @@ def bloq_to_qir(bloq: qualtran.Bloq) -> pyqir.Module:
     entry_block = BasicBlock(context, "entry", entry)
     builder.insert_at_end(entry_block)
     qubits = [pyqir.qubit(context, n) for n in range(get_num_qubits_for_bloq(bloq))]
-    bloq_func, _ = compile_bloq(bloq, qubit_type, void_type, mod, context, builder, qubit_allocate, dict())
+    bloq_func, _ = compile_bloq(
+        bloq, qubit_type, void_type, mod, context, builder, qubit_allocate, dict()
+    )
     builder.insert_at_end(entry_block)
     builder.call(bloq_func, qubits)
     builder.ret(None)
