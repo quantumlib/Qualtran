@@ -35,11 +35,10 @@ def test_state_prep_via_rotation(bloq_autotester):
 
 # these states can be prepared exactly with the given phase_bitsize
 @pytest.mark.parametrize(
-    "state_bitsize, phase_bitsize, state_coefs",
+    "phase_bitsize, state_coefs",
     [
-        [1, 2, ((-0.5 - 0.5j), (0.5 - 0.5j))],
+        [2, ((-0.5 - 0.5j), (0.5 - 0.5j))],
         [
-            1,
             4,
             (
                 (-0.8154931568489165 - 0.16221167441072862j),
@@ -47,7 +46,6 @@ def test_state_prep_via_rotation(bloq_autotester):
             ),
         ],
         [
-            3,
             3,
             (
                 (-0.42677669529663675 - 0.1767766952966366j),
@@ -62,15 +60,14 @@ def test_state_prep_via_rotation(bloq_autotester):
         ],
     ],
 )
-def test_exact_state_prep_via_rotation_(state_bitsize, phase_bitsize, state_coefs):
+def test_exact_state_prep_via_rotation_(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        state_bitsize=state_bitsize,
         phase_bitsize=phase_bitsize,
         state_coefficients=tuple(state_coefs),
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
-    state = bb.allocate(state_bitsize)
+    state = bb.allocate((len(state_coefs)-1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     state, phase_gradient = bb.add(qsp, target_state=state, phase_gradient=phase_gradient)
     bb.add(PhaseGradientState(bitsize=phase_bitsize).adjoint(), phase_grad=phase_gradient)
@@ -80,10 +77,9 @@ def test_exact_state_prep_via_rotation_(state_bitsize, phase_bitsize, state_coef
 
 
 @pytest.mark.parametrize(
-    "state_bitsize, phase_bitsize, state_coefs",
+    "phase_bitsize, state_coefs",
     [
         [
-            1,
             4,
             (
                 (-0.8154931568489165 - 0.16221167441072862j),
@@ -91,7 +87,6 @@ def test_exact_state_prep_via_rotation_(state_bitsize, phase_bitsize, state_coef
             ),
         ],
         [
-            2,
             3,
             (
                 (0.3535533905932734 - 0.35355339059327373j),
@@ -102,21 +97,19 @@ def test_exact_state_prep_via_rotation_(state_bitsize, phase_bitsize, state_coef
         ],
     ],
 )
-def test_state_prep_via_rotation_adjoint(state_bitsize, phase_bitsize, state_coefs):
+def test_state_prep_via_rotation_adjoint(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        state_bitsize=state_bitsize,
         phase_bitsize=phase_bitsize,
         state_coefficients=tuple(state_coefs),
     )
     qsp_adj = StatePreparationViaRotations(
-        state_bitsize=state_bitsize,
         phase_bitsize=phase_bitsize,
         state_coefficients=tuple(state_coefs),
         uncompute=True,
     )
 
     bb = BloqBuilder()
-    state = bb.allocate(state_bitsize)
+    state = bb.allocate((len(state_coefs)-1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     state, phase_gradient = bb.add(qsp, target_state=state, phase_gradient=phase_gradient)
     state, phase_gradient = bb.add(qsp_adj, target_state=state, phase_gradient=phase_gradient)
@@ -129,10 +122,9 @@ def test_state_prep_via_rotation_adjoint(state_bitsize, phase_bitsize, state_coe
 # these states can't be approximated exactly with the given
 # phase_bitsize, check they are close enough
 @pytest.mark.parametrize(
-    "state_bitsize, phase_bitsize, state_coefs",
+    "phase_bitsize, state_coefs",
     [
         [
-            1,
             3,
             (
                 (0.481145088606368 - 0.47950088720913586j),
@@ -140,7 +132,6 @@ def test_state_prep_via_rotation_adjoint(state_bitsize, phase_bitsize, state_coe
             ),
         ],
         [
-            2,
             3,
             (
                 (-0.45832126811131957 - 0.18416419776558368j),
@@ -151,15 +142,14 @@ def test_state_prep_via_rotation_adjoint(state_bitsize, phase_bitsize, state_coe
         ],
     ],
 )
-def test_approximate_state_prep_via_rotation(state_bitsize, phase_bitsize, state_coefs):
+def test_approximate_state_prep_via_rotation(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        state_bitsize=state_bitsize,
         phase_bitsize=phase_bitsize,
         state_coefficients=tuple(state_coefs),
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
-    state = bb.allocate(state_bitsize)
+    state = bb.allocate((len(state_coefs)-1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     state, phase_gradient = bb.add(qsp, target_state=state, phase_gradient=phase_gradient)
     bb.add(PhaseGradientState(bitsize=phase_bitsize).adjoint(), phase_grad=phase_gradient)
@@ -169,10 +159,9 @@ def test_approximate_state_prep_via_rotation(state_bitsize, phase_bitsize, state
 
 
 @pytest.mark.parametrize(
-    "state_bitsize, phase_bitsize, state_coefs",
+    "phase_bitsize, state_coefs",
     [
         [
-            2,
             2,
             (
                 (-0.45832126811131957 - 0.18416419776558368j),
@@ -183,11 +172,8 @@ def test_approximate_state_prep_via_rotation(state_bitsize, phase_bitsize, state
         ]
     ],
 )
-def test_controlled_state_preparation_via_rotation_do_not_prepare(
-    state_bitsize, phase_bitsize, state_coefs
-):
+def test_controlled_state_preparation_via_rotation_do_not_prepare(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        state_bitsize=state_bitsize,
         phase_bitsize=phase_bitsize,
         state_coefficients=tuple(state_coefs),
         control_bitsize=1,
@@ -195,7 +181,7 @@ def test_controlled_state_preparation_via_rotation_do_not_prepare(
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     prepare_control = bb.allocate(1)
-    state = bb.allocate(state_bitsize)
+    state = bb.allocate((len(state_coefs)-1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     prepare_control, state, phase_gradient = bb.add(
         qsp, prepare_control=prepare_control, target_state=state, phase_gradient=phase_gradient
@@ -205,18 +191,17 @@ def test_controlled_state_preparation_via_rotation_do_not_prepare(
     network = bb.finalize(state=state)
     result = network.tensor_contract()
     assert np.allclose(
-        result, np.array([1] + [0] * (2**state_bitsize - 1))
+        result, np.array([1] + [0] * (2**(len(state_coefs)-1).bit_length() - 1))
     )  # assert result = |0>
 
 
 @pytest.mark.parametrize(
-    "state_bitsize, phase_bitsize, state_coefs", [[2, 2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
+    "phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
 )
 def test_state_preparation_via_rotation_superposition_ctrl(
-    state_bitsize, phase_bitsize, state_coefs
+    phase_bitsize, state_coefs
 ):
     qsp = StatePreparationViaRotations(
-        state_bitsize=state_bitsize,
         phase_bitsize=phase_bitsize,
         state_coefficients=tuple(state_coefs),
         control_bitsize=1,
@@ -224,7 +209,7 @@ def test_state_preparation_via_rotation_superposition_ctrl(
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     prepare_control = bb.add(PlusState())
-    state = bb.allocate(state_bitsize)
+    state = bb.allocate((len(state_coefs)-1).bit_length())
     phase_gradient = bb.add(PhaseGradientState(phase_bitsize))
     prepare_control, state, phase_gradient = bb.add(
         qsp, prepare_control=prepare_control, target_state=state, phase_gradient=phase_gradient
@@ -232,21 +217,21 @@ def test_state_preparation_via_rotation_superposition_ctrl(
     bb.add(PhaseGradientState(bitsize=phase_bitsize).adjoint(), phase_grad=phase_gradient)
     network = bb.finalize(prepare_control=prepare_control, state=state)
     result = network.tensor_contract()
-    correct = 1 / np.sqrt(2) * np.array([1] + [0] * (2**state_bitsize - 1) + list(state_coefs))
+    correct = 1 / np.sqrt(2) * np.array([1] + [0] * (2**(len(state_coefs)-1).bit_length() - 1) + list(state_coefs))
     # assert result = 1/sqrt(2)*(|0, 0> + |1, state>)
     assert np.allclose(result, correct)
 
 
 @pytest.mark.parametrize(
-    "state_bitsize, phase_bitsize, state_coefs", [[2, 2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
+    "phase_bitsize, state_coefs", [[2, ((-0.5 - 0.5j), 0, 0.5, -0.5)]]
 )
-def test_state_preparation_via_rotation_multi_qubit_ctrl(state_bitsize, phase_bitsize, state_coefs):
+def test_state_preparation_via_rotation_multi_qubit_ctrl(phase_bitsize, state_coefs):
     qsp = StatePreparationViaRotations(
-        state_bitsize=state_bitsize,
         phase_bitsize=phase_bitsize,
         state_coefficients=tuple(state_coefs),
         control_bitsize=2,
     )
+    state_bitsize = (len(state_coefs)-1).bit_length()
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
     # set prepare control to |00> + |11>

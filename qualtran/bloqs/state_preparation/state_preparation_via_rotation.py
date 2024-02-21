@@ -110,7 +110,6 @@ class StatePreparationViaRotations(GateWithRegisters):
     $$
 
     Args:
-        state_bitsize: number of qubits of the state.
         phase_bitsize: size of the register that is used to store the rotation angles. Bigger values
             increase the accuracy of the results.
         state_coefficients: tuple of length 2^state_bitsizes that contains the complex coefficients of the state.
@@ -122,11 +121,24 @@ class StatePreparationViaRotations(GateWithRegisters):
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    state_bitsize: int
     phase_bitsize: int
     state_coefficients: Tuple[complex, ...]
     control_bitsize: int = 0
     uncompute: bool = False
+
+    def __attrs_post_init__(self):
+        # a valid quantum state has a number of coefficients that is a power of two
+        assert len(self.state_coefficients) == 2**self.state_bitsize
+        # negative number of control bits is not allowed
+        assert self.control_bitsize >= 0
+        # the register to which the angle is written must be at least of size two
+        assert self.phase_bitsize > 1
+        # a valid quantum state must have norm one
+        assert np.isclose(np.linalg.norm(self.state_coefficients), 1)
+
+    @property
+    def state_bitsize(self) -> int:
+        return (len(self.state_coefficients) - 1).bit_length()
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -267,7 +279,7 @@ def _state_prep_via_rotation() -> StatePreparationViaRotations:
         (-0.07322330470336308 - 0.17677669529663678j),
     )
     state_prep_via_rotation = StatePreparationViaRotations(
-        state_bitsize=2, phase_bitsize=4, state_coefficients=state_coefs
+        phase_bitsize=2, state_coefficients=state_coefs
     )
     return state_prep_via_rotation
 
