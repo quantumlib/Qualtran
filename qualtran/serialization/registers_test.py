@@ -16,7 +16,7 @@ import attrs
 import pytest
 import sympy
 
-from qualtran import Register, Side
+from qualtran import QAny, Register, Side
 from qualtran.serialization.registers import (
     register_from_proto,
     register_to_proto,
@@ -39,7 +39,7 @@ from qualtran.serialization.registers import (
     ],
 )
 def test_registers_to_proto(bitsize, shape, side):
-    reg = Register('my_reg', bitsize=bitsize, shape=shape, side=side)
+    reg = Register('my_reg', dtype=QAny(bitsize), shape=shape, side=side)
     reg_proto = register_to_proto(reg)
     assert reg_proto.name == 'my_reg'
     if shape and isinstance(shape[0], sympy.Expr):
