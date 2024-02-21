@@ -241,7 +241,7 @@ class SingleFactorizationOneBody(Bloq):
             (iprep_dag, 1),
             (CSwap(n), 2),
             (SelectSingleFactorization(num_spin_orb=self.num_spin_orb), 1),
-            (ArbitraryClifford(1), 4),
+            (Hadamard(), 4),
         }
 
 

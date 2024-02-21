@@ -36,9 +36,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting import big_O
 from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
@@ -353,9 +351,6 @@ class _IntVector(Bloq):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(ArbitraryClifford(self.bitsize), big_O(1))}
 
     def short_name(self) -> str:
         return f'{self.val}'
