@@ -61,7 +61,7 @@ class Split(Bloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape((self.n, 1))}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
@@ -127,7 +127,7 @@ class Join(Bloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg.reshape(self.n)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -212,7 +212,7 @@ class Partition(Bloq):
         else:
             return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -308,7 +308,7 @@ class Allocate(Bloq):
     def on_classical_vals(self) -> Dict[str, int]:
         return {'reg': 0}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -354,7 +354,7 @@ class Free(Bloq):
             raise ValueError(f"Tried to free a non-zero register: {reg}.")
         return {}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -393,5 +393,5 @@ class ArbitraryClifford(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('x', QAny(bitsize=self.n))])
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

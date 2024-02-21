@@ -63,7 +63,7 @@ class TestAtom(Bloq):
             )
         )
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(100)
 
     def __repr__(self):

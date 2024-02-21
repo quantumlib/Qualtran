@@ -151,7 +151,7 @@ class TwoBitCSwap(Bloq):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for TwoBitCSwap classical simulation.")
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         """The t complexity.
 
         References:

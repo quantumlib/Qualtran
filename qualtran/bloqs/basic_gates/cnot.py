@@ -137,7 +137,7 @@ class CNOT(Bloq):
             return ModPlus()
         raise ValueError(f'Bad wire symbol soquet: {soq}')
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
 
 

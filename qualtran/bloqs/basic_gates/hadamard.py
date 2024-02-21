@@ -89,7 +89,7 @@ class Hadamard(Bloq):
         (q,) = q
         return cirq.H(q), {'q': np.array([q])}
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         return TComplexity(clifford=1)
 
     def short_name(self) -> 'str':

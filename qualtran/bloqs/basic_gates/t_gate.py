@@ -73,7 +73,7 @@ class TGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=1)
 
     def add_my_tensors(

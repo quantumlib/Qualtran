@@ -169,7 +169,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
     def short_name(self) -> str:
         return 'y = x^{-1/2}'
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return (
             SquareRealNumber(self.poly_bitsize).t_complexity()
             + ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize).t_complexity()
@@ -228,7 +228,7 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
     def short_name(self) -> str:
         return 'y ~ x^{-1/2}'
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         # There are 3 multiplications and subtractions, the shifts (-1, -3/2)
         # are not included in Fusion estimates as these can be achieved with
         # Clifford gates only.

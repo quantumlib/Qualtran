@@ -60,7 +60,7 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-class CirqGateAsBloqBase(GateWithRegisters):
+class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     """A Bloq wrapper around a `cirq.Gate`"""
 
     @property
@@ -110,7 +110,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
             outgoing=outgoing,
         )
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return t_complexity(self.cirq_gate)
 
     def as_cirq_op(

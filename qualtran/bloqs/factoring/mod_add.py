@@ -59,7 +59,7 @@ class CtrlScaleModAdd(Bloq):
         k = ssa.new_symbol('k')
         return {(CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod), self.bitsize)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         ((bloq, n),) = self.bloq_counts().items()
         return n * bloq.t_complexity()
 
@@ -112,7 +112,7 @@ class CtrlModAddK(Bloq):
         k = ssa.new_symbol('k')
         return {(CtrlAddK(k=k, bitsize=self.bitsize), 5)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         ((bloq, n),) = self.bloq_counts().items()
         return n * bloq.t_complexity()
 
@@ -146,5 +146,5 @@ class CtrlAddK(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 2 * self.bitsize)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=2 * self.bitsize)
