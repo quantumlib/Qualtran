@@ -201,5 +201,6 @@ def test_cache_clear():
     t_complexity.cache_clear()
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('t_complexity')

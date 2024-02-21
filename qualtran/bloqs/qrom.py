@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import BoundedQUInt, Register, Soquet
+from qualtran import BoundedQUInt, QAny, Register, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT
@@ -99,7 +99,7 @@ class QROM(UnaryIterationGate):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if not self.num_controls else (Register('control', self.num_controls),)
+        return () if not self.num_controls else (Register('control', QAny(self.num_controls)),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -116,7 +116,9 @@ class QROM(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return tuple(Register(f'target{i}_', l) for i, l in enumerate(self.target_bitsizes) if l)
+        return tuple(
+            Register(f'target{i}_', QAny(l)) for i, l in enumerate(self.target_bitsizes) if l
+        )
 
     def _load_nth_data(
         self,

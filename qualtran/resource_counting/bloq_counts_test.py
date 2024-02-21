@@ -17,6 +17,7 @@ from typing import Dict, Optional, Sequence, Set, Tuple
 
 import attrs
 import networkx as nx
+import pytest
 import sympy
 from attrs import field, frozen
 
@@ -104,6 +105,7 @@ def test_bloq_counts_decomp():
     assert str(expr) == '30'
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('bloq_counts')
 

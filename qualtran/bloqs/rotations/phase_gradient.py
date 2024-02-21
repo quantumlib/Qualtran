@@ -51,7 +51,7 @@ class PhaseGradientUnitary(GateWithRegisters):
     The implementation simply decomposes into $n$ (controlled-) rotations, one on each qubit.
     """
     bitsize: int
-    exponent: int = 1
+    exponent: float = 1
     controlled: bool = False
     eps: float = 1e-10
 
@@ -107,34 +107,24 @@ class PhaseGradientState(GateWithRegisters):
     """
 
     bitsize: int
-    exponent: int = -1
-    adjoint: bool = False
+    exponent: float = -1
     eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
-        side = Side.LEFT if self.adjoint else Side.RIGHT
-        return Signature([Register('phase_grad', QFxp(self.bitsize, self.bitsize), side=side)])
+        return Signature(
+            [Register('phase_grad', QFxp(self.bitsize, self.bitsize), side=Side.RIGHT)]
+        )
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         # Assumes `phase_grad` is in big-endian representation.
         phase_grad = quregs['phase_grad']
-        ops = [OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)]
-        ops += [
-            PhaseGradientUnitary(self.bitsize, exponent=self.exponent).on_registers(
-                phase_grad=phase_grad
-            )
-        ]
-        yield cirq.inverse(ops) if self.adjoint else ops
-
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return PhaseGradientState(self.bitsize, self.exponent, not self.adjoint, self.eps)
-        raise NotImplementedError(f"Power is only defined for +1/-1. Found {self.power}.")
+        yield OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)
+        yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent).on_registers(
+            phase_grad=phase_grad
+        )
 
 
 @attrs.frozen

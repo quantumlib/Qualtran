@@ -19,7 +19,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -160,16 +160,16 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('x_sq', bitsize=self.x_sq_bitsize),
-                Register('poly', bitsize=self.poly_bitsize),
-                Register('target', self.target_bitsize),
+                Register('x_sq', QAny(bitsize=self.x_sq_bitsize)),
+                Register('poly', QAny(bitsize=self.poly_bitsize)),
+                Register('target', QAny(self.target_bitsize)),
             ]
         )
 
     def short_name(self) -> str:
         return 'y = x^{-1/2}'
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return (
             SquareRealNumber(self.poly_bitsize).t_complexity()
             + ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize).t_complexity()
@@ -219,16 +219,16 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('x_sq', bitsize=self.x_sq_bitsize),
-                Register('in_coeff', bitsize=self.poly_bitsize, shape=(4,)),
-                Register('out', bitsize=self.out_bitsize),
+                Register('x_sq', QAny(bitsize=self.x_sq_bitsize)),
+                Register('in_coeff', QAny(bitsize=self.poly_bitsize), shape=(4,)),
+                Register('out', QAny(bitsize=self.out_bitsize)),
             ]
         )
 
     def short_name(self) -> str:
         return 'y ~ x^{-1/2}'
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         # There are 3 multiplications and subtractions, the shifts (-1, -3/2)
         # are not included in Fusion estimates as these can be achieved with
         # Clifford gates only.

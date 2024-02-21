@@ -32,6 +32,7 @@ from qualtran import (
     DecomposeNotImplementedError,
     DecomposeTypeError,
     GateWithRegisters,
+    QBit,
     Register,
     Side,
     Signature,
@@ -59,7 +60,7 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-class CirqGateAsBloqBase(GateWithRegisters):
+class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     """A Bloq wrapper around a `cirq.Gate`"""
 
     @property
@@ -67,17 +68,13 @@ class CirqGateAsBloqBase(GateWithRegisters):
     def cirq_gate(self) -> cirq.Gate:
         ...
 
-    def pretty_name(self) -> str:
-        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
-        return f'cirq.{g}'
-
     @cached_property
     def signature(self) -> 'Signature':
         if isinstance(self.cirq_gate, Bloq):
             return self.cirq_gate.signature
         nqubits = cirq.num_qubits(self.cirq_gate)
         return (
-            Signature([Register('q', shape=nqubits, bitsize=1)])
+            Signature([Register('q', QBit(), shape=nqubits)])
             if nqubits > 1
             else Signature.build(q=nqubits)
         )
@@ -113,7 +110,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
             outgoing=outgoing,
         )
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return t_complexity(self.cirq_gate)
 
     def as_cirq_op(
@@ -144,6 +141,10 @@ class CirqGateAsBloqBase(GateWithRegisters):
 @frozen
 class CirqGateAsBloq(CirqGateAsBloqBase):
     gate: cirq.Gate
+
+    def pretty_name(self) -> str:
+        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
+        return f'cirq.{g}'
 
     @property
     def cirq_gate(self) -> cirq.Gate:
@@ -343,9 +344,9 @@ def cirq_optree_to_cbloq(
      which are mappings of cirq qubits used in the OP-TREE corresponding to the `LEFT` & `RIGHT`
      registers in `signature`. If `signature` has registers with entry
 
-        - `Register('x', bitsize=2, shape=(3, 4), side=Side.THRU)`
-        - `Register('y', bitsize=1, shape=(10, 20), side=Side.LEFT)`
-        - `Register('z', bitsize=1, shape=(10, 20), side=Side.RIGHT)`
+        - `Register('x', QAny(bitsize=2), shape=(3, 4), side=Side.THRU)`
+        - `Register('y', QBit(), shape=(10, 20), side=Side.LEFT)`
+        - `Register('z', QBit(), shape=(10, 20), side=Side.RIGHT)`
 
     then `in_quregs` should have one entry corresponding to registers `x` and `y` as follows:
 
@@ -364,7 +365,7 @@ def cirq_optree_to_cbloq(
         if in_quregs is not None or out_quregs is not None:
             raise ValueError("`in_quregs` / `out_quregs` requires specifying `signature`.")
         all_qubits = sorted(circuit.all_qubits())
-        signature = Signature([Register('qubits', 1, shape=(len(all_qubits),))])
+        signature = Signature([Register('qubits', QBit(), shape=(len(all_qubits),))])
         in_quregs = out_quregs = {'qubits': np.array(all_qubits).reshape(len(all_qubits), 1)}
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")

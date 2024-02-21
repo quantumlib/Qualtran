@@ -274,7 +274,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         ]
         return cirq.inverse(optree) if self.adjoint else optree
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         and_t = And(uncompute=self.adjoint).t_complexity()
         num_clifford = self.bitsize * (5 + and_t.clifford)
         num_t = self.bitsize * and_t.t
@@ -360,7 +360,9 @@ class SimpleAddConstant(Bloq):
                 ]
             )
         else:
-            return Signature([Register('x', bitsize=self.bitsize)])
+            return Signature(
+                [Register('x', QInt(bitsize=self.bitsize) if self.signed else QUInt(self.bitsize))]
+            )
 
     def on_classical_vals(
         self, x: 'ClassicalValT', **vals: 'ClassicalValT'

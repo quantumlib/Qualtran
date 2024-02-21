@@ -16,7 +16,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Side, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Side, Signature
 from qualtran.bloqs.arithmetic import GreaterThan
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -50,16 +50,16 @@ class Comparator(Bloq):
     def signature(self):
         return Signature(
             [
-                Register('a', self.bitsize),
-                Register('b', self.bitsize),
-                Register('out', 1, side=Side.RIGHT),
+                Register('a', QAny(self.bitsize)),
+                Register('b', QAny(self.bitsize)),
+                Register('out', QBit(), side=Side.RIGHT),
             ]
         )
 
     def short_name(self) -> str:
         return "Cmprtr"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # complexity is from less than on two n qubit numbers + controlled swap
         # Hard code for now until CSwap-Bloq is merged.
         # See: https://github.com/quantumlib/Qualtran/issues/219
@@ -107,12 +107,12 @@ class BitonicSort(Bloq):
 
     @property
     def signature(self):
-        return Signature([Register("input", bitsize=self.bitsize, shape=(self.k,))])
+        return Signature([Register("input", QAny(self.bitsize), shape=(self.k,))])
 
     def short_name(self) -> str:
         return "BSort"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # Need O(k * log^2(k)) comparisons.
         # TODO: This is Big-O complexity.
         # Should work out constant factors or

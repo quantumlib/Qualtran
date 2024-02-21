@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
 from openfermion.resource_estimates.df.compute_cost_df import compute_cost
 from openfermion.resource_estimates.utils import power_two
 
@@ -100,5 +101,6 @@ def test_compare_cost_to_openfermion():
     assert of_cost == qual_cost
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook("double_factorization")

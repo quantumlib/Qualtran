@@ -18,7 +18,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -51,12 +51,12 @@ class QuantumVariableRotation(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('phi', bitsize=self.phi_bitsize)])
+        return Signature([Register('phi', QAny(bitsize=self.phi_bitsize))])
 
     def short_name(self) -> str:
         return 'e^{i*phi}'
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         # Upper bounding for the moment with just phi_bitsize * Rz rotation gates.
         return self.phi_bitsize * Rz(0.0).t_complexity()
 

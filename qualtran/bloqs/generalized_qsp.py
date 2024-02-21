@@ -20,7 +20,7 @@ from attrs import frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Signature
+from qualtran import GateWithRegisters, QBit, Register, Signature
 
 
 @frozen
@@ -262,7 +262,7 @@ class GeneralizedQSP(GateWithRegisters):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register(name='signal', bitsize=1), *self.U.signature])
+        return Signature([Register('signal', QBit()), *self.U.signature])
 
     @cached_property
     def Q(self):

@@ -18,7 +18,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, Register, Signature
+from qualtran import Bloq, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import QROAM
 
@@ -65,11 +65,11 @@ class ProgRotGateArray(Bloq):
         nxi = (self.num_spin_orb // 2 - 1).bit_length()
         return Signature(
             [
-                Register('offset', nlxi),
-                Register('p', nxi),
-                Register('rotations', bitsize=(self.num_spin_orb // 2) * self.num_bits_rot),
-                Register('spin', bitsize=1),
-                Register('sys', bitsize=self.num_spin_orb // 2, shape=(2,)),
+                Register('offset', QAny(nlxi)),
+                Register('p', QAny(nxi)),
+                Register('rotations', QAny(bitsize=(self.num_spin_orb // 2) * self.num_bits_rot)),
+                Register('spin', QBit()),
+                Register('sys', QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),
             ]
         )
 

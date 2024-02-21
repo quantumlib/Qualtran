@@ -208,5 +208,6 @@ def test_classical_sim_int():
     assert vals == (88, 1)
 
 
+@pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('../Controlled')

@@ -32,6 +32,7 @@ from qualtran.testing import (
 )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "data,num_controls",
     [
@@ -117,6 +118,7 @@ def test_qrom_diagram():
     )
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('qrom')
 
@@ -222,6 +224,7 @@ def test_qrom_wire_symbols():
     assert_wire_symbols_match_expected(qrom, ['In_i', 'In_j', 'In_k', 'data_a'])
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "data,num_controls",
     [
