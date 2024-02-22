@@ -37,6 +37,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .bloq import Bloq, DecomposeTypeError
+from .data_types import QAny, QBit
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
 from .registers import Register, Side, Signature
 
@@ -766,7 +767,7 @@ class BloqBuilder:
                     "`bitsize` must be specified and must be an "
                     "integer if `reg` is a register name."
                 )
-            reg = Register(name=reg, bitsize=bitsize)
+            reg = Register(name=reg, dtype=QBit() if bitsize == 1 else QAny(bitsize))
 
         self._regs.append(reg)
         if reg.side & Side.LEFT:
@@ -997,11 +998,11 @@ class BloqBuilder:
         def _infer_reg(name: str, soq: SoquetT) -> Register:
             """Go from Soquet -> register, but use a specific name for the register."""
             if isinstance(soq, Soquet):
-                return Register(name=name, bitsize=soq.reg.bitsize, side=Side.RIGHT)
+                return Register(name=name, dtype=soq.reg.dtype, side=Side.RIGHT)
 
             # Get info from 0th soquet in an ndarray.
             return Register(
-                name=name, bitsize=soq.reshape(-1)[0].reg.bitsize, shape=soq.shape, side=Side.RIGHT
+                name=name, dtype=soq.reshape(-1)[0].reg.dtype, shape=soq.shape, side=Side.RIGHT
             )
 
         right_reg_names = [reg.name for reg in self._regs if reg.side & Side.RIGHT]
