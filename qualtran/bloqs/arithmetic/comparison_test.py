@@ -21,6 +21,9 @@ import pytest
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran.bloqs.arithmetic.comparison import (
+    _eq_k,
+    _greater_than,
+    _gt_k,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
@@ -35,22 +38,16 @@ from qualtran.cirq_interop.testing import (
 )
 
 
-def _make_greater_than():
-    from qualtran.bloqs.arithmetic import GreaterThan
-
-    return GreaterThan(a_bitsize=4, b_bitsize=4)
+def test_greater_than(bloq_autotester):
+    bloq_autotester(_greater_than)
 
 
-def _make_greater_than_constant():
-    from qualtran.bloqs.arithmetic import GreaterThanConstant
-
-    return GreaterThanConstant(bitsize=4, val=13)
+def test_gt_k(bloq_autotester):
+    bloq_autotester(_gt_k)
 
 
-def _make_equals_a_constant():
-    from qualtran.bloqs.arithmetic import EqualsAConstant
-
-    return EqualsAConstant(bitsize=4, val=13)
+def test_eq_k(bloq_autotester):
+    bloq_autotester(_eq_k)
 
 
 def identity_map(n: int):
@@ -172,7 +169,7 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     assert g.with_registers([2] * 4, [2] * 5, [2]) == LessThanEqual(4, 5)
 
 
-def test_greater_than():
+def test_greater_than_manual():
     bb = BloqBuilder()
     bitsize = 5
     q0 = bb.add_register('a', bitsize)
@@ -250,10 +247,10 @@ def test_equals_a_constant():
 
 
 @pytest.mark.notebook
-def test_comparison_gates_notebook():
-    qlt_testing.execute_notebook('comparison_gates')
+def test_t_complexity_of_comparison_gates_notebook():
+    qlt_testing.execute_notebook('t_complexity_of_comparison_gates')
 
 
 @pytest.mark.notebook
-def test_arithmetic_notebook():
-    qlt_testing.execute_notebook('arithmetic')
+def test_comparison_notebook():
+    qlt_testing.execute_notebook('comparison')

@@ -18,12 +18,11 @@ import numpy as np
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import TGate, Toffoli, ZeroState
+from qualtran.bloqs.basic_gates.toffoli import _toffoli
 
 
-def _make_Toffoli():
-    from qualtran.bloqs.basic_gates import Toffoli
-
-    return Toffoli()
+def test_toffoli(bloq_autotester):
+    bloq_autotester(_toffoli)
 
 
 def test_toffoli_t_count():

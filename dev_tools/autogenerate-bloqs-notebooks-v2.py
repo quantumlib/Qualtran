@@ -44,12 +44,14 @@ Usage as a script:
 
 from typing import List
 
+from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
+import qualtran.bloqs.arithmetic.comparison
 import qualtran.bloqs.arithmetic.conversions
 import qualtran.bloqs.arithmetic.multiplication
 import qualtran.bloqs.basic_gates.swap
@@ -83,6 +85,16 @@ SOURCE_DIR = get_git_root() / 'qualtran/'
 
 NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     NotebookSpecV2(
+        title='T Gate',
+        module=qualtran.bloqs.basic_gates.t_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.t_gate._T_GATE_DOC],
+    ),
+    NotebookSpecV2(
+        title='Toffoli',
+        module=qualtran.bloqs.basic_gates.toffoli,
+        bloq_specs=[qualtran.bloqs.basic_gates.toffoli._TOFFOLI_DOC],
+    ),
+    NotebookSpecV2(
         title='Swap Network',
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
@@ -91,8 +103,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network._SWZ_DOC,
             qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs',
-        path_stem='swap_network_2',
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',
@@ -118,6 +128,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
+    # --------------------------------------------------------------------------
+    # -----   Chemistry   ------------------------------------------------------
+    # --------------------------------------------------------------------------
     NotebookSpecV2(
         title='First Quantized Hamiltonian',
         module=qualtran.bloqs.chemistry.pbc.first_quantization,
@@ -141,15 +154,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization/projectile',
     ),
     NotebookSpecV2(
-        title='Sorting',
-        module=qualtran.bloqs.sorting,
-        bloq_specs=[
-            qualtran.bloqs.sorting._COMPARATOR_DOC,
-            qualtran.bloqs.sorting._BITONIC_SORT_DOC,
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/',
-    ),
-    NotebookSpecV2(
         title='Double Factorization',
         module=qualtran.bloqs.chemistry.df.double_factorization,
         bloq_specs=[
@@ -166,12 +170,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.sparse.select_bloq._SPARSE_SELECT,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
-    ),
-    NotebookSpecV2(
-        title='And',
-        module=qualtran.bloqs.and_bloq,
-        bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
         title='Single Factorization',
@@ -206,6 +204,21 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
     ),
     NotebookSpecV2(
+        title='Sorting',
+        module=qualtran.bloqs.sorting,
+        bloq_specs=[
+            qualtran.bloqs.sorting._COMPARATOR_DOC,
+            qualtran.bloqs.sorting._BITONIC_SORT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='And',
+        module=qualtran.bloqs.and_bloq,
+        bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
         title='Block Encoding',
         module=qualtran.bloqs.block_encoding,
         bloq_specs=[
@@ -229,6 +242,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
+    # --------------------------------------------------------------------------
+    # -----   Arithmetic   -----------------------------------------------------
+    # --------------------------------------------------------------------------
     NotebookSpecV2(
         title='Addition',
         module=qualtran.bloqs.arithmetic.addition,
@@ -249,6 +265,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.multiplication._SCALE_INT_BY_REAL_DOC,
             qualtran.bloqs.arithmetic.multiplication._MULTIPLY_TWO_REALS_DOC,
             qualtran.bloqs.arithmetic.multiplication._SQUARE_REAL_NUMBER_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Comparison',
+        module=qualtran.bloqs.arithmetic.comparison,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.comparison._GREATER_THAN_DOC,
+            qualtran.bloqs.arithmetic.comparison._GREATER_THAN_K_DOC,
+            qualtran.bloqs.arithmetic.comparison._EQUALS_K_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -282,5 +307,19 @@ def render_notebooks():
         render_notebook(nbspec)
 
 
+def check_all_bloqs_included():
+    bspecs = get_bloqdocspecs()
+    rendered_bspecs = []
+    for nbspec in NOTEBOOK_SPECS:
+        rendered_bspecs += [bspec for bspec in nbspec.bloq_specs]
+
+    undoc = set(bspecs) - set(rendered_bspecs)
+    if undoc:
+        print("\nWarning: found a BloqDocSpec for these, but they're not in any NotebookSpecs:")
+        for bspec in undoc:
+            print('   ', bspec.bloq_cls.__name__)
+
+
 if __name__ == '__main__':
     render_notebooks()
+    check_all_bloqs_included()
