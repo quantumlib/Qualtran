@@ -23,6 +23,7 @@ import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import qualtran.protos.args_pb2
+import qualtran.protos.data_types_pb2
 import sys
 import typing
 
@@ -57,12 +58,12 @@ class Register(google.protobuf.message.Message):
     THRU: Register.Side.ValueType  # 3
 
     NAME_FIELD_NUMBER: builtins.int
-    BITSIZE_FIELD_NUMBER: builtins.int
+    DTYPE_FIELD_NUMBER: builtins.int
     SHAPE_FIELD_NUMBER: builtins.int
     SIDE_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
-    def bitsize(self) -> qualtran.protos.args_pb2.IntOrSympy: ...
+    def dtype(self) -> qualtran.protos.data_types_pb2.QDataType: ...
     @property
     def shape(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.IntOrSympy]: ...
     side: global___Register.Side.ValueType
@@ -70,12 +71,12 @@ class Register(google.protobuf.message.Message):
         self,
         *,
         name: builtins.str = ...,
-        bitsize: qualtran.protos.args_pb2.IntOrSympy | None = ...,
+        dtype: qualtran.protos.data_types_pb2.QDataType | None = ...,
         shape: collections.abc.Iterable[qualtran.protos.args_pb2.IntOrSympy] | None = ...,
         side: global___Register.Side.ValueType = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bitsize", b"bitsize"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bitsize", b"bitsize", "name", b"name", "shape", b"shape", "side", b"side"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dtype", b"dtype", "name", b"name", "shape", b"shape", "side", b"side"]) -> None: ...
 
 global___Register = Register
 

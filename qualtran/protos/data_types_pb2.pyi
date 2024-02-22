@@ -34,16 +34,9 @@ DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 class QBit(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    BITSIZE_FIELD_NUMBER: builtins.int
-    bitsize: builtins.int
     def __init__(
         self,
-        *,
-        bitsize: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_bitsize", b"_bitsize", "bitsize", b"bitsize"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_bitsize", b"_bitsize"]) -> typing_extensions.Literal["bitsize"] | None: ...
 
 global___QBit = QBit
 
@@ -173,3 +166,45 @@ class QFxp(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_signed", b"_signed"]) -> typing_extensions.Literal["signed"] | None: ...
 
 global___QFxp = QFxp
+
+@typing_extensions.final
+class QDataType(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    QBIT_FIELD_NUMBER: builtins.int
+    QANY_FIELD_NUMBER: builtins.int
+    QINT_FIELD_NUMBER: builtins.int
+    QINT_ONES_COMP_FIELD_NUMBER: builtins.int
+    QUINT_FIELD_NUMBER: builtins.int
+    BOUNDED_QUINT_FIELD_NUMBER: builtins.int
+    QFXP_FIELD_NUMBER: builtins.int
+    @property
+    def qbit(self) -> global___QBit: ...
+    @property
+    def qany(self) -> global___QAny: ...
+    @property
+    def qint(self) -> global___QInt: ...
+    @property
+    def qint_ones_comp(self) -> global___QIntOnesComp: ...
+    @property
+    def quint(self) -> global___QUInt: ...
+    @property
+    def bounded_quint(self) -> global___BoundedQUInt: ...
+    @property
+    def qfxp(self) -> global___QFxp: ...
+    def __init__(
+        self,
+        *,
+        qbit: global___QBit | None = ...,
+        qany: global___QAny | None = ...,
+        qint: global___QInt | None = ...,
+        qint_ones_comp: global___QIntOnesComp | None = ...,
+        quint: global___QUInt | None = ...,
+        bounded_quint: global___BoundedQUInt | None = ...,
+        qfxp: global___QFxp | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bounded_quint", b"bounded_quint", "qany", b"qany", "qbit", b"qbit", "qfxp", b"qfxp", "qint", b"qint", "qint_ones_comp", b"qint_ones_comp", "quint", b"quint", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bounded_quint", b"bounded_quint", "qany", b"qany", "qbit", b"qbit", "qfxp", b"qfxp", "qint", b"qint", "qint_ones_comp", b"qint_ones_comp", "quint", b"quint", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["qbit", "qany", "qint", "qint_ones_comp", "quint", "bounded_quint", "qfxp"] | None: ...
+
+global___QDataType = QDataType
