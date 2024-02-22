@@ -53,9 +53,9 @@ message QDataType {
     QBit qbit = 1;
     QAny qany = 2;
     QInt qint = 3;
-    QIntOnesComp qintoc = 4;
+    QIntOnesComp qint_ones_comp = 4;
     QUInt quint = 5;
-    BoundedQUInt bquint = 6;
+    BoundedQUInt bounded_quint = 6;
     QFxp qfxp = 7;
   }
 }

@@ -19,80 +19,10 @@ from qualtran import BoundedQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp,
 from qualtran.protos import data_types_pb2
 from qualtran.serialization.args import int_or_sympy_from_proto, int_or_sympy_to_proto
 
-SerializedDataTypes = Union[
-    data_types_pb2.QBit,
-    data_types_pb2.QAny,
-    data_types_pb2.QInt,
-    data_types_pb2.QIntOnesComp,
-    data_types_pb2.QUInt,
-    data_types_pb2.BoundedQUInt,
-    data_types_pb2.QFxp,
-]
-
-
-def data_type_to_proto(data: QDType) -> SerializedDataTypes:
-    if isinstance(data, QBit):
-        return data_types_pb2.QBit()
-
-    bitsize = int_or_sympy_to_proto(data.bitsize)
-    if isinstance(data, QAny):
-        return data_types_pb2.QAny(bitsize=bitsize)
-    elif isinstance(data, QInt):
-        return data_types_pb2.QInt(bitsize=bitsize)
-    elif isinstance(data, QIntOnesComp):
-        return data_types_pb2.QIntOnesComp(bitsize=bitsize)
-    elif isinstance(data, QUInt):
-        return data_types_pb2.QUInt(bitsize=bitsize)
-    elif isinstance(data, BoundedQUInt):
-        iteration_length = int_or_sympy_to_proto(data.iteration_length)
-        return data_types_pb2.BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
-    elif isinstance(data, QFxp):
-        num_frac = int_or_sympy_to_proto(data.num_frac)
-        return data_types_pb2.QFxp(bitsize=bitsize, num_frac=num_frac, signed=data.signed)
-    else:
-        raise TypeError(
-            f"Data type {type(data)} is not recognized."
-            " It must be of one of the following subtypes: QBit, "
-            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
-            "QFixedPoint"
-        )
-
-
-def data_type_from_proto(serialized: SerializedDataTypes) -> QDType:
-    if isinstance(serialized, data_types_pb2.QBit):
-        return QBit()
-
-    bitsize = int_or_sympy_from_proto(serialized.bitsize)
-    if isinstance(serialized, data_types_pb2.QAny):
-        return QAny(bitsize=bitsize)
-    elif isinstance(serialized, data_types_pb2.QInt):
-        return QInt(bitsize=bitsize)
-    elif isinstance(serialized, data_types_pb2.QIntOnesComp):
-        return QIntOnesComp(bitsize=bitsize)
-    elif isinstance(serialized, data_types_pb2.QUInt):
-        return QUInt(bitsize=bitsize)
-    elif isinstance(serialized, data_types_pb2.QIntOnesComp):
-        return QIntOnesComp(bitsize=bitsize)
-    elif isinstance(serialized, data_types_pb2.QUInt):
-        return QUInt(bitsize=bitsize)
-    elif isinstance(serialized, data_types_pb2.BoundedQUInt):
-        iteration_length = int_or_sympy_from_proto(serialized.iteration_length)
-        return BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
-    elif isinstance(serialized, data_types_pb2.QFxp):
-        num_frac = int_or_sympy_from_proto(serialized.num_frac)
-        return QFxp(bitsize=bitsize, num_frac=num_frac, signed=serialized.signed)
-    else:
-        raise TypeError(
-            f"Data type {type(serialized)} is not recognized."
-            " It must be of one of the following subtypes: QBit, "
-            "QAny, QInt, QIntOnesComp, QUInt, BoundedQUInt, "
-            "QFixedPoint"
-        )
-
 
 def int_or_sympy_from_qdt_proto(val: data_types_pb2.QDataType) -> Union[int, sympy.Expr]:
     if val.HasField('qbit'):
-        return 1
+        raise ValueError('QBit case should have been handled already.')
     if val.HasField('qany'):
         return int_or_sympy_from_proto(val.qany.bitsize)
     if val.HasField('qint'):
@@ -108,7 +38,7 @@ def int_or_sympy_from_qdt_proto(val: data_types_pb2.QDataType) -> Union[int, sym
     raise ValueError(f"Cannot deserialize {val=}")
 
 
-def data_type_to_qdt_proto(data: QDType) -> data_types_pb2.QDataType:
+def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
     if isinstance(data, QBit):
         return data_types_pb2.QDataType(qbit=data_types_pb2.QBit())
 
@@ -140,7 +70,7 @@ def data_type_to_qdt_proto(data: QDType) -> data_types_pb2.QDataType:
         )
 
 
-def data_type_from_qdt_proto(serialized: SerializedDataTypes) -> QDType:
+def data_type_from_proto(serialized: data_types_pb2.QDataType) -> QDType:
     if serialized.HasField('qbit'):
         return QBit()
 
@@ -149,13 +79,11 @@ def data_type_from_qdt_proto(serialized: SerializedDataTypes) -> QDType:
         return QAny(bitsize=bitsize)
     elif serialized.HasField('qint'):
         return QInt(bitsize=bitsize)
-    elif serialized.HasField('qintoc'):
+    elif serialized.HasField('qint_ones_comp'):
         return QIntOnesComp(bitsize=bitsize)
     elif serialized.HasField('quint'):
         return QUInt(bitsize=bitsize)
-    elif serialized.HasField('quint'):
-        return QUInt(bitsize=bitsize)
-    elif serialized.HasField('bquint'):
+    elif serialized.HasField('bounded_quint'):
         iteration_length = int_or_sympy_from_proto(serialized.bquint.iteration_length)
         return BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
     elif serialized.HasField('qfxp'):
