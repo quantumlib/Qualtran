@@ -86,7 +86,7 @@ def records_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
 
 
 def show_bloq_report_card(df: pd.DataFrame) -> pandas.io.formats.style.Styler:
-    return df.style.applymap(color_status, CHECKCOLS).format(format_status, CHECKCOLS)
+    return df.style.map(color_status, CHECKCOLS).format(format_status, CHECKCOLS)
 
 
 def get_bloq_report_card(

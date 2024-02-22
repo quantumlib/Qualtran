@@ -323,6 +323,10 @@ class Allocate(Bloq):
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
 
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        assert soq.reg.name == 'reg'
+        return directional_text_box('alloc', Side.RIGHT)
+
 
 @frozen
 class Free(Bloq):
@@ -364,6 +368,10 @@ class Free(Bloq):
         data = np.zeros(1 << self.n)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        assert soq.reg.name == 'reg'
+        return directional_text_box('free', Side.LEFT)
 
 
 @frozen
