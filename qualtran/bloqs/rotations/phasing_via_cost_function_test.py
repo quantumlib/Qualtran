@@ -180,6 +180,7 @@ class TestSquarePhasing(GateWithRegisters):
         return soqs
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('normalize_cost_function', [True, False])
 @pytest.mark.parametrize('use_phase_gradient', [True, False])
 @pytest.mark.parametrize('gamma, eps', [(0.1, 5e-2), (1.20345, 5e-2), (-1.1934341, 5e-2)])

@@ -278,7 +278,7 @@ class QvrPhaseGradient(QvrInterface):
 
     @cached_property
     def b_phase(self) -> int:
-        return int(np.ceil(np.log2(1 / self.eps)))
+        return int(np.ceil(np.log2(np.pi * 2 / self.eps)))
 
     @cached_property
     def b_grad(self) -> int:

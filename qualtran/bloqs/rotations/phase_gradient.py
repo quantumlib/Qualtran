@@ -138,6 +138,10 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     Args:
         x_bitsize: Size of input register.
         phase_bitsize: Size of phase gradient register to which the input value should be added.
+        right_shift: An integer specifying the amount by which the input register x should be right
+            shifted before adding to the phase gradient register.
+        sign: Whether the input register x should be  added or subtracted from the phase gradient
+            register.
 
     Registers:
         - x : Input THRU register storing input value x to be added to the phase gradient register.
@@ -197,11 +201,21 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         return n * toffoli.t_complexity()
 
 
-def _fxp(x: float, out: int):
+def _fxp(x: float, n: int) -> Fxp:
+    """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.
+
+    Specifically,
+    -   op_sizing='same' and const_op_sizing='same' ensure that the returned object is not resized
+        to a bigger fixed point number when doing operations with other Fxp objects.
+    -   shifting='trunc' ensures that when shifting the Fxp integer to left / right; the digits are
+        truncated and no rounding occurs
+    -   overflow='wrap' ensures that when performing operations where result overflows, the overflowed
+        digits are simply discarded.
+    """
     assert 0 <= x < 1
     return Fxp(
         x,
-        dtype=f'fxp-u{out}/{out}',
+        dtype=f'fxp-u{n}/{n}',
         op_sizing='same',
         const_op_sizing='same',
         shifting='trunc',
@@ -236,7 +250,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         x_dtype: Fixed point specification of the input register.
         phase_bitsize: Size of phase gradient register to which the scaled input should be added.
         gamma: Floating point scaling factor.
-        gamma_bitsize: Number of bits of precisions to be used for fractional part of `gamma`.
+        gamma_dtype: `QFxp` data type capturing number of bits of precisions to be used for
+            integer and fractional part of `gamma`.
 
     Registers:
         - x : Input THRU register storing input value x to be scaled and added to the phase
@@ -299,10 +314,6 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
         # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
         assert 0 <= result < 1 and result.dtype == self.phase_dtype.fxp_dtype_str
-        # result -= np.floor(result)
-        # Now that `result` is a number between [0, 1), represent the fraction using `self.phase_bitsize`
-        # bits.
-        # result = result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str))
         # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
         # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
         # can be ignored during the fixed point arithmetic analysis.
