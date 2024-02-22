@@ -19,10 +19,22 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    BoundedQUInt,
+    CompositeBloq,
+    QAny,
+    Register,
+    Signature,
+    Soquet,
+)
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
+from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.drawing import Circle, TextBox, WireSymbol
 
 
@@ -30,8 +42,9 @@ def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> i
     """Find optimal block size, which is a power of 2, for SelectSwapQROM.
 
     This functions returns the optimal `k` s.t.
-        * k is in an integer and k >= 0.
-        * iteration_length/2^k + target_bitsize*(2^k - 1) is minimized.
+     - k is in an integer and k >= 0.
+     - iteration_length/2^k + target_bitsize*(2^k - 1) is minimized.
+
     The corresponding block size for SelectSwapQROM would be 2^k.
     """
     k = 0.5 * np.log2(iteration_length / target_bitsize)
@@ -46,45 +59,54 @@ def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> i
 
 
 @cirq.value_equality()
-class SelectSwapQROM(GateWithRegisters):
-    """Gate to load data[l] in the target register when the selection register stores integer l.
+class SelectSwapQROM(Bloq):
+    r"""Gate to load `data[l]` in the target register when the selection register stores integer `l`.
 
-    Let
-        N:= Number of data elements to load.
-        b:= Bit-length of the target register in which data elements should be loaded.
+    Let `N` be the number of data elements to load; and `b` be the bit-size of the target
+    register in which data elements should be loaded.
 
     The `SelectSwapQROM` is a hybrid of the following two existing primitives:
 
-        * Unary Iteration based `QROM` requires O(N) T-gates to load `N` data
-        elements into a b-bit target register. Note that the T-complexity is independent of `b`.
-        * `SwapWithZeroGate` can swap a `b` bit register indexed `x` with a `b`
-        bit register at index `0` using O(b) T-gates, if the selection register stores integer `x`.
-        Note that the swap complexity is independent of the iteration length `N`.
+     - Unary Iteration based `QROM` requires O(N) T-gates to load `N` data
+       elements into a `b`-sized target register. Note that the T-complexity is independent of `b`.
+     - `SwapWithZeroGate` can swap a `b`-sized register at index `x` with a `b`-sized
+       register at index `0` using O(b) T-gates, if the selection register stores integer `x`.
+       Note that the swap complexity is independent of the iteration length `N`.
 
-    The `SelectSwapQROM` uses square root decomposition by combining the above two approaches to
-    further optimize the T-gate complexity of loading `N` data elements, each into a `b` bit
+    The `SelectSwapQROM` uses a square root decomposition by combining the above two approaches to
+    further optimize the T-gate complexity of loading `N` data elements, each into a `b`-sized
     target register as follows:
 
-        * Divide the `N` data elements into batches of size `B` (a variable) and
-        load each batch simultaneously into `B` distinct target signature using the conventional
-        QROM. This has T-complexity `O(N / B)`.
-        * Use `SwapWithZeroGate` to swap the `i % B`'th target register in batch number `i / B`
-        to load `data[i]` in the 0'th target register. This has T-complexity `O(B * b)`.
+     - Divide the `N` data elements into batches of size `B` (a variable) and
+       load each batch simultaneously into `B` distinct target signature using the conventional
+       QROM. This has T-complexity `O(N / B)`.
+     - Use `SwapWithZeroGate` to swap the `i % B`'th target register in batch number `i / B`
+       to load `data[i]` in the 0'th target register. This has T-complexity `O(B * b)`.
 
-    This, the final T-complexity of `SelectSwapQROM` is `O(B * b + N / B)` T-gates; where `B` is
-    the block-size with an optimal value of `O(sqrt(N / b))`.
+    Thus, the final T-complexity of `SelectSwapQROM` is $O(B * b + N / B)$ T-gates; where $B$ is
+    the block-size with an optimal value of $O(\sqrt(N / b))$.
 
-    This improvement in T-complexity is achieved at the cost of using an additional `O(B * b)`
-    ancilla qubits, with a nice property that these additional ancillas can be `dirty`; i.e.
-    they don't need to start in the |0> state and thus can be borrowed from other parts of the
-    algorithm. The state of these dirty ancillas would be unaffected after the operation has
-    finished.
+    This improvement in T-complexity is achieved at the cost of using an additional $O(B * b)$
+    ancilla qubits, with a nice property that these additional ancillas can be "dirty".
+    They don't need to start in the |0> state and can be borrowed from other parts of the
+    algorithm. The these dirty ancillas are restored to their original state after the operation.
 
-    For more details, see the reference below:
+    Args:
+        data: Sequence of integers to load in the target register. If more than one sequence
+            is provided, each sequence must be of the same length.
+        target_bitsizes: Sequence of integers describing the size of target register for each
+            data sequence to load. Defaults to `max(data[i]).bit_length()` for each i.
+        block_size(B): Load batches of `B` data elements in each iteration of traditional QROM
+            (N/B iterations required). Complexity of SelectSwap QROAM scales as
+            `O(B * b + N / B)`, where `B` is the block_size. Defaults to optimal value of
+            `O(sqrt{N / b})`.
+
+    Registers:
+        selection: The selection register of size `logN` to index into each `data`.
+        target{i}_: The target registers, one for each `data` to load the data.
 
     References:
-        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
-        (https://arxiv.org/abs/1812.00954).
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
@@ -94,39 +116,13 @@ class SelectSwapQROM(GateWithRegisters):
         target_bitsizes: Optional[Sequence[int]] = None,
         block_size: Optional[int] = None,
     ):
-        """Initializes SelectSwapQROM
-
-        For a single data sequence of length `N`, maximum target bitsize `b` and block size `B`;
-        SelectSwapQROM requires:
-            - Selection register & ancilla of size `logN` for QROM data load.
-            - 1 clean target register of size `b`.
-            - `B` dirty target signature, each of size `b`.
-
-        Similarly, to load `M` such data sequences, `SelectSwapQROM` requires:
-            - Selection register & ancilla of size `logN` for QROM data load.
-            - 1 clean target register of size `sum(target_bitsizes)`.
-            - `B` dirty target signature, each of size `sum(target_bitsizes)`.
-
-        Args:
-            data: Sequence of integers to load in the target register. If more than one sequence
-                is provided, each sequence must be of the same length.
-            target_bitsizes: Sequence of integers describing the size of target register for each
-                data sequence to load. Defaults to `max(data[i]).bit_length()` for each i.
-            block_size(B): Load batches of `B` data elements in each iteration of traditional QROM
-                (N/B iterations required). Complexity of SelectSwap QROAM scales as
-                `O(B * b + N / B)`, where `B` is the block_size. Defaults to optimal value of
-                 `O(sqrt(N / b))`.
-
-        Raises:
-            ValueError: If all target data sequences to load do not have the same length.
-        """
         # Validate input.
         if len(set(len(d) for d in data)) != 1:
             raise ValueError("All data sequences to load must be of equal length.")
         if target_bitsizes is None:
-            target_bitsizes = [max(d).bit_length() for d in data]
+            target_bitsizes = [int(max(d)).bit_length() for d in data]
         assert len(target_bitsizes) == len(data)
-        assert all(t >= max(d).bit_length() for t, d in zip(target_bitsizes, data))
+        assert all(t >= int(max(d)).bit_length() for t, d in zip(target_bitsizes, data))
         self._num_sequences = len(data)
         self._target_bitsizes = tuple(target_bitsizes)
         self._iteration_length = len(data[0])
@@ -142,15 +138,6 @@ class SelectSwapQROM(GateWithRegisters):
         self._data = tuple(tuple(d) for d in data)
 
     @cached_property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                'selection',
-                BoundedQUInt(self.selection_q + self.selection_r, self._iteration_length),
-            ),
-        )
-
-    @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         # See https://github.com/quantumlib/Qualtran/issues/556 for unusual placement of underscore.
         return tuple(
@@ -160,7 +147,10 @@ class SelectSwapQROM(GateWithRegisters):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.selection_registers, *self.target_registers])
+        selection_reg = Register(
+            'selection', BoundedQUInt(self.selection_q + self.selection_r, self._iteration_length)
+        )
+        return Signature([selection_reg, *self.target_registers])
 
     @property
     def data(self) -> Tuple[Tuple[int, ...], ...]:
@@ -173,6 +163,9 @@ class SelectSwapQROM(GateWithRegisters):
     @property
     def num_blocks(self) -> int:
         return self._num_blocks
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
 
     def decompose_from_registers(
         self,
@@ -200,34 +193,34 @@ class SelectSwapQROM(GateWithRegisters):
         # Construct QROM, SwapWithZero and CX operations using the batched data and qubits.
         k = (self.block_size - 1).bit_length()
         q, r = selection[: self.selection_q], selection[self.selection_q :]
-        qrom_op, swap_with_zero_op = [], []
         qrom_gate = QROM(
             qrom_data,
             selection_bitsizes=(self.selection_q,),
             target_bitsizes=tuple(qrom_target_bitsizes),
         )
-        qrom_op = qrom_gate.on_registers(
-            selection=q, **split_qubits(qrom_gate.target_registers, ordered_target_qubits)
-        )
-        if self.block_size > 1:
-            swap_with_zero_gate = SwapWithZero(
-                k, total_bits(self.target_registers), self.block_size
-            )
-            swap_with_zero_op = swap_with_zero_gate.on_registers(
-                selection=r,
-                **split_qubits(swap_with_zero_gate.target_registers, ordered_target_qubits),
-            )
+        qrom_targets = split_qubits(qrom_gate.target_registers, ordered_target_qubits)
+
         clean_targets = merge_qubits(self.target_registers, **targets)
-        cnot_op = cirq.Moment(cirq.CNOT(s, t) for s, t in zip(ordered_target_qubits, clean_targets))
-        # Yield the operations in correct order.
-        yield qrom_op
-        yield swap_with_zero_op
-        yield cnot_op
-        yield cirq.inverse(swap_with_zero_op)
-        yield cirq.inverse(qrom_op)
-        yield swap_with_zero_op
-        yield cnot_op
-        yield cirq.inverse(swap_with_zero_op)
+        cnot_op = [CNOT().on(s, t) for s, t in zip(ordered_target_qubits, clean_targets)]
+
+        if self.block_size > 1:
+            swz_gate = SwapWithZero(k, total_bits(self.target_registers), self.block_size)
+            swz_targets = split_qubits(swz_gate.target_registers, ordered_target_qubits)
+
+            yield qrom_gate.on_registers(selection=q, **qrom_targets)
+            yield swz_gate.on_registers(selection=r, **swz_targets)
+            yield cnot_op
+            yield swz_gate.adjoint().on_registers(selection=r, **swz_targets)
+            yield qrom_gate.adjoint().on_registers(selection=q, **qrom_targets)
+            yield swz_gate.on_registers(selection=r, **swz_targets)
+            yield cnot_op
+            yield swz_gate.adjoint().on_registers(selection=r, **swz_targets)
+            return
+        else:
+            yield qrom_gate.on_registers(selection=q, **qrom_targets)
+            yield cnot_op
+            yield qrom_gate.adjoint().on_registers(selection=q, **qrom_targets)
+            yield cnot_op
 
         context.qubit_manager.qfree(ordered_target_qubits)
 
@@ -255,3 +248,18 @@ class SelectSwapQROM(GateWithRegisters):
 
     def _value_equality_values_(self):
         return self.block_size, self._target_bitsizes, self.data
+
+
+@bloq_example
+def _ss_qrom() -> SelectSwapQROM:
+    rs = np.random.RandomState(52)
+    datas = rs.randint(0, 256, size=(3, 11))
+    ss_qrom = SelectSwapQROM(*datas)
+    return ss_qrom
+
+
+_SS_QROM_DOC = BloqDocSpec(
+    bloq_cls=SelectSwapQROM,
+    import_line='from qualtran.bloqs.select_swap_qrom import SelectSwapQROM',
+    examples=[_ss_qrom],
+)

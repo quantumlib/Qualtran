@@ -186,5 +186,8 @@ class Adjoint(GateWithRegisters):
         The cirq-style t complexity protocol does not leverage the heirarchical decomposition
         of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
         """
-        # TODO: https://github.com/quantumlib/Qualtran/issues/489
-        return self.subbloq._t_complexity_(adjoint=True)
+        if hasattr(self.subbloq, '_t_complexity_'):
+            return self.subbloq._t_complexity_(adjoint=True)
+        from qualtran.cirq_interop.t_complexity_protocol import t_complexity
+
+        return t_complexity(self.subbloq)
