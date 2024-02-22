@@ -27,12 +27,12 @@ def int_or_sympy_from_qdt_proto(val: data_types_pb2.QDataType) -> Union[int, sym
         return int_or_sympy_from_proto(val.qany.bitsize)
     if val.HasField('qint'):
         return int_or_sympy_from_proto(val.qint.bitsize)
-    if val.HasField('qintoc'):
-        return int_or_sympy_from_proto(val.qintoc.bitsize)
+    if val.HasField('qint_ones_comp'):
+        return int_or_sympy_from_proto(val.qint_ones_comp.bitsize)
     if val.HasField('quint'):
         return int_or_sympy_from_proto(val.quint.bitsize)
-    if val.HasField('bquint'):
-        return int_or_sympy_from_proto(val.bquint.bitsize)
+    if val.HasField('bounded_quint'):
+        return int_or_sympy_from_proto(val.bounded_quint.bitsize)
     if val.HasField('qfxp'):
         return int_or_sympy_from_proto(val.qfxp.bitsize)
     raise ValueError(f"Cannot deserialize {val=}")
@@ -48,13 +48,15 @@ def data_type_to_proto(data: QDType) -> data_types_pb2.QDataType:
     elif isinstance(data, QInt):
         return data_types_pb2.QDataType(qint=data_types_pb2.QInt(bitsize=bitsize))
     elif isinstance(data, QIntOnesComp):
-        return data_types_pb2.QDataType(qintoc=data_types_pb2.QIntOnesComp(bitsize=bitsize))
+        return data_types_pb2.QDataType(qint_ones_comp=data_types_pb2.QIntOnesComp(bitsize=bitsize))
     elif isinstance(data, QUInt):
         return data_types_pb2.QDataType(quint=data_types_pb2.QUInt(bitsize=bitsize))
     elif isinstance(data, BoundedQUInt):
         iteration_length = int_or_sympy_to_proto(data.iteration_length)
         return data_types_pb2.QDataType(
-            bquint=data_types_pb2.BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
+            bounded_quint=data_types_pb2.BoundedQUInt(
+                bitsize=bitsize, iteration_length=iteration_length
+            )
         )
     elif isinstance(data, QFxp):
         num_frac = int_or_sympy_to_proto(data.num_frac)
@@ -84,7 +86,7 @@ def data_type_from_proto(serialized: data_types_pb2.QDataType) -> QDType:
     elif serialized.HasField('quint'):
         return QUInt(bitsize=bitsize)
     elif serialized.HasField('bounded_quint'):
-        iteration_length = int_or_sympy_from_proto(serialized.bquint.iteration_length)
+        iteration_length = int_or_sympy_from_proto(serialized.bounded_quint.iteration_length)
         return BoundedQUInt(bitsize=bitsize, iteration_length=iteration_length)
     elif serialized.HasField('qfxp'):
         num_frac = int_or_sympy_from_proto(serialized.qfxp.num_frac)
