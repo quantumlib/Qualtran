@@ -474,7 +474,7 @@ def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqChec
         assert_equivalent_bloq_example_counts(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''
