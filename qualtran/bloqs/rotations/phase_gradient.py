@@ -122,7 +122,7 @@ class PhaseGradientState(GateWithRegisters):
         # Assumes `phase_grad` is in big-endian representation.
         phase_grad = quregs['phase_grad']
         yield OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)
-        yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent).on_registers(
+        yield PhaseGradientUnitary(self.bitsize, exponent=self.exponent, eps=self.eps).on_registers(
             phase_grad=phase_grad
         )
 
@@ -212,15 +212,13 @@ def _fxp(x: float, out: int):
 def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
     """Multiplication via repeated additions algorithm described in Appendix D5"""
 
-    x_bitsize = x_fxp.n_word
     res = _fxp(0, out)
     for i, bit in enumerate(gamma_fxp.bin()):
         if bit == '0':
             continue
         shift = gamma_fxp.n_int - i - 1
-        if -out <= shift < x_bitsize:
-            # Left/Right shift by `shift` bits.
-            res += x_fxp << shift if shift > 0 else x_fxp >> abs(shift)
+        # Left/Right shift by `shift` bits.
+        res += x_fxp << shift if shift > 0 else x_fxp >> abs(shift)
     return res
 
 
@@ -235,7 +233,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     The operation calls `AddIntoPhaseGrad` gate $(gamma_bitsize + 2) / 2$ times.
 
     Args:
-        inp_dtype: Fixed point specification of the input register.
+        x_dtype: Fixed point specification of the input register.
         phase_bitsize: Size of phase gradient register to which the scaled input should be added.
         gamma: Floating point scaling factor.
         gamma_bitsize: Number of bits of precisions to be used for fractional part of `gamma`.
@@ -250,17 +248,28 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
     """
 
-    x_bitsize: int
+    x_dtype: QFxp
     phase_bitsize: int
     gamma: float
-    gamma_bitsize: int
+    gamma_dtype: QFxp
+
+    @classmethod
+    def from_bitsize(
+        cls, x_bitsize: int, phase_bitsize: int, gamma: float, gamma_bitsize: int
+    ) -> 'AddScaledValIntoPhaseReg':
+        return AddScaledValIntoPhaseReg(
+            QFxp(x_bitsize, x_bitsize, signed=False),
+            phase_bitsize,
+            gamma,
+            QFxp(gamma_bitsize + max(0, int(np.log2(abs(gamma)))), gamma_bitsize, signed=False),
+        )
 
     @cached_property
     def signature(self):
-        return Signature.build_from_dtypes(x=self.inp_dtype, phase_grad=self.phase_dtype)
+        return Signature.build_from_dtypes(x=self.x_dtype, phase_grad=self.phase_dtype)
 
     def registers(self):
-        return [2] * self.inp_dtype.num_qubits, [2] * self.phase_bitsize
+        return [2] * self.x_dtype.num_qubits, [2] * self.phase_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("not needed.")
@@ -268,15 +277,6 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     @cached_property
     def phase_dtype(self) -> QFxp:
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
-
-    @cached_property
-    def inp_dtype(self) -> QFxp:
-        return QFxp(self.x_bitsize, self.x_bitsize, signed=False)
-
-    @cached_property
-    def gamma_dtype(self) -> QFxp:
-        n_int = Fxp(abs(self.gamma), signed=False).n_int
-        return QFxp(n_int + self.gamma_bitsize, self.gamma_bitsize, signed=False)
 
     @cached_property
     def gamma_fxp(self) -> Fxp:
@@ -287,10 +287,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         """Computes `x*self.gamma` using fixed point arithmetic."""
         sign = np.sign(self.gamma)
         # `x` is an integer because we currently represent each bitstring as an integer during simulations.
-        # However, `x` should be interpreted as per the fixed point specification given in self.inp_dtype.
-        # If `self.inp_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
+        # However, `x` should be interpreted as per the fixed point specification given in self.x_dtype.
+        # If `self.x_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
         # 2**n_frac (in other words, right shifted by n_frac)
-        x_fxp = Fxp(x / 2**self.x_bitsize, dtype=self.inp_dtype.fxp_dtype_str)
+        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
         # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
         # of bits for integer and fractional part. This is done in self.gamma_fxp
         # Compute the result = x_fxp * gamma_fxp
@@ -298,10 +298,11 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
         # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
         # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
-        result -= np.floor(result)
+        assert 0 <= result < 1 and result.dtype == self.phase_dtype.fxp_dtype_str
+        # result -= np.floor(result)
         # Now that `result` is a number between [0, 1), represent the fraction using `self.phase_bitsize`
         # bits.
-        result = result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str))
+        # result = result.like(Fxp(None, dtype=self.phase_dtype.fxp_dtype_str))
         # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
         # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
         # can be ignored during the fixed point arithmetic analysis.
@@ -316,17 +317,21 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
             if bit == '0':
                 continue
             shift = self.gamma_fxp.n_int - i - 1
-            if 0 <= shift < self.x_bitsize:
+            if 0 <= shift < self.x_dtype.num_frac:
                 # Left shift by `shift` bits / multiply by 2**shift
                 yield AddIntoPhaseGrad(
-                    self.x_bitsize - shift, self.phase_bitsize, sign=sign
-                ).on_registers(x=x[shift:], phase_grad=phase_grad)
-            elif -len(phase_grad) < shift < 0:
+                    self.x_dtype.num_frac - shift, self.phase_bitsize, sign=sign
+                ).on_registers(x=x[shift + self.x_dtype.num_int :], phase_grad=phase_grad)
+            elif -len(phase_grad) - self.x_dtype.num_int < shift < 0:
                 # Right shift by `shift` bits / divide by 2**shift
-                x_bitsize = min(self.x_bitsize, len(phase_grad) + shift)
+                shift = abs(shift)
+                x_bitsize = self.x_dtype.num_frac + min(shift, self.x_dtype.num_int)
+                x_qubits = x[-x_bitsize:]
+                right_shift = max(0, shift - self.x_dtype.num_int)
+                x_bitsize = min(x_bitsize, self.phase_dtype.bitsize - right_shift)
                 yield AddIntoPhaseGrad(
-                    x_bitsize, self.phase_bitsize, right_shift=abs(shift), sign=sign
-                ).on_registers(x=x[:x_bitsize], phase_grad=phase_grad)
+                    x_bitsize, self.phase_bitsize, right_shift=right_shift, sign=sign
+                ).on_registers(x=x_qubits[:x_bitsize], phase_grad=phase_grad)
 
     def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
@@ -338,7 +343,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_additions = (self.gamma_dtype.bitsize + 2) // 2
-        return {(AddIntoPhaseGrad(self.x_bitsize, self.phase_bitsize), num_additions)}
+        return {(AddIntoPhaseGrad(self.x_dtype.bitsize, self.phase_bitsize), num_additions)}
 
     def _t_complexity_(self):
         ((add_into_phase, n),) = self.bloq_counts().items()

@@ -21,7 +21,7 @@ from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
-from qualtran.bloqs.rotations.phasing_via_cost_function import PhaseOraclePhaseGradient
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -143,8 +143,8 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         )
 
     @cached_property
-    def phase_oracle(self) -> PhaseOraclePhaseGradient:
-        return PhaseOraclePhaseGradient(
+    def phase_oracle(self) -> QvrPhaseGradient:
+        return QvrPhaseGradient(
             Register(
                 'out',
                 QFxp(
