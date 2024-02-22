@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import BoundedQUInt, QBit, QDType, QFxp, QInt, QIntOnesComp, QUInt
+from qualtran import BoundedQUInt, QBit, QDType, QFxp, QInt, QIntOnesComp, QMontgomeryUInt, QUInt
 
 
 def test_qint():
@@ -84,6 +84,16 @@ def test_qfxp():
     qfp = QFxp(b, f, True)
     assert qfp.num_qubits == b
     assert qfp.num_int == b - f - 1
+
+
+def test_qmontgomeryuint():
+    qmontgomeryuint_8 = QMontgomeryUInt(8)
+    assert qmontgomeryuint_8.num_qubits == 8
+    # works
+    QMontgomeryUInt(1)
+    n = sympy.symbols('x')
+    qmontgomeryuint_8 = QMontgomeryUInt(n)
+    assert qmontgomeryuint_8.num_qubits == n
 
 
 @pytest.mark.parametrize('qdtype', [QBit(), QInt(4), QUInt(4), BoundedQUInt(3, 5)])
