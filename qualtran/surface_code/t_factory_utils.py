@@ -19,12 +19,13 @@ import numpy as np
 
 
 def _rotation_unitary(pauli_string: str, theta: float):
+    r"""Returns the unitary matrix of e^{j P \theta} where P is the pauli string."""
     num_qubits = len(pauli_string)
     u = cirq.unitary(cirq.DensePauliString(pauli_string))
     return np.cos(theta) * np.eye(1 << num_qubits) + 1j * np.sin(theta) * u
 
 
-class PauliRotationChannel(cirq.Gate):
+class NoisyPauliRotation(cirq.Gate):
     r"""A channel that applies a pi/8 pauli rotation with possible overshooting to 5pi/8, -pi/8, and 3pi/8.
 
     The channel is defined as
@@ -34,7 +35,15 @@ class PauliRotationChannel(cirq.Gate):
     $$
     """
 
-    def __init__(self, pauli_string, p1, p2, p3):
+    def __init__(self, pauli_string: str, p1: float, p2: float, p3: float):
+        """Initializes NoisyPauliRotation.
+        
+        Args:
+            pauli_string: The pauli string to apply the rotation to.
+            p1: The probability of applying the rotation by 5pi/8.
+            p2: The probability of applying the rotation by -pi/8.
+            p3: The probability of applying the rotation by 3pi/8.
+        """
         self._probabilities = [1 - p1 - p2 - p3, p1, p2, p3]
         self._unitaries = [_rotation_unitary(pauli_string, t * np.pi / 8) for t in (1, 5, -1, 3)]
         self.pauli_string = pauli_string
@@ -54,7 +63,7 @@ class PauliRotationChannel(cirq.Gate):
 def storage_error(
     kind: str, probabilities: Sequence[float], qubits: Sequence[cirq.Qid]
 ) -> Sequence[cirq.Operation]:
-    r"""Creates several channels each applying the requested pauli error a single qubit.
+    r"""Creates several channels each applying the requested pauli error to a single qubit.
 
     Each returned operation is a channel that applies the requested error with
     probability `probabilities[i]` to the ith qubit.

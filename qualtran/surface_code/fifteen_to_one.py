@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Optional
 from functools import lru_cache
 
 import cirq
@@ -23,14 +24,15 @@ from qualtran.surface_code.quantum_error_correction_scheme_summary import (
     FowlerSuperconductingQubits,
     QuantumErrorCorrectionSchemeSummary,
 )
-from qualtran.surface_code.t_factory_utils import PauliRotationChannel, storage_error
+from qualtran.surface_code.t_factory_utils import NoisyPauliRotation, storage_error
 
 
 @frozen
 class FifteenToOne(MagicStateFactory):
     """15-to-1 Magic T state factory.
 
-        reference: https://arxiv.org/abs/1905.06903
+    reference:
+        [Magic State Distillation: Not as Costly as You Think] https://arxiv.org/abs/1905.06903
 
     Attributes:
         d_X: Side length of the surface code along which X measurements happen.
@@ -43,6 +45,7 @@ class FifteenToOne(MagicStateFactory):
     d_Z: int
     d_m: int
     qec: QuantumErrorCorrectionSchemeSummary = FowlerSuperconductingQubits
+    reference: Optional[str] = None
 
     def footprint(self) -> int:
         return 2 * (self.d_X + 4 * self.d_Z) * 3 * self.d_X + 4 * self.d_m
@@ -61,17 +64,19 @@ class FifteenToOne(MagicStateFactory):
 
     @lru_cache(5)
     def p_out(self, phys_err: float) -> float:
+        # I \otimes ones \otimes ones \otimes ones \otimes ones / 16
         projector = np.kron(
             np.eye(2), np.ones((16, 16)) / 16
-        )  # I \otimes ones \otimes ones \otimes ones \otimes ones / 16
+        )
         project_state = (
             1
             / (1 - self.p_fail(phys_err))
             * (projector @ self._final_state(phys_err) @ projector.T.conj())
         )
+        # |T><T| \otimes ones \otimes ones \otimes ones \otimes ones / 16
         T_state = np.array([1, np.exp(-1j * np.pi / 4)]).reshape((1, 2)) / np.sqrt(
             2
-        )  # |T><T| \otimes ones \otimes ones \otimes ones \otimes ones / 16
+        )
         target_density = np.kron(T_state.T.conj() @ T_state, np.ones((16, 16)) / 16)
         return np.real(1 - np.trace(project_state @ target_density))
 
@@ -91,7 +96,7 @@ def _build_factory(
 ) -> cirq.Circuit:
     """Builds the 15-to-1 factory with its associated cost model.
 
-    The cost model turns the unitaries into channels (PauliRotationChannel) and
+    The cost model turns the unitaries into channels (NoisyPauliRotation) and
     adds X and Z errors (storage_errors).
     The probabilities of those channels are the same as those in the supplementary
     material of https://arxiv.org/abs/1905.06903.
@@ -114,38 +119,42 @@ def _build_factory(
 
     factory = cirq.Circuit.from_moments(
         cirq.H.on_each(qs),
-        PauliRotationChannel(
+        # 1
+        NoisyPauliRotation(
             'IZIII',
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 1
-        PauliRotationChannel(
+        ),
+        # 2
+        NoisyPauliRotation(
             'IIZII',
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 2
-        PauliRotationChannel(
+        ),
+        # 3
+        NoisyPauliRotation(
             'IIIZI',
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 3
-        PauliRotationChannel(
+        ),
+        # 5
+        NoisyPauliRotation(
             'IZZZI',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 5
+        ),
         *storage_error(
             'X',
             [
@@ -168,22 +177,24 @@ def _build_factory(
             ],
             qs,
         ),
-        PauliRotationChannel(
+        # 6
+        NoisyPauliRotation(
             'ZZZII',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 2 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 6
-        PauliRotationChannel(
+        ),
+        # 7
+        NoisyPauliRotation(
             'ZZIZI',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 7
+        ),
         *storage_error(
             'Z', [0.5 * ((d_X + 2 * d_Z) + (d_X + 3 * d_Z)) / d_X * px * d_m, 0, 0, 0, 0], qs
         ),
@@ -209,30 +220,33 @@ def _build_factory(
             ],
             qs,
         ),
-        PauliRotationChannel(
+        # 8
+        NoisyPauliRotation(
             'ZIZZI',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 8
-        PauliRotationChannel(
+        ),
+        # 9
+        NoisyPauliRotation(
             'ZIIZZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 9
-        PauliRotationChannel(
+        ),
+        # 4
+        NoisyPauliRotation(
             'IIIIZ',
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 4
+        ),
         *storage_error(
             'Z', [0.5 * ((d_X + 3 * d_Z) + (d_X + 4 * d_Z)) / d_X * px * d_m, 0, 0, 0, 0], qs
         ),
@@ -258,22 +272,24 @@ def _build_factory(
             ],
             qs,
         ),
-        PauliRotationChannel(
+        # 10
+        NoisyPauliRotation(
             'ZZIIZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 10
-        PauliRotationChannel(
+        ),
+        # 11
+        NoisyPauliRotation(
             'ZIZIZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 11
+        ),
         *storage_error(
             'Z', [0.5 * ((d_X + 4 * d_Z) + (d_X + 4 * d_Z)) / d_X * px * d_m, 0, 0, 0, 0], qs
         ),
@@ -299,22 +315,24 @@ def _build_factory(
             ],
             qs,
         ),
-        PauliRotationChannel(
+        # 12
+        NoisyPauliRotation(
             'ZZZZZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 12
-        PauliRotationChannel(
+        ),
+        # 13
+        NoisyPauliRotation(
             'IIZZZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 13
+        ),
         *storage_error('Z', [0.5 * (d_X + 4 * d_Z) / d_X * px * d_m, 0, 0, 0, 0], qs),
         *storage_error(
             'X',
@@ -338,22 +356,24 @@ def _build_factory(
             ],
             qs,
         ),
-        PauliRotationChannel(
+        # 14
+        NoisyPauliRotation(
             'IZIZZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 14
-        PauliRotationChannel(
+        ),
+        # 15
+        NoisyPauliRotation(
             'IZZIZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
         )(
             *qs
-        ),  # 15
+        ),
         *storage_error(
             'X',
             [
@@ -380,5 +400,6 @@ def _build_factory(
     return factory
 
 
-FifteenToOne733 = FifteenToOne(7, 3, 3)
-FifteenToOne933 = FifteenToOne(9, 3, 3)
+FifteenToOne733 = FifteenToOne(7, 3, 3, reference='https://arxiv.org/abs/1905.06903')
+
+FifteenToOne933 = FifteenToOne(9, 3, 3, reference='https://arxiv.org/abs/1905.06903')
