@@ -18,7 +18,6 @@ from typing import Callable, Iterable, Iterator, Optional, Tuple
 from attrs import frozen
 
 import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
 from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
@@ -164,7 +163,7 @@ class CCZ2TFactory(MagicStateFactory):
 
 def get_ccz2t_costs(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float,
     cycle_time_us: float,
@@ -197,7 +196,7 @@ def get_ccz2t_costs(
 
 def get_ccz2t_costs_from_error_budget(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -305,7 +304,7 @@ def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
 
 def get_ccz2t_costs_from_grid_search(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
