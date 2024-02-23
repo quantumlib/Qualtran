@@ -40,7 +40,7 @@ from qualtran import (
 from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
-from qualtran.protos import args_pb2, bloq_pb2
+from qualtran.protos import bloq_pb2
 from qualtran.serialization import annotations, args, data_types, registers
 
 RESOLVER_DICT = {
