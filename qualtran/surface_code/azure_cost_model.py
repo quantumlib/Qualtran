@@ -66,7 +66,7 @@ def minimum_time_steps(
     eps_syn = error_budget / 3
     c_min += math.ceil(
         alg.rotation_circuit_depth
-        * rotation_model.rotation_cost(eps_syn / alg.rotation_gates).t_gates
+        * rotation_model.rotation_cost(eps_syn / max(1.0, alg.rotation_gates)).t_gates
     )
     return c_min
 
@@ -123,5 +123,5 @@ def t_states(
     return (
         alg.t_gates
         + 4 * alg.toffoli_gates
-        + alg.rotation_gates * rotation_model.rotation_cost(eps_syn / alg.rotation_gates).t_gates
+        + alg.rotation_gates * rotation_model.rotation_cost(eps_syn / max(1.0, alg.rotation_gates)).t_gates
     )

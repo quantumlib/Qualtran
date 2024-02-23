@@ -378,3 +378,7 @@ def _build_factory(
         ),
     )
     return factory
+
+
+FifteenToOne733 = FifteenToOne(7, 3, 3)
+FifteenToOne933 = FifteenToOne(9, 3, 3)
