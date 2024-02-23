@@ -76,6 +76,8 @@ import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.reflection
+import qualtran.bloqs.rotations.phasing_via_cost_function
+import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.sorting
 import qualtran.bloqs.swap_network
 
@@ -281,6 +283,21 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
         ],
+    ),
+    NotebookSpecV2(
+        title='Quantum Variable Rotation',
+        module=qualtran.bloqs.rotations.quantum_variable_rotation,
+        bloq_specs=[
+            qualtran.bloqs.rotations.quantum_variable_rotation._QVR_ZPOW,
+            qualtran.bloqs.rotations.quantum_variable_rotation._QVR_PHASE_GRADIENT,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    NotebookSpecV2(
+        title='Phasing via Cost function',
+        module=qualtran.bloqs.rotations.phasing_via_cost_function,
+        bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
+        directory=f'{SOURCE_DIR}/bloqs/rotations/',
     ),
 ]
 
