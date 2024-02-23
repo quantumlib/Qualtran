@@ -17,11 +17,12 @@ from typing import Dict, Sequence, Set, Tuple, TYPE_CHECKING
 import cirq
 import numpy as np
 import scipy
+import sympy
 from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, QBit, Register, Signature
+from qualtran import Bloq, CtrlSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Ry, ZPowGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 
@@ -349,7 +350,7 @@ class GeneralizedQSP(GateWithRegisters):
         degree = len(self.P)
         return {
             (self.U.adjoint().controlled(), min(degree, self.negative_power)),
-            (self.U.controlled(control_values=[0]), max(0, degree - self.negative_power)),
+            (self.U.controlled(ctrl_spec=CtrlSpec(cvs=0)), max(0, degree - self.negative_power)),
             (self.U.adjoint(), max(0, self.negative_power - degree)),
         } | {(rotation, 1) for rotation in self.signal_rotations}
 
@@ -373,7 +374,10 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
 
         return GeneralizedQSP(
-            self.walk_operator, approx_cos, np.zeros(2 * self.degree + 1), negative_power=self.degree
+            self.walk_operator,
+            approx_cos,
+            np.zeros(2 * self.degree + 1),
+            negative_power=self.degree,
         )
 
     @cached_property
@@ -409,3 +413,12 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
             bb.free(soq)
 
         return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        t = ssa.new_symbol('t')
+        alpha = ssa.new_symbol('alpha')
+        precision = ssa.new_symbol('precision')
+        d = t * alpha + sympy.log(precision) / sympy.log(sympy.log(precision))
+
+        # TODO account for SU2 rotation gates
+        return {(self.walk_operator, d)}

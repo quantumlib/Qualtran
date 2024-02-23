@@ -23,7 +23,7 @@ from cirq.testing import random_unitary
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran.bloqs.generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
@@ -130,6 +130,9 @@ class RandomGate(GateWithRegisters):
 
     def adjoint(self) -> GateWithRegisters:
         return RandomGate(self.bitsize, self.matrix.conj().T)
+
+    def controlled(self, *args, **kwargs):
+        return Bloq.controlled(self, *args, **kwargs)
 
     def __hash__(self):
         return hash(tuple(np.ravel(self.matrix)))
