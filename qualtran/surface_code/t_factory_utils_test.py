@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.surface_code.t_factory_utils import PauliRotationChannel, storage_error
+from qualtran.surface_code.t_factory_utils import NoisyPauliRotation, storage_error
 
 
 def test_storage_error():
@@ -43,7 +43,7 @@ def test_pauli_channel():
         np.sqrt(p) * (np.cos(t) * np.eye(16) + 1j * np.sin(t) * u)
         for t, p in zip(angles, probabilities)
     ]
-    p = PauliRotationChannel('ZIZZ', *probabilities[1:])
+    p = NoisyPauliRotation('ZIZZ', *probabilities[1:])
     np.testing.assert_allclose(cirq.kraus(p), desired_kraus)
 
     cirq.testing.assert_has_diagram(
