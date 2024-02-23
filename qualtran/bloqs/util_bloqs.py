@@ -352,7 +352,7 @@ class Free(Bloq):
     vector after freeing qubits and make sure it is normalized.
 
     Attributes:
-        n: the bitsize of the register to be freed.
+        dtype: The quantum data type of the register to be freed.
     """
 
     dtype: QDType
