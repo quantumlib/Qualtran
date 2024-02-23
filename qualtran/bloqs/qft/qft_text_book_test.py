@@ -49,4 +49,5 @@ def test_qft_text_book_t_complexity(n: int):
     qft_bloq = QFTTextBook(n)
     qft_t_complexity = qft_bloq.t_complexity()
     assert qft_t_complexity.rotations == (n * (n - 1)) // 2
-    assert qft_t_complexity.t == 0
+    # Each CZ**k uses 1 AND/AND† gate to decompose into a non-controlled Z**k
+    assert qft_t_complexity.t == qft_t_complexity.rotations * 4

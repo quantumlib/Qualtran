@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Protocol
+from typing import Set, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -23,20 +23,16 @@ from qualtran import bloq_example
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
-
-class _HasEps(Protocol):
-    """Protocol for typing `RotationBloq` base class mixin that has accuracy specified as eps."""
-
-    eps: float
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
 class ZPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
 
-    The unitary matrix of `ZPowGate(exponent=t, global_shift=s)` is:
+    The unitary matrix of `ZPowGate(exponent=t)` is:
     $$
-        e^{i \pi s t}
         \begin{bmatrix}
             1 & 0 \\
             0 & e^{i \pi t}
@@ -46,8 +42,7 @@ class ZPowGate(CirqGateAsBloqBase):
     Note in particular that this gate has a global phase factor of
     $e^{i\pi t/2}$ vs the traditionally defined rotation matrices
     about the Pauli Z axis. See `Rz` for rotations without the global
-    phase. The global phase factor can be adjusted by using the `global_shift`
-    parameter when initializing.
+    phase.
 
     Args:
         exponent: The t in gate**t. Determines how much the eigenvalues of
@@ -55,10 +50,6 @@ class ZPowGate(CirqGateAsBloqBase):
             when `gate**1` is applied will gain a relative phase of
             e^{i pi exponent} when `gate**exponent` is applied (relative to
             eigenvectors unaffected by `gate**1`).
-        global_shift: Offsets the eigenvalues of the gate at exponent=1.
-            In effect, this controls a global phase factor on the gate's
-            unitary matrix. The factor for global_shift=s is:
-                exp(i * pi * s * t)
         eps: precision for implementation of rotation.
 
     Registers:
@@ -72,30 +63,50 @@ class ZPowGate(CirqGateAsBloqBase):
     """
 
     exponent: float = 1.0
-    global_shift: float = 0.0
     eps: float = 1e-11
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
-        return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift)
+        exponent = self.exponent + (-1) ** np.random.randint(2) * self.eps / np.pi
+        return cirq.ZPowGate(exponent=exponent, global_shift=0)
 
     def __pow__(self, power):
         g = self.cirq_gate**power
-        return ZPowGate(g.exponent, g.global_shift, self.eps)
+        return ZPowGate(g.exponent, self.eps)
+
+    def t_complexity(self) -> 'TComplexity':
+        if cirq.has_stabilizer_effect(self.cirq_gate):
+            return TComplexity(clifford=1)
+        return TComplexity(rotations=1)
 
 
 @frozen
 class CZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
-    global_shift: float = 0.0
     eps: float = 1e-11
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
-        return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
+        exponent = self.exponent + (-1) ** np.random.randint(2) * self.eps / np.pi
+        return cirq.CZPowGate(exponent=exponent)
 
     def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(rotations=1)
+        if cirq.has_stabilizer_effect(self.cirq_gate):
+            return TComplexity(clifford=1)
+        return TComplexity(rotations=1, t=4, clifford=9 + 4)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # A CZ**k can be implemented via 1 AND/AND† and 1 non-controlled Z**k
+        if cirq.has_stabilizer_effect(self.cirq_gate):
+            return super().build_call_graph(ssa)
+
+        from qualtran.bloqs.and_bloq import And
+
+        return {
+            (And(), 1),
+            (And().adjoint(), 1),
+            (ZPowGate(exponent=self.exponent, eps=self.eps), 1),
+        }
 
     def __pow__(self, power):
         g = self.cirq_gate**power

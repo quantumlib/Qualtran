@@ -14,10 +14,11 @@
 
 import cirq
 import numpy as np
+import pytest
 from cirq.ops import SimpleQubitManager
 
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+from qualtran.bloqs.basic_gates import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from qualtran.bloqs.basic_gates.rotation import _rx, _ry, _rz
 
 
@@ -77,13 +78,11 @@ def test_as_cirq_op():
     assert circuit == cirq.Circuit(
         cirq.YPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
     )
-    bloq = ZPowGate(exponent=1 / 5, global_shift=-0.5)
+    bloq = ZPowGate(exponent=1 / 5, eps=0)
     quregs = get_named_qubits(bloq.signature)
     op, _ = bloq.as_cirq_op(SimpleQubitManager(), **quregs)
     circuit = cirq.Circuit(op)
-    assert circuit == cirq.Circuit(
-        cirq.ZPowGate(exponent=1 / 5, global_shift=-0.5).on(cirq.NamedQubit("q"))
-    )
+    assert circuit == cirq.Circuit(cirq.ZPowGate(exponent=1 / 5).on(cirq.NamedQubit("q")))
 
 
 def test_pretty_name():
@@ -93,6 +92,20 @@ def test_pretty_name():
     assert _ry().pretty_name() == "Ry"
     assert _rx().pretty_name() == "Rx"
     assert _rz().pretty_name() == "Rz"
+
+
+@pytest.mark.parametrize("exponent, eps", [[0.2, 1e-2], [-0.0123, 1e-3]])
+def test_approx_zpow_rotation(exponent: float, eps: float):
+    zpow_perfect = cirq.ZPowGate(exponent=exponent)
+    zpow_eps = ZPowGate(exponent=exponent, eps=eps)
+    np.testing.assert_allclose(cirq.unitary(zpow_eps), cirq.unitary(zpow_perfect), atol=eps)
+
+
+@pytest.mark.parametrize("exponent, eps", [[0.2, 1e-2], [-0.0123, 1e-3]])
+def test_approx_czpow_rotation(exponent: float, eps: float):
+    zpow_perfect = cirq.CZPowGate(exponent=exponent)
+    zpow_eps = CZPowGate(exponent=exponent, eps=eps)
+    np.testing.assert_allclose(cirq.unitary(zpow_eps), cirq.unitary(zpow_perfect), atol=eps)
 
 
 def test_rx(bloq_autotester):

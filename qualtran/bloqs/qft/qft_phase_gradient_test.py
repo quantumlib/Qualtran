@@ -61,7 +61,6 @@ def test_qft_with_phase_gradient(n: int, without_reverse: bool):
 @pytest.mark.parametrize('n', [10, 123])
 def test_qft_text_book_t_complexity(n: int):
     qft_bloq = QFTPhaseGradient(n)
-    print(qft_bloq.t_complexity())
 
     def f(x):
         if x == 1:
