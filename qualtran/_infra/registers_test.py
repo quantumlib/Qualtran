@@ -55,8 +55,6 @@ def test_selection_registers_indexing(n, N, m, M):
 
 
 def test_selection_registers_consistent():
-    with pytest.raises(ValueError, match="should be flat"):
-        _ = Register('a', BoundedQUInt(3, 5), shape=(3, 5))
     with pytest.raises(ValueError, match=".*iteration length is too large "):
         _ = Register('a', BoundedQUInt(3, 10))
 
@@ -166,7 +164,7 @@ def test_agg_split():
 
 
 def test_get_named_qubits_multidim():
-    regs = Signature([Register('q', shape=(2, 3), bitsize=4)])
+    regs = Signature([Register('q', shape=(2, 3), dtype=QAny(4))])
     quregs = get_named_qubits(regs.lefts())
     assert quregs['q'].shape == (2, 3, 4)
     assert quregs['q'][1, 2, 3] == cirq.NamedQubit('q[1, 2][3]')
