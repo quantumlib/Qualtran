@@ -410,3 +410,46 @@ class ArbitraryClifford(Bloq):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
+
+
+@frozen
+class Cast(Bloq):
+    """Cast a register from one n-bit QDType to another QDType.
+
+
+    Args:
+        in_qdtype: Input QDType to cast from.
+        out_qdtype: Output QDType to cast to.
+
+    Registers:
+        in: input register to cast from.
+        out: input register to cast to.
+    """
+
+    in_dtype: QDType
+    out_dtype: QDType
+    shape: Tuple[int, ...] = attrs.field(
+        default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
+    )
+
+    def __attrs_post_init__(self):
+        if isinstance(self.in_dtype.bitsize, int):
+            if self.in_dtype.num_qubits != self.out_dtype.num_qubits:
+                raise ValueError("Casting only permitted between same-sized registers.")
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('x', dtype=self.in_dtype, shape=self.shape, side=Side.LEFT),
+                Register('y', dtype=self.out_dtype, shape=self.shape, side=Side.RIGHT),
+            ]
+        )
+
+    def build_composite_bloq(self, bb: BloqBuilder, x: SoquetT) -> Dict[str, 'SoquetT']:
+        split = bb.split(x)
+        y = bb.join(split, dtype=self.out_dtype)
+        return {'y': y}
+
+    def _t_complexity_(self, adjoint=False) -> 'TComplexity':
+        return TComplexity()
