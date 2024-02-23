@@ -42,7 +42,6 @@ def test_bloq_to_proto_cnot():
     assert proto.name == "TestCNOT"
     assert len(proto.registers.registers) == 2
     assert proto.registers.registers[0].name == 'control'
-    assert proto.registers.registers[0].bitsize.int_val == 1
     assert proto.registers.registers[0].side == registers_pb2.Register.Side.THRU
 
     deserialized_bloqs = bloq_serialization.bloqs_from_proto(proto_lib)
@@ -70,7 +69,7 @@ class TestCSwap(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
 

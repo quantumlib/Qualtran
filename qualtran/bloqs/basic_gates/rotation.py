@@ -12,22 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import abc
 from functools import cached_property
-from typing import Protocol, Set, TYPE_CHECKING
+from typing import Protocol
 
 import cirq
 import numpy as np
 from attrs import frozen
 
 from qualtran import bloq_example
-from qualtran.bloqs import utils
-from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 class _HasEps(Protocol):
@@ -51,8 +45,10 @@ class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
         return {(TGate(), num_t)}
 
 
+=======
+>>>>>>> 419dea02431f3d324b03e70eb97a9f21e49fe2f8
 @frozen
-class ZPowGate(_RotationBloq):
+class ZPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
 
     The unitary matrix of `ZPowGate(exponent=t, global_shift=s)` is:
@@ -130,7 +126,7 @@ class CZPowGate(CirqGateAsBloqBase):
 
 
 @frozen
-class XPowGate(_RotationBloq):
+class XPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the X axis of the Bloch sphere.
 
     The unitary matrix of `XPowGate(exponent=t, global_shift=s)` is:
@@ -179,7 +175,7 @@ class XPowGate(_RotationBloq):
 
 
 @frozen
-class YPowGate(_RotationBloq):
+class YPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
 
     The unitary matrix of `YPowGate(exponent=t)` is:
@@ -228,7 +224,7 @@ class YPowGate(_RotationBloq):
 
 
 @frozen
-class Rz(_RotationBloq):
+class Rz(CirqGateAsBloqBase):
     """Single-qubit Rz gate.
 
     Args:
@@ -254,7 +250,7 @@ class Rz(_RotationBloq):
 
 
 @frozen
-class Rx(_RotationBloq):
+class Rx(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
@@ -264,7 +260,7 @@ class Rx(_RotationBloq):
 
 
 @frozen
-class Ry(_RotationBloq):
+class Ry(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
