@@ -19,7 +19,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, MultiplyTwoReals, ScaleIntByReal, SquareRealNumber
 from qualtran.cirq_interop.bit_tools import float_as_fixed_width_int
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -174,7 +174,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             SquareRealNumber(self.poly_bitsize).t_complexity()
             + ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize).t_complexity()
             + 2 * MultiplyTwoReals(self.target_bitsize).t_complexity()
-            + Add(self.target_bitsize).t_complexity()
+            + Add(QInt(self.target_bitsize)).t_complexity()
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -190,7 +190,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             # See: https://github.com/quantumlib/Qualtran/issues/655
             (ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize), 1),
             (MultiplyTwoReals(self.target_bitsize), 2),
-            (Add(self.target_bitsize), 1),
+            (Add(QInt(self.target_bitsize)), 1),
         }
 
 
@@ -233,14 +233,14 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         # are not included in Fusion estimates as these can be achieved with
         # Clifford gates only.
         return 3 * (
-            Add(self.poly_bitsize).t_complexity()
+            Add(QInt(self.poly_bitsize)).t_complexity()
             + MultiplyTwoReals(self.poly_bitsize).t_complexity()
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(self.poly_bitsize), 3)}
+        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(QInt(self.poly_bitsize)), 3)}
 
 
 @bloq_example
