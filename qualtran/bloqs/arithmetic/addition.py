@@ -74,7 +74,6 @@ class Add(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    # bitsize: Union[int, sympy.Expr] = field()
     dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
 
     @dtype.validator
