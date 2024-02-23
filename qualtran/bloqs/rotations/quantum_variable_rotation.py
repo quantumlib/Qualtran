@@ -56,7 +56,7 @@ References:
 
 import abc
 from functools import cached_property
-from typing import Dict, Sequence, TYPE_CHECKING, Union
+from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -71,6 +71,7 @@ from qualtran import (
     Register,
     Signature,
 )
+from qualtran.bloqs import utils
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
@@ -158,6 +159,10 @@ class QvrZPow(QvrInterface):
                 q=out[-(i + 1)],
             )
         return {self.cost_reg.name: bb.join(out)}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        zpow = ZPowGate(exponent=self.gamma, eps=self.eps / self.cost_dtype.bitsize)
+        return {(zpow, self.cost_dtype.bitsize)}
 
 
 @bloq_example
@@ -324,12 +329,14 @@ class QvrPhaseGradient(QvrInterface):
 
     @cached_property
     def b_phase(self) -> int:
-        return int(np.ceil(np.log2(np.pi * 2 / self.eps)))
+        pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
+        return utils.ceil(utils.log2(pi * 2 / self.eps))
 
     @cached_property
     def b_grad(self) -> int:
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
-        return int(np.ceil(np.log2(self.num_additions * 2 * np.pi / self.eps)))
+        pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
+        return utils.ceil(utils.log2(self.num_additions * 2 * pi / self.eps))
 
     @cached_property
     def num_additions(self) -> int:
@@ -358,7 +365,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = max(0, int(np.ceil(np.log2(abs(self.gamma)))))
+        n_int = sympy.Max(0, utils.ceil(utils.log2(abs(self.gamma))))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 
