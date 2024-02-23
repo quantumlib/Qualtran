@@ -68,6 +68,7 @@ import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.qrom
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
@@ -120,6 +121,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.apply_gate_to_lth_target,
         bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='QROM', module=qualtran.bloqs.qrom, bloq_specs=[qualtran.bloqs.qrom._QROM_DOC]
     ),
     # --------------------------------------------------------------------------
     # -----   Chemistry   ------------------------------------------------------

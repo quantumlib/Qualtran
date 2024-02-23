@@ -350,6 +350,7 @@ class _IntVector(Bloq):
             return {'val': self.val}
 
         assert val == self.val, val
+        return {}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()

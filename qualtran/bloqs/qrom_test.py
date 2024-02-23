@@ -20,7 +20,7 @@ import pytest
 
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT, TGate
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.qrom import _qrom_multi_data, _qrom_multi_dim, _qrom_small, QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
@@ -32,16 +32,23 @@ from qualtran.testing import (
 )
 
 
+def test_qrom_small(bloq_autotester):
+    bloq_autotester(_qrom_small)
+
+
+def test_qrom_multi_data(bloq_autotester):
+    bloq_autotester(_qrom_multi_data)
+
+
+def test_qrom_multi_dim(bloq_autotester):
+    bloq_autotester(_qrom_multi_dim)
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "data,num_controls",
     [
-        pytest.param(
-            data,
-            num_controls,
-            id=f"{num_controls}-data{idx}",
-            marks=pytest.mark.slow if num_controls == 2 and idx == 2 else (),
-        )
+        pytest.param(data, num_controls, id=f"{num_controls}-data{idx}")
         for idx, data in enumerate(
             [[[1, 2, 3, 4, 5]], [[1, 2, 3], [4, 5, 10]], [[1], [2], [3], [4], [5], [6]]]
         )
@@ -91,6 +98,57 @@ def test_qrom_1d(data, num_controls):
             assert_circuit_inp_out_cirqsim(
                 decomposed_circuit + inverse, g.all_qubits, final_state, final_state
             )
+
+
+def test_qrom_1d_classical():
+    rs = np.random.RandomState()
+    data = rs.randint(0, 2**3, size=10)
+    sel_size = int(np.ceil(np.log2(10)))
+    qrom = QROM([data], (sel_size,), target_bitsizes=(3,))
+    for i in range(len(data)):
+        i_out, data_out = qrom.call_classically(selection=i, target0_=0)
+        assert i_out == i
+        assert data_out == data[i]
+
+
+def test_qrom_1d_classical_nonzero_target():
+    rs = np.random.RandomState()
+    data = rs.randint(0, 2**3, size=10)
+    sel_size = int(np.ceil(np.log2(10)))
+    qrom = QROM([data], (sel_size,), target_bitsizes=(3,))
+    for i in range(len(data)):
+        target_in = int('111', 2)
+        i_out, data_out = qrom.call_classically(selection=i, target0_=target_in)
+        assert i_out == i
+        assert data_out == data[i] ^ target_in
+
+
+def test_qrom_1d_multitarget_classical():
+    rs = np.random.RandomState()
+    n = 10
+    data_sets = [rs.randint(0, 2**3, size=n) for _ in range(3)]
+    sel_size = int(np.ceil(np.log2(10)))
+    qrom = QROM(data_sets, (sel_size,), target_bitsizes=(3, 3, 3))
+    for i in range(n):
+        init = {f'target{i}_': 0 for i in range(3)}
+        i_out, *data_out = qrom.call_classically(selection=i, **init)
+        assert i_out == i
+        assert data_out == [data[i] for data in data_sets]
+
+
+def test_qrom_3d_classical():
+    rs = np.random.RandomState()
+    data = rs.randint(0, 2**3, size=(3, 2, 4))
+    sel_sizes = (2, 1, 2)
+    qrom = QROM([data], sel_sizes, target_bitsizes=(3,))
+    for i in range(3):
+        for j in range(2):
+            for k in range(4):
+                *i_out, data_out = qrom.call_classically(
+                    selection0=i, selection1=j, selection2=k, target0_=0
+                )
+                assert i_out == [i, j, k]
+                assert data_out == data[i, j, k]
 
 
 def test_qrom_diagram():
