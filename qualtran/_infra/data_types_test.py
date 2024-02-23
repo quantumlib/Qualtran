@@ -20,6 +20,7 @@ from .data_types import (
     BoundedQUInt,
     check_dtypes_consistent,
     QAny,
+    QAnyInt,
     QBit,
     QDType,
     QFxp,
@@ -192,6 +193,8 @@ def test_type_errors_fxp():
 )
 def test_type_errors_matrix(qdtype_a, qdtype_b):
     if qdtype_a == qdtype_b:
+        assert check_dtypes_consistent(qdtype_a, qdtype_b)
+    elif isinstance(qdtype_a, QAnyInt) and isinstance(qdtype_b, QAnyInt):
         assert check_dtypes_consistent(qdtype_a, qdtype_b)
     else:
         assert not check_dtypes_consistent(qdtype_a, qdtype_b)
