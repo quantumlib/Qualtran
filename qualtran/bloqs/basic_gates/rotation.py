@@ -30,23 +30,6 @@ class _HasEps(Protocol):
     eps: float
 
 
-class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
-    def t_complexity(self: _HasEps):
-        # TODO Determine precise clifford count and/or ignore.
-        # This is an improvement over Ref. 2 from the docstring which provides
-        # a bound of 3 log(1/eps).
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_t = utils.ceil(1.149 * utils.log2(1.0 / self.eps) + 9.2)
-        return TComplexity(t=num_t)
-
-    def build_call_graph(self: _HasEps, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_t = _RotationBloq.t_complexity(self).t
-        return {(TGate(), num_t)}
-
-
-=======
->>>>>>> 419dea02431f3d324b03e70eb97a9f21e49fe2f8
 @frozen
 class ZPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
@@ -113,12 +96,6 @@ class CZPowGate(CirqGateAsBloqBase):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(rotations=1)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.bloqs.and_bloq import And
-
-        zpow = ZPowGate(exponent=self.exponent, global_shift=self.global_shift, eps=self.eps)
-        return {(And(), 1), (zpow, 1), (And().adjoint(), 1)}
 
     def __pow__(self, power):
         g = self.cirq_gate**power

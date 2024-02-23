@@ -309,10 +309,6 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     def gamma_fxp(self) -> Fxp:
         return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
 
-    @cached_property
-    def gamma_fxp(self) -> Fxp:
-        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
-
     @cached_method
     def scaled_val(self, x: int) -> int:
         """Computes `x*self.gamma` using fixed point arithmetic."""
