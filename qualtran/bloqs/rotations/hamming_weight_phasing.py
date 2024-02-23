@@ -20,7 +20,6 @@ import attrs
 from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
-from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 
 if TYPE_CHECKING:

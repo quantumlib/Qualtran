@@ -18,10 +18,12 @@ the wave-function has support, by an amount $e^{i 2\pi \gamma x}$. The general u
 defined as
 
 $$
-\text{QVR}_{n, \epsilon}(\gamma)\sum_{j=0}^{2^n-1} c_j|x_j\rangle\rightarrow\sum_{j=0}^{2^n-1} e^{2\pi i\widetilde{\gamma x_j}}c_j|x_j\rangle
+\text{QVR}_{n, \epsilon}(\gamma)\sum_{j=0}^{2^n-1} c_j|x_j\rangle\rightarrow\sum_{j=0}^{2^n-1}
+e^{2\pi i\widetilde{\gamma x_j}}c_j|x_j\rangle
 $$
 
-where $\epsilon$ parameterizes the accuracy to which we wish to synthesize the phase coefficients s.t.
+where $\epsilon$ parameterizes the accuracy to which we wish to synthesize the phase
+coefficients s.t.
 
 $$
 |e^{2\pi i\widetilde{\gamma x_j}} - e^{2\pi i \gamma x_j}| \leq \epsilon
@@ -34,18 +36,22 @@ $$
 $$
 
 The linked references typically assume that $0 \leq x_{j} \le 1$ and $-1 \leq \gamma \leq 1$,
-for ease of exposition and analysis, but we do not have any such constraint. In the implementations
-presented below, both the cost register $|x\rangle$ and $\gamma$ can be arbitrary fixed point integer types.
-Each section below presents more details about the constraints on cost register $|x\rangle$ and
-scaling constant $\gamma$.
+for ease of exposition and analysis, but we do not have any such constraint. In the
+implementations presented below, both the cost register $|x\rangle$ and $\gamma$ can be
+arbitrary fixed point integer types.
+Each section below presents more details about the constraints on cost register
+$|x\rangle$ and scaling constant $\gamma$.
 
 
 References:
   1. [Faster quantum chemistry simulation on fault-tolerant quantum
         computers](https://iopscience.iop.org/article/10.1088/1367-2630/14/11/115023/meta)
         Fig 14.
-  2. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391) Appendix C: Oracles for phasing by cost function
-  3. [Formulae for propagating uncertainty](https://en.wikipedia.org/wiki/Propagation_of_uncertainty#Example_formulae)
+  2. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial
+        Optimization](https://arxiv.org/abs/2007.07391) Appendix C: Oracles for
+        phasing by cost function
+  3. [Formulae for propagating
+        uncertainty](https://en.wikipedia.org/wiki/Propagation_of_uncertainty#Example_formulae)
 """
 
 import abc
@@ -94,7 +100,7 @@ class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
 class QvrZPow(QvrInterface):
     r"""QVR oracle that applies a ZPow rotation to every qubit in the n-bit cost register.
 
-    This phase oracle simply applies a Z^{2^{k}} rotation to every qubit in the cost register.
+    This phase oracle simply applies a $Z^{2^{k}}$ rotation to every qubit in the cost register.
     To obtain a desired accuracy of $\epsilon$, each individual rotation is synthesized with accuracy
     $\frac{\epsilon}{n}$, where $n$ is the size of cost register.
 
@@ -173,69 +179,109 @@ class QvrPhaseGradient(QvrInterface):
 
     A $b_\text{grad}$-bit phase gradient state $|\phi\rangle_{b_\text{grad}}$ can be written as
 
-    <!-- can be thought of as a superposition of states $|\frac{0}{2^{b_\text{grad}}}\rangle, |\frac{2}{2^{b_\text{grad}}}\rangle, |\frac{2}{2^{b_\text{grad}}}\rangle, ... |k/$ where each integer $0\leq k \lt 2^{b_\text{grad}}$ represents a $b_\text{grad}$-bit fixed point number $\frac{k}{2^{b_\text{grad}}}$ -->
     $$
-        |\phi\rangle_{b_\text{grad}} = \frac{1}{\sqrt{2^{b_\text{grad}}}} \sum_{k=0}^{2^{b_\text{grad}} - 1} e^{\frac{-2\pi i k}{2^{b_\text{grad}}}} \ket{\frac{k}{b_\text{grad}}}
-    $$
-
-    In the above equation $\frac{k}{b_\text{grad}}$ represents a fixed point fraction. In Qualtran, we can represent such a
-    quantum register using quantum data type `QFxp(bitsize=b_grad, num_frac=b_grad, signed=False)`. Let $\tilde{k}=\frac{k}{b_\text{grad}}$
-    be a $b_\text{grad}$-bit fixed point fraction, we can rewrite the phase gradient state as
-
-
-    $$
-        |\phi\rangle_{b_\text{grad}} = \frac{1}{\sqrt{2^{b_\text{grad}}}}\sum_{\tilde{k}=0}^{\frac{2^{b_\text{grad}-1}}{2^{b_\text{grad}}}} e^{-2\pi i \tilde{k}} \ket{\tilde{k}}
+        |\phi\rangle_{b_\text{grad}} = \frac{1}{\sqrt{2^{b_\text{grad}}}}
+        \sum_{k=0}^{2^{b_\text{grad}} - 1} e^{\frac{-2\pi i k}{2^{b_\text{grad}}}}
+        \ket{\frac{k}{2^{b_\text{grad}}}}
     $$
 
+    In the above equation $\frac{k}{2^{b_\text{grad}}}$ represents a fixed point fraction. In
+    Qualtran, we can represent such a quantum register using quantum data type
+    `QFxp(bitsize=b_grad, num_frac=b_grad, signed=False)`. Let
+    $\tilde{k}=\frac{k}{2^{b_\text{grad}}}$ be a $b_\text{grad}$-bit fixed point fraction,
+    we can rewrite the phase gradient state as
 
-    A useful property of the phase gradient state is that adding a fixed-point number $\tilde{l}$ to the state applies a phase-kickback
-    of $e^{2\pi i \tilde{l}}$
+
+    $$
+        |\phi\rangle_{b_\text{grad}} = \frac{1}{\sqrt{2^{b_\text{grad}}}}
+        \sum_{\tilde{k}=0}^{\frac{2^{b_\text{grad}-1}}{2^{b_\text{grad}}}}
+        e^{-2\pi i \tilde{k}} \ket{\tilde{k}}
+    $$
+
+
+    A useful property of the phase gradient state is that adding a fixed-point number
+    $\tilde{l}$ to the state applies a phase-kickback of $e^{2\pi i \tilde{l}}$
 
     $$
     |\phi + \tilde{l}\rangle_{b_\text{grad}} = e^{2\pi i \tilde{l}}|\phi\rangle_{b_\text{grad}}
     $$
 
-    We exploit this property of the phase gradient states to implement a quantum variable rotation via addition into the phase gradient
-    state s.t.
+    We exploit this property of the phase gradient states to implement a quantum variable
+    rotation via addition into the phase gradient state s.t.
 
     $$\begin{aligned}
-        \text{QVR}_{n, \epsilon}(\gamma)|x\rangle |\phi\rangle &= |x\rangle |\phi + \gamma x\rangle \\
+        \text{QVR}_{n,\epsilon}(\gamma)|x\rangle|\phi\rangle &=|x\rangle|\phi+\gamma x\rangle \\
                                           &= e^{2\pi i \gamma x}|x\rangle |\phi\rangle
     \end{aligned}$$
 
     A number of subtleties arise as part of this procedure and we describe them below one by one.
 
-    - **Adding a scaled value into phase gradient register** Instead of computing $\gamma x$ an intermediate register, we perform the multiplication via repeated additions into the phase gradient register, as described in [2]. This requires us to represent $\gamma$ as a fixed point fraction with bitsize $\gamma_\text{bitsize}$. This procedure introduces two sources of errors:
-        - **Errors due to fixed point representation of $\gamma$** - Note that adding any fixed point number of the form $a.b$ to the phase gradient register is equivalent to adding $0.b$ since $e^{2\pi i a} = 1$ for every integer $a$. Let $\tilde{\gamma} = a.b$ and $x = p.q$ be fixed point decimal representations of $\gamma$ and $x$. We can write the product $\gamma x$ as
+    - **Adding a scaled value into phase gradient register** Instead of computing $\gamma x$ an
+        intermediate register, we perform the multiplication via repeated additions into the phase
+        gradient register, as described in [2]. This requires us to represent $\gamma$ as a fixed
+        point fraction with bitsize $\gamma_\text{bitsize}$. This procedure introduces two sources
+        of errors:
+        - **Errors due to fixed point representation of $\gamma$** - Note that adding any fixed
+            point number of the form $a.b$ to the phase gradient register is equivalent to adding
+            $0.b$ since $e^{2\pi i a} = 1$ for every integer $a$. Let $\tilde{\gamma} = a.b$ and
+            $x = p.q$ be fixed point decimal representations of $\gamma$ and $x$. We can write
+            the product $\gamma x$ as
         $$
-              \tilde{\gamma} x = (\sum_{i=0}^{\gamma_\text{n\_int}} a_{i} * 2^{i} + \sum_{i=1}^{\gamma_\text{n\_frac}} \frac{b_i}{2^i}) (\sum_{j=0}^{x_\text{n\_int}} p_{j} * 2^{j} + \sum_{j=1}^{x_\text{n\_frac}} \frac{q_{j}}{2^{j}})
+              \tilde{\gamma} x = (\sum_{i=0}^{\gamma_\text{n\_int}} a_{i} * 2^{i} +
+              \sum_{i=1}^{\gamma_\text{n\_frac}} \frac{b_i}{2^i}) (\sum_{j=0}^{x_\text{n\_int}}
+              p_{j} * 2^{j} + \sum_{j=1}^{x_\text{n\_frac}} \frac{q_{j}}{2^{j}})
         $$
-        In order to compute $\tilde{\gamma} x$ to precision $\frac{\epsilon}{2\pi}$, we can ignore all terms in the above summation that are < $\frac{\epsilon}{2\pi}$. Let $b_\text{phase} = \log_2{\frac{2\pi}{\epsilon}}$, then we get $\gamma_\text{n\_frac} = x_\text{n\_int} + b_\text{phase}$. Thus,
+        In order to compute $\tilde{\gamma} x$ to precision $\frac{\epsilon}{2\pi}$, we can
+        ignore all terms in the above summation that are < $\frac{\epsilon}{2\pi}$.
+        Let $b_\text{phase} = \log_2{\frac{2\pi}{\epsilon}}$, then we get
+        $\gamma_\text{n\_frac} = x_\text{n\_int} + b_\text{phase}$. Thus,
 
         $$\begin{aligned}
               \gamma_\text{bitsize} &= \gamma_\text{n\_int} + x_\text{n\_int} + b_\text{phase} \\
-                                    &\approxeq \log_2{\frac{1}{\epsilon}} + O(1)
+                                    &\approxeq \log_2{\frac{1}{\epsilon}} + x_\text{n\_int} + O(1)
         \end{aligned}$$
 
-        - **Errors due to truncation of digits of $|x\rangle$ during multiplication via repeated addition** - Let $b_\text{grad}$ be the size of the phase gradient register. When adding right shifted copies of state $x$ to the phase gradient register, we incur an error every time the fractional part of the right shifted state to be added needs to be truncated to $b_\text{grad}$ digits. For each such addition the error is upper bounded by $\frac{2\pi}{2^{b_\text{grad}}}$, because we omit adding bits that would correspond to phase shifts of $\frac{2\pi}{2^{b_\text{grad}+1}}$, $\frac{2\pi}{2^{b_\text{grad}+2}}$, and so forth. The number of such additions can be upper bounded by $\frac{(\gamma_\text{n\_frac} + 2)}{2}$ using techniques from [2]. When $b_\text{grad} >= x_\text{bitsize}$, the first $x_\text{n\_int}$ additions do not contribute to any phase error and thus the number of error causing additions can be upper bounded by $\frac{(b_\text{phase} + 2)}{2}$. In order to keep the error less then $\epsilon$, we get
+        - **Errors due to truncation of digits of $|x\rangle$ during multiplication via repeated
+            addition** - Let $b_\text{grad}$ be the size of the phase gradient register. When
+            adding left/right shifted copies of state $x$ to the phase gradient register, we incur
+            an error every time the fractional part of the shifted state to be added needs to be
+            truncated to $b_\text{grad}$ digits. For each such addition the error is upper bounded
+            by $\frac{2\pi}{2^{b_\text{grad}}}$, because we omit adding bits that would correspond
+            to phase shifts of $\frac{2\pi}{2^{b_\text{grad}+1}}$, $\frac{2\pi}{2^{b_\text{grad}+2}}$,
+            and so forth. The number of such additions can be upper bounded by
+            $\frac{(\gamma_\text{bitsize} + 2)}{2}$ using techniques from [2].
 
-        $$\begin{aligned}
-        b_\text{grad} &= \left \lceil \log_2{\frac{\text{num\_additions} * 2\pi}{\epsilon}} \right\rceil   \\
-                      &= \left \lceil \log_2{\frac{(b_\text{phase} + 2)\pi}{\epsilon}} \right\rceil \text{; if } b_\text{grad} \geq x_\text{bitsize}  \\
-                      &= \left \lceil \log_2{\frac{(b_\text{phase} + \text{x\_int} + 2)\pi}{\epsilon}} \right\rceil \text{; otherwise}
-        \end{aligned}$$
+          - **When $b_\text{grad} \geq x_\text{bitsize}$**:  the first $x_\text{n\_int}$ additions
+            do not contribute to any phase error and thus the number of error causing additions can
+            be upper bounded by $\frac{(b_\text{phase} + 2)}{2}$. In order to keep the error less
+            than $\epsilon$, we get
+            $$\begin{aligned}
+            b_\text{grad}&=\left\lceil\log_2{\frac{\text{num\_additions}\times2\pi}{\epsilon}}
+                        \right\rceil \\
+                        &=\left\lceil\log_2{\frac{(b_\text{phase}+2)\pi}{\epsilon}}\right\rceil
+                        \text{; if }
+                        b_\text{grad} \geq x_\text{bitsize}  \\
+            \end{aligned}$$
+          - **When $b_\text{grad} \lt x_\text{bitsize}$**: We believe that the above precision for
+            $b_\text{grad}$ holds even for this case we have some numerics in tests to verify that.
+            Currently, `QvrPhaseGradient` always sets the bitsize of phase gradient register as per
+            the above equation.
 
+    - **Constraints on $\gamma$ and $|x\rangle$** - In the current implementation, $\gamma$ can be
+        any arbitrary floating point number (signed or unsigned) and $|x\rangle$ must be an unsigned
+        fixed point register.
 
-    - **Constraints on $\gamma$ and $|x\rangle$** - In the current implementation, $\gamma$ can be any arbitrary floating point number (signed or unsigned) and $|x\rangle$ must be an unsigned fixed point register.
-
-    - **Cost of the phase gradient procedure** - Each addition into the phase gradient register costs $b_\text{grad} - 2$ Toffoli's and there are $\frac{\gamma_\text{bitsize} + 2}{2}$ such additions, therefore the total Toffoli cost is
+    - **Cost of the phase gradient procedure** - Each addition into the phase gradient register
+        costs $b_\text{grad} - 2$ Toffoli's and there are $\frac{\gamma_\text{bitsize} + 2}{2}$
+        such additions, therefore the total Toffoli cost is
 
         $$\begin{aligned}
             \text{Toffoli Cost} &= \frac{(b_\text{grad} - 2)(\gamma_\text{bitsize} + 2)}{2} \\
         \end{aligned}$$
 
 
-    Thus, for cases where $-1\lt \gamma \lt 1$ and $0 \leq x \lt 1$, the toffoli cost scales as $\mathcal{O}\left(\log^2{\frac{1}{\epsilon}} \log{\log{\frac{1}{\epsilon}}}\right)$
+    Thus, for cases where $-1\lt \gamma \lt 1$ and $0 \leq x \lt 1$, the toffoli cost scales
+    as $\mathcal{O}\left(\log^2{\frac{1}{\epsilon}} \log{\log{\frac{1}{\epsilon}}}\right)$
 
     References:
 
@@ -301,7 +347,7 @@ class QvrPhaseGradient(QvrInterface):
         #   E(x.0 * a.b) = 0 # Since we only left shift `a.b` and thus do not discard any digit.
         #   E(0.y * a.b) = (y_bitsize-a_bitsize + 2)//2 # Assuming b_grad >= cost_reg.bitsize;
         #                           no digit is discarded for the first `a_bitsize` right shifts.
-        return (self.b_phase + self.cost_dtype.num_int + 2) // 2
+        return (self.b_phase + 2) // 2
 
     @cached_property
     def gamma_dtype(self) -> QFxp:
