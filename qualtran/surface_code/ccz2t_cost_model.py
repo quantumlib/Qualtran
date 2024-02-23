@@ -164,7 +164,7 @@ class CCZ2TFactory(MagicStateFactory):
 
 def get_ccz2t_costs(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float,
     cycle_time_us: float,
@@ -197,7 +197,7 @@ def get_ccz2t_costs(
 
 def get_ccz2t_costs_from_error_budget(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -357,3 +357,5 @@ def get_ccz2t_costs_from_grid_search(
 
     best_factory, best_data_block = best_params
     return best_cost, best_factory, best_data_block
+
+GidneyFowlerCCZ = CCZ2TFactory()

@@ -123,5 +123,6 @@ def t_states(
     return (
         alg.t_gates
         + 4 * alg.toffoli_gates
-        + alg.rotation_gates * rotation_model.rotation_cost(eps_syn / max(1.0, alg.rotation_gates)).t_gates
+        + alg.rotation_gates
+        * rotation_model.rotation_cost(eps_syn / max(1.0, alg.rotation_gates)).t_gates
     )
