@@ -19,7 +19,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QInt, QMontgomeryUInt, QUInt, Register, Signature, SoquetT
+from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
