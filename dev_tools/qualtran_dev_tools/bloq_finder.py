@@ -17,7 +17,7 @@ import subprocess
 from pathlib import Path
 from typing import Callable, Iterable, List, Tuple, Type
 
-from qualtran import Bloq, BloqExample
+from qualtran import Bloq, BloqDocSpec, BloqExample
 
 from .git_tools import get_git_root
 
@@ -97,6 +97,15 @@ def modpath_to_bloq_exs(path: Path) -> Iterable[Tuple[str, str, BloqExample]]:
         yield modname, name, obj
 
 
+def modpath_to_bloqdocspecs(path: Path) -> Iterable[Tuple[str, str, BloqDocSpec]]:
+    """Given a module path, return all the `BloqDocSpec`s defined within."""
+    modname = _bloq_modpath_to_modname(path)
+    mod = importlib.import_module(modname)
+
+    for name, obj in inspect.getmembers(mod, lambda x: isinstance(x, BloqDocSpec)):
+        yield modname, name, obj
+
+
 def get_bloq_classes() -> List[Type[Bloq]]:
     reporoot = get_git_root()
     bloqs_root = reporoot / 'qualtran/bloqs'
@@ -118,3 +127,16 @@ def get_bloq_examples() -> List[BloqExample]:
             bexamples.append(be)
 
     return bexamples
+
+
+def get_bloqdocspecs() -> List[BloqDocSpec]:
+    reporoot = get_git_root()
+    bloqs_root = reporoot / 'qualtran/bloqs'
+    paths = get_bloq_module_paths(bloqs_root)
+
+    bdspecs: List[BloqDocSpec] = []
+    for path in paths:
+        for modname, name, bds in modpath_to_bloqdocspecs(path):
+            bdspecs.append(bds)
+
+    return bdspecs

@@ -17,6 +17,7 @@
 syntax = "proto3";
 
 import "qualtran/protos/args.proto";
+import "qualtran/protos/data_types.proto";
 
 package qualtran;
 
@@ -29,7 +30,7 @@ message Register {
     THRU = 3;
   }
   string name = 1;
-  IntOrSympy bitsize = 2;
+  QDataType dtype = 2;
   repeated IntOrSympy shape = 3;
   Side side = 4;
 }

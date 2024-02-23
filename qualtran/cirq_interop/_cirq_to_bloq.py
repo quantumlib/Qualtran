@@ -60,17 +60,13 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-class CirqGateAsBloqBase(GateWithRegisters):
+class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     """A Bloq wrapper around a `cirq.Gate`"""
 
     @property
     @abc.abstractmethod
     def cirq_gate(self) -> cirq.Gate:
         ...
-
-    def pretty_name(self) -> str:
-        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
-        return f'cirq.{g}'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -114,7 +110,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
             outgoing=outgoing,
         )
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return t_complexity(self.cirq_gate)
 
     def as_cirq_op(
@@ -145,6 +141,10 @@ class CirqGateAsBloqBase(GateWithRegisters):
 @frozen
 class CirqGateAsBloq(CirqGateAsBloqBase):
     gate: cirq.Gate
+
+    def pretty_name(self) -> str:
+        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
+        return f'cirq.{g}'
 
     @property
     def cirq_gate(self) -> cirq.Gate:
@@ -276,15 +276,15 @@ def _ensure_in_reg_exists(
     qreg_to_qvar.clear()
 
     # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
-    soqs_to_join = []
+    soqs_to_join: Dict[cirq.Qid, Soquet] = {}
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            soqs_to_join.append(soq)
+            soqs_to_join[qreg.qubits[0]] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        qreg_to_qvar[in_reg] = bb.join(np.array(soqs_to_join))
+        qreg_to_qvar[in_reg] = bb.join(np.array([soqs_to_join[q] for q in in_reg.qubits]))
 
 
 def _gather_input_soqs(

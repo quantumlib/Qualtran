@@ -42,7 +42,17 @@ from ._infra.composite_bloq import (
     SoquetT,
 )
 
-from ._infra.data_types import QDType, QInt, QBit, QAny, QFxp, QIntOnesComp, QUInt, BoundedQUInt
+from ._infra.data_types import (
+    QDType,
+    QInt,
+    QBit,
+    QAny,
+    QFxp,
+    QIntOnesComp,
+    QUInt,
+    BoundedQUInt,
+    QMontgomeryUInt,
+)
 
 # Internal imports: none
 # External:

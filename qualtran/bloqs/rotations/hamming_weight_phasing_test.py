@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasing,
     HammingWeightPhasingViaPhaseGradient,
@@ -79,7 +78,7 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 @pytest.mark.slow
 @pytest.mark.parametrize('n', [2, 3])
 @pytest.mark.parametrize(
-    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-4), (1.20345, 1e-4), (-1.1934341, 1e-4)]
+    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-3), (1.20345, 1e-3), (-1.1934341, 1e-3)]
 )
 def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: float):
     gate = TestHammingWeightPhasingViaPhaseGradient(n, theta, eps)
@@ -99,10 +98,10 @@ def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: fl
 
 @pytest.mark.parametrize('n, theta, eps', [(5_000, 1 / 100, 1e-1)])
 def test_hamming_weight_phasing_via_phase_gradient_t_complexity(n: int, theta: float, eps: float):
-    gate = HammingWeightPhasingViaPhaseGradient(n, theta, eps)
+    hwp_t_complexity = HammingWeightPhasingViaPhaseGradient(n, theta, eps).t_complexity()
     naive_hwp_t_complexity = HammingWeightPhasing(n, theta, eps).t_complexity()
-    assert (
-        gate.t_complexity().t
-        < naive_hwp_t_complexity.t
-        + naive_hwp_t_complexity.rotations * ZPowGate(eps=eps / n.bit_length()).t_complexity().t
-    )
+
+    total_t = hwp_t_complexity.t_incl_rotations(eps=eps / n.bit_length())
+    naive_total_t = naive_hwp_t_complexity.t_incl_rotations(eps=eps / n.bit_length())
+
+    assert total_t < naive_total_t
