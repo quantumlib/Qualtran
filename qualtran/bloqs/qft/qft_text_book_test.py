@@ -19,9 +19,9 @@ from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-@pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7])
 @pytest.mark.parametrize('without_reverse', [True, False])
-def test_qft_school_book(n: int, without_reverse: bool):
+def test_qft_text_book_quick(without_reverse: bool):
+    n = 3
     qft_bloq = QFTTextBook(n, not without_reverse)
     qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
 
@@ -31,7 +31,20 @@ def test_qft_school_book(n: int, without_reverse: bool):
     assert_valid_bloq_decomposition(qft_bloq)
 
 
-@pytest.mark.parametrize('n', [10, 100, 500])
+@pytest.mark.slow
+@pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7])
+@pytest.mark.parametrize('without_reverse', [True, False])
+def test_qft_text_book(n: int, without_reverse: bool):
+    qft_bloq = QFTTextBook(n, not without_reverse)
+    qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
+
+    assert np.allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
+    assert np.allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
+
+    assert_valid_bloq_decomposition(qft_bloq)
+
+
+@pytest.mark.parametrize('n', [10, 123])
 def test_qft_text_book_t_complexity(n: int):
     qft_bloq = QFTTextBook(n)
     qft_t_complexity = qft_bloq.t_complexity()

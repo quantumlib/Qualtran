@@ -24,6 +24,7 @@ from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("selection_bitsize, target_bitsize", [(2, 4), (3, 8), (4, 9)])
 @pytest.mark.parametrize("target_gate", [cirq.X, cirq.Y])
 def test_selected_majorana_fermion_gate(selection_bitsize, target_bitsize, target_gate):

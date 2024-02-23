@@ -32,7 +32,7 @@ jobs:
           pip install -r dev_tools/requirements/envs/pytest.env.txt
           pip install --no-deps -e .
       - run: |
-          check/pytest
+          check/pytest -m 'not notebooks'
 
   pytest-dev-tools:
     runs-on: ubuntu-latest

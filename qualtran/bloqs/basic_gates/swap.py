@@ -151,7 +151,7 @@ class TwoBitCSwap(Bloq):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for TwoBitCSwap classical simulation.")
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         """The t complexity.
 
         References:
@@ -278,7 +278,7 @@ class CSwap(GateWithRegisters):
         raise ValueError("Bad control value for CSwap classical simulation.")
 
     def short_name(self) -> str:
-        return r'$x\leftrightarrow y$'
+        return r'x↔y'
 
     @classmethod
     def make_on(

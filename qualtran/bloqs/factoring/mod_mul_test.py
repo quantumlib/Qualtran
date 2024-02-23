@@ -27,12 +27,6 @@ from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
-def _make_modmul():
-    from qualtran.bloqs.factoring.mod_mul import CtrlModMul
-
-    return CtrlModMul(k=123, mod=13 * 17, bitsize=8)
-
-
 def test_consistent_classical():
     rs = np.random.RandomState(52)
     primes = [
@@ -112,7 +106,6 @@ def test_modmul_symb_manual():
 
 
 def test_consistent_counts():
-
     bloq = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
     counts1 = bloq.bloq_counts()
 

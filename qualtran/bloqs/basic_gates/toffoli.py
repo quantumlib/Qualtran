@@ -18,7 +18,7 @@ from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, QBit, Register, Signature, Soquet
+from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
@@ -58,7 +58,7 @@ class Toffoli(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 4)}
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         return TComplexity(t=4)
 
     def add_my_tensors(
@@ -120,3 +120,16 @@ class Toffoli(Bloq):
         elif soq.reg.name == 'target':
             return ModPlus()
         raise ValueError(f'Bad wire symbol soquet: {soq}')
+
+
+@bloq_example
+def _toffoli() -> Toffoli:
+    toffoli = Toffoli()
+    return toffoli
+
+
+_TOFFOLI_DOC = BloqDocSpec(
+    bloq_cls=Toffoli,
+    import_line='from qualtran.bloqs.basic_gates import Toffoli',
+    examples=[_toffoli],
+)
