@@ -47,9 +47,10 @@ class FifteenToOne(MagicStateFactory):
     qec: QuantumErrorCorrectionSchemeSummary = FowlerSuperconductingQubits
     reference: Optional[str] = None
 
-    @d_X.validator
-    def validate_dm(self, _, value):
-        assert 0 < value <= 3 * self.d_m
+    def __attrs_post_init__(self):
+        assert 0 < self.d_X <= 3 * self.d_m
+        assert self.d_m > 0
+        assert self.d_Z > 0
 
     def footprint(self) -> int:
         # source: page 11 of https://arxiv.org/abs/1905.06903
