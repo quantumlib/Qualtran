@@ -37,7 +37,7 @@ class NoisyPauliRotation(cirq.Gate):
 
     def __init__(self, pauli_string: str, p1: float, p2: float, p3: float):
         """Initializes NoisyPauliRotation.
-        
+
         Args:
             pauli_string: The pauli string to apply the rotation to.
             p1: The probability of applying the rotation by 5pi/8.

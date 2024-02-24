@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Optional
 from functools import lru_cache
+from typing import Optional
 
 import cirq
 import numpy as np
@@ -65,18 +65,14 @@ class FifteenToOne(MagicStateFactory):
     @lru_cache(5)
     def p_out(self, phys_err: float) -> float:
         # I \otimes ones \otimes ones \otimes ones \otimes ones / 16
-        projector = np.kron(
-            np.eye(2), np.ones((16, 16)) / 16
-        )
+        projector = np.kron(np.eye(2), np.ones((16, 16)) / 16)
         project_state = (
             1
             / (1 - self.p_fail(phys_err))
             * (projector @ self._final_state(phys_err) @ projector.T.conj())
         )
         # |T><T| \otimes ones \otimes ones \otimes ones \otimes ones / 16
-        T_state = np.array([1, np.exp(-1j * np.pi / 4)]).reshape((1, 2)) / np.sqrt(
-            2
-        )
+        T_state = np.array([1, np.exp(-1j * np.pi / 4)]).reshape((1, 2)) / np.sqrt(2)
         target_density = np.kron(T_state.T.conj() @ T_state, np.ones((16, 16)) / 16)
         return np.real(1 - np.trace(project_state @ target_density))
 
@@ -125,36 +121,28 @@ def _build_factory(
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 2
         NoisyPauliRotation(
             'IIZII',
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 3
         NoisyPauliRotation(
             'IIIZI',
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 5
         NoisyPauliRotation(
             'IZZZI',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         *storage_error(
             'X',
             [
@@ -183,18 +171,14 @@ def _build_factory(
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 2 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 7
         NoisyPauliRotation(
             'ZZIZI',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         *storage_error(
             'Z', [0.5 * ((d_X + 2 * d_Z) + (d_X + 3 * d_Z)) / d_X * px * d_m, 0, 0, 0, 0], qs
         ),
@@ -226,27 +210,21 @@ def _build_factory(
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 9
         NoisyPauliRotation(
             'ZIIZZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 4
         NoisyPauliRotation(
             'IIIIZ',
             phys_err / 3 + 0.5 * (d_m / d_Z) * pz * d_m,
             phys_err / 3 + 0.5 * d_Z * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         *storage_error(
             'Z', [0.5 * ((d_X + 3 * d_Z) + (d_X + 4 * d_Z)) / d_X * px * d_m, 0, 0, 0, 0], qs
         ),
@@ -278,18 +256,14 @@ def _build_factory(
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 11
         NoisyPauliRotation(
             'ZIZIZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         *storage_error(
             'Z', [0.5 * ((d_X + 4 * d_Z) + (d_X + 4 * d_Z)) / d_X * px * d_m, 0, 0, 0, 0], qs
         ),
@@ -321,18 +295,14 @@ def _build_factory(
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (d_X + 4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 13
         NoisyPauliRotation(
             'IIZZZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (3 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         *storage_error('Z', [0.5 * (d_X + 4 * d_Z) / d_X * px * d_m, 0, 0, 0, 0], qs),
         *storage_error(
             'X',
@@ -362,18 +332,14 @@ def _build_factory(
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         # 15
         NoisyPauliRotation(
             'IZZIZ',
             phys_err / 3 + 0.5 * pm * d_m,
             phys_err / 3 + 0.5 * pm * d_m + 0.5 * (4 * d_Z) * d_X / d_m * pm,
             phys_err / 3,
-        )(
-            *qs
-        ),
+        )(*qs),
         *storage_error(
             'X',
             [
