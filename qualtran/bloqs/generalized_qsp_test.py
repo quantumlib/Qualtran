@@ -12,24 +12,38 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Tuple, Union
 
+import attrs
 import cirq
 import numpy as np
 import pytest
+import scipy
 import sympy
 from attrs import define, frozen
 from cirq.testing import random_unitary
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, Signature
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    BoundedQUInt,
+    GateWithRegisters,
+    QBit,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.generalized_qsp import (
     GeneralizedQSP,
+    HamiltonianSimulationByGQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
     SU2RotationGate,
 )
+from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.cirq_interop import BloqAsCirqGate
 
 
@@ -279,3 +293,143 @@ def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
     for _ in range(10):
         P = random_qsp_polynomial(degree, random_state=random_state)
         SymbolicGQSP(P).verify()
+
+
+@frozen
+class RandomPrepareOracle(PrepareOracle):
+    U: RandomGate
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return (Register('selection', BoundedQUInt(bitsize=self.U.bitsize)),)
+
+    @staticmethod
+    def create(bitsize: int, *, random_state: np.random.RandomState):
+        matrix = random_unitary(2**bitsize, random_state=random_state)
+        alpha = matrix[:, 0]
+        matrix = matrix * (alpha.conj() / np.abs(alpha))[:, None]
+        return RandomPrepareOracle(RandomGate(bitsize, matrix))
+
+    def build_composite_bloq(self, bb: BloqBuilder, selection: SoquetT) -> dict[str, SoquetT]:
+        selection = bb.add(self.U, q=selection)
+        return {'selection': selection}
+
+    def __pow__(self, power):
+        if power == -1:
+            return self.U.adjoint()
+        return NotImplemented
+
+    @cached_property
+    def alphas(self):
+        np.testing.assert_almost_equal(np.imag(self.U.matrix[:, 0]), 0)
+        return np.sqrt(self.U.matrix[:, 0])
+
+
+@frozen
+class PauliSelectOracle(SelectOracle):
+    select_bitsize: int
+    target_bitsize: int
+    select_unitaries: tuple[cirq.DensePauliString, ...]
+    control_val: Optional[int] = None
+
+    @property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return () if self.control_val is None else (Register('control', QBit()),)
+
+    @property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (Register('selection', BoundedQUInt(bitsize=self.select_bitsize)),)
+
+    @property
+    def target_registers(self) -> Tuple[Register, ...]:
+        return (Register('target', BoundedQUInt(bitsize=self.target_bitsize)),)
+
+    def adjoint(self):
+        return self
+
+    def __pow__(self, power):
+        if abs(power) == 1:
+            return self
+        return NotImplemented
+
+    def controlled(
+        self,
+        num_controls: Optional[int] = None,
+        control_values=None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+    ) -> 'cirq.Gate':
+        if num_controls is None:
+            num_controls = 1
+        if control_values is None:
+            control_values = [1] * num_controls
+        if (
+            isinstance(control_values, Sequence)
+            and isinstance(control_values[0], int)
+            and len(control_values) == 1
+            and self.control_val is None
+        ):
+            return attrs.evolve(self, control_val=control_values[0])
+        raise NotImplementedError()
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        selection: NDArray[cirq.Qid],
+        target: NDArray[cirq.Qid],
+        **quregs: NDArray[cirq.Qid],
+    ) -> cirq.OP_TREE:
+        if self.control_val is not None:
+            selection = np.concatenate([selection, quregs['control']])
+
+        for cv, U in enumerate(self.select_unitaries):
+            bits = tuple(map(int, bin(cv)[2:].zfill(self.select_bitsize)))
+            if self.control_val is not None:
+                bits = (*bits, self.control_val)
+            yield U.on(*target).controlled_by(*selection, control_values=bits)
+
+
+def random_qubitization_walk_operator(
+    select_bitsize: int, target_bitsize: int, *, random_state: np.random.RandomState
+) -> tuple[QubitizationWalkOperator, cirq.PauliSum]:
+    prepare = RandomPrepareOracle.create(select_bitsize, random_state=random_state)
+
+    dps = tuple(
+        cirq.DensePauliString(random_state.random_integers(0, 3, size=target_bitsize))
+        for _ in range(2**select_bitsize)
+    )
+    select = PauliSelectOracle(select_bitsize, target_bitsize, dps)
+
+    ham = cirq.PauliSum.from_pauli_strings(
+        [
+            dp.on(*cirq.LineQubit.range(target_bitsize)) * alpha
+            for dp, alpha in zip(dps, prepare.alphas)
+        ]
+    )
+
+    return QubitizationWalkOperator(prepare=prepare, select=select), ham
+
+
+def verify_hamiltonian_simulation_by_gqsp(
+    W: QubitizationWalkOperator, H: NDArray[np.complex_], *, t: float, alpha: float = 1
+):
+    N = H.shape[0]
+    W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, alpha=alpha, precision=1e-10)
+    result_unitary = cirq.unitary(W_e_iHt)
+
+    expected_top_left = scipy.linalg.expm(1j * H * t)
+    actual_top_left = result_unitary[:N, :N]
+    assert_matrices_almost_equal(expected_top_left, actual_top_left)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("select_bitsize", [1, 2, 3])
+@pytest.mark.parametrize("target_bitsize", [1, 2, 3])
+def test_hamiltonian_simulation_by_gqsp(select_bitsize: int, target_bitsize: int):
+    random_state = np.random.RandomState(42)
+
+    for _ in range(5):
+        W, H = random_qubitization_walk_operator(
+            select_bitsize, target_bitsize, random_state=random_state
+        )
+        verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=5, alpha=1)
