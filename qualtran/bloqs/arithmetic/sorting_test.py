@@ -15,7 +15,7 @@
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.sorting import _bitonic_sort, _cmp_symb, BitonicSort, Comparator
+from qualtran.bloqs.arithmetic.sorting import _bitonic_sort, _cmp_symb, BitonicSort, Comparator
 
 
 def test_cmp_symb(bloq_autotester):
