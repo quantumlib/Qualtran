@@ -144,6 +144,11 @@ class RandomGate(GateWithRegisters):
     def adjoint(self) -> GateWithRegisters:
         return RandomGate(self.bitsize, self.matrix.conj().T)
 
+    def __pow__(self, power):
+        if power == -1:
+            return self.adjoint()
+        return NotImplemented
+
     def __hash__(self):
         return hash(tuple(np.ravel(self.matrix)))
 
