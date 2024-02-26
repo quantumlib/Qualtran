@@ -141,17 +141,6 @@ class StatePreparationViaRotations(GateWithRegisters):
         return (len(self.state_coefficients) - 1).bit_length()
 
     @property
-    def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                "target_state",
-                BoundedQUInt(
-                    bitsize=self.state_bitsize, iteration_length=len(self.state_coefficients)
-                ),
-            ),
-        )
-
-    @property
     def signature(self) -> Signature:
         return Signature.build(
             prepare_control=self.control_bitsize,
