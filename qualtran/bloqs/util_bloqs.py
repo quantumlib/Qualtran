@@ -283,7 +283,7 @@ class Partition(Bloq):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:
-            text = f'[{", ".join(str(i) for i in soq.idx)}]'
+            text = f'[{",".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
         return directional_text_box(' ', side=soq.reg.side)
 
@@ -322,6 +322,10 @@ class Allocate(Bloq):
         data = np.zeros(1 << self.n)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        assert soq.reg.name == 'reg'
+        return directional_text_box('alloc', Side.RIGHT)
 
 
 @frozen
@@ -364,6 +368,10 @@ class Free(Bloq):
         data = np.zeros(1 << self.n)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        assert soq.reg.name == 'reg'
+        return directional_text_box('free', Side.LEFT)
 
 
 @frozen
