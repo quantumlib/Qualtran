@@ -85,6 +85,9 @@ class FifteenToOne(MagicStateFactory):
     def n_cycles(self, n_magic: MagicCount, phys_err: float) -> int:
         """The number of cycles (time) required to produce the requested number of magic states.
 
+        Unlike the same method for other factories. This method reports the *expected* number of cycles
+        until producing the needed magic states while taking into account possible failures.
+
         reference: page 11 of https://arxiv.org/abs/1905.06903
         """
         num_t = n_magic.n_t + 4 * n_magic.n_ccz
