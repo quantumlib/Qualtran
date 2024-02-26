@@ -98,6 +98,7 @@ def test_add_into_phase_grad():
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     'bloq',
     [
