@@ -23,7 +23,7 @@ from qualtran._infra.data_types import QFxp
 from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 from qualtran.bloqs.arithmetic.multiplication import Square
 from qualtran.bloqs.basic_gates import Hadamard
-from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction
 from qualtran.bloqs.rotations.quantum_variable_rotation import (
