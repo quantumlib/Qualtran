@@ -81,32 +81,6 @@ class TestHammingWeightPhasing(GateWithRegisters):
         return soqs
 
 
-def test_hamming_weight_phasing_using_phase_via_cost_function_quick():
-    n = 2
-    exponent = 1.20345
-    eps = 1e-3
-    use_phase_gradient = True
-    gate = TestHammingWeightPhasing(n, True, exponent, eps, use_phase_gradient)
-    assert_valid_bloq_decomposition(gate)
-
-    gh = GateHelper(gate)
-    sim = cirq.Simulator(dtype=np.complex128)
-    initial_state = cirq.testing.random_superposition(dim=2**n, random_state=12345)
-    gamma = exponent / 2
-    phases = np.array(
-        [
-            np.exp(1j * 2 * np.pi * gamma * x.bit_count() / (2 ** n.bit_length()))
-            for x in range(2**n)
-        ]
-    )
-    expected_final_state = np.multiply(initial_state, phases)
-
-    state_prep = cirq.Circuit(cirq.StatePreparationChannel(initial_state).on(*gh.quregs['x']))
-    hw_phasing = cirq.Circuit(state_prep, gh.operation)
-    hw_final_state = sim.simulate(hw_phasing).final_state_vector
-    np.testing.assert_allclose(expected_final_state, hw_final_state, atol=eps)
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize('normalize_cost_function', [True, False])
 @pytest.mark.parametrize('use_phase_gradient', [True, False])
