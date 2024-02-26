@@ -20,8 +20,7 @@ import attrs
 from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
-from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
-from qualtran.bloqs.rotations.phasing_via_cost_function import PhaseOraclePhaseGradient
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -143,36 +142,26 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         )
 
     @cached_property
-    def phase_oracle(self) -> PhaseOraclePhaseGradient:
-        return PhaseOraclePhaseGradient(
+    def phase_oracle(self) -> QvrPhaseGradient:
+        return QvrPhaseGradient(
             Register('out', QFxp(bitsize=self.bitsize.bit_length(), num_frac=0, signed=False)),
             self.exponent / 2,
             self.eps,
         )
 
     @cached_property
-    def b_phase(self) -> int:
-        return self.phase_oracle.b_phase
-
-    @cached_property
     def b_grad(self) -> int:
         return self.phase_oracle.b_grad
 
     @cached_property
-    def gamma_bitsize(self) -> int:
-        return self.phase_oracle.gamma_bitsize
+    def gamma_dtype(self) -> QFxp:
+        return self.phase_oracle.gamma_dtype
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', *, x: 'SoquetT', phase_grad: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         x, junk, out = bb.add(HammingWeightCompute(self.bitsize), x=x)
-        out, phase_grad = bb.add(
-            AddScaledValIntoPhaseReg(
-                self.phase_oracle.cost_dtype, self.b_grad, self.exponent / 2, self.gamma_bitsize
-            ),
-            x=out,
-            phase_grad=phase_grad,
-        )
+        out, phase_grad = bb.add(self.phase_oracle, out=out, phase_grad=phase_grad)
         x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
         return {'x': x, 'phase_grad': phase_grad}
 

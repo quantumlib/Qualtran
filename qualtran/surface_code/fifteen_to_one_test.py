@@ -47,3 +47,9 @@ def test_compare_with_paper(test: TestCase):
     assert f'{factory.distillation_error(MagicCount(n_t=1), test.phys_err):.1e}' == str(test.p_out)
     assert round(factory.footprint(), -1) == test.footprint  # rounding to the 10s digit.
     assert factory.n_cycles(MagicCount(n_t=1), test.phys_err) == math.ceil(test.cycles + 1e-9)
+
+
+def test_validation():
+    for bad_args in (1, 1, -1), (1, -1, 1), (-1, 1, 1), (5, 1, 1):
+        with pytest.raises(AssertionError):
+            _ = FifteenToOne(*bad_args)
