@@ -37,7 +37,8 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
+from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, swap_network
+from qualtran.bloqs.arithmetic import sorting
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.protos import bloq_pb2
