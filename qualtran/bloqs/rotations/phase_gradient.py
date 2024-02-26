@@ -212,7 +212,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     ):
         import quimb.tensor as qtn
 
-        N, M = 2**self.inp_bitsize, 2**self.phase_bitsize
+        N, M = 2**self.x_bitsize, 2**self.phase_bitsize
         inds = (incoming['x'], incoming['phase_grad'], outgoing['x'], outgoing['phase_grad'])
         unitary = np.zeros((N, M) * 2, dtype=np.complex128)
         for a, b in itertools.product(range(N), range(M)):
