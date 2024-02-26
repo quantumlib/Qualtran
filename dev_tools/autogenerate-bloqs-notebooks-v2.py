@@ -39,7 +39,7 @@ If you add additional cells to the notebook it will *preserve them* even when th
 re-run
 
 Usage as a script:
-    python dev_tools/autogenerate-bloqs-notebooks.py
+    python dev_tools/autogenerate-bloqs-notebooks-v2.py
 """
 
 from typing import List
@@ -79,6 +79,7 @@ import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.sorting
+import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
@@ -253,6 +254,14 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='State Preparation Using Rotations',
+        module=qualtran.bloqs.state_preparation.state_preparation_via_rotation,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
     ),
     NotebookSpecV2(
         title='Multiplication',

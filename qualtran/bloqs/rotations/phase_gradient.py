@@ -200,6 +200,20 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         ((toffoli, n),) = self.bloq_counts().items()
         return n * toffoli.t_complexity()
 
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
+
 
 def _fxp(x: float, n: int) -> Fxp:
     """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.

@@ -130,3 +130,8 @@ dmypy.json
 
 # pycharm
 .idea/
+
+# files that get generated when testing
+mod_exp_bloq.json
+mod_exp_cbloq.json
+musical_score_example.json
