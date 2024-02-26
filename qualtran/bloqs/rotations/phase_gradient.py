@@ -210,16 +210,11 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
-        import quimb.tensor as qtn
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
-        N, M = 2**self.x_bitsize, 2**self.phase_bitsize
-        inds = (incoming['x'], incoming['phase_grad'], outgoing['x'], outgoing['phase_grad'])
-        unitary = np.zeros((N, M) * 2, dtype=np.complex128)
-        for a, b in itertools.product(range(N), range(M)):
-            unitary[a, b, a, int(math.fmod(a + b, M))] = 1
-
-        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
-
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
 
 def _fxp(x: float, n: int) -> Fxp:
     """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.
