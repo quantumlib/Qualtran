@@ -238,8 +238,8 @@ class SelectSwapQROM(Bloq):
         elif 'target' in name:
             trg_indx = int(name.replace('target', '').replace('_', ''))
             # match the sel index
-            subscript = chr(ord('a') + trg_indx)
-            return TextBox(f'data_{subscript}')
+            subscript = trg_indx
+            return TextBox(f'QROAM_{subscript}')
         elif name == 'control':
             return Circle()
 

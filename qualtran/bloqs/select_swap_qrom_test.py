@@ -71,7 +71,7 @@ def test_select_swap_qrom_full(data, block_size):
         cirq.H.on_each(*dirty_target_ancilla),
     )
     all_qubits = sorted(circuit.all_qubits())
-    for selection_integer in range(qrom.selection_registers[0].dtype.iteration_length):
+    for selection_integer in range(len(data[0])):
         svals_q = list(iter_bits(selection_integer // qrom.block_size, len(selection_q)))
         svals_r = list(iter_bits(selection_integer % qrom.block_size, len(selection_r)))
         qubit_vals = {x: 0 for x in all_qubits}
@@ -95,13 +95,12 @@ def test_qroam_diagram():
     qrom = SelectSwapQROM(*data, block_size=blocksize)
     q = cirq.LineQubit.range(7)
     circuit = cirq.Circuit(qrom.on_registers(**split_qubits(qrom.signature, q)))
-    pytest.xfail("https://github.com/quantumlib/Qualtran/issues/700")
     cirq.testing.assert_has_diagram(
         circuit,
         """
-0: ───In_q──────
+0: ───In────────
       │
-1: ───In_r──────
+1: ───In────────
       │
 2: ───QROAM_0───
       │
