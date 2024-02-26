@@ -26,7 +26,6 @@ from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import (
-    Bloq,
     BloqBuilder,
     BoundedQUInt,
     GateWithRegisters,
@@ -144,9 +143,6 @@ class RandomGate(GateWithRegisters):
 
     def adjoint(self) -> GateWithRegisters:
         return RandomGate(self.bitsize, self.matrix.conj().T)
-
-    def controlled(self, *args, **kwargs):
-        return Bloq.controlled(self, *args, **kwargs)
 
     def __hash__(self):
         return hash(tuple(np.ravel(self.matrix)))
@@ -306,8 +302,15 @@ class RandomPrepareOracle(PrepareOracle):
     @staticmethod
     def create(bitsize: int, *, random_state: np.random.RandomState):
         matrix = random_unitary(2**bitsize, random_state=random_state)
+
+        # make the first column (weights alpha_i) all reals
         alpha = matrix[:, 0]
         matrix = matrix * (alpha.conj() / np.abs(alpha))[:, None]
+
+        # verify that it is still unitary
+        np.testing.assert_allclose(matrix @ matrix.conj().T, np.eye(2**bitsize), atol=1e-10)
+        np.testing.assert_allclose(matrix.conj().T @ matrix, np.eye(2**bitsize), atol=1e-10)
+
         return RandomPrepareOracle(RandomGate(bitsize, matrix))
 
     def build_composite_bloq(self, bb: BloqBuilder, selection: SoquetT) -> dict[str, SoquetT]:

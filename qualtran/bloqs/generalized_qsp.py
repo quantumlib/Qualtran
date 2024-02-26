@@ -333,7 +333,7 @@ class GeneralizedQSP(GateWithRegisters):
         for signal_rotation in self.signal_rotations[1:]:
             if num_inverse_applications > 0:
                 # apply C-U^\dagger
-                yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
+                yield (self.U**-1).on_registers(**quregs).controlled_by(signal_qubit)
                 num_inverse_applications -= 1
             else:
                 # apply C[0]-U
