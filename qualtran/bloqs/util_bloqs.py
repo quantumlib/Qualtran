@@ -283,7 +283,7 @@ class Partition(Bloq):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:
-            text = f'[{", ".join(str(i) for i in soq.idx)}]'
+            text = f'[{",".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
         return directional_text_box(' ', side=soq.reg.side)
 
