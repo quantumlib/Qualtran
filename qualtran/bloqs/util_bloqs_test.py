@@ -135,10 +135,10 @@ def test_partition_as_cirq_op():
     assert (
         circuit.to_text_diagram(transpose=True)
         == """\
-system0           system1 system2 system3 system4 system5 system6 system7 system8 system9 system10 system11
-│                 │       │       │       │       │       │       │       │       │       │        │
-TestMultiRegister─yy──────yy──────yy──────yy──────yy──────yy──────yy──────yy──────zz──────zz───────zz
-│                 │       │       │       │       │       │       │       │       │       │        │"""
+system0 system1  system2  system3  system4  system5  system6  system7  system8  system9 system10 system11
+│       │        │        │        │        │        │        │        │        │       │        │
+xx──────yy[0, 0]─yy[0, 1]─yy[1, 0]─yy[1, 1]─yy[0, 0]─yy[0, 1]─yy[1, 0]─yy[1, 1]─zz──────zz───────zz
+│       │        │        │        │        │        │        │        │        │       │        │"""
     )
 
 
