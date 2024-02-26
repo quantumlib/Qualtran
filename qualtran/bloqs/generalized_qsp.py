@@ -394,8 +394,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         prepare_soqs = bb.add_d(
             self.walk_operator.prepare, selection=soqs['selection'], **state_prep_ancilla
         )
-        soqs['selection'] = prepare_soqs['selection']
-        del prepare_soqs['selection']
+        soqs['selection'] = prepare_soqs.pop('selection')
         state_prep_ancilla = prepare_soqs
 
         # GQSP
@@ -405,8 +404,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         prepare_soqs = bb.add_d(
             self.walk_operator.prepare.adjoint(), selection=soqs['selection'], **state_prep_ancilla
         )
-        soqs['selection'] = prepare_soqs['selection']
-        del prepare_soqs['selection']
+        soqs['selection'] = prepare_soqs.pop('selection')
         state_prep_ancilla = prepare_soqs
 
         for soq in state_prep_ancilla.values():
