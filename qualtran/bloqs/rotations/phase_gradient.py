@@ -214,6 +214,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
             self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
+
 def _fxp(x: float, n: int) -> Fxp:
     """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.
 

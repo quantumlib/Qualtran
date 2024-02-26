@@ -31,13 +31,13 @@ in $|0\rangle$ and $\theta_1 = \cos^{-1}(\sqrt{p_{10}/p_{1}})$ conditioned by th
 $|1\rangle$, and so on. Here $p_y$ means the probability that the first len(y) qubits of the
 original state are in the state $y$. Refer to equation (8) of [1] for the details.
 
-This general scheme is handled by ControlledStatePreparationUsingRotations. This class also uses
+This general scheme is handled by StatePreparationViaRotations. This class also uses
 RotationTree to get the angles of rotation needed (which are converted to the value to be loaded
 to the ROM to achieve such a rotation). RotationTree is a tree data structure which holds the
 accumulated probability of each substring, i.e., the root holds the probability of measuring the
 first qubit at 0, the branch1 node the probability of measuring the second qubit at 0 if the first
 was measured at 1 and so on. The $2^i$ rotations needed to prepare the ith qubit are performed by
-ControlledQROMRotateQubit. This essentially is a rotation gate array, that is, given a list of
+PRGAViaPhaseGradient. This essentially is a rotation gate array, that is, given a list of
 angles it performs the kth rotation when the selection register is on state $|k\rangle$. This
 rotation is done in the Z axis, but for encoding amplitude a rotation around Ry is needed, thus the
 need of a $R_x(\pm \pi/2)$ gate before and after encoding the amplitudes of each qubit.
@@ -84,9 +84,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
     GateWithRegisters,
-    Register,
     Signature,
     SoquetT,
 )
@@ -165,7 +163,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         return soqs
 
     def _prepare_amplitudes(
-        self, rom_vals: ArrayLike, bb: BloqBuilder, **soqs: SoquetT
+        self, rom_vals: List[List[int]], bb: BloqBuilder, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
         r"""Parameters into soqs:
         * prepare_control: only if control_bitsize != 0
@@ -208,7 +206,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         return soqs
 
     def _prepare_phases(
-        self, rom_vals: ArrayLike, bb: BloqBuilder, **soqs: SoquetT
+        self, rom_vals: List[int], bb: BloqBuilder, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
         """Encodes the phase of each coefficient.
 
@@ -220,9 +218,9 @@ class StatePreparationViaRotations(GateWithRegisters):
         erased, leaving the desired phase in target_register.
 
         Args:
-            amplitude_rom_vals: list of ROM values that correspond to the angles of the phases to
-                be encoded. The ith item contains the value of the ith coefficient. To get the ROM
-                value that corresponds to an angle use RotationTree.angle_to_rom_value.
+            rom_vals: list of ROM values that correspond to the angles of the phases to
+                be encoded. The ith item contain an integer approximation of the value of the
+                ith coefficient, that should be loaded via QROM.
             prepare_control: control qubit for the gate. Gate only takes effect when control is at |1>
             target_state: register that holds the amplitudes of the state to be encoded. It is
                 used as the selection register for the ROM value to be loaded, thus for the
@@ -243,7 +241,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         ctrl_rot = PRGAViaPhaseGradient(
             self.state_bitsize, self.phase_bitsize, tuple(rom_vals), self.control_bitsize + 1
         )
-        # rename some registers to make them compatible with ControlledQROMRotateQubit
+        # rename some registers to make them compatible with PRGAViaPhaseGradient
         soqs["selection"] = soqs.pop("target_state")
         soqs = bb.add_d(ctrl_rot, **soqs)
         soqs["target_state"] = soqs.pop("selection")
@@ -273,7 +271,7 @@ def _state_prep_via_rotation() -> StatePreparationViaRotations:
     return state_prep_via_rotation
 
 
-_CONTROLLED_STATE_PREP_DOC = BloqDocSpec(
+_STATE_PREP_VIA_ROTATIONS_DOC = BloqDocSpec(
     bloq_cls=StatePreparationViaRotations,
     import_line='from qualtran.bloqs.state_preparation.state_preparation_via_rotation import StatePreparationViaRotations',
     examples=(_state_prep_via_rotation,),
@@ -289,14 +287,13 @@ class PRGAViaPhaseGradient(Bloq):
     Refer to [1], section on arbitrary quantum state preparation on page 3.
 
     Args:
-        selection_bitsizes: number of qubits used for encoding the selection register of the QROM, it
+        selection_bitsize: number of qubits used for encoding the selection register of the QROM, it
             must be equal to $\lceil \log_2(l_{rv}) \rceil$, where $l_{rv}$ is the number of angles
             provided.
         phase_bitsize: size of the register that is used to store the rotation angles. Bigger values
             increase the accuracy of the results.
         rom_values: the tuple of values to be loaded in the rom, which correspond to the angle of
-            each rotation. In order to get the rom value that corresponds to a given angle use
-            RotationTree.angle_to_rom_value(angle, phase_bitsize).
+            each rotation.
         control_bitsize: number of qubits of the control register. Set to zero for an uncontrolled gate.
 
     References:
@@ -305,7 +302,7 @@ class PRGAViaPhaseGradient(Bloq):
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    selection_bitsizes: int
+    selection_bitsize: int
     phase_bitsize: int
     rom_values: Tuple[int, ...]
     control_bitsize: int
@@ -314,19 +311,19 @@ class PRGAViaPhaseGradient(Bloq):
     def signature(self) -> Signature:
         return Signature.build(
             control=self.control_bitsize,
-            selection=self.selection_bitsizes,
+            selection=self.selection_bitsize,
             phase_gradient=self.phase_bitsize,
         )
 
     def build_composite_bloq(self, bb: BloqBuilder, **soqs: SoquetT) -> Dict[str, SoquetT]:
         """Parameters:
         * control
-        * selection (not necessary if selection_bitsizes == 0)
+        * selection (not necessary if selection_bitsize == 0)
         * phase_gradient
         """
         qrom = QROM(
             [np.array(self.rom_values)],
-            selection_bitsizes=(self.selection_bitsizes,),
+            selection_bitsizes=(self.selection_bitsize,),
             target_bitsizes=(self.phase_bitsize,),
             num_controls=self.control_bitsize,
         )
@@ -350,7 +347,7 @@ class PRGAViaPhaseGradient(Bloq):
 
 
 class RotationTree:
-    r"""Used by `StatePreparationUsingRotations` to get the corresponding rotation angles.
+    r"""Used by `StatePreparationViaRotations` to get the corresponding rotation angles.
 
     The rotation angles are used to encode the amplitude of a state using the method described in
     [1], section on arbitrary quantum state preparation, page 3.
@@ -361,20 +358,17 @@ class RotationTree:
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    amplitude_rom_values: List[int]
-    phase_rom_values: List[int]
-
     def __init__(self, state: ArrayLike, phase_bitsize: int, uncompute: bool = False):
         self.state_bitsize = (len(state) - 1).bit_length()
         self._calc_amplitude_angles_and_rv(state, phase_bitsize, uncompute)
         self._calc_phase_rom_values(state, phase_bitsize, uncompute)
 
-    def get_rom_vals(self):
+    def get_rom_vals(self) -> Tuple[List[List[int]], List[int]]:
         return self.amplitude_rom_values, self.phase_rom_values
 
     def _calc_amplitude_angles_and_rv(
         self, state: ArrayLike, phase_bitsize: int, uncompute: bool
-    ) -> List[int]:
+    ) -> None:
         r"""Gives a list of the ROM values to be loaded for preparing the amplitudes of a state.
 
         The ith element of the returned list is another list with the rom values to be loaded when
@@ -386,9 +380,9 @@ class RotationTree:
             self.sum_total[i + slen] = abs(state[i]) ** 2
         for i in range(slen - 1, 0, -1):
             self.sum_total[i] = self.sum_total[i << 1] + self.sum_total[(i << 1) | 1]
-        self.amplitude_rom_values = []
+        self.amplitude_rom_values: List[List[int]] = []
         for i in range(self.state_bitsize):
-            rom_vals_this_layer = []
+            rom_vals_this_layer: List[int] = []
             for node in range(1 << i, 1 << (i + 1)):
                 angle = self._angle_0(node)
                 if uncompute:
@@ -397,9 +391,7 @@ class RotationTree:
                 rom_vals_this_layer.append(rom_val)
             self.amplitude_rom_values.append(rom_vals_this_layer)
 
-    def _calc_phase_rom_values(
-        self, state: ArrayLike, phase_bitsize: int, uncompute: bool
-    ) -> List[int]:
+    def _calc_phase_rom_values(self, state: ArrayLike, phase_bitsize: int, uncompute: bool) -> None:
         """Computes the rom value to be loaded to get the phase for each coefficient of the state.
 
         As we are using the equivalent to controlled Z to do the rotations instead of Rz, there
@@ -417,7 +409,9 @@ class RotationTree:
         angles = np.array([np.angle(c) for c in state])
         # flip angle if uncompute
         angles = [(1 - 2 * uncompute) * (a - o) for a, o in zip(angles, offsets)]
-        self.phase_rom_values = [RotationTree._angle_to_rom_value(a, phase_bitsize) for a in angles]
+        self.phase_rom_values: List[int] = [
+            RotationTree._angle_to_rom_value(a, phase_bitsize) for a in angles
+        ]
 
     def _angle_0(self, idx: int) -> float:
         r"""Angle that corresponds to p_0."""

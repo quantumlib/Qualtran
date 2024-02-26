@@ -259,7 +259,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='State Preparation Using Rotations',
         module=qualtran.bloqs.state_preparation.state_preparation_via_rotation,
         bloq_specs=[
-            qualtran.bloqs.state_preparation.state_preparation_via_rotation._CONTROLLED_STATE_PREP_DOC
+            qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
         ],
         directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
     ),
