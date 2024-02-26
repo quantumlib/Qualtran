@@ -325,7 +325,7 @@ class RandomPrepareOracle(PrepareOracle):
     @cached_property
     def alphas(self):
         np.testing.assert_almost_equal(np.imag(self.U.matrix[:, 0]), 0)
-        return np.sqrt(self.U.matrix[:, 0])
+        return self.U.matrix[:, 0] ** 2
 
 
 @frozen
@@ -402,6 +402,8 @@ def random_qubitization_walk_operator(
         for _ in range(2**select_bitsize)
     )
     select = PauliSelectOracle(select_bitsize, target_bitsize, dps)
+
+    np.testing.assert_allclose(np.linalg.norm(prepare.alphas, 1), 1)
 
     ham = cirq.PauliSum.from_pauli_strings(
         [
