@@ -107,7 +107,7 @@ def test_controlled_parallel():
     assert (
         cbloq.debug_text()
         == """\
-Split(n=3)<0>
+Split(dtype=QAny(bitsize=3))<0>
   LeftDangle.reg -> reg
   reg[0] -> C[TestAtom()]<1>.q
   reg[1] -> C[TestAtom()]<2>.q
@@ -115,23 +115,23 @@ Split(n=3)<0>
 --------------------
 C[TestAtom()]<1>
   LeftDangle.ctrl -> ctrl
-  Split(n=3)<0>.reg[0] -> q
+  Split(dtype=QAny(bitsize=3))<0>.reg[0] -> q
   ctrl -> C[TestAtom()]<2>.ctrl
-  q -> Join(n=3)<4>.reg[0]
+  q -> Join(dtype=QAny(bitsize=3))<4>.reg[0]
 --------------------
 C[TestAtom()]<2>
   C[TestAtom()]<1>.ctrl -> ctrl
-  Split(n=3)<0>.reg[1] -> q
+  Split(dtype=QAny(bitsize=3))<0>.reg[1] -> q
   ctrl -> C[TestAtom()]<3>.ctrl
-  q -> Join(n=3)<4>.reg[1]
+  q -> Join(dtype=QAny(bitsize=3))<4>.reg[1]
 --------------------
 C[TestAtom()]<3>
   C[TestAtom()]<2>.ctrl -> ctrl
-  Split(n=3)<0>.reg[2] -> q
-  q -> Join(n=3)<4>.reg[2]
+  Split(dtype=QAny(bitsize=3))<0>.reg[2] -> q
+  q -> Join(dtype=QAny(bitsize=3))<4>.reg[2]
   ctrl -> RightDangle.ctrl
 --------------------
-Join(n=3)<4>
+Join(dtype=QAny(bitsize=3))<4>
   C[TestAtom()]<1>.q -> reg[0]
   C[TestAtom()]<2>.q -> reg[1]
   C[TestAtom()]<3>.q -> reg[2]
