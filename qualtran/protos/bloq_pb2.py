@@ -15,9 +15,10 @@ _sym_db = _symbol_database.Default()
 from qualtran.protos import annotations_pb2 as qualtran_dot_protos_dot_annotations__pb2
 from qualtran.protos import args_pb2 as qualtran_dot_protos_dot_args__pb2
 from qualtran.protos import registers_pb2 as qualtran_dot_protos_dot_registers__pb2
+from qualtran.protos import data_types_pb2 as qualtran_dot_protos_dot_data__types__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aqualtran/protos/bloq.proto\x12\x08qualtran\x1a!qualtran/protos/annotations.proto\x1a\x1aqualtran/protos/args.proto\x1a\x1fqualtran/protos/registers.proto\"\xe8\x02\n\x0b\x42loqLibrary\x12\x0c\n\x04name\x18\x01 \x01(\t\x12:\n\x05table\x18\x02 \x03(\x0b\x32+.qualtran.BloqLibrary.BloqWithDecomposition\x1a\x8e\x02\n\x15\x42loqWithDecomposition\x12\x0f\n\x07\x62loq_id\x18\x01 \x01(\x05\x12+\n\rdecomposition\x18\x02 \x03(\x0b\x32\x14.qualtran.Connection\x12P\n\x0b\x62loq_counts\x18\x03 \x03(\x0b\x32;.qualtran.BloqLibrary.BloqWithDecomposition.BloqCountsEntry\x12\x1c\n\x04\x62loq\x18\x04 \x01(\x0b\x32\x0e.qualtran.Bloq\x1aG\n\x0f\x42loqCountsEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.qualtran.IntOrSympy:\x02\x38\x01\"\x8a\x01\n\x04\x42loq\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1f\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\x11.qualtran.BloqArg\x12&\n\tregisters\x18\x03 \x01(\x0b\x32\x13.qualtran.Registers\x12+\n\x0ct_complexity\x18\x04 \x01(\x0b\x32\x15.qualtran.TComplexity\"4\n\x0c\x42loqInstance\x12\x13\n\x0binstance_id\x18\x01 \x01(\x05\x12\x0f\n\x07\x62loq_id\x18\x02 \x01(\x05\"\x8d\x01\n\x06Soquet\x12/\n\rbloq_instance\x18\x01 \x01(\x0b\x32\x16.qualtran.BloqInstanceH\x00\x12\x14\n\ndangling_t\x18\x02 \x01(\tH\x00\x12$\n\x08register\x18\x03 \x01(\x0b\x32\x12.qualtran.Register\x12\r\n\x05index\x18\x04 \x03(\x05\x42\x07\n\x05\x62inst\"M\n\nConnection\x12\x1e\n\x04left\x18\x01 \x01(\x0b\x32\x10.qualtran.Soquet\x12\x1f\n\x05right\x18\x02 \x01(\x0b\x32\x10.qualtran.Soquetb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1aqualtran/protos/bloq.proto\x12\x08qualtran\x1a!qualtran/protos/annotations.proto\x1a\x1aqualtran/protos/args.proto\x1a\x1fqualtran/protos/registers.proto\x1a qualtran/protos/data_types.proto\"\xf0\x01\n\x07\x42loqArg\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\x07int_val\x18\x02 \x01(\x03H\x00\x12\x13\n\tfloat_val\x18\x03 \x01(\x01H\x00\x12\x14\n\nstring_val\x18\x04 \x01(\tH\x00\x12\x14\n\nsympy_expr\x18\x05 \x01(\tH\x00\x12$\n\x07ndarray\x18\x06 \x01(\x0b\x32\x11.qualtran.NDArrayH\x00\x12\x11\n\x07subbloq\x18\x07 \x01(\x05H\x00\x12\x18\n\x0e\x63irq_json_gzip\x18\x08 \x01(\x0cH\x00\x12)\n\nqdata_type\x18\t \x01(\x0b\x32\x13.qualtran.QDataTypeH\x00\x42\x05\n\x03val\"\xe8\x02\n\x0b\x42loqLibrary\x12\x0c\n\x04name\x18\x01 \x01(\t\x12:\n\x05table\x18\x02 \x03(\x0b\x32+.qualtran.BloqLibrary.BloqWithDecomposition\x1a\x8e\x02\n\x15\x42loqWithDecomposition\x12\x0f\n\x07\x62loq_id\x18\x01 \x01(\x05\x12+\n\rdecomposition\x18\x02 \x03(\x0b\x32\x14.qualtran.Connection\x12P\n\x0b\x62loq_counts\x18\x03 \x03(\x0b\x32;.qualtran.BloqLibrary.BloqWithDecomposition.BloqCountsEntry\x12\x1c\n\x04\x62loq\x18\x04 \x01(\x0b\x32\x0e.qualtran.Bloq\x1aG\n\x0f\x42loqCountsEntry\x12\x0b\n\x03key\x18\x01 \x01(\x05\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.qualtran.IntOrSympy:\x02\x38\x01\"\x8a\x01\n\x04\x42loq\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1f\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\x11.qualtran.BloqArg\x12&\n\tregisters\x18\x03 \x01(\x0b\x32\x13.qualtran.Registers\x12+\n\x0ct_complexity\x18\x04 \x01(\x0b\x32\x15.qualtran.TComplexity\"4\n\x0c\x42loqInstance\x12\x13\n\x0binstance_id\x18\x01 \x01(\x05\x12\x0f\n\x07\x62loq_id\x18\x02 \x01(\x05\"\x8d\x01\n\x06Soquet\x12/\n\rbloq_instance\x18\x01 \x01(\x0b\x32\x16.qualtran.BloqInstanceH\x00\x12\x14\n\ndangling_t\x18\x02 \x01(\tH\x00\x12$\n\x08register\x18\x03 \x01(\x0b\x32\x12.qualtran.Register\x12\r\n\x05index\x18\x04 \x03(\x05\x42\x07\n\x05\x62inst\"M\n\nConnection\x12\x1e\n\x04left\x18\x01 \x01(\x0b\x32\x10.qualtran.Soquet\x12\x1f\n\x05right\x18\x02 \x01(\x0b\x32\x10.qualtran.Soquetb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -26,18 +27,20 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION_BLOQCOUNTSENTRY']._options = None
   _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION_BLOQCOUNTSENTRY']._serialized_options = b'8\001'
-  _globals['_BLOQLIBRARY']._serialized_start=137
-  _globals['_BLOQLIBRARY']._serialized_end=497
-  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION']._serialized_start=227
-  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION']._serialized_end=497
-  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION_BLOQCOUNTSENTRY']._serialized_start=426
-  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION_BLOQCOUNTSENTRY']._serialized_end=497
-  _globals['_BLOQ']._serialized_start=500
-  _globals['_BLOQ']._serialized_end=638
-  _globals['_BLOQINSTANCE']._serialized_start=640
-  _globals['_BLOQINSTANCE']._serialized_end=692
-  _globals['_SOQUET']._serialized_start=695
-  _globals['_SOQUET']._serialized_end=836
-  _globals['_CONNECTION']._serialized_start=838
-  _globals['_CONNECTION']._serialized_end=915
+  _globals['_BLOQARG']._serialized_start=171
+  _globals['_BLOQARG']._serialized_end=411
+  _globals['_BLOQLIBRARY']._serialized_start=414
+  _globals['_BLOQLIBRARY']._serialized_end=774
+  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION']._serialized_start=504
+  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION']._serialized_end=774
+  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION_BLOQCOUNTSENTRY']._serialized_start=703
+  _globals['_BLOQLIBRARY_BLOQWITHDECOMPOSITION_BLOQCOUNTSENTRY']._serialized_end=774
+  _globals['_BLOQ']._serialized_start=777
+  _globals['_BLOQ']._serialized_end=915
+  _globals['_BLOQINSTANCE']._serialized_start=917
+  _globals['_BLOQINSTANCE']._serialized_end=969
+  _globals['_SOQUET']._serialized_start=972
+  _globals['_SOQUET']._serialized_end=1113
+  _globals['_CONNECTION']._serialized_start=1115
+  _globals['_CONNECTION']._serialized_end=1192
 # @@protoc_insertion_point(module_scope)
