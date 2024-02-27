@@ -24,8 +24,8 @@ from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
+from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
-from qualtran.bloqs.on_each import OnEach
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -199,6 +199,20 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     def _t_complexity_(self) -> 'TComplexity':
         ((toffoli, n),) = self.bloq_counts().items()
         return n * toffoli.t_complexity()
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
 
 
 def _fxp(x: float, n: int) -> Fxp:

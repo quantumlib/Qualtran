@@ -39,7 +39,7 @@ If you add additional cells to the notebook it will *preserve them* even when th
 re-run
 
 Usage as a script:
-    python dev_tools/autogenerate-bloqs-notebooks.py
+    python dev_tools/autogenerate-bloqs-notebooks-v2.py
 """
 
 from typing import List
@@ -51,26 +51,19 @@ from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_noteboo
 import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
-import qualtran.bloqs.arithmetic.comparison
-import qualtran.bloqs.arithmetic.conversions
-import qualtran.bloqs.arithmetic.multiplication
+import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
-import qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
-import qualtran.bloqs.chemistry.sparse.select_bloq
 import qualtran.bloqs.chemistry.thc.prepare
-import qualtran.bloqs.chemistry.thc.select_bloq
 import qualtran.bloqs.chemistry.trotter.inverse_sqrt
-import qualtran.bloqs.chemistry.trotter.kinetic
-import qualtran.bloqs.chemistry.trotter.potential
 import qualtran.bloqs.chemistry.trotter.qvr
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
@@ -78,7 +71,7 @@ import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
-import qualtran.bloqs.sorting
+import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
@@ -204,15 +197,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
     ),
     NotebookSpecV2(
-        title='Sorting',
-        module=qualtran.bloqs.sorting,
-        bloq_specs=[
-            qualtran.bloqs.sorting._COMPARATOR_DOC,
-            qualtran.bloqs.sorting._BITONIC_SORT_DOC,
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/',
-    ),
-    NotebookSpecV2(
         title='And',
         module=qualtran.bloqs.and_bloq,
         bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
@@ -253,6 +237,23 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Sorting',
+        module=qualtran.bloqs.arithmetic.sorting,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.sorting._COMPARATOR_DOC,
+            qualtran.bloqs.arithmetic.sorting._BITONIC_SORT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/arithmetic/',
+    ),
+    NotebookSpecV2(
+        title='State Preparation Using Rotations',
+        module=qualtran.bloqs.state_preparation.state_preparation_via_rotation,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
     ),
     NotebookSpecV2(
         title='Multiplication',

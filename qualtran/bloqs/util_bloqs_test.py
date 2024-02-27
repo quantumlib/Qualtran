@@ -63,7 +63,7 @@ def test_util_bloqs():
 
 def test_free_nonzero_state_vector_leads_to_unnormalized_state():
     from qualtran.bloqs.basic_gates.hadamard import Hadamard
-    from qualtran.bloqs.on_each import OnEach
+    from qualtran.bloqs.basic_gates.on_each import OnEach
 
     bb = BloqBuilder()
     qs1 = bb.add(Allocate(QAny(10)))
