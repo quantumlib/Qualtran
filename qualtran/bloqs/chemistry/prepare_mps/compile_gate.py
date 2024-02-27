@@ -30,7 +30,9 @@ class CompileGateGivenVectorsWithoutPG(Bloq):
     def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT) -> Dict[str, SoquetT]:
         gate_compiler = CompileGateGivenVectors(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=self.uncompute)
         phase_gradient = bb.add(PhaseGradientState(bitsize=self.phase_bitsize))
-        gate_input, phase_gradient = bb.add(gate_compiler, gate_input=gate_input, phase_grad=phase_gradient)
+        reflection_ancilla = bb.allocate(1)
+        gate_input, phase_gradient, reflection_ancilla = bb.add(gate_compiler, gate_input=gate_input, phase_grad=phase_gradient, reflection_ancilla=reflection_ancilla)
+        bb.free(reflection_ancilla)
         bb.add(PhaseGradientState(bitsize=self.phase_bitsize).adjoint(), phase_grad=phase_gradient)
         return {"gate_input": gate_input}
 
@@ -49,14 +51,13 @@ class CompileGateGivenVectors(Bloq):
 
     @property
     def signature(self):
-        return Signature.build(gate_input=self.gate_bitsize, phase_grad=self.phase_bitsize)
+        return Signature.build(gate_input=self.gate_bitsize, phase_grad=self.phase_bitsize, reflection_ancilla=1)
     
     @property
     def gate_bitsize(self):
         return (len(self.gate_cols[0])-1).bit_length()
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT, phase_grad: SoquetT) -> Dict[str, SoquetT]:
-        reflection_ancilla = bb.allocate(1)
+    def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT, phase_grad: SoquetT, reflection_ancilla: SoquetT) -> Dict[str, SoquetT]:
         if not self.uncompute:
             reflection_ancilla = bb.add(XGate(), q=reflection_ancilla)
         if self.gate_bitsize == 1:
@@ -64,13 +65,18 @@ class CompileGateGivenVectors(Bloq):
         else:
             reflection_reg = bb.join(np.array([reflection_ancilla, *bb.split(gate_input)]))
         for i in range(len(self.gate_cols)):
+            # change reflection order depending on wether the computation is U or U^t, this ideally
+            # does not matter but approximation errors can cause U*U^t != I if done otherwise
+            if self.uncompute:
+                qi = len(self.gate_cols) - i - 1
+            else:
+                qi = i
             reflection_reg, phase_grad = self._ith_reflection(bb, i, reflection_reg, phase_grad)
         qubits = bb.split(reflection_reg)
         if self.uncompute:
             qubits[0] = bb.add(XGate(), q=qubits[0])
-        bb.free(qubits[0])
-        gate_input = bb.join(qubits[1:])
-        return {"gate_input": gate_input, "phase_grad": phase_grad}
+
+        return {"gate_input": bb.join(qubits[1:]), "phase_grad": phase_grad, "reflection_ancilla": qubits[0]}
     
     def _ith_reflection(self, bb: BloqBuilder, i: int, reflection_reg: SoquetT, phase_grad: SoquetT):
         reflection_prep = PrepareOracleCompileGateReflection(state_coefs=self.gate_cols[i], phase_bitsize=self.phase_bitsize, index=i)
@@ -96,14 +102,6 @@ class PrepareOracleCompileGateReflection(Bloq):
     phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
     index: int # i value in |i>
     uncompute: bool = False
-
-    # @property
-    # def selection_registers(self) -> Tuple[SelectionRegister, ...]:
-    #     return (
-    #         SelectionRegister(
-    #             "target_reg", bitsize=self.state_bitsize+1, iteration_length=self.state_bitsize+1
-    #         ),
-    #     )
     
     @property
     def state_bitsize(self):

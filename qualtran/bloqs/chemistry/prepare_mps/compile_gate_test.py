@@ -14,62 +14,92 @@
 
 import numpy as np
 import pytest
+import attrs
+from typing import Tuple, Dict
 
-from qualtran import BloqBuilder
-from qualtran.bloqs.chemistry.prepare_mps.compile_gate import CompileGateGivenVectorsWithoutPG
+from qualtran import BloqBuilder, Bloq, Signature, SoquetT
+from qualtran.bloqs.chemistry.prepare_mps.compile_gate import CompileGateGivenVectorsWithoutPG, CompileGateGivenVectors
 from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
 
-def accuracy(state1, state2):
-    return abs(np.dot(state1, state2.conj()))
 
-
-def cInPolar (c):
-  return f"{round(abs(c),2)} ∠ {round(np.angle(c, deg=True),2)}º"
-
-def formatU (U):
-  formatted = ""
-  for r in U:
-    formatted += " ".join([f"({cInPolar(c)})" for c in r]) + "\n"
-  return formatted
-
-
-# these gates can be approximated exactly with the given rot_reg_size
+# these gates can be approximated exactly with the given phase_bitsize
 @pytest.mark.parametrize(
-    "rot_reg_size, gate_cols",
+    "phase_bitsize, gate_cols",
     [
         [2, (((0.5+0.5j), (0.5-0.5j)),
              ((-0.5-0.5j), (0.5-0.5j)))],
         [4, (((-0.191341716182545+0.961939766255644j), (-0.038060233744357+0.191341716182545j)),
              ((0.038060233744356-0.191341716182545j), (-0.191341716182545+0.961939766255644j)))],
-        [2,  (((0.5625+0.125j), (-0.125-0.4375j), (0.0625-0.25j), (0.5-0.0625j)),
-              ((0.375+0.0625j), (0.4375-0.125j), (-0.25+0.0625j), (-0.4375-0.5j)),
-              ((-0.375-0.125j), (0.125-0.375j), (-0.625-0.375j), (0.125+0.125j)),
-              ((-0.5+0j), (-0-0.5j), (0.5-0j), -0.5j))]
+        [2,  (((-0-0.5j), (0.5-0j), (-0.5+0.5j), -0j),
+              ((0.5+0.5j), (0.5-0.5j), 0j, 0j),
+              (0.5j, (-0.5+0j), (-0.5+0.5j), 0j),
+              (0j, 0j, (-0+0j), (-1+0j)))]
     ],
 )
-def test_exact_gate_compilation(rot_reg_size, gate_cols):
-    gate_compiler = CompileGateGivenVectorsWithoutPG(rot_reg_size, tuple(gate_cols))
+def test_exact_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...]):
+    gate_compiler = CompileGateGivenVectorsWithoutPG(phase_bitsize, tuple(gate_cols))
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate, np.array(gate_cols))
 
 
 @pytest.mark.parametrize(
-    "rot_reg_size, gate_cols",
+    "phase_bitsize, gate_cols",
     [
-        [2, (((0.5+0.5j), (0.5-0.5j)),
-             ((-0.5-0.5j), (0.5-0.5j)))],
-        [4, (((-0.191341716182545+0.961939766255644j), (-0.038060233744357+0.191341716182545j)),
-             ((0.038060233744356-0.191341716182545j), (-0.191341716182545+0.961939766255644j)))],
-        [2,  (((0.5625+0.125j), (-0.125-0.4375j), (0.0625-0.25j), (0.5-0.0625j)),
-              ((0.375+0.0625j), (0.4375-0.125j), (-0.25+0.0625j), (-0.4375-0.5j)),
-              ((-0.375-0.125j), (0.125-0.375j), (-0.625-0.375j), (0.125+0.125j)),
-              ((-0.5+0j), (-0-0.5j), (0.5-0j), -0.5j))]
+        [4, (((-0.191341716182545+0.961939766255644j), (-0.038060233744357+0.191341716182545j)),)],
+        [2,  (((-0-0.5j), (0.5-0j), (-0.5+0.5j), -0j),
+              ((0.5+0.5j), (0.5-0.5j), 0j, 0j),
+              (0.5j, (-0.5+0j), (-0.5+0.5j), 0j))]
     ],
 )
-def test_partial_gate_compilation(rot_reg_size, gate_cols):
-    gate_compiler = CompileGateGivenVectorsWithoutPG(rot_reg_size, tuple(gate_cols))
+def test_partial_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...]):
+    gate_compiler = CompileGateGivenVectorsWithoutPG(phase_bitsize, tuple(gate_cols))
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate[range(len(gate_cols)),:], np.array(gate_cols))
+
+
+# this class is just for testing, as I want to be able to contract the
+# entire matrix without providing a precise gate input
+@attrs.frozen
+class UUt (Bloq):
+    phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
+    gate_cols: Tuple[Tuple] # tuple with the columns/rows of the gate that are specified
+
+    @property
+    def signature(self):
+        return Signature.build(gate_input=self.gate_bitsize)
+
+    @property
+    def gate_bitsize(self):
+        return (len(self.gate_cols[0])-1).bit_length()
+    
+    def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT) -> Dict[str, SoquetT]:
+        gate_compiler = CompileGateGivenVectors(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=False)
+        gate_compiler_adj = CompileGateGivenVectors(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=True)
+        soqs = {}
+        soqs["gate_input"] = gate_input
+        soqs["phase_grad"] = bb.add(PhaseGradientState(bitsize=self.phase_bitsize))
+        soqs["reflection_ancilla"] = bb.allocate(1)
+        soqs = bb.add_d(gate_compiler, **soqs)
+        soqs = bb.add_d(gate_compiler_adj, **soqs)
+        bb.free(soqs.pop("reflection_ancilla"))
+        bb.add(PhaseGradientState(bitsize=self.phase_bitsize).adjoint(), phase_grad=soqs.pop("phase_grad"))
+        return soqs
+
+@pytest.mark.parametrize(
+    "phase_bitsize, gate_cols",
+    [
+        [2, (((0.5+0.5j), (0.5-0.5j)),
+             ((-0.5-0.5j), (0.5-0.5j)))],
+        [2,  (((-0-0.5j), (0.5-0j), (-0.5+0.5j), -0j),
+              ((0.5+0.5j), (0.5-0.5j), 0j, 0j),
+              (0.5j, (-0.5+0j), (-0.5+0.5j), 0j),
+              (0j, 0j, (-0+0j), (-1+0j)))]
+    ],
+)
+def test_gate_compilation_adjoint(phase_bitsize: int, gate_cols: Tuple[complex,...]):
+    uut = UUt(phase_bitsize, gate_cols)
+    assert np.allclose(uut.tensor_contract(), np.eye(len(gate_cols[0])))
