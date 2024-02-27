@@ -297,6 +297,31 @@ def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
         SymbolicGQSP(P).verify()
 
 
+@pytest.mark.parametrize("precision", [1e-5, 1e-10])
+def test_cos_approximation_fast(precision: float):
+    random_state = np.random.RandomState(42)
+
+    for t in [1, 2, 3]:
+        for alpha in [0.5, 1]:
+            bloq = HamiltonianSimulationByGQSP(None, t=t, alpha=alpha, precision=precision)
+            check_polynomial_pair_on_random_points_on_unit_circle(
+                bloq._approx_cos, [0], random_state=random_state, rtol=precision
+            )
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-10])
+def test_cos_approximation(precision):
+    random_state = np.random.RandomState(42)
+
+    for t in random_state.random(10):
+        for alpha in random_state.random(5):
+            bloq = HamiltonianSimulationByGQSP(None, t=t * 10, alpha=alpha, precision=precision)
+            check_polynomial_pair_on_random_points_on_unit_circle(
+                bloq._approx_cos, [0], random_state=random_state, rtol=precision
+            )
+
+
 @frozen
 class RandomPrepareOracle(PrepareOracle):
     U: RandomGate
@@ -431,31 +456,6 @@ def verify_hamiltonian_simulation_by_gqsp(
     expected_top_left = scipy.linalg.expm(1j * H * t)
     actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left)
-
-
-@pytest.mark.parametrize("precision", [1e-5, 1e-10])
-def test_cos_approximation_fast(precision: float):
-    random_state = np.random.RandomState(42)
-
-    for t in [1, 2, 3]:
-        for alpha in [0.5, 1]:
-            bloq = HamiltonianSimulationByGQSP(None, t=t, alpha=alpha, precision=precision)
-            check_polynomial_pair_on_random_points_on_unit_circle(
-                bloq._approx_cos, [0], random_state=random_state, rtol=precision
-            )
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-10])
-def test_cos_approximation(precision):
-    random_state = np.random.RandomState(42)
-
-    for t in random_state.random(10):
-        for alpha in random_state.random(5):
-            bloq = HamiltonianSimulationByGQSP(None, t=t * 10, alpha=alpha, precision=precision)
-            check_polynomial_pair_on_random_points_on_unit_circle(
-                bloq._approx_cos, [0], random_state=random_state, rtol=precision
-            )
 
 
 # @pytest.mark.slow
