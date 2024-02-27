@@ -429,7 +429,7 @@ def random_qubitization_walk_operator(
     prepare = RandomPrepareOracle.create(select_bitsize, random_state=random_state)
 
     dps = tuple(
-        cirq.DensePauliString(random_state.random_integers(0, 3, size=target_bitsize))
+        cirq.DensePauliString(random_state.randint(0, 4, size=target_bitsize))
         for _ in range(2**select_bitsize)
     )
     select = PauliSelectOracle(select_bitsize, target_bitsize, dps)
