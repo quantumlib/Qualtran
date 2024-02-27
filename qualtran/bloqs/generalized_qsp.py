@@ -357,6 +357,24 @@ class GeneralizedQSP(GateWithRegisters):
 
 @frozen
 class HamiltonianSimulationByGQSP(GateWithRegisters):
+    r"""Hamiltonian simulation using Generalized QSP given a qubitized quantum walk operator.
+
+    Implements Hamiltonian simulation given a walk operator from SELECT and PREPARE oracles.
+
+    We can use the Jacobi-Anger expansion to obtain low-degree polynomial approximations for the $\cos$ function:
+
+        $$ e^{it\cos\theta} = \sum_{n = -\infty}^{\infty} i^n J_n(t) (e^{i\theta})^n $$
+
+    where $J_n$ is the $n$-th [Bessel function of the first kind](https://en.wikipedia.org/wiki/Bessel_function#Bessel_functions_of_the_first_kind), which is provided by `scipy.special.jv`.
+    We can cutoff at $d = O(t + \log(1/\epsilon) / \log\log(1/\epsilon))$ to get an $\epsilon$-approximation (Theorem 7):
+
+        $$ P[t](z) = \sum_{n = -d}^d i^n J_n(t) z^n $$
+
+    References:
+        [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
+            Motlagh and Wiebe. (2023). Theorem 7.
+    """
+
     walk_operator: QubitizationWalkOperator
     t: float = field(kw_only=True)
     alpha: float = field(kw_only=True)
@@ -364,12 +382,14 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
     @cached_property
     def degree(self) -> int:
+        r"""degree of the polynomial to approximate the function e^{it\cos(\theta)}"""
         log_precision = np.log(1 / self.precision)
         degree = self.t * self.alpha + 3 * log_precision / np.log(log_precision)
         return int(np.ceil(degree))
 
     @cached_property
     def _approx_cos(self) -> NDArray[np.complex_]:
+        r"""polynomial approximation for e^{it\cos(\theta)} in terms of monomials (e^{i\theta})^n"""
         coeff_indices = np.arange(-self.degree, self.degree + 1)
         approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
         return approx_cos
@@ -419,7 +439,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         t = ssa.new_symbol('t')
         alpha = ssa.new_symbol('alpha')
         precision = ssa.new_symbol('precision')
-        d = t * alpha + sympy.log(precision) / sympy.log(sympy.log(precision))
+        d = t * alpha + 3 * sympy.log(precision) / sympy.log(sympy.log(precision))
 
         # TODO account for SU2 rotation gates
         return {(self.walk_operator, d)}
