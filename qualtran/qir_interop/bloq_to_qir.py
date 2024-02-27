@@ -15,8 +15,7 @@ from typing import List, Tuple, Union
 
 import numpy as np
 import pyqir
-from pyqir import BasicBlock, Builder, Context, Function, Linkage
-from pyqir._native import Function, FunctionType, Type
+from pyqir import BasicBlock, Builder, Context, Function, FunctionType, Linkage, Type
 
 import qualtran
 from qualtran import Soquet
