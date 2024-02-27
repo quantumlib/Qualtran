@@ -368,3 +368,55 @@ class QFxp(QDType):
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         pass  # TODO: implement
+
+
+@attrs.frozen
+class QMontgomeryUInt(QDType):
+    """Montgomery form of an unsigned integer of a given width bitsize which wraps around upon
+        overflow.
+
+    Similar to unsigned integer types in C. Any intended wrap around effect is
+    expected to be handled by the developer. Any QMontgomeryUInt can be treated as a QUInt, but not
+    every QUInt can be treated as a QMontgomeryUInt. Montgomery form is used in order to compute
+    fast modular multiplication.
+
+    In order to convert an unsigned integer from a finite field x % p into Montgomery form you
+    first must choose a value r > p where gcd(r, p) = 1. Typically this value is a power of 2.
+
+    Conversion to Montgomery form:
+        [x] = (x * r) % p
+
+    Conversion from Montgomery form to normal form:
+        x = REDC([x])
+
+    Pseudocode for REDC(u) can be found in the resource below.
+
+    Attributes:
+        bitsize: The number of qubits used to represent the integer.
+
+    References:
+        [Montgomery modular multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication)
+    """
+
+    bitsize: Union[int, sympy.Expr]
+
+    @property
+    def num_qubits(self):
+        return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        return range(2 ** (self.bitsize))
+
+    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        if val < 0:
+            raise ValueError(f"Negative classical value encountered in {debug_str}")
+        if val >= 2**self.bitsize:
+            raise ValueError(f"Too-large classical value encountered in {debug_str}")
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+        if np.any(val_array < 0):
+            raise ValueError(f"Negative classical values encountered in {debug_str}")
+        if np.any(val_array >= 2**self.bitsize):
+            raise ValueError(f"Too-large classical values encountered in {debug_str}")

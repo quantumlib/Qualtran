@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import typing
-from typing import Any, Callable, Iterable, Optional, Tuple, Type, Union
+from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, Type, Union
 
 from attrs import field, frozen
 
@@ -140,7 +140,7 @@ class BloqDocSpec:
 
     bloq_cls: Type[Bloq]
     import_line: str
-    examples: Tuple[BloqExample, ...] = field(converter=_to_tuple(BloqExample), factory=tuple)
+    examples: Sequence[BloqExample] = field(converter=_to_tuple(BloqExample), factory=tuple)
     call_graph_example: Union[BloqExample, None] = field()
 
     @call_graph_example.default
