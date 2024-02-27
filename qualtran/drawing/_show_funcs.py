@@ -20,7 +20,7 @@ import IPython.display
 import ipywidgets
 
 from .bloq_counts_graph import format_counts_sigma, GraphvizCounts
-from .graphviz import PrettyGraphDrawer
+from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
 from .musical_score import draw_musical_score, get_musical_score_data
 
 if TYPE_CHECKING:
@@ -40,6 +40,8 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
     """
     if type.lower() == 'graph':
         IPython.display.display(PrettyGraphDrawer(bloq).get_svg())
+    elif type.lower() == 'dtype':
+        IPython.display.display(TypedGraphDrawer(bloq).get_svg())
     elif type.lower() == 'musical_score':
         draw_musical_score(get_musical_score_data(bloq))
     else:

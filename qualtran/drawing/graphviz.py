@@ -32,6 +32,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
+from qualtran._infra.test_reg import QDType
 
 
 def _assign_ids_to_bloqs_and_soqs(
@@ -395,6 +396,33 @@ class PrettyGraphDrawer(GraphDrawer):
             right_id,
             label=self.cxn_label(cxn),
             labelfloat=True,
+            fontsize=10,
+            arrowhead='dot',
+            arrowsize=0.25,
+        )
+
+
+class TypedGraphDrawer(PrettyGraphDrawer):
+    @staticmethod
+    def _fmt_dtype(dtype: QDType):
+        label = f'{dtype.__class__.__name__}({dtype.num_qubits})'
+        return label
+
+    def cxn_label(self, cxn: Connection) -> str:
+        """Overridable method to return labels for connections."""
+
+        l, r = cxn.left.reg.dtype, cxn.right.reg.dtype
+        if l == r:
+            return self._fmt_dtype(l)
+        else:
+            return f'{self._fmt_dtype(l)}-{self._fmt_dtype(r)}'
+
+    def cxn_edge(self, left_id: str, right_id: str, cxn: Connection) -> pydot.Edge:
+        return pydot.Edge(
+            left_id,
+            right_id,
+            label=self.cxn_label(cxn),
+            labelfloat=False,
             fontsize=10,
             arrowhead='dot',
             arrowsize=0.25,
