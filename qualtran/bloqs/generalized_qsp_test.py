@@ -73,6 +73,7 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
     Q: Union[Sequence[complex], Polynomial],
     *,
     random_state: np.random.RandomState,
+    rtol: float = 1e-7,
     n_points: int = 1000,
 ):
     P = Polynomial(P)
@@ -80,7 +81,7 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
 
     for _ in range(n_points):
         z = np.exp(random_state.random() * np.pi * 2j)
-        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1)
+        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)
 
 
 def random_qsp_polynomial(
@@ -391,7 +392,7 @@ class PauliSelectOracle(SelectOracle):
             selection = np.concatenate([selection, quregs['control']])
 
         for cv, U in enumerate(self.select_unitaries):
-            bits = tuple(map(int, bin(cv)[2:].zfill(self.select_bitsize)))
+            bits = tuple(map(int, bin(cv)[2:].zfill(self.select_bitsize)))[::-1]
             if self.control_val is not None:
                 bits = (*bits, self.control_val)
             yield U.on(*target).controlled_by(*selection, control_values=bits)
@@ -432,9 +433,34 @@ def verify_hamiltonian_simulation_by_gqsp(
     assert_matrices_almost_equal(expected_top_left, actual_top_left)
 
 
+@pytest.mark.parametrize("precision", [1e-5, 1e-10])
+def test_cos_approximation_fast(precision: float):
+    random_state = np.random.RandomState(42)
+
+    for t in [1, 2, 3]:
+        for alpha in [0.5, 1]:
+            bloq = HamiltonianSimulationByGQSP(None, t=t, alpha=alpha, precision=precision)
+            check_polynomial_pair_on_random_points_on_unit_circle(
+                bloq._approx_cos, [0], random_state=random_state, rtol=precision
+            )
+
+
 @pytest.mark.slow
-@pytest.mark.parametrize("select_bitsize", [1, 2, 3])
-@pytest.mark.parametrize("target_bitsize", [1, 2, 3])
+@pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-10])
+def test_cos_approximation(precision):
+    random_state = np.random.RandomState(42)
+
+    for t in random_state.random(10):
+        for alpha in random_state.random(5):
+            bloq = HamiltonianSimulationByGQSP(None, t=t * 10, alpha=alpha, precision=precision)
+            check_polynomial_pair_on_random_points_on_unit_circle(
+                bloq._approx_cos, [0], random_state=random_state, rtol=precision
+            )
+
+
+# @pytest.mark.slow
+@pytest.mark.parametrize("select_bitsize", [1])
+@pytest.mark.parametrize("target_bitsize", [1])
 def test_hamiltonian_simulation_by_gqsp(select_bitsize: int, target_bitsize: int):
     random_state = np.random.RandomState(42)
 

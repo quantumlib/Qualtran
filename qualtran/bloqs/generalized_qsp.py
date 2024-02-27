@@ -290,9 +290,9 @@ class GeneralizedQSP(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature([Register('signal', QBit()), *self.U.signature])
 
-    @staticmethod
+    @classmethod
     def from_qsp_polynomial(
-        U: GateWithRegisters, P: Sequence[complex], *, negative_power: int = 0
+        cls, U: GateWithRegisters, P: Sequence[complex], *, negative_power: int = 0
     ) -> 'GeneralizedQSP':
         Q = qsp_complementary_polynomial(P)
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
@@ -365,17 +365,20 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     @cached_property
     def degree(self) -> int:
         log_precision = np.log(1 / self.precision)
-        degree = self.t * self.alpha + log_precision / np.log(log_precision)
+        degree = self.t * self.alpha + 3 * log_precision / np.log(log_precision)
         return int(np.ceil(degree))
 
     @cached_property
-    def gqsp(self) -> GeneralizedQSP:
+    def _approx_cos(self) -> NDArray[np.complex_]:
         coeff_indices = np.arange(-self.degree, self.degree + 1)
         approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
+        return approx_cos
 
+    @cached_property
+    def gqsp(self) -> GeneralizedQSP:
         return GeneralizedQSP(
             self.walk_operator,
-            approx_cos,
+            self._approx_cos,
             np.zeros(2 * self.degree + 1),
             negative_power=self.degree,
         )
