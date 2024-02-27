@@ -17,7 +17,7 @@ import numpy as np
 
 import qualtran.testing as qlt_testing
 from qualtran.bloqs.basic_gates import Hadamard, XGate
-from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.basic_gates.on_each import OnEach
 
 
 def test_valid_bloq():
