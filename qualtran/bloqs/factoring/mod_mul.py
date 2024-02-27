@@ -131,7 +131,8 @@ class MontgomeryModDbl(Bloq):
         x: A bitsize-sized input register (register x above).
 
     References:
-        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585) Fig 6d and 8
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6d and 8
     """
 
     bitsize: int
