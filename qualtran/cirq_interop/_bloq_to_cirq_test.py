@@ -22,7 +22,7 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.and_bloq import And, MultiAnd
-from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
@@ -286,6 +286,31 @@ exponent1: ───exponent───────┼─────┼───�
 exponent2: ───exponent───────┼─────@─────────────────
               │              │
 exponent3: ───exponent───────@───────────────────────''',
+    )
+
+
+def test_toffoli_circuit_diagram():
+    q = cirq.LineQubit.range(3)
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(Toffoli().on(*q)),
+        """
+0: ───@───
+      │
+1: ───@───
+      │
+2: ───⊕───
+""",
+    )
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(Toffoli().on(*q)),
+        """
+0: ---@---
+      |
+1: ---@---
+      |
+2: ---X---
+""",
+        use_unicode_characters=False,
     )
 
 
