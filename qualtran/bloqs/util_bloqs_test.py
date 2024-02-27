@@ -33,7 +33,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 @pytest.mark.parametrize('n', [5, 123])
 @pytest.mark.parametrize('bloq_cls', [Split, Join])
 def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
-    bloq = bloq_cls(n)
+    bloq = bloq_cls(QAny(n))
     for name, group_regs in bloq.signature.groups():
         if any(reg.side is Side.THRU for reg in group_regs):
             assert not any(reg.side != Side.THRU for reg in group_regs)
@@ -50,33 +50,33 @@ def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
 
 def test_util_bloqs():
     bb = BloqBuilder()
-    qs1 = bb.add(Allocate(10))
+    qs1 = bb.add(Allocate(QAny(10)))
     assert isinstance(qs1, Soquet)
-    qs2 = bb.add(Split(10), reg=qs1)
+    qs2 = bb.add(Split(QAny(10)), reg=qs1)
     assert qs2.shape == (10,)
-    qs3 = bb.add(Join(10), reg=qs2)
+    qs3 = bb.add(Join(QAny(10)), reg=qs2)
     assert isinstance(qs3, Soquet)
-    no_return = bb.add(Free(10), reg=qs3)
+    no_return = bb.add(Free(QAny(10)), reg=qs3)
     assert no_return is None
     assert bb.finalize().tensor_contract() == 1.0
 
 
 def test_free_nonzero_state_vector_leads_to_unnormalized_state():
     from qualtran.bloqs.basic_gates.hadamard import Hadamard
-    from qualtran.bloqs.on_each import OnEach
+    from qualtran.bloqs.basic_gates.on_each import OnEach
 
     bb = BloqBuilder()
-    qs1 = bb.add(Allocate(10))
+    qs1 = bb.add(Allocate(QAny(10)))
     qs2 = bb.add(OnEach(10, Hadamard()), q=qs1)
-    no_return = bb.add(Free(10), reg=qs2)
+    no_return = bb.add(Free(QAny(10)), reg=qs2)
     assert np.allclose(bb.finalize().tensor_contract(), np.sqrt(1 / 2**10))
 
 
 def test_util_bloqs_tensor_contraction():
     bb = BloqBuilder()
-    qs1 = bb.add(Allocate(10))
-    qs2 = bb.add(Split(10), reg=qs1)
-    qs3 = bb.add(Join(10), reg=qs2)
+    qs1 = bb.add(Allocate(QAny(10)))
+    qs2 = bb.add(Split(QAny(10)), reg=qs1)
+    qs3 = bb.add(Join(QAny(10)), reg=qs2)
     cbloq = bb.finalize(out=qs3)
     expected = np.zeros(2**10)
     expected[0] = 1
@@ -178,7 +178,7 @@ def test_classical_sim():
 
 
 def test_classical_sim_dtypes():
-    s = Split(n=8)
+    s = Split(QAny(8))
     (xx,) = s.call_classically(reg=255)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 

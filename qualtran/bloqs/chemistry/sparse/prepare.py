@@ -33,8 +33,8 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.z_basis import ZGate
-from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
