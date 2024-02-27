@@ -300,7 +300,7 @@ def _wire_symbol_to_cirq_diagram_info(
         if isinstance(ws, (TextBox, RarrowTextBox, LarrowTextBox)):
             return ws.text
         if isinstance(ws, ModPlus):
-            return "⊕" if args.use_unicode_characters else 'X'
+            return 'X'
         raise NotImplementedError(f"Unknown cirq version of {ws}")
 
     wire_symbols = [_qualtran_wire_symbols_to_cirq_text(ws) for ws in wire_symbols]

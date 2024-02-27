@@ -298,7 +298,7 @@ def test_toffoli_circuit_diagram():
       │
 1: ───@───
       │
-2: ───⊕───
+2: ───X───
 """,
     )
     cirq.testing.assert_has_diagram(
