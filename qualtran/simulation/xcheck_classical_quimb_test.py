@@ -14,6 +14,7 @@
 import pytest
 
 import qualtran.testing as qlt_testing
+from qualtran import QUInt
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
@@ -41,7 +42,7 @@ def test_toffoli():
 
 
 def test_add():
-    add = Add(bitsize=5)
+    add = Add(QUInt(bitsize=5))
     add_tt = flank_with_classical_vectors(add, {'a': 2, 'b': 3})
     assert add_tt.tensor_contract() == 1.0
 

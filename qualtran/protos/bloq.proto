@@ -19,8 +19,29 @@ syntax = "proto3";
 import "qualtran/protos/annotations.proto";
 import "qualtran/protos/args.proto";
 import "qualtran/protos/registers.proto";
+import "qualtran/protos/data_types.proto";
 
 package qualtran;
+
+message BloqArg {
+  string name = 1;
+  oneof val {
+    int64 int_val = 2;
+    double float_val = 3;
+    string string_val = 4;
+    // Sympy expression generated using str(expr).
+    string sympy_expr = 5;
+    // N-dimensional numpy array stored as bytes.
+    NDArray ndarray = 6;
+    // Integer reference of a subbloq. Assumes access to a BloqLibrary.
+    int32 subbloq = 7;
+    // Gzipped JSON corresponding to a Cirq object.
+    bytes cirq_json_gzip = 8;
+    // data type
+    QDataType qdata_type = 9;
+  }
+}
+
 
 // A library of Bloqs. BloqLibrary should be used to represent both primitive Bloqs and
 // composite Bloqs; i.e. Bloqs consisting of other subbloqs, like `CompositeBloq`,

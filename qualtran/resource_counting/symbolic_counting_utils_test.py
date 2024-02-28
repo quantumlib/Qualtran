@@ -11,22 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from functools import reduce
-
 import numpy as np
+import sympy
+from sympy.codegen.cfunctions import log2 as sympy_log2
 
-import qualtran.testing as qlt_testing
-from qualtran.bloqs.basic_gates import Hadamard, XGate
-from qualtran.bloqs.on_each import OnEach
-
-
-def test_valid_bloq():
-    on_each = OnEach(10, XGate())
-    qlt_testing.assert_valid_bloq_decomposition(on_each)
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
 
 
-def test_tensor_contract():
-    bloq = OnEach(5, Hadamard())
-    tensor = bloq.tensor_contract()
-    single_had = Hadamard().tensor_contract()
-    np.testing.assert_allclose(tensor, reduce(np.kron, (single_had,) * 5))
+def test_log2():
+    assert log2(sympy.Symbol('x')) == sympy_log2(sympy.Symbol('x'))
+    assert log2(sympy.Number(10)) == sympy_log2(sympy.Number(10))
+    assert log2(10) == np.log2(10)
+
+
+def test_ceil():
+    assert ceil(sympy.Symbol('x')) == sympy.ceiling(sympy.Symbol('x'))
+    assert ceil(sympy.Number(10.123)) == sympy.ceiling(sympy.Number(11))
+    assert isinstance(ceil(sympy.Number(10.123)), sympy.Basic)
+    assert ceil(10.123) == 11

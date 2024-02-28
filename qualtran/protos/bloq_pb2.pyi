@@ -23,6 +23,7 @@ import google.protobuf.internal.containers
 import google.protobuf.message
 import qualtran.protos.annotations_pb2
 import qualtran.protos.args_pb2
+import qualtran.protos.data_types_pb2
 import qualtran.protos.registers_pb2
 import sys
 
@@ -32,6 +33,54 @@ else:
     import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+
+@typing_extensions.final
+class BloqArg(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NAME_FIELD_NUMBER: builtins.int
+    INT_VAL_FIELD_NUMBER: builtins.int
+    FLOAT_VAL_FIELD_NUMBER: builtins.int
+    STRING_VAL_FIELD_NUMBER: builtins.int
+    SYMPY_EXPR_FIELD_NUMBER: builtins.int
+    NDARRAY_FIELD_NUMBER: builtins.int
+    SUBBLOQ_FIELD_NUMBER: builtins.int
+    CIRQ_JSON_GZIP_FIELD_NUMBER: builtins.int
+    QDATA_TYPE_FIELD_NUMBER: builtins.int
+    name: builtins.str
+    int_val: builtins.int
+    float_val: builtins.float
+    string_val: builtins.str
+    sympy_expr: builtins.str
+    """Sympy expression generated using str(expr)."""
+    @property
+    def ndarray(self) -> qualtran.protos.args_pb2.NDArray:
+        """N-dimensional numpy array stored as bytes."""
+    subbloq: builtins.int
+    """Integer reference of a subbloq. Assumes access to a BloqLibrary."""
+    cirq_json_gzip: builtins.bytes
+    """Gzipped JSON corresponding to a Cirq object."""
+    @property
+    def qdata_type(self) -> qualtran.protos.data_types_pb2.QDataType:
+        """data type"""
+    def __init__(
+        self,
+        *,
+        name: builtins.str = ...,
+        int_val: builtins.int = ...,
+        float_val: builtins.float = ...,
+        string_val: builtins.str = ...,
+        sympy_expr: builtins.str = ...,
+        ndarray: qualtran.protos.args_pb2.NDArray | None = ...,
+        subbloq: builtins.int = ...,
+        cirq_json_gzip: builtins.bytes = ...,
+        qdata_type: qualtran.protos.data_types_pb2.QDataType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type"] | None: ...
+
+global___BloqArg = BloqArg
 
 @typing_extensions.final
 class BloqLibrary(google.protobuf.message.Message):
@@ -125,7 +174,7 @@ class Bloq(google.protobuf.message.Message):
     name: builtins.str
     """`name` identifies the Bloq."""
     @property
-    def args(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.BloqArg]:
+    def args(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___BloqArg]:
         """`Args` are used to construct the Bloq."""
     @property
     def registers(self) -> qualtran.protos.registers_pb2.Registers:
@@ -137,7 +186,7 @@ class Bloq(google.protobuf.message.Message):
         self,
         *,
         name: builtins.str = ...,
-        args: collections.abc.Iterable[qualtran.protos.args_pb2.BloqArg] | None = ...,
+        args: collections.abc.Iterable[global___BloqArg] | None = ...,
         registers: qualtran.protos.registers_pb2.Registers | None = ...,
         t_complexity: qualtran.protos.annotations_pb2.TComplexity | None = ...,
     ) -> None: ...
