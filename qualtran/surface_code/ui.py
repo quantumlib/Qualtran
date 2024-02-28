@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from enum import Enum
 from typing import Any, Dict, Sequence, Tuple
 
 import numpy as np
@@ -35,6 +36,7 @@ from qualtran.surface_code.multi_factory import MultiFactory
 
 
 def get_objects(modules, object_type):
+    """Get all objects of a given type from a list of modules."""
     for module in modules:
         for obj_name in dir(module):
             obj = getattr(module, obj_name)
@@ -42,33 +44,33 @@ def get_objects(modules, object_type):
                 yield obj_name, obj
 
 
-QEC_SCHEMES = dict(get_objects([qecs], qecs.QuantumErrorCorrectionSchemeSummary))
-MAGIC_FACTORIES = dict(
+_QEC_SCHEMES = dict(get_objects([qecs], qecs.QuantumErrorCorrectionSchemeSummary))
+_MAGIC_FACTORIES = dict(
     get_objects([fifteen_to_one, ccz2t_cost_model], magic_state_factory.MagicStateFactory)
 )
-ROTATION_MODELS = dict(get_objects([rotation_cost_model], rotation_cost_model.RotationCostModel))
-SUPPORTED_ESTIMATION_MODELS = [
-    'GidneyFolwer (arxiv:1812.01238)',
-    'Beverland et al (arxiv:2211.07629)',
-]
+_ROTATION_MODELS = dict(get_objects([rotation_cost_model], rotation_cost_model.RotationCostModel))
 
-ALGORITHM_INPUTS = [Input({'type': 'algorithm', 'property': ALL}, 'value')]
-QEC_INPUTS = [Input('QEC', 'value')]
-MAGIC_FACTORIES_INPUTS = [
-    Input('magic_factories', 'value'),
-    Input('magic_factories_number', 'value'),
-]
-ROTATION_MODELS_INPUTS = [Input('rotation-cost-model', 'value')]
-ESTIMATION_INPUTS = [Input('estimation_model', 'value')]
-ERROR_INPUTS = [Input('physical_error_rate', 'value'), Input('error_budget', 'value')]
+_GIDNEY_FOLWER_MODEL = 'GidneyFolwer (arxiv:1812.01238)'
+_BEVERLAND_MODEL = 'Beverland et al (arxiv:2211.07629)'
+_SUPPORTED_ESTIMATION_MODELS = [_GIDNEY_FOLWER_MODEL, _BEVERLAND_MODEL]
 
-ALL_INPUTS = [
-    *ERROR_INPUTS,
-    *ESTIMATION_INPUTS,
-    *ALGORITHM_INPUTS,
-    *QEC_INPUTS,
-    *MAGIC_FACTORIES_INPUTS,
-    *ROTATION_MODELS_INPUTS,
+_ALGORITHM_INPUTS = [Input({'type': 'algorithm', 'property': ALL}, 'value')]
+_QEC_INPUTS = [Input('QEC', 'value')]
+_MAGIC_FACTORIES_INPUTS = [
+    Input('_MAGIC_FACTORIES', 'value'),
+    Input('_MAGIC_FACTORIES_number', 'value'),
+]
+_ROTATION_MODELS_INPUTS = [Input('rotation-cost-model', 'value')]
+_ESTIMATION_INPUTS = [Input('estimation_model', 'value')]
+_ERROR_INPUTS = [Input('physical_error_rate', 'value'), Input('error_budget', 'value')]
+
+_ALL_INPUTS = [
+    *_ERROR_INPUTS,
+    *_ESTIMATION_INPUTS,
+    *_ALGORITHM_INPUTS,
+    *_QEC_INPUTS,
+    *_MAGIC_FACTORIES_INPUTS,
+    *_ROTATION_MODELS_INPUTS,
 ]
 
 
@@ -166,22 +168,22 @@ def algorithm_summary_components():
     ]
 
 
-def magic_factories_components():
+def _MAGIC_FACTORIES_components():
     return [
         html.P("Enter number of magic state factories:"),
         dcc.RadioItems(
-            id='magic_factories',
-            options=sorted(MAGIC_FACTORIES),
-            value=next(iter(MAGIC_FACTORIES.keys())),
+            id='_MAGIC_FACTORIES',
+            options=sorted(_MAGIC_FACTORIES),
+            value=next(iter(_MAGIC_FACTORIES.keys())),
         ),
-        dcc.Input(debounce=True, id='magic_factories_number', type='number', min=1, value=1),
+        dcc.Input(debounce=True, id='_MAGIC_FACTORIES_number', type='number', min=1, value=1),
         html.Details(
             [
                 html.Summary("Magic Factories' information"),
                 html.Table(
                     [
                         html.Tr([html.Td(k), html.Td(str(v), style={'padding': '10px'})])
-                        for k, v in MAGIC_FACTORIES.items()
+                        for k, v in _MAGIC_FACTORIES.items()
                     ]
                 ),
             ]
@@ -192,14 +194,16 @@ def magic_factories_components():
 def qec_summary_components():
     return [
         html.P("Select a QEC algorithm:"),
-        dcc.RadioItems(id='QEC', options=sorted(QEC_SCHEMES), value=next(iter(QEC_SCHEMES.keys()))),
+        dcc.RadioItems(
+            id='QEC', options=sorted(_QEC_SCHEMES), value=next(iter(_QEC_SCHEMES.keys()))
+        ),
         html.Details(
             [
                 html.Summary("QECs' information"),
                 html.Table(
                     [
                         html.Tr([html.Td(k), html.Td(str(v), style={'padding': '10px'})])
-                        for k, v in QEC_SCHEMES.items()
+                        for k, v in _QEC_SCHEMES.items()
                     ]
                 ),
             ]
@@ -212,8 +216,8 @@ def rotation_cost_model_components():
         html.P("Select Rotation Cost Model:"),
         dcc.RadioItems(
             id='rotation-cost-model',
-            options=sorted(ROTATION_MODELS),
-            value=next(iter(ROTATION_MODELS.keys())),
+            options=sorted(_ROTATION_MODELS),
+            value=next(iter(_ROTATION_MODELS.keys())),
         ),
         html.Details(
             [
@@ -221,7 +225,7 @@ def rotation_cost_model_components():
                 html.Table(
                     [
                         html.Tr([html.Td(r), html.Td(str(v), style={'padding': '10px'})])
-                        for r, v in ROTATION_MODELS.items()
+                        for r, v in _ROTATION_MODELS.items()
                     ]
                 ),
             ]
@@ -265,13 +269,11 @@ def input_components():
         ),
         html.P("Select Estimation Cost Model:"),
         dcc.RadioItems(
-            id='estimation_model',
-            options=SUPPORTED_ESTIMATION_MODELS,
-            value='GidneyFolwer (arxiv:1812.01238)',
+            id='estimation_model', options=_SUPPORTED_ESTIMATION_MODELS, value=_GIDNEY_FOLWER_MODEL
         ),
         *algorithm_summary_components(),
         *qec_summary_components(),
-        *magic_factories_components(),
+        *_MAGIC_FACTORIES_components(),
         *rotation_cost_model_components(),
     ]
 
@@ -357,7 +359,7 @@ def create_qubit_pie_chart(
     needed_magic: MagicCount,
 ) -> go.Figure:
     """Create a pie chart of the physical qubit utilization."""
-    if estimation_model == 'GidneyFolwer (arxiv:1812.01238)':
+    if estimation_model == _GIDNEY_FOLWER_MODEL:
         res, factory, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
             n_algo_qubits=algorithm.algorithm_qubits,
@@ -430,7 +432,7 @@ def create_runtime_plot(
 
     Currently displays the runtime plot for the Beverland model only.
     """
-    if estimation_model == 'GidneyFolwer (arxiv:1812.01238)':
+    if estimation_model == _GIDNEY_FOLWER_MODEL:
         return {'display': 'none'}, go.Figure()
     factory = MultiFactory(magic_factory, int(magic_count))
     c_min = minimum_time_steps(
@@ -484,7 +486,7 @@ def create_runtime_plot(
     Output('min_factory_count', 'value'),
     Output('duration-container', 'style'),
     Output("duration", "value"),
-    *ALL_INPUTS,
+    *_ALL_INPUTS,
 )
 def update(
     physical_error_rate,
@@ -500,9 +502,9 @@ def update(
     if any(x is None for x in [physical_error_rate, error_budget, *algorithm_data, magic_count]):
         raise PreventUpdate
     algorithm = AlgorithmSummary(*algorithm_data)
-    qec = QEC_SCHEMES[qec_name]
-    magic_factory = MAGIC_FACTORIES[magic_name]
-    rotation_model = ROTATION_MODELS[rotaion_model_name]
+    qec = _QEC_SCHEMES[qec_name]
+    magic_factory = _MAGIC_FACTORIES[magic_name]
+    rotation_model = _ROTATION_MODELS[rotaion_model_name]
     needed_magic = algorithm.to_magic_count(rotation_model, error_budget / 3)
     magic_count = int(magic_count)
     return (
@@ -552,7 +554,7 @@ def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[Tuple[
     """Compute the number of magic states needed for the algorithm and their type."""
     total_t = needed_magic.n_t + 4 * needed_magic.n_ccz
     total_ccz = total_t / 4
-    if estimation_model == 'GidneyFolwer (arxiv:1812.01238)':
+    if estimation_model == _GIDNEY_FOLWER_MODEL:
         return ['Total Number of Toffoli gates'], f'{total_ccz:g}'
     else:
         return ['Total Number of T gates'], f'{total_t:g}'
@@ -567,7 +569,7 @@ def min_num_factories(
     magic_factory: magic_state_factory.MagicStateFactory,
     needed_magic: MagicCount,
 ) -> Tuple[Dict[str, Any], int]:
-    if estimation_model == 'GidneyFolwer (arxiv:1812.01238)':
+    if estimation_model == _GIDNEY_FOLWER_MODEL:
         return {'display': 'none'}, 1
     c_min = minimum_time_steps(
         error_budget=error_budget, alg=algorithm, rotation_model=rotation_model
@@ -590,7 +592,7 @@ def compute_duration(
 
     Currently displays the result only for GidneyFolwer (arxiv:1812.01238).
     """
-    if estimation_model == 'GidneyFolwer (arxiv:1812.01238)':
+    if estimation_model == _GIDNEY_FOLWER_MODEL:
         res, _, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
             n_algo_qubits=algorithm.algorithm_qubits,

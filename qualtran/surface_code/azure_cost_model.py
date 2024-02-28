@@ -65,9 +65,7 @@ def minimum_time_steps(
     c_min = math.ceil(alg.measurements + alg.rotation_gates + alg.t_gates + 3 * alg.toffoli_gates)
     eps_syn = error_budget / 3
     if alg.rotation_gates > 0:
-        rotation_cost = rotation_model.prepartion_overhead(eps_syn) + rotation_model.rotation_cost(
-            eps_syn / alg.rotation_gates
-        )
+        rotation_cost = rotation_model.rotation_cost(eps_syn / alg.rotation_gates)
         c_min += math.ceil(
             alg.rotation_circuit_depth * (rotation_cost.n_t + 4 * rotation_cost.n_ccz)
         )

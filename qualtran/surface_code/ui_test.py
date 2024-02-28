@@ -18,7 +18,7 @@ from dash.exceptions import PreventUpdate
 from qualtran.surface_code import ui
 
 
-@pytest.mark.parametrize('estimation_model', ui.SUPPORTED_ESTIMATION_MODELS)
+@pytest.mark.parametrize('estimation_model', ui._SUPPORTED_ESTIMATION_MODELS)
 def test_ensure_support_for_all_supported_models(estimation_model: str):
     # Make sure the update runs without failure for all supported models.
     _ = ui.update(
@@ -37,7 +37,7 @@ def test_ensure_support_for_all_supported_models(estimation_model: str):
     'estimation_model,desired',
     [
         (
-            'GidneyFolwer (arxiv:1812.01238)',
+            ui._GIDNEY_FOLWER_MODEL,
             (
                 {'display': 'none'},
                 ['Total Number of Toffoli gates'],
@@ -49,7 +49,7 @@ def test_ensure_support_for_all_supported_models(estimation_model: str):
             ),
         ),
         (
-            'Beverland et al (arxiv:2211.07629)',
+            ui._BEVERLAND_MODEL,
             (
                 {'display': 'block'},
                 ['Total Number of T gates'],
@@ -99,7 +99,7 @@ def test_update_bad_input():
         _ = ui.update(
             physical_error_rate=None,
             error_budget=1e-3,
-            estimation_model=ui.SUPPORTED_ESTIMATION_MODELS[0],
+            estimation_model=ui._SUPPORTED_ESTIMATION_MODELS[0],
             algorithm_data=(10**11,) * 6,
             qec_name='FowlerSuperconductingQubits',
             magic_name='FifteenToOne733',
