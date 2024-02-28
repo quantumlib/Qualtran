@@ -73,7 +73,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, smax
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -365,7 +365,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = sympy.Max(0, ceil(log2(abs(self.gamma))))
+        n_int = smax(0, ceil(log2(abs(self.gamma))))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 

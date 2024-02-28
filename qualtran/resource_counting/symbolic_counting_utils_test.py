@@ -15,7 +15,7 @@ import numpy as np
 import sympy
 from sympy.codegen.cfunctions import log2 as sympy_log2
 
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, smax
 
 
 def test_log2():
@@ -29,3 +29,9 @@ def test_ceil():
     assert ceil(sympy.Number(10.123)) == sympy.ceiling(sympy.Number(11))
     assert isinstance(ceil(sympy.Number(10.123)), sympy.Basic)
     assert ceil(10.123) == 11
+
+
+def test_smax():
+    assert smax(1, 2) == 2
+    assert smax(1.1, 2.2) == 2.2
+    assert smax(1, sympy.Symbol('x')) == sympy.Max(1, sympy.Symbol('x'))
