@@ -99,6 +99,8 @@ class Add(Bloq):
     ):
         import quimb.tensor as qtn
 
+        if isinstance(self.dtype, QInt):
+            raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
         N = 2**self.dtype.bitsize
         inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
         unitary = np.zeros((N,) * len(inds), dtype=np.complex128)
@@ -114,7 +116,7 @@ class Add(Bloq):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        unsigned = True  # TODO: derive from signature
+        unsigned = isinstance(self.dtype, (QUInt, QMontgomeryUInt))
         N = 2**self.dtype.bitsize if unsigned else 2 ** (self.dtype.bitsize - 1)
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
