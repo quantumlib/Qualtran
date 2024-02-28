@@ -36,3 +36,9 @@ def ceil(x: SymbolicFloat) -> SymbolicInt:
     if not isinstance(x, sympy.Basic):
         return int(np.ceil(x))
     return sympy.ceiling(x)
+
+
+def smax(*args):
+    if any(isinstance(arg, sympy.Basic) for arg in args):
+        return sympy.Max(*args)
+    return max(*args)
