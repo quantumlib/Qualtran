@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 def _get_all_rotation_types() -> Tuple['_HasEps', ...]:
     """Returns all classes defined in bloqs.basic_gates which have an attribute `eps`."""
-    import qualtran.bloqs.basic_gates
+    import qualtran.bloqs.basic_gates  # pylint: disable=unused-import
 
     return tuple(
         v
