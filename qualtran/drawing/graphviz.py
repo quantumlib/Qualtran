@@ -26,13 +26,13 @@ from qualtran import (
     Connection,
     DanglingT,
     LeftDangle,
+    QDType,
     Register,
     RightDangle,
     Side,
     Signature,
     Soquet,
 )
-from qualtran._infra.test_reg import QDType
 
 
 def _assign_ids_to_bloqs_and_soqs(
