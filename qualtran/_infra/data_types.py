@@ -436,26 +436,22 @@ def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
 def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType, strict: bool = False) -> bool:
     """Check if two types are consistent given our current definition on consistent types.
 
-    If the the reference type is a QAny type then any dtype is consistent with
-    this assuming the bitsizes match. The opposite is not true to prevent
-    silently casting to a numeric type. Registers of size 1 are all consistent with QBit.
-
     Args:
         dtype_a: The dtype to check against the reference.
         dtype_b: The reference dtype.
         strict: Whether to compare types literally
+
     Returns:
-        true
+        True if the types are consistent.
     """
+    if dtype_a == dtype_b:
+        return True
     if strict:
-        return dtype_a == dtype_b
+        return False
     same_n_qubits = dtype_a.num_qubits == dtype_b.num_qubits
     if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
         # QAny -> any dtype and any dtype -> QAny
         return same_n_qubits
-    elif isinstance(dtype_a, type(dtype_b)):
-        # The same types with the same number is ok.
-        return dtype_a == dtype_b
     elif dtype_a.num_qubits == 1 and same_n_qubits:
         # Single qubit types are ok.
         return True
