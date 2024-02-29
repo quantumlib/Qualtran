@@ -14,7 +14,7 @@
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.trotter.kinetic import _kinetic_energy, KineticEnergy
+from qualtran.bloqs.chemistry.trotter.grid_ham.kinetic import _kinetic_energy, KineticEnergy
 
 
 @pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
