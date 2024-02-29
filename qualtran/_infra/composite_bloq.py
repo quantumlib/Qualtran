@@ -763,7 +763,7 @@ class BloqBuilder:
                 raise ValueError("`reg` must be a string register name if not a Register.")
             if not isinstance(dtype, QDType):
                 raise ValueError(
-                    "`dtype` must be specified and must be an " "QDTypeif `reg` is a register name."
+                    "`dtype` must be specified and must be an QDType if `reg` is a register name."
                 )
             reg = Register(name=reg, dtype=dtype)
 
