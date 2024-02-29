@@ -433,7 +433,7 @@ def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
     return a.num_qubits == b.num_qubits and (b.num_frac == 0 or b.num_int == 0)
 
 
-def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType) -> bool:
+def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType, strict: bool = False) -> bool:
     """Check if two types are consistent given our current definition on consistent types.
 
     If the the reference type is a QAny type then any dtype is consistent with
@@ -443,10 +443,12 @@ def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType) -> bool:
     Args:
         dtype_a: The dtype to check against the reference.
         dtype_b: The reference dtype.
-
+        strict: Whether to compare types literally
     Returns:
         true
     """
+    if strict:
+        return dtype_a == dtype_b
     same_n_qubits = dtype_a.num_qubits == dtype_b.num_qubits
     if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
         # QAny -> any dtype and any dtype -> QAny
