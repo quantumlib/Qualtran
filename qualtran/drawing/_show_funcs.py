@@ -35,8 +35,10 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
 
     Args:
         bloq: The bloq to show
-        type: Either 'graph' or 'musical_score'. By default, display a directed acyclic
-            graph of the bloq connectivity. Otherwise, draw a musical score diagram.
+        type: Either 'graph', 'dtype', or 'musical_score'. By default, display a directed acyclic
+            graph of the bloq connectivity. If dtype then the connections are
+            labelled with their dtypes rather than bitsizes. Otherwise, draw a
+            musical score diagram.
     """
     if type.lower() == 'graph':
         IPython.display.display(PrettyGraphDrawer(bloq).get_svg())

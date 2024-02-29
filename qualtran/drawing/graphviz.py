@@ -423,6 +423,7 @@ class TypedGraphDrawer(PrettyGraphDrawer):
             right_id,
             label=self.cxn_label(cxn),
             labelfloat=False,
+            fontcolor='red' if '-' in self.cxn_label(cxn) else 'black',
             fontsize=10,
             arrowhead='dot',
             arrowsize=0.25,
