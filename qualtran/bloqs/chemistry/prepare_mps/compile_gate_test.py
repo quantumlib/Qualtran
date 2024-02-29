@@ -18,7 +18,7 @@ import attrs
 from typing import Tuple, Dict
 
 from qualtran import BloqBuilder, Bloq, Signature, SoquetT
-from qualtran.bloqs.chemistry.prepare_mps.compile_gate import CompileGateGivenVectorsWithoutPG, CompileGateGivenVectors
+from qualtran.bloqs.chemistry.prepare_mps.compile_gate import CompileGateFromColumnsNoPG, CompileGateFromColumns
 from qualtran.testing import assert_valid_bloq_decomposition
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
@@ -39,7 +39,7 @@ from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
     ],
 )
 def test_exact_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...]):
-    gate_compiler = CompileGateGivenVectorsWithoutPG(phase_bitsize, tuple(gate_cols))
+    gate_compiler = CompileGateFromColumnsNoPG(phase_bitsize, tuple(gate_cols))
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate, np.array(gate_cols))
@@ -55,7 +55,7 @@ def test_exact_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...
     ],
 )
 def test_partial_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...]):
-    gate_compiler = CompileGateGivenVectorsWithoutPG(phase_bitsize, tuple(gate_cols))
+    gate_compiler = CompileGateFromColumnsNoPG(phase_bitsize, tuple(gate_cols))
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate[range(len(gate_cols)),:], np.array(gate_cols))
@@ -77,8 +77,8 @@ class UUt (Bloq):
         return (len(self.gate_cols[0])-1).bit_length()
     
     def build_composite_bloq(self, bb: BloqBuilder, *, gate_input: SoquetT) -> Dict[str, SoquetT]:
-        gate_compiler = CompileGateGivenVectors(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=False)
-        gate_compiler_adj = CompileGateGivenVectors(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=True)
+        gate_compiler = CompileGateFromColumns(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=False)
+        gate_compiler_adj = CompileGateFromColumns(gate_cols=self.gate_cols, phase_bitsize=self.phase_bitsize, uncompute=True)
         soqs = {}
         soqs["gate_input"] = gate_input
         soqs["phase_grad"] = bb.add(PhaseGradientState(bitsize=self.phase_bitsize))
