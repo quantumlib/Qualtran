@@ -210,7 +210,7 @@ def test_cast_tensor_contraction():
     bloq = TestCastToFrom()
     tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
     assert len(tn.tensors) == 3
-    assert tn.shape == (2**4,) * 42
+    assert tn.shape == (2**4,) * 4
 
 
 def test_cast_classical_sim():
