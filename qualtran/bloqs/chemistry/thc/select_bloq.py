@@ -314,7 +314,9 @@ def _thc_sel() -> SelectTHC:
     num_mu = 8
     num_mu = 10
     num_spin_orb = 2 * 4
-    thc_sel = SelectTHC(num_mu=num_mu, num_spin_orb=num_spin_orb, num_bits_theta=12, keep_bitsize=10)
+    thc_sel = SelectTHC(
+        num_mu=num_mu, num_spin_orb=num_spin_orb, num_bits_theta=12, keep_bitsize=10
+    )
     return thc_sel
 
 
