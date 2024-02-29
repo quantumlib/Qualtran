@@ -108,10 +108,6 @@ def _square_via_zpow_phasing() -> PhasingViaCostFunction:
     square_via_zpow_phasing = PhasingViaCostFunction(cost_eval_oracle, phase_oracle)
     return square_via_zpow_phasing
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        zpow = ZPowGate(exponent=self.gamma, eps=self.eps / self.cost_dtype.bitsize)
-        return {(zpow, self.cost_dtype.bitsize)}
-
 
 @bloq_example
 def _square_via_phase_gradient() -> PhasingViaCostFunction:

@@ -21,22 +21,13 @@ $$
 C(z) = \sum_{j < k}^{n} w_{j, k} z_{j} z_{k} \; \text{where}\;  w_{j, k} \in \{0, 1\}
 $$
 """
-from functools import cached_property
-from typing import Tuple, Sequence
+from typing import Dict, Sequence, Set, Tuple
 
 import attrs
-import cirq
-from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature, QFxp
-from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
-
-from qualtran import GateWithRegisters, Signature, Register, Side, SoquetT, BloqBuilder
-from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState, AddScaledValIntoPhaseReg
-from qualtran.bloqs.basic_gates import TGate, Hadamard, Rx
-from qualtran.bloqs.on_each import OnEach
-from typing import Dict, Optional, Set
-from qualtran.bloqs import utils
+from qualtran import GateWithRegisters, QFxp, QUInt, Register, Side, Signature
+from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
 
 
 def _cost(n: int, x: int, w: Sequence[int]) -> int:
@@ -84,22 +75,20 @@ class SKModelCostEval(GateWithRegisters):
         side = Side.LEFT if self.uncompute else Side.RIGHT
         return Signature(
             [
-                Register('x', self.n),
+                Register('x', QUInt(self.n)),
                 Register(
                     'cost_reg',
-                    QFxp(
-                        2 * utils.ceil(utils.log2(self.n)),
-                        2 * utils.ceil(utils.log2(self.n)),
-                        signed=False,
-                    ),
+                    QFxp(2 * ceil(log2(self.n)), 2 * ceil(log2(self.n)), signed=False),
                     side=side,
                 ),
             ]
         )
 
-    def bloq_counts(self, ssa: Optional['SympySymbolAllocator'] = None) -> Set[Tuple[int, 'Bloq']]:
-        num_t = 0 if self.uncompute else self.n**2
-        return {(num_t, TGate())}
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(Toffoli(), 0 if self.uncompute else self.n**2)}
+
+    def adjoint(self) -> 'Bloq':
+        return SKModelCostEval(self.n, self.w, not self.uncompute)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         x = vals['x']
