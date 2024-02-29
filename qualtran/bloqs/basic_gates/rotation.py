@@ -13,11 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Protocol
+from typing import Protocol, Set
 
 import cirq
 import numpy as np
 from attrs import frozen
+from numpy._typing import NDArray
 
 from qualtran import bloq_example
 from qualtran.cirq_interop import CirqGateAsBloqBase
@@ -83,6 +84,9 @@ class ZPowGate(CirqGateAsBloqBase):
         g = self.cirq_gate**power
         return ZPowGate(g.exponent, g.global_shift, self.eps)
 
+    def adjoint(self) -> 'ZPowGate':
+        return self**-1
+
 
 @frozen
 class CZPowGate(CirqGateAsBloqBase):
@@ -100,6 +104,30 @@ class CZPowGate(CirqGateAsBloqBase):
     def __pow__(self, power):
         g = self.cirq_gate**power
         return CZPowGate(g.exponent, g.global_shift, self.eps)
+
+
+@frozen
+class ZZPowGate(CirqGateAsBloqBase):
+    exponent: float = 1.0
+    global_shift: float = 0
+    eps: float = 1e-11
+
+    @cached_property
+    def cirq_gate(self) -> cirq.Gate:
+        return cirq.ZZPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        q = quregs.get('q').flatten().tolist()
+        yield ZPowGate(exponent=self.exponent, eps=self.eps / 3)(q[0])
+        yield ZPowGate(exponent=self.exponent, eps=self.eps / 3)(q[1])
+        yield CZPowGate(
+            exponent=-2 * self.exponent, global_shift=-self.global_shift / 2, eps=self.eps / 3
+        )(*q)
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(rotations=1)
 
 
 @frozen

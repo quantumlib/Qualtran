@@ -25,7 +25,7 @@ from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, Sy
 
 @attrs.frozen
 class DriverOracle(GateWithRegisters):
-    """Implements the problem-independent driver unitary $U_{B}(β)=\prod_j \exp(-i β X_j)$"""
+    r"""Implements the problem-independent driver unitary $U_{B}(β)=\prod_j \exp(-i β X_j)$"""
 
     bitsize: SymbolicInt
     beta: SymbolicFloat

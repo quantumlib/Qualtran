@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Oracles for Sherrington-Kirkpatrick (SK) model
+r"""Cost Oracles for Sherrington-Kirkpatrick (SK) model
 
 The Sherrington-Kirkpatrick (SK) model describes a classical spin system with all-to-all
 couplings between the $n$ spins. The classical cost function $C$ for $n$-bit SK model
@@ -42,7 +42,7 @@ def _cost(n: int, x: int, w: Sequence[int]) -> int:
 
 @attrs.frozen
 class SKModelCostEval(GateWithRegisters):
-    """Implements the cost function evaluation oracle $O^{\text{direct}}$ for SK-Model.
+    r"""Implements the cost function evaluation oracle $O^{\text{direct}}$ for SK-Model.
 
     Evaluates the cost function $C(z)$ for SK-Model and stores the output in a new clean register.
     The oracle is defined as

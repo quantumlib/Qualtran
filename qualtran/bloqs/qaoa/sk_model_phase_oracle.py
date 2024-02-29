@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-"""Phase Oracles for Sherrington-Kirkpatrick (SK) model
+r"""Phase Oracles for Sherrington-Kirkpatrick (SK) model
 
 The Sherrington-Kirkpatrick (SK) model describes a classical spin system with all-to-all
 couplings between the $n$ spins. The classical cost function $C$ for $n$-bit SK model
@@ -49,7 +49,7 @@ from qualtran.resource_counting.symbolic_counting_utils import (
 
 @attrs.frozen
 class SKPhaseOracleNaiveRZZ(GateWithRegisters):
-    """Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C)$
+    r"""Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C)$
 
     For the SK-model, the phase oracle $U_{C}(γ)$ can be expressed as
     $$
@@ -96,7 +96,7 @@ class SKPhaseOracleNaiveRZZ(GateWithRegisters):
 
 @attrs.frozen
 class SKPhaseViaCostBase(Bloq, metaclass=abc.ABCMeta):
-    """Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C)$ using `PhasingViaCostFunction`"""
+    r"""Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C)$ using `PhasingViaCostFunction`"""
 
     bitsize: SymbolicInt
     gamma: SymbolicFloat
@@ -139,7 +139,7 @@ class SKPhaseViaCostBase(Bloq, metaclass=abc.ABCMeta):
 
 @attrs.frozen
 class SKPhaseViaCostQvrZPow(SKPhaseViaCostBase):
-    """Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C) using `QvrZPow`$"""
+    r"""Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C) using `QvrZPow`$"""
 
     @property
     def qvr_oracle(self) -> QvrZPow:
@@ -148,7 +148,7 @@ class SKPhaseViaCostQvrZPow(SKPhaseViaCostBase):
 
 @attrs.frozen
 class SKPhaseViaCostQvrPhaseGrad(SKPhaseViaCostBase):
-    """Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C)$ using `QvrPhaseGradient`"""
+    r"""Implements the problem-dependent unitary $U_{C}(γ)=\exp(-i γ C)$ using `QvrPhaseGradient`"""
 
     @property
     def qvr_oracle(self) -> QvrPhaseGradient:
