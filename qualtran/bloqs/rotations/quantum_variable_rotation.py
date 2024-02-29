@@ -71,9 +71,9 @@ from qualtran import (
     Register,
     Signature,
 )
-from qualtran.bloqs import utils
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, smax
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -330,13 +330,13 @@ class QvrPhaseGradient(QvrInterface):
     @cached_property
     def b_phase(self) -> int:
         pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
-        return utils.ceil(utils.log2(pi * 2 / self.eps))
+        return ceil(log2(pi * 2 / self.eps))
 
     @cached_property
     def b_grad(self) -> int:
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
         pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
-        return utils.ceil(utils.log2(self.num_additions * 2 * pi / self.eps))
+        return ceil(log2(self.num_additions * 2 * pi / self.eps))
 
     @cached_property
     def num_additions(self) -> int:
@@ -365,7 +365,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = sympy.Max(0, utils.ceil(utils.log2(abs(self.gamma))))
+        n_int = smax(0, ceil(log2(abs(self.gamma))))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 
@@ -377,6 +377,16 @@ class QvrPhaseGradient(QvrInterface):
             add_scaled_val, x=soqs[self.cost_reg.name], phase_grad=soqs['phase_grad']
         )
         return {self.cost_reg.name: out, 'phase_grad': phase_grad}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {
+            (
+                AddScaledValIntoPhaseReg(
+                    self.cost_dtype, self.b_grad, self.gamma, self.gamma_dtype
+                ),
+                1,
+            )
+        }
 
 
 @bloq_example

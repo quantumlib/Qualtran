@@ -17,10 +17,10 @@ from typing import Any, Callable, Hashable, Iterable, Literal, Optional, overloa
 import attrs
 import cachetools
 import cirq
-import numpy as np
 
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -33,6 +33,10 @@ class TComplexity:
     clifford: int = 0
     rotations: int = 0
 
+    @staticmethod
+    def rotation_cost(eps: SymbolicFloat) -> SymbolicFloat:
+        return ceil(1.149 * log2(1.0 / eps) + 9.2)
+
     def t_incl_rotations(self, eps: float = 1e-11) -> int:
         """Return the total number of T gates after compiling rotations"""
 
@@ -41,8 +45,7 @@ class TComplexity:
         # a bound of 3 log(1/eps).
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        t_per_rot = int(np.ceil(1.149 * np.log2(1.0 / eps) + 9.2))
-        return self.t + t_per_rot * self.rotations
+        return self.t + self.rotation_cost(eps) * self.rotations
 
     def __add__(self, other: 'TComplexity') -> 'TComplexity':
         return TComplexity(

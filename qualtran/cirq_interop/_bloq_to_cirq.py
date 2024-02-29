@@ -42,7 +42,7 @@ from qualtran._infra.gate_with_registers import (
 )
 from qualtran.cirq_interop._cirq_to_bloq import _QReg, CirqQuregInT, CirqQuregT
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
-from qualtran.drawing import Circle, LarrowTextBox, RarrowTextBox, TextBox, WireSymbol
+from qualtran.drawing import Circle, LarrowTextBox, ModPlus, RarrowTextBox, TextBox, WireSymbol
 
 
 def _cirq_style_decompose_from_decompose_bloq(
@@ -154,7 +154,7 @@ class BloqAsCirqGate(cirq.Gate):
         By default, we label each qubit with its register name. If `reg_to_wires` was provided
         in the class constructor, we use that to get a list of wire symbols for each register.
         """
-        return _wire_symbol_to_cirq_diagram_info(self._bloq)
+        return _wire_symbol_to_cirq_diagram_info(self._bloq, args)
 
     def __pow__(self, power, modulo=None):
         if power == 1:
@@ -273,7 +273,9 @@ def _cbloq_to_cirq_circuit(
     return cirq.FrozenCircuit(moments), out_quregs
 
 
-def _wire_symbol_to_cirq_diagram_info(bloq: Bloq) -> cirq.CircuitDiagramInfo:
+def _wire_symbol_to_cirq_diagram_info(
+    bloq: Bloq, args: cirq.CircuitDiagramInfoArgs
+) -> cirq.CircuitDiagramInfo:
     wire_symbols = []
     for reg in bloq.signature:
         # Note: all of our soqs lack a `binst`. The `bloq.wire_symbol` methods
@@ -297,7 +299,8 @@ def _wire_symbol_to_cirq_diagram_info(bloq: Bloq) -> cirq.CircuitDiagramInfo:
                 return '@(0)'
         if isinstance(ws, (TextBox, RarrowTextBox, LarrowTextBox)):
             return ws.text
-
+        if isinstance(ws, ModPlus):
+            return 'X'
         raise NotImplementedError(f"Unknown cirq version of {ws}")
 
     wire_symbols = [_qualtran_wire_symbols_to_cirq_text(ws) for ws in wire_symbols]
