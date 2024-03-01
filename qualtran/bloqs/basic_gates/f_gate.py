@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -34,7 +34,6 @@ from qualtran.bloqs.basic_gates.hadamard import Hadamard
 from qualtran.bloqs.basic_gates.rotation import Rz
 from qualtran.bloqs.basic_gates.s_gate import SGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
 
 if TYPE_CHECKING:
@@ -59,7 +58,13 @@ def _fkn_matrix(k: int, n: int) -> NDArray[np.complex128]:
 
 @frozen
 class FGate(Bloq):
-    """Two-qubit fermionic Fourier transform gate.
+    r"""Two-qubit fermionic Fourier transform gate.
+
+    Args:
+        k: An integer.
+        n: The number of qubits the FFFT acts on.
+        eps: The rotation precision.
+        is_adjoint: If True, this bloq is $F^\dagger$ instead.
 
     References:
         [Improved Fault-Tolerant Quantum Simulation of Condensed-Phase Correlated Electrons
