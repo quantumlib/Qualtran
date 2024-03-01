@@ -14,11 +14,11 @@
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
+from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
 )
-from qualtran.bloqs.chemistry.trotter.potential import (
+from qualtran.bloqs.chemistry.trotter.grid_ham.potential import (
     _pair_potential,
     _potential_energy,
     PairPotential,

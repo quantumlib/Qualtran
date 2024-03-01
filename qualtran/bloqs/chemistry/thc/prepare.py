@@ -40,9 +40,8 @@ from qualtran.bloqs.arithmetic import (
     ToContiguousIndex,
 )
 from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
-from qualtran.bloqs.basic_gates.swap import CSwap
+from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.on_each import OnEach
 from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
