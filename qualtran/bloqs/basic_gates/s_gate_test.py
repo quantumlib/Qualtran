@@ -17,7 +17,6 @@ import numpy as np
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import PlusState, SGate
 from qualtran.bloqs.basic_gates.s_gate import _s_gate
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 
 def test_s_gate(bloq_autotester):

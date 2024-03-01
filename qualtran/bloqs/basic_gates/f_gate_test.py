@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import Rz, TGate
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.basic_gates.f_gate import _f_gate, _fkn_matrix, FGate
 
 
