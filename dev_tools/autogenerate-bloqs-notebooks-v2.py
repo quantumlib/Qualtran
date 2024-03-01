@@ -83,6 +83,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.basic_gates.t_gate._T_GATE_DOC],
     ),
     NotebookSpecV2(
+        title='S Gate',
+        module=qualtran.bloqs.basic_gates.s_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC],
+    ),
+    NotebookSpecV2(
         title='Toffoli',
         module=qualtran.bloqs.basic_gates.toffoli,
         bloq_specs=[qualtran.bloqs.basic_gates.toffoli._TOFFOLI_DOC],
@@ -96,6 +101,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network._SWZ_DOC,
             qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='F Gate',
+        module=qualtran.bloqs.basic_gates.f_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.f_gate._FGATE_DOC],
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',
