@@ -114,6 +114,9 @@ class MultiControlPauli(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build(controls=len(self.cvs), target=1)
 
+    def pretty_name(self) -> str:
+        return 'MultiControlPauli'
+
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
     ) -> cirq.OP_TREE:

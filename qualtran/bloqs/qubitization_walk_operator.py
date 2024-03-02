@@ -73,7 +73,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return self.prepare.selection_registers
+        return tuple({*self.select.selection_registers, *self.prepare.selection_registers})
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:

@@ -52,23 +52,25 @@ def _keep_if_small(bloq: Bloq) -> bool:
 
 
 def _populate_flame_graph_data(
-    bloq: Bloq,
-    graph: nx.DiGraph,
-    graph_t: nx.DiGraph,
-    data: List[str],
-    prefix: List[str],
-    nreps: int = 1,
-):
+    bloq: Bloq, graph: nx.DiGraph, graph_t: nx.DiGraph, prefix: List[str]
+) -> List[str]:
     callees = [x for x in list(graph.successors(bloq)) if _t_counts_for_bloq(x, graph_t) > 0]
     total_t_counts = _t_counts_for_bloq(bloq, graph_t)
     prefix.append(_pretty_name(bloq) + f'(T:{total_t_counts})')
+    data = []
     if len(callees) == 0 or (len(callees) == 1 and callees[0] in [TGate(), TGate(is_adjoint=True)]):
-        data.append(';'.join(prefix) + ' ' + str(total_t_counts))
+        data += [';'.join(prefix) + '\t' + str(total_t_counts)]
     else:
+        succ_t_counts = 0
         for succ in callees:
-            for _ in range(graph.get_edge_data(bloq, succ)['n']):
-                _populate_flame_graph_data(succ, graph, graph_t, data, prefix, nreps)
+            curr_data = _populate_flame_graph_data(succ, graph, graph_t, prefix)
+            succ_t_counts += (
+                _t_counts_for_bloq(succ, graph_t) * graph.get_edge_data(bloq, succ)['n']
+            )
+            data += curr_data * graph.get_edge_data(bloq, succ)['n']
+        # assert total_t_counts == succ_t_counts, f'{bloq=}, {total_t_counts=}, {succ_t_counts=}'
     prefix.pop()
+    return data
 
 
 def get_flame_graph_data(
@@ -81,7 +83,7 @@ def get_flame_graph_data(
     for bloq in bloqs:
         call_graph, _ = bloq.call_graph(keep=keep, **kwargs)
         call_graph_t_counts, _ = bloq.call_graph()
-        _populate_flame_graph_data(bloq, call_graph, call_graph_t_counts, data, prefix=[])
+        data += _populate_flame_graph_data(bloq, call_graph, call_graph_t_counts, prefix=[])
     if file_path:
         with open(file_path, 'w') as f:
             f.write('\n'.join(data))
@@ -97,7 +99,7 @@ def show_flame_graph(
     import subprocess
 
     pipe = subprocess.Popen(
-        [pathlib.Path(__file__).resolve().parent / "flamegraph.pl --countname='TCounts'"],
+        [pathlib.Path(__file__).resolve().parent / "flamegraph.pl --countname='TCounts' "],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
