@@ -63,8 +63,8 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
-import qualtran.bloqs.chemistry.trotter.inverse_sqrt
-import qualtran.bloqs.chemistry.trotter.qvr
+import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
+import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
@@ -175,14 +175,14 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Trotter Bloqs',
-        module=qualtran.bloqs.chemistry.trotter,
+        module=qualtran.bloqs.chemistry.trotter.grid_ham,
         bloq_specs=[
-            qualtran.bloqs.chemistry.trotter.inverse_sqrt._POLY_INV_SQRT,
-            qualtran.bloqs.chemistry.trotter.inverse_sqrt._NR_INV_SQRT,
-            qualtran.bloqs.chemistry.trotter.qvr._QVR,
-            qualtran.bloqs.chemistry.trotter.kinetic._KINETIC_ENERGY,
-            qualtran.bloqs.chemistry.trotter.potential._PAIR_POTENTIAL,
-            qualtran.bloqs.chemistry.trotter.potential._POTENTIAL_ENERGY,
+            qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt._POLY_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt._NR_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.grid_ham.qvr._QVR,
+            qualtran.bloqs.chemistry.trotter.grid_ham.kinetic._KINETIC_ENERGY,
+            qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
+            qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
     ),

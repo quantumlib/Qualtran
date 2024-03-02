@@ -15,7 +15,7 @@ Bloqs Library
     arithmetic/t_complexity_of_comparison_gates.ipynb
     arithmetic/error_analysis_for_fxp_arithmetic.ipynb
     phase_estimation_of_quantum_walk.ipynb
-    chemistry/trotter/trotter_costs.ipynb
+    chemistry/trotter/grid_ham/trotter_costs.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
     factoring/factoring-via-modexp.ipynb
@@ -40,7 +40,7 @@ Bloqs Library
     chemistry/pbc/first_quantization/projectile/projectile.ipynb
     chemistry/sf/single_factorization.ipynb
     chemistry/df/double_factorization.ipynb
-    chemistry/trotter/trotter.ipynb
+    chemistry/trotter/grid_ham/trotter.ipynb
 
 .. toctree::
     :maxdepth: 2

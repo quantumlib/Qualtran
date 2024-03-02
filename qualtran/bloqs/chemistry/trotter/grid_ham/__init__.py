@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.chemistry.trotter.qvr import _qvr
+"""Bloqs for Trotter simulation of the real space grid Hamiltonian."""
 
-
-def test_kinetic_energy(bloq_autotester):
-    bloq_autotester(_qvr)
+from .kinetic import KineticEnergy
+from .potential import PairPotential, PotentialEnergy
