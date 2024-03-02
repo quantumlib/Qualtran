@@ -20,6 +20,8 @@ import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
+from qualtran import DecomposeNotImplementedError
+
 from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
 from .gate_with_registers import GateWithRegisters
 from .quantum_graph import LeftDangle, RightDangle
@@ -186,5 +188,11 @@ class Adjoint(GateWithRegisters):
         The cirq-style t complexity protocol does not leverage the heirarchical decomposition
         of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
         """
-        # TODO: https://github.com/quantumlib/Qualtran/issues/489
-        return self.subbloq._t_complexity_(adjoint=True)
+        try:
+            return self.decompose_bloq().t_complexity()
+        except DecomposeNotImplementedError:
+            return self.subbloq.t_complexity()
+
+    #     # TODO: https://github.com/quantumlib/Qualtran/issues/489
+    #     if hasattr(self.subbloq, '_t_complexity_'):
+    #         return self.subbloq._t_complexity_()

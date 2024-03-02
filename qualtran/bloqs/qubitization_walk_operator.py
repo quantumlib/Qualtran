@@ -61,6 +61,9 @@ class QubitizationWalkOperator(GateWithRegisters):
     control_val: Optional[int] = None
     power: int = 1
 
+    def pretty_name(self) -> str:
+        return 'QubitizationWalkOperator'
+
     def __attrs_post_init__(self):
         assert self.select.control_registers == self.reflect.control_registers
 

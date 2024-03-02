@@ -57,6 +57,9 @@ class ReflectionUsingPrepare(GateWithRegisters):
     prepare_gate: PrepareOracle
     control_val: Optional[int] = None
 
+    def pretty_name(self) -> str:
+        return 'ReflectionUsingPrepare'
+
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)
