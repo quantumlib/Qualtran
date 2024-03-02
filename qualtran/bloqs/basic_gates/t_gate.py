@@ -73,9 +73,6 @@ class TGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def pretty_name(self) -> str:
-        return 'T†' if self.adjoint else 'T'
-
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=1)
 

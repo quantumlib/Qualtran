@@ -92,7 +92,7 @@ class StatePreparationAliasSampling(PrepareOracle):
     mu: int
 
     def pretty_name(self) -> str:
-        return f'StatePreparationAliasSampling'
+        return 'StatePreparationAliasSampling'
 
     @classmethod
     def from_lcu_probs(

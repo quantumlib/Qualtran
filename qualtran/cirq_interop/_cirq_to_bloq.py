@@ -26,7 +26,6 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
-    Adjoint,
     Bloq,
     BloqBuilder,
     CompositeBloq,
