@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
+from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     _nr_inv_sqrt,
     _poly_inv_sqrt,
     build_qrom_data_for_poly_fit,
