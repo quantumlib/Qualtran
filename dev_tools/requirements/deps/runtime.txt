@@ -16,6 +16,10 @@ pydot
 ipython
 matplotlib
 ipywidgets
+plotly
+
+# ui
+dash
 
 # quimb simulation
 quimb

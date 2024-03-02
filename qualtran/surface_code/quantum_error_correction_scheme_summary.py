@@ -121,3 +121,17 @@ FowlerSuperconductingQubits = SimpliedSurfaceCode(
     single_stabilizer_time_us=1,
     reference='https://arxiv.org/abs/1808.06709',
 )
+
+BeverlandMajoranaQubits = SimpliedSurfaceCode(
+    error_rate_scaler=0.03,
+    error_rate_threshold=0.01,
+    single_stabilizer_time_us=0.6,  # Equals 4*t_gate+2*t_meas where t_gate=100ns and t_meas=100ns.
+    reference='https://arxiv.org/abs/2211.07629',
+)
+
+BeverlandTrappedIonQubits = SimpliedSurfaceCode(
+    error_rate_scaler=0.03,
+    error_rate_threshold=0.01,
+    single_stabilizer_time_us=600,  # Equals 4*t_gate+2*t_meas where t_gate=100us and t_meas=100us.
+    reference='https://arxiv.org/abs/2211.07629',
+)

@@ -15,18 +15,18 @@
 import pytest
 
 import qualtran.surface_code.rotation_cost_model as rcm
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
+from qualtran.surface_code.magic_count import MagicCount
 
 
 @pytest.mark.parametrize(
     'model,want',
     [
-        (rcm.BeverlandEtAlRotationCost, AlgorithmSummary(t_gates=7)),
+        (rcm.BeverlandEtAlRotationCost, MagicCount(n_t=7)),
         (
             rcm.ConstantWithOverheadRotationCost(
                 bitsize=13, overhead_rotation_cost=rcm.RotationLogarithmicModel(1, 1)
             ),
-            AlgorithmSummary(toffoli_gates=11),
+            MagicCount(n_ccz=11),
         ),
     ],
 )
@@ -37,12 +37,12 @@ def test_rotation_cost(model: rcm.RotationCostModel, want: float):
 @pytest.mark.parametrize(
     'model,want',
     [
-        (rcm.BeverlandEtAlRotationCost, AlgorithmSummary()),
+        (rcm.BeverlandEtAlRotationCost, MagicCount()),
         (
             rcm.ConstantWithOverheadRotationCost(
                 bitsize=13, overhead_rotation_cost=rcm.RotationLogarithmicModel(1, 1)
             ),
-            AlgorithmSummary(t_gates=104),
+            MagicCount(n_t=104),
         ),
     ],
 )

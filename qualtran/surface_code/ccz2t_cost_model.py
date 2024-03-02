@@ -356,3 +356,6 @@ def get_ccz2t_costs_from_grid_search(
 
     best_factory, best_data_block = best_params
     return best_cost, best_factory, best_data_block
+
+
+GidneyFowlerCCZ = CCZ2TFactory()
