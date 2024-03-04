@@ -16,7 +16,7 @@ from typing import Set
 import cirq
 import pytest
 
-from qualtran import GateWithRegisters, Signature, Bloq
+from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
@@ -56,6 +56,7 @@ class DoesNotSupportTComplexityGate(cirq.Gate):
 
 
 class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
+    @property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
