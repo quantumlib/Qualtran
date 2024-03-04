@@ -426,7 +426,7 @@ class Cast(Bloq):
         out: input register to cast to.
     """
 
-    in_dtype: QDType
+    inp_dtype: QDType
     out_dtype: QDType
     shape: Tuple[int, ...] = attrs.field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
