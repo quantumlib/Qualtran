@@ -60,13 +60,7 @@ class MontgomeryModSub(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-
-        y -= x
-
-        if y < 0:
-            y += self.p
-
-        return {'x': x, 'y': y}
+        return {'x': x, 'y': (y - x) % self.p}
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
@@ -130,11 +124,7 @@ class MontgomeryModNeg(Bloq):
         return Signature([Register('x', QMontgomeryUInt(self.bitsize))])
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-
-        x = -x
-        x += self.p
-
-        return {'x': x}
+        return {'x': (-1 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
 

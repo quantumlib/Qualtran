@@ -143,14 +143,7 @@ class MontgomeryModDbl(Bloq):
         return Signature([Register('x', QMontgomeryUInt(self.bitsize))])
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-
-        x *= 2
-        x -= self.p
-
-        if x < 0:
-            x += self.p
-
-        return {'x': x}
+        return {'x': (2 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
 
