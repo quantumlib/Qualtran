@@ -114,6 +114,7 @@ def test_complementary_polynomial(degree: int):
         check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
 def test_real_polynomial_has_real_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
