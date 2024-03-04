@@ -446,12 +446,12 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         t = ssa.new_symbol('t')
         alpha = ssa.new_symbol('alpha')
-        precision = ssa.new_symbol('precision')
+        inv_precision = ssa.new_symbol('1/precision')
         d = sympy.O(
-            t * alpha + sympy.log(precision) / sympy.log(sympy.log(precision)),
+            t * alpha + sympy.log(1 / inv_precision) / sympy.log(sympy.log(1 / inv_precision)),
             (t, sympy.oo),
             (alpha, sympy.oo),
-            (precision, 0),
+            (inv_precision, sympy.oo),
         )
 
         # TODO account for SU2 rotation gates
