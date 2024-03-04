@@ -65,6 +65,7 @@ import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
@@ -184,6 +185,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham',
+    ),
+    NotebookSpecV2(
+        title='Trotterization',
+        module=qualtran.bloqs.chemistry.trotter.trotterized_unitary,
+        bloq_specs=[qualtran.bloqs.chemistry.trotter.trotterized_unitary._TROTT_UNITARY_DOC],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
     ),
     NotebookSpecV2(
