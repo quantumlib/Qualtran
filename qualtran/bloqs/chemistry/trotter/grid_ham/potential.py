@@ -111,10 +111,10 @@ class PairPotential(Bloq):
         qrom_anc_c2 = bb.allocate(self.poly_bitsize)
         qrom_anc_c3 = bb.allocate(self.poly_bitsize)
         cast = Cast(
-            in_dtype=sos.reg.dtype,
+            inp_dtype=sos.reg.dtype,
             out_dtype=BoundedQUInt(sos.reg.dtype.bitsize, iteration_length=len(self.qrom_data[0])),
         )
-        sos = bb.add(cast, x=sos)
+        sos = bb.add(cast, reg=sos)
         qrom_bloq = QROM(
             [np.array(d) for d in self.qrom_data],
             selection_bitsizes=(bitsize_rij_sq,),
@@ -128,7 +128,7 @@ class PairPotential(Bloq):
             target2_=qrom_anc_c2,
             target3_=qrom_anc_c3,
         )
-        sos = bb.add(cast.adjoint(), y=sos)
+        sos = bb.add(cast.adjoint(), reg=sos)
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
         poly_out = bb.allocate(self.poly_bitsize)
