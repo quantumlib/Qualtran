@@ -20,8 +20,6 @@ import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import DecomposeNotImplementedError
-
 from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
 from .gate_with_registers import GateWithRegisters
 from .quantum_graph import LeftDangle, RightDangle
