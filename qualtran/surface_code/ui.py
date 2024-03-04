@@ -319,7 +319,7 @@ def create_ouputs():
 app = Dash(__name__)
 app.layout = html.Div(
     [
-        html.H4('Interactive Quantum Resource Estimation'),
+        html.H4('Interactive QEC overhead estimation'),
         html.Table(
             [
                 html.Tr(
