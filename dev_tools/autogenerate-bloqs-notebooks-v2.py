@@ -63,6 +63,8 @@ import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.chemistry.trotter.hubbard.hopping
+import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
