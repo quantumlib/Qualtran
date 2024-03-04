@@ -237,7 +237,7 @@ def qsp_phase_factors(
     lambd = 0
 
     def safe_angle(x):
-        return 0 if np.isclose(x, 0) else np.angle(x)
+        return 0 if np.isclose(x, 0, atol=1e-10) else np.angle(x)
 
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
@@ -245,7 +245,7 @@ def qsp_phase_factors(
         a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
         # \phi_d = arg(a / b)
-        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a * np.conj(b))
+        phi[d] = 0 if np.isclose(np.abs(b), 0, atol=1e-10) else safe_angle(a * np.conj(b))
 
         if d == 0:
             lambd = safe_angle(b)
@@ -383,23 +383,31 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     @cached_property
     def degree(self) -> int:
         r"""degree of the polynomial to approximate the function e^{it\cos(\theta)}"""
-        log_precision = np.log(1 / self.precision)
-        degree = self.t * self.alpha + 3 * log_precision / np.log(log_precision)
-        return int(np.ceil(degree))
+        return len(self.approx_cos) // 2
 
     @cached_property
-    def _approx_cos(self) -> NDArray[np.complex_]:
-        r"""polynomial approximation for e^{it\cos(\theta)} in terms of monomials (e^{i\theta})^n"""
-        coeff_indices = np.arange(-self.degree, self.degree + 1)
+    def approx_cos(self) -> NDArray[np.complex_]:
+        r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
+        d = 0
+        while True:
+            term = scipy.special.jv(d + 1, self.t * self.alpha)
+            if np.isclose(term, 0, atol=self.precision / 2):
+                break
+            d += 1
+
+        coeff_indices = np.arange(-d, d + 1)
         approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
         return approx_cos
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:
+        # return GeneralizedQSP.from_qsp_polynomial(
+        #     self.walk_operator, self.approx_cos / np.sqrt(2), negative_power=self.degree
+        # )
         return GeneralizedQSP(
             self.walk_operator,
-            self._approx_cos,
-            np.zeros(2 * self.degree + 1),
+            self.approx_cos / np.sqrt(2),
+            self.approx_cos / np.sqrt(2),
             negative_power=self.degree,
         )
 
@@ -439,7 +447,12 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         t = ssa.new_symbol('t')
         alpha = ssa.new_symbol('alpha')
         precision = ssa.new_symbol('precision')
-        d = t * alpha + 3 * sympy.log(precision) / sympy.log(sympy.log(precision))
+        d = sympy.O(
+            t * alpha + sympy.log(precision) / sympy.log(sympy.log(precision)),
+            (t, sympy.oo),
+            (alpha, sympy.oo),
+            (precision, 0),
+        )
 
         # TODO account for SU2 rotation gates
         return {(self.walk_operator, d)}

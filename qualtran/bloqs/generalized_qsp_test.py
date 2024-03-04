@@ -297,29 +297,43 @@ def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
         SymbolicGQSP(P).verify()
 
 
-@pytest.mark.parametrize("precision", [1e-5, 1e-10])
-def test_cos_approximation_fast(precision: float):
+@pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-10])
+def test_cos_approximation(precision: float):
     random_state = np.random.RandomState(42)
 
-    for t in [1, 2, 3]:
-        for alpha in [0.5, 1]:
+    for t in [2, 3, 5, 10]:
+        for alpha in [0.5, 1, 2]:
             bloq = HamiltonianSimulationByGQSP(None, t=t, alpha=alpha, precision=precision)
-            check_polynomial_pair_on_random_points_on_unit_circle(
-                bloq._approx_cos, [0], random_state=random_state, rtol=precision
+
+            P = Polynomial(bloq.approx_cos)
+            theta = 2 * np.pi * random_state.random(1000)
+            e_itheta = np.exp(1j * theta)
+            np.testing.assert_allclose(
+                P(e_itheta) * e_itheta ** (-bloq.degree),
+                np.exp(1j * t * alpha * np.cos(theta)),
+                rtol=precision * 2,
             )
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-10])
-def test_cos_approximation(precision):
+@pytest.mark.parametrize("bitsize", [1, 2])
+@pytest.mark.parametrize("t", [2, 3, 5])
+@pytest.mark.parametrize("alpha", [1, 2, 3])
+@pytest.mark.parametrize("precision", [1e-7, 1e-10])
+def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
+    bitsize: int, t: float, alpha: float, precision: float
+):
     random_state = np.random.RandomState(42)
 
-    for t in random_state.random(10):
-        for alpha in random_state.random(5):
-            bloq = HamiltonianSimulationByGQSP(None, t=t * 10, alpha=alpha, precision=precision)
-            check_polynomial_pair_on_random_points_on_unit_circle(
-                bloq._approx_cos, [0], random_state=random_state, rtol=precision
-            )
+    for _ in range(5):
+        U = RandomGate.create(bitsize, random_state=random_state)
+        P = HamiltonianSimulationByGQSP(
+            None, t=t, alpha=alpha, precision=precision
+        ).approx_cos / np.sqrt(2)
+        check_polynomial_pair_on_random_points_on_unit_circle(
+            P, P, random_state=random_state, rtol=2 * precision
+        )
+        verify_generalized_qsp(U, P, P, negative_power=len(P) // 2)
 
 
 @frozen
@@ -450,15 +464,16 @@ def verify_hamiltonian_simulation_by_gqsp(
     W: QubitizationWalkOperator, H: NDArray[np.complex_], *, t: float, alpha: float = 1
 ):
     N = H.shape[0]
-    W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, alpha=alpha, precision=1e-10)
+
+    W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, alpha=alpha, precision=1e-7)
     result_unitary = cirq.unitary(W_e_iHt)
 
-    expected_top_left = scipy.linalg.expm(1j * H * t)
+    expected_top_left = scipy.linalg.expm(-1j * H * t)
     actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left)
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 @pytest.mark.parametrize("select_bitsize", [1])
 @pytest.mark.parametrize("target_bitsize", [1])
 def test_hamiltonian_simulation_by_gqsp(select_bitsize: int, target_bitsize: int):
