@@ -412,6 +412,9 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return t_complexity(self)
 
+    def _t_complexity_(self) -> 'TComplexity':
+        return NotImplemented
+
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:

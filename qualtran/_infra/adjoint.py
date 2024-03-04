@@ -189,6 +189,9 @@ class Adjoint(GateWithRegisters):
         of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
         """
         # TODO: https://github.com/quantumlib/Qualtran/issues/735
+        if not hasattr(self.subbloq, '_t_complexity_'):
+            return NotImplemented
+
         try:
             return self.subbloq._t_complexity_(adjoint=True)
         except TypeError as e:

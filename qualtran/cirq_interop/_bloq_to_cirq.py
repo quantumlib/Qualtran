@@ -26,6 +26,7 @@ from qualtran import (
     Bloq,
     Connection,
     DecomposeNotImplementedError,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -136,7 +137,7 @@ class BloqAsCirqGate(cirq.Gate):
             return _cirq_style_decompose_from_decompose_bloq(
                 bloq=self.bloq, quregs=quregs, context=context
             )
-        except DecomposeNotImplementedError:
+        except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
         return NotImplemented
 
