@@ -225,6 +225,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/ising',
     ),
     NotebookSpecV2(
+        title='Trotterized Hubbard',
+        module=qualtran.bloqs.chemistry.trotter.hubbard,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
+    ),
+    NotebookSpecV2(
         title='Tensor Hypercontraction',
         module=qualtran.bloqs.chemistry.thc,
         bloq_specs=[
