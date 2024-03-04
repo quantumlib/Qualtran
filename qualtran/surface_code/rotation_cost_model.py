@@ -18,18 +18,18 @@ from typing import Optional
 
 from attrs import frozen
 
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
+from qualtran.surface_code.magic_count import MagicCount
 
 
 class RotationCostModel(abc.ABC):
     """Analytical estimate of the complexity of approximating a rotation given an error budget."""
 
     @abc.abstractmethod
-    def rotation_cost(self, error_budget: float) -> AlgorithmSummary:
+    def rotation_cost(self, error_budget: float) -> MagicCount:
         """Cost of a single rotation."""
 
     @abc.abstractmethod
-    def prepartion_overhead(self, error_budget) -> AlgorithmSummary:
+    def prepartion_overhead(self, error_budget) -> MagicCount:
         """Cost of preparation circuit."""
 
 
@@ -56,13 +56,11 @@ class RotationLogarithmicModel(RotationCostModel):
     approximation_protocol: Optional[str] = None
     reference: Optional[str] = None
 
-    def rotation_cost(self, error_budget: float) -> AlgorithmSummary:
-        return AlgorithmSummary(
-            t_gates=math.ceil(-self.slope * math.log2(error_budget) + self.overhead)
-        )
+    def rotation_cost(self, error_budget: float) -> MagicCount:
+        return MagicCount(n_t=math.ceil(-self.slope * math.log2(error_budget) + self.overhead))
 
-    def prepartion_overhead(self, error_budget) -> AlgorithmSummary:
-        return AlgorithmSummary()
+    def prepartion_overhead(self, error_budget) -> MagicCount:
+        return MagicCount()
 
 
 @frozen
@@ -89,10 +87,10 @@ class ConstantWithOverheadRotationCost(RotationCostModel):
     overhead_rotation_cost: RotationCostModel
     reference: Optional[str] = None
 
-    def rotation_cost(self, error_budget: float) -> AlgorithmSummary:
-        return AlgorithmSummary(toffoli_gates=max(self.bitsize - 2, 0))
+    def rotation_cost(self, error_budget: float) -> MagicCount:
+        return MagicCount(n_ccz=max(self.bitsize - 2, 0))
 
-    def prepartion_overhead(self, error_budget) -> AlgorithmSummary:
+    def prepartion_overhead(self, error_budget) -> MagicCount:
         return self.bitsize * self.overhead_rotation_cost.rotation_cost(error_budget / self.bitsize)
 
 
@@ -102,4 +100,10 @@ BeverlandEtAlRotationCost = RotationLogarithmicModel(
     gateset='Clifford+T',
     approximation_protocol='Mixed fallback:https://arxiv.org/abs/2203.10064',
     reference='https://arxiv.org/abs/2211.07629:D2',
+)
+
+SevenDigitsOfPrecisionConstantCost = ConstantWithOverheadRotationCost(
+    bitsize=7,
+    overhead_rotation_cost=BeverlandEtAlRotationCost,
+    reference='https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.1.020312',
 )

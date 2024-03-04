@@ -257,12 +257,12 @@ def _poly_inv_sqrt() -> PolynmomialEvaluationInverseSquareRoot:
 
 _NR_INV_SQRT = BloqDocSpec(
     bloq_cls=NewtonRaphsonApproxInverseSquareRoot,
-    import_line='from qualtran.bloqs.chemistry.trotter.inverse_sqrt import NewtonRaphsonApproxInverseSquareRoot',
+    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import NewtonRaphsonApproxInverseSquareRoot',
     examples=(_nr_inv_sqrt,),
 )
 
 _POLY_INV_SQRT = BloqDocSpec(
     bloq_cls=PolynmomialEvaluationInverseSquareRoot,
-    import_line='from qualtran.bloqs.chemistry.trotter.inverse_sqrt import PolynmomialEvaluationInverseSquareRoot',
+    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import PolynmomialEvaluationInverseSquareRoot',
     examples=(_poly_inv_sqrt,),
 )

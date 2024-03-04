@@ -11,8 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.chemistry.trotter.qvr import _qvr
+
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.for_testing.casting import TestCastToFrom
 
 
-def test_kinetic_energy(bloq_autotester):
-    bloq_autotester(_qvr)
+def test_casting():
+    cast = TestCastToFrom()
+    qlt_testing.assert_valid_bloq_decomposition(cast)
