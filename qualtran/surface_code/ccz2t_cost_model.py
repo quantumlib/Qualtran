@@ -18,8 +18,8 @@ from typing import Callable, Iterable, Iterator, Optional, Tuple
 from attrs import frozen
 
 import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
 from qualtran.surface_code.data_block import DataBlock, SimpleDataBlock
+from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
 from qualtran.surface_code.multi_factory import MultiFactory
 from qualtran.surface_code.physical_cost import PhysicalCost
@@ -143,16 +143,16 @@ class CCZ2TFactory(MagicStateFactory):
         l2 = 4 * 8 * 2 * self.distillation_l2_d**2
         return 6 * l1 + l2
 
-    def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
+    def distillation_error(self, n_magic: MagicCount, phys_err: float) -> float:
         """Error resulting from the magic state distillation part of the computation."""
-        n_ccz_states = n_magic.toffoli_gates + math.ceil(n_magic.t_gates / 2)
+        n_ccz_states = n_magic.n_ccz + math.ceil(n_magic.n_t / 2)
         return self.l2_error(phys_err) * n_ccz_states
 
-    def n_cycles(self, n_magic: AlgorithmSummary) -> int:
+    def n_cycles(self, n_magic: MagicCount, phys_err: float = 1e-3) -> int:
         """The number of error-correction cycles to distill enough magic states."""
         distillation_d = max(2 * self.distillation_l1_d + 1, self.distillation_l2_d)
-        n_ccz_states = n_magic.toffoli_gates + math.ceil(n_magic.t_gates / 2)
-        catalyzations = math.ceil(n_magic.t_gates / 2)
+        n_ccz_states = n_magic.n_ccz + math.ceil(n_magic.n_t / 2)
+        catalyzations = math.ceil(n_magic.n_t / 2)
 
         # Naive depth of 8.5, but can be overlapped to effective depth of 5.5
         # See section 2, paragraph 2 of the reference.
@@ -163,7 +163,7 @@ class CCZ2TFactory(MagicStateFactory):
 
 def get_ccz2t_costs(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float,
     cycle_time_us: float,
@@ -196,7 +196,7 @@ def get_ccz2t_costs(
 
 def get_ccz2t_costs_from_error_budget(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -304,7 +304,7 @@ def iter_simple_data_blocks(d_start: int = 7, d_stop: int = 35):
 
 def get_ccz2t_costs_from_grid_search(
     *,
-    n_magic: AlgorithmSummary,
+    n_magic: MagicCount,
     n_algo_qubits: int,
     phys_err: float = 1e-3,
     error_budget: float = 1e-2,
@@ -356,3 +356,6 @@ def get_ccz2t_costs_from_grid_search(
 
     best_factory, best_data_block = best_params
     return best_cost, best_factory, best_data_block
+
+
+GidneyFowlerCCZ = CCZ2TFactory()

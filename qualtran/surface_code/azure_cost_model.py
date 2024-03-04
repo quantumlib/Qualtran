@@ -64,10 +64,11 @@ def minimum_time_steps(
     """
     c_min = math.ceil(alg.measurements + alg.rotation_gates + alg.t_gates + 3 * alg.toffoli_gates)
     eps_syn = error_budget / 3
-    c_min += math.ceil(
-        alg.rotation_circuit_depth
-        * rotation_model.rotation_cost(eps_syn / alg.rotation_gates).t_gates
-    )
+    if alg.rotation_gates > 0:
+        rotation_cost = rotation_model.rotation_cost(eps_syn / alg.rotation_gates)
+        c_min += math.ceil(
+            alg.rotation_circuit_depth * (rotation_cost.n_t + 4 * rotation_cost.n_ccz)
+        )
     return c_min
 
 
@@ -120,8 +121,5 @@ def t_states(
             needed to approximate rotations.
     """
     eps_syn = error_budget / 3
-    return (
-        alg.t_gates
-        + 4 * alg.toffoli_gates
-        + alg.rotation_gates * rotation_model.rotation_cost(eps_syn / alg.rotation_gates).t_gates
-    )
+    total_magic = alg.to_magic_count(rotation_model=rotation_model, error_budget=eps_syn)
+    return total_magic.n_t + 4 * total_magic.n_ccz

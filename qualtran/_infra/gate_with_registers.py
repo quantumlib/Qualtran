@@ -19,14 +19,13 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError
+from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import CompositeBloq
 from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
 
 if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
-    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
 
 
@@ -293,7 +292,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
             return _cirq_style_decompose_from_decompose_bloq(
                 bloq=self, quregs=quregs, context=context
             )
-        except DecomposeNotImplementedError:
+        except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
         return NotImplemented
 
