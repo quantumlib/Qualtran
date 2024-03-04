@@ -201,11 +201,6 @@ def test_classical_sim_dtypes():
     #     _ = s.call_classically(reg=np.uint16(256))
 
 
-def test_cast():
-    c = Cast(QInt(8), QFxp(8, 8))
-    assert_valid_bloq_decomposition(c)
-
-
 def test_cast_tensor_contraction():
     bloq = TestCastToFrom()
     tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
@@ -215,7 +210,7 @@ def test_cast_tensor_contraction():
 
 def test_cast_classical_sim():
     c = Cast(QInt(8), QFxp(8, 8))
-    (y,) = c.call_classically(x=7)
+    (y,) = c.call_classically(reg=7)
     assert y == 7
     bloq = TestCastToFrom()
     (a, b) = bloq.call_classically(a=7, b=2)

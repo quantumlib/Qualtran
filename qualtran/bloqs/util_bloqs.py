@@ -433,23 +433,41 @@ class Cast(Bloq):
     )
 
     def __attrs_post_init__(self):
-        if isinstance(self.in_dtype.bitsize, int):
-            if self.in_dtype.num_qubits != self.out_dtype.num_qubits:
-                raise ValueError("Casting only permitted between same-sized registers.")
+        if isinstance(self.inp_dtype.bitsize, int):
+            if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
+                raise ValueError("Casting only permitted between same sized registers.")
+
+    def adjoint(self) -> 'Bloq':
+        return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('x', dtype=self.in_dtype, shape=self.shape, side=Side.LEFT),
-                Register('y', dtype=self.out_dtype, shape=self.shape, side=Side.RIGHT),
+                Register('reg', dtype=self.inp_dtype, shape=self.shape, side=Side.LEFT),
+                Register('reg', dtype=self.out_dtype, shape=self.shape, side=Side.RIGHT),
             ]
         )
 
-    def build_composite_bloq(self, bb: BloqBuilder, x: SoquetT) -> Dict[str, 'SoquetT']:
-        split = bb.split(x)
-        y = bb.join(split, dtype=self.out_dtype)
-        return {'y': y}
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=np.eye(2**self.inp_dtype.num_qubits, 2**self.inp_dtype.num_qubits),
+                inds=[outgoing['reg']] + [incoming['reg']],
+                tags=['Cast', tag],
+            )
+        )
 
-    def _t_complexity_(self, adjoint=False) -> 'TComplexity':
+    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
+        return {'reg': reg}
+
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
