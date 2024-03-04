@@ -31,13 +31,13 @@ from qualtran import (
 )
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
-from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
+from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
     NewtonRaphsonApproxInverseSquareRoot,
     PolynmomialEvaluationInverseSquareRoot,
 )
-from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation
+from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.util_bloqs import Cast
 
@@ -253,15 +253,15 @@ def _potential_energy() -> PotentialEnergy:
 
 _POTENTIAL_ENERGY = BloqDocSpec(
     bloq_cls=PotentialEnergy,
-    import_line='from qualtran.bloqs.chemistry.trotter.potential import PotentialEnergy',
+    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.potential import PotentialEnergy',
     examples=(_potential_energy,),
 )
 
 _PAIR_POTENTIAL = BloqDocSpec(
     bloq_cls=PairPotential,
     import_line=(
-        'from qualtran.bloqs.chemistry.trotter.potential import PairPotential, build_qrom_data_for_poly_fit\n'
-        'from qualtran.bloqs.chemistry.trotter.inverse_sqrt import get_inverse_square_root_poly_coeffs'
+        'from qualtran.bloqs.chemistry.trotter.grid_ham.potential import PairPotential, build_qrom_data_for_poly_fit\n'
+        'from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import get_inverse_square_root_poly_coeffs'
     ),
     examples=(_pair_potential,),
 )
