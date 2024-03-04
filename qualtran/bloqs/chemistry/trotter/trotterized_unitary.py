@@ -26,7 +26,7 @@ from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, So
 class TrotterizedUnitary(Bloq):
     r"""Implement arbitrary trotterized unitary given any Trotter splitting of the Hamiltonian.
 
-    Given an arbitrary splitting of the Hamiltonian into $m$ terms
+    Given an arbitrary splitting of the Hamiltonian into $\Gamma$ terms
 
     $$
         H = \sum_{\gamma=1}^\Gamma H_\gamma
@@ -39,30 +39,27 @@ class TrotterizedUnitary(Bloq):
         S_p(t) = \prod_{v=1}^{\Upsilon}\prod_{k=1}^\Gamma e^{-it a_{v,\gamma} H_{\pi_v(\gamma)}}
     $$
 
-    where $\Upsilon$ is the number of `stages`, a_{v, \gamma} are real numbers
-    and $\pi_v(\gamma)$ is a permutation of the Hamiltonian terms.
+    where $\Upsilon$ is the number of `stages`, $a_{v, \gamma}$ are real numbers
+    and $\pi_v(\gamma)$ is a permutation of the Hamiltonian term labels.
 
     To construct the unitary we adopt the convention from the second reference
     which simply requires a list of the coefficients and a list of indices which
     index the hamiltonian terms.
 
-    For example, the second order Suzuki splitting could be built like
+    For example, the second order Suzuki splitting would have indicies = (0, 1, 0)
+    and coeffs = (0.5, 1, 0.5), which would build
 
-    >>> indicies = (0, 1, 0)
-    >>> coeffs = (0.5, 1, 0.5)
-    >>> suzuki = TrotterizedUnitary((U1, U2), indicies, coeffs, timestep=0.1)
-
-    where $U1 = e^{-i t H_1}$ and $U2 = e^{-i t H_2}$ are bloqs implementing the
-    individula unitaries required by the splitting method.
-
+    $$
+        e^{-i \frac{t}{2} H_0} e^{-i t H_1} e^{-i \frac{t}{2} H_0}
+    $$
 
     Args:
-        bloqs: A tuple of bloqs of length `m` which implement the unitaries for
+        bloqs: A tuple of bloqs of length $\Gamma$ which implement the unitaries for
             each term in the Hamiltonian.
         indices: A tuple of integers which specifies which bloq to apply when
             forming the unitary as a product of unitaries.
-        coeffs: The coefficients `a` which appear in the expression for the unitary.
-        timestep: The timestep `t`.
+        coeffs: The coefficients $a$ which appear in the expression for the unitary.
+        timestep: The timestep $t$.
 
     Registers:
         system: The system register to which to apply the unitary.
@@ -70,6 +67,7 @@ class TrotterizedUnitary(Bloq):
     References:
         [Theory of Trotter Error with Commutator Scaling](
             https://journals.aps.org/prx/abstract/10.1103/PhysRevX.11.011020) Eq. 12 page 7.
+
         [Trotter error with commutator scaling for the Fermi-Hubbard model](
             https://arxiv.org/abs/2306.10603) see github repo for software to produce splittings.
     """
