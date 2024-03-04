@@ -302,14 +302,14 @@ class MultiAnd(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    # def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
-    #     pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
-    #     num_single_and = len(self.cvs) - 1
-    #     if adjoint:
-    #         return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
-    #     return TComplexity(
-    #         t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
-    #     )
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
+        pre_post_cliffords = len(self.cvs) - sum(self.cvs)  # number of zeros in self.cv
+        num_single_and = len(self.cvs) - 1
+        if adjoint:
+            return TComplexity(clifford=4 * num_single_and + 2 * pre_post_cliffords)
+        return TComplexity(
+            t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
+        )
 
     def short_name(self) -> str:
         return 'And'

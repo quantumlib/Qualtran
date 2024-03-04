@@ -21,6 +21,7 @@ from qualtran.bloqs.basic_gates import CNOT, CSwap, ZeroState
 from qualtran.bloqs.for_testing.atom import TestAtom
 from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import LarrowTextBox, RarrowTextBox
 
 
@@ -159,6 +160,23 @@ def test_wire_symbol():
     adj_ws = adj.wire_symbol(Soquet(None, reg.adjoint()))
     assert isinstance(ws, LarrowTextBox)
     assert isinstance(adj_ws, RarrowTextBox)
+
+
+class TAcceptsAdjoint(TestAtom):
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
+        return TComplexity(t=2 if adjoint else 1)
+
+
+class TDoesNotAcceptAdjoint(TestAtom):
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(t=3)
+
+
+def test_t_complexity():
+    assert TAcceptsAdjoint().t_complexity().t == 1
+    assert Adjoint(TAcceptsAdjoint()).t_complexity().t == 2
+    assert TDoesNotAcceptAdjoint().t_complexity().t == 3
+    assert Adjoint(TDoesNotAcceptAdjoint()).t_complexity().t == 3
 
 
 @pytest.mark.notebook
