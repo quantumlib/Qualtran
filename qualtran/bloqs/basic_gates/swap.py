@@ -77,7 +77,7 @@ class TwoBitSwap(Bloq):
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         (x,) = x
         (y,) = y
-        return cirq.SWAP.on(x, y), {'x': x, 'y': y}
+        return cirq.SWAP.on(x, y), {'x': [x], 'y': [y]}
 
     def add_my_tensors(
         self,
