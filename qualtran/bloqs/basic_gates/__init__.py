@@ -22,6 +22,7 @@ requirements.
 """
 
 from .cnot import CNOT
+from .f_gate import FGate
 from .hadamard import Hadamard
 from .on_each import OnEach
 from .rotation import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate

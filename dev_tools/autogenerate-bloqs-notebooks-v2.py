@@ -108,6 +108,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='F Gate',
+        module=qualtran.bloqs.basic_gates.f_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.f_gate._FGATE_DOC],
+    ),
+    NotebookSpecV2(
         title='Modular Exponentiation',
         module=qualtran.bloqs.factoring.mod_exp,
         bloq_specs=[qualtran.bloqs.factoring.mod_exp._MODEXP_DOC],
