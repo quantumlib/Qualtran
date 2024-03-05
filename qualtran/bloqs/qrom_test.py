@@ -55,7 +55,7 @@ def test_qrom_multi_dim(bloq_autotester):
         for num_controls in [0, 1, 2]
     ],
 )
-def test_qrom_1d(data, num_controls):
+def test_qrom_1d_full(data, num_controls):
     qrom = QROM.build(*data, num_controls=num_controls)
     assert_valid_bloq_decomposition(qrom)
 
@@ -110,6 +110,9 @@ def test_qrom_1d_classical():
         assert i_out == i
         assert data_out == data[i]
 
+        decomp_ret = qrom.decompose_bloq().call_classically(selection=i, target0_=0)
+        assert decomp_ret == (i_out, data_out)
+
 
 def test_qrom_1d_classical_nonzero_target():
     rs = np.random.RandomState()
@@ -121,6 +124,9 @@ def test_qrom_1d_classical_nonzero_target():
         i_out, data_out = qrom.call_classically(selection=i, target0_=target_in)
         assert i_out == i
         assert data_out == data[i] ^ target_in
+
+        decomp_ret = qrom.decompose_bloq().call_classically(selection=i, target0_=target_in)
+        assert decomp_ret == (i_out, data_out)
 
 
 def test_qrom_1d_multitarget_classical():
@@ -134,6 +140,12 @@ def test_qrom_1d_multitarget_classical():
         i_out, *data_out = qrom.call_classically(selection=i, **init)
         assert i_out == i
         assert data_out == [data[i] for data in data_sets]
+
+        decomp_i_out, *decomp_data_out = qrom.decompose_bloq().call_classically(selection=i, **init)
+        assert decomp_i_out == i_out
+        assert len(data_out) == len(decomp_data_out)
+        for do, decomp_do in zip(data_out, decomp_data_out):
+            np.testing.assert_array_equal(do, decomp_do)
 
 
 def test_qrom_3d_classical():
@@ -149,6 +161,12 @@ def test_qrom_3d_classical():
                 )
                 assert i_out == [i, j, k]
                 assert data_out == data[i, j, k]
+
+                *decomp_i_out, decomp_data_out = qrom.decompose_bloq().call_classically(
+                    selection0=i, selection1=j, selection2=k, target0_=0
+                )
+                assert decomp_i_out == i_out
+                assert decomp_data_out == data_out
 
 
 def test_qrom_diagram():
@@ -301,7 +319,7 @@ def test_qrom_wire_symbols():
         for num_controls in [0, 1, 2]
     ],
 )
-def test_qrom_multi_dim(data, num_controls):
+def test_qrom_multi_dim_full(data, num_controls):
     selection_bitsizes = tuple((s - 1).bit_length() for s in data[0].shape)
     target_bitsizes = tuple(int(np.max(d)).bit_length() for d in data)
     qrom = QROM(
