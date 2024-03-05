@@ -401,14 +401,8 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:
-        # return GeneralizedQSP.from_qsp_polynomial(
-        #     self.walk_operator, self.approx_cos / np.sqrt(2), negative_power=self.degree
-        # )
-        return GeneralizedQSP(
-            self.walk_operator,
-            self.approx_cos / np.sqrt(2),
-            self.approx_cos / np.sqrt(2),
-            negative_power=self.degree,
+        return GeneralizedQSP.from_qsp_polynomial(
+            self.walk_operator, self.approx_cos, negative_power=self.degree
         )
 
     @cached_property
