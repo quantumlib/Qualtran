@@ -360,15 +360,6 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         return ZPowGate(exponent=gate.exponent, global_shift=gate.global_shift)
     if isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
         return Adjoint(_cirq_gate_to_bloq(gate._original))
-    # if isinstance(gate, cirq.ControlledGate):
-    #     gate_cv = gate.control_values
-    #     if not isinstance(gate_cv, cirq.ProductOfSums):
-    #         raise ValueError("Only cirq.ProductOfSums controls are supported right now.")
-    #     for cv in gate_cv:
-    #         if len(cv) > 1:
-    #             raise ValueError("Each qubit should have a single control value right now.")
-    #     ctrl_spec = CtrlSpec(cvs=[cv[0] for cv in gate_cv])
-    #     return Controlled(subbloq=_cirq_gate_to_bloq(gate.sub_gate), ctrl_spec=ctrl_spec)
     return CirqGateAsBloq(gate)
 
 
