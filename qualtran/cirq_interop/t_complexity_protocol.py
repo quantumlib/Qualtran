@@ -18,7 +18,7 @@ import attrs
 import cachetools
 import cirq
 
-from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
 from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
 
@@ -123,16 +123,20 @@ def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
     return t
 
 
-def _from_bloq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
-    # Decompose the object and recursively compute the complexity.
+def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
     if not isinstance(stc, Bloq):
         return None
 
-    if isinstance(stc, CompositeBloq):
-        return _is_iterable((binst.bloq for binst in stc.bloq_instances), fail_quietly=fail_quietly)
-
     try:
-        return _from_bloq_decomposition(stc.decompose_bloq(), fail_quietly=fail_quietly)
+        _, sigma = stc.call_graph(max_depth=1)
+        ret = TComplexity()
+        for bloq, n in sigma.items():
+            r = t_complexity(bloq, fail_quietly=fail_quietly)
+            if r is None:
+                return None
+            ret += n * t_complexity(bloq)
+        return ret
     except (DecomposeNotImplementedError, DecomposeTypeError):
         return None
 
@@ -184,7 +188,7 @@ def _t_complexity_for_gate_or_op(
     strategies = [
         _has_t_complexity,
         _is_clifford_or_t,
-        _from_bloq_decomposition,
+        _from_bloq_build_call_graph,
         _from_cirq_decomposition,
     ]
     return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
@@ -219,7 +223,7 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
         strategies = [
             _has_t_complexity,
             _is_clifford_or_t,
-            _from_bloq_decomposition,
+            _from_bloq_build_call_graph,
             _from_cirq_decomposition,
             _is_iterable,
         ]
