@@ -29,6 +29,7 @@ from qualtran import (
     Signature,
     SoquetT,
 )
+from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
 from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
@@ -38,6 +39,7 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
 )
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
 from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.util_bloqs import Cast
 
 
 @frozen
@@ -108,6 +110,11 @@ class PairPotential(Bloq):
         qrom_anc_c1 = bb.allocate(self.poly_bitsize)
         qrom_anc_c2 = bb.allocate(self.poly_bitsize)
         qrom_anc_c3 = bb.allocate(self.poly_bitsize)
+        cast = Cast(
+            inp_dtype=sos.reg.dtype,
+            out_dtype=BoundedQUInt(sos.reg.dtype.bitsize, iteration_length=len(self.qrom_data[0])),
+        )
+        sos = bb.add(cast, reg=sos)
         qrom_bloq = QROM(
             [np.array(d) for d in self.qrom_data],
             selection_bitsizes=(bitsize_rij_sq,),
@@ -121,6 +128,7 @@ class PairPotential(Bloq):
             target2_=qrom_anc_c2,
             target3_=qrom_anc_c3,
         )
+        sos = bb.add(cast.adjoint(), reg=sos)
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
         poly_out = bb.allocate(self.poly_bitsize)

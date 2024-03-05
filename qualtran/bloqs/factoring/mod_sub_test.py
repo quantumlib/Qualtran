@@ -12,8 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .atom import TestAtom, TestTwoBitOp
-from .casting import TestCastToFrom
-from .many_registers import TestMultiRegister
-from .with_call_graph import TestBloqWithCallGraph
-from .with_decomposition import TestParallelCombo, TestSerialCombo
+import pytest
+
+from qualtran.bloqs.factoring.mod_sub import MontgomeryModNeg, MontgomeryModSub
+from qualtran.testing import assert_valid_bloq_decomposition
+
+
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_neg_decomp(bitsize, p):
+    bloq = MontgomeryModNeg(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_sub_decomp(bitsize, p):
+    bloq = MontgomeryModSub(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)

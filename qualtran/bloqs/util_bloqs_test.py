@@ -20,11 +20,11 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, QAny, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.for_testing import TestMultiRegister
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
+from qualtran.bloqs.for_testing import TestCastToFrom, TestMultiRegister
+from qualtran.bloqs.util_bloqs import Allocate, Cast, Free, Join, Partition, Split
 from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -199,6 +199,23 @@ def test_classical_sim_dtypes():
     #  https://github.com/quantumlib/Qualtran/issues/446
     # with pytest.raises(ValueError):
     #     _ = s.call_classically(reg=np.uint16(256))
+
+
+def test_cast_tensor_contraction():
+    bloq = TestCastToFrom()
+    tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
+    assert len(tn.tensors) == 3
+    assert tn.shape == (2**4,) * 4
+
+
+def test_cast_classical_sim():
+    c = Cast(QInt(8), QFxp(8, 8))
+    (y,) = c.call_classically(reg=7)
+    assert y == 7
+    bloq = TestCastToFrom()
+    (a, b) = bloq.call_classically(a=7, b=2)
+    assert a == 7
+    assert b == 9
 
 
 @pytest.mark.notebook
