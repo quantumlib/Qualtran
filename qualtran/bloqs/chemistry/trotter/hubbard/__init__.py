@@ -20,9 +20,9 @@ $$
 H = H_h + H_I
 $$
 
-where the hopping hamiltonian is given as 
+where the hopping hamiltonian is given as
 $$
-H_h = -\tau \sum_{\langle p, q\rangle, \sigma} 
+H_h = -\tau \sum_{\langle p, q\rangle, \sigma}
     \left(a_{p\sigma}^{\dagger} a_{q\sigma} + \mathrm{h.c.} \right)
 $$
 where the sum is over nearest neighbour lattice sites (under periodic boundary conditions).
@@ -35,9 +35,9 @@ $$
 where $z_{p\sigma} = (2 n_{p\sigma} - 1)$.
 
 
-For Trotterization we assume the plaquette splitting from the 
+For Trotterization we assume the plaquette splitting from the
 [reference](https://arxiv.org/abs/2012.09238).
-The plaquette splitting rewrites $H_h$ as a sum of $H_h^p$ and $H_h^g$ (for pink and gold 
+The plaquette splitting rewrites $H_h$ as a sum of $H_h^p$ and $H_h^g$ (for pink and gold
 respectively) which when combined tile the entire lattice. Each plaquette
 contains four sites and paritions the lattice such that each edge of the lattice
 belongs to a single plaquette. Each term within a grouping commutes so that the

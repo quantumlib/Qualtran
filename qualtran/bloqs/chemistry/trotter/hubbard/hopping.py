@@ -40,10 +40,10 @@ class HoppingPlaquette(Bloq):
     $$
         \sum_{i,j} [R_{\mathrm{plaq}}]_{i,j} a_{i\sigma}^\dagger a_{j\sigma}
     $$
-    where the non-zero sub-bloq of R_{\mathrm{plaq}} is
+    where the non-zero sub-bloq of $R_{\mathrm{plaq}}$ is
 
     $$
-        R_{\mathrm{plaq}} = 
+        R_{\mathrm{plaq}} =
         \begin{bmatrix}
             0 & 1 & 0 & 1 \\
             1 & 0 & 1 & 0 \\
@@ -54,7 +54,7 @@ class HoppingPlaquette(Bloq):
 
     Args:
         kappa: The scalar prefactor appearing in the definition of the unitary.
-            Usually a combination of the timestep and the hopping parameter $\tau$. 
+            Usually a combination of the timestep and the hopping parameter $\tau$.
         eps: The precision of the single qubit rotations.
 
     Registers:
