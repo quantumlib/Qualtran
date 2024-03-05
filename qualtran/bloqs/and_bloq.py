@@ -53,6 +53,13 @@ from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import (
+    cirq_to_bloqs,
+    generalize_cvs,
+    generalize_rotation_angle,
+    ignore_alloc_free,
+    ignore_cliffords,
+)
 
 
 @frozen
@@ -208,7 +215,9 @@ class And(GateWithRegisters):
             return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
 
 
-@bloq_example
+@bloq_example(
+    generalizer=[cirq_to_bloqs, ignore_cliffords, ignore_alloc_free, generalize_rotation_angle]
+)
 def _and_bloq() -> And:
     and_bloq = And()
     return and_bloq
@@ -314,10 +323,13 @@ class MultiAnd(Bloq):
     def short_name(self) -> str:
         return 'And'
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(And(), len(self.cvs) - 1)}
 
-@bloq_example
+
+@bloq_example(generalizer=(ignore_cliffords, generalize_cvs))
 def _multi_and() -> MultiAnd:
-    multi_and = MultiAnd(cvs=(1,) * 4)
+    multi_and = MultiAnd(cvs=(1, 0, 1, 0, 1, 0))
     return multi_and
 
 
