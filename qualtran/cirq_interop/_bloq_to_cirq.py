@@ -207,6 +207,7 @@ def _bloq_to_cirq_op(
         if soq.reg.side == Side.LEFT:
             # Remove soquets for LEFT registers from qvar_to_qreg mapping.
             del qvar_to_qreg[soq]
+
     op, out_quregs = bloq.as_cirq_op(qubit_manager=qubit_manager, **in_quregs)
 
     # 2. Update the mappings based on output soquets and `out_quregs`.
