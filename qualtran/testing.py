@@ -416,18 +416,27 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
     manual_counts = None
     decomp_counts = None
 
+    # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
+    # that uses the decomposition, we could accidentally be comparing two identical code paths
+    # which isn't much of a check at all.
+    #
+    # To determine whether we have an independent source of bloq counts, we test whether
+    # the `build_call_graph` method was overriden or not. This is not foolproof! The override
+    # could itself rely on the decomposition, and we wouldn't actually have two independent sources
+    # of data to compare against each other.
     if bloq.build_call_graph.__qualname__.startswith('Bloq.'):
         has_manual_counts = False
     else:
         has_manual_counts = True
-        # TODO: don't let the author sneak in decomposition??
-        manual_counts = bloq.bloq_counts(generalizer=generalizer)  # TODO: get exactly level 1
+        manual_counts = bloq.bloq_counts(generalizer=generalizer)
+        if manual_counts == {bloq: 1}:
+            has_manual_counts = False
 
     try:
         cbloq = bloq.decompose_bloq()
         decomp_counts = cbloq.bloq_counts(generalizer=generalizer)
         has_decomp_counts = True
-    except (DecomposeTypeError, DecomposeNotImplementedError) as e:
+    except (DecomposeTypeError, DecomposeNotImplementedError):
         has_decomp_counts = False
 
     if (not has_decomp_counts) and (not has_manual_counts):
