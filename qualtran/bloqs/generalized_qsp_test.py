@@ -328,13 +328,13 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
     for _ in range(5):
         U = RandomGate.create(bitsize, random_state=random_state)
-        P = HamiltonianSimulationByGQSP(
-            None, t=t, alpha=alpha, precision=precision
-        ).approx_cos / np.sqrt(2)
+        gqsp = HamiltonianSimulationByGQSP(None, t=t, alpha=alpha, precision=precision).gqsp
+        P, Q = gqsp.P, gqsp.Q
+
         check_polynomial_pair_on_random_points_on_unit_circle(
-            P, P, random_state=random_state, rtol=2 * precision
+            P, Q, random_state=random_state, rtol=2 * precision
         )
-        verify_generalized_qsp(U, P, P, negative_power=len(P) // 2)
+        verify_generalized_qsp(U, P, Q, negative_power=len(P) // 2)
 
 
 @frozen
