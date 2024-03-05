@@ -144,9 +144,11 @@ class TwoBitFFFT(Bloq):
 @bloq_example
 def _two_bit_ffft() -> TwoBitFFFT:
     two_bit_ffft = TwoBitFFFT(2, 3)
-    return two_bit_ffft 
+    return two_bit_ffft
 
 
 _TWO_BIT_FFFT_DOC = BloqDocSpec(
-    bloq_cls=TwoBitFFFT, import_line='from qualtran.bloqs.basic_gates import TwoBitFFFT', examples=[_two_bit_ffft]
+    bloq_cls=TwoBitFFFT,
+    import_line='from qualtran.bloqs.basic_gates import TwoBitFFFT',
+    examples=[_two_bit_ffft],
 )
