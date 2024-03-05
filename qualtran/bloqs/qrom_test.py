@@ -105,12 +105,13 @@ def test_qrom_1d_classical():
     data = rs.randint(0, 2**3, size=10)
     sel_size = int(np.ceil(np.log2(10)))
     qrom = QROM([data], (sel_size,), target_bitsizes=(3,))
+    cbloq = qrom.decompose_bloq()
     for i in range(len(data)):
         i_out, data_out = qrom.call_classically(selection=i, target0_=0)
         assert i_out == i
         assert data_out == data[i]
 
-        decomp_ret = qrom.decompose_bloq().call_classically(selection=i, target0_=0)
+        decomp_ret = cbloq.call_classically(selection=i, target0_=0)
         assert decomp_ret == (i_out, data_out)
 
 
@@ -119,13 +120,14 @@ def test_qrom_1d_classical_nonzero_target():
     data = rs.randint(0, 2**3, size=10)
     sel_size = int(np.ceil(np.log2(10)))
     qrom = QROM([data], (sel_size,), target_bitsizes=(3,))
+    cbloq = qrom.decompose_bloq()
     for i in range(len(data)):
         target_in = int('111', 2)
         i_out, data_out = qrom.call_classically(selection=i, target0_=target_in)
         assert i_out == i
         assert data_out == data[i] ^ target_in
 
-        decomp_ret = qrom.decompose_bloq().call_classically(selection=i, target0_=target_in)
+        decomp_ret = cbloq.call_classically(selection=i, target0_=target_in)
         assert decomp_ret == (i_out, data_out)
 
 
@@ -135,13 +137,14 @@ def test_qrom_1d_multitarget_classical():
     data_sets = [rs.randint(0, 2**3, size=n) for _ in range(3)]
     sel_size = int(np.ceil(np.log2(10)))
     qrom = QROM(data_sets, (sel_size,), target_bitsizes=(3, 3, 3))
+    cbloq = qrom.decompose_bloq()
     for i in range(n):
         init = {f'target{i}_': 0 for i in range(3)}
         i_out, *data_out = qrom.call_classically(selection=i, **init)
         assert i_out == i
         assert data_out == [data[i] for data in data_sets]
 
-        decomp_i_out, *decomp_data_out = qrom.decompose_bloq().call_classically(selection=i, **init)
+        decomp_i_out, *decomp_data_out = cbloq.call_classically(selection=i, **init)
         assert decomp_i_out == i_out
         assert len(data_out) == len(decomp_data_out)
         for do, decomp_do in zip(data_out, decomp_data_out):
@@ -153,6 +156,7 @@ def test_qrom_3d_classical():
     data = rs.randint(0, 2**3, size=(3, 2, 4))
     sel_sizes = (2, 1, 2)
     qrom = QROM([data], sel_sizes, target_bitsizes=(3,))
+    cbloq = qrom.decompose_bloq()
     for i in range(3):
         for j in range(2):
             for k in range(4):
@@ -162,7 +166,7 @@ def test_qrom_3d_classical():
                 assert i_out == [i, j, k]
                 assert data_out == data[i, j, k]
 
-                *decomp_i_out, decomp_data_out = qrom.decompose_bloq().call_classically(
+                *decomp_i_out, decomp_data_out = cbloq.call_classically(
                     selection0=i, selection1=j, selection2=k, target0_=0
                 )
                 assert decomp_i_out == i_out
