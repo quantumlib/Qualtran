@@ -337,7 +337,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     # Check specific basic gates instances.
     CIRQ_GATE_TO_BLOQ_MAP = {
         cirq.T: TGate(),
-        cirq.T**-1: TGate(is_adjoint=True),
+        cirq.T**-1: TGate().adjoint(),
         cirq.H: Hadamard(),
         cirq.CNOT: CNOT(),
         cirq.TOFFOLI: Toffoli(),

@@ -33,7 +33,6 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
     QAny,
     QBit,
     Register,
@@ -49,7 +48,6 @@ from qualtran.bloqs.chemistry.sf.prepare import (
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
 from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -241,7 +239,7 @@ class SingleFactorizationOneBody(Bloq):
             (iprep_dag, 1),
             (CSwap(n), 2),
             (SelectSingleFactorization(num_spin_orb=self.num_spin_orb), 1),
-            (ArbitraryClifford(1), 4),
+            (Hadamard(), 4),
         }
 
 
