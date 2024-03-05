@@ -304,6 +304,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     from qualtran import Adjoint
     from qualtran.bloqs.basic_gates import (
         CNOT,
+        CSwap,
         CZPowGate,
         Hadamard,
         Rx,
@@ -314,6 +315,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         TwoBitSwap,
         XGate,
         XPowGate,
+        YGate,
         YPowGate,
         ZGate,
         ZPowGate,
@@ -328,38 +330,44 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         # I.e., `GateWithRegisters`.
         return gate
 
-    if gate == cirq.T:
-        return TGate()
-    if gate == cirq.T**-1:
-        return TGate(is_adjoint=True)
-    if gate == cirq.H:
-        return Hadamard()
-    if gate == cirq.CNOT:
-        return CNOT()
-    if gate == cirq.TOFFOLI:
-        return Toffoli()
-    if gate == cirq.X:
-        return XGate()
-    if gate == cirq.Z:
-        return ZGate()
-    if gate == cirq.SWAP:
-        return TwoBitSwap()
-    if isinstance(gate, cirq.CZPowGate):
-        return CZPowGate(exponent=gate.exponent, global_shift=gate.global_shift)
-    if isinstance(gate, cirq.Rz):
-        return Rz(angle=gate._rads)
-    if isinstance(gate, cirq.Rx):
-        return Rx(angle=gate._rads)
-    if isinstance(gate, cirq.Ry):
-        return Ry(angle=gate._rads)
-    if isinstance(gate, cirq.XPowGate):
-        return XPowGate(exponent=gate.exponent, global_shift=gate.global_shift)
-    if isinstance(gate, cirq.YPowGate):
-        return YPowGate(exponent=gate.exponent, global_shift=gate.global_shift)
-    if isinstance(gate, cirq.ZPowGate):
-        return ZPowGate(exponent=gate.exponent, global_shift=gate.global_shift)
     if isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
+        # Inverse of a cirq gate, delegate to Adjoint
         return Adjoint(_cirq_gate_to_bloq(gate._original))
+
+    # Check specific basic gates instances.
+    CIRQ_GATE_TO_BLOQ_MAP = {
+        cirq.T: TGate(),
+        cirq.T**-1: TGate(is_adjoint=True),
+        cirq.H: Hadamard(),
+        cirq.CNOT: CNOT(),
+        cirq.TOFFOLI: Toffoli(),
+        cirq.X: XGate(),
+        cirq.Y: YGate(),
+        cirq.Z: ZGate(),
+        cirq.SWAP: TwoBitSwap(),
+        cirq.CSWAP: CSwap(1),
+    }
+    if gate in CIRQ_GATE_TO_BLOQ_MAP:
+        return CIRQ_GATE_TO_BLOQ_MAP[gate]
+
+    # Check specific basic gates types.
+    CIRQ_TYPE_TO_BLOQ_MAP = {
+        cirq.Rz: Rz,
+        cirq.Rx: Rx,
+        cirq.Ry: Ry,
+        cirq.XPowGate: XPowGate,
+        cirq.YPowGate: YPowGate,
+        cirq.ZPowGate: ZPowGate,
+        cirq.CZPowGate: CZPowGate,
+    }
+    if isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)):
+        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](
+            exponent=gate.exponent, global_shift=gate.global_shift
+        )
+    if isinstance(gate, (cirq.Rx, cirq.Ry, cirq.Rz)):
+        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](angle=gate._rads)
+
+    # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
     return CirqGateAsBloq(gate)
 
 
