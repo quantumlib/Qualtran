@@ -123,8 +123,8 @@ def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
     return t
 
 
-def _from_bloq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
-    # Decompose the object and recursively compute the complexity.
+def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
     if not isinstance(stc, Bloq):
         return None
 
@@ -188,7 +188,7 @@ def _t_complexity_for_gate_or_op(
     strategies = [
         _has_t_complexity,
         _is_clifford_or_t,
-        _from_bloq_decomposition,
+        _from_bloq_build_call_graph,
         _from_cirq_decomposition,
     ]
     return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
@@ -223,7 +223,7 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
         strategies = [
             _has_t_complexity,
             _is_clifford_or_t,
-            _from_bloq_decomposition,
+            _from_bloq_build_call_graph,
             _from_cirq_decomposition,
             _is_iterable,
         ]
