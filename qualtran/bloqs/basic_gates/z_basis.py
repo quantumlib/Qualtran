@@ -252,6 +252,9 @@ class ZGate(Bloq):
         (q,) = q
         return cirq.Z(q), {'q': [q]}
 
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
+
 
 @bloq_example
 def _zgate() -> ZGate:

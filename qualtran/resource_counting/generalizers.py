@@ -83,28 +83,10 @@ def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
 
 def cirq_to_bloqs(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces Cirq gates with their equivalent bloq, where possible."""
-    import cirq
-
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, Toffoli, TwoBitSwap, XGate, ZGate
     from qualtran.cirq_interop import CirqGateAsBloq
+    from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
 
     if not isinstance(b, CirqGateAsBloq):
         return b
 
-    gate = b.gate
-    if gate == cirq.T:
-        return TGate()
-    if gate == cirq.H:
-        return Hadamard()
-    if gate == cirq.CNOT:
-        return CNOT()
-    if gate == cirq.TOFFOLI:
-        return Toffoli()
-    if gate == cirq.X:
-        return XGate()
-    if gate == cirq.Z:
-        return ZGate()
-    if gate == cirq.SWAP:
-        return TwoBitSwap()
-
-    return b
+    return _cirq_gate_to_bloq(b.gate)
