@@ -144,6 +144,15 @@ class BloqAsCirqGate(cirq.Gate):
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
 
+    def _unitary_(self):
+        if self._num_qubits_() > 3:
+            # Prefer decomposition for large bloqs
+            return NotImplemented
+        tensor = self.bloq.tensor_contract()
+        if tensor.ndim != 2:
+            return NotImplemented
+        return tensor
+
     def on_registers(
         self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
     ) -> cirq.Operation:
