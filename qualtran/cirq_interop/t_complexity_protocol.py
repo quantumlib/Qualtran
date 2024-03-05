@@ -18,7 +18,7 @@ import attrs
 import cachetools
 import cirq
 
-from qualtran import Bloq, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran import Bloq
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
 from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
 
