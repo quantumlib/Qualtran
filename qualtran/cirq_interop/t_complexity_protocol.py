@@ -127,18 +127,17 @@ def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TCompl
     # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
     if not isinstance(stc, Bloq):
         return None
-
-    try:
-        _, sigma = stc.call_graph(max_depth=1)
-        ret = TComplexity()
-        for bloq, n in sigma.items():
-            r = t_complexity(bloq, fail_quietly=fail_quietly)
-            if r is None:
-                return None
-            ret += n * t_complexity(bloq)
-        return ret
-    except (DecomposeNotImplementedError, DecomposeTypeError):
+    _, sigma = stc.call_graph(max_depth=1)
+    if sigma == {stc: 1}:
+        # No decomposition found.
         return None
+    ret = TComplexity()
+    for bloq, n in sigma.items():
+        r = t_complexity(bloq, fail_quietly=fail_quietly)
+        if r is None:
+            return None
+        ret += n * t_complexity(bloq)
+    return ret
 
 
 def _from_cirq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
