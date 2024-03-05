@@ -33,7 +33,7 @@ from qualtran import (
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import OneState
+from qualtran.bloqs.basic_gates import CNOT, OneState
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -216,7 +216,7 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
     bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
     assert bloqs_list.count(Split(QAny(2))) == 1
     assert bloqs_list.count(Free(QBit())) == 2
-    assert bloqs_list.count(CirqGateAsBloq(cirq.CNOT)) == 1
+    assert bloqs_list.count(CNOT()) == 1
     assert bloqs_list.count(CirqGateAsBloq(cirq.ResetChannel())) == 2
 
 

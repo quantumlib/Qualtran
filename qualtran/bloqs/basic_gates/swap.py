@@ -80,6 +80,9 @@ class TwoBitSwap(Bloq):
         (y,) = y
         return cirq.SWAP.on(x, y), {'x': [x], 'y': [y]}
 
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
+
     def add_my_tensors(
         self,
         tn: 'qtn.TensorNetwork',
