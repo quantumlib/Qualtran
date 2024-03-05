@@ -19,11 +19,11 @@ import pytest
 
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.basic_gates.f_gate import _f_gate, _fkn_matrix, FGate
+from qualtran.bloqs.basic_gates.two_bit_ffft import _fkn_matrix, _two_bit_ffft, TwoBitFFFT
 
 
 def test_t_gate(bloq_autotester):
-    bloq_autotester(_f_gate)
+    bloq_autotester(_two_bit_ffft)
 
 
 def test_call_graph():
@@ -33,15 +33,15 @@ def test_call_graph():
         return bloq
 
     assert (
-        FGate(2, 3).call_graph(generalizer=all_t)[1]
-        == FGate(2, 3).decompose_bloq().call_graph(generalizer=all_t)[1]
+        TwoBitFFFT(2, 3).call_graph(generalizer=all_t)[1]
+        == TwoBitFFFT(2, 3).decompose_bloq().call_graph(generalizer=all_t)[1]
     )
 
 
 @pytest.mark.parametrize('k,n', itertools.product(range(0, 4), range(1, 4)))
 def test_tensors(k, n):
     # Eq. E11 in https://arxiv.org/pdf/2012.09238.pdf
-    from_tensors = FGate(k, n).tensor_contract()
+    from_tensors = TwoBitFFFT(k, n).tensor_contract()
     np.testing.assert_allclose(from_tensors, _fkn_matrix(k, n))
-    from_decomp = FGate(k, n).decompose_bloq().tensor_contract()
+    from_decomp = TwoBitFFFT(k, n).decompose_bloq().tensor_contract()
     cirq.testing.assert_allclose_up_to_global_phase(from_decomp, _fkn_matrix(k, n), atol=1e-12)

@@ -16,12 +16,12 @@ import sympy
 
 from qualtran.bloqs.basic_gates import (
     CZPowGate,
-    FGate,
     Rx,
     Ry,
     Rz,
     TGate,
     Toffoli,
+    TwoBitFFFT,
     XPowGate,
     YPowGate,
     ZPowGate,
@@ -42,7 +42,7 @@ def test_all_rotation_types():
         XPowGate,
         YPowGate,
         ZPowGate,
-        FGate,
+        TwoBitFFFT,
     }
 
 

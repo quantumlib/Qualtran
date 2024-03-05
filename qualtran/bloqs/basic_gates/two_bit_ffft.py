@@ -57,7 +57,7 @@ def _fkn_matrix(k: int, n: int) -> NDArray[np.complex128]:
 
 
 @frozen
-class FGate(Bloq):
+class TwoBitFFFT(Bloq):
     r"""Two-qubit fermionic Fourier transform gate.
 
     Args:
@@ -142,11 +142,11 @@ class FGate(Bloq):
 
 
 @bloq_example
-def _f_gate() -> FGate:
-    f_gate = FGate(2, 3)
-    return f_gate
+def _two_bit_ffft() -> TwoBitFFFT:
+    two_bit_ffft = TwoBitFFFT(2, 3)
+    return two_bit_ffft 
 
 
-_FGATE_DOC = BloqDocSpec(
-    bloq_cls=FGate, import_line='from qualtran.bloqs.basic_gates import FGate', examples=[_f_gate]
+_TWO_BIT_FFFT_DOC = BloqDocSpec(
+    bloq_cls=TwoBitFFFT, import_line='from qualtran.bloqs.basic_gates import TwoBitFFFT', examples=[_two_bit_ffft]
 )
