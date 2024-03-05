@@ -114,14 +114,6 @@ class THCRotations(Bloq):
         rot_cost = self.num_spin_orb * (self.num_bits_theta - 2)
         return {(Toffoli(), (rot_cost + toff_cost_qrom))}
 
-    def _t_complexity_(self):
-        from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-        ret = TComplexity()
-        for (bloq, n) in self.bloq_counts().items():
-            ret += bloq.t_complexity() * n
-        return ret
-
 
 @frozen
 class SelectTHC(SelectOracle):
