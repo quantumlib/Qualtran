@@ -61,6 +61,9 @@ class QubitizationWalkOperator(GateWithRegisters):
     control_val: Optional[int] = None
     power: int = 1
 
+    def pretty_name(self) -> str:
+        return 'QubitizationWalkOperator'
+
     def __attrs_post_init__(self):
         assert self.select.control_registers == self.reflect.control_registers
 
@@ -70,7 +73,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return self.prepare.selection_registers
+        return tuple({*self.select.selection_registers, *self.prepare.selection_registers})
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
