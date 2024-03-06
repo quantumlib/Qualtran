@@ -35,9 +35,9 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.quantum_graph import Soquet
-from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol

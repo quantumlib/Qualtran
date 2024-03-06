@@ -21,7 +21,7 @@ from qualtran import BoundedQUInt, QAny, QBit, QDType, QFxp, QInt, QIntOnesComp,
 from qualtran.serialization.data_types import data_type_from_proto, data_type_to_proto
 
 
-def round_trip(data: QDType):
+def round_trip_qdt(data: QDType):
     serialized_qbit = data_type_to_proto(data)
     original_qbit = data_type_from_proto(serialized_qbit)
 
@@ -29,15 +29,15 @@ def round_trip(data: QDType):
 
 
 def test_qbit():
-    round_trip(QBit())
+    round_trip_qdt(QBit())
 
 
 @pytest.mark.parametrize("num_qbits", [10, 1000, sympy.Symbol("a") * sympy.Symbol("b")])
 def test_basic_data_types(num_qbits: Union[int, sympy.Expr]):
-    round_trip(QInt(num_qbits))
-    round_trip(QAny(num_qbits))
-    round_trip(QIntOnesComp(num_qbits))
-    round_trip(QUInt(num_qbits))
+    round_trip_qdt(QInt(num_qbits))
+    round_trip_qdt(QAny(num_qbits))
+    round_trip_qdt(QIntOnesComp(num_qbits))
+    round_trip_qdt(QUInt(num_qbits))
 
 
 @pytest.mark.parametrize(
@@ -51,7 +51,7 @@ def test_basic_data_types(num_qbits: Union[int, sympy.Expr]):
     ],
 )
 def test_bounded_quint(num_qbits: int, iteration_length):
-    round_trip(BoundedQUInt(num_qbits, iteration_length))
+    round_trip_qdt(BoundedQUInt(num_qbits, iteration_length))
 
 
 @pytest.mark.parametrize(
@@ -59,4 +59,4 @@ def test_bounded_quint(num_qbits: int, iteration_length):
     [(10, 5, True), (10, 5, False), (5, 5, False), (sympy.Symbol("a"), sympy.Symbol("a"), False)],
 )
 def test_qfxp(num_qbits: int, num_frac: int, signed: bool):
-    round_trip(QFxp(num_qbits, num_frac, signed))
+    round_trip_qdt(QFxp(num_qbits, num_frac, signed))

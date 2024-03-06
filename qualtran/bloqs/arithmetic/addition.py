@@ -38,9 +38,10 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.and_bloq import And
+from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.and_bloq import And
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
@@ -73,18 +74,20 @@ class Add(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    bitsize: Union[int, sympy.Expr] = field()
+    dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
 
-    @bitsize.validator
-    def _bitsize_validate(self, a, v):
-        if isinstance(v, sympy.Expr):
+    @dtype.validator
+    def _dtype_validate(self, field, val):
+        if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
+            raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
+        if isinstance(val.num_qubits, sympy.Expr):
             return
-        if v <= 1:
+        if val.num_qubits <= 1:
             raise ValueError("Bitsize must be 2 or greater.")
 
     @property
     def signature(self):
-        return Signature([Register("a", QUInt(self.bitsize)), Register("b", QUInt(self.bitsize))])
+        return Signature([Register("a", self.dtype), Register("b", self.dtype)])
 
     def add_my_tensors(
         self,
@@ -96,7 +99,9 @@ class Add(Bloq):
     ):
         import quimb.tensor as qtn
 
-        N = 2**self.bitsize
+        if isinstance(self.dtype, QInt):
+            raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
+        N = 2**self.dtype.bitsize
         inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
         unitary = np.zeros((N,) * len(inds), dtype=np.complex128)
         # TODO: Add a value-to-index method on dtype to make this easier.
@@ -111,16 +116,16 @@ class Add(Bloq):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        unsigned = True  # TODO: derive from signature
-        N = 2**self.bitsize if unsigned else 2 ** (self.bitsize - 1)
+        unsigned = isinstance(self.dtype, (QUInt, QMontgomeryUInt))
+        N = 2**self.dtype.bitsize if unsigned else 2 ** (self.dtype.bitsize - 1)
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.bitsize
-        wire_symbols += ["In(y)/Out(x+y)"] * self.bitsize
+        wire_symbols = ["In(x)"] * self.dtype.bitsize
+        wire_symbols += ["In(y)/Out(x+y)"] * self.dtype.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
@@ -134,7 +139,7 @@ class Add(Bloq):
             raise ValueError()
 
     def _left_building_block(self, inp, out, anc, depth):
-        if depth == self.bitsize - 1:
+        if depth == self.dtype.bitsize - 1:
             return
         else:
             yield CNOT().on(anc[depth - 1], inp[depth])
@@ -159,7 +164,7 @@ class Add(Bloq):
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
-        ancillas = context.qubit_manager.qalloc(self.bitsize - 1)[::-1]
+        ancillas = context.qubit_manager.qalloc(self.dtype.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
         # Left part of Fig.2
@@ -167,44 +172,46 @@ class Add(Bloq):
         yield CNOT().on(ancillas[-1], output_bits[-1])
         yield CNOT().on(input_bits[-1], output_bits[-1])
         # right part of Fig.2
-        yield from self._right_building_block(input_bits, output_bits, ancillas, self.bitsize - 2)
+        yield from self._right_building_block(
+            input_bits, output_bits, ancillas, self.dtype.bitsize - 2
+        )
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
     def _t_complexity_(self):
-        num_clifford = (self.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.bitsize - 4
+        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
+        num_t_gates = 4 * self.dtype.bitsize - 4
         return TComplexity(t=num_t_gates, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_clifford = (self.bitsize - 2) * 19 + 16
-        num_toffoli = self.bitsize - 1
+        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
+        num_toffoli = self.dtype.bitsize - 1
         return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
 
 
 @bloq_example
 def _add_symb() -> Add:
     n = sympy.Symbol('n')
-    add_symb = Add(bitsize=n)
+    add_symb = Add(QInt(bitsize=n))
     return add_symb
 
 
 @bloq_example
 def _add_small() -> Add:
-    add_small = Add(bitsize=4)
+    add_small = Add(QUInt(bitsize=4))
     return add_small
 
 
 @bloq_example
 def _add_large() -> Add:
-    add_large = Add(bitsize=64)
+    add_large = Add(QUInt(bitsize=64))
     return add_large
 
 
 _ADD_DOC = BloqDocSpec(
     bloq_cls=Add,
-    import_line='from qualtran.bloqs.arithmetic.addition import Add',
+    import_line='from qualtran import QInt, QUInt\nfrom qualtran.bloqs.arithmetic.addition import Add',
     examples=(_add_symb, _add_small, _add_large),
 )
 
@@ -385,7 +392,7 @@ class SimpleAddConstant(Bloq):
             ctrls = regs['ctrls']
         else:
             ctrls = None
-        k = bb.allocate(n=self.bitsize)
+        k = bb.allocate(dtype=x.reg.dtype)
 
         # Get binary representation of k and split k into separate wires.
         k_split = bb.split(k)
@@ -406,8 +413,8 @@ class SimpleAddConstant(Bloq):
                     k_split[i] = bb.add(XGate(), q=k_split[i])
 
         # Rejoin the qubits representing k for in-place addition.
-        k = bb.join(k_split)
-        k, x = bb.add(Add(bitsize=self.bitsize), a=k, b=x)
+        k = bb.join(k_split, dtype=x.reg.dtype)
+        k, x = bb.add(Add(x.reg.dtype), a=k, b=x)
 
         # Resplit the k qubits in order to undo the original bit flips to go from the binary
         # representation back to the zero state.
@@ -422,7 +429,7 @@ class SimpleAddConstant(Bloq):
                     k_split[i] = bb.add(XGate(), q=k_split[i])
 
         # Free the ancilla qubits.
-        k = bb.join(k_split)
+        k = bb.join(k_split, dtype=x.reg.dtype)
         bb.free(k)
 
         # Return the output registers.
@@ -478,7 +485,7 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
         control_reg = (2,) * len(self.cvs)
         return (control_reg, add_reg) if control_reg else (add_reg,)
 
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "AddMod":
+    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "AddConstantMod":
         raise NotImplementedError()
 
     def _classical_unctrled(self, target_val: int):
@@ -518,10 +525,10 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
 
     def _t_complexity_(self) -> TComplexity:
         # Rough cost as given in https://arxiv.org/abs/1905.09749
-        return 5 * Add(self.bitsize).t_complexity()
+        return 5 * Add(QUInt(self.bitsize)).t_complexity()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Add(self.bitsize), 5)}
+        return {(Add(QUInt(self.bitsize)), 5)}
 
 
 @bloq_example

@@ -258,7 +258,7 @@ class Controlled(Bloq):
     def signature(self) -> 'Signature':
         # Prepend register(s) corresponding to `ctrl_spec`.
         ctrl_regs = tuple(
-            Register(name=self.ctrl_reg_names[i], bitsize=qdtype, shape=shape, side=Side.THRU)
+            Register(name=self.ctrl_reg_names[i], dtype=qdtype, shape=shape, side=Side.THRU)
             for i, (qdtype, shape) in enumerate(self.ctrl_spec.activation_function_dtypes())
         )
         return Signature(ctrl_regs + tuple(self.subbloq.signature))

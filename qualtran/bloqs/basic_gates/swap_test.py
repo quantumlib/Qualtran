@@ -61,6 +61,13 @@ def test_two_bit_swap_unitary_vs_cirq():
     np.testing.assert_array_equal(swap.tensor_contract(), cirq.unitary(cirq.SWAP))
 
 
+def test_two_bit_swap_as_cirq_op():
+    q = cirq.LineQubit.range(2)
+    expected_circuit = cirq.Circuit(cirq.SWAP(*q))
+    cbloq_to_circuit, quregs = TwoBitSwap().as_composite_bloq().to_cirq_circuit(x=[q[0]], y=[q[1]])
+    cirq.testing.assert_same_circuits(expected_circuit, cbloq_to_circuit)
+
+
 def test_two_bit_swap_call_classically():
     swap = TwoBitSwap()
     x, y = swap.call_classically(x=0, y=1)

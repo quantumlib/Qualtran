@@ -15,7 +15,7 @@ import re
 
 import numpy as np
 
-from qualtran.bloqs.and_bloq import MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.drawing import ClassicalSimGraphDrawer
 
 

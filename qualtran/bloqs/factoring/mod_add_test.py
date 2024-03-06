@@ -12,7 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd
+import pytest
+
+from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd, MontgomeryModAdd
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_ctrl_scale_mod_add():
@@ -31,3 +34,9 @@ def test_ctrl_mod_add_k():
     counts = bloq.bloq_counts()
     ((bloq, n),) = counts.items()
     assert n == 5
+
+
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_add_decomp(bitsize, p):
+    bloq = MontgomeryModAdd(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)

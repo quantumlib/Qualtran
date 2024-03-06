@@ -15,7 +15,7 @@
 import numpy as np
 from attrs import frozen
 
-from qualtran.surface_code.algorithm_summary import AlgorithmSummary
+from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.magic_state_factory import MagicStateFactory
 
 
@@ -38,8 +38,8 @@ class MultiFactory(MagicStateFactory):
     def footprint(self) -> int:
         return self.base_factory.footprint() * self.n_factories
 
-    def n_cycles(self, n_magic: AlgorithmSummary) -> int:
-        return np.ceil(self.base_factory.n_cycles(n_magic) / self.n_factories)
+    def n_cycles(self, n_magic: MagicCount, phys_err: float = 1e-3) -> int:
+        return np.ceil(self.base_factory.n_cycles(n_magic, phys_err) / self.n_factories)
 
-    def distillation_error(self, n_magic: AlgorithmSummary, phys_err: float) -> float:
+    def distillation_error(self, n_magic: MagicCount, phys_err: float) -> float:
         return self.base_factory.distillation_error(n_magic, phys_err)

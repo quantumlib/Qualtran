@@ -12,34 +12,36 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""Quantum read-only memory."""
+
 from functools import cached_property
-from typing import Callable, Sequence, Set, Tuple
+from typing import Callable, Dict, Sequence, Set, Tuple
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import BoundedQUInt, QAny, Register, Soquet
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
-from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT
+from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @cirq.value_equality()
 @attrs.frozen
 class QROM(UnaryIterationGate):
-    """Bloq to load data[l] in the target register when the selection stores an index l.
+    """Bloq to load `data[l]` in the target register when the selection stores an index `l`.
 
-    In the case of multi-dimensional data[p,q,r,...] we use multiple named
-    selection signature [p, q, r, ...] to index and load the data. Here `p, q, r, ...`
-    correspond to signature named `selection0`, `selection1`, `selection2`, ... etc.
+    In the case of multidimensional `data[p,q,r,...]` we use multiple named
+    selection registers to index and load the data named selection0, selection1, ...
 
     When the input data elements contain consecutive entries of identical data elements to
-    load, the QROM also implements the "variable-spaced" QROM optimization described in Ref[2].
+    load, the QROM also implements the "variable-spaced" QROM optimization described in Ref [2].
 
     Args:
         data: List of numpy ndarrays specifying the data to load. If the length
@@ -56,12 +58,10 @@ class QROM(UnaryIterationGate):
         num_controls: The number of control signature.
 
     References:
-        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
-        (https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
             Babbush et. al. (2018). Figure 1.
 
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391).
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
             Babbush et. al. (2020). Figure 3.
     """
 
@@ -103,16 +103,14 @@ class QROM(UnaryIterationGate):
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        ret = tuple(
-            Register(f'selection{i}', BoundedQUInt(sb, l))
-            for i, (l, sb) in enumerate(zip(self.data[0].shape, self.selection_bitsizes))
+        types = [
+            BoundedQUInt(sb, l)
+            for l, sb in zip(self.data[0].shape, self.selection_bitsizes)
             if sb > 0
-        )
-        if len(self.data[0].shape) == 1 and len(ret) == 1:
-            ret = (
-                Register('selection', BoundedQUInt(ret[0].bitsize, ret[0].dtype.iteration_length)),
-            )
-        return ret
+        ]
+        if len(types) == 1:
+            return (Register('selection', types[0]),)
+        return tuple(Register(f'selection{i}', qdtype) for i, qdtype in enumerate(types))
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -141,7 +139,7 @@ class QROM(UnaryIterationGate):
         if self.num_controls == 0:
             yield self._load_nth_data(zero_indx, cirq.X, **target_regs)
         elif self.num_controls == 1:
-            yield self._load_nth_data(zero_indx, lambda q: cirq.CNOT(controls[0], q), **target_regs)
+            yield self._load_nth_data(zero_indx, lambda q: CNOT().on(controls[0], q), **target_regs)
         else:
             ctrl = np.array(controls)[:, np.newaxis]
             junk = np.array(context.qubit_manager.qalloc(len(controls) - 2))[:, np.newaxis]
@@ -153,7 +151,7 @@ class QROM(UnaryIterationGate):
                     ctrl=ctrl, junk=junk, target=and_target
                 )
             yield multi_controlled_and
-            yield self._load_nth_data(zero_indx, lambda q: cirq.CNOT(and_target, q), **target_regs)
+            yield self._load_nth_data(zero_indx, lambda q: CNOT().on(and_target, q), **target_regs)
             yield cirq.inverse(multi_controlled_and)
             context.qubit_manager.qfree(list(junk.flatten()) + [and_target])
 
@@ -171,7 +169,30 @@ class QROM(UnaryIterationGate):
     ) -> cirq.OP_TREE:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         target_regs = {reg.name: kwargs[reg.name] for reg in self.target_registers}
-        yield self._load_nth_data(selection_idx, lambda q: cirq.CNOT(control, q), **target_regs)
+        yield self._load_nth_data(selection_idx, lambda q: CNOT().on(control, q), **target_regs)
+
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        if self.num_controls > 0:
+            control = vals['control']
+            if control != 2**self.num_controls - 1:
+                return vals
+            controls = {'control': control}
+        else:
+            controls = {}
+
+        n_dim = len(self.selection_bitsizes)
+        if n_dim == 1:
+            idx = vals['selection']
+            selections = {'selection': idx}
+        else:
+            # Multidimensional
+            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))
+            selections = {f'selection{i}': idx[i] for i in range(n_dim)}
+
+        # Retrieve the data; bitwise add them in to the input target values
+        targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}
+        targets = {k: v ^ vals[k] for k, v in targets.items()}
+        return controls | selections | targets
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@"] * self.num_controls
@@ -209,3 +230,33 @@ class QROM(UnaryIterationGate):
     def nth_operation_callgraph(self, **kwargs: int) -> Set['BloqCountT']:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         return {(CNOT(), sum(int(d[selection_idx]).bit_count() for d in self.data))}
+
+
+@bloq_example
+def _qrom_small() -> QROM:
+    data = np.arange(5)
+    qrom_small = QROM([data], selection_bitsizes=(3,), target_bitsizes=(3,))
+    return qrom_small
+
+
+@bloq_example
+def _qrom_multi_data() -> QROM:
+    data1 = np.arange(5)
+    data2 = np.arange(5) + 1
+    qrom_multi_data = QROM([data1, data2], selection_bitsizes=(3,), target_bitsizes=(3, 4))
+    return qrom_multi_data
+
+
+@bloq_example
+def _qrom_multi_dim() -> QROM:
+    data1 = np.arange(9).reshape((3, 3))
+    data2 = (np.arange(9) + 1).reshape((3, 3))
+    qrom_multi_dim = QROM([data1, data2], selection_bitsizes=(2, 2), target_bitsizes=(8, 8))
+    return qrom_multi_dim
+
+
+_QROM_DOC = BloqDocSpec(
+    bloq_cls=QROM,
+    import_line='from qualtran.bloqs.qrom import QROM',
+    examples=[_qrom_small, _qrom_multi_data, _qrom_multi_dim],
+)

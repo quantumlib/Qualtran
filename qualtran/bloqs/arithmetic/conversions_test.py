@@ -35,7 +35,7 @@ def test_to_contiguous_index_t_complexity():
     bitsize = 5
     q0 = bb.add_register('mu', bitsize)
     q1 = bb.add_register('nu', bitsize)
-    out = bb.add_register('s', 1)
+    out = bb.add_register('s', 2 * bitsize)
     q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2 * bitsize), mu=q0, nu=q1, s=out)
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
     assert cbloq.t_complexity().t == 4 * 29

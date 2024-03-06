@@ -20,7 +20,9 @@ from attrs import frozen
 from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

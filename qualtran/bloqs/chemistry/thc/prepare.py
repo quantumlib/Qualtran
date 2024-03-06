@@ -40,15 +40,15 @@ from qualtran.bloqs.arithmetic import (
     ToContiguousIndex,
 )
 from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
-from qualtran.bloqs.basic_gates.swap import CSwap
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.basic_gates.on_each import OnEach
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.swap_network import CSwap
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -458,7 +458,7 @@ def _thc_uni() -> UniformSuperpositionTHC:
     return thc_uni
 
 
-@bloq_example
+@bloq_example(generalizer=[ignore_split_join, ignore_cliffords])
 def _thc_prep() -> PrepareTHC:
     num_spat = 4
     num_mu = 8

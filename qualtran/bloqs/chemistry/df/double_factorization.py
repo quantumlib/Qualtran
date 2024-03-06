@@ -476,7 +476,6 @@ class DoubleFactorizationBlockEncoding(Bloq):
 
 @bloq_example
 def _df_one_body() -> DoubleFactorizationOneBody:
-    num_aux = 50
     num_bits_state_prep = 12
     num_bits_rot = 7
     num_spin_orb = 10

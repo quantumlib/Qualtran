@@ -18,11 +18,13 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, Signature
+from qualtran import Bloq, bloq_example, QUInt, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import QROAM
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -77,7 +79,7 @@ class InnerPrepareDoubleFactorization(Bloq):
         cost_a = (Toffoli(), 7 * num_bits_xi + 2 * self.num_bits_rot_aa - 6)
         # add offset to get correct bit of QROM from [l + offset^l, l+offset^l+Xi^l]
         num_bits_lxi = (self.num_eig + self.num_spin_orb // 2 - 1).bit_length()
-        cost_b = (Add(num_bits_lxi), 1)
+        cost_b = (Add(QUInt(num_bits_lxi)), 1)
         # QROAM for alt/keep values
         bp = num_bits_xi + self.num_bits_state_prep + 2  # C31
         cost_c = (QROAM(self.num_eig + self.num_spin_orb // 2, bp), 1)
