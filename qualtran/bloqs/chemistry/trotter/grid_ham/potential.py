@@ -29,15 +29,17 @@ from qualtran import (
     Signature,
     SoquetT,
 )
+from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import OutOfPlaceAdder, SumOfSquares
-from qualtran.bloqs.chemistry.trotter.inverse_sqrt import (
+from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     build_qrom_data_for_poly_fit,
     get_inverse_square_root_poly_coeffs,
     NewtonRaphsonApproxInverseSquareRoot,
     PolynmomialEvaluationInverseSquareRoot,
 )
-from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation
+from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
 from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.util_bloqs import Cast
 
 
 @frozen
@@ -108,6 +110,11 @@ class PairPotential(Bloq):
         qrom_anc_c1 = bb.allocate(self.poly_bitsize)
         qrom_anc_c2 = bb.allocate(self.poly_bitsize)
         qrom_anc_c3 = bb.allocate(self.poly_bitsize)
+        cast = Cast(
+            inp_dtype=sos.reg.dtype,
+            out_dtype=BoundedQUInt(sos.reg.dtype.bitsize, iteration_length=len(self.qrom_data[0])),
+        )
+        sos = bb.add(cast, reg=sos)
         qrom_bloq = QROM(
             [np.array(d) for d in self.qrom_data],
             selection_bitsizes=(bitsize_rij_sq,),
@@ -121,6 +128,7 @@ class PairPotential(Bloq):
             target2_=qrom_anc_c2,
             target3_=qrom_anc_c3,
         )
+        sos = bb.add(cast.adjoint(), reg=sos)
 
         # Compute the polynomial from the polynomial coefficients stored in QROM
         poly_out = bb.allocate(self.poly_bitsize)
@@ -245,15 +253,15 @@ def _potential_energy() -> PotentialEnergy:
 
 _POTENTIAL_ENERGY = BloqDocSpec(
     bloq_cls=PotentialEnergy,
-    import_line='from qualtran.bloqs.chemistry.trotter.potential import PotentialEnergy',
+    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.potential import PotentialEnergy',
     examples=(_potential_energy,),
 )
 
 _PAIR_POTENTIAL = BloqDocSpec(
     bloq_cls=PairPotential,
     import_line=(
-        'from qualtran.bloqs.chemistry.trotter.potential import PairPotential, build_qrom_data_for_poly_fit\n'
-        'from qualtran.bloqs.chemistry.trotter.inverse_sqrt import get_inverse_square_root_poly_coeffs'
+        'from qualtran.bloqs.chemistry.trotter.grid_ham.potential import PairPotential, build_qrom_data_for_poly_fit\n'
+        'from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import get_inverse_square_root_poly_coeffs'
     ),
     examples=(_pair_potential,),
 )

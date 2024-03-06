@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import _qvr
 
-from .atom import TestAtom, TestTwoBitOp
-from .casting import TestCastToFrom
-from .many_registers import TestMultiRegister
-from .with_call_graph import TestBloqWithCallGraph
-from .with_decomposition import TestParallelCombo, TestSerialCombo
+
+def test_kinetic_energy(bloq_autotester):
+    bloq_autotester(_qvr)

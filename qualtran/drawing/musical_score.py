@@ -454,7 +454,7 @@ class ModPlus(WireSymbol):
             -y,
             "⊕",
             transform=ax.transData,
-            fontsize=20,
+            fontsize=18,
             ha='center',
             va='center',
             bbox={'fc': 'none', 'lw': 0},

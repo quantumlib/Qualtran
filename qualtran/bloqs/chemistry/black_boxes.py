@@ -25,7 +25,7 @@ from attrs import field, frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.drawing import Circle, TextBox, WireSymbol
 
 if TYPE_CHECKING:

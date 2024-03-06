@@ -11,9 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import pytest
 
-from .atom import TestAtom, TestTwoBitOp
-from .casting import TestCastToFrom
-from .many_registers import TestMultiRegister
-from .with_call_graph import TestBloqWithCallGraph
-from .with_decomposition import TestParallelCombo, TestSerialCombo
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.chemistry.trotter.grid_ham.kinetic import _kinetic_energy, KineticEnergy
+
+
+@pytest.mark.parametrize("nelec, nx", ((2, 10), (6, 8), (8, 12)))
+def test_kinetic_bloq(nelec, nx):
+    ngrid_x = 2 * nx + 1
+    ke = KineticEnergy(nelec, ngrid_x)
+    qlt_testing.assert_valid_bloq_decomposition(ke)
+
+
+def test_kinetic_energy(bloq_autotester):
+    bloq_autotester(_kinetic_energy)

@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.reflection_using_prepare_test import construct_gate_helper_and_qubit_order
 from qualtran.bloqs.select_pauli_lcu import SelectPauliLCU

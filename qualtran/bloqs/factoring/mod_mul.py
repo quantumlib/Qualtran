@@ -13,16 +13,30 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Optional, Set, Union
 
+import attrs
+import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, Soquet, SoquetT
-from qualtran.bloqs.basic_gates import CSwap
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QMontgomeryUInt,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
+from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
+from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -104,13 +118,105 @@ class CtrlModMul(Bloq):
             return directional_text_box(f'*={self.k}', side=soq.reg.side)
 
 
-@bloq_example
+@frozen
+class MontgomeryModDbl(Bloq):
+    r"""An n-bit modular doubling gate.
+
+    This gate is designed to operate on integers in the Montgomery form.
+    Implements |x> => |2 * x % p> using $2n$ Toffoli gates.
+
+    Args:
+        bitsize: Number of bits used to represent each integer.
+        p: The modulus for the doubling.
+
+    Registers:
+        x: A bitsize-sized input register (register x above).
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 6d and 8
+    """
+
+    bitsize: int
+    p: int
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', QMontgomeryUInt(self.bitsize))])
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        return {'x': (2 * x) % self.p}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Allocate ancilla bits for sign and double.
+        lower_bit = bb.allocate(n=1)
+        sign = bb.allocate(n=1)
+
+        # Convert x to an n + 2-bit integer by attaching two |0⟩ qubits as the least and most
+        # significant bits.
+        x_split = bb.split(x)
+        x = bb.join(np.concatenate([[sign], x_split, [lower_bit]]))
+
+        # Add constant -p to the x register.
+        x = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize + 2, k=-1 * self.p, signed=True, cvs=()), x=x
+        )
+
+        # Split the three bit pieces again so that we can use the sign to control our constant
+        # addition circuit.
+        x_split = bb.split(x)
+        sign = x_split[0]
+        x = bb.join(x_split[1:])
+
+        # Add constant p to the x register if the result of the last modular reduction is negative.
+        sign_split = bb.split(sign)
+        sign_split, x = bb.add(
+            SimpleAddConstant(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)),
+            ctrls=sign_split,
+            x=x,
+        )
+        sign = bb.join(sign_split)
+
+        # Split the lower bit ancilla from the x register for use in resetting the other ancilla bit
+        # before freeing them both.
+        x_split = bb.split(x)
+        lower_bit = x_split[-1]
+        lower_bit = bb.add(XGate(), q=lower_bit)
+        lower_bit, sign = bb.add(CNOT(), ctrl=lower_bit, target=sign)
+        lower_bit = bb.add(XGate(), q=lower_bit)
+
+        free_bit = x_split[0]
+        x = bb.join(np.concatenate([x_split[1:-1], [lower_bit]]))
+
+        # Free the ancilla bits.
+        bb.free(free_bit)
+        bb.free(sign)
+
+        # Return the output registers.
+        return {'x': x}
+
+    def short_name(self) -> str:
+        return f'x = 2 * x mod {self.p}'
+
+
+_K = sympy.Symbol('k_mul')
+
+
+def _generalize_k(b: Bloq) -> Optional[Bloq]:
+    if isinstance(b, CtrlScaleModAdd):
+        return attrs.evolve(b, k=_K)
+
+    return b
+
+
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul() -> CtrlModMul:
     modmul = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
     return modmul
 
 
-@bloq_example
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul_symb() -> CtrlModMul:
     import sympy
 

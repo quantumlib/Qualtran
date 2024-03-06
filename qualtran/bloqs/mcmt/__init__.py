@@ -12,8 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .atom import TestAtom, TestTwoBitOp
-from .casting import TestCastToFrom
-from .many_registers import TestMultiRegister
-from .with_call_graph import TestBloqWithCallGraph
-from .with_decomposition import TestParallelCombo, TestSerialCombo
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
+    MultiControlPauli,
+    MultiControlX,
+    MultiTargetCNOT,
+)

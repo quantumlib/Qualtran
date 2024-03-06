@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.multi_control_multi_target_pauli import (
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
     MultiControlPauli,
     MultiControlX,
     MultiTargetCNOT,

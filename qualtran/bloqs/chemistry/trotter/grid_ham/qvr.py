@@ -74,6 +74,6 @@ def _qvr() -> QuantumVariableRotation:
 
 _QVR = BloqDocSpec(
     bloq_cls=QuantumVariableRotation,
-    import_line='from qualtran.bloqs.chemistry.trotter.qvr import QuantumVariableRotation',
+    import_line='from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation',
     examples=(_qvr,),
 )

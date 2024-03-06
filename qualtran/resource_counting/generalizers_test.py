@@ -14,8 +14,8 @@
 import cirq
 
 from qualtran import QAny
-from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT, Rx, TwoBitSwap
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting.bloq_counts import _make_composite_generalizer
