@@ -39,9 +39,9 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.data_types import QMontgomeryUInt
-from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.and_bloq import And
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement

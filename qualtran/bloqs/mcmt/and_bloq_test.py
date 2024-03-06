@@ -22,8 +22,8 @@ from attrs import frozen
 
 import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
-from qualtran.bloqs.and_bloq import _and_bloq, _multi_and, And, MultiAnd
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
+from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, And, MultiAnd
 from qualtran.drawing import Circle, get_musical_score_data
 
 

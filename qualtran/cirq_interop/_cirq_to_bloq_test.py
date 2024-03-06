@@ -32,8 +32,8 @@ from qualtran import (
     Signature,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.and_bloq import And
 from qualtran.bloqs.basic_gates import CNOT, OneState
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
