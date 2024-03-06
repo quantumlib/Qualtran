@@ -11,8 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.chemistry.trotter.qvr import _qvr
+
+import pytest
+
+from qualtran.bloqs.factoring.mod_sub import MontgomeryModNeg, MontgomeryModSub
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
-def test_kinetic_energy(bloq_autotester):
-    bloq_autotester(_qvr)
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_neg_decomp(bitsize, p):
+    bloq = MontgomeryModNeg(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_sub_decomp(bitsize, p):
+    bloq = MontgomeryModSub(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)

@@ -15,6 +15,7 @@
 import pytest
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
+from qualtran.surface_code.magic_count import MagicCount
 
 
 def test_mul():
@@ -82,3 +83,10 @@ def test_subtraction():
         rotation_gates=6,
         rotation_circuit_depth=2,
     )
+
+    assert AlgorithmSummary(t_gates=1, toffoli_gates=4).to_magic_count() == MagicCount(
+        n_ccz=4, n_t=1
+    )
+
+    with pytest.raises(ValueError):
+        _ = AlgorithmSummary(rotation_gates=1).to_magic_count()

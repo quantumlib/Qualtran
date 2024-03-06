@@ -32,8 +32,8 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
 

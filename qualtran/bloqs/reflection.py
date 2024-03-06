@@ -22,8 +22,9 @@ import numpy as np
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.drawing import Circle, WireSymbol
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -83,7 +84,7 @@ class Reflection(Bloq):
         return {(Toffoli(), nbits - 1)}
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _reflection() -> Reflection:
     reflection = Reflection(bitsizes=(2, 3, 1), cvs=(0, 1, 1))
     return reflection

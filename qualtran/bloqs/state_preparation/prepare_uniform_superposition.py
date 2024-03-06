@@ -21,8 +21,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
-from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.arithmetic import LessThanConstant
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
 
 @attrs.frozen
