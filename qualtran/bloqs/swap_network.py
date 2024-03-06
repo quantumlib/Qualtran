@@ -36,10 +36,16 @@ from qualtran import (
 )
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.basic_gates import CSwap, TGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.generalizers import (
+    cirq_to_bloqs,
+    generalize_rotation_angle,
+    ignore_cliffords,
+    ignore_split_join,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -144,14 +150,18 @@ def _approx_cswap_symb() -> CSwapApprox:
     return approx_cswap_symb
 
 
-@bloq_example
+@bloq_example(
+    generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords, generalize_rotation_angle]
+)
 def _approx_cswap_small() -> CSwapApprox:
     # A small version on four bits.
     approx_cswap_small = CSwapApprox(bitsize=4)
     return approx_cswap_small
 
 
-@bloq_example
+@bloq_example(
+    generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords, generalize_rotation_angle]
+)
 def _approx_cswap_large() -> CSwapApprox:
     # A large version that swaps 64-bit registers.
     approx_cswap_large = CSwapApprox(bitsize=64)
@@ -246,13 +256,13 @@ class SwapWithZero(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _swz() -> SwapWithZero:
     swz = SwapWithZero(selection_bitsize=8, target_bitsize=32, n_target_registers=4)
     return swz
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _swz_small() -> SwapWithZero:
     # A small version on four bits.
     swz_small = SwapWithZero(selection_bitsize=3, target_bitsize=2, n_target_registers=2)

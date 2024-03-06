@@ -37,12 +37,6 @@ import qualtran.cirq_interop.testing as cq_testing
 # a notebook template.
 
 
-def _make_QROM():
-    from qualtran.bloqs.qrom import QROM
-
-    return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
-
-
 def _make_MultiTargetCSwap():
     from qualtran.bloqs.basic_gates import CSwap
 

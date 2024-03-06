@@ -51,12 +51,17 @@ def test_t_counts_from_sigma():
     sigma = {
         ZPowGate(eps=z_eps1): 1,
         ZPowGate(eps=z_eps2): 2,
+        ZPowGate(0.01, eps=z_eps1): 1,
+        ZPowGate(0.01, eps=z_eps2): 2,
         Rz(0.01, eps=z_eps2): 3,
         Rx(0.01, eps=x_eps): 4,
         XPowGate(eps=x_eps): 5,
+        XPowGate(0.01, eps=x_eps): 5,
         Ry(0.01, eps=y_eps): 6,
         YPowGate(eps=y_eps): 7,
+        YPowGate(0.01, eps=y_eps): 7,
         CZPowGate(eps=cz_eps): 20,
+        CZPowGate(0.01, eps=cz_eps): 20,
         TGate(): 100,
         Toffoli(): 200,
     }

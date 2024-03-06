@@ -11,11 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from qualtran.bloqs.basic_gates import CNOT
-from qualtran.bloqs.mcmt.and_bloq import MultiAnd
-from qualtran.simulation.tensor import bloq_has_custom_tensors
 
-
-def test_bloq_has_custom_tensors():
-    assert bloq_has_custom_tensors(CNOT())
-    assert not bloq_has_custom_tensors(MultiAnd((1,) * 5))
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
+    MultiControlPauli,
+    MultiControlX,
+    MultiTargetCNOT,
+)
