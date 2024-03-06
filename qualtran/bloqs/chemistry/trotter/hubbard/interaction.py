@@ -49,6 +49,7 @@ class Interaction(Bloq):
 
     length: Union[int, sympy.Expr]
     angle: Union[float, sympy.Expr]
+    hubb_u: Union[float, sympy.Expr]
     eps: Union[float, sympy.Expr] = 1e-9
 
     @cached_property
@@ -57,7 +58,7 @@ class Interaction(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Page 13 paragraph 1.
-        return {(Rz(angle=self.angle, eps=self.eps), self.length**2)}
+        return {(Rz(angle=self.angle * self.hubb_u, eps=self.eps), self.length**2)}
 
 
 @bloq_example

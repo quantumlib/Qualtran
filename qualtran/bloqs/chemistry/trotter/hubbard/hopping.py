@@ -115,7 +115,7 @@ class HoppingTile(Bloq):
     pink: bool = True
 
     def __attrs_post_init__(self):
-        if self.length % 2 != 0:
+        if isinstance(self.length, int) and self.length % 2 != 0:
             raise ValueError('Only even length lattices are supported')
 
     def short_name(self) -> str:

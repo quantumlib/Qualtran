@@ -46,9 +46,9 @@ def build_plaq_unitary_second_order_suzuki(
     coeffs = (0.5, 0.5, 1.0, 0.5, 0.5)
     # Build the basic bloqs which make up the 2nd order PlAQ unitary.
     # The pink and gold "tiles".
-    pink = HoppingTile(length=length, angle=0, eps=eps, pink=True)
-    gold = HoppingTile(length=length, angle=0, eps=eps, pink=False)
-    interaction = Interaction(length=length, angle=0, eps=eps)
+    pink = HoppingTile(length=length, angle=0, eps=eps, pink=True, tau=hubb_t)
+    gold = HoppingTile(length=length, angle=0, eps=eps, pink=False, tau=hubb_t)
+    interaction = Interaction(length=length, angle=0, eps=eps, hubb_u=hubb_u)
     unitary = TrotterizedUnitary(
         (interaction, pink, gold), indices=indices, coeffs=coeffs, timestep=timestep
     )
