@@ -66,6 +66,7 @@ import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.qrom
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
