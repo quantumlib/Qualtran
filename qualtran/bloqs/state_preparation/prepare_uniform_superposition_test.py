@@ -18,7 +18,7 @@ import pytest
 
 import qualtran.testing as qlt_testing
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran.bloqs.prepare_uniform_superposition import (
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     _c_prep_uniform,
     _prep_uniform,
     PrepareUniformSuperposition,
