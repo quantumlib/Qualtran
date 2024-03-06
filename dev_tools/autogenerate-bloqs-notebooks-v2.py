@@ -68,6 +68,7 @@ import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qrom
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -102,11 +103,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network._SWZ_DOC,
             qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
         ],
-    ),
-    NotebookSpecV2(
-        title='Two Bit FFFT Gate',
-        module=qualtran.bloqs.basic_gates.two_bit_ffft,
-        bloq_specs=[qualtran.bloqs.basic_gates.two_bit_ffft._TWO_BIT_FFFT_DOC],
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',
@@ -316,6 +312,14 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.rotations.phasing_via_cost_function,
         bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
         directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    # --------------------------------------------------------------------------
+    # -----   QFT          -----------------------------------------------------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Two Bit FFFT Gate',
+        module=qualtran.bloqs.qft.two_bit_ffft,
+        bloq_specs=[qualtran.bloqs.qft.two_bit_ffft._TWO_BIT_FFFT_DOC],
     ),
 ]
 
