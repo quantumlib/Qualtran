@@ -383,19 +383,18 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     @cached_property
     def degree(self) -> int:
         r"""degree of the polynomial to approximate the function e^{it\cos(\theta)}"""
-        return len(self.approx_cos) // 2
-
-    @cached_property
-    def approx_cos(self) -> NDArray[np.complex_]:
-        r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         d = 0
         while True:
             term = scipy.special.jv(d + 1, self.t * self.alpha)
             if np.isclose(term, 0, atol=self.precision / 2):
                 break
             d += 1
+        return d
 
-        coeff_indices = np.arange(-d, d + 1)
+    @cached_property
+    def approx_cos(self) -> NDArray[np.complex_]:
+        r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
+        coeff_indices = np.arange(-self.degree, self.degree + 1)
         approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
         return approx_cos
 
