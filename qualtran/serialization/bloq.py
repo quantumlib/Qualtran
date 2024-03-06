@@ -89,6 +89,7 @@ RESOLVER_DICT = {
     'ArbitraryClifford': ArbitraryClifford,
     'Controlled': Controlled,
     'CirqGateAsBloq': CirqGateAsBloq,
+    'Toffoli': basic_gates.Toffoli,
 }
 
 
@@ -318,6 +319,8 @@ def _populate_bloq_to_idx(
                     _populate_bloq_to_idx(binst.bloq, bloq_to_idx, pred, 0)
         except NotImplementedError:
             # NotImplementedError is raised if `bloq` does not have a decomposition.
+            ...
+        except DecomposeTypeError:
             ...
 
         # Approximately decompose the current Bloq and its decomposed Bloqs.

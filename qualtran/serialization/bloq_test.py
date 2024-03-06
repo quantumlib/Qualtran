@@ -23,13 +23,15 @@ import sympy
 
 from qualtran import Bloq, Signature
 from qualtran._infra.composite_bloq_test import TestTwoCNOT
+from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.factoring.mod_exp import ModExp
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
-
+from qualtran import QUInt
+from qualtran.bloqs.arithmetic import Add
 
 @pytest.mark.parametrize(
     'arg',
@@ -72,6 +74,13 @@ def test_bloq_to_proto_cnot():
     assert cnot in deserialized_bloqs
     assert CirqGateAsBloq(cirq.CNOT) in deserialized_bloqs
 
+def test_cnot_to_proto():
+    cnot = CNOT()
+    proto_lib = bloq_serialization.bloqs_to_proto(cnot)
+    assert len(proto_lib.table) == 1
+    deseralized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert len(deseralized) == 1
+    assert isinstance(deseralized[0], CNOT)
 
 def test_cbloq_to_proto_two_cnot():
     bloq_serialization.RESOLVER_DICT.update({'TestTwoCNOT': TestTwoCNOT})
@@ -192,3 +201,12 @@ def test_meta_bloq_to_proto():
 
     assert proto_lib == bloq_serialization.bloqs_to_proto(bloq, bloq, TestTwoCSwap(20), max_depth=2)
     assert bloq in bloq_serialization.bloqs_from_proto(proto_lib)
+
+def test_add():
+    add = Add(dtype=QUInt(bitsize=2))
+    proto_lib = bloq_serialization.bloqs_to_proto(add)
+    assert len(proto_lib.table) == 8
+    deseralized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert len(deseralized) == 8
+    assert isinstance(deseralized[0],Add)
+    assert deseralized[0].dtype == QUInt(bitsize=2)
