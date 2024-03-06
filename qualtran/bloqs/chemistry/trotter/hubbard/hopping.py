@@ -77,7 +77,7 @@ class HoppingPlaquette(Bloq):
         # page 14, discussion after E13
         # There are 4 flanking f-gates and a e^{iXX}e^{iYY} rotation, which can
         # be rotated to single rotation + cliffords.
-        return {(FGate(0, 1), 4), (Rz(self.kappa, eps=self.eps), 2)}
+        return {(FGate(0, 1, eps=self.eps), 4), (Rz(self.kappa, eps=self.eps), 2)}
 
 
 @frozen
