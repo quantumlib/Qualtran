@@ -21,7 +21,7 @@ from qualtran import Bloq, QMontgomeryUInt, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.factoring.mod_add import MontgomeryModAdd
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 
 
 @frozen

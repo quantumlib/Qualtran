@@ -48,7 +48,6 @@ from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
-import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting
@@ -66,7 +65,8 @@ import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
 import qualtran.bloqs.factoring.mod_exp
-import qualtran.bloqs.multi_control_multi_target_pauli
+import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.prepare_uniform_superposition
 import qualtran.bloqs.qrom
 import qualtran.bloqs.reflection
@@ -202,8 +202,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='And',
-        module=qualtran.bloqs.and_bloq,
-        bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        module=qualtran.bloqs.mcmt.and_bloq,
+        bloq_specs=[
+            qualtran.bloqs.mcmt.and_bloq._AND_DOC,
+            qualtran.bloqs.mcmt.and_bloq._MULTI_AND_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
@@ -223,10 +226,10 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Multi-Paulis',
-        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        module=qualtran.bloqs.mcmt.multi_control_multi_target_pauli,
         bloq_specs=[
-            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
-            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),

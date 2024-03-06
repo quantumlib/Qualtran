@@ -224,7 +224,7 @@ def _and_bloq() -> And:
 
 
 _AND_DOC = BloqDocSpec(
-    bloq_cls=And, import_line='from qualtran.bloqs.and_bloq import And', examples=(_and_bloq,)
+    bloq_cls=And, import_line='from qualtran.bloqs.mcmt import And', examples=(_and_bloq,)
 )
 
 
@@ -335,6 +335,6 @@ def _multi_and() -> MultiAnd:
 
 _MULTI_AND_DOC = BloqDocSpec(
     bloq_cls=MultiAnd,
-    import_line='from qualtran.bloqs.and_bloq import MultiAnd',
+    import_line='from qualtran.bloqs.mcmt import MultiAnd',
     examples=(_multi_and,),
 )

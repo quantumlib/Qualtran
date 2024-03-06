@@ -64,7 +64,7 @@ def generalize_rotation_angle(b: Bloq) -> Optional[Bloq]:
 
 def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces control variables with a shared symbol."""
-    from qualtran.bloqs.and_bloq import And, MultiAnd
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
     if isinstance(b, And):
         return attrs.evolve(b, cv1=CV, cv2=CV)
@@ -79,7 +79,7 @@ def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     import cirq
 
     from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitSwap, XGate, ZGate
-    from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT
+    from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
     from qualtran.bloqs.util_bloqs import ArbitraryClifford
     from qualtran.cirq_interop import CirqGateAsBloq
 

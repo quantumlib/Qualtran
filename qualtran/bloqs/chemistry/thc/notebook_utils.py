@@ -26,7 +26,7 @@ from qualtran.bloqs.arithmetic import (
     ToContiguousIndex,
 )
 from qualtran.bloqs.basic_gates import CSwap, Rx, Ry, Rz, TGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.qrom import QROM
 from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split

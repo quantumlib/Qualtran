@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from qualtran import QBit, Register, Side, Signature
-from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop import testing
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 

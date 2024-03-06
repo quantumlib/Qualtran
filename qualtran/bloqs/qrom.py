@@ -24,8 +24,8 @@ from numpy.typing import ArrayLike, NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
-from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT

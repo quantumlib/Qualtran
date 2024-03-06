@@ -22,7 +22,7 @@ import numpy as np
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.drawing import Circle, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
