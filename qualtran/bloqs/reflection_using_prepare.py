@@ -45,6 +45,8 @@ class ReflectionUsingPrepare(GateWithRegisters):
 
     Args:
         prepare_gate: An implementation of `PREPARE` for state preparation.
+        extra_registers: If the prepare_gate receives extra registers that do not interfere in the
+            rotation, those should be specified there as pairs (name, bitsize)
         control_val: If 0/1, a controlled version of the reflection operator is constructed.
             Defaults to None, in which case the resulting reflection operator is not controlled.
 
