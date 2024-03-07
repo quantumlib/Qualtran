@@ -21,7 +21,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import Bloq, GateWithRegisters, QAny, QUInt, Register, Side, Signature
-from qualtran.bloqs.and_bloq import And
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 

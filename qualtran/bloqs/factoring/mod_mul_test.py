@@ -16,19 +16,16 @@ from typing import Optional
 
 import attrs
 import numpy as np
+import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import Bloq
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul
+from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul, MontgomeryModDbl
 from qualtran.bloqs.util_bloqs import Allocate, Free
 from qualtran.resource_counting import SympySymbolAllocator
-
-
-def _make_modmul():
-    from qualtran.bloqs.factoring.mod_mul import CtrlModMul
-
-    return CtrlModMul(k=123, mod=13 * 17, bitsize=8)
+from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_consistent_classical():
@@ -110,7 +107,6 @@ def test_modmul_symb_manual():
 
 
 def test_consistent_counts():
-
     bloq = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
     counts1 = bloq.bloq_counts()
 
@@ -130,9 +126,20 @@ def test_consistent_counts():
     assert counts1 == counts2
 
 
+@pytest.mark.parametrize('bitsize,p', [(1, 1), (2, 3), (5, 8)])
+def test_montgomery_mod_dbl_decomp(bitsize, p):
+    bloq = MontgomeryModDbl(bitsize=bitsize, p=p)
+    assert_valid_bloq_decomposition(bloq)
+
+
 def test_modul(bloq_autotester):
     bloq_autotester(_modmul)
 
 
 def test_modul_symb(bloq_autotester):
     bloq_autotester(_modmul_symb)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('mod_mul')

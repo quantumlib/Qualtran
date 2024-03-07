@@ -85,7 +85,7 @@ class ToContiguousIndex(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         num_toffoli = self.bitsize**2 + self.bitsize - 1
         return TComplexity(t=4 * num_toffoli)
 

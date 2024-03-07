@@ -299,13 +299,13 @@ def test_finalize_alloc():
 
 
 def test_get_soquets():
-    soqs = _get_dangling_soquets(Join(10).signature, right=True)
+    soqs = _get_dangling_soquets(Join(QAny(10)).signature, right=True)
     assert list(soqs.keys()) == ['reg']
     soq = soqs['reg']
     assert soq.binst == RightDangle
     assert soq.reg.bitsize == 10
 
-    soqs = _get_dangling_soquets(Join(10).signature, right=False)
+    soqs = _get_dangling_soquets(Join(QAny(10)).signature, right=False)
     assert list(soqs.keys()) == ['reg']
     soq = soqs['reg']
     assert soq.shape == (10,)
@@ -424,25 +424,25 @@ def test_add_from(call_decompose):
         == """\
 TestParallelCombo()<0>
   LeftDangle.stuff -> reg
-  reg -> Split(n=3)<1>.reg
+  reg -> Split(dtype=QAny(bitsize=3))<1>.reg
 --------------------
-Split(n=3)<1>
+Split(dtype=QAny(bitsize=3))<1>
   TestParallelCombo()<0>.reg -> reg
   reg[0] -> TestAtom()<2>.q
   reg[1] -> TestAtom()<3>.q
   reg[2] -> TestAtom()<4>.q
 --------------------
 TestAtom()<2>
-  Split(n=3)<1>.reg[0] -> q
-  q -> Join(n=3)<5>.reg[0]
+  Split(dtype=QAny(bitsize=3))<1>.reg[0] -> q
+  q -> Join(dtype=QAny(bitsize=3))<5>.reg[0]
 TestAtom()<3>
-  Split(n=3)<1>.reg[1] -> q
-  q -> Join(n=3)<5>.reg[1]
+  Split(dtype=QAny(bitsize=3))<1>.reg[1] -> q
+  q -> Join(dtype=QAny(bitsize=3))<5>.reg[1]
 TestAtom()<4>
-  Split(n=3)<1>.reg[2] -> q
-  q -> Join(n=3)<5>.reg[2]
+  Split(dtype=QAny(bitsize=3))<1>.reg[2] -> q
+  q -> Join(dtype=QAny(bitsize=3))<5>.reg[2]
 --------------------
-Join(n=3)<5>
+Join(dtype=QAny(bitsize=3))<5>
   TestAtom()<2>.q -> reg[0]
   TestAtom()<3>.q -> reg[1]
   TestAtom()<4>.q -> reg[2]

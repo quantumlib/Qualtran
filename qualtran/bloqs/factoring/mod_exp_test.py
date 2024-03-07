@@ -27,12 +27,6 @@ from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import execute_notebook
 
 
-def _make_modexp():
-    from qualtran.bloqs.factoring.mod_exp import ModExp
-
-    return ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
-
-
 def test_mod_exp_consistent_classical():
     rs = np.random.RandomState(52)
 
@@ -105,5 +99,5 @@ def test_intro_notebook():
 
 
 @pytest.mark.notebook
-def test_ref_notebook():
-    execute_notebook('ref-factoring')
+def test_notebook():
+    execute_notebook('mod_exp')

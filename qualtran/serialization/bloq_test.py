@@ -17,6 +17,8 @@ from typing import Union
 
 import attrs
 import cirq
+import numpy as np
+import pytest
 import sympy
 
 from qualtran import Bloq, Signature
@@ -27,6 +29,28 @@ from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
+
+
+@pytest.mark.parametrize(
+    'arg',
+    [
+        1,
+        2.0,
+        'hello world',
+        sympy.Symbol('a') * sympy.Symbol('b') + sympy.Symbol('c') / 10,
+        np.array([*range(100)], dtype=np.complex128).reshape((10, 10)),
+    ],
+)
+def test_arg_to_proto_round_trip(arg):
+    proto = bloq_serialization.arg_to_proto(name='custom_name', val=arg)
+    arg_dict = bloq_serialization.arg_from_proto(proto)
+    if isinstance(arg, np.ndarray):
+        arr = arg_dict['custom_name']
+        assert arr.shape == arg.shape
+        assert arr.dtype == arg.dtype
+        assert np.allclose(arr, arg)
+    else:
+        assert arg_dict['custom_name'] == arg
 
 
 def test_bloq_to_proto_cnot():
@@ -42,7 +66,6 @@ def test_bloq_to_proto_cnot():
     assert proto.name == "TestCNOT"
     assert len(proto.registers.registers) == 2
     assert proto.registers.registers[0].name == 'control'
-    assert proto.registers.registers[0].bitsize.int_val == 1
     assert proto.registers.registers[0].side == registers_pb2.Register.Side.THRU
 
     deserialized_bloqs = bloq_serialization.bloqs_from_proto(proto_lib)
@@ -70,7 +93,7 @@ class TestCSwap(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
 

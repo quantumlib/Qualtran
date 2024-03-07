@@ -12,10 +12,10 @@ Bloqs Library
     :caption: Concepts:
 
     unary_iteration.ipynb
-    arithmetic/comparison_gates.ipynb
+    arithmetic/t_complexity_of_comparison_gates.ipynb
     arithmetic/error_analysis_for_fxp_arithmetic.ipynb
     phase_estimation_of_quantum_walk.ipynb
-    chemistry/trotter/trotter_costs.ipynb
+    chemistry/trotter/grid_ham/trotter_costs.ipynb
     chemistry/resource_estimation.ipynb
     chemistry/writing_algorithms.ipynb
     factoring/factoring-via-modexp.ipynb
@@ -27,6 +27,8 @@ Bloqs Library
     basic_gates.ipynb
     and_bloq.ipynb
     swap_network.ipynb
+    basic_gates/t_gate.ipynb
+    basic_gates/toffli.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -38,13 +40,12 @@ Bloqs Library
     chemistry/pbc/first_quantization/projectile/projectile.ipynb
     chemistry/sf/single_factorization.ipynb
     chemistry/df/double_factorization.ipynb
-    chemistry/trotter/trotter.ipynb
+    chemistry/trotter/grid_ham/trotter.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Factoring:
 
-    factoring/ref-factoring.ipynb
     factoring/mod_exp.ipynb
     factoring/mod_mul.ipynb
 
@@ -55,7 +56,7 @@ Bloqs Library
     arithmetic/addition.ipynb
     arithmetic/multiplication.ipynb
     arithmetic/conversions.ipynb
-    arithmetic/arithmetic.ipynb
+    arithmetic/comparisons.ipynb
 
 .. toctree::
     :maxdepth: 2

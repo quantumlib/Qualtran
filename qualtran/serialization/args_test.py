@@ -19,23 +19,15 @@ import sympy
 from qualtran.serialization import args
 
 
-@pytest.mark.parametrize(
-    'arg',
-    [
-        1,
-        2.0,
-        'hello world',
-        sympy.Symbol('a') * sympy.Symbol('b') + sympy.Symbol('c') / 10,
-        np.array([*range(100)], dtype=np.complex128).reshape((10, 10)),
-    ],
-)
-def test_arg_to_proto_round_trip(arg):
-    proto = args.arg_to_proto(name='custom_name', val=arg)
-    arg_dict = args.arg_from_proto(proto)
-    if isinstance(arg, np.ndarray):
-        arr = arg_dict['custom_name']
-        assert arr.shape == arg.shape
-        assert arr.dtype == arg.dtype
-        assert np.allclose(arr, arg)
-    else:
-        assert arg_dict['custom_name'] == arg
+@pytest.mark.parametrize('arg', [1, sympy.Symbol('a') * sympy.Symbol('b') + sympy.Symbol('c') / 10])
+def test_int_or_sympy_to_proto(arg):
+    proto = args.int_or_sympy_to_proto(arg)
+    arg_from_proto = args.int_or_sympy_from_proto(proto)
+    assert arg_from_proto == arg
+
+
+def test_ndarray_to_proto():
+    x = np.random.random(100)
+    proto = args.ndarray_to_proto(x)
+    x_from_proto = args.ndarray_from_proto(proto)
+    assert np.allclose(x, x_from_proto)

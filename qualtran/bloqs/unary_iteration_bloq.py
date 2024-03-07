@@ -23,8 +23,8 @@ from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
-from qualtran.bloqs import and_bloq
 from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.mcmt import and_bloq
 
 if TYPE_CHECKING:
     import sympy
@@ -107,7 +107,7 @@ def _unary_iteration_segtree(
     yield from _unary_iteration_segtree(
         ops, anc, selection, ancilla, sl + 1, l, m, l_iter, r_iter, break_early
     )
-    ops.append(cirq.CNOT(control, anc))
+    ops.append(CNOT().on(control, anc))
     yield from _unary_iteration_segtree(
         ops, anc, selection, ancilla, sl + 1, m, r, l_iter, r_iter, break_early
     )
@@ -129,11 +129,11 @@ def _unary_iteration_zero_control(
             ops, selection[1:], ancilla, l_iter, r_iter, break_early
         )
         return
-    ops.append(cirq.X(selection[0]))
+    ops.append(XGate().on(selection[0]))
     yield from _unary_iteration_segtree(
         ops, selection[0], selection[1:], ancilla, sl, l, m, l_iter, r_iter, break_early
     )
-    ops.append(cirq.X(selection[0]))
+    ops.append(XGate().on(selection[0]))
     yield from _unary_iteration_segtree(
         ops, selection[0], selection[1:], ancilla, sl, m, r, l_iter, r_iter, break_early
     )
@@ -486,7 +486,7 @@ class UnaryIterationGate(GateWithRegisters):
         representing range `[l, r)`. If True, the internal node is considered equivalent to a leaf
         node and thus, `self.nth_operation` will be called for only integer `l` in the range [l, r).
 
-        When the `UnaryIteration` class is constructed using multiple selection signature, i.e. we
+        When the `UnaryIteration` class is constructed using multiple selection registers, i.e. we
         wish to perform nested coherent for-loops, a unary iteration segment tree is constructed
         corresponding to each nested coherent for-loop. For every such unary iteration segment tree,
         the `_break_early` condition is checked by passing the `selection_index_prefix` tuple.
@@ -622,5 +622,5 @@ class UnaryIterationGate(GateWithRegisters):
         try:
             unary_iteration_loops(0, {}, total_bits(self.control_registers))
             return {(bloq, count) for bloq, count in bloq_counts.items()}
-        except NotImplementedError as e:
+        except NotImplementedError:
             return super().build_call_graph(ssa)

@@ -408,7 +408,12 @@ class Bloq(metaclass=abc.ABCMeta):
         By default, this will recurse into this bloq's decomposition but this
         method can be overriden with a known value.
         """
-        return self.decompose_bloq().t_complexity()
+        from qualtran.cirq_interop.t_complexity_protocol import t_complexity
+
+        return t_complexity(self)
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return NotImplemented
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'

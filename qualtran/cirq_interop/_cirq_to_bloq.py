@@ -60,17 +60,13 @@ def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
     return ret
 
 
-class CirqGateAsBloqBase(GateWithRegisters):
+class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     """A Bloq wrapper around a `cirq.Gate`"""
 
     @property
     @abc.abstractmethod
     def cirq_gate(self) -> cirq.Gate:
         ...
-
-    def pretty_name(self) -> str:
-        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
-        return f'cirq.{g}'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -114,7 +110,7 @@ class CirqGateAsBloqBase(GateWithRegisters):
             outgoing=outgoing,
         )
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return t_complexity(self.cirq_gate)
 
     def as_cirq_op(
@@ -145,6 +141,10 @@ class CirqGateAsBloqBase(GateWithRegisters):
 @frozen
 class CirqGateAsBloq(CirqGateAsBloqBase):
     gate: cirq.Gate
+
+    def pretty_name(self) -> str:
+        g = min(self.cirq_gate.__class__.__name__, str(self.cirq_gate), key=len)
+        return f'cirq.{g}'
 
     @property
     def cirq_gate(self) -> cirq.Gate:
@@ -276,15 +276,15 @@ def _ensure_in_reg_exists(
     qreg_to_qvar.clear()
 
     # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
-    soqs_to_join = []
+    soqs_to_join: Dict[cirq.Qid, Soquet] = {}
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            soqs_to_join.append(soq)
+            soqs_to_join[qreg.qubits[0]] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        qreg_to_qvar[in_reg] = bb.join(np.array(soqs_to_join))
+        qreg_to_qvar[in_reg] = bb.join(np.array([soqs_to_join[q] for q in in_reg.qubits]))
 
 
 def _gather_input_soqs(
@@ -300,18 +300,29 @@ def _gather_input_soqs(
     return qvars_in
 
 
-def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
-    """Get a `Bloq` out of a cirq Operation.
-
-    Unwrap BloqAsCirqGate, pass through any GateWithRegisters, and wrap
-    true cirq gates with `CirqGateAsBloq`.
-    """
+def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
+    from qualtran import Adjoint
+    from qualtran.bloqs.basic_gates import (
+        CNOT,
+        CSwap,
+        CZPowGate,
+        Hadamard,
+        Rx,
+        Ry,
+        Rz,
+        TGate,
+        Toffoli,
+        TwoBitSwap,
+        XGate,
+        XPowGate,
+        YGate,
+        YPowGate,
+        ZGate,
+        ZPowGate,
+    )
+    from qualtran.cirq_interop import CirqGateAsBloq
     from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
 
-    if op.gate is None:
-        raise ValueError(f"Only gate operations are supported, not {op}.")
-
-    gate = op.gate
     if isinstance(gate, BloqAsCirqGate):
         # Perhaps this operation was constructed from `Bloq.on()`.
         return gate.bloq
@@ -319,8 +330,57 @@ def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
         # I.e., `GateWithRegisters`.
         return gate
 
-    # A base cirq gate.
+    if isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
+        # Inverse of a cirq gate, delegate to Adjoint
+        return Adjoint(_cirq_gate_to_bloq(gate._original))
+
+    # Check specific basic gates instances.
+    CIRQ_GATE_TO_BLOQ_MAP = {
+        cirq.T: TGate(),
+        cirq.T**-1: TGate().adjoint(),
+        cirq.H: Hadamard(),
+        cirq.CNOT: CNOT(),
+        cirq.TOFFOLI: Toffoli(),
+        cirq.X: XGate(),
+        cirq.Y: YGate(),
+        cirq.Z: ZGate(),
+        cirq.SWAP: TwoBitSwap(),
+        cirq.CSWAP: CSwap(1),
+    }
+    if gate in CIRQ_GATE_TO_BLOQ_MAP:
+        return CIRQ_GATE_TO_BLOQ_MAP[gate]
+
+    # Check specific basic gates types.
+    CIRQ_TYPE_TO_BLOQ_MAP = {
+        cirq.Rz: Rz,
+        cirq.Rx: Rx,
+        cirq.Ry: Ry,
+        cirq.XPowGate: XPowGate,
+        cirq.YPowGate: YPowGate,
+        cirq.ZPowGate: ZPowGate,
+        cirq.CZPowGate: CZPowGate,
+    }
+    if isinstance(gate, (cirq.Rx, cirq.Ry, cirq.Rz)):
+        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](angle=gate._rads)
+
+    if isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)):
+        return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](
+            exponent=gate.exponent, global_shift=gate.global_shift
+        )
+
+    # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
     return CirqGateAsBloq(gate)
+
+
+def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
+    """Get a `Bloq` out of a cirq Operation.
+
+    Unwrap BloqAsCirqGate, pass through any GateWithRegisters, and wrap
+    true cirq gates with `CirqGateAsBloq`.
+    """
+    if op.gate is None:
+        raise ValueError(f"Only gate operations are supported, not {op}.")
+    return _cirq_gate_to_bloq(op.gate)
 
 
 def cirq_optree_to_cbloq(

@@ -23,7 +23,18 @@ import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
-from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, Soquet, SoquetT
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    QAny,
+    QBit,
+    QDType,
+    Register,
+    Side,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
@@ -41,31 +52,31 @@ class Split(Bloq):
     """Split a bitsize `n` register into a length-`n` array-register.
 
     Attributes:
-        n: The bitsize of the left register.
+        dtype: The quantum data type of the bitsize of the left register.
     """
 
-    n: int
+    dtype: QDType
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('reg', QAny(bitsize=self.n), shape=tuple(), side=Side.LEFT),
-                Register('reg', QBit(), shape=(self.n,), side=Side.RIGHT),
+                Register('reg', self.dtype, shape=tuple(), side=Side.LEFT),
+                Register('reg', QBit(), shape=(self.dtype.num_qubits,), side=Side.RIGHT),
             ]
         )
 
     def adjoint(self) -> 'Bloq':
-        return Join(n=self.n)
+        return Join(dtype=self.dtype)
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'reg': reg.reshape((self.n, 1))}
+        return None, {'reg': reg.reshape((self.dtype.num_qubits, 1))}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        return {'reg': ints_to_bits(np.array([reg]), self.n)[0]}
+        return {'reg': ints_to_bits(np.array([reg]), self.dtype.num_qubits)[0]}
 
     def add_my_tensors(
         self,
@@ -77,7 +88,9 @@ class Split(Bloq):
     ):
         tn.add(
             qtn.Tensor(
-                data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
+                data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
+                    (2,) * self.dtype.num_qubits + (2**self.dtype.num_qubits,)
+                ),
                 inds=outgoing['reg'].tolist() + [incoming['reg']],
                 tags=['Split', tag],
             )
@@ -107,27 +120,27 @@ class Join(Bloq):
     """Join a length-`n` array-register into one register of bitsize `n`.
 
     Attributes:
-        n: The bitsize of the right register.
+        dtype: The quantum data type of the right register.
     """
 
-    n: int
+    dtype: QDType
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
-                Register('reg', QBit(), shape=(self.n,), side=Side.LEFT),
-                Register('reg', QAny(bitsize=self.n), shape=tuple(), side=Side.RIGHT),
+                Register('reg', QBit(), shape=(self.dtype.num_qubits,), side=Side.LEFT),
+                Register('reg', self.dtype, shape=tuple(), side=Side.RIGHT),
             ]
         )
 
     def adjoint(self) -> 'Bloq':
-        return Split(n=self.n)
+        return Split(dtype=self.dtype)
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
-        return None, {'reg': reg.reshape(self.n)}
+        return None, {'reg': reg.reshape(self.dtype.num_qubits)}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -140,7 +153,9 @@ class Join(Bloq):
     ):
         tn.add(
             qtn.Tensor(
-                data=np.eye(2**self.n, 2**self.n).reshape((2,) * self.n + (2**self.n,)),
+                data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
+                    (2,) * self.dtype.num_qubits + (2**self.dtype.num_qubits,)
+                ),
                 inds=incoming['reg'].tolist() + [outgoing['reg']],
                 tags=['Join', tag],
             )
@@ -212,7 +227,7 @@ class Partition(Bloq):
         else:
             return None, {'x': np.concatenate([v.ravel() for _, v in cirq_quregs.items()])}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -283,7 +298,7 @@ class Partition(Bloq):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.shape:
-            text = f'[{", ".join(str(i) for i in soq.idx)}]'
+            text = f'[{",".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
         return directional_text_box(' ', side=soq.reg.side)
 
@@ -293,22 +308,22 @@ class Allocate(Bloq):
     """Allocate an `n` bit register.
 
     Attributes:
-          n: the bitsize of the allocated register.
+          dtype: the quantum data type of the allocated register.
     """
 
-    n: int
+    dtype: QDType
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('reg', QAny(bitsize=self.n), side=Side.RIGHT)])
+        return Signature([Register('reg', self.dtype, side=Side.RIGHT)])
 
     def adjoint(self) -> 'Bloq':
-        return Free(n=self.n)
+        return Free(self.dtype)
 
     def on_classical_vals(self) -> Dict[str, int]:
         return {'reg': 0}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -319,9 +334,13 @@ class Allocate(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
-        data = np.zeros(1 << self.n)
+        data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        assert soq.reg.name == 'reg'
+        return directional_text_box('alloc', Side.RIGHT)
 
 
 @frozen
@@ -333,24 +352,24 @@ class Free(Bloq):
     vector after freeing qubits and make sure it is normalized.
 
     Attributes:
-        n: the bitsize of the register to be freed.
+        dtype: The quantum data type of the register to be freed.
     """
 
-    n: int
+    dtype: QDType
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('reg', QAny(bitsize=self.n), side=Side.LEFT)])
+        return Signature([Register('reg', self.dtype, side=Side.LEFT)])
 
     def adjoint(self) -> 'Bloq':
-        return Allocate(n=self.n)
+        return Allocate(self.dtype)
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         if reg != 0:
             raise ValueError(f"Tried to free a non-zero register: {reg}.")
         return {}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def add_my_tensors(
@@ -361,9 +380,13 @@ class Free(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
-        data = np.zeros(1 << self.n)
+        data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        assert soq.reg.name == 'reg'
+        return directional_text_box('free', Side.LEFT)
 
 
 @frozen
@@ -385,5 +408,66 @@ class ArbitraryClifford(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('x', QAny(bitsize=self.n))])
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
+
+
+@frozen
+class Cast(Bloq):
+    """Cast a register from one n-bit QDType to another QDType.
+
+
+    Args:
+        in_qdtype: Input QDType to cast from.
+        out_qdtype: Output QDType to cast to.
+
+    Registers:
+        in: input register to cast from.
+        out: input register to cast to.
+    """
+
+    inp_dtype: QDType
+    out_dtype: QDType
+    shape: Tuple[int, ...] = attrs.field(
+        default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
+    )
+
+    def __attrs_post_init__(self):
+        if isinstance(self.inp_dtype.bitsize, int):
+            if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
+                raise ValueError("Casting only permitted between same sized registers.")
+
+    def adjoint(self) -> 'Bloq':
+        return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('reg', dtype=self.inp_dtype, shape=self.shape, side=Side.LEFT),
+                Register('reg', dtype=self.out_dtype, shape=self.shape, side=Side.RIGHT),
+            ]
+        )
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=np.eye(2**self.inp_dtype.num_qubits, 2**self.inp_dtype.num_qubits),
+                inds=[outgoing['reg']] + [incoming['reg']],
+                tags=['Cast', tag],
+            )
+        )
+
+    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
+        return {'reg': reg}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity()

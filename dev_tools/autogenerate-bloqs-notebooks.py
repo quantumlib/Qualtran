@@ -48,37 +48,16 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import BloqNbSpec, NotebookSpec, render_notebook
 
 import qualtran.bloqs.arithmetic
-import qualtran.bloqs.arithmetic.addition_test
-import qualtran.bloqs.arithmetic.comparison_test
-import qualtran.bloqs.arithmetic.conversions_test
-import qualtran.bloqs.arithmetic.multiplication_test
 import qualtran.bloqs.basic_gates.cnot_test
 import qualtran.bloqs.basic_gates.hadamard_test
 import qualtran.bloqs.basic_gates.rotation_test
-import qualtran.bloqs.basic_gates.swap_test
-import qualtran.bloqs.basic_gates.t_gate_test
-import qualtran.bloqs.basic_gates.toffoli_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
-import qualtran.bloqs.factoring.mod_exp
-import qualtran.bloqs.factoring.mod_exp_test
-import qualtran.bloqs.factoring.mod_mul_test
-import qualtran.bloqs.swap_network
 import qualtran.bloqs.swap_network_test
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
 NOTEBOOK_SPECS: List[NotebookSpec] = [
-    NotebookSpec(
-        title='Swap Network',
-        module=qualtran.bloqs.swap_network,
-        gate_specs=[
-            BloqNbSpec(qualtran.bloqs.basic_gates.swap_test._make_CSwap),
-            BloqNbSpec(qualtran.bloqs.swap_network_test._make_CSwapApprox),
-            BloqNbSpec(qualtran.bloqs.swap_network_test._make_SwapWithZero),
-        ],
-        directory=f'{SOURCE_DIR}/bloqs',
-    ),
     NotebookSpec(
         title='Basic Gates',
         module=qualtran.bloqs.basic_gates,
@@ -86,33 +65,11 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.basic_gates.cnot_test._make_CNOT),
             BloqNbSpec(qualtran.bloqs.basic_gates.x_basis_test._make_plus_state),
             BloqNbSpec(qualtran.bloqs.basic_gates.z_basis_test._make_zero_state),
-            BloqNbSpec(qualtran.bloqs.basic_gates.t_gate_test._make_t_gate),
             BloqNbSpec(qualtran.bloqs.basic_gates.rotation_test._make_Rz),
-            BloqNbSpec(qualtran.bloqs.basic_gates.toffoli_test._make_Toffoli),
             BloqNbSpec(qualtran.bloqs.basic_gates.hadamard_test._make_Hadamard),
         ],
         directory=f'{SOURCE_DIR}/bloqs',
-    ),
-    NotebookSpec(
-        title='Arithmetic',
-        module=qualtran.bloqs.arithmetic,
-        gate_specs=[
-            BloqNbSpec(qualtran.bloqs.arithmetic.comparison_test._make_greater_than),
-            BloqNbSpec(qualtran.bloqs.arithmetic.comparison_test._make_greater_than_constant),
-            BloqNbSpec(qualtran.bloqs.arithmetic.comparison_test._make_equals_a_constant),
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/arithmetic',
-    ),
-    NotebookSpec(
-        title='Modular arithmetic',
-        module=qualtran.bloqs.factoring,
-        path_stem='ref-factoring',
-        gate_specs=[
-            BloqNbSpec(qualtran.bloqs.factoring.mod_exp_test._make_modexp),
-            BloqNbSpec(qualtran.bloqs.factoring.mod_mul_test._make_modmul),
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/factoring',
-    ),
+    )
 ]
 
 

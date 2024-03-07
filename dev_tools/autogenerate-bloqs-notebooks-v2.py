@@ -44,43 +44,50 @@ Usage as a script:
 
 from typing import List
 
+from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
-import qualtran.bloqs.and_bloq
 import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
-import qualtran.bloqs.arithmetic.conversions
-import qualtran.bloqs.arithmetic.multiplication
+import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
-import qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
-import qualtran.bloqs.chemistry.sparse.select_bloq
 import qualtran.bloqs.chemistry.thc.prepare
-import qualtran.bloqs.chemistry.thc.select_bloq
-import qualtran.bloqs.chemistry.trotter.inverse_sqrt
-import qualtran.bloqs.chemistry.trotter.kinetic
-import qualtran.bloqs.chemistry.trotter.potential
-import qualtran.bloqs.chemistry.trotter.qvr
+import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
+import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
 import qualtran.bloqs.factoring.mod_exp
-import qualtran.bloqs.multi_control_multi_target_pauli
-import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
+import qualtran.bloqs.qrom
 import qualtran.bloqs.reflection
-import qualtran.bloqs.sorting
+import qualtran.bloqs.rotations.phasing_via_cost_function
+import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
 NOTEBOOK_SPECS: List[NotebookSpecV2] = [
+    NotebookSpecV2(
+        title='T Gate',
+        module=qualtran.bloqs.basic_gates.t_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.t_gate._T_GATE_DOC],
+    ),
+    NotebookSpecV2(
+        title='Toffoli',
+        module=qualtran.bloqs.basic_gates.toffoli,
+        bloq_specs=[qualtran.bloqs.basic_gates.toffoli._TOFFOLI_DOC],
+    ),
     NotebookSpecV2(
         title='Swap Network',
         module=qualtran.bloqs.swap_network,
@@ -90,8 +97,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network._SWZ_DOC,
             qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs',
-        path_stem='swap_network_2',
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',
@@ -107,8 +112,10 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Prepare Uniform Superposition',
-        module=qualtran.bloqs.prepare_uniform_superposition,
-        bloq_specs=[qualtran.bloqs.prepare_uniform_superposition._PREP_UNIFORM_DOC],
+        module=qualtran.bloqs.state_preparation.prepare_uniform_superposition,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.prepare_uniform_superposition._PREP_UNIFORM_DOC
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
@@ -117,6 +124,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
+    NotebookSpecV2(
+        title='QROM', module=qualtran.bloqs.qrom, bloq_specs=[qualtran.bloqs.qrom._QROM_DOC]
+    ),
+    # --------------------------------------------------------------------------
+    # -----   Chemistry   ------------------------------------------------------
+    # --------------------------------------------------------------------------
     NotebookSpecV2(
         title='First Quantized Hamiltonian',
         module=qualtran.bloqs.chemistry.pbc.first_quantization,
@@ -140,15 +153,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/pbc/first_quantization/projectile',
     ),
     NotebookSpecV2(
-        title='Sorting',
-        module=qualtran.bloqs.sorting,
-        bloq_specs=[
-            qualtran.bloqs.sorting._COMPARATOR_DOC,
-            qualtran.bloqs.sorting._BITONIC_SORT_DOC,
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/',
-    ),
-    NotebookSpecV2(
         title='Double Factorization',
         module=qualtran.bloqs.chemistry.df.double_factorization,
         bloq_specs=[
@@ -167,12 +171,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),
     NotebookSpecV2(
-        title='And',
-        module=qualtran.bloqs.and_bloq,
-        bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/',
-    ),
-    NotebookSpecV2(
         title='Single Factorization',
         module=qualtran.bloqs.chemistry.sf.single_factorization,
         bloq_specs=[
@@ -183,14 +181,14 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Trotter Bloqs',
-        module=qualtran.bloqs.chemistry.trotter,
+        module=qualtran.bloqs.chemistry.trotter.grid_ham,
         bloq_specs=[
-            qualtran.bloqs.chemistry.trotter.inverse_sqrt._POLY_INV_SQRT,
-            qualtran.bloqs.chemistry.trotter.inverse_sqrt._NR_INV_SQRT,
-            qualtran.bloqs.chemistry.trotter.qvr._QVR,
-            qualtran.bloqs.chemistry.trotter.kinetic._KINETIC_ENERGY,
-            qualtran.bloqs.chemistry.trotter.potential._PAIR_POTENTIAL,
-            qualtran.bloqs.chemistry.trotter.potential._POTENTIAL_ENERGY,
+            qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt._POLY_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt._NR_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.grid_ham.qvr._QVR,
+            qualtran.bloqs.chemistry.trotter.grid_ham.kinetic._KINETIC_ENERGY,
+            qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
+            qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
     ),
@@ -203,6 +201,15 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.thc.select_bloq._THC_SELECT,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
+    ),
+    NotebookSpecV2(
+        title='And',
+        module=qualtran.bloqs.mcmt.and_bloq,
+        bloq_specs=[
+            qualtran.bloqs.mcmt.and_bloq._AND_DOC,
+            qualtran.bloqs.mcmt.and_bloq._MULTI_AND_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
         title='Block Encoding',
@@ -221,13 +228,16 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Multi-Paulis',
-        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        module=qualtran.bloqs.mcmt.multi_control_multi_target_pauli,
         bloq_specs=[
-            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
-            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
+    # --------------------------------------------------------------------------
+    # -----   Arithmetic   -----------------------------------------------------
+    # --------------------------------------------------------------------------
     NotebookSpecV2(
         title='Addition',
         module=qualtran.bloqs.arithmetic.addition,
@@ -238,10 +248,19 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Sorting',
+        module=qualtran.bloqs.arithmetic.sorting,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.sorting._COMPARATOR_DOC,
+            qualtran.bloqs.arithmetic.sorting._BITONIC_SORT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/arithmetic/',
+    ),
+    NotebookSpecV2(
         title='State Preparation Using Rotations',
         module=qualtran.bloqs.state_preparation.state_preparation_via_rotation,
         bloq_specs=[
-            qualtran.bloqs.state_preparation.state_preparation_via_rotation._CONTROLLED_STATE_PREP_DOC
+            qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
         ],
         directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
     ),
@@ -259,12 +278,36 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='Comparison',
+        module=qualtran.bloqs.arithmetic.comparison,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.comparison._GREATER_THAN_DOC,
+            qualtran.bloqs.arithmetic.comparison._GREATER_THAN_K_DOC,
+            qualtran.bloqs.arithmetic.comparison._EQUALS_K_DOC,
+        ],
+    ),
+    NotebookSpecV2(
         title='Conversions',
         module=qualtran.bloqs.arithmetic.conversions,
         bloq_specs=[
             qualtran.bloqs.arithmetic.conversions._SIGNED_TO_TWOS,
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
         ],
+    ),
+    NotebookSpecV2(
+        title='Quantum Variable Rotation',
+        module=qualtran.bloqs.rotations.quantum_variable_rotation,
+        bloq_specs=[
+            qualtran.bloqs.rotations.quantum_variable_rotation._QVR_ZPOW,
+            qualtran.bloqs.rotations.quantum_variable_rotation._QVR_PHASE_GRADIENT,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    NotebookSpecV2(
+        title='Phasing via Cost function',
+        module=qualtran.bloqs.rotations.phasing_via_cost_function,
+        bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
+        directory=f'{SOURCE_DIR}/bloqs/rotations/',
     ),
 ]
 
@@ -274,5 +317,19 @@ def render_notebooks():
         render_notebook(nbspec)
 
 
+def check_all_bloqs_included():
+    bspecs = get_bloqdocspecs()
+    rendered_bspecs = []
+    for nbspec in NOTEBOOK_SPECS:
+        rendered_bspecs += [bspec for bspec in nbspec.bloq_specs]
+
+    undoc = set(bspecs) - set(rendered_bspecs)
+    if undoc:
+        print("\nWarning: found a BloqDocSpec for these, but they're not in any NotebookSpecs:")
+        for bspec in undoc:
+            print('   ', bspec.bloq_cls.__name__)
+
+
 if __name__ == '__main__':
     render_notebooks()
+    check_all_bloqs_included()

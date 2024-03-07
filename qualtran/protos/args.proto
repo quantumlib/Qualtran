@@ -29,21 +29,3 @@ message NDArray {
   // A Numpy array serialized as bytes using np.save() / np.load().
   bytes ndarray = 1;
 }
-
-message BloqArg {
-  string name = 1;
-  oneof val {
-    int64 int_val = 2;
-    double float_val = 3;
-    string string_val = 4;
-    // Sympy expression generated using str(expr).
-    string sympy_expr = 5;
-    // N-dimensional numpy array stored as bytes.
-    NDArray ndarray = 6;
-    // Integer reference of a subbloq. Assumes access to a BloqLibrary.
-    int32 subbloq = 7;
-    // Gzipped JSON corresponding to a Cirq object.
-    bytes cirq_json_gzip = 8;
-  }
-}
-

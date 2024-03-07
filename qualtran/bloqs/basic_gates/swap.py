@@ -36,6 +36,7 @@ from qualtran import (
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 from .t_gate import TGate
 
@@ -77,7 +78,10 @@ class TwoBitSwap(Bloq):
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         (x,) = x
         (y,) = y
-        return cirq.SWAP.on(x, y)
+        return cirq.SWAP.on(x, y), {'x': [x], 'y': [y]}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
 
     def add_my_tensors(
         self,
@@ -151,7 +155,7 @@ class TwoBitCSwap(Bloq):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for TwoBitCSwap classical simulation.")
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         """The t complexity.
 
         References:
@@ -222,7 +226,7 @@ class Swap(Bloq):
         return self
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _swap_small() -> Swap:
     swap_small = Swap(bitsize=4)
     return swap_small
@@ -278,7 +282,7 @@ class CSwap(GateWithRegisters):
         raise ValueError("Bad control value for CSwap classical simulation.")
 
     def short_name(self) -> str:
-        return r'$x\leftrightarrow y$'
+        return r'x↔y'
 
     @classmethod
     def make_on(
@@ -318,14 +322,14 @@ def _cswap_symb() -> CSwap:
     return cswap_symb
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _cswap_small() -> CSwap:
     # A small version on four bits.
     cswap_small = CSwap(bitsize=4)
     return cswap_small
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _cswap_large() -> CSwap:
     # A large version that swaps 64-bit registers.
     cswap_large = CSwap(bitsize=64)

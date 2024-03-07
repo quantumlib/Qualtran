@@ -50,17 +50,21 @@ def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
 
 def generalize_rotation_angle(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces rotation angles with a shared symbol."""
-    from qualtran.bloqs.basic_gates import Rx, Ry, Rz
+    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate
 
     if isinstance(b, (Rx, Ry, Rz)):
         return attrs.evolve(b, angle=PHI)
+
+    if isinstance(b, TGate):
+        # ignore `is_adjoint`.
+        return TGate()
 
     return b
 
 
 def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces control variables with a shared symbol."""
-    from qualtran.bloqs.and_bloq import And, MultiAnd
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
     if isinstance(b, And):
         return attrs.evolve(b, cv1=CV, cv2=CV)
@@ -72,39 +76,31 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
 
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitSwap, XGate, ZGate
-    from qualtran.bloqs.util_bloqs import ArbitraryClifford
+    import cirq
 
-    if isinstance(b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT)):
+    from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitSwap, XGate, ZGate
+    from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
+    from qualtran.bloqs.util_bloqs import ArbitraryClifford
+    from qualtran.cirq_interop import CirqGateAsBloq
+
+    if isinstance(
+        b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT, MultiTargetCNOT)
+    ):
         return None
+
+    if isinstance(b, CirqGateAsBloq):
+        if b.gate == cirq.S or b.gate == cirq.S**-1:
+            return None
 
     return b
 
 
 def cirq_to_bloqs(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces Cirq gates with their equivalent bloq, where possible."""
-    import cirq
-
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, TGate, Toffoli, TwoBitSwap, XGate, ZGate
     from qualtran.cirq_interop import CirqGateAsBloq
+    from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
 
     if not isinstance(b, CirqGateAsBloq):
         return b
 
-    gate = b.gate
-    if gate == cirq.T:
-        return TGate()
-    if gate == cirq.H:
-        return Hadamard()
-    if gate == cirq.CNOT:
-        return CNOT()
-    if gate == cirq.TOFFOLI:
-        return Toffoli()
-    if gate == cirq.X:
-        return XGate()
-    if gate == cirq.Z:
-        return ZGate()
-    if gate == cirq.SWAP:
-        return TwoBitSwap()
-
-    return b
+    return _cirq_gate_to_bloq(b.gate)

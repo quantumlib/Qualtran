@@ -170,6 +170,10 @@ class Adjoint(GateWithRegisters):
         """The subbloq's pretty_name with a dagger."""
         return self.subbloq.pretty_name() + '†'
 
+    def __str__(self) -> str:
+        """Delegate to subbloq's `__str__` method."""
+        return f'Adjoint(subbloq={str(self.subbloq)})'
+
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
@@ -182,5 +186,14 @@ class Adjoint(GateWithRegisters):
         The cirq-style t complexity protocol does not leverage the heirarchical decomposition
         of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
         """
-        # TODO: https://github.com/quantumlib/Qualtran/issues/489
-        return self.subbloq._t_complexity_(adjoint=True)
+        # TODO: https://github.com/quantumlib/Qualtran/issues/735
+        if not hasattr(self.subbloq, '_t_complexity_'):
+            return NotImplemented
+
+        try:
+            return self.subbloq._t_complexity_(adjoint=True)
+        except TypeError as e:
+            if 'adjoint' in str(e):
+                return self.subbloq._t_complexity_()
+            else:
+                raise e

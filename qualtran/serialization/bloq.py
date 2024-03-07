@@ -17,6 +17,10 @@ import inspect
 from typing import Any, Callable, Dict, List, Optional
 
 import attrs
+import cirq
+import numpy as np
+import sympy
+from sympy.parsing.sympy_parser import parse_expr
 
 from qualtran import (
     Bloq,
@@ -28,15 +32,18 @@ from qualtran import (
     DecomposeNotImplementedError,
     DecomposeTypeError,
     LeftDangle,
+    QDType,
     RightDangle,
     Signature,
     Soquet,
 )
-from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
+from qualtran.bloqs import arithmetic, basic_gates, factoring, swap_network
+from qualtran.bloqs.arithmetic import sorting
+from qualtran.bloqs.mcmt import and_bloq
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
-from qualtran.protos import args_pb2, bloq_pb2
-from qualtran.serialization import annotations, args, registers
+from qualtran.protos import bloq_pb2
+from qualtran.serialization import annotations, args, data_types, registers
 
 RESOLVER_DICT = {
     'CNOT': basic_gates.CNOT,
@@ -85,6 +92,42 @@ RESOLVER_DICT = {
 }
 
 
+def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
+    if isinstance(val, int):
+        return bloq_pb2.BloqArg(name=name, int_val=val)
+    if isinstance(val, float):
+        return bloq_pb2.BloqArg(name=name, float_val=val)
+    if isinstance(val, str):
+        return bloq_pb2.BloqArg(name=name, string_val=val)
+    if isinstance(val, sympy.Expr):
+        return bloq_pb2.BloqArg(name=name, sympy_expr=str(val))
+    if isinstance(val, np.ndarray):
+        return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(val))
+    if isinstance(val, cirq.Gate):
+        return bloq_pb2.BloqArg(name=name, cirq_json_gzip=cirq.to_json_gzip(val))
+    if isinstance(val, QDType):
+        return bloq_pb2.BloqArg(name=name, qdata_type=data_types.data_type_to_proto(val))
+    raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
+
+
+def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
+    if arg.HasField("int_val"):
+        return {arg.name: arg.int_val}
+    if arg.HasField("float_val"):
+        return {arg.name: arg.float_val}
+    if arg.HasField("string_val"):
+        return {arg.name: arg.string_val}
+    if arg.HasField("sympy_expr"):
+        return {arg.name: parse_expr(arg.sympy_expr)}
+    if arg.HasField("ndarray"):
+        return {arg.name: args.ndarray_from_proto(arg.ndarray)}
+    if arg.HasField("cirq_json_gzip"):
+        return {arg.name: cirq.read_json_gzip(gzip_raw=arg.cirq_json_gzip)}
+    if arg.HasField("qdata_type"):
+        return {arg.name: data_types.data_type_from_proto(arg.qdata_type)}
+    raise ValueError(f"Cannot deserialize {arg=}")
+
+
 class _BloqLibDeserializer:
     def __init__(self, lib: bloq_pb2.BloqLibrary):
         self.idx_to_proto: Dict[int, bloq_pb2.BloqLibrary.BloqWithDecomposition] = {
@@ -115,7 +158,7 @@ class _BloqLibDeserializer:
                 if arg.HasField('subbloq'):
                     kwargs[arg.name] = self.bloq_id_to_bloq(arg.subbloq)
                 else:
-                    kwargs.update(args.arg_from_proto(arg))
+                    kwargs.update(arg_from_proto(arg))
             self.idx_to_bloq[bloq_id] = self._construct_bloq(bloq_proto.bloq.name, **kwargs)
         else:
             raise ValueError(f"Unable to find a Bloq corresponding to {bloq_proto.bloq.name=}")
@@ -312,7 +355,7 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
 
 def _bloq_args_to_proto(
     bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]
-) -> Optional[List[args_pb2.BloqArg]]:
+) -> Optional[List[bloq_pb2.BloqArg]]:
     if isinstance(bloq, CompositeBloq):
         return None
 
@@ -323,7 +366,7 @@ def _bloq_args_to_proto(
     return ret if ret else None
 
 
-def _bloq_arg_to_proto(name: str, val: Any, bloq_to_idx: Dict[Bloq, int]) -> args_pb2.BloqArg:
+def _bloq_arg_to_proto(name: str, val: Any, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.BloqArg:
     if isinstance(val, Bloq):
-        return args_pb2.BloqArg(name=name, subbloq=bloq_to_idx[val])
-    return args.arg_to_proto(name=name, val=val)
+        return bloq_pb2.BloqArg(name=name, subbloq=bloq_to_idx[val])
+    return arg_to_proto(name=name, val=val)

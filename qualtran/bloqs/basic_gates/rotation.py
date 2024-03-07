@@ -12,21 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import abc
 from functools import cached_property
-from typing import Protocol, Set, TYPE_CHECKING
+from typing import Protocol
 
 import cirq
 import numpy as np
 from attrs import frozen
 
 from qualtran import bloq_example
-from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 class _HasEps(Protocol):
@@ -35,23 +30,8 @@ class _HasEps(Protocol):
     eps: float
 
 
-class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
-    def t_complexity(self: _HasEps):
-        # TODO Determine precise clifford count and/or ignore.
-        # This is an improvement over Ref. 2 from the docstring which provides
-        # a bound of 3 log(1/eps).
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
-        return TComplexity(t=num_t)
-
-    def build_call_graph(self: _HasEps, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_t = _RotationBloq.t_complexity(self).t
-        return {(TGate(), num_t)}
-
-
 @frozen
-class ZPowGate(_RotationBloq):
+class ZPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
 
     The unitary matrix of `ZPowGate(exponent=t, global_shift=s)` is:
@@ -115,6 +95,8 @@ class CZPowGate(CirqGateAsBloqBase):
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def _t_complexity_(self) -> 'TComplexity':
+        if cirq.has_stabilizer_effect(self.cirq_gate):
+            return TComplexity(clifford=1)
         return TComplexity(rotations=1)
 
     def __pow__(self, power):
@@ -123,7 +105,7 @@ class CZPowGate(CirqGateAsBloqBase):
 
 
 @frozen
-class XPowGate(_RotationBloq):
+class XPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the X axis of the Bloch sphere.
 
     The unitary matrix of `XPowGate(exponent=t, global_shift=s)` is:
@@ -172,7 +154,7 @@ class XPowGate(_RotationBloq):
 
 
 @frozen
-class YPowGate(_RotationBloq):
+class YPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
 
     The unitary matrix of `YPowGate(exponent=t)` is:
@@ -221,7 +203,7 @@ class YPowGate(_RotationBloq):
 
 
 @frozen
-class Rz(_RotationBloq):
+class Rz(CirqGateAsBloqBase):
     """Single-qubit Rz gate.
 
     Args:
@@ -247,7 +229,7 @@ class Rz(_RotationBloq):
 
 
 @frozen
-class Rx(_RotationBloq):
+class Rx(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
@@ -257,7 +239,7 @@ class Rx(_RotationBloq):
 
 
 @frozen
-class Ry(_RotationBloq):
+class Ry(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
