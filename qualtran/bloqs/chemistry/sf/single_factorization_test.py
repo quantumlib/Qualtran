@@ -22,7 +22,9 @@ from qualtran.bloqs.chemistry.sf.single_factorization import (
     SingleFactorizationBlockEncoding,
     SingleFactorizationOneBody,
 )
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 from qualtran.testing import execute_notebook
 
 

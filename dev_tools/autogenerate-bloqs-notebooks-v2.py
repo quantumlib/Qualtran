@@ -67,11 +67,12 @@ import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
-import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qrom
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
+import qualtran.bloqs.state_preparation.prepare_uniform_superposition
 import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network
 
@@ -82,6 +83,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='T Gate',
         module=qualtran.bloqs.basic_gates.t_gate,
         bloq_specs=[qualtran.bloqs.basic_gates.t_gate._T_GATE_DOC],
+    ),
+    NotebookSpecV2(
+        title='S Gate',
+        module=qualtran.bloqs.basic_gates.s_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC],
     ),
     NotebookSpecV2(
         title='Toffoli',
@@ -112,8 +118,10 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Prepare Uniform Superposition',
-        module=qualtran.bloqs.prepare_uniform_superposition,
-        bloq_specs=[qualtran.bloqs.prepare_uniform_superposition._PREP_UNIFORM_DOC],
+        module=qualtran.bloqs.state_preparation.prepare_uniform_superposition,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.prepare_uniform_superposition._PREP_UNIFORM_DOC
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
@@ -306,6 +314,14 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.rotations.phasing_via_cost_function,
         bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
         directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    # --------------------------------------------------------------------------
+    # -----   QFT          -----------------------------------------------------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Two Bit FFFT Gate',
+        module=qualtran.bloqs.qft.two_bit_ffft,
+        bloq_specs=[qualtran.bloqs.qft.two_bit_ffft._TWO_BIT_FFFT_DOC],
     ),
 ]
 

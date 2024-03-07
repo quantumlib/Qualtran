@@ -12,6 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     StatePreparationAliasSampling,
+)
+from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
+    StatePreparationViaRotations,
 )
