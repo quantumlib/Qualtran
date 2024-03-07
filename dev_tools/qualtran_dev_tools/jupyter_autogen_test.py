@@ -125,4 +125,4 @@ def test_render_notebook_cells():
     assert list(cells.gate_cells.keys()) == ['_make_QROM']
     gcell = cells.gate_cells['_make_QROM']
     assert gcell.md.source.startswith('## `QROM`')
-    assert gcell.py.source.startswith('from qualtran.bloqs.qrom import QROM')
+    assert gcell.py.source.startswith('from qualtran.bloqs.data_loading.qrom import QROM')
