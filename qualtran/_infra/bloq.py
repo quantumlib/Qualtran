@@ -202,8 +202,15 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         try:
             return self.decompose_bloq().on_classical_vals(**vals)
+        except DecomposeTypeError as e:
+            raise NotImplementedError(f"{self} is not classically simulable.")
+        except DecomposeNotImplementedError as e:
+            raise NotImplementedError(
+                f"{self} has no decomposition and does not "
+                f"support classical simulation directly"
+            ) from e
         except NotImplementedError as e:
-            raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
+            raise NotImplementedError(f"{self} does not support classical simulation: {e}")
 
     def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
         """Call this bloq on classical data.
