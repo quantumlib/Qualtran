@@ -57,8 +57,8 @@ def test_exact_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...
 def test_partial_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...]):
     gate_compiler = DecomposeGateViaHR(phase_bitsize, tuple(gate_cols), internal_phase_grad=True)
     assert_valid_bloq_decomposition(gate_compiler)
-    compiled_gate = gate_compiler.tensor_contract()
-    assert np.allclose(compiled_gate[range(len(gate_cols)),:], np.array([gc[1] for gc in gate_cols]).T)
+    compiled_gate = gate_compiler.tensor_contract().T
+    assert np.allclose(compiled_gate[range(len(gate_cols)),:], np.array([gc[1] for gc in gate_cols]))
 
 
 @pytest.mark.parametrize(
