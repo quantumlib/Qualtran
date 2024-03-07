@@ -19,7 +19,8 @@ import sympy
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
-from qualtran.bloqs.basic_gates import FGate, Rz
+from qualtran.bloqs.basic_gates import Rz
+from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -73,11 +74,11 @@ class HoppingPlaquette(Bloq):
         return Signature([Register('qubits', QBit(), shape=(4,))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # The FGate in the reference is F(k=0, n=arbitrary)
+        # The TwoBitFFFT in the reference is F(k=0, n=arbitrary)
         # page 14, discussion after E13
         # There are 4 flanking f-gates and a e^{iXX}e^{iYY} rotation, which can
         # be rotated to single rotation + cliffords.
-        return {(FGate(0, 1), 4), (Rz(self.kappa, eps=self.eps), 2)}
+        return {(TwoBitFFFT(0, 1), 4), (Rz(self.kappa, eps=self.eps), 2)}
 
 
 @frozen
