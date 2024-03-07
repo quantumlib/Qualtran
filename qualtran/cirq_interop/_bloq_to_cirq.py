@@ -306,7 +306,7 @@ def _wire_symbol_to_cirq_diagram_info(
             if ws.filled:
                 return '@'
             else:
-                return '@(0)'
+                return '(0)'
         if isinstance(ws, (TextBox, RarrowTextBox, LarrowTextBox)):
             return ws.text
         if isinstance(ws, ModPlus):
