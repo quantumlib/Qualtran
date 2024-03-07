@@ -37,14 +37,14 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.bloqs import arithmetic, basic_gates, factoring, swap_network
+from qualtran.bloqs import arithmetic, basic_gates, factoring, swap_network, qrom
 from qualtran.bloqs.arithmetic import sorting
 from qualtran.bloqs.mcmt import and_bloq
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.protos import bloq_pb2
 from qualtran.serialization import annotations, args, data_types, registers
-
+from qualtran._infra.adjoint import Adjoint
 RESOLVER_DICT = {
     'CNOT': basic_gates.CNOT,
     'Rx': basic_gates.Rx,
@@ -90,6 +90,9 @@ RESOLVER_DICT = {
     'Controlled': Controlled,
     'CirqGateAsBloq': CirqGateAsBloq,
     'Toffoli': basic_gates.Toffoli,
+    'QROM':qrom.QROM,
+    'Adjoint': Adjoint
+
 }
 
 
@@ -167,6 +170,8 @@ class _BloqLibDeserializer:
 
     def _construct_bloq(self, name: str, **kwargs):
         """Construct a Bloq using serialized name and BloqArgs."""
+        if hasattr(RESOLVER_DICT[name], "set_builder_with_kwargs"):
+            return RESOLVER_DICT[name].set_builder_with_kwargs(kwargs)
         return RESOLVER_DICT[name](**kwargs)
 
     def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
@@ -361,11 +366,16 @@ def _bloq_args_to_proto(
 ) -> Optional[List[bloq_pb2.BloqArg]]:
     if isinstance(bloq, CompositeBloq):
         return None
-
-    ret = [
-        _bloq_arg_to_proto(name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx)
-        for field in _iter_fields(bloq)
-    ]
+    if hasattr(bloq, "get_builder_args"):
+        ret = [
+            _bloq_arg_to_proto(name=name, val=value, bloq_to_idx=bloq_to_idx)
+            for name, value in bloq.get_builder_args().items()
+        ]
+    else:
+        ret = [
+            _bloq_arg_to_proto(name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx)
+            for field in _iter_fields(bloq)
+        ]
     return ret if ret else None
 
 

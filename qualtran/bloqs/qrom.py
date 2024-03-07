@@ -97,6 +97,15 @@ class QROM(UnaryIterationGate):
         assert isinstance(self.selection_bitsizes, tuple)
         assert isinstance(self.target_bitsizes, tuple)
 
+
+    def get_builder_args(self):
+        return {"data":np.array(self.data), "num_controls":self.num_controls, "num_arrays":len(self.data)}
+
+    @classmethod
+    def set_builder_with_kwargs(self, kwargs):
+        data = [item for item in kwargs["data"]]
+        assert len(data) == kwargs["num_arrays"]
+        return self.build(*data, num_controls=kwargs["num_controls"])
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return () if not self.num_controls else (Register('control', QAny(self.num_controls)),)

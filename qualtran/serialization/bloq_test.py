@@ -32,6 +32,7 @@ from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
 from qualtran import QUInt
 from qualtran.bloqs.arithmetic import Add
+from qualtran.bloqs.qrom import QROM
 
 @pytest.mark.parametrize(
     'arg',
@@ -203,6 +204,7 @@ def test_meta_bloq_to_proto():
     assert bloq in bloq_serialization.bloqs_from_proto(proto_lib)
 
 def test_add():
+    # TODO Add other data types
     add = Add(dtype=QUInt(bitsize=2))
     proto_lib = bloq_serialization.bloqs_to_proto(add)
     assert len(proto_lib.table) == 8
@@ -210,3 +212,4 @@ def test_add():
     assert len(deseralized) == 8
     assert isinstance(deseralized[0],Add)
     assert deseralized[0].dtype == QUInt(bitsize=2)
+
