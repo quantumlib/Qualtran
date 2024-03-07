@@ -18,7 +18,7 @@ import ipywidgets
 import pytest
 
 import qualtran.cirq_interop.testing as cq_testing
-from qualtran.bloqs.and_bloq import MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.cirq_interop.jupyter_tools import (
     circuit_with_costs,
     display_gate_and_compilation,

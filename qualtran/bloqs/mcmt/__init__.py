@@ -12,12 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
-    PrepareUniformSuperposition,
-)
-from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
-    StatePreparationAliasSampling,
-)
-from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
-    StatePreparationViaRotations,
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
+    MultiControlPauli,
+    MultiControlX,
+    MultiTargetCNOT,
 )

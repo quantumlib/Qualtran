@@ -25,7 +25,9 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
     TestNuInequality,
     TestNuLessThanMu,
 )
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

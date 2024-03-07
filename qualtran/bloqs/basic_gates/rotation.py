@@ -95,6 +95,8 @@ class CZPowGate(CirqGateAsBloqBase):
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def _t_complexity_(self) -> 'TComplexity':
+        if cirq.has_stabilizer_effect(self.cirq_gate):
+            return TComplexity(clifford=1)
         return TComplexity(rotations=1)
 
     def __pow__(self, power):
