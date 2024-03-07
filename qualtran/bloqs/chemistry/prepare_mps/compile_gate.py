@@ -7,7 +7,7 @@ import cirq
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import StatePreparationViaRotations
 from qualtran.bloqs.basic_gates import Hadamard, ZGate, CNOT
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
