@@ -1,10 +1,13 @@
 from typing import Dict, Tuple, List
+from functools import cached_property
 import attrs
 
 import numpy as np
 import cirq
 
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, SoquetT, Register, BoundedQUInt
+from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import StatePreparationViaRotations
 from qualtran.bloqs.basic_gates import Hadamard, ZGate, CNOT
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
@@ -61,8 +64,8 @@ class CompileGateFromColumns(Bloq):
             reflection_reg = bb.join(np.array([refl_ancilla, *bb.split(gate_input)]))
         # If uncompute iterate backwards. In theory this would not make a difference, but as the
         # column compilations are approximate if done otherwise then U*U^t != I
-        for i, col in self.gate_cols[::(1-2*self.uncompute)]:
-            reflection_reg, phase_grad = self._ith_reflection(bb, i, col, reflection_reg, phase_grad)
+        for i in list(range(0,len(self.gate_cols)))[::(1-2*self.uncompute)]:
+            reflection_reg, phase_grad = self._ith_reflection(bb, i, reflection_reg, phase_grad)
         qubits = bb.split(reflection_reg)
         if self.uncompute:
             qubits[0] = bb.add(XGate(), q=qubits[0])
@@ -78,34 +81,35 @@ class CompileGateFromColumns(Bloq):
             soqs["phase_grad"] = phase_grad
         return soqs 
     
-    def _ith_reflection(self, bb: BloqBuilder, i: int, col: Tuple[complex,...], reflection_reg: SoquetT, phase_grad: SoquetT):
-        reflection_prep = PrepareOracleCompileGateReflection(state_coefs=col, phase_bitsize=self.phase_bitsize, index=i)
-        reflection_prep_adj = PrepareOracleCompileGateReflection(state_coefs=col, phase_bitsize=self.phase_bitsize, index=i, uncompute=True)
-        reflection_reg, phase_grad = bb.add(reflection_prep_adj, target_reg=reflection_reg, phase_grad=phase_grad)
-        reflection_reg = self._reflect(bb, reflection_reg)
-        reflection_reg, phase_grad = bb.add(reflection_prep, target_reg=reflection_reg, phase_grad=phase_grad)
+    def _ith_reflection(self, bb: BloqBuilder, i: int, reflection_reg: SoquetT, phase_grad: SoquetT):
+        reflection_prep = PrepareOracleCompileGateReflection(state_coefs=self.gate_cols[i][1], phase_bitsize=self.phase_bitsize, index=self.gate_cols[i][0])
+        refl_bloq = ReflectionUsingPrepare(prepare_gate=reflection_prep, extra_registers=(("phase_grad", self.phase_bitsize),))
+        reflection_reg, phase_grad = bb.add(refl_bloq, target_reg=reflection_reg, phase_grad=phase_grad)
         return reflection_reg, phase_grad
-    
-    def _reflect(self, bb: BloqBuilder, reg: SoquetT):
-        mult_control_flip = MultiControlPauli(cvs=tuple([0]*(self.gate_bitsize+1)), target_gate=cirq.Z)
-        ancilla = bb.allocate(1)
-        ancilla = bb.add(XGate(), q=ancilla)
-        reg, ancilla = bb.add(mult_control_flip, controls=reg, target=ancilla)
-        ancilla = bb.add(XGate(), q=ancilla)
-        bb.free(ancilla)
-        return reg
 
 
 @attrs.frozen
-class PrepareOracleCompileGateReflection(Bloq):
+class PrepareOracleCompileGateReflection(SelectOracle):
     state_coefs: Tuple # state |u_i>
     phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
     index: int # i value in |i>
     uncompute: bool = False
+    target_registers: Tuple[Register, ...] = ()
+    junk_registers: Tuple[Register, ...] = ()
     
     @property
     def state_bitsize(self):
         return (len(self.state_coefs)-1).bit_length()
+    
+    @cached_property
+    def selection_registers(self) -> Tuple[Register, ...]:
+        return (
+            Register('target_reg', BoundedQUInt(bitsize=self.state_bitsize+1, iteration_length=2**(self.state_bitsize))),
+        )
+    
+    @cached_property
+    def control_registers(self) -> Tuple[Register, ...]:
+        return ()
     
     @property
     def signature (self):
