@@ -64,15 +64,13 @@ import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
-import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
-import qualtran.bloqs.qrom
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
-import qualtran.bloqs.state_preparation.state_preparation_via_rotation
 import qualtran.bloqs.swap_network
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
@@ -125,7 +123,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
-        title='QROM', module=qualtran.bloqs.qrom, bloq_specs=[qualtran.bloqs.qrom._QROM_DOC]
+        title='QROM',
+        module=qualtran.bloqs.data_loading.qrom,
+        bloq_specs=[qualtran.bloqs.data_loading.qrom._QROM_DOC],
     ),
     # --------------------------------------------------------------------------
     # -----   Chemistry   ------------------------------------------------------

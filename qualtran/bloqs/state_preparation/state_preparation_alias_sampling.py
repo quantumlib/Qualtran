@@ -32,7 +32,7 @@ from qualtran import BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
 from qualtran.bloqs.basic_gates.swap import CSwap
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,

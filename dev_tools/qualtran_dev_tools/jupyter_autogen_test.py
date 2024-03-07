@@ -20,7 +20,7 @@ import inspect
 
 import numpy as np
 
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 
 from .jupyter_autogen import (
     _get_code_for_demoing_a_gate,
@@ -33,7 +33,7 @@ from .jupyter_autogen import (
 
 
 def _make_QROM():
-    from qualtran.bloqs.qrom import QROM
+    from qualtran.bloqs.data_loading.qrom import QROM
 
     return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
 
