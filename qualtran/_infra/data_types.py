@@ -452,7 +452,7 @@ def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType, strict: bool = Fal
     if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
         # QAny -> any dtype and any dtype -> QAny
         return same_n_qubits
-    elif dtype_a.num_qubits == 1 and same_n_qubits:
+    elif same_n_qubits == 1:
         # Single qubit types are ok.
         return True
     elif isinstance(dtype_a, QAnyInt) and isinstance(dtype_b, QAnyInt):
