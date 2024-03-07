@@ -15,10 +15,10 @@
 import numpy as np
 import pytest
 import attrs
-from typing import Tuple, Dict
+from typing import Tuple
 
-from qualtran import BloqBuilder, Bloq, Signature, SoquetT
-from qualtran.bloqs.chemistry.prepare_mps.compile_gate import CompileGateFromColumnsNoPG, CompileGateFromColumns
+from qualtran import BloqBuilder
+from qualtran.bloqs.chemistry.prepare_mps.compile_gate import CompileGateFromColumns
 from qualtran.testing import assert_valid_bloq_decomposition
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
@@ -39,7 +39,7 @@ from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
     ],
 )
 def test_exact_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...]):
-    gate_compiler = CompileGateFromColumnsNoPG(phase_bitsize, tuple(gate_cols))
+    gate_compiler = CompileGateFromColumns(phase_bitsize, tuple(gate_cols), internal_phase_grad=True)
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate, np.array([gc[1] for gc in gate_cols]))
@@ -55,7 +55,7 @@ def test_exact_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...
     ],
 )
 def test_partial_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,...]):
-    gate_compiler = CompileGateFromColumnsNoPG(phase_bitsize, tuple(gate_cols))
+    gate_compiler = CompileGateFromColumns(phase_bitsize, tuple(gate_cols), internal_phase_grad=True)
     assert_valid_bloq_decomposition(gate_compiler)
     compiled_gate = gate_compiler.tensor_contract().T
     assert np.allclose(compiled_gate[range(len(gate_cols)),:], np.array([gc[1] for gc in gate_cols]))
@@ -73,14 +73,14 @@ def test_partial_gate_compilation(phase_bitsize: int, gate_cols: Tuple[complex,.
     ],
 )
 def test_gate_compilation_adjoint(phase_bitsize: int, gate_cols: Tuple[complex,...]):
-    gate_compiler = CompileGateFromColumns(gate_cols=gate_cols, phase_bitsize=phase_bitsize, uncompute=False)
-    gate_compiler_adj = CompileGateFromColumns(gate_cols=gate_cols, phase_bitsize=phase_bitsize, uncompute=True)
+    gate_compiler = CompileGateFromColumns(gate_cols=gate_cols, phase_bitsize=phase_bitsize, uncompute=False, internal_refl_ancilla=False)
+    gate_compiler_adj = CompileGateFromColumns(gate_cols=gate_cols, phase_bitsize=phase_bitsize, uncompute=True, internal_refl_ancilla=False)
     bb = BloqBuilder()
     inp = bb.add_register("gate_input", gate_compiler.gate_bitsize)
     pg = bb.add(PhaseGradientState(bitsize=phase_bitsize))
     ra = bb.allocate(1)
-    inp, pg, ra = bb.add(gate_compiler, gate_input=inp, phase_grad=pg, reflection_ancilla=ra)
-    inp, pg, ra = bb.add(gate_compiler_adj, gate_input=inp, phase_grad=pg, reflection_ancilla=ra)
+    ra, inp, pg = bb.add(gate_compiler, gate_input=inp, phase_grad=pg, refl_ancilla=ra)
+    ra, inp, pg = bb.add(gate_compiler_adj, gate_input=inp, phase_grad=pg, refl_ancilla=ra)
     bb.free(ra)
     bb.add(PhaseGradientState(bitsize=phase_bitsize).adjoint(), phase_grad=pg)
     gate_coefs = bb.finalize(gate_input=inp).tensor_contract()
