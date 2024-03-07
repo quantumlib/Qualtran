@@ -11,61 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List, Sequence
+from typing import List
 
 import cirq
 import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran.bloqs.for_testing.ising import get_1d_Ising_hamiltonian, get_1d_Ising_lcu_coeffs
 from qualtran.bloqs.select_pauli_lcu import SelectPauliLCU
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
-
-
-def get_1d_Ising_hamiltonian(
-    qubits: Sequence[cirq.Qid], j_zz_strength: float = 1.0, gamma_x_strength: float = -1
-) -> cirq.PauliSum:
-    r"""A one dimensional ising model with periodic boundaries.
-
-    $$
-    H = -J\sum_{k=0}^{L-1}\sigma_{k}^{Z}\sigma_{(k+1)\%L}^{Z} - \Gamma\sum_{k=0}^{L-1}\sigma_{k}^{X}
-    $$
-
-    Args:
-        qubits: One qubit for each spin site.
-        j_zz_strength: The two-body ZZ potential strength, $J$.
-        gamma_x_strength: The one-body X potential strength, $\Gamma$.
-
-    Returns:
-        cirq.PauliSum representing the Hamiltonian
-    """
-    n_sites = len(qubits)
-    terms: List[cirq.PauliString] = []
-    for k in range(n_sites):
-        terms.append(
-            cirq.PauliString(
-                {qubits[k]: cirq.Z, qubits[(k + 1) % n_sites]: cirq.Z}, coefficient=j_zz_strength
-            )
-        )
-        terms.append(cirq.PauliString({qubits[k]: cirq.X}, coefficient=gamma_x_strength))
-    return cirq.PauliSum.from_pauli_strings(terms)
-
-
-def get_1d_Ising_lcu_coeffs(
-    n_spins: int, j_zz_strength: float = np.pi / 3, gamma_x_strength: float = np.pi / 7
-) -> np.ndarray:
-    """Get LCU coefficients for a 1d ising Hamiltonian.
-
-    The order of the terms is according to `get_1d_Ising_hamiltonian`, namely: ZZ's and X's
-    interleaved.
-    """
-    spins = cirq.LineQubit.range(n_spins)
-    ham = get_1d_Ising_hamiltonian(spins, j_zz_strength, gamma_x_strength)
-    coeffs = np.array([term.coefficient.real for term in ham])
-    lcu_coeffs = coeffs / np.sum(abs(coeffs))
-    return lcu_coeffs
 
 
 @pytest.mark.parametrize('control_val', [0, 1])

@@ -64,6 +64,9 @@ import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.chemistry.trotter.hubbard.hopping
+import qualtran.bloqs.chemistry.trotter.hubbard.interaction
+import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
@@ -103,6 +106,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network._SWZ_DOC,
             qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='F Gate',
+        module=qualtran.bloqs.basic_gates.f_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.f_gate._FGATE_DOC],
     ),
     NotebookSpecV2(
         title='Modular Exponentiation',
@@ -196,7 +204,23 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham',
+    ),
+    NotebookSpecV2(
+        title='Trotterization',
+        module=qualtran.bloqs.chemistry.trotter.trotterized_unitary,
+        bloq_specs=[qualtran.bloqs.chemistry.trotter.trotterized_unitary._TROTT_UNITARY_DOC],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
+    ),
+    NotebookSpecV2(
+        title='Trotterized Hubbard',
+        module=qualtran.bloqs.chemistry.trotter.hubbard,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._PLAQUETTE_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
     ),
     NotebookSpecV2(
         title='Tensor Hypercontraction',
