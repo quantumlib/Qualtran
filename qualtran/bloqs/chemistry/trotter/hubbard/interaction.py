@@ -65,7 +65,8 @@ class Interaction(Bloq):
 def _interaction() -> Interaction:
     length = 8
     angle = 0.5
-    interaction = Interaction(length, angle)
+    hubb_u = 4.0
+    interaction = Interaction(length, angle, hubb_u)
     return interaction
 
 
