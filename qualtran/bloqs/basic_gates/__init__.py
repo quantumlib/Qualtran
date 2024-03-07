@@ -25,6 +25,7 @@ from .cnot import CNOT
 from .hadamard import Hadamard
 from .on_each import OnEach
 from .rotation import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+from .s_gate import SGate
 from .swap import CSwap, TwoBitCSwap, TwoBitSwap
 from .t_gate import TGate
 from .toffoli import Toffoli
