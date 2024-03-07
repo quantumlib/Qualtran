@@ -1,16 +1,14 @@
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from functools import cached_property
 import attrs
 
 import numpy as np
-import cirq
 
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT, Register, BoundedQUInt
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import StatePreparationViaRotations
 from qualtran.bloqs.basic_gates import Hadamard, ZGate, CNOT
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
@@ -22,6 +20,7 @@ class CompileGateFromColumns(Bloq):
     uncompute: bool = False
     internal_phase_grad: bool = False
     internal_refl_ancilla: bool = True
+    control_val: Optional[int] = None
 
     def __attrs_post_init__(self):
         # at least one column has to be specified
@@ -83,7 +82,7 @@ class CompileGateFromColumns(Bloq):
     
     def _ith_reflection(self, bb: BloqBuilder, i: int, reflection_reg: SoquetT, phase_grad: SoquetT):
         reflection_prep = PrepareOracleCompileGateReflection(state_coefs=self.gate_cols[i][1], phase_bitsize=self.phase_bitsize, index=self.gate_cols[i][0])
-        refl_bloq = ReflectionUsingPrepare(prepare_gate=reflection_prep, extra_registers=(("phase_grad", self.phase_bitsize),))
+        refl_bloq = ReflectionUsingPrepare(prepare_gate=reflection_prep, extra_registers=(("phase_grad", self.phase_bitsize),), control_val=self.control_val)
         reflection_reg, phase_grad = bb.add(refl_bloq, target_reg=reflection_reg, phase_grad=phase_grad)
         return reflection_reg, phase_grad
 
