@@ -14,7 +14,9 @@ from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
 
 @attrs.frozen
-class CompileGateFromColumns(Bloq):
+class DecomposeGateViaHR(Bloq):
+    r"""
+    """
     phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
     gate_cols: Tuple[int, Tuple[complex, ...]] # tuple with the columns of the gate that are specified
     uncompute: bool = False
@@ -81,14 +83,14 @@ class CompileGateFromColumns(Bloq):
         return soqs 
     
     def _ith_reflection(self, bb: BloqBuilder, i: int, reflection_reg: SoquetT, phase_grad: SoquetT):
-        reflection_prep = PrepareOracleCompileGateReflection(state_coefs=self.gate_cols[i][1], phase_bitsize=self.phase_bitsize, index=self.gate_cols[i][0])
+        reflection_prep = PrepareOracleDecomposeeGateReflection(state_coefs=self.gate_cols[i][1], phase_bitsize=self.phase_bitsize, index=self.gate_cols[i][0])
         refl_bloq = ReflectionUsingPrepare(prepare_gate=reflection_prep, extra_registers=(("phase_grad", self.phase_bitsize),), control_val=self.control_val)
         reflection_reg, phase_grad = bb.add(refl_bloq, target_reg=reflection_reg, phase_grad=phase_grad)
         return reflection_reg, phase_grad
 
 
 @attrs.frozen
-class PrepareOracleCompileGateReflection(SelectOracle):
+class PrepareOracleDecomposeeGateReflection(SelectOracle):
     state_coefs: Tuple # state |u_i>
     phase_bitsize: int # number of ancilla qubits used to encode the state preparation's rotations
     index: int # i value in |i>
