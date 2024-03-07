@@ -131,7 +131,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
             and len(control_values) == 1
             and self.control_val is None
         ):
-            return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[0])
+            return ReflectionUsingPrepare(self.prepare_gate, self.extra_registers, control_val=control_values[0])
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
