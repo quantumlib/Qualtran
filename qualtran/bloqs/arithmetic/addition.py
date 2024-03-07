@@ -180,14 +180,15 @@ class Add(Bloq):
         context.qubit_manager.qfree(ancillas)
 
     def _t_complexity_(self):
-        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.dtype.bitsize - 4
-        return TComplexity(t=num_t_gates, clifford=num_clifford)
+        n = self.dtype.bitsize
+        num_clifford = (n - 2) * 19 + 16
+        num_toffoli = self.dtype.bitsize - 1
+        return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
-        num_toffoli = self.dtype.bitsize - 1
-        return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
+        n = self.dtype.bitsize
+        n_cnot = (n - 2) * 6 + 3
+        return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
 
 @bloq_example
