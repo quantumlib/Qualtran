@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits, split_qubits
-from qualtran.bloqs.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
+from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
