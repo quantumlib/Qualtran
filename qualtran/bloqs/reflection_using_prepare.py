@@ -19,7 +19,7 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, QAny, Register, Signature
+from qualtran import GateWithRegisters, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle
@@ -57,7 +57,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
     """
 
     prepare_gate: PrepareOracle
-    extra_registers: Tuple[Tuple[str, int],...] = ()
+    extra_registers: Tuple[Tuple[str, int], ...] = ()
     control_val: Optional[int] = None
 
     @cached_property
@@ -67,14 +67,16 @@ class ReflectionUsingPrepare(GateWithRegisters):
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
         return self.prepare_gate.selection_registers
-    
+
     @cached_property
     def extra_reg_objects(self) -> Tuple[Register, ...]:
         return tuple([Register(name, QAny(bitsize)) for name, bitsize in self.extra_registers])
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([*self.control_registers, *self.selection_registers, *self.extra_reg_objects])
+        return Signature(
+            [*self.control_registers, *self.selection_registers, *self.extra_reg_objects]
+        )
 
     def decompose_from_registers(
         self,
@@ -131,7 +133,9 @@ class ReflectionUsingPrepare(GateWithRegisters):
             and len(control_values) == 1
             and self.control_val is None
         ):
-            return ReflectionUsingPrepare(self.prepare_gate, self.extra_registers, control_val=control_values[0])
+            return ReflectionUsingPrepare(
+                self.prepare_gate, self.extra_registers, control_val=control_values[0]
+            )
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
