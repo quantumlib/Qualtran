@@ -34,6 +34,7 @@ from qualtran.bloqs.chemistry.trotter.hubbard.hopping import (
     Ryy,
 )
 from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT
+from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.resource_counting.generalizers import PHI
 
@@ -142,6 +143,7 @@ def test_hopping_tile_hwp_t_counts():
     bloq = _hopping_tile_hwp()
     _, counts = bloq.call_graph(generalizer=catch_rotations)
     n_rot_par = bloq.length**2 // 2
-    print(counts, 2 * 4 * (n_rot_par - n_rot_par.bit_count()) - counts[TGate()])
     assert counts[Rz(PHI)] == 2 * n_rot_par.bit_length()
-    assert counts[TGate()] == 8 * bloq.length**2 // 2 + 2 * 4 * (n_rot_par - n_rot_par.bit_count())
+    assert counts[TGate()] == 8 * bloq.length**2 // 2 + 2 * 4 * (
+        n_rot_par - n_rot_par.bit_count() + 1
+    )

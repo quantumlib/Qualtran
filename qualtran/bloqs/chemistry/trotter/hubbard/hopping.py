@@ -265,7 +265,7 @@ class HoppingTileHWP(HoppingTile):
         # We use Hamming weight phasing to apply all 2 * L^2/4 (two for spin
         # here) for both of these rotations.
         return {
-            # (TwoBitFFFT(0, 1, self.eps), 4 * self.length**2 // 2),
+            (TwoBitFFFT(0, 1, self.eps), 4 * self.length**2 // 2),
             (HammingWeightPhasing(2 * self.length**2 // 4, self.tau * self.angle, eps=self.eps), 2)
         }
 
@@ -304,12 +304,12 @@ _PLAQUETTE_DOC = BloqDocSpec(
 def _hopping_tile_hwp() -> HoppingTileHWP:
     length = 8
     angle = 0.15
-    plaquette = HoppingTileHWP(length, angle)
-    return plaquette
+    hopping_tile_hwp = HoppingTileHWP(length, angle)
+    return hopping_tile_hwp
 
 
 _HOPPING_TILE_HWP_DOC = BloqDocSpec(
     bloq_cls=HoppingTileHWP,
-    import_line='from qualtran.bloqs.chemistry.trotter.hubbard.hopping import HoppingPlaquetteHWP',
+    import_line='from qualtran.bloqs.chemistry.trotter.hubbard.hopping import HoppingTileHWP',
     examples=(_hopping_tile_hwp,),
 )
