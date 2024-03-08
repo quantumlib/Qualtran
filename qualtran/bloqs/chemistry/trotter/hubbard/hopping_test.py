@@ -23,9 +23,10 @@ from openfermion import (
 )
 
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import Rz, TGate
+from qualtran.bloqs.basic_gates import Rz, TGate, ZPowGate
 from qualtran.bloqs.chemistry.trotter.hubbard.hopping import (
     _hopping_tile,
+    _hopping_tile_hwp,
     _plaquette,
     BasisChange,
     HoppingPlaquette,
@@ -41,13 +42,19 @@ def test_hopping_tile(bloq_autotester):
     bloq_autotester(_hopping_tile)
 
 
+def test_hopping_tile_hwp(bloq_autotester):
+    bloq_autotester(_hopping_tile_hwp)
+
+
 def test_hopping_plaquette(bloq_autotester):
     bloq_autotester(_plaquette)
 
 
 def catch_rotations(bloq) -> Bloq:
-    if isinstance(bloq, Rz):
-        if abs(bloq.angle) < 1e-12:
+    if isinstance(bloq, (Rz, ZPowGate)):
+        if isinstance(bloq, ZPowGate):
+            return Rz(angle=PHI)
+        elif abs(bloq.angle) < 1e-12:
             return ArbitraryClifford(1)
         else:
             return Rz(angle=PHI)
@@ -129,3 +136,12 @@ def test_hopping_tile_t_counts():
     _, counts = bloq.call_graph(generalizer=catch_rotations)
     assert counts[TGate()] == 8 * bloq.length**2 // 2
     assert counts[Rz(PHI)] == 2 * bloq.length**2 // 2
+
+
+def test_hopping_tile_hwp_t_counts():
+    bloq = _hopping_tile_hwp()
+    _, counts = bloq.call_graph(generalizer=catch_rotations)
+    n_rot_par = bloq.length**2 // 2
+    print(counts, 2 * 4 * (n_rot_par - n_rot_par.bit_count()) - counts[TGate()])
+    assert counts[Rz(PHI)] == 2 * n_rot_par.bit_length()
+    assert counts[TGate()] == 8 * bloq.length**2 // 2 + 2 * 4 * (n_rot_par - n_rot_par.bit_count())
