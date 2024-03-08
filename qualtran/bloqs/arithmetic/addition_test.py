@@ -34,6 +34,7 @@ from qualtran.cirq_interop.testing import (
     assert_decompose_is_consistent_with_t_complexity,
     GateHelper,
 )
+from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.simulation.classical_sim import (
     format_classical_truth_table,
     get_classical_truth_table,
@@ -134,10 +135,11 @@ def test_subtract(a, b, num_bits):
 
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
-def test_addition_gate_t_complexity(n: int):
-    g = Add(QUInt(n))
-    assert g.t_complexity() == g.decompose_bloq().t_complexity()
-    qlt_testing.assert_valid_bloq_decomposition(g)
+def test_addition_gate_counts(n: int):
+    add = Add(QUInt(n))
+    qlt_testing.assert_valid_bloq_decomposition(add)
+    assert add.t_complexity() == add.decompose_bloq().t_complexity()
+    assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
