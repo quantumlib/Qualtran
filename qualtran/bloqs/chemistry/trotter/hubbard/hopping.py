@@ -13,16 +13,87 @@
 #  limitations under the License.
 """Bloqs implementing unitary evolution under the one-body hopping Hamiltonian in 2D."""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING, Union
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
-from qualtran.bloqs.basic_gates import FGate, Rz
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
+from qualtran._infra.composite_bloq import BloqBuilder
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, Rz, SGate, XGate
+from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+
+
+@frozen
+class Rxx(Bloq):
+    angle: Union[float, sympy.Expr]
+    eps: Union[float, sympy.Expr] = 1e-9
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(q0=1, q1=1)
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, q0: SoquetT, q1: SoquetT
+    ) -> Dict[str, 'Soquet']:
+        q0 = bb.add(Hadamard(), q=q0)
+        q1 = bb.add(Hadamard(), q=q1)
+        q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
+        q1 = bb.add(Rz(-self.angle, eps=self.eps), q=q1)
+        q0, q1 = bb.add(CNOT(), ctrl=q0, target=q1)
+        q0 = bb.add(Hadamard(), q=q0)
+        q1 = bb.add(Hadamard(), q=q1)
+        return {'q0': q0, 'q1': q1}
+
+
+@frozen
+class Ryy(Bloq):
+    angle: Union[float, sympy.Expr]
+    eps: Union[float, sympy.Expr] = 1e-9
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(q0=1, q1=1)
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, q0: SoquetT, q1: SoquetT
+    ) -> Dict[str, 'Soquet']:
+        # Rotate to XX and then use Rxx
+        q0 = bb.add(SGate(), q=q0)
+        q1 = bb.add(SGate(), q=q1)
+        q0, q1 = bb.add(Rxx(self.angle, eps=self.eps), q0=q0, q1=q1)
+        q0 = bb.add(SGate().adjoint(), q=q0)
+        q1 = bb.add(SGate().adjoint(), q=q1)
+        return {'q0': q0, 'q1': q1}
+
+@frozen
+class BasisChange(Bloq):
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(q0=1, q1=1, q2=1, q3=1)
+
+    def build_composite_bloq(
+        self, bb: BloqBuilder, q0: SoquetT, q1: SoquetT, q2: SoquetT, q3: SoquetT
+    ) -> Dict[str, 'Soquet']:
+        q0, q1 = bb.add(TwoBitFFFT(0, 1), x=q0, y=q1)
+        q2, q3 = bb.add(TwoBitFFFT(0, 1), x=q2, y=q3)
+        q1, q2= bb.add(TwoBitFFFT(0, 1), x=q1, y=q2)
+        return {'q0': q0, 'q1': q1, 'q2': q2, 'q3': q3}
+
 
 
 @frozen
@@ -72,12 +143,22 @@ class HoppingPlaquette(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('qubits', QBit(), shape=(4,))])
 
+    def build_composite_bloq(self, bb: BloqBuilder, qubits: SoquetT) -> Dict[str, 'Soquet']:
+        q0, q1, q2, q3 = qubits
+        q0, q1 = bb.add(TwoBitFFFT(0, 1), x=q0, y=q1)
+        q2, q3 = bb.add(TwoBitFFFT(0, 1), x=q2, y=q3)
+        q1, q2 = bb.add(Rxx(2 * self.kappa, self.eps), q0=q1, q1=q2)
+        q1, q2 = bb.add(Ryy(2 * self.kappa, self.eps), q0=q1, q1=q2)
+        q2, q3 = bb.add(TwoBitFFFT(0, 1), x=q2, y=q3)
+        q0, q1 = bb.add(TwoBitFFFT(0, 1), x=q0, y=q1)
+        return {'qubits': [q0, q1, q2, q3]}
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # The FGate in the reference is F(k=0, n=arbitrary)
         # page 14, discussion after E13
         # There are 4 flanking f-gates and a e^{iXX}e^{iYY} rotation, which can
         # be rotated to single rotation + cliffords.
-        return {(FGate(0, 1, eps=self.eps), 4), (Rz(self.kappa, eps=self.eps), 2)}
+        return {(TwoBitFFFT(0, 1, eps=self.eps), 4), (Rz(2 * self.kappa, eps=self.eps), 2)}
 
 
 @frozen
@@ -128,9 +209,7 @@ class HoppingTile(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
-        return {
-            (HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps), self.length**2 // 2)
-        }
+        return {(HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps), self.length**2 // 2)}
 
 
 @bloq_example
