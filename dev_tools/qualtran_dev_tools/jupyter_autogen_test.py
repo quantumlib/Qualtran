@@ -20,7 +20,7 @@ import inspect
 
 import numpy as np
 
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 
 from .jupyter_autogen import (
     _get_code_for_demoing_a_gate,
@@ -33,7 +33,7 @@ from .jupyter_autogen import (
 
 
 def _make_QROM():
-    from qualtran.bloqs.qrom import QROM
+    from qualtran.bloqs.data_loading.qrom import QROM
 
     return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
 
@@ -87,7 +87,7 @@ def test_get_markdown_docstring_lines():
 
 def test_get_lines_for_constructing_an_object():
     lines, obj_expr = _get_lines_for_constructing_an_object(_make_QROM)
-    assert lines == ['from qualtran.bloqs.qrom import QROM', '']
+    assert lines == ['from qualtran.bloqs.data_loading.qrom import QROM', '']
     assert (
         obj_expr
         == 'QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))'
@@ -125,4 +125,4 @@ def test_render_notebook_cells():
     assert list(cells.gate_cells.keys()) == ['_make_QROM']
     gcell = cells.gate_cells['_make_QROM']
     assert gcell.md.source.startswith('## `QROM`')
-    assert gcell.py.source.startswith('from qualtran.bloqs.qrom import QROM')
+    assert gcell.py.source.startswith('from qualtran.bloqs.data_loading.qrom import QROM')

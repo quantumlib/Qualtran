@@ -14,6 +14,7 @@
 from typing import Optional
 
 import attrs
+import pytest
 
 from qualtran import Bloq
 from qualtran.bloqs.for_testing import TestAtom, TestBloqWithCallGraph
@@ -30,3 +31,12 @@ def test_test_bloq_with_call_graph():
     g, sigma = bwcg.call_graph(generalizer=all_atoms_the_same)
     assert len(sigma) == 3
     assert g.number_of_edges() == (3 + 2 + 2)  # level 1 + level 2 + split/join
+
+
+def test_no_decomp_classical_simulation():
+    bwcg = TestBloqWithCallGraph()
+    with pytest.raises(
+        NotImplementedError,
+        match=r'.*has no decomposition and does not support classical simulation',
+    ):
+        bwcg.call_classically()

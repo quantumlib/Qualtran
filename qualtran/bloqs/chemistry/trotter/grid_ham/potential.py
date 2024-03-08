@@ -38,7 +38,7 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     PolynmomialEvaluationInverseSquareRoot,
 )
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.util_bloqs import Cast
 
 

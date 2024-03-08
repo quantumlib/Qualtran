@@ -37,7 +37,7 @@ def test_ensure_support_for_all_supported_models(estimation_model: str):
     'estimation_model,desired',
     [
         (
-            ui._GIDNEY_FOLWER_MODEL,
+            ui._GIDNEY_FOWLER_MODEL,
             (
                 {'display': 'none'},
                 ['Total Number of Toffoli gates'],
