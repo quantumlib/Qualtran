@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from qualtran import BloqBuilder
-from qualtran.bloqs.chemistry.prepare_mps.compile_gate import DecomposeGateViaHR
+from qualtran.bloqs.chemistry.prepare_mps.decompose_gate_hr import DecomposeGateViaHR
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.testing import assert_valid_bloq_decomposition
 
