@@ -268,6 +268,6 @@ def _qrom_multi_dim() -> QROM:
 
 _QROM_DOC = BloqDocSpec(
     bloq_cls=QROM,
-    import_line='from qualtran.bloqs.qrom import QROM',
+    import_line='from qualtran.bloqs.data_loading.qrom import QROM',
     examples=[_qrom_small, _qrom_multi_data, _qrom_multi_dim],
 )

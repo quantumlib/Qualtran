@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 
 from qualtran import Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits
-from qualtran.bloqs.programmable_rotation_gate_array import (
+from qualtran.bloqs.rotations.programmable_rotation_gate_array import (
     ProgrammableRotationGateArray,
     ProgrammableRotationGateArrayBase,
 )

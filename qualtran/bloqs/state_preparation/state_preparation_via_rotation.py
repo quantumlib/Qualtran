@@ -90,7 +90,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
 
