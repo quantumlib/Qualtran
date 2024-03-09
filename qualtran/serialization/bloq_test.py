@@ -213,3 +213,22 @@ def test_add():
     assert isinstance(deseralized[0],Add)
     assert deseralized[0].dtype == QUInt(bitsize=2)
 
+def test_add_sympy():
+    bitsize = sympy.Symbol("a") * sympy.Symbol("b")
+    add = Add(dtype=QUInt(bitsize=bitsize))
+    proto_lib = bloq_serialization.bloqs_to_proto(add)
+    assert len(proto_lib.table) == 8
+    deseralized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert len(deseralized) == 8
+    assert isinstance(deseralized[0],Add)
+    assert deseralized[0].dtype == QUInt(bitsize=bitsize)
+
+def test_qrom():
+    array1 = [1,2,3]
+    array2 = [4,5,6]
+    qrom = QROM.build(array1, array2, num_controls=3)
+    proto_lib = bloq_serialization.bloqs_to_proto(qrom)
+    assert len(proto_lib.table) == 11
+    deserialized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert isinstance(deserialized[0],QROM)
+    assert deserialized[0].data[0].shape == np.array(array1).shape

@@ -169,10 +169,13 @@ class _BloqLibDeserializer:
         return self.idx_to_bloq[bloq_id]
 
     def _construct_bloq(self, name: str, **kwargs):
-        """Construct a Bloq using serialized name and BloqArgs."""
-        if hasattr(RESOLVER_DICT[name], "set_builder_with_kwargs"):
-            return RESOLVER_DICT[name].set_builder_with_kwargs(kwargs)
-        return RESOLVER_DICT[name](**kwargs)
+        """Construct a Bloq using serialized name and BloqArgs. Initializes bloq with builder
+         if 'set_builder_with_kwargs' is overriden. Otherwise, it will try to initialize the bloq directly with kwargs."""
+        bloq = RESOLVER_DICT[name]
+        try:
+            return bloq.set_builder_with_kwargs(kwargs)
+        except NotImplementedError:
+            return RESOLVER_DICT[name](**kwargs)
 
     def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
         return Connection(
@@ -232,6 +235,8 @@ def bloqs_to_proto(
                 for b, c in sorted(bloq.bloq_counts().items(), key=lambda x: x[1])
             }
         except stop_recursing_exceptions:
+            bloq_counts = None
+        except TypeError:
             bloq_counts = None
 
         library.table.add(
@@ -366,12 +371,14 @@ def _bloq_args_to_proto(
 ) -> Optional[List[bloq_pb2.BloqArg]]:
     if isinstance(bloq, CompositeBloq):
         return None
-    if hasattr(bloq, "get_builder_args"):
+    # Check if "get_builder_args" has been overriden.
+    try:
+        builder_args = bloq.get_builder_args().items()
         ret = [
             _bloq_arg_to_proto(name=name, val=value, bloq_to_idx=bloq_to_idx)
-            for name, value in bloq.get_builder_args().items()
+            for name, value in builder_args
         ]
-    else:
+    except NotImplementedError:
         ret = [
             _bloq_arg_to_proto(name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx)
             for field in _iter_fields(bloq)
