@@ -37,7 +37,8 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.bloqs import arithmetic, basic_gates, factoring, swap_network, qrom
+from qualtran.bloqs import arithmetic, basic_gates, factoring, swap_network
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.arithmetic import sorting
 from qualtran.bloqs.mcmt import and_bloq
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
@@ -90,7 +91,7 @@ RESOLVER_DICT = {
     'Controlled': Controlled,
     'CirqGateAsBloq': CirqGateAsBloq,
     'Toffoli': basic_gates.Toffoli,
-    'QROM':qrom.QROM,
+    'QROM':QROM,
     'Adjoint': Adjoint
 
 }
