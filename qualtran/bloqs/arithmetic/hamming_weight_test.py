@@ -30,7 +30,6 @@ from qualtran.testing import assert_valid_bloq_decomposition
 def test_hamming_weight_compute(bitsize: int):
     gate = HammingWeightCompute(bitsize=bitsize)
     gate_inv = gate**-1
-
     assert_decompose_is_consistent_with_t_complexity(gate)
     assert_decompose_is_consistent_with_t_complexity(gate_inv)
     assert_valid_bloq_decomposition(gate)

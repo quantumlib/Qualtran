@@ -15,12 +15,11 @@
 from functools import cached_property
 from typing import List, Set, TYPE_CHECKING
 
-import attrs
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, QAny, QUInt, Register, Side, Signature
+from qualtran import GateWithRegisters, QAny, QUInt, Register, Side, Signature
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -41,7 +40,6 @@ class HammingWeightCompute(GateWithRegisters):
         bitsize: Number of bits in the input register. The allocated output register
             is of size $\log_2(\text{bitsize})$ so it has enough space to hold the hamming weight
             of x.
-        uncompute: Whether to uncompute the hamming weight instead.
 
     Registers:
      - x: A $\text{bitsize}$-sized input register (register x above).
@@ -53,18 +51,16 @@ class HammingWeightCompute(GateWithRegisters):
     """
 
     bitsize: int
-    uncompute: bool = False
 
     @cached_property
     def signature(self):
-        side = Side.LEFT if self.uncompute else Side.RIGHT
         jnk_size = self.bitsize - self.bitsize.bit_count()
         out_size = self.bitsize.bit_length()
         return Signature(
             [
                 Register('x', QUInt(self.bitsize)),
-                Register('junk', QAny(jnk_size), side=side),
-                Register('out', QUInt(out_size), side=side),
+                Register('junk', QAny(jnk_size), side=Side.RIGHT),
+                Register('out', QUInt(out_size), side=Side.RIGHT),
             ]
         )
 
@@ -104,27 +100,17 @@ class HammingWeightCompute(GateWithRegisters):
         x: List[cirq.Qid] = [*quregs['x'][::-1]]
         junk: List[cirq.Qid] = [*quregs['junk'][::-1]]
         out: List[cirq.Qid] = [*quregs['out'][::-1]]
-        optree = self._decompose_using_three_to_two_adders(x, junk, out)
-        return cirq.inverse(optree) if self.uncompute else optree
+        yield self._decompose_using_three_to_two_adders(x, junk, out)
 
-    def _t_complexity_(self) -> TComplexity:
-        and_t = And(uncompute=self.uncompute)._t_complexity_()
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
+        and_t = And(uncompute=adjoint).t_complexity()
         junk_bitsize = self.bitsize - self.bitsize.bit_count()
         num_clifford = junk_bitsize * (5 + and_t.clifford) + self.bitsize.bit_count()
         num_t = junk_bitsize * and_t.t
         return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (And(uncompute=self.uncompute), self.bitsize),
-            (ArbitraryClifford(n=2), 5 * self.bitsize),
-        }
-
-    def adjoint(self) -> 'Bloq':
-        # TODO: There is nothing special about the `uncompute` construction of this bloq.
-        # However: using the default `Adjoint` bloq somehow breaks Cirq simulation of
-        # `HammingWeightPhasing`.
-        return attrs.evolve(self, uncompute=not self.uncompute)
+        return {(And(), self.bitsize), (ArbitraryClifford(n=2), 5 * self.bitsize)}
 
     def __pow__(self, power: int):
         if power == 1:
