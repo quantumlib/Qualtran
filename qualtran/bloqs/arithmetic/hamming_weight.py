@@ -115,10 +115,9 @@ class HammingWeightCompute(GateWithRegisters):
         return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (And(uncompute=self.uncompute), self.bitsize),
-            (ArbitraryClifford(n=2), 5 * self.bitsize),
-        }
+        num_and = self.bitsize - self.bitsize.bit_count()
+        num_clifford = num_and * 5 + self.bitsize.bit_count()
+        return {(And(uncompute=self.uncompute), num_and), (ArbitraryClifford(n=2), num_clifford)}
 
     def adjoint(self) -> 'Bloq':
         # TODO: There is nothing special about the `uncompute` construction of this bloq.
