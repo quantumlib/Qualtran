@@ -110,7 +110,9 @@ class HammingWeightCompute(GateWithRegisters):
         return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(And(), self.bitsize), (ArbitraryClifford(n=2), 5 * self.bitsize)}
+        num_and = self.bitsize - self.bitsize.bit_count()
+        num_clifford = num_and * 5 + self.bitsize.bit_count()
+        return {(And(), num_and), (ArbitraryClifford(n=2), num_clifford)}
 
     def __pow__(self, power: int):
         if power == 1:
