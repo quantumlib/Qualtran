@@ -323,6 +323,8 @@ class PrepareTHC(PrepareOracle):
             Register("plus_b", BoundedQUInt(bitsize=1)),
             Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
             Register("rot", BoundedQUInt(bitsize=1)),
+            Register('succ', QBit()),
+            Register('nu_eq_mp1', QBit()),
         )
 
     @cached_property
@@ -330,8 +332,6 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         return (
-            Register('succ', QBit()),
-            Register('nu_eq_mp1', QBit()),
             Register('theta', QBit()),
             Register('s', QAny(bitsize=(data_size - 1).bit_length())),
             Register('alt_mn', QAny(bitsize=log_mu), shape=(2,)),
