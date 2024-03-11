@@ -603,7 +603,9 @@ class LinearDepthGreaterThan(Bloq):
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
             ctrls = [a, b]
-            ctrls, target = bb.add(MultiControlPauli(cvs=(1, 0)), controls=ctrls, target=target)
+            ctrls, target = bb.add(
+                MultiControlPauli(cvs=(1, 0), target_gate=cirq.X), controls=ctrls, target=target
+            )
             a, b = ctrls
             # Return the output registers.
             return {'a': a, 'b': b, 'target': target}
