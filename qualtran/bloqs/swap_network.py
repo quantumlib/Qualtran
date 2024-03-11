@@ -37,7 +37,7 @@ from qualtran import (
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.basic_gates import CSwap, TGate
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
-from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
+from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.generalizers import (

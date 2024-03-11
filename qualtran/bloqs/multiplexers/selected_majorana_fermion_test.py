@@ -18,7 +18,7 @@ import pytest
 
 from qualtran import BoundedQUInt, Register
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
-from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
+from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition
