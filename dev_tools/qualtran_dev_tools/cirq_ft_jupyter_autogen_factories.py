@@ -18,7 +18,6 @@
 import cirq
 import numpy as np
 
-
 # pylint: enable=unused-import,wildcard-import,unused-wildcard-import
 # !!!! Do not modify imports !!!!
 
