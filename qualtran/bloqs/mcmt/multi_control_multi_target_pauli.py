@@ -98,7 +98,7 @@ class MultiControlPauli(GateWithRegisters):
     """
 
     cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
-    target_gate: cirq.Pauli = cirq.X
+    target_gate: cirq.Pauli
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -136,9 +136,8 @@ class MultiControlPauli(GateWithRegisters):
         wire_symbols += [str(self.target_gate)]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def on_classical_vals(
-        self, controls: 'ClassicalValT', target: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        controls, target = vals.get('controls', np.array([])), vals.get('target')
         if self.target_gate not in (cirq.X, XGate()):
             raise NotImplementedError(f"{self} is not classically simulatable.")
 

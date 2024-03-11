@@ -408,7 +408,9 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlPauli(cvs=self.cvs), controls=ctrls, target=k_split[i]
+                        MultiControlPauli(cvs=self.cvs, target_gate=cirq.X),
+                        controls=ctrls,
+                        target=k_split[i],
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -424,7 +426,9 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlPauli(cvs=self.cvs), controls=ctrls, target=k_split[i]
+                        MultiControlPauli(cvs=self.cvs, target_gate=cirq.X),
+                        controls=ctrls,
+                        target=k_split[i],
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])

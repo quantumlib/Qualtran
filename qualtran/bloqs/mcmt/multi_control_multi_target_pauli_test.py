@@ -45,7 +45,7 @@ def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
 
 @pytest.mark.parametrize("cvs", [(0,), (1, 0), (1, 1, 1), (1, 0, 1, 0)])
 def test_multi_control_x(cvs):
-    bloq = MultiControlPauli(cvs=cvs)
+    bloq = MultiControlPauli(cvs=cvs, target_gate=cirq.X)
     assert_valid_bloq_decomposition(bloq=bloq)
 
 
@@ -57,13 +57,15 @@ def test_multi_control_x(cvs):
         ((1, 1, 1), 1, (1, 1, 1), 0),
         ((1, 0, 1, 0), 1, (1, 0, 1, 0), 0),
         ((1,), 0, (0,), 0),
+        ((), 0, (), 1),
     ],
 )
 def test_classical_multi_control_x(cvs, x, ctrls, result):
-    bloq = MultiControlPauli(cvs=cvs)
+    bloq = MultiControlPauli(cvs=cvs, target_gate=cirq.X)
     cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(target=x, controls=ctrls)
-    cbloq_classical = cbloq.call_classically(target=x, controls=ctrls)
+    kwargs = {'target': x} | ({'controls': ctrls} if ctrls else {})
+    bloq_classical = bloq.call_classically(**kwargs)
+    cbloq_classical = cbloq.call_classically(**kwargs)
 
     assert len(bloq_classical) == len(cbloq_classical)
     for i in range(len(bloq_classical)):
