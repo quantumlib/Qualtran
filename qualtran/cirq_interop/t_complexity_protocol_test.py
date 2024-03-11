@@ -18,7 +18,7 @@ import pytest
 
 from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.and_bloq import And
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import execute_notebook
@@ -55,6 +55,12 @@ class DoesNotSupportTComplexityGate(cirq.Gate):
         return 1
 
 
+class DoesNotSupportTComplexityBloq(Bloq):
+    @property
+    def signature(self) -> 'Signature':
+        return Signature.build(q=1)
+
+
 class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
     @property
     def signature(self) -> 'Signature':
@@ -67,6 +73,12 @@ class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
 def test_t_complexity_for_bloq_via_build_call_graph():
     bloq = SupportsTComplexityBloqViaBuildCallGraph()
     assert t_complexity(bloq) == TComplexity(t=5, clifford=10)
+
+
+def test_t_complexity_for_bloq_does_not_support():
+    with pytest.raises(TypeError):
+        _ = t_complexity(DoesNotSupportTComplexityBloq())
+    assert t_complexity(DoesNotSupportTComplexityBloq(), True) == None
 
 
 def test_t_complexity():

@@ -15,6 +15,7 @@
 """Autogeneration of Jupyter notebooks."""
 import abc
 import inspect
+import re
 import textwrap
 from pathlib import Path
 from types import ModuleType
@@ -76,18 +77,26 @@ def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> List[str]:
         trimmed_lines: The un-indented body of the function without the return statement.
         obj_expression: The expression used in the terminal `return` statement.
     """
-    lines = textwrap.dedent(inspect.getsource(bloq_ex._func)).splitlines()
+    source = textwrap.dedent(inspect.getsource(bloq_ex._func))
 
-    if lines[0].startswith('@bloq_example'):
-        lines = lines[1:]
-
-    if not lines[0].startswith('def '):
-        raise ValueError(
-            f"The first line of {bloq_ex} doesn't look like a function definition: {lines[0]}"
-        )
+    # Usually, our bloq examples are constructed via functions annotated with the `@bloq_example`
+    # annotation. If you want to find just the annotation: I develoepd this regex:
+    # ma = re.match(r'@bloq_example.*?(?=^def)', source, flags=re.MULTILINE | re.DOTALL)
+    #
+    # Instead, we'll just strip anything until we find a `def(...) -> xxx:` line.
+    # Regex explanation:
+    #   - Non-greedy match any character until we get to def
+    #   - Non-greedy match any character until we get to a return-type annotation
+    #   - Non-greedy match any character until we get to the end of the type annotation
+    ma = re.match(r'^.*?def .*?\) -> .*?:\n', source, flags=re.MULTILINE | re.DOTALL)
+    if ma is None:
+        raise ValueError("The bloq example function source was not in the form we expected.")
+    def_start, body_start = ma.span()
+    assert def_start == 0, 'The regex failed to trim off the function definition'
+    lines = source[body_start:].splitlines()
 
     trimmed_lines = []
-    for line in lines[1:]:
+    for line in lines:
         if not (line == '' or line.startswith(' ' * 4)):
             raise ValueError(f"Bad indentation in {bloq_ex}: {line}")
 
