@@ -39,9 +39,9 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.data_types import QMontgomeryUInt
-from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.basic_gates import CNOT, XGate
+from qualtran.bloqs.mcmt.and_bloq import And
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
@@ -180,14 +180,15 @@ class Add(Bloq):
         context.qubit_manager.qfree(ancillas)
 
     def _t_complexity_(self):
-        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.dtype.bitsize - 4
-        return TComplexity(t=num_t_gates, clifford=num_clifford)
+        n = self.dtype.bitsize
+        num_clifford = (n - 2) * 19 + 16
+        num_toffoli = n - 1
+        return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
-        num_toffoli = self.dtype.bitsize - 1
-        return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
+        n = self.dtype.bitsize
+        n_cnot = (n - 2) * 6 + 3
+        return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
 
 @bloq_example

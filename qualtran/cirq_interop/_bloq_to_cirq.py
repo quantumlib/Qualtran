@@ -26,6 +26,7 @@ from qualtran import (
     Bloq,
     Connection,
     DecomposeNotImplementedError,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -136,12 +137,21 @@ class BloqAsCirqGate(cirq.Gate):
             return _cirq_style_decompose_from_decompose_bloq(
                 bloq=self.bloq, quregs=quregs, context=context
             )
-        except DecomposeNotImplementedError:
+        except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
         return NotImplemented
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
+
+    def _unitary_(self):
+        if self._num_qubits_() > 3:
+            # Prefer decomposition for large bloqs
+            return NotImplemented
+        tensor = self.bloq.tensor_contract()
+        if tensor.ndim != 2:
+            return NotImplemented
+        return tensor
 
     def on_registers(
         self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
@@ -296,7 +306,7 @@ def _wire_symbol_to_cirq_diagram_info(
             if ws.filled:
                 return '@'
             else:
-                return '@(0)'
+                return '(0)'
         if isinstance(ws, (TextBox, RarrowTextBox, LarrowTextBox)):
             return ws.text
         if isinstance(ws, ModPlus):

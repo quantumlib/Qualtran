@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Union
 
 from attrs import field, frozen, validators
 
@@ -30,3 +31,12 @@ class MagicCount:
     n_ccz: float = field(
         default=0.0, converter=float, repr=lambda x: f'{x:g}', validator=validators.ge(0)
     )
+
+    def __add__(self, other: 'MagicCount') -> 'MagicCount':
+        return MagicCount(n_t=self.n_t + other.n_t, n_ccz=self.n_ccz + other.n_ccz)
+
+    def __mul__(self, other: Union[float, int]) -> 'MagicCount':
+        return MagicCount(n_t=self.n_t * other, n_ccz=self.n_ccz * other)
+
+    def __rmul__(self, other: Union[float, int]) -> 'MagicCount':
+        return self.__mul__(other)

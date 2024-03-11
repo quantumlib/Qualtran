@@ -202,6 +202,13 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         try:
             return self.decompose_bloq().on_classical_vals(**vals)
+        except DecomposeTypeError as e:
+            raise NotImplementedError(f"{self} is not classically simulable.") from e
+        except DecomposeNotImplementedError as e:
+            raise NotImplementedError(
+                f"{self} has no decomposition and does not "
+                f"support classical simulation directly"
+            ) from e
         except NotImplementedError as e:
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
 
@@ -411,6 +418,9 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 
         return t_complexity(self)
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return NotImplemented
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'

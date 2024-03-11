@@ -410,3 +410,64 @@ class ArbitraryClifford(Bloq):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
+
+
+@frozen
+class Cast(Bloq):
+    """Cast a register from one n-bit QDType to another QDType.
+
+
+    Args:
+        in_qdtype: Input QDType to cast from.
+        out_qdtype: Output QDType to cast to.
+
+    Registers:
+        in: input register to cast from.
+        out: input register to cast to.
+    """
+
+    inp_dtype: QDType
+    out_dtype: QDType
+    shape: Tuple[int, ...] = attrs.field(
+        default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
+    )
+
+    def __attrs_post_init__(self):
+        if isinstance(self.inp_dtype.bitsize, int):
+            if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
+                raise ValueError("Casting only permitted between same sized registers.")
+
+    def adjoint(self) -> 'Bloq':
+        return Cast(inp_dtype=self.out_dtype, out_dtype=self.inp_dtype)
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('reg', dtype=self.inp_dtype, shape=self.shape, side=Side.LEFT),
+                Register('reg', dtype=self.out_dtype, shape=self.shape, side=Side.RIGHT),
+            ]
+        )
+
+    def add_my_tensors(
+        self,
+        tn: qtn.TensorNetwork,
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        tn.add(
+            qtn.Tensor(
+                data=np.eye(2**self.inp_dtype.num_qubits, 2**self.inp_dtype.num_qubits),
+                inds=[outgoing['reg']] + [incoming['reg']],
+                tags=['Cast', tag],
+            )
+        )
+
+    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+        # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
+        return {'reg': reg}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity()
