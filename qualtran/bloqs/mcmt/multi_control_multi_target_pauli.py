@@ -21,19 +21,9 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
-    GateWithRegisters,
-    QBit,
-    Register,
-    Signature,
-    SoquetT,
-)
-from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
+from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.mcmt.and_bloq import MultiAnd
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 
 
@@ -111,43 +101,61 @@ class MultiControlPauli(GateWithRegisters):
     target_gate: cirq.Pauli = cirq.X
 
     @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(controls=len(self.cvs), target=1)
+    def signature(self) -> 'Signature':
+        ctrl = Register('controls', QBit(), shape=(len(self.cvs),))
+        target = Register('target', QBit())
+        return Signature([ctrl, target] if len(self.cvs) > 0 else [target])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
     ) -> cirq.OP_TREE:
-        controls, target = quregs.get('controls', ()), quregs['target']
-        if len(self.cvs) < 2:
+        controls, target = quregs.get('controls', np.array([])), quregs['target']
+        if len(self.cvs) <= 2:
+            controls = controls.flatten()
+            yield [cirq.X(q) for cv, q in zip(self.cvs, controls) if cv == 0]
             yield self.target_gate.on(*target).controlled_by(*controls)
+            yield [cirq.X(q) for cv, q in zip(self.cvs, controls) if cv == 0]
             return
         qm = context.qubit_manager
         and_ancilla, and_target = np.array(qm.qalloc(len(self.cvs) - 2)), qm.qalloc(1)
-        ctrl, junk = controls[:, np.newaxis], and_ancilla[:, np.newaxis]
-        if len(self.cvs) == 2:
-            and_op = And(*self.cvs).on_registers(ctrl=ctrl, target=and_target)
-        else:
-            and_op = MultiAnd(self.cvs).on_registers(ctrl=ctrl, junk=junk, target=and_target)
+        and_op = MultiAnd(self.cvs).on_registers(
+            ctrl=controls, junk=and_ancilla[:, np.newaxis], target=and_target
+        )
         yield and_op
         yield self.target_gate.on(*target).controlled_by(*and_target)
         yield and_op**-1
         qm.qfree([*and_ancilla, *and_target])
 
     def short_name(self) -> str:
-        return r'$C^{n}(P)$'
+        n = len(self.cvs)
+        ctrl = f'C^{n}' if n > 2 else ['', 'C', 'CC'][n]
+        return f'{ctrl}{self.target_gate!s}'
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@" if b else "@(0)" for b in self.cvs]
         wire_symbols += [str(self.target_gate)]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
+    def on_classical_vals(
+        self, controls: 'ClassicalValT', target: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if self.target_gate not in (cirq.X, XGate()):
+            raise NotImplementedError(f"{self} is not classically simulatable.")
+
+        if (self.cvs == controls).all():
+            target = (target + 1) % 2
+
+        return {'controls': controls, 'target': target}
+
     def _t_complexity_(self) -> TComplexity:
-        if len(self.cvs) < 2:
-            return TComplexity(clifford=1)
-        and_gate = And(*self.cvs) if len(self.cvs) == 2 else MultiAnd(self.cvs)
-        and_cost = t_complexity(and_gate)
+        n = len(self.cvs)
+        if n <= 2:
+            return TComplexity(
+                t=4 * (n == 2), clifford=(n < 2) + 2 * (len(self.cvs) - sum(self.cvs))
+            )
+        and_cost = t_complexity(MultiAnd(self.cvs))
         controlled_pauli_cost = t_complexity(self.target_gate.controlled(1))
-        and_inv_cost = t_complexity(and_gate**-1)
+        and_inv_cost = t_complexity(MultiAnd(self.cvs).adjoint())
         return and_cost + controlled_pauli_cost + and_inv_cost
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
@@ -168,139 +176,3 @@ _CC_PAULI_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli',
     examples=(_ccpauli,),
 )
-
-
-@frozen
-class MultiControlX(Bloq):
-    r"""Implements multi-control, single-target X gate as a bloq using $n-2$ clean ancillas.
-
-    Args:
-        cvs: A tuple of control values. Each entry specifies whether that control line is a
-            "positive" control (`cv[i]=1`) or a "negative" control (`cv[i]=0`).
-
-    Registers:
-        ctrls: An input register with n 1-bit controls corresponding to the size of the control
-            variable settings above.
-        x: A 1-bit input register bit-flipped based on the values in the ctrls register.
-
-    References:
-        [Constructing Large CNOTS]
-        (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html).
-        Section title "$n−2$ Ancilla Bits", Figure titled $C^n$NOT from $n-2$ zeroed bits.
-    """
-
-    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        assert len(self.cvs) > 0
-        return Signature([Register('ctrls', QBit(), shape=(len(self.cvs),)), Register('x', QBit())])
-
-    def on_classical_vals(
-        self, ctrls: 'ClassicalValT', x: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
-        if (self.cvs == ctrls).all():
-            x = (x + 1) % 2
-
-        return {'ctrls': ctrls, 'x': x}
-
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrls: SoquetT, x: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        # n = number of controls in the bloq.
-        n = len(self.cvs)
-
-        # Base case 1: CNOT()
-        if n == 1:
-            # Allows for 0-controlled implementations.
-            if self.cvs[0] == 0:
-                ctrls[0] = bb.add(XGate(), q=ctrls[0])
-            ctrls[0], x = bb.add(CNOT(), ctrl=ctrls[0], target=x)
-            if self.cvs[0] == 0:
-                ctrls[0] = bb.add(XGate(), q=ctrls[0])
-            return {'ctrls': ctrls, 'x': x}
-
-        # Base case 2: Toffoli()
-        if n == 2:
-            # Allows for 0-controlled implementations.
-            for i in range(len(self.cvs)):
-                if self.cvs[i] == 0:
-                    ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-            ctrls, x = bb.add(Toffoli(), ctrl=ctrls, target=x)
-
-            for i in range(len(self.cvs)):
-                if self.cvs[i] == 0:
-                    ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-            return {'ctrls': ctrls, 'x': x}
-
-        # Iterative case: MultiControlledX
-        # Allocate necessary ancilla bits.
-        ancillas = bb.allocate(n=(n - 2))
-
-        # Split the ancilla bits for bloq decomposition connections.
-        ancillas_split = bb.split(ancillas)
-
-        # Initialize a list to store the grouped Toffoli gate controls.
-        toffoli_ctrls = []
-
-        # Allows for 0-controlled implementations.
-        for i in range(len(self.cvs)):
-            if self.cvs[i] == 0:
-                ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-        # Iterative case 0: The first Toffoli gate is controlled by the first two controls.
-        toffoli_ctrl = [ctrls[0], ctrls[1]]
-        toffoli_ctrl, ancillas_split[0] = bb.add(
-            Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[0]
-        )
-        # Save the Toffoli controls for later uncomputation.
-        toffoli_ctrls.append(toffoli_ctrl)
-
-        # Iterative case i: The middle Toffoli gates with controls ancilla and control.
-        for i in range(n - 3):
-            toffoli_ctrl = [ancillas_split[i], ctrls[i + 2]]
-            toffoli_ctrl, ancillas_split[i + 1] = bb.add(
-                Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[i + 1]
-            )
-            toffoli_ctrls.append(toffoli_ctrl)
-
-        # Iteritave case n - 1: The final Toffoli gate which is not uncomputed.
-        toffoli_ctrl = [ancillas_split[n - 3], ctrls[n - 1]]
-        toffoli_ctrl, x = bb.add(Toffoli(), ctrl=toffoli_ctrl, target=x)
-
-        # Start storing end states back into ancilla and control qubits.
-        ancillas_split[n - 3] = toffoli_ctrl[0]
-        ctrls[n - 1] = toffoli_ctrl[1]
-
-        # Iterative case i: Uncomputation of middle Toffoli gates.
-        for i in range(n - 3):
-            toffoli_ctrl = toffoli_ctrls.pop()
-            toffoli_ctrl, ancillas_split[n - 3 - i] = bb.add(
-                Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[n - 3 - i]
-            )
-            ancillas_split[n - 4 - i] = toffoli_ctrl[0]
-            ctrls[n - 2 - i] = toffoli_ctrl[1]
-
-        # Iterative case 0: Uncomputation of first Toffoli gate.
-        toffoli_ctrl = toffoli_ctrls.pop()
-        toffoli_ctrl, ancillas_split[0] = bb.add(
-            Toffoli(), ctrl=toffoli_ctrl, target=ancillas_split[0]
-        )
-        ctrls[0:2] = toffoli_ctrl
-
-        # Uncompute 0-controlled qubits.
-        for i in range(len(self.cvs)):
-            if self.cvs[i] == 0:
-                ctrls[i] = bb.add(XGate(), q=ctrls[i])
-
-        # Join and free ancilla qubits.
-        ancillas = bb.join(ancillas_split)
-        bb.free(ancillas)
-
-        # Return the output registers.
-        return {'ctrls': ctrls, 'x': x}
-
-    def short_name(self) -> str:
-        return f'C^{len(self.cvs)}-NOT'

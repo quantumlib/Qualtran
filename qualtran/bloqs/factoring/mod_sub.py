@@ -21,7 +21,7 @@ from qualtran import Bloq, QMontgomeryUInt, Register, Signature, SoquetT
 from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.factoring.mod_add import MontgomeryModAdd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 
 
 @frozen
@@ -138,7 +138,7 @@ class MontgomeryModNeg(Bloq):
         for i in range(self.bitsize):
             cvs = cvs + (0,)
         x_split = bb.split(x)
-        x_split, ctrl = bb.add(MultiControlX(cvs=cvs), ctrls=x_split, x=ctrl)
+        x_split, ctrl = bb.add(MultiControlPauli(cvs=cvs), controls=x_split, target=ctrl)
         x = bb.join(x_split)
 
         # Bitflips all qubits if the ctrl bit is set to 1 (the input x register is not in the 0
@@ -160,7 +160,7 @@ class MontgomeryModNeg(Bloq):
         # Perform a multi-controlled bitflip on the ancilla bit if the state of x is the bitstring
         # representing 0.
         x_split = bb.split(x)
-        x_split, ctrl = bb.add(MultiControlX(cvs=cvs), ctrls=x_split, x=ctrl)
+        x_split, ctrl = bb.add(MultiControlPauli(cvs=cvs), controls=x_split, target=ctrl)
         x = bb.join(x_split)
 
         # Return the ancilla qubit to the 0 state and free it.
