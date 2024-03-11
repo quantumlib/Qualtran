@@ -41,7 +41,7 @@ from qualtran import (
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
@@ -408,7 +408,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlPauli(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])
@@ -424,7 +424,7 @@ class SimpleAddConstant(Bloq):
             if binary_rep[i] == 1:
                 if len(self.cvs) > 0:
                     ctrls, k_split[i] = bb.add(
-                        MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
+                        MultiControlPauli(cvs=self.cvs), controls=ctrls, target=k_split[i]
                     )
                 else:
                     k_split[i] = bb.add(XGate(), q=k_split[i])

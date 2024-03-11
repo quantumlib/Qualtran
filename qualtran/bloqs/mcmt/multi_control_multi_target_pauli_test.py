@@ -16,11 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
-    MultiControlPauli,
-    MultiControlX,
-    MultiTargetCNOT,
-)
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiTargetCNOT
 from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -49,7 +45,7 @@ def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
 
 @pytest.mark.parametrize("cvs", [(0,), (1, 0), (1, 1, 1), (1, 0, 1, 0)])
 def test_multi_control_x(cvs):
-    bloq = MultiControlX(cvs=cvs)
+    bloq = MultiControlPauli(cvs=cvs)
     assert_valid_bloq_decomposition(bloq=bloq)
 
 
@@ -64,10 +60,10 @@ def test_multi_control_x(cvs):
     ],
 )
 def test_classical_multi_control_x(cvs, x, ctrls, result):
-    bloq = MultiControlX(cvs=cvs)
+    bloq = MultiControlPauli(cvs=cvs)
     cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(x=x, ctrls=ctrls)
-    cbloq_classical = cbloq.call_classically(x=x, ctrls=ctrls)
+    bloq_classical = bloq.call_classically(target=x, controls=ctrls)
+    cbloq_classical = cbloq.call_classically(target=x, controls=ctrls)
 
     assert len(bloq_classical) == len(cbloq_classical)
     for i in range(len(bloq_classical)):

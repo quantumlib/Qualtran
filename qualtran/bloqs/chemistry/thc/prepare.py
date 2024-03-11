@@ -183,11 +183,11 @@ class UniformSuperpositionTHC(Bloq):
             GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, target=gt_mu_n
         )
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
-        ctrls = bb.join(np.array([lte_nu_mp1, lte_mu_nu, junk]))
-        ctrls, succ = bb.add(
-            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X), controls=ctrls, target=succ
+        (lte_nu_mp1, lte_mu_nu, junk), succ = bb.add(
+            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
+            controls=np.array([lte_nu_mp1, lte_mu_nu, junk]),
+            target=succ,
         )
-        lte_nu_mp1, lte_mu_nu, junk = bb.split(ctrls)
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
         mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
@@ -406,11 +406,11 @@ class PrepareTHC(PrepareOracle):
         plus_a = bb.add(Hadamard(), q=plus_a)
         plus_b = bb.add(Hadamard(), q=plus_b)
         plus_mn = bb.add(Hadamard(), q=plus_mn)
-        ctrls = bb.join(np.array([nu_eq_mp1, plus_a]))
-        ctrls, extra_ctrl = bb.add(
-            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X), controls=ctrls, target=extra_ctrl
+        (nu_eq_mp1, plus_a), extra_ctrl = bb.add(
+            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X),
+            controls=np.array([nu_eq_mp1, plus_a]),
+            target=extra_ctrl,
         )
-        nu_eq_mp1, plus_a = bb.split(ctrls)
         extra_ctrl, mu, nu = bb.add(CSwap(bitsize=log_mu), ctrl=extra_ctrl, x=mu, y=nu)
         out_regs = {
             'mu': mu,

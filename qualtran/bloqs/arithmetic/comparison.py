@@ -37,7 +37,7 @@ from qualtran import (
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
@@ -603,7 +603,7 @@ class LinearDepthGreaterThan(Bloq):
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
             ctrls = [a, b]
-            ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
+            ctrls, target = bb.add(MultiControlPauli(cvs=(1, 0)), controls=ctrls, target=target)
             a, b = ctrls
             # Return the output registers.
             return {'a': a, 'b': b, 'target': target}
