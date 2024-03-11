@@ -26,6 +26,7 @@ quimb
 
 #qsharp resource estimator interop
 qsharp
+qsharp-widgets
 
 # serialization
 protobuf
