@@ -22,7 +22,7 @@ import pytest
 from qualtran import BoundedQUInt, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
-from qualtran.bloqs.unary_iteration_bloq import unary_iteration, UnaryIterationGate
+from qualtran.bloqs.multiplexers.unary_iteration_bloq import unary_iteration, UnaryIterationGate
 from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper

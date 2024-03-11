@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.select_pauli_lcu_test import get_1d_Ising_lcu_coeffs
+from qualtran.bloqs.multiplexers.select_pauli_lcu_test import get_1d_Ising_lcu_coeffs
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
