@@ -14,9 +14,13 @@
 
 # !!!! Do not modify imports !!!!
 # pylint: disable=unused-import,wildcard-import,unused-wildcard-import
+from typing import *
 
 import cirq
 import numpy as np
+
+import qualtran
+import qualtran.cirq_interop.testing as cq_testing
 
 # pylint: enable=unused-import,wildcard-import,unused-wildcard-import
 # !!!! Do not modify imports !!!!
