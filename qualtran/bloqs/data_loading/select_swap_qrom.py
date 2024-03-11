@@ -21,7 +21,7 @@ from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.drawing import Circle, TextBox, WireSymbol
 
