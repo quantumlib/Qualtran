@@ -21,6 +21,7 @@ import attrs
 import cirq
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Soquet
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
@@ -97,7 +98,11 @@ class QROM(UnaryIterationGate):
         assert isinstance(self.target_bitsizes, tuple)
 
     def get_builder_args(self):
-        return {"data":np.array(self.data), "num_controls":self.num_controls, "num_arrays":len(self.data)}
+        return {
+            "data": np.array(self.data),
+            "num_controls": self.num_controls,
+            "num_arrays": len(self.data),
+        }
 
     @classmethod
     def set_builder_with_kwargs(cls, kwargs):

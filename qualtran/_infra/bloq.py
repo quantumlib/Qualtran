@@ -516,19 +516,23 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return directional_text_box(text=soq.pretty(), side=soq.reg.side)
 
-
-    def get_builder_args(self)->Dict[str,Any]:
+    def get_builder_args(self) -> Dict[str, Any]:
         """Some bloqs are initialized using a "build" method. These bloqs usually have initialization
         args that are not serializable. Override this method to return the args used in this bloq's build method
         as a dictionary that can be serialized.
         """
 
-        raise NotImplementedError("Override this method to return the arguments used in the 'build' method as a dictionary")
+        raise NotImplementedError(
+            "Override this method to return the arguments used in the 'build' method as a dictionary"
+        )
+
     @classmethod
-    def set_builder_with_kwargs(self, kwargs:Dict[str,Any])->'Bloq':
+    def set_builder_with_kwargs(self, kwargs: Dict[str, Any]) -> 'Bloq':
         """Some bloqs are initalized using a build method. When a bloq is being deserialized, the args for this
         build method are converted to a 'kwargs' dictionary. Override thid method to take the kwargs and pass them into
         a the build method.
         """
 
-        raise NotImplementedError("Override this method with a 'build' method which takes in kwargs")
+        raise NotImplementedError(
+            "Override this method with a 'build' method which takes in kwargs"
+        )

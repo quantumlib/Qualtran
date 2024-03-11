@@ -260,13 +260,12 @@ class MultiAnd(Bloq):
         )
 
     def get_builder_args(self):
-        return {"cvs":np.array(self.cvs, dtype=np.int32)}
+        return {"cvs": np.array(self.cvs, dtype=np.int32)}
 
     @classmethod
     def set_builder_with_kwargs(self, kwargs):
         cvs = tuple(kwargs["cvs"])
         return MultiAnd(cvs)
-
 
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
         accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))

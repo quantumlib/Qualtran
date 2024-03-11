@@ -37,15 +37,16 @@ from qualtran import (
     Signature,
     Soquet,
 )
+from qualtran._infra.adjoint import Adjoint
 from qualtran.bloqs import arithmetic, basic_gates, factoring, swap_network
-from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.arithmetic import sorting
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.mcmt import and_bloq
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.protos import bloq_pb2
 from qualtran.serialization import annotations, args, data_types, registers
-from qualtran._infra.adjoint import Adjoint
+
 RESOLVER_DICT = {
     'CNOT': basic_gates.CNOT,
     'Rx': basic_gates.Rx,
@@ -91,9 +92,8 @@ RESOLVER_DICT = {
     'Controlled': Controlled,
     'CirqGateAsBloq': CirqGateAsBloq,
     'Toffoli': basic_gates.Toffoli,
-    'QROM':QROM,
-    'Adjoint': Adjoint
-
+    'QROM': QROM,
+    'Adjoint': Adjoint,
 }
 
 
@@ -171,7 +171,7 @@ class _BloqLibDeserializer:
 
     def _construct_bloq(self, name: str, **kwargs):
         """Construct a Bloq using serialized name and BloqArgs. Initializes bloq with builder
-         if 'set_builder_with_kwargs' is overriden. Otherwise, it will try to initialize the bloq directly with kwargs."""
+        if 'set_builder_with_kwargs' is overriden. Otherwise, it will try to initialize the bloq directly with kwargs."""
         bloq = RESOLVER_DICT[name]
         try:
             return bloq.set_builder_with_kwargs(kwargs)
@@ -381,7 +381,9 @@ def _bloq_args_to_proto(
         ]
     except NotImplementedError:
         ret = [
-            _bloq_arg_to_proto(name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx)
+            _bloq_arg_to_proto(
+                name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx
+            )
             for field in _iter_fields(bloq)
         ]
     return ret if ret else None
