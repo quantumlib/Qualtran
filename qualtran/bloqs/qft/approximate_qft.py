@@ -76,12 +76,14 @@ class ApproximateQFT(Bloq):
         phase_grad_qubits = bb.split(phase_grad)
         for i in range(len(qs)):
             qs[i] = bb.add(Hadamard(), q=qs[i])
-            addition_bitsize = min(i + 1, len(phase_grad_qubits))
-            a = qs[:addition_bitsize]
-            b = phase_grad_qubits[:addition_bitsize]
-            a, b = bb.add(Add(QUInt(addition_bitsize)), a=a, b=b)
-            qs[:addition_bitsize] = a
-            phase_grad_qubits[:addition_bitsize] = b
+            if i == 0:
+                continue
+            addition_bitsize = min(i, len(phase_grad_qubits) - 1)
+            a = bb.join(qs[:addition_bitsize])
+            b = bb.join(phase_grad_qubits[:addition_bitsize + 1])
+            a, b = bb.add(Add(QUInt(addition_bitsize+1)), a=a, b=b)
+            qs[:addition_bitsize] = bb.split(a)
+            phase_grad_qubits[:addition_bitsize + 1] = bb.split(b)
         q = bb.join(qs)
         phase_grad = bb.join(phase_grad_qubits)
 
