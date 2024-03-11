@@ -20,7 +20,7 @@ import pytest
 
 from qualtran._infra.gate_with_registers import split_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT, TGate
-from qualtran.bloqs.qrom import _qrom_multi_data, _qrom_multi_dim, _qrom_small, QROM
+from qualtran.bloqs.data_loading.qrom import _qrom_multi_data, _qrom_multi_dim, _qrom_small, QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
