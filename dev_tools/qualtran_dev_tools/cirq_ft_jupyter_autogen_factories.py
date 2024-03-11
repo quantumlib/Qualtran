@@ -14,13 +14,10 @@
 
 # !!!! Do not modify imports !!!!
 # pylint: disable=unused-import,wildcard-import,unused-wildcard-import
-from typing import *
 
 import cirq
 import numpy as np
 
-import qualtran
-import qualtran.cirq_interop.testing as cq_testing
 
 # pylint: enable=unused-import,wildcard-import,unused-wildcard-import
 # !!!! Do not modify imports !!!!
@@ -56,7 +53,7 @@ def _make_SwapWithZeroGate():
 
 
 def _make_SelectPauliLCU():
-    from qualtran.bloqs.select_pauli_lcu import SelectPauliLCU
+    from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 
     target_bitsize = 4
     us = ['XIXI', 'YIYI', 'ZZZZ', 'ZXYZ']

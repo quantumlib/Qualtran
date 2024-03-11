@@ -24,7 +24,7 @@ from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, QAny, QBit, Register
 from qualtran.bloqs.select_and_prepare import SelectOracle
-from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
+from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 
 
 @attrs.frozen
