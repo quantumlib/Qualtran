@@ -56,7 +56,7 @@ def _make_SwapWithZeroGate():
 
 
 def _make_SelectPauliLCU():
-    from qualtran.bloqs.select_pauli_lcu import SelectPauliLCU
+    from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 
     target_bitsize = 4
     us = ['XIXI', 'YIYI', 'ZZZZ', 'ZXYZ']
