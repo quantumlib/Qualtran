@@ -20,7 +20,7 @@ from typing import Dict, Optional, Tuple, Union
 import sympy
 
 from qualtran import Adjoint, Bloq
-from qualtran.bloqs.basic_gates import CSwap, Ry, TGate, Toffoli
+from qualtran.bloqs.basic_gates import CSwap, TGate, Toffoli
 from qualtran.bloqs.reflection import Reflection
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
