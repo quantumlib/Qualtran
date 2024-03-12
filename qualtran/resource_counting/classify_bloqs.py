@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 def _get_all_bloqs_in_module(bloq_module: str) -> Tuple[Bloq]:
-    """Returns all classes defined in bloqs.basic_gates which have an attribute `eps`."""
+    """Returns all classes defined in bloqs `bloq_module`."""
     importlib.import_module(bloq_module)
     all_members = [v for (_, v) in inspect.getmembers(sys.modules[bloq_module], inspect.isclass)]
     defined_in_module = tuple(member for member in all_members if bloq_module in member.__module__)
