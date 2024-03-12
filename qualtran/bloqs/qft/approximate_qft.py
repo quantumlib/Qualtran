@@ -13,29 +13,26 @@
 #  limitations under the License.
 import math
 from functools import cached_property
-from typing import Callable, Dict
+from typing import Callable
 
 import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QFxp, QUInt, Signature, Bloq, SoquetT, QInt
-from qualtran.bloqs.arithmetic import Add
+from qualtran import GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
-from qualtran.bloqs.basic_gates import Hadamard
-from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
 
 @attrs.frozen
 class ApproximateQFT(GateWithRegisters):
     r"""
-    An approximate QFT using the phase gradient trick where controlled z-power gates past a user-defined threshold
-    are cut off.
+    An approximate QFT, using the phase gradient trick, where we delete controlled z-power gates
+    smaller than a user-defined threshold.
 
-    Given an n-bit phase gradient state $|\phi\rangle$ prepared as
+    Given a b-bit phase gradient state $|\phi\rangle$ prepared as
 
     $$
-        |\phi\rangle = \frac{1}{\sqrt{2^{n}}} \sum_{k=0}^{2^{n} - 1} \omega_{n}^{-k} |k\rangle
+        |\phi\rangle = \frac{1}{\sqrt{2^{b}}} \sum_{k=0}^{2^{b} - 1} \omega_{b}^{-k} |k\rangle
     $$
 
     The QFT uses exponentially small z-power gates. In practice, it is often sufficient to perform
@@ -48,7 +45,8 @@ class ApproximateQFT(GateWithRegisters):
 
     Args:
         bitsize: Size of input register to apply QFT on.
-        b: The threshold for the z-power gates. Gates with exponents smaller than b are dropped.
+        b: The size of the phase gradient register. This is a function of the bitsize
+           and defaults to being math.ceil(math.log2(bitsize)).
         with_reverse: Whether or not to include the swaps at the end
             of the circuit decomposition that reverse the order of the
             qubits. If True, the swaps are inserted. Defaults to True.
@@ -65,7 +63,7 @@ class ApproximateQFT(GateWithRegisters):
     @cached_property
     def signature(self) -> 'Signature':
         phase_grad_bitsize = self.b(self.bitsize)
-        assert(phase_grad_bitsize > 0, "b_func must return a positive value for b")
+        assert (phase_grad_bitsize > 0, "b_func must return a positive value for b")
         return Signature.build_from_dtypes(
             q=QUInt(self.bitsize), phase_grad=QFxp(phase_grad_bitsize, phase_grad_bitsize)
         )
@@ -82,8 +80,7 @@ class ApproximateQFT(GateWithRegisters):
                 yield cirq.H(q[i])
                 continue
             addition_bitsize = min(i, len(phase_grad) - 1)
-            a, b = q[:addition_bitsize], phase_grad[:addition_bitsize + 1]
-            # yield AddIntoPhaseGrad(addition_bitsize, addition_bitsize + 1, right_shift=1).on_registers(x=a[::-1], phase_grad=b).controlled_by(q[i])
+            a, b = q[:addition_bitsize], phase_grad[: addition_bitsize + 1]
             yield PlusEqualProduct(addition_bitsize, 1, addition_bitsize + 1).on_registers(
                 a=a[::-1], b=q[i], result=b
             )
