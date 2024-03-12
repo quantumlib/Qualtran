@@ -11,3 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.rotations.hamming_weight_phasing import (
+    HammingWeightPhasing,
+    HammingWeightPhasingViaPhaseGradient,
+)
+from qualtran.bloqs.rotations.phase_gradient import (
+    AddIntoPhaseGrad,
+    AddScaledValIntoPhaseReg,
+    PhaseGradientState,
+)
+from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction
+from qualtran.bloqs.rotations.programmable_rotation_gate_array import ProgrammableRotationGateArray
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow, QvrPhaseGradient 
