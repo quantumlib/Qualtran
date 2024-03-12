@@ -54,6 +54,8 @@ class ApproximateQFT(GateWithRegisters):
             correct effect, but can almost always be optimized away by just
             performing later operations on different qubits.
 
+    References:
+        [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
     """
 
     bitsize: int
