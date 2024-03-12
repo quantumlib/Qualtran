@@ -72,7 +72,9 @@ import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
-import qualtran.bloqs.swap_network
+import qualtran.bloqs.swap_network.cswap_approx
+import qualtran.bloqs.swap_network.multiplexed_cswap
+import qualtran.bloqs.swap_network.swap_with_zero
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
@@ -97,9 +99,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
             qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
-            qualtran.bloqs.swap_network._APPROX_CSWAP_DOC,
-            qualtran.bloqs.swap_network._SWZ_DOC,
-            qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
+            qualtran.bloqs.swap_network.cswap_approx._APPROX_CSWAP_DOC,
+            qualtran.bloqs.swap_network.swap_with_zero._SWZ_DOC,
+            qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
         ],
     ),
     NotebookSpecV2(
