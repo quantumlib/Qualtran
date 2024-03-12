@@ -58,7 +58,7 @@ class TestBundleOfBloqs(Bloq):
         (((HammingWeightPhasing(10, 1.11), 11),), 'rotations'),
         (((Add(QInt(8)), 4),), 'arithmetic'),
         (((QROM.build([4, 10, 11, 34]), 8),), 'data_loading'),
-        (((And(), 4),), 'mcmt'),
+        (((And(), 4),), 'multi_control_pauli'),
         (((Reflection((3, 3, 2), (0, 0, 1)), 100),), 'reflection'),
         (((LessThanConstant(8, 3), 10),), 'arithmetic'),
     ),
@@ -76,7 +76,7 @@ def test_default_classification(bloq_count, classification):
         (HammingWeightPhasing(10, 1.11), 'rotations'),
         (Add(QInt(8)), 'arithmetic'),
         (QROM.build([4, 10, 11, 34]), 'data_loading'),
-        (And(), 'mcmt'),
+        (And(), 'multi_control_pauli'),
         (Reflection((3, 3, 2), (0, 0, 1)), 'reflection'),
         (LessThanConstant(8, 3).adjoint(), 'arithmetic'),
     ),
@@ -88,7 +88,7 @@ def test_classify_bloq(bloq, classification):
 
 
 def test_classify_bloq_counts_with_custom_bloq_classification():
-    bloq_classification = {'swaps': ('qualtran.bloqs.basic_gates.swap',)}
+    bloq_classification = {'qualtran.bloqs.basic_gates.swap': 'swaps'}
     test_bloq = TestBundleOfBloqs(((CSwap(10), 42), (Add(QInt(4)), 3)))
     classified_bloqs = classify_t_count_by_bloq_type(
         test_bloq, bloq_classification=bloq_classification
