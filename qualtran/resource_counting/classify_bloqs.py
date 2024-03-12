@@ -78,16 +78,6 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> st
     return 'other'
 
 
-def _keep_only_classified_bloqs(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> bool:
-    """A keep method for a bloqs call graph to turn classified bloqs into leaf nodes."""
-    for _, v in bloq_classification.items():
-        if isinstance(bloq, v):
-            return True
-        elif isinstance(bloq, Adjoint) and isinstance(bloq.adjoint(), v):
-            return True
-    return False
-
-
 def classify_t_count_by_bloq_type(
     bloq: Bloq, bloq_classification: Optional[Dict[str, Tuple[Bloq]]] = None
 ) -> Dict[str, Union[int, sympy.Expr]]:
@@ -102,7 +92,7 @@ def classify_t_count_by_bloq_type(
     """
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
-    keeper = lambda bloq: _keep_only_classified_bloqs(bloq, bloq_classification)
+    keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
     _, sigma = bloq.call_graph(
         generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords, ignore_partition],
         keep=keeper,
