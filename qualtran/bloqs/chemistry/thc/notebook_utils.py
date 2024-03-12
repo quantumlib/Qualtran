@@ -12,14 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import Optional
+
 import cirq
 
 from qualtran import Bloq
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting import SympySymbolAllocator
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.resource_counting.generalizers import (
     generalize_cvs,
     generalize_rotation_angle,
