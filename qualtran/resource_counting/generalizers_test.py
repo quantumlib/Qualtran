@@ -13,10 +13,10 @@
 #  limitations under the License.
 import cirq
 
-from qualtran import QAny
+from qualtran import Adjoint, QAny, Register
 from qualtran.bloqs.basic_gates import CNOT, Rx, TwoBitSwap
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
+from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting.bloq_counts import _make_composite_generalizer
 from qualtran.resource_counting.generalizers import (
@@ -41,6 +41,8 @@ _BLOQS_TO_FILTER = [
     Rx(0.123),
     Allocate(QAny(bitsize=5)),
     Free(QAny(bitsize=5)),
+    Adjoint(TwoBitSwap()),
+    Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
 ]
 
 
@@ -57,6 +59,8 @@ def test_ignore_split_join():
         Rx(0.123),
         Allocate(QAny(bitsize=5)),
         Free(QAny(bitsize=5)),
+        Adjoint(TwoBitSwap()),
+        None,  # Partition(5, (Register('x', QAny(2)), Register('y', QAny(3))))
     ]
 
 
@@ -73,6 +77,8 @@ def test_ignore_alloc_free():
         Rx(0.123),
         None,  # Allocate(QAny(bitsize=5))
         None,  # Free(QAny(bitsize=5))
+        Adjoint(TwoBitSwap()),
+        Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
     ]
 
 
@@ -89,6 +95,8 @@ def test_generalize_rotation_angle():
         Rx(PHI),  # this one is generalized
         Allocate(QAny(bitsize=5)),
         Free(QAny(bitsize=5)),
+        Adjoint(TwoBitSwap()),
+        Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
     ]
 
 
@@ -105,6 +113,8 @@ def test_generalize_cvs():
         Rx(0.123),
         Allocate(QAny(bitsize=5)),
         Free(QAny(bitsize=5)),
+        Adjoint(TwoBitSwap()),
+        Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
     ]
 
 
@@ -121,6 +131,8 @@ def test_ignore_cliffords():
         Rx(0.123),
         Allocate(QAny(bitsize=5)),
         Free(QAny(bitsize=5)),
+        None,  # Adjoint(TwoBitSwap()),
+        Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
     ]
 
 
@@ -138,6 +150,8 @@ def test_ignore_cliffords_with_cirq():
         Rx(0.123),
         Allocate(QAny(bitsize=5)),
         Free(QAny(bitsize=5)),
+        None,  # Adjoint(TwoBitSwap()),
+        Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
     ]
 
 
@@ -163,4 +177,6 @@ def test_many_generalizers():
         Rx(PHI),
         # Allocate(QAny(n=5)),
         # Free(QAny(n=5)),
+        # Adjoint(TwoBitSwap()),
+        # Partition(5, (Register('x', QAny(2)), Register('y', QAny(3))))
     ]
