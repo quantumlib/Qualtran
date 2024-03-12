@@ -65,7 +65,7 @@ class ApproximateQFT(GateWithRegisters):
     @cached_property
     def signature(self) -> 'Signature':
         phase_grad_bitsize = self.b(self.bitsize)
-        assert (phase_grad_bitsize > 0, "b_func must return a positive value for b")
+        assert phase_grad_bitsize > 0
         return Signature.build_from_dtypes(
             q=QUInt(self.bitsize), phase_grad=QFxp(phase_grad_bitsize, phase_grad_bitsize)
         )
