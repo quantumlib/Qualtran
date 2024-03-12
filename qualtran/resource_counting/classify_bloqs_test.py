@@ -33,7 +33,7 @@ from qualtran.resource_counting.classify_bloqs import (
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen

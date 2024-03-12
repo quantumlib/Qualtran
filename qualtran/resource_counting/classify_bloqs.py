@@ -15,22 +15,17 @@ import importlib
 import inspect
 import sys
 from collections import defaultdict
-from typing import Callable, Dict, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Tuple, Union
 
 import sympy
 
 from qualtran import Adjoint, Bloq
 from qualtran.bloqs.basic_gates import CSwap, TGate, Toffoli
 from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.resource_counting.t_counts_from_sigma import (
     _get_all_rotation_types,
     t_counts_from_sigma,
 )
-
-if TYPE_CHECKING:
-    from qualtran import Bloq
-    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
 
 
 def _get_all_bloqs_in_module(bloq_module: str) -> Tuple[Bloq]:
@@ -43,7 +38,6 @@ def _get_all_bloqs_in_module(bloq_module: str) -> Tuple[Bloq]:
 
 def _get_basic_bloq_classification() -> Dict[str, Tuple[Bloq]]:
     """High level classification of bloqs by the module name."""
-
     bloq_classifier = {
         'arithmetic': _get_all_bloqs_in_module('qualtran.bloqs.arithmetic'),
         'rotations': _get_all_bloqs_in_module('qualtran.bloqs.rotations')
@@ -61,6 +55,15 @@ def _get_basic_bloq_classification() -> Dict[str, Tuple[Bloq]]:
 
 
 def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> str:
+    """Classify a bloq given a bloq_classification.
+
+    Args:
+        bloq: The bloq to classify
+        bloq_classification: A dictionary mapping a classification to a tuple of
+            bloqs in that classification.
+    Returns:
+        classification: The matching key in bloq_classification. Returns other if not classified.
+    """
     for k, v in bloq_classification.items():
         if isinstance(bloq, v):
             return k
@@ -69,11 +72,9 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> st
     return 'other'
 
 
-def keeper(bloq: Bloq, bloq_classification: Optional[Dict[str, Tuple[Bloq]]] = None) -> bool:
-    """Turn bloqs into leaf nodes."""
-    if bloq_classification is None:
-        bloq_classification = _get_basic_bloq_classification()
-    for k, v in bloq_classification.items():
+def _keep_only_classified_bloqs(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> bool:
+    """A keep method for a bloqs call graph to turn classified bloqs into leaf nodes."""
+    for _, v in bloq_classification.items():
         if isinstance(bloq, v):
             return True
         elif isinstance(bloq, Adjoint) and isinstance(bloq.adjoint(), v):
@@ -84,49 +85,21 @@ def keeper(bloq: Bloq, bloq_classification: Optional[Dict[str, Tuple[Bloq]]] = N
 def classify_t_count_by_bloq_type(
     bloq: Bloq, bloq_classification: Optional[Dict[str, Tuple[Bloq]]] = None
 ) -> Dict[str, Union[int, sympy.Expr]]:
-    _, sigma = bloq.call_graph(keep=keeper)
-    classified_bloqs = defaultdict(int)
+    """Classify (bin) the T count of a bloq's call graph by type of operation.
+
+    Args:
+        bloq: the bloq to classify.
+        bloq_classification: An optional dictionary mapping bloq_classifications to bloq types.
+
+    Returns
+        classified_bloqs: dictionary containing the T count for different types of bloqs.
+    """
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
+    keeper = lambda bloq: _keep_only_classified_bloqs(bloq, bloq_classification)
+    _, sigma = bloq.call_graph(keep=keeper)
+    classified_bloqs = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
         classified_bloqs[classification] += v * t_counts_from_sigma(k.call_graph()[1])
     return classified_bloqs
-
-
-# def classify_t_count_by_bloq_type(
-#     bloq: Bloq,
-#     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-#     bloq_classification: Optional[Dict[str, Tuple[Bloq]]] = None,
-# ) -> Dict[str, int]:
-#     """Classify (bin) the T count of a bloq's call graph by type of operation.
-
-#     Args:
-#         bloq: the bloq to classify.
-#         generalizer: If provided, run this function on each (sub)bloq to replace attributes
-#             that do not affect resource estimates with generic sympy symbols. If the function
-#             returns `None`, the bloq is omitted from the counts graph. If a sequence of
-#             generalizers is provided, each generalizer will be run in order.
-#         bloq_classification: An optional dictionary mapping bloq_classifications to bloq types.
-
-#     Returns
-#         classified_bloqs: dictionary containing the T count for different types of bloqs.
-#     """
-#     classified_bloqs = defaultdict(int)
-#     if bloq_classification is None:
-#         bloq_classification = _get_basic_bloq_classification()
-#     for bloq, num_calls in bloq.bloq_counts().items():
-#         # only classify bloqs which contribute to the T count.
-#         if isinstance(bloq, (Split, Join, Allocate, Free)):
-#             continue
-#         num_t = bloq.call_graph(generalizer=generalizer)[1].get(TGate())
-#         if num_t is not None:
-#             num_t = int(num_t)
-#             is_classified = False
-#             for k, v in bloq_classification.items():
-#                 if isinstance(bloq, v):
-#                     classified_bloqs[k] += num_calls * num_t
-#                     is_classified = True
-#             if not is_classified:
-#                 classified_bloqs['other'] += num_calls * num_t
-#     return classified_bloqs
