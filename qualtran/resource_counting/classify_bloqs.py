@@ -15,10 +15,10 @@ import importlib
 import inspect
 import sys
 from collections import defaultdict
-from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Callable, Dict, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate
+from qualtran.bloqs.basic_gates import CSwap, TGate, Toffoli
 from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.resource_counting.t_counts_from_sigma import _get_all_rotation_types
@@ -49,8 +49,16 @@ def _get_basic_bloq_classification() -> Dict[str, Tuple[Bloq]]:
         'multiplexers': _get_all_bloqs_in_module('qualtran.bloqs.multiplexers'),
         'swaps': _get_all_bloqs_in_module('qualtran.bloqs.swap_network') + (CSwap,),
         'reflection': (Reflection,),
+        'toffoli': (Toffoli,),
+        'tgate': (TGate,),
     }
-    return bloq_classifier
+
+
+def keeper(bloq: Bloq, classification: Dict[str, Tuple[Bloq]]) -> bool:
+    for k, v in _get_basic_bloq_classification().items():
+        if isinstance(bloq, v):
+            return True
+    return False
 
 
 def classify_t_count_by_bloq_type(
