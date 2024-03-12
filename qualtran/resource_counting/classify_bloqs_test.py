@@ -30,6 +30,7 @@ from qualtran.resource_counting.classify_bloqs import (
     _get_all_bloqs_in_module,
     classify_t_count_by_bloq_type,
 )
+from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
@@ -65,7 +66,9 @@ def test_default_classification(bloq_count, classification):
     bloq = TestBundleOfBloqs(bloq_count)
     classified_bloqs = classify_t_count_by_bloq_type(bloq)
     bc = bloq_count[0]
-    assert classified_bloqs[classification] == bc[1] * bc[0].call_graph()[1].get(TGate())
+    assert classified_bloqs[classification] == t_counts_from_sigma(
+        bloq.call_graph()[1]
+    )  # bc[1] * bc[0].call_graph()[1].get(TGate())
 
 
 def test_get_all_bloqs_in_module():
