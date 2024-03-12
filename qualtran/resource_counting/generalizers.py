@@ -39,6 +39,15 @@ def ignore_split_join(b: Bloq) -> Optional[Bloq]:
     return b
 
 
+def ignore_partition(b: Bloq) -> Optional[Bloq]:
+    """A generalizer that ignores Partition operations."""
+    from qualtran.bloqs.util_bloqs import Partition
+
+    if isinstance(b, Partition):
+        return None
+    return b
+
+
 def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores allocations and frees."""
     from qualtran.bloqs.util_bloqs import Allocate, Free
