@@ -185,16 +185,16 @@ def test_greater_than_manual():
 
 @pytest.mark.parametrize('bitsize', [1, 2, 5])
 @pytest.mark.parametrize('signed', [False, True])
-@pytest.mark.parametrize('num_targets', [1, 2, 3, 4])
-def test_linear_depth_greater_than_decomp(bitsize, signed, num_targets):
-    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed, num_targets=num_targets)
+@pytest.mark.parametrize('target_bitsize', [1, 2, 3, 4])
+def test_linear_depth_greater_than_decomp(bitsize, signed, target_bitsize):
+    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed, target_bitsize=target_bitsize)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 # TODO: write tests for signed integer comparison
 # https://github.com/quantumlib/Qualtran/issues/606
 @pytest.mark.parametrize(
-    'bitsize,signed,num_targets,a,b,targets,result',
+    'bitsize,signed,target_bitsize,a,b,targets,result',
     [
         (1, False, 1, 1, 0, (0,), (1,)),
         (2, False, 1, 2, 3, (0,), (0,)),
@@ -208,8 +208,10 @@ def test_linear_depth_greater_than_decomp(bitsize, signed, num_targets):
         (5, True, 5, 13, 12, (1, 1, 1, 1, 1), (0, 0, 0, 0, 0)),
     ],
 )
-def test_classical_linear_depth_greater_than(bitsize, signed, num_targets, a, b, targets, result):
-    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed, num_targets=num_targets)
+def test_classical_linear_depth_greater_than(
+    bitsize, signed, target_bitsize, a, b, targets, result
+):
+    bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed, target_bitsize=target_bitsize)
     cbloq = bloq.decompose_bloq()
     print(targets)
     bloq_classical = bloq.call_classically(a=a, b=b, targets=targets)

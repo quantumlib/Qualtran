@@ -563,7 +563,7 @@ class LinearDepthGreaterThan(Bloq):
             it relies on the 1's complement trick described above which only works for signed
             values. If the input registers are unsigned we use 2 ancilla bits to represent the
             registers in 2's complement.
-        num_targets: The number of target bits to be flipped based on the comparison of integers a
+        target_bitsize: The number of target bits to be flipped based on the comparison of integers a
             and b.
 
     Registers:
@@ -577,23 +577,23 @@ class LinearDepthGreaterThan(Bloq):
     """
     bitsize: int
     signed: bool
-    num_targets: int = 1
+    target_bitsize: int = 1
 
     @property
     def signature(self):
-        assert self.num_targets > 0
+        assert self.target_bitsize > 0
         return Signature(
             [
                 Register('a', QUInt(self.bitsize)),
                 Register('b', QUInt(self.bitsize)),
-                Register('targets', QBit(), shape=(self.num_targets,)),
+                Register('targets', QBit(), shape=(self.target_bitsize,)),
             ]
         )
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT', targets: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        for i in range(self.num_targets):
+        for i in range(self.target_bitsize):
             # targets[i] is a 1-bit register so we assert that it's classical value is binary.
             assert targets[i] == (targets[i] % 2)
 
@@ -612,7 +612,7 @@ class LinearDepthGreaterThan(Bloq):
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
             ctrls = [a, b]
-            for i in range(self.num_targets):
+            for i in range(self.target_bitsize):
                 ctrls, targets[i] = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=targets[i])
             a, b = ctrls
             # Return the output registers.
@@ -671,7 +671,7 @@ class LinearDepthGreaterThan(Bloq):
         # is 1. (b' + a)' = b - a therefore if a > b, then b - a < 0 and the sign bit of b - a will
         # be 1.
         a_split[0] = bb.add(XGate(), q=a_split[0])
-        for i in range(self.num_targets):
+        for i in range(self.target_bitsize):
             a_split[0], targets[i] = bb.add(CNOT(), ctrl=a_split[0], target=targets[i])
         a_split[0] = bb.add(XGate(), q=a_split[0])
 
