@@ -27,7 +27,8 @@ from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 from qualtran.resource_counting import BloqCountT
 from qualtran.resource_counting.classify_bloqs import (
-    _get_all_bloqs_in_module,
+    _get_basic_bloq_classification,
+    classify_bloq,
     classify_t_count_by_bloq_type,
 )
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
@@ -65,26 +66,29 @@ class TestBundleOfBloqs(Bloq):
 def test_default_classification(bloq_count, classification):
     bloq = TestBundleOfBloqs(bloq_count)
     classified_bloqs = classify_t_count_by_bloq_type(bloq)
-    bc = bloq_count[0]
-    assert classified_bloqs[classification] == t_counts_from_sigma(
-        bloq.call_graph()[1]
-    )  # bc[1] * bc[0].call_graph()[1].get(TGate())
+    assert classified_bloqs[classification] == t_counts_from_sigma(bloq.call_graph()[1])
 
 
-def test_get_all_bloqs_in_module():
-    comparitors = _get_all_bloqs_in_module('qualtran.bloqs.arithmetic.comparison')
-    assert isinstance(LessThanConstant(8, 3), comparitors)
-    arithmetic = _get_all_bloqs_in_module('qualtran.bloqs.arithmetic')
-    assert isinstance(LessThanConstant(8, 3), arithmetic)
-    rotation = _get_all_bloqs_in_module('qualtran.bloqs.rotations')
-    assert not isinstance(LessThanConstant(8, 3), rotation)
-    assert isinstance(HammingWeightPhasing(10, 1.11), rotation)
-    data_load = _get_all_bloqs_in_module('qualtran.bloqs.data_loading')
-    assert isinstance(QROM.build([4, 10, 11, 23]), data_load)
+@pytest.mark.parametrize(
+    'bloq, classification',
+    (
+        (CSwap(10), 'swaps'),
+        (HammingWeightPhasing(10, 1.11), 'rotations'),
+        (Add(QInt(8)), 'arithmetic'),
+        (QROM.build([4, 10, 11, 34]), 'data_loading'),
+        (And(), 'mcmt'),
+        (Reflection((3, 3, 2), (0, 0, 1)), 'reflection'),
+        (LessThanConstant(8, 3).adjoint(), 'arithmetic'),
+    ),
+)
+def test_classify_bloq(bloq, classification):
+    bloq_classification = _get_basic_bloq_classification()
+    bloq_type = classify_bloq(bloq, bloq_classification)
+    assert bloq_type == classification
 
 
 def test_classify_bloq_counts_with_custom_bloq_classification():
-    bloq_classification = {'swaps': (CSwap,)}
+    bloq_classification = {'swaps': ('qualtran.bloqs.basic_gates.swap',)}
     test_bloq = TestBundleOfBloqs(((CSwap(10), 42), (Add(QInt(4)), 3)))
     classified_bloqs = classify_t_count_by_bloq_type(
         test_bloq, bloq_classification=bloq_classification

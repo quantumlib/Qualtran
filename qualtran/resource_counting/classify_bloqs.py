@@ -11,56 +11,39 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import importlib
-import inspect
-import sys
 from collections import defaultdict
 from typing import Dict, Optional, Tuple, Union
 
 import sympy
 
-from qualtran import Adjoint, Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate, Toffoli
-from qualtran.bloqs.reflection import Reflection
+from qualtran import Bloq
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
     ignore_partition,
     ignore_split_join,
 )
-from qualtran.resource_counting.t_counts_from_sigma import (
-    _get_all_rotation_types,
-    t_counts_from_sigma,
-)
+from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 
-def _get_all_bloqs_in_module(bloq_module: str) -> Tuple[Bloq]:
-    """Returns all classes defined in bloqs `bloq_module`."""
-    importlib.import_module(bloq_module)
-    all_members = [v for (_, v) in inspect.getmembers(sys.modules[bloq_module], inspect.isclass)]
-    defined_in_module = tuple(member for member in all_members if bloq_module in member.__module__)
-    return defined_in_module
-
-
-def _get_basic_bloq_classification() -> Dict[str, Tuple[Bloq]]:
+def _get_basic_bloq_classification() -> Dict[str, Tuple[str]]:
     """High level classification of bloqs by the module name."""
     bloq_classifier = {
-        'arithmetic': _get_all_bloqs_in_module('qualtran.bloqs.arithmetic'),
-        'rotations': _get_all_bloqs_in_module('qualtran.bloqs.rotations')
-        + _get_all_rotation_types(),
-        'state_preparation': _get_all_bloqs_in_module('qualtran.bloqs.state_preparation'),
-        'data_loading': _get_all_bloqs_in_module('qualtran.bloqs.data_loading'),
-        'mcmt': _get_all_bloqs_in_module('qualtran.bloqs.mcmt'),
-        'multiplexers': _get_all_bloqs_in_module('qualtran.bloqs.multiplexers'),
-        'swaps': _get_all_bloqs_in_module('qualtran.bloqs.swap_network') + (CSwap,),
-        'reflection': (Reflection,),
-        'toffoli': (Toffoli,),
-        'tgate': (TGate,),
+        'arithmetic': ('qualtran.bloqs.arithmetic',),
+        'rotations': ('qualtran.bloqs.rotations',),
+        'state_preparation': ('qualtran.bloqs.state_preparation',),
+        'data_loading': ('qualtran.bloqs.data_loading',),
+        'mcmt': ('qualtran.bloqs.mcmt',),
+        'multiplexers': ('qualtran.bloqs.multiplexers',),
+        'swaps': ('qualtran.bloqs.swap_network', 'qualtran.bloqs.basic_gates.swap'),
+        'reflection': ('qualtran.bloqs.reflection',),
+        'toffoli': ('qualtran.bloqs.basic_gates.toffoli',),
+        'tgate': ('qualtran.bloqs.basic_gates.t_gate',),
     }
     return bloq_classifier
 
 
-def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> str:
+def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[str]]) -> str:
     """Classify a bloq given a bloq_classification.
 
     Args:
@@ -71,10 +54,11 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> st
         classification: The matching key in bloq_classification. Returns other if not classified.
     """
     for k, v in bloq_classification.items():
-        if isinstance(bloq, v):
-            return k
-        elif isinstance(bloq, Adjoint) and isinstance(bloq.subbloq, v):
-            return k
+        for mod in v:
+            if mod in bloq.__module__:
+                return k
+            elif 'adjoint' in bloq.__module__ and mod in bloq.subbloq.__module__:
+                return k
     return 'other'
 
 
