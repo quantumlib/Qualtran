@@ -26,6 +26,7 @@ from sympy import Expr
 from qualtran import (
     Bloq,
     BloqBuilder,
+    CompositeBloq,
     QAny,
     QBit,
     QDType,
@@ -471,3 +472,68 @@ class Cast(Bloq):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
+
+
+@frozen
+class Wrap(Bloq):
+    """Wrap a bloq with a Partition so that splits / joins can be avoided in diagrams.
+
+    Args:
+        bloq: bloq to wrap
+        bitsizes: bitsizes of wires to partition the bloq's register into / out of.
+
+    Registers:
+        x: the un-partitioned register. LEFT by default.
+        [user spec]: The registers provided by the `regs` argument. RIGHT by default.
+    """
+
+    bloq: Bloq
+    register_map: Dict[Register, Tuple[Register]]
+    from_bloq_regs: bool = False
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        if self.from_bloq_regs:
+            return self.bloq.signature
+        else:
+            return Signature(tuple(self.register_map.values()))
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return self.bloq._t_complexity_()
+
+    def adjoint(self):
+        return Wrap(attrs.evolve(self.bloq))
+
+    def short_name(self) -> str:
+        return self.bloq.short_name
+
+    def pretty_name(self) -> str:
+        return self.bloq.pretty_name
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **regs: 'Soquet') -> Dict[str, 'SoquetT']:
+        if self.from_bloq_regs:
+            return self._build_composite_bloq_from_bloq_regs(bb, **regs)
+        else:
+            return self._build_composite_bloq_from_outer_regs(bb, **regs)
+
+    def _build_composite_bloq_from_regs(
+        self, bb: 'BloqBuilder', **regs: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        regs = {}
+        partitions = []
+        for in_reg, out_regs in self.register_map.items():
+            # partitition register k into registers in v
+            bitsize = sum(r.bitsize for r in out_regs)
+            part = Partition(bitsize, regs=out_regs)
+            partitions.append(part)
+            regs |= bb.add_t(part, x=in_reg)
+        all_regs = bb.add(self.bloq, **regs)
+        for ipart, (in_reg, out_regs) in enumerate(self.register_map.items()):
+            # un partitition register k into registers in v
+            bitsize = sum(r.bitsize for r in out_regs)
+            regs |= bb.add_t(part, x=in_reg)
+
+    def _build_composite_bloq_from_bloq_regs(
+        self, bb: 'BloqBuilder', **regs: 'SoquetT'
+    ) -> Dict[str, 'SoquetT']:
+        pass
