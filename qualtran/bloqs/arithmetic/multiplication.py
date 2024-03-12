@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from functools import cached_property
 from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import cirq
@@ -23,14 +24,18 @@ from qualtran import (
     bloq_example,
     BloqDocSpec,
     GateWithRegisters,
+    QAny,
+    QInt,
     QFxp,
     QUInt,
     Register,
     Side,
     Signature,
+    SoquetT,
 )
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -544,3 +549,80 @@ _SQUARE_REAL_NUMBER_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.arithmetic.multiplication import SquareRealNumber',
     examples=(_square_real_number,),
 )
+
+@frozen
+class Negate(Bloq):
+    """Flips all the bits of a register.
+
+    Args:
+        bitsize: size of the register.
+
+    Registers:
+        x: input register to be negated.
+    """
+
+    bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('x', QAny(self.bitsize)),
+            ]
+        )
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Flip the bit values of x.
+        x_split = bb.split(x)
+        for i in range(self.bitsize):
+            x_split[i] = bb.add(XGate(), q=x_split[i])
+        x = bb.join(x_split)
+
+        # Return the output registers.
+        return {'x': x}
+
+    def short_name(self) -> str:
+        return '~x'
+
+@frozen
+class NegateTwosComplement(Bloq):
+    """Negates an integer in two's complement form.
+        |x> => |-1 * x>
+
+    Args:
+        bitsize: size of the register.
+
+    Registers:
+        x: input two's complement register.
+    """
+
+    bitsize: int
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('x', QInt(self.bitsize)),
+            ]
+        )
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        return {'x': -1 * x}
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
+
+        # Flip the bit values of x.
+        x_split = bb.split(x)
+        for i in range(self.bitsize):
+            x_split[i] = bb.add(XGate(), q=x_split[i])
+        x = bb.join(x_split)
+
+        # Add 1 to x.
+        x = bb.add(SimpleAddConstant(bitsize=self.bitsize, k=1, cvs=(), signed=True), x=x)
+
+        # Return the output registers.
+        return {'x': x}
+
+    def short_name(self) -> str:
+        return 'x = -x'

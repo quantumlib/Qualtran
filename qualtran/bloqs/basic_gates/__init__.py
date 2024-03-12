@@ -24,7 +24,7 @@ requirements.
 from .cnot import CNOT
 from .hadamard import Hadamard
 from .rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
-from .swap import CSwap, TwoBitCSwap, TwoBitSwap
+from .swap import CSwap, Swap, TwoBitCSwap, TwoBitSwap
 from .t_gate import TGate
 from .toffoli import Toffoli
 from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate

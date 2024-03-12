@@ -24,18 +24,23 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    QAny,
     QMontgomeryUInt,
     Register,
     Signature,
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
-from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
+from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
+from qualtran.bloqs.arithmetic.multiplication import Negate
+from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
+from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, XGate
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
+from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
+from qualtran.bloqs.classical_quantum_conversions import ClassicalToQInt
 
 
 @frozen
@@ -196,6 +201,105 @@ class MontgomeryModDbl(Bloq):
 
     def short_name(self) -> str:
         return f'x = 2 * x mod {self.p}'
+
+
+@frozen
+class MontgomeryModInv(Bloq):
+    r"""An n-bit modular inverse gate.
+
+    This gate is designed to operate on integers in the Montgomery form.
+    Implements |x> => |x ^ (-1) % p> using $26n^2 + 2n$ Toffoli gates.
+
+    Args:
+        bitsize: Number of bits used to represent integer x.
+        p: The modulus for the inverse.
+
+    Registers:
+        x: A bitsize-sized input register (register x above).
+
+    References:
+        [How to compute a 256-bit elliptic curve private key with only 50 million Toffoli gates](https://arxiv.org/abs/2306.08585)
+        Fig 7
+        [The Montgomery Modular Inverse - Revisited](https://delta.cs.cinvestav.mx/~francisco/arith/j52moinv.pdf)
+    """
+
+    bitsize: int
+    p: int
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', QMontgomeryUInt(self.bitsize)), Register('garbage1', QAny(self.bitsize)), Register('garbage2', QAny(self.bitsize))])
+
+    def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        u = self.p
+        v = x
+        r = 0
+        s = 1
+
+        k = 0
+
+        while (v > 0):
+            if ((u % 2) == 0):
+                u /= 2
+                s *= 2
+            elif ((v % 2) == 0):
+                v /= 2
+                r *= 2
+            elif (u > v):
+                u = (u - v) / 2
+                r += s
+                s *= 2
+            elif (v >= u):
+                v = (v - u) / 2
+                r += s
+                r *= 2
+            k += 1
+        
+        if (r >= self.p):
+            r -= self.p
+        r = self.p - r
+
+        for _ in range(k - self.bitsize):
+            if ((r % 2) == 0):
+                r /= 2
+            else:
+                r = (r + self.p) / 2
+
+        return {'x': r}
+
+    def build_call_graph(self, ssa: SympySymbolAllocator) -> Set['BloqCountT']:
+        n = self.bitsize
+        mutli_control_x_cvs_1 = (1,)
+        for _ in range(self.bitsize):
+            mutli_control_x_cvs_1 = mutli_control_x_cvs_1 + (0,)
+
+        return {
+            (XGate(), 1 + 1 + 2 * n * (1 + 1)),
+            (ClassicalToQInt(bitsize=self.bitsize, k=self.p), 1),
+            (MultiControlX(cvs=mutli_control_x_cvs_1), 2 * n),
+            (CNOT(), 2 * n * (1 + 1 + 1 + 1 + 1 + 1)),
+            (MultiControlX(cvs=(1, 0)), 2 * n),
+            (MultiControlX(cvs=(0, 1, 0)), 2 * n),
+            (
+                LinearDepthGreaterThan(bitsize=self.bitsize, signed=False, num_targets=2).controlled(
+                    ctrl_spec=(0, 1)
+                ),
+                2 * n,
+            ),
+            # This represents the controlled non-modular halving bloq which we do not yet have.
+            # It can be constructed out of n (bitsize) controlled-SWAPs.
+            #                                                                 |
+            #                                                                 v
+            (CSwap(bitsize=self.bitsize), 2 * self.bitsize * (1 + 1 + 1 + 1 + n)),
+            (Add(bitsize=self.bitsize).controlled(ctrl_spec=(0, 1)), 2 * n * (1 + 1)),
+            (MontgomeryModDbl(bitsize=self.bitsize, p=self.p), 2 * n),
+            (Negate(bitsize=self.bitsize), 1),
+            (SimpleAddConstant(bitsize=self.bitsize, k=self.p, cvs=(), signed=False), 1),
+            (Swap(bitsize=self.bitsize), 1),
+        }
+
+    def short_name(self) -> str:
+        return f'x = x ^ -1 mod {self.p}'
 
 
 @bloq_example
