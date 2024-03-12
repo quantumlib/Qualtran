@@ -20,8 +20,14 @@ from typing import Dict, Optional, Tuple, Union
 import sympy
 
 from qualtran import Adjoint, Bloq
-from qualtran.bloqs.basic_gates import CSwap, TGate, Toffoli
+from qualtran.bloqs.basic_gates import CSwap, Ry, TGate, Toffoli
 from qualtran.bloqs.reflection import Reflection
+from qualtran.resource_counting.generalizers import (
+    ignore_alloc_free,
+    ignore_cliffords,
+    ignore_partition,
+    ignore_split_join,
+)
 from qualtran.resource_counting.t_counts_from_sigma import (
     _get_all_rotation_types,
     t_counts_from_sigma,
@@ -67,7 +73,7 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[Bloq]]) -> st
     for k, v in bloq_classification.items():
         if isinstance(bloq, v):
             return k
-        elif isinstance(bloq, Adjoint) and isinstance(bloq, v):
+        elif isinstance(bloq, Adjoint) and isinstance(bloq.subbloq, v):
             return k
     return 'other'
 
@@ -97,7 +103,10 @@ def classify_t_count_by_bloq_type(
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
     keeper = lambda bloq: _keep_only_classified_bloqs(bloq, bloq_classification)
-    _, sigma = bloq.call_graph(keep=keeper)
+    _, sigma = bloq.call_graph(
+        generalizer=[ignore_split_join, ignore_alloc_free, ignore_cliffords, ignore_partition],
+        keep=keeper,
+    )
     classified_bloqs = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
