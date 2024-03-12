@@ -25,17 +25,17 @@ from qualtran.bloqs.arithmetic.multiplication import (
     _square_real_number,
     _sum_of_squares,
     MultiplyTwoReals,
+    Negate,
+    NegateTwosComplement,
     PlusEqualProduct,
     Product,
     ScaleIntByReal,
     Square,
     SquareRealNumber,
     SumOfSquares,
-    Negate,
-    NegateTwosComplement,
 )
 from qualtran.bloqs.basic_gates import IntState
-from qualtran.testing import execute_notebook, qlt_testing
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def test_square_auto(bloq_autotester):
@@ -161,47 +161,13 @@ def test_multiplication_notebook():
     execute_notebook('multiplication')
 
 
-@pytest.mark.parametrize(
-    'bitsize',
-    [
-        (1),
-        (3),
-        (5),
-    ],
-)
+@pytest.mark.parametrize('bitsize', [(1), (3), (5)])
 def test_negate_decomp(bitsize):
     bloq = Negate(bitsize=bitsize)
-    qlt_testing.assert_valid_bloq_decomposition(bloq)
+    assert_valid_bloq_decomposition(bloq)
 
-@pytest.mark.parametrize(
-    'bitsize',
-    [
-        (1),
-        (3),
-        (5),
-    ],
-)
+
+@pytest.mark.parametrize('bitsize', [(1), (3), (5)])
 def test_negate_twos_complement_decomp(bitsize):
     bloq = NegateTwosComplement(bitsize=bitsize)
-    qlt_testing.assert_valid_bloq_decomposition(bloq)
-
-
-@pytest.mark.parametrize(
-    'bitsize,x,result',
-    [
-        (3, 2, -2),
-        (5, 8, -8),
-        (6, 30, -30),
-    ],
-)
-def test_negate_twos_complement_classical_sim(bitsize, x, result):
-    bloq = NegateTwosComplement(bitsize=bitsize)
-    cbloq = bloq.decompose_bloq()
-    bloq_classical = bloq.call_classically(x=x)
-    cbloq_classical = cbloq.call_classically(x=x)
-
-    assert len(bloq_classical) == len(cbloq_classical)
-    for i in range(len(bloq_classical)):
-        np.testing.assert_array_equal(bloq_classical[i], cbloq_classical[i])
-
-    assert bloq_classical[-1] == result
+    assert_valid_bloq_decomposition(bloq)

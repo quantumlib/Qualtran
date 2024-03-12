@@ -19,7 +19,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import bloq_example
+from qualtran import bloq_example, CompositeBloq, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -75,6 +75,9 @@ class ZPowGate(CirqGateAsBloqBase):
     global_shift: float = 0.0
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ZPowGate(exponent=self.exponent, global_shift=self.global_shift)
@@ -90,11 +93,16 @@ class CZPowGate(CirqGateAsBloqBase):
     global_shift: float = 0.0
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def _t_complexity_(self) -> 'TComplexity':
+        if cirq.has_stabilizer_effect(self.cirq_gate):
+            return TComplexity(clifford=1)
         return TComplexity(rotations=1)
 
     def __pow__(self, power):
@@ -146,6 +154,9 @@ class XPowGate(CirqGateAsBloqBase):
     global_shift: float = 0.0
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift)
@@ -195,6 +206,9 @@ class YPowGate(CirqGateAsBloqBase):
     global_shift: float = 0.0
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
@@ -221,6 +235,9 @@ class Rz(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
@@ -231,6 +248,9 @@ class Rx(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
@@ -240,6 +260,9 @@ class Rx(CirqGateAsBloqBase):
 class Ry(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:

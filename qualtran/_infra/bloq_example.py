@@ -39,7 +39,9 @@ class BloqExample:
     _func: Callable[[], Bloq] = field(repr=False, hash=False)
     name: str
     bloq_cls: Type[Bloq]
-    generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
+    generalizer: Callable[[Bloq], Optional[Bloq]] = field(
+        converter=lambda x: tuple(x) if isinstance(x, Sequence) else x, default=lambda x: x
+    )
 
     def make(self) -> Bloq:
         """Make the bloq."""

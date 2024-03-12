@@ -17,10 +17,10 @@ from typing import Any, Callable, Hashable, Iterable, Literal, Optional, overloa
 import attrs
 import cachetools
 import cirq
-import numpy as np
 
-from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
+from qualtran import Bloq
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -33,6 +33,10 @@ class TComplexity:
     clifford: int = 0
     rotations: int = 0
 
+    @staticmethod
+    def rotation_cost(eps: SymbolicFloat) -> SymbolicFloat:
+        return ceil(1.149 * log2(1.0 / eps) + 9.2)
+
     def t_incl_rotations(self, eps: float = 1e-11) -> int:
         """Return the total number of T gates after compiling rotations"""
 
@@ -41,8 +45,7 @@ class TComplexity:
         # a bound of 3 log(1/eps).
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        t_per_rot = int(np.ceil(1.149 * np.log2(1.0 / eps) + 9.2))
-        return self.t + t_per_rot * self.rotations
+        return self.t + self.rotation_cost(eps) * self.rotations
 
     def __add__(self, other: 'TComplexity') -> 'TComplexity':
         return TComplexity(
@@ -120,18 +123,21 @@ def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
     return t
 
 
-def _from_bloq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
-    # Decompose the object and recursively compute the complexity.
+def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
     if not isinstance(stc, Bloq):
         return None
-
-    if isinstance(stc, CompositeBloq):
-        return _is_iterable((binst.bloq for binst in stc.bloq_instances), fail_quietly=fail_quietly)
-
-    try:
-        return _from_bloq_decomposition(stc.decompose_bloq(), fail_quietly=fail_quietly)
-    except (DecomposeNotImplementedError, DecomposeTypeError):
+    _, sigma = stc.call_graph(max_depth=1)
+    if sigma == {stc: 1}:
+        # No decomposition found.
         return None
+    ret = TComplexity()
+    for bloq, n in sigma.items():
+        r = t_complexity(bloq, fail_quietly=fail_quietly)
+        if r is None:
+            return None
+        ret += n * t_complexity(bloq)
+    return ret
 
 
 def _from_cirq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
@@ -181,7 +187,7 @@ def _t_complexity_for_gate_or_op(
     strategies = [
         _has_t_complexity,
         _is_clifford_or_t,
-        _from_bloq_decomposition,
+        _from_bloq_build_call_graph,
         _from_cirq_decomposition,
     ]
     return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
@@ -216,7 +222,7 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
         strategies = [
             _has_t_complexity,
             _is_clifford_or_t,
-            _from_bloq_decomposition,
+            _from_bloq_build_call_graph,
             _from_cirq_decomposition,
             _is_iterable,
         ]

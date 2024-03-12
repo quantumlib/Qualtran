@@ -20,11 +20,11 @@ import numpy as np
 import pytest
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, QAny, Register, Side, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.for_testing import TestMultiRegister
-from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Partition, Split
+from qualtran.bloqs.for_testing import TestCastToFrom, TestMultiRegister
+from qualtran.bloqs.util_bloqs import Allocate, Cast, Free, Join, Partition, Split
 from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -33,7 +33,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 @pytest.mark.parametrize('n', [5, 123])
 @pytest.mark.parametrize('bloq_cls', [Split, Join])
 def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
-    bloq = bloq_cls(n)
+    bloq = bloq_cls(QAny(n))
     for name, group_regs in bloq.signature.groups():
         if any(reg.side is Side.THRU for reg in group_regs):
             assert not any(reg.side != Side.THRU for reg in group_regs)
@@ -50,33 +50,33 @@ def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
 
 def test_util_bloqs():
     bb = BloqBuilder()
-    qs1 = bb.add(Allocate(10))
+    qs1 = bb.add(Allocate(QAny(10)))
     assert isinstance(qs1, Soquet)
-    qs2 = bb.add(Split(10), reg=qs1)
+    qs2 = bb.add(Split(QAny(10)), reg=qs1)
     assert qs2.shape == (10,)
-    qs3 = bb.add(Join(10), reg=qs2)
+    qs3 = bb.add(Join(QAny(10)), reg=qs2)
     assert isinstance(qs3, Soquet)
-    no_return = bb.add(Free(10), reg=qs3)
+    no_return = bb.add(Free(QAny(10)), reg=qs3)
     assert no_return is None
     assert bb.finalize().tensor_contract() == 1.0
 
 
 def test_free_nonzero_state_vector_leads_to_unnormalized_state():
     from qualtran.bloqs.basic_gates.hadamard import Hadamard
-    from qualtran.bloqs.on_each import OnEach
+    from qualtran.bloqs.basic_gates.on_each import OnEach
 
     bb = BloqBuilder()
-    qs1 = bb.add(Allocate(10))
+    qs1 = bb.add(Allocate(QAny(10)))
     qs2 = bb.add(OnEach(10, Hadamard()), q=qs1)
-    no_return = bb.add(Free(10), reg=qs2)
+    no_return = bb.add(Free(QAny(10)), reg=qs2)
     assert np.allclose(bb.finalize().tensor_contract(), np.sqrt(1 / 2**10))
 
 
 def test_util_bloqs_tensor_contraction():
     bb = BloqBuilder()
-    qs1 = bb.add(Allocate(10))
-    qs2 = bb.add(Split(10), reg=qs1)
-    qs3 = bb.add(Join(10), reg=qs2)
+    qs1 = bb.add(Allocate(QAny(10)))
+    qs2 = bb.add(Split(QAny(10)), reg=qs1)
+    qs3 = bb.add(Join(QAny(10)), reg=qs2)
     cbloq = bb.finalize(out=qs3)
     expected = np.zeros(2**10)
     expected[0] = 1
@@ -135,10 +135,10 @@ def test_partition_as_cirq_op():
     assert (
         circuit.to_text_diagram(transpose=True)
         == """\
-system0           system1 system2 system3 system4 system5 system6 system7 system8 system9 system10 system11
-│                 │       │       │       │       │       │       │       │       │       │        │
-TestMultiRegister─yy──────yy──────yy──────yy──────yy──────yy──────yy──────yy──────zz──────zz───────zz
-│                 │       │       │       │       │       │       │       │       │       │        │"""
+system0 system1  system2  system3  system4  system5  system6  system7  system8  system9 system10 system11
+│       │        │        │        │        │        │        │        │        │       │        │
+xx──────yy[0, 0]─yy[0, 1]─yy[1, 0]─yy[1, 1]─yy[0, 0]─yy[0, 1]─yy[1, 0]─yy[1, 1]─zz──────zz───────zz
+│       │        │        │        │        │        │        │        │        │       │        │"""
     )
 
 
@@ -178,7 +178,7 @@ def test_classical_sim():
 
 
 def test_classical_sim_dtypes():
-    s = Split(n=8)
+    s = Split(QAny(8))
     (xx,) = s.call_classically(reg=255)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
@@ -199,6 +199,23 @@ def test_classical_sim_dtypes():
     #  https://github.com/quantumlib/Qualtran/issues/446
     # with pytest.raises(ValueError):
     #     _ = s.call_classically(reg=np.uint16(256))
+
+
+def test_cast_tensor_contraction():
+    bloq = TestCastToFrom()
+    tn, _ = cbloq_to_quimb(bloq.decompose_bloq())
+    assert len(tn.tensors) == 3
+    assert tn.shape == (2**4,) * 4
+
+
+def test_cast_classical_sim():
+    c = Cast(QInt(8), QFxp(8, 8))
+    (y,) = c.call_classically(reg=7)
+    assert y == 7
+    bloq = TestCastToFrom()
+    (a, b) = bloq.call_classically(a=7, b=2)
+    assert a == 7
+    assert b == 9
 
 
 @pytest.mark.notebook

@@ -37,7 +37,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .bloq import Bloq, DecomposeTypeError
-from .data_types import QAny, QBit
+from .data_types import check_dtypes_consistent, QAny, QBit, QDType
 from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
 from .registers import Register, Side, Signature
 
@@ -632,6 +632,13 @@ def _process_soquets(
             idxed_soq = in_soq[li]
             assert isinstance(idxed_soq, Soquet), idxed_soq
             func(idxed_soq, reg, li)
+            if not check_dtypes_consistent(idxed_soq.reg.dtype, reg.dtype):
+                extra_str = (
+                    f"{idxed_soq.reg.name}: {idxed_soq.reg.dtype} vs {reg.name}: {reg.dtype}"
+                )
+                raise BloqError(
+                    f"{debug_str} register dtypes are not consistent {extra_str}."
+                ) from None
 
     if in_soqs:
         raise BloqError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
@@ -723,6 +730,48 @@ class BloqBuilder:
         # Whether we can call `add_register` and do non-strict `finalize()`.
         self.add_register_allowed = add_registers_allowed
 
+    def add_register_from_dtype(
+        self, reg: Union[str, Register], dtype: Optional[QDType] = None
+    ) -> Union[None, SoquetT]:
+        """Add a new typed register to the composite bloq being built.
+
+        If this bloq builder was constructed with `add_registers_allowed=False`,
+        this operation is not allowed.
+
+        Args:
+            reg: Either the register or a register name. If this is a register, then `bitsize`
+                must also be provided and a default THRU register will be added.
+            dtype: If `reg` is a register name, this is the quantum data type for the added register.
+                Otherwise, this must not be provided.
+
+        Returns:
+            If `reg` is a LEFT or THRU register, return the soquet(s) corresponding to the
+            initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
+            and will be used for error checking in `finalize()` and nothing is returned.
+        """
+        if not self.add_register_allowed:
+            raise ValueError(
+                "This BloqBuilder was constructed from pre-specified registers. "
+                "Ad hoc addition of more registers is not allowed."
+            )
+
+        if isinstance(reg, Register):
+            if dtype is not None:
+                raise ValueError("`dtype` must not be specified if `reg` is a Register.")
+        else:
+            if not isinstance(reg, str):
+                raise ValueError("`reg` must be a string register name if not a Register.")
+            if not isinstance(dtype, QDType):
+                raise ValueError(
+                    "`dtype` must be specified and must be an QDType if `reg` is a register name."
+                )
+            reg = Register(name=reg, dtype=dtype)
+
+        self._regs.append(reg)
+        if reg.side & Side.LEFT:
+            return _reg_to_soq(LeftDangle, reg, available=self._available)
+        return None
+
     @overload
     def add_register(self, reg: Register, bitsize: None = None) -> Union[None, SoquetT]:
         ...
@@ -750,29 +799,9 @@ class BloqBuilder:
             initial, left-dangling soquets for the register. Otherwise, this is a RIGHT register
             and will be used for error checking in `finalize()` and nothing is returned.
         """
-        if not self.add_register_allowed:
-            raise ValueError(
-                "This BloqBuilder was constructed from pre-specified registers. "
-                "Ad hoc addition of more registers is not allowed."
-            )
-
-        if isinstance(reg, Register):
-            if bitsize is not None:
-                raise ValueError("`bitsize` must not be specified if `reg` is a Register.")
-        else:
-            if not isinstance(reg, str):
-                raise ValueError("`reg` must be a string register name if not a Register.")
-            if not isinstance(bitsize, int):
-                raise ValueError(
-                    "`bitsize` must be specified and must be an "
-                    "integer if `reg` is a register name."
-                )
-            reg = Register(name=reg, dtype=QBit() if bitsize == 1 else QAny(bitsize))
-
-        self._regs.append(reg)
-        if reg.side & Side.LEFT:
-            return _reg_to_soq(LeftDangle, reg, available=self._available)
-        return None
+        if bitsize is not None:
+            return self.add_register_from_dtype(reg, QBit() if bitsize == 1 else QAny(bitsize))
+        return self.add_register_from_dtype(reg)
 
     @classmethod
     def from_signature(
@@ -789,9 +818,9 @@ class BloqBuilder:
         initial_soqs: Dict[str, SoquetT] = {}
         for reg in signature:
             if reg.side & Side.LEFT:
-                initial_soqs[reg.name] = bb.add_register(reg)
+                initial_soqs[reg.name] = bb.add_register_from_dtype(reg)
             else:
-                bb.add_register(reg)
+                bb.add_register_from_dtype(reg)
 
         # Now we can set it to the desired value.
         bb.add_register_allowed = add_registers_allowed
@@ -1037,10 +1066,12 @@ class BloqBuilder:
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
-    def allocate(self, n: int = 1) -> Soquet:
+    def allocate(self, n: int = 1, dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
 
-        return self.add(Allocate(n=n))
+        if dtype is not None:
+            return self.add(Allocate(dtype=dtype))
+        return self.add(Allocate(dtype=(QAny(n))))
 
     def free(self, soq: Soquet) -> None:
         from qualtran.bloqs.util_bloqs import Free
@@ -1048,7 +1079,7 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`free` expects a single Soquet to free.")
 
-        self.add(Free(n=soq.reg.bitsize), reg=soq)
+        self.add(Free(dtype=soq.reg.dtype), reg=soq)
 
     def split(self, soq: Soquet) -> NDArray[Soquet]:
         """Add a Split bloq to split up a register."""
@@ -1057,9 +1088,9 @@ class BloqBuilder:
         if not isinstance(soq, Soquet):
             raise ValueError("`split` expects a single Soquet to split.")
 
-        return self.add(Split(n=soq.reg.bitsize), reg=soq)
+        return self.add(Split(dtype=soq.reg.dtype), reg=soq)
 
-    def join(self, soqs: NDArray[Soquet]) -> Soquet:
+    def join(self, soqs: NDArray[Soquet], dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.util_bloqs import Join
 
         try:
@@ -1069,5 +1100,7 @@ class BloqBuilder:
 
         if not all(soq.reg.bitsize == 1 for soq in soqs):
             raise ValueError("`join` can only join equal-bitsized soquets, currently only size 1.")
+        if dtype is None:
+            dtype = QAny(n)
 
-        return self.add(Join(n=n), reg=soqs)
+        return self.add(Join(dtype=dtype), reg=soqs)

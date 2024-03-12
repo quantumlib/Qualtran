@@ -29,8 +29,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import XGate
-from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
+from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -52,7 +52,9 @@ class ClassicalToQBit(Bloq):
         return Signature([Register('x', QBit())])
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        assert self.k == 0 or self.k == 1, "Argument `k` should be a classical bit containing value 0 or 1"
+        assert (
+            self.k == 0 or self.k == 1
+        ), "Argument `k` should be a classical bit containing value 0 or 1"
         return {'x': self.k}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
@@ -105,7 +107,7 @@ class ClassicalToQInt(Bloq):
 
     def short_name(self) -> str:
         return f'x = {self.k}'
-    
+
 
 @frozen
 class ClassicalToQUInt(Bloq):
@@ -144,7 +146,7 @@ class ClassicalToQUInt(Bloq):
 
     def short_name(self) -> str:
         return f'x = {self.k}'
-    
+
 
 @frozen
 class ClassicalToQIntOnesComp(Bloq):

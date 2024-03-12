@@ -12,8 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import Optional
 
 from attrs import field, frozen
+
+from qualtran.surface_code.magic_count import MagicCount
+from qualtran.surface_code.rotation_cost_model import RotationCostModel
 
 _PRETTY_FLOAT = field(default=0.0, converter=float, repr=lambda x: f'{x:g}')
 
@@ -87,3 +91,22 @@ class AlgorithmSummary:
             rotation_gates=self.rotation_gates - other.rotation_gates,
             rotation_circuit_depth=self.rotation_circuit_depth - other.rotation_circuit_depth,
         )
+
+    def to_magic_count(
+        self,
+        rotation_model: Optional[RotationCostModel] = None,
+        error_budget: Optional[float] = None,
+    ) -> MagicCount:
+        ret = MagicCount(n_t=self.t_gates, n_ccz=self.toffoli_gates)
+        if self.rotation_gates > 0:
+            if rotation_model is None or error_budget is None:
+                raise ValueError(
+                    'Rotation cost model and error budget must be provided to calculate rotation cost'
+                )
+            ret = (
+                ret
+                + rotation_model.prepartion_overhead(error_budget)
+                + self.rotation_gates
+                * rotation_model.rotation_cost(error_budget / self.rotation_gates)
+            )
+        return ret

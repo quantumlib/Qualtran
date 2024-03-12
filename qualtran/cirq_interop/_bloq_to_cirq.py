@@ -15,7 +15,7 @@
 """Qualtran Bloqs to Cirq gates/circuits conversion."""
 
 from functools import cached_property
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import cirq
 import networkx as nx
@@ -26,6 +26,7 @@ from qualtran import (
     Bloq,
     Connection,
     DecomposeNotImplementedError,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -33,7 +34,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran._infra.composite_bloq import _binst_to_cxns, _reg_to_soq
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
     merge_qubits,
@@ -42,6 +43,7 @@ from qualtran._infra.gate_with_registers import (
 )
 from qualtran.cirq_interop._cirq_to_bloq import _QReg, CirqQuregInT, CirqQuregT
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
+from qualtran.drawing import Circle, LarrowTextBox, ModPlus, RarrowTextBox, TextBox, WireSymbol
 
 
 def _cirq_style_decompose_from_decompose_bloq(
@@ -73,11 +75,9 @@ class BloqAsCirqGate(cirq.Gate):
 
     Args:
         bloq: The bloq to wrap.
-        reg_to_wires: an optional callable to produce a list of wire symbols for each register
-            to match Cirq diagrams.
     """
 
-    def __init__(self, bloq: Bloq, reg_to_wires: Optional[Callable[[Register], List[str]]] = None):
+    def __init__(self, bloq: Bloq):
         for _, regs in bloq.signature.groups():
             if len(regs) > 1:
                 raise ValueError(
@@ -85,7 +85,6 @@ class BloqAsCirqGate(cirq.Gate):
                     f" Found {regs}\n. Please override `bloq.as_cirq_op` for `{bloq=}` instead."
                 )
         self._bloq = bloq
-        self._reg_to_wires = reg_to_wires
 
     @property
     def bloq(self) -> Bloq:
@@ -138,12 +137,21 @@ class BloqAsCirqGate(cirq.Gate):
             return _cirq_style_decompose_from_decompose_bloq(
                 bloq=self.bloq, quregs=quregs, context=context
             )
-        except DecomposeNotImplementedError:
+        except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
         return NotImplemented
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
+
+    def _unitary_(self):
+        if self._num_qubits_() > 3:
+            # Prefer decomposition for large bloqs
+            return NotImplemented
+        tensor = self.bloq.tensor_contract()
+        if tensor.ndim != 2:
+            return NotImplemented
+        return tensor
 
     def on_registers(
         self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
@@ -156,20 +164,7 @@ class BloqAsCirqGate(cirq.Gate):
         By default, we label each qubit with its register name. If `reg_to_wires` was provided
         in the class constructor, we use that to get a list of wire symbols for each register.
         """
-
-        if self._reg_to_wires is not None:
-            reg_to_wires = self._reg_to_wires
-        else:
-            reg_to_wires = lambda reg: [reg.name] * reg.total_bits()
-
-        wire_symbols = []
-        for reg in self._bloq.signature:
-            symbs = reg_to_wires(reg)
-            assert len(symbs) == reg.total_bits()
-            wire_symbols.extend(symbs)
-        if self._reg_to_wires is None:
-            wire_symbols[0] = self._bloq.pretty_name()
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+        return _wire_symbol_to_cirq_diagram_info(self._bloq, args)
 
     def __pow__(self, power, modulo=None):
         if power == 1:
@@ -286,3 +281,37 @@ def _cbloq_to_cirq_circuit(
     out_quregs = {reg.name: _f_quregs(reg) for reg in signature.rights()}
 
     return cirq.FrozenCircuit(moments), out_quregs
+
+
+def _wire_symbol_to_cirq_diagram_info(
+    bloq: Bloq, args: cirq.CircuitDiagramInfoArgs
+) -> cirq.CircuitDiagramInfo:
+    wire_symbols = []
+    for reg in bloq.signature:
+        # Note: all of our soqs lack a `binst`. The `bloq.wire_symbol` methods
+        # should never use the binst field, but this isn't really enforced anywhere.
+        # https://github.com/quantumlib/Qualtran/issues/608
+        soqs = _reg_to_soq(None, reg)
+        if isinstance(soqs, Soquet):
+            assert soqs.idx == ()
+            soqs = np.array([soqs] * reg.bitsize)
+        else:
+            soqs = np.broadcast_to(soqs, (reg.bitsize,) + reg.shape)
+
+        for soq in soqs.reshape(-1):
+            wire_symbols.append(bloq.wire_symbol(soq))
+
+    def _qualtran_wire_symbols_to_cirq_text(ws: WireSymbol) -> str:
+        if isinstance(ws, Circle):
+            if ws.filled:
+                return '@'
+            else:
+                return '(0)'
+        if isinstance(ws, (TextBox, RarrowTextBox, LarrowTextBox)):
+            return ws.text
+        if isinstance(ws, ModPlus):
+            return 'X'
+        raise NotImplementedError(f"Unknown cirq version of {ws}")
+
+    wire_symbols = [_qualtran_wire_symbols_to_cirq_text(ws) for ws in wire_symbols]
+    return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

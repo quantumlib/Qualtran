@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 from .atom import TestAtom, TestTwoBitOp
+from .casting import TestCastToFrom
 from .many_registers import TestMultiRegister
 from .with_call_graph import TestBloqWithCallGraph
 from .with_decomposition import TestParallelCombo, TestSerialCombo

@@ -15,29 +15,22 @@
 import numpy as np
 import pytest
 
-from qualtran.bloqs.classical_quantum_conversions import ClassicalToQBit, ClassicalToQInt, ClassicalToQUInt, ClassicalToQIntOnesComp
 import qualtran.testing as qlt_testing
-
-
-@pytest.mark.parametrize(
-    'k',
-    [
-        (0),
-        (1),
-    ],
+from qualtran.bloqs.classical_quantum_conversions import (
+    ClassicalToQBit,
+    ClassicalToQInt,
+    ClassicalToQIntOnesComp,
+    ClassicalToQUInt,
 )
+
+
+@pytest.mark.parametrize('k', [(0), (1)])
 def test_classical_to_qbit_decomp(k):
     bloq = ClassicalToQBit(k=k)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
-@pytest.mark.parametrize(
-    'k,result',
-    [
-        (0, 0),
-        (1, 1),
-    ],
-)
+@pytest.mark.parametrize('k,result', [(0, 0), (1, 1)])
 def test_classical_to_qbit_classical_sim(k, result):
     bloq = ClassicalToQBit(k=k)
     cbloq = bloq.decompose_bloq()
@@ -50,27 +43,14 @@ def test_classical_to_qbit_classical_sim(k, result):
 
     assert bloq_classical[-1] == result
 
-@pytest.mark.parametrize(
-    'bitsize,k',
-    [
-        (3, 2),
-        (5, 8),
-        (6, 30),
-    ],
-)
+
+@pytest.mark.parametrize('bitsize,k', [(3, 2), (5, 8), (6, 30)])
 def test_classical_to_qint_decomp(bitsize, k):
     bloq = ClassicalToQInt(bitsize=bitsize, k=k)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
-@pytest.mark.parametrize(
-    'bitsize,k,result',
-    [
-        (3, 2, 2),
-        (5, 8, 8),
-        (6, 30, 30),
-    ],
-)
+@pytest.mark.parametrize('bitsize,k,result', [(3, 2, 2), (5, 8, 8), (6, 30, 30)])
 def test_classical_to_qint_classical_sim(bitsize, k, result):
     bloq = ClassicalToQInt(bitsize=bitsize, k=k)
     cbloq = bloq.decompose_bloq()
@@ -84,27 +64,13 @@ def test_classical_to_qint_classical_sim(bitsize, k, result):
     assert bloq_classical[-1] == result
 
 
-@pytest.mark.parametrize(
-    'bitsize,k',
-    [
-        (3, 2),
-        (5, 8),
-        (6, 30),
-    ],
-)
+@pytest.mark.parametrize('bitsize,k', [(3, 2), (5, 8), (6, 30)])
 def test_classical_to_quint_decomp(bitsize, k):
     bloq = ClassicalToQUInt(bitsize=bitsize, k=k)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
-@pytest.mark.parametrize(
-    'bitsize,k,result',
-    [
-        (3, 2, 2),
-        (5, 8, 8),
-        (6, 30, 30),
-    ],
-)
+@pytest.mark.parametrize('bitsize,k,result', [(3, 2, 2), (5, 8, 8), (6, 30, 30)])
 def test_classical_to_quint_classical_sim(bitsize, k, result):
     bloq = ClassicalToQUInt(bitsize=bitsize, k=k)
     cbloq = bloq.decompose_bloq()
@@ -118,27 +84,13 @@ def test_classical_to_quint_classical_sim(bitsize, k, result):
     assert bloq_classical[-1] == result
 
 
-@pytest.mark.parametrize(
-    'bitsize,k',
-    [
-        (3, 2),
-        (5, 8),
-        (6, 30),
-    ],
-)
+@pytest.mark.parametrize('bitsize,k', [(3, 2), (5, 8), (6, 30)])
 def test_classical_to_qint_ones_comp_decomp(bitsize, k):
     bloq = ClassicalToQIntOnesComp(bitsize=bitsize, k=k)
     qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
-@pytest.mark.parametrize(
-    'bitsize,k,result',
-    [
-        (3, 2, 2),
-        (5, 8, 8),
-        (6, 30, 30),
-    ],
-)
+@pytest.mark.parametrize('bitsize,k,result', [(3, 2, 2), (5, 8, 8), (6, 30, 30)])
 def test_classical_to_qint_ones_comp_classical_sim(bitsize, k, result):
     bloq = ClassicalToQIntOnesComp(bitsize=bitsize, k=k)
     cbloq = bloq.decompose_bloq()

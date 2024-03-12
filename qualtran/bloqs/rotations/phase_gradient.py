@@ -11,21 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
 import numpy as np
+import sympy
 from cirq._compat import cached_method
 from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
+from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
-from qualtran.bloqs.on_each import OnEach
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -200,6 +200,20 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         ((toffoli, n),) = self.bloq_counts().items()
         return n * toffoli.t_complexity()
 
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
+
 
 def _fxp(x: float, n: int) -> Fxp:
     """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.
@@ -353,15 +367,16 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_additions_naive = 0
-        for i, bit in enumerate(self.gamma_fxp.bin()):
-            if bit == '0':
-                continue
-            shift = self.gamma_fxp.n_int - i - 1
-            if -(self.phase_bitsize + self.x_dtype.num_int) < shift < self.x_dtype.num_frac:
-                num_additions_naive += 1
-        num_additions_fancy = (self.gamma_dtype.bitsize + 2) // 2
-        num_additions = min(num_additions_naive, num_additions_fancy)
+        num_additions = (self.gamma_dtype.bitsize + 2) // 2
+        if not isinstance(self.gamma, sympy.Basic):
+            num_additions_naive = 0
+            for i, bit in enumerate(self.gamma_fxp.bin()):
+                if bit == '0':
+                    continue
+                shift = self.gamma_fxp.n_int - i - 1
+                if -(self.phase_bitsize + self.x_dtype.num_int) < shift < self.x_dtype.num_frac:
+                    num_additions_naive += 1
+            num_additions = min(num_additions_naive, num_additions)
         return {(AddIntoPhaseGrad(self.x_dtype.bitsize, self.phase_bitsize), num_additions)}
 
     def _t_complexity_(self):

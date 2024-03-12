@@ -13,8 +13,9 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Optional, Set, Union
 
+import attrs
 import numpy as np
 import sympy
 from attrs import frozen
@@ -24,6 +25,7 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
+    CtrlSpec,
     QAny,
     QMontgomeryUInt,
     Register,
@@ -32,15 +34,16 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
-from qualtran.bloqs.arithmetic.multiplication import Negate
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
+from qualtran.bloqs.arithmetic.multiplication import Negate
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, XGate
+from qualtran.bloqs.classical_quantum_conversions import ClassicalToQInt
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.drawing import Circle, directional_text_box, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
-from qualtran.bloqs.classical_quantum_conversions import ClassicalToQInt
 
 
 @frozen
@@ -228,7 +231,13 @@ class MontgomeryModInv(Bloq):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('x', QMontgomeryUInt(self.bitsize)), Register('garbage1', QAny(self.bitsize)), Register('garbage2', QAny(self.bitsize))])
+        return Signature(
+            [
+                Register('x', QMontgomeryUInt(self.bitsize)),
+                Register('garbage1', QAny(self.bitsize)),
+                Register('garbage2', QAny(self.bitsize)),
+            ]
+        )
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         u = self.p
@@ -238,29 +247,29 @@ class MontgomeryModInv(Bloq):
 
         k = 0
 
-        while (v > 0):
-            if ((u % 2) == 0):
+        while v > 0:
+            if (u % 2) == 0:
                 u /= 2
                 s *= 2
-            elif ((v % 2) == 0):
+            elif (v % 2) == 0:
                 v /= 2
                 r *= 2
-            elif (u > v):
+            elif u > v:
                 u = (u - v) / 2
                 r += s
                 s *= 2
-            elif (v >= u):
+            elif v >= u:
                 v = (v - u) / 2
                 r += s
                 r *= 2
             k += 1
-        
-        if (r >= self.p):
+
+        if r >= self.p:
             r -= self.p
         r = self.p - r
 
         for _ in range(k - self.bitsize):
-            if ((r % 2) == 0):
+            if (r % 2) == 0:
                 r /= 2
             else:
                 r = (r + self.p) / 2
@@ -281,9 +290,9 @@ class MontgomeryModInv(Bloq):
             (MultiControlX(cvs=(1, 0)), 2 * n),
             (MultiControlX(cvs=(0, 1, 0)), 2 * n),
             (
-                LinearDepthGreaterThan(bitsize=self.bitsize, signed=False, num_targets=2).controlled(
-                    ctrl_spec=(0, 1)
-                ),
+                LinearDepthGreaterThan(
+                    bitsize=self.bitsize, signed=False, num_targets=2
+                ).controlled(ctrl_spec=CtrlSpec(cvs=[0, 1])),
                 2 * n,
             ),
             # This represents the controlled non-modular halving bloq which we do not yet have.
@@ -291,7 +300,12 @@ class MontgomeryModInv(Bloq):
             #                                                                 |
             #                                                                 v
             (CSwap(bitsize=self.bitsize), 2 * self.bitsize * (1 + 1 + 1 + 1 + n)),
-            (Add(bitsize=self.bitsize).controlled(ctrl_spec=(0, 1)), 2 * n * (1 + 1)),
+            (
+                Add(QMontgomeryUInt(bitsize=self.bitsize)).controlled(
+                    ctrl_spec=CtrlSpec(cvs=[0, 1])
+                ),
+                2 * n * (1 + 1),
+            ),
             (MontgomeryModDbl(bitsize=self.bitsize, p=self.p), 2 * n),
             (Negate(bitsize=self.bitsize), 1),
             (SimpleAddConstant(bitsize=self.bitsize, k=self.p, cvs=(), signed=False), 1),
@@ -302,13 +316,23 @@ class MontgomeryModInv(Bloq):
         return f'x = x ^ -1 mod {self.p}'
 
 
-@bloq_example
+_K = sympy.Symbol('k_mul')
+
+
+def _generalize_k(b: Bloq) -> Optional[Bloq]:
+    if isinstance(b, CtrlScaleModAdd):
+        return attrs.evolve(b, k=_K)
+
+    return b
+
+
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul() -> CtrlModMul:
     modmul = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
     return modmul
 
 
-@bloq_example
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul_symb() -> CtrlModMul:
     import sympy
 

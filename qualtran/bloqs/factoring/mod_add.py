@@ -214,7 +214,7 @@ class MontgomeryModAdd(Bloq):
         y = bb.join(np.concatenate([[sign], y_split]))
 
         # Perform in-place addition on quantum register y.
-        x, y = bb.add(Add(bitsize=self.bitsize + 1), a=x, b=y)
+        x, y = bb.add(Add(QMontgomeryUInt(bitsize=self.bitsize + 1)), a=x, b=y)
 
         # Temporary solution to equalize the bitlength of the x and y registers for Add().
         x_split = bb.split(x)
@@ -243,7 +243,7 @@ class MontgomeryModAdd(Bloq):
         # Check if y < x; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
         x, y, sign = bb.add(
-            LinearDepthGreaterThan(bitsize=self.bitsize, signed=False), a=x, b=y, target=sign
+            LinearDepthGreaterThan(bitsize=self.bitsize, signed=False), a=x, b=y, targets=sign
         )
         sign = bb.add(XGate(), q=sign)
 

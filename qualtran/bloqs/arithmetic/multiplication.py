@@ -25,17 +25,17 @@ from qualtran import (
     BloqDocSpec,
     GateWithRegisters,
     QAny,
-    QInt,
     QFxp,
+    QInt,
     QUInt,
     Register,
     Side,
     Signature,
     SoquetT,
 )
+from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -550,6 +550,7 @@ _SQUARE_REAL_NUMBER_DOC = BloqDocSpec(
     examples=(_square_real_number,),
 )
 
+
 @frozen
 class Negate(Bloq):
     """Flips all the bits of a register.
@@ -565,11 +566,7 @@ class Negate(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('x', QAny(self.bitsize)),
-            ]
-        )
+        return Signature([Register('x', QAny(self.bitsize))])
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
 
@@ -584,6 +581,7 @@ class Negate(Bloq):
 
     def short_name(self) -> str:
         return '~x'
+
 
 @frozen
 class NegateTwosComplement(Bloq):
@@ -601,11 +599,7 @@ class NegateTwosComplement(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature(
-            [
-                Register('x', QInt(self.bitsize)),
-            ]
-        )
+        return Signature([Register('x', QInt(self.bitsize))])
 
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         return {'x': -1 * x}

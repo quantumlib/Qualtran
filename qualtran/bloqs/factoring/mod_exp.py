@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Dict, Optional, Set, Union
 
+import attrs
 import numpy as np
 import sympy
 from attrs import frozen
@@ -34,6 +34,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 
 @frozen
@@ -124,13 +125,23 @@ class ModExp(Bloq):
         return f'{self.base}^e % {self.mod}'
 
 
-@bloq_example
+_K = sympy.Symbol('k_exp')
+
+
+def _generalize_k(b: Bloq) -> Optional[Bloq]:
+    if isinstance(b, CtrlModMul):
+        return attrs.evolve(b, k=_K)
+
+    return b
+
+
+@bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp_small() -> ModExp:
     modexp_small = ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
     return modexp_small
 
 
-@bloq_example
+@bloq_example(generalizer=(ignore_split_join, _generalize_k))
 def _modexp() -> ModExp:
     modexp = ModExp.make_for_shor(big_n=15 * 17, g=9)
     return modexp

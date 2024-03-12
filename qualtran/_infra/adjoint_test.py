@@ -11,16 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from functools import cached_property
+
 import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Adjoint, CompositeBloq, Side, Soquet
+from qualtran import Adjoint, Bloq, CompositeBloq, Side, Signature, Soquet
 from qualtran._infra.adjoint import _adjoint_cbloq
 from qualtran.bloqs.basic_gates import CNOT, CSwap, ZeroState
 from qualtran.bloqs.for_testing.atom import TestAtom
 from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import LarrowTextBox, RarrowTextBox
 
 
@@ -130,8 +133,8 @@ def test_call_graph():
         'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestAtom())',
         'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestParallelCombo())',
         'Adjoint(subbloq=TestBloqWithCallGraph()) -> Adjoint(subbloq=TestSerialCombo())',
-        'Adjoint(subbloq=TestParallelCombo()) -> Join(n=3)',
-        'Adjoint(subbloq=TestParallelCombo()) -> Split(n=3)',
+        'Adjoint(subbloq=TestParallelCombo()) -> Join(dtype=QAny(bitsize=3))',
+        'Adjoint(subbloq=TestParallelCombo()) -> Split(dtype=QAny(bitsize=3))',
         'Adjoint(subbloq=TestParallelCombo()) -> Adjoint(subbloq=TestAtom())',
         "Adjoint(subbloq=TestSerialCombo()) -> Adjoint(subbloq=TestAtom('atom0'))",
         "Adjoint(subbloq=TestSerialCombo()) -> Adjoint(subbloq=TestAtom('atom1'))",
@@ -159,6 +162,37 @@ def test_wire_symbol():
     adj_ws = adj.wire_symbol(Soquet(None, reg.adjoint()))
     assert isinstance(ws, LarrowTextBox)
     assert isinstance(adj_ws, RarrowTextBox)
+
+
+class TAcceptsAdjoint(TestAtom):
+    def _t_complexity_(self, adjoint: bool = False) -> TComplexity:
+        return TComplexity(t=2 if adjoint else 1)
+
+
+class TDoesNotAcceptAdjoint(TestAtom):
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(t=3)
+
+
+class DecomposesIntoTAcceptsAdjoint(Bloq):
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(q=1)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT'):
+        soqs = bb.add_d(TAcceptsAdjoint(), **soqs)
+        return soqs
+
+
+def test_t_complexity():
+    assert TAcceptsAdjoint().t_complexity().t == 1
+    assert Adjoint(TAcceptsAdjoint()).t_complexity().t == 2
+
+    assert DecomposesIntoTAcceptsAdjoint().t_complexity().t == 1
+    assert Adjoint(DecomposesIntoTAcceptsAdjoint()).t_complexity().t == 2
+
+    assert TDoesNotAcceptAdjoint().t_complexity().t == 3
+    assert Adjoint(TDoesNotAcceptAdjoint()).t_complexity().t == 3
 
 
 @pytest.mark.notebook

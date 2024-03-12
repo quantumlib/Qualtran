@@ -39,7 +39,7 @@ If you add additional cells to the notebook it will *preserve them* even when th
 re-run
 
 Usage as a script:
-    python dev_tools/autogenerate-bloqs-notebooks.py
+    python dev_tools/autogenerate-bloqs-notebooks-v2.py
 """
 
 from typing import List
@@ -48,38 +48,33 @@ from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
-import qualtran.bloqs.and_bloq
-import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
-import qualtran.bloqs.arithmetic.comparison
-import qualtran.bloqs.arithmetic.conversions
-import qualtran.bloqs.arithmetic.multiplication
+import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.swap
 import qualtran.bloqs.block_encoding
 import qualtran.bloqs.chemistry.df.double_factorization
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
-import qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
-import qualtran.bloqs.chemistry.sparse.select_bloq
 import qualtran.bloqs.chemistry.thc.prepare
-import qualtran.bloqs.chemistry.thc.select_bloq
-import qualtran.bloqs.chemistry.trotter.inverse_sqrt
-import qualtran.bloqs.chemistry.trotter.kinetic
-import qualtran.bloqs.chemistry.trotter.potential
-import qualtran.bloqs.chemistry.trotter.qvr
+import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
+import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
-import qualtran.bloqs.multi_control_multi_target_pauli
-import qualtran.bloqs.prepare_uniform_superposition
+import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
-import qualtran.bloqs.sorting
-import qualtran.bloqs.swap_network
+import qualtran.bloqs.state_preparation.prepare_uniform_superposition
+import qualtran.bloqs.swap_network.cswap_approx
+import qualtran.bloqs.swap_network.multiplexed_cswap
+import qualtran.bloqs.swap_network.swap_with_zero
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
@@ -88,6 +83,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='T Gate',
         module=qualtran.bloqs.basic_gates.t_gate,
         bloq_specs=[qualtran.bloqs.basic_gates.t_gate._T_GATE_DOC],
+    ),
+    NotebookSpecV2(
+        title='S Gate',
+        module=qualtran.bloqs.basic_gates.s_gate,
+        bloq_specs=[qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC],
     ),
     NotebookSpecV2(
         title='Toffoli',
@@ -99,9 +99,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
             qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
-            qualtran.bloqs.swap_network._APPROX_CSWAP_DOC,
-            qualtran.bloqs.swap_network._SWZ_DOC,
-            qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
+            qualtran.bloqs.swap_network.cswap_approx._APPROX_CSWAP_DOC,
+            qualtran.bloqs.swap_network.swap_with_zero._SWZ_DOC,
+            qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -118,15 +118,22 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Prepare Uniform Superposition',
-        module=qualtran.bloqs.prepare_uniform_superposition,
-        bloq_specs=[qualtran.bloqs.prepare_uniform_superposition._PREP_UNIFORM_DOC],
+        module=qualtran.bloqs.state_preparation.prepare_uniform_superposition,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.prepare_uniform_superposition._PREP_UNIFORM_DOC
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
         title='Apply to Lth Target',
-        module=qualtran.bloqs.apply_gate_to_lth_target,
-        bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
+        module=qualtran.bloqs.multiplexers.apply_gate_to_lth_target,
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLYLTH_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
+    ),
+    NotebookSpecV2(
+        title='QROM',
+        module=qualtran.bloqs.data_loading.qrom,
+        bloq_specs=[qualtran.bloqs.data_loading.qrom._QROM_DOC],
     ),
     # --------------------------------------------------------------------------
     # -----   Chemistry   ------------------------------------------------------
@@ -182,14 +189,14 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Trotter Bloqs',
-        module=qualtran.bloqs.chemistry.trotter,
+        module=qualtran.bloqs.chemistry.trotter.grid_ham,
         bloq_specs=[
-            qualtran.bloqs.chemistry.trotter.inverse_sqrt._POLY_INV_SQRT,
-            qualtran.bloqs.chemistry.trotter.inverse_sqrt._NR_INV_SQRT,
-            qualtran.bloqs.chemistry.trotter.qvr._QVR,
-            qualtran.bloqs.chemistry.trotter.kinetic._KINETIC_ENERGY,
-            qualtran.bloqs.chemistry.trotter.potential._PAIR_POTENTIAL,
-            qualtran.bloqs.chemistry.trotter.potential._POTENTIAL_ENERGY,
+            qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt._POLY_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt._NR_INV_SQRT,
+            qualtran.bloqs.chemistry.trotter.grid_ham.qvr._QVR,
+            qualtran.bloqs.chemistry.trotter.grid_ham.kinetic._KINETIC_ENERGY,
+            qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
+            qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
     ),
@@ -204,18 +211,12 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/thc',
     ),
     NotebookSpecV2(
-        title='Sorting',
-        module=qualtran.bloqs.sorting,
-        bloq_specs=[
-            qualtran.bloqs.sorting._COMPARATOR_DOC,
-            qualtran.bloqs.sorting._BITONIC_SORT_DOC,
-        ],
-        directory=f'{SOURCE_DIR}/bloqs/',
-    ),
-    NotebookSpecV2(
         title='And',
-        module=qualtran.bloqs.and_bloq,
-        bloq_specs=[qualtran.bloqs.and_bloq._AND_DOC, qualtran.bloqs.and_bloq._MULTI_AND_DOC],
+        module=qualtran.bloqs.mcmt.and_bloq,
+        bloq_specs=[
+            qualtran.bloqs.mcmt.and_bloq._AND_DOC,
+            qualtran.bloqs.mcmt.and_bloq._MULTI_AND_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
@@ -235,10 +236,10 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Multi-Paulis',
-        module=qualtran.bloqs.multi_control_multi_target_pauli,
+        module=qualtran.bloqs.mcmt.multi_control_multi_target_pauli,
         bloq_specs=[
-            qualtran.bloqs.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
-            qualtran.bloqs.multi_control_multi_target_pauli._CC_PAULI_DOC,
+            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
+            qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
@@ -253,6 +254,23 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Sorting',
+        module=qualtran.bloqs.arithmetic.sorting,
+        bloq_specs=[
+            qualtran.bloqs.arithmetic.sorting._COMPARATOR_DOC,
+            qualtran.bloqs.arithmetic.sorting._BITONIC_SORT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/arithmetic/',
+    ),
+    NotebookSpecV2(
+        title='State Preparation Using Rotations',
+        module=qualtran.bloqs.state_preparation.state_preparation_via_rotation,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
     ),
     NotebookSpecV2(
         title='Multiplication',
@@ -298,6 +316,14 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.rotations.phasing_via_cost_function,
         bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
         directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    # --------------------------------------------------------------------------
+    # -----   QFT          -----------------------------------------------------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Two Bit FFFT Gate',
+        module=qualtran.bloqs.qft.two_bit_ffft,
+        bloq_specs=[qualtran.bloqs.qft.two_bit_ffft._TWO_BIT_FFFT_DOC],
     ),
 ]
 
