@@ -23,10 +23,11 @@ from qualtran import GateWithRegisters, QFxp, QUInt, Signature, Bloq, SoquetT, Q
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.basic_gates import Hadamard
+from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
 
 @attrs.frozen
-class ApproximateQFT(Bloq):
+class ApproximateQFT(GateWithRegisters):
     r"""
     An approximate QFT using the phase gradient trick where controlled z-power gates past a user-defined threshold
     are cut off.
@@ -58,33 +59,36 @@ class ApproximateQFT(Bloq):
     """
 
     bitsize: int
-    b_func: Callable = lambda n: math.ceil(math.log2(n))
+    b: Callable = lambda n: math.ceil(math.log2(n))
     with_reverse: bool = True
 
     @cached_property
     def signature(self) -> 'Signature':
-        b = self.b_func(self.bitsize)
-        assert(b > 0, "b_func must return a positive value for b")
+        phase_grad_bitsize = self.b(self.bitsize)
+        assert(phase_grad_bitsize > 0, "b_func must return a positive value for b")
         return Signature.build_from_dtypes(
-            q=QUInt(self.bitsize), phase_grad=QFxp(b, b)
+            q=QUInt(self.bitsize), phase_grad=QFxp(phase_grad_bitsize, phase_grad_bitsize)
         )
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', q: SoquetT, phase_grad: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-        qs = bb.split(q)
-        phase_grad_qubits = bb.split(phase_grad)
-        for i in range(len(qs)):
-            qs[i] = bb.add(Hadamard(), q=qs[i])
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        if self.bitsize == 1:
+            yield cirq.H(*quregs['q'])
+            return
+        q, phase_grad = quregs['q'], quregs['phase_grad']
+        for i in range(len(q)):
             if i == 0:
+                yield cirq.H(q[i])
                 continue
-            addition_bitsize = min(i, len(phase_grad_qubits) - 1)
-            a = bb.join(qs[:addition_bitsize])
-            b = bb.join(phase_grad_qubits[:addition_bitsize + 1])
-            a, b = bb.add(Add(QUInt(addition_bitsize+1)), a=a, b=b)
-            qs[:addition_bitsize] = bb.split(a)
-            phase_grad_qubits[:addition_bitsize + 1] = bb.split(b)
-        q = bb.join(qs)
-        phase_grad = bb.join(phase_grad_qubits)
+            addition_bitsize = min(i, len(phase_grad) - 1)
+            a, b = q[:addition_bitsize], phase_grad[:addition_bitsize + 1]
+            # yield AddIntoPhaseGrad(addition_bitsize, addition_bitsize + 1, right_shift=1).on_registers(x=a[::-1], phase_grad=b).controlled_by(q[i])
+            yield PlusEqualProduct(addition_bitsize, 1, addition_bitsize + 1).on_registers(
+                a=a[::-1], b=q[i], result=b
+            )
+            yield cirq.H(q[i])
 
-        return dict(q=q, phase_grad=phase_grad)
+        if self.with_reverse:
+            for i in range(self.bitsize // 2):
+                yield cirq.SWAP(q[i], q[-i - 1])
