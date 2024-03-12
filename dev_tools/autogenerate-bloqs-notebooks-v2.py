@@ -48,7 +48,6 @@ from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
 
-import qualtran.bloqs.apply_gate_to_lth_target
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting
 import qualtran.bloqs.basic_gates.swap
@@ -67,14 +66,15 @@ import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
-import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
+import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
-import qualtran.bloqs.state_preparation.state_preparation_via_rotation
-import qualtran.bloqs.swap_network
+import qualtran.bloqs.swap_network.cswap_approx
+import qualtran.bloqs.swap_network.multiplexed_cswap
+import qualtran.bloqs.swap_network.swap_with_zero
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
@@ -99,9 +99,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
             qualtran.bloqs.basic_gates.swap._CSWAP_DOC,
-            qualtran.bloqs.swap_network._APPROX_CSWAP_DOC,
-            qualtran.bloqs.swap_network._SWZ_DOC,
-            qualtran.bloqs.swap_network._MULTIPLEXED_CSWAP_DOC,
+            qualtran.bloqs.swap_network.cswap_approx._APPROX_CSWAP_DOC,
+            qualtran.bloqs.swap_network.swap_with_zero._SWZ_DOC,
+            qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -126,8 +126,8 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     ),
     NotebookSpecV2(
         title='Apply to Lth Target',
-        module=qualtran.bloqs.apply_gate_to_lth_target,
-        bloq_specs=[qualtran.bloqs.apply_gate_to_lth_target._APPLYLTH_DOC],
+        module=qualtran.bloqs.multiplexers.apply_gate_to_lth_target,
+        bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLYLTH_DOC],
         directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(

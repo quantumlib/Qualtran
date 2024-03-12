@@ -23,7 +23,7 @@ from numpy.typing import NDArray
 from qualtran import QAny, QBit, Register
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
+from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 
 
 @attrs.frozen
