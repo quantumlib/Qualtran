@@ -197,7 +197,8 @@ def get_call_graph_cells(bloqdoc: BloqDocSpec, cid_prefix: str) -> List[_Cell]:
     sigmavar = f'{ex.name}_sigma'
 
     code = [
-        f'{graphvar}, {sigmavar} = {ex.name}.call_graph()',
+        'from qualtran.resource_counting.generalizers import ignore_split_join',
+        f'{graphvar}, {sigmavar} = {ex.name}.call_graph(max_depth=1, generalizer=ignore_split_join)',
         f'show_call_graph({graphvar})',
         f'show_counts_sigma({sigmavar})',
     ]
