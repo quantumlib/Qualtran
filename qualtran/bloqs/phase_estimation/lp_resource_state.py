@@ -141,13 +141,15 @@ class LPResourceState(GateWithRegisters):
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        flag_angle = sympy.acos(1 / (1 + 2**self.bitsize))
+        from qualtran.resource_counting.symbolic_counting_utils import acos
+
+        flag_angle = acos(1 / (1 + 2**self.bitsize))
 
         return {
             (_LPRSHelper(self.bitsize), 2),
             (_LPRSHelper(self.bitsize).adjoint(), 1),
             (Ry(angle=flag_angle), 3),
-            (MultiControlPauli(sympy.zeros(self.bitsize + 1), target_gate=cirq.Z), 1),
+            (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
             (XGate(), 4),
             (CirqGateAsBloq(cirq.GlobalPhaseGate(1j)), 1),
             (CZPowGate(), 1),
