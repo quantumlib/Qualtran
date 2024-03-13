@@ -149,9 +149,9 @@ class MultiControlPauli(GateWithRegisters):
     def _t_complexity_(self) -> TComplexity:
         n = len(self.cvs)
         if n <= 2:
-            return TComplexity(
-                t=4 * (n == 2), clifford=(n < 2) + 2 * (len(self.cvs) - sum(self.cvs))
-            )
+            pre_post_clifford = TComplexity(clifford=2 * (len(self.cvs) - sum(self.cvs)))
+            target_cost = t_complexity(self.target_gate.controlled(n))
+            return pre_post_clifford + target_cost
         and_cost = t_complexity(MultiAnd(self.cvs))
         controlled_pauli_cost = t_complexity(self.target_gate.controlled(1))
         and_inv_cost = t_complexity(MultiAnd(self.cvs).adjoint())
