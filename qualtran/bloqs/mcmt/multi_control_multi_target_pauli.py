@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -34,7 +34,9 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -156,16 +158,19 @@ class MultiControlPauli(GateWithRegisters):
 
         return {'controls': controls, 'target': target}
 
-    def _t_complexity_(self) -> TComplexity:
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
+
         n = len(self.cvs)
-        if n <= 2:
-            pre_post_clifford = TComplexity(clifford=2 * (len(self.cvs) - sum(self.cvs)))
-            target_cost = t_complexity(self.target_gate.controlled(n))
-            return pre_post_clifford + target_cost
-        and_cost = t_complexity(MultiAnd(self.cvs))
-        controlled_pauli_cost = t_complexity(self.target_gate.controlled(1))
-        and_inv_cost = t_complexity(MultiAnd(self.cvs).adjoint())
-        return and_cost + controlled_pauli_cost + and_inv_cost
+        if n > 2:
+            return {
+                (MultiAnd(self.cvs), 1),
+                (MultiAnd(self.cvs).adjoint(), 1),
+                (_cirq_gate_to_bloq(self.target_gate.controlled(1)), 1),
+            }
+        n_pre_post_x = 2 * (len(self.cvs) - sum(self.cvs))
+        pre_post_graph = {(XGate(), n_pre_post_x)} if n_pre_post_x else set({})
+        return {(_cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
         cpauli = (
