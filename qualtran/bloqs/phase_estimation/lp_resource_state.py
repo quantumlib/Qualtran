@@ -19,7 +19,6 @@ from typing import Set, TYPE_CHECKING
 import attrs
 import cirq
 import numpy as np
-import sympy
 from numpy._typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Register, Side, Signature
