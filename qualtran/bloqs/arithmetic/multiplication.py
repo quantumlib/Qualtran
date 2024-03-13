@@ -111,11 +111,7 @@ def _plus_equal_product() -> PlusEqualProduct:
     return plus_equal_product
 
 
-_PLUS_EQUALS_PRODUCT_DOC = BloqDocSpec(
-    bloq_cls=PlusEqualProduct,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct',
-    examples=(_plus_equal_product,),
-)
+_PLUS_EQUALS_PRODUCT_DOC = BloqDocSpec(bloq_cls=PlusEqualProduct, examples=[_plus_equal_product])
 
 
 @frozen
@@ -202,11 +198,7 @@ def _square() -> Square:
     return square
 
 
-_SQUARE_DOC = BloqDocSpec(
-    bloq_cls=Square,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import Square',
-    examples=(_square,),
-)
+_SQUARE_DOC = BloqDocSpec(bloq_cls=Square, examples=[_square])
 
 
 @frozen
@@ -274,11 +266,7 @@ def _sum_of_squares() -> SumOfSquares:
     return sum_of_squares
 
 
-_SUM_OF_SQUARES_DOC = BloqDocSpec(
-    bloq_cls=SumOfSquares,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import SumOfSquares',
-    examples=(_sum_of_squares,),
-)
+_SUM_OF_SQUARES_DOC = BloqDocSpec(bloq_cls=SumOfSquares, examples=[_sum_of_squares])
 
 
 @frozen
@@ -337,11 +325,7 @@ def _product() -> Product:
     return product
 
 
-_PRODUCT_DOC = BloqDocSpec(
-    bloq_cls=Product,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import Product',
-    examples=(_product,),
-)
+_PRODUCT_DOC = BloqDocSpec(bloq_cls=Product, examples=[_product])
 
 
 @frozen
@@ -408,11 +392,7 @@ def _scale_int_by_real() -> ScaleIntByReal:
     return scale_int_by_real
 
 
-_SCALE_INT_BY_REAL_DOC = BloqDocSpec(
-    bloq_cls=ScaleIntByReal,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import ScaleIntByReal',
-    examples=(_scale_int_by_real,),
-)
+_SCALE_INT_BY_REAL_DOC = BloqDocSpec(bloq_cls=ScaleIntByReal, examples=[_scale_int_by_real])
 
 
 @frozen
@@ -472,11 +452,7 @@ def _multiply_two_reals() -> MultiplyTwoReals:
     return multiply_two_reals
 
 
-_MULTIPLY_TWO_REALS_DOC = BloqDocSpec(
-    bloq_cls=MultiplyTwoReals,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import MultiplyTwoReals',
-    examples=(_multiply_two_reals,),
-)
+_MULTIPLY_TWO_REALS_DOC = BloqDocSpec(bloq_cls=MultiplyTwoReals, examples=[_multiply_two_reals])
 
 
 @frozen
@@ -539,8 +515,4 @@ def _square_real_number() -> SquareRealNumber:
     return square_real_number
 
 
-_SQUARE_REAL_NUMBER_DOC = BloqDocSpec(
-    bloq_cls=SquareRealNumber,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import SquareRealNumber',
-    examples=(_square_real_number,),
-)
+_SQUARE_REAL_NUMBER_DOC = BloqDocSpec(bloq_cls=SquareRealNumber, examples=[_square_real_number])
