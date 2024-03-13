@@ -49,7 +49,7 @@ respectively.
 """
 
 import abc
-from typing import Any, Iterable, Union
+from typing import Any, Iterable, Optional, Tuple, Union
 
 import attrs
 import numpy as np
@@ -68,6 +68,13 @@ class QDType(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_classical_domain(self) -> Iterable[Any]:
         """Yields all possible classical (computational basis state) values representable
+        by this type."""
+
+    @abc.abstractmethod
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        """Returns a random classical (computational basis state) value representable
         by this type."""
 
     @abc.abstractmethod
@@ -106,6 +113,11 @@ class QBit(QDType):
     def get_classical_domain(self) -> Iterable[int]:
         yield from (0, 1)
 
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        return rng.choice([0, 1], size=size)
+
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not (val == 0 or val == 1):
             raise ValueError(f"Bad {self} value {val} in {debug_str}")
@@ -126,6 +138,11 @@ class QAny(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
+        raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
+
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
         raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
@@ -153,6 +170,11 @@ class QInt(QDType):
 
     def get_classical_domain(self) -> Iterable[int]:
         return range(-(2 ** (self.bitsize - 1)), 2 ** (self.bitsize - 1))
+
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        return rng.integers(-(2 ** (self.bitsize - 1)), 2 ** (self.bitsize - 1), size=size)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -193,6 +215,11 @@ class QIntOnesComp(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         raise NotImplementedError()
 
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        raise NotImplementedError()
+
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         pass  # TODO: implement
 
@@ -215,7 +242,12 @@ class QUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2 ** (self.bitsize))
+        return range(2**self.bitsize)
+
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        return rng.integers(2**self.bitsize, size=size)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -301,6 +333,11 @@ class BoundedQUInt(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         return range(0, self.iteration_length)
 
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        return rng.integers(0, self.iteration_length, size=size)
+
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
             raise ValueError(f"{debug_str} should be an integer, not {val!r}")
@@ -366,6 +403,11 @@ class QFxp(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         raise NotImplementedError()
 
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        raise NotImplementedError()
+
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         pass  # TODO: implement
 
@@ -405,7 +447,12 @@ class QMontgomeryUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2 ** (self.bitsize))
+        return range(2**self.bitsize)
+
+    def get_random_classical_vals(
+        self, rng: np.random.Generator, size: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> Any:
+        return rng.integers(2**self.bitsize, size=size)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):

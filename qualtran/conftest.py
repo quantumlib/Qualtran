@@ -23,7 +23,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
@@ -75,10 +75,26 @@ def assert_equivalent_bloq_example_counts_for_pytest(bloq_ex: BloqExample):
         raise bce from bce
 
 
+def assert_bloq_example_classical_action_for_pytest(bloq_ex: BloqExample):
+    rng = np.random.default_rng(seed=52)
+    try:
+        qlt_testing.assert_bloq_example_classical_action(bloq_ex, rng=rng)
+    except qlt_testing.BloqCheckException as bce:
+        if bce.check_result in [
+            qlt_testing.BloqCheckResult.UNVERIFIED,
+            qlt_testing.BloqCheckResult.NA,
+            qlt_testing.BloqCheckResult.MISSING,
+        ]:
+            pytest.skip(bce.msg)
+
+        raise bce from bce
+
+
 _TESTFUNCS = [
     ('make', assert_bloq_example_make_for_pytest),
     ('decompose', assert_bloq_example_decompose_for_pytest),
     ('counts', assert_equivalent_bloq_example_counts_for_pytest),
+    ('classical', assert_bloq_example_classical_action_for_pytest),
 ]
 
 
