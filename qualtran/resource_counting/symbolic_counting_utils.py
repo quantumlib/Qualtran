@@ -42,3 +42,9 @@ def smax(*args):
     if any(isinstance(arg, sympy.Basic) for arg in args):
         return sympy.Max(*args)
     return max(*args)
+
+
+def acos(x: SymbolicFloat) -> SymbolicFloat:
+    if not isinstance(x, sympy.Basic):
+        return np.arccos(x)
+    return sympy.acos(x)
