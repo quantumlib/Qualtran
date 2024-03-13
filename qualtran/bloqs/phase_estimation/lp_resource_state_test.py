@@ -31,4 +31,10 @@ def test_prepares_resource_state(n):
 @pytest.mark.parametrize('n', [*range(1, 14, 2)])
 def test_t_complexity(n):
     bloq = LPResourceState(n)
-    assert_decompose_is_consistent_with_t_complexity(bloq)
+    if n == 1:
+        # n=1 fails due to https://github.com/quantumlib/Qualtran/issues/785
+        with pytest.raises(AssertionError):
+            assert_decompose_is_consistent_with_t_complexity(bloq)
+    else:
+        assert_decompose_is_consistent_with_t_complexity(bloq)
+        assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6

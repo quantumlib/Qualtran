@@ -19,10 +19,11 @@ from typing import Set, TYPE_CHECKING
 import attrs
 import cirq
 import numpy as np
+import sympy
 from numpy._typing import NDArray
 
-from qualtran import GateWithRegisters, QUInt, Register, Side, Signature
-from qualtran.bloqs.basic_gates import CZPowGate, Hadamard, Ry, XGate, ZPowGate
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Register, Side, Signature
+from qualtran.bloqs.basic_gates import CZPowGate, Hadamard, OnEach, Ry, Rz, XGate, ZPowGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -54,12 +55,12 @@ class _LPRSHelper(GateWithRegisters):
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         q, anc = quregs['m'].tolist()[::-1], quregs['anc']
-        yield cirq.Moment(cirq.H.on_each(*q, *anc))
+        yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]
         for i in range(self.bitsize):
             rz_angle = -2 * np.pi * (2**i) / (2**self.bitsize + 1)
-            yield cirq.Rz(rads=rz_angle).on(*anc).controlled_by(q[i])
-        yield cirq.Rz(rads=-2 * np.pi / (2**self.bitsize + 1)).on(*anc)
-        yield cirq.H(*anc)
+            yield Rz(angle=rz_angle).controlled().on(q[i], *anc)
+        yield Rz(angle=-2 * np.pi / (2**self.bitsize + 1)).on(*anc)
+        yield Hadamard().on(*anc)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
@@ -77,7 +78,7 @@ class _LPRSHelper(GateWithRegisters):
 
 @attrs.frozen
 class LPResourceState(GateWithRegisters):
-    """Prepares optimal resource state $\chi_{m}$ proposed by A. Luis and J. Peřina (1996)
+    r"""Prepares optimal resource state $\chi_{m}$ proposed by A. Luis and J. Peřina (1996)
 
     Uses a single round of amplitude amplification, as described in Ref[2], to prepare the
     resource state from Ref[1] described as
@@ -117,37 +118,61 @@ class LPResourceState(GateWithRegisters):
         flag_angle = np.arccos(1 / (1 + 2**self.bitsize))
 
         # Prepare initial state
-        yield cirq.Ry(rads=flag_angle).on(flag)
+        yield Ry(angle=flag_angle).on(flag)
         yield _LPRSHelper(self.bitsize).on(*q, anc)
 
         # Reflect around the target state
-        yield cirq.CZ.on(flag, anc)
+        yield CZPowGate().on(flag, anc)
 
         # Reflect around the initial state
         yield _LPRSHelper(self.bitsize).adjoint().on(*q, anc)
-        yield cirq.Ry(rads=-flag_angle).on(flag)
+        yield Ry(angle=-flag_angle).on(flag)
 
-        yield cirq.X(flag)
+        yield XGate().on(flag)
         yield MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z).on(*q, anc, flag)
-        yield cirq.X(flag)
+        yield XGate().on(flag)
 
         yield _LPRSHelper(self.bitsize).on(*q, anc)
-        yield cirq.Ry(rads=flag_angle).on(flag)
+        yield Ry(angle=flag_angle).on(flag)
 
         # Reset ancilla to |0> state.
-        yield cirq.X.on_each(flag, anc)
+        yield [XGate().on(flag), XGate().on(anc)]
         yield cirq.global_phase_operation(1j)
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        flag_angle = np.arccos(1 / (1 + 2**self.bitsize))
+        flag_angle = sympy.acos(1 / (1 + 2**self.bitsize))
 
         return {
             (_LPRSHelper(self.bitsize), 2),
             (_LPRSHelper(self.bitsize).adjoint(), 1),
             (Ry(angle=flag_angle), 3),
-            (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
+            (MultiControlPauli(sympy.zeros(self.bitsize + 1), target_gate=cirq.Z), 1),
             (XGate(), 4),
             (CirqGateAsBloq(cirq.GlobalPhaseGate(1j)), 1),
             (CZPowGate(), 1),
         }
+
+
+@bloq_example
+def _lp_resource_state_small() -> LPResourceState:
+    lp_resource_state_small = LPResourceState(5)
+    return lp_resource_state_small
+
+
+@bloq_example
+def _lp_resource_state_symbolic() -> LPResourceState:
+    import sympy
+
+    # Note: Symbolic callgraphs currently don't work due to
+    # https://github.com/quantumlib/Qualtran/issues/786
+
+    lp_resource_state_symbolic = LPResourceState(sympy.Symbol('n'))
+    return lp_resource_state_symbolic
+
+
+_CC_LP_RESOURCE_STATE_DOC = BloqDocSpec(
+    bloq_cls=LPResourceState,
+    import_line='from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState',
+    examples=(_lp_resource_state_small, _lp_resource_state_symbolic),
+)
