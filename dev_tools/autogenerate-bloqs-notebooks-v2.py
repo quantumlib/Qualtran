@@ -252,6 +252,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.addition._ADD_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
+            qualtran.bloqs.arithmetic.addition._SIMPLE_ADD_K_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
     ),
@@ -289,9 +290,13 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Comparison',
         module=qualtran.bloqs.arithmetic.comparison,
         bloq_specs=[
+            qualtran.bloqs.arithmetic.comparison._LT_K_DOC,
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_DOC,
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_K_DOC,
             qualtran.bloqs.arithmetic.comparison._EQUALS_K_DOC,
+            qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
+            qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
+            qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -302,6 +307,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
         ],
     ),
+    # --------------------------------------------------------------------------
+    # -----   Rotations    -----------------------------------------------------
+    # --------------------------------------------------------------------------
     NotebookSpecV2(
         title='Quantum Variable Rotation',
         module=qualtran.bloqs.rotations.quantum_variable_rotation,
