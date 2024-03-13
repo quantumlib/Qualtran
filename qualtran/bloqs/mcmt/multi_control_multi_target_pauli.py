@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 import cirq
 import numpy as np
@@ -168,7 +168,24 @@ class MultiControlPauli(GateWithRegisters):
         return and_cost + controlled_pauli_cost + and_inv_cost
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
-        return cirq.apply_unitary(self.target_gate.controlled(control_values=self.cvs), args)
+        cpauli = (
+            self.target_gate.controlled(control_values=self.cvs) if self.cvs else self.target_gate
+        )
+        return cirq.apply_unitary(cpauli, args)
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
 
     def _has_unitary_(self) -> bool:
         return True

@@ -47,6 +47,16 @@ def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
     assert_decompose_is_consistent_with_t_complexity(gate)
 
 
+@pytest.mark.parametrize("num_controls", [*range(10)])
+@pytest.mark.parametrize("pauli", [cirq.X, cirq.Y, cirq.Z])
+@pytest.mark.parametrize('cv', [0, 1])
+def test_mcp_unitary(num_controls: int, pauli: cirq.Pauli, cv: int):
+    cvs = (cv,) * num_controls
+    gate = MultiControlPauli(cvs, target_gate=pauli)
+    cpauli = pauli.controlled(control_values=cvs) if num_controls else pauli
+    np.testing.assert_allclose(gate.tensor_contract(), cirq.unitary(cpauli))
+
+
 @pytest.mark.parametrize("cvs", [(0,), (1, 0), (1, 1, 1), (1, 0, 1, 0)])
 def test_multi_control_x(cvs):
     bloq = MultiControlX(cvs=cvs)
