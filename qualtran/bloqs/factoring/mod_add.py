@@ -243,7 +243,7 @@ class MontgomeryModAdd(Bloq):
         # Check if y < x; if yes flip the bit of the signed ancilla bit. Then bitflip the sign bit
         # again before freeing.
         x, y, sign = bb.add(
-            LinearDepthGreaterThan(bitsize=self.bitsize, signed=False), a=x, b=y, target=sign
+            LinearDepthGreaterThan(bitsize=self.bitsize, signed=False), a=x, b=y, targets=sign
         )
         sign = bb.add(XGate(), q=sign)
 

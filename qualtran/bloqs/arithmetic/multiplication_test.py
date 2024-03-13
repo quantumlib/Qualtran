@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import cirq
+import numpy as np
 import pytest
 
 from qualtran import BloqBuilder, QUInt, Register
@@ -24,6 +25,8 @@ from qualtran.bloqs.arithmetic.multiplication import (
     _square_real_number,
     _sum_of_squares,
     MultiplyTwoReals,
+    Negate,
+    NegateTwosComplement,
     PlusEqualProduct,
     Product,
     ScaleIntByReal,
@@ -32,7 +35,7 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SumOfSquares,
 )
 from qualtran.bloqs.basic_gates import IntState
-from qualtran.testing import execute_notebook
+from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
 def test_square_auto(bloq_autotester):
@@ -156,3 +159,15 @@ def test_plus_equal_product():
 @pytest.mark.notebook
 def test_multiplication_notebook():
     execute_notebook('multiplication')
+
+
+@pytest.mark.parametrize('bitsize', [(1), (3), (5)])
+def test_negate_decomp(bitsize):
+    bloq = Negate(bitsize=bitsize)
+    assert_valid_bloq_decomposition(bloq)
+
+
+@pytest.mark.parametrize('bitsize', [(1), (3), (5)])
+def test_negate_twos_complement_decomp(bitsize):
+    bloq = NegateTwosComplement(bitsize=bitsize)
+    assert_valid_bloq_decomposition(bloq)
