@@ -37,7 +37,6 @@ from qualtran import (
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
@@ -609,12 +608,17 @@ class LinearDepthGreaterThan(Bloq):
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
-            # We use a specially controlled Toffolli gate to implement GreaterThan.
-            # If a is 1 and b is 0 then a > b and we can flip the target bit.
+            # We use an And() gate to compute a single bit GreaterThan() bloq without a toffoli.
+            # If a is 1 and b is 0 then a > b and we can flip the target bit(s).
+            b = bb.add(XGate(), q=b)
             ctrls = [a, b]
+            ctrls, ancilla = bb.add(And(), ctrl=ctrls)
             for i in range(self.target_bitsize):
-                ctrls, targets[i] = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=targets[i])
+                ancilla, targets[i] = bb.add(CNOT(), ctrl=ancilla, target=targets[i])
+            ctrls = bb.add(And(uncompute=True), ctrl=ctrls, target=ancilla)
             a, b = ctrls
+            b = bb.add(XGate(), q=b)
+
             # Return the output registers.
             return {'a': a, 'b': b, 'targets': targets}
 
