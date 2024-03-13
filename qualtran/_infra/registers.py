@@ -180,6 +180,17 @@ class Signature:
         """Swap all RIGHT and LEFT registers in this collection."""
         return Signature(reg.adjoint() for reg in self._registers)
 
+    def n_qubits(self) -> int:
+        """The number of qubits in the signature.
+
+        If the signature has LEFT and RIGHT registers, the number of qubits in the signature
+        is taken to be the greater of the number of left or right qubits. A bloq with this
+        signature uses at least this many qubits.
+        """
+        left_size = sum(reg.total_bits() for reg in self.lefts())
+        right_size = sum(reg.total_bits() for reg in self.rights())
+        return max(left_size, right_size)
+
     def __repr__(self):
         return f'Signature({repr(self._registers)})'
 

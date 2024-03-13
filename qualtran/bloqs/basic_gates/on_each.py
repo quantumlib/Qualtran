@@ -14,7 +14,7 @@
 
 """Classes to apply single qubit bloq to multiple qubits."""
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Set
 
 import attrs
 
@@ -22,6 +22,7 @@ from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, SoquetT
 from qualtran._infra.quantum_graph import Soquet
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
+from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -60,3 +61,6 @@ class OnEach(Bloq):
         for i in range(self.n):
             qs[i] = bb.add(self.gate, q=qs[i])
         return {'q': bb.join(qs)}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(self.gate, self.n)}
