@@ -23,7 +23,7 @@ from qualtran.bloqs.basic_gates import CNOT, Hadamard, ZGate
 from qualtran.bloqs.basic_gates.x_basis import XGate
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.bloqs.select_and_prepare import SelectOracle
+from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     StatePreparationViaRotations,
 )
@@ -159,14 +159,12 @@ class DecomposeGateViaHR(Bloq):
 
 
 @attrs.frozen
-class PrepareOracleDecomposeeGateReflection(SelectOracle):
+class PrepareOracleDecomposeeGateReflection(PrepareOracle):
     r"""Prepares the state $|0,u_i\rangle - |1,i\rangle$, used by DecomposeGateViaHR."""
     state_coefs: Tuple  # state |u_i>
     phase_bitsize: int  # number of ancilla qubits used to encode the state preparation's rotations
     index: int  # i value in |i>
     uncompute: bool = False
-    target_registers: Tuple[Register, ...] = ()
-    junk_registers: Tuple[Register, ...] = ()
 
     @property
     def state_bitsize(self):
@@ -183,12 +181,9 @@ class PrepareOracleDecomposeeGateReflection(SelectOracle):
             ),
         )
 
-    @cached_property
-    def control_registers(self) -> Tuple[Register, ...]:
-        return ()
 
     @property
-    def signature(self):
+    def signature(self) -> Signature:
         return Signature.build(target_reg=self.state_bitsize + 1, phase_grad=self.phase_bitsize)
 
     def build_composite_bloq(
@@ -210,14 +205,16 @@ class PrepareOracleDecomposeeGateReflection(SelectOracle):
         target_reg = bb.join(qubits)
         return {"target_reg": target_reg, "phase_grad": phase_grad}
 
-    def _prepare_reflection_ancilla(self, bb: BloqBuilder, refl_ancilla: SoquetT):
+    def _prepare_reflection_ancilla(self, bb: BloqBuilder, refl_ancilla: SoquetT) -> SoquetT:
         # prepare/unprepare the ancilla from |0> to 1/sqrt(2)(|1> - |0>)
         refl_ancilla = bb.add(Hadamard(), q=refl_ancilla)
         refl_ancilla = bb.add(ZGate(), q=refl_ancilla)
         refl_ancilla = bb.add(XGate(), q=refl_ancilla)
         return refl_ancilla
 
-    def _prepare_i_state(self, bb: BloqBuilder, refl_ancilla: SoquetT, state: List[SoquetT]):
+    def _prepare_i_state(
+        self, bb: BloqBuilder, refl_ancilla: SoquetT, state: List[SoquetT]
+    ) -> Tuple[SoquetT, SoquetT]:
         for i, bit in enumerate(f"{self.index:0{self.state_bitsize}b}"):
             if bit == '1':
                 refl_ancilla, state[i] = bb.add(CNOT(), ctrl=refl_ancilla, target=state[i])
@@ -225,7 +222,7 @@ class PrepareOracleDecomposeeGateReflection(SelectOracle):
 
     def _prepare_u_state(
         self, bb: BloqBuilder, refl_ancilla: SoquetT, state: List[SoquetT], phase_grad: SoquetT
-    ):
+    ) -> Tuple[SoquetT, SoquetT]:
         csp = StatePreparationViaRotations(
             phase_bitsize=self.phase_bitsize,
             state_coefficients=self.state_coefs,
