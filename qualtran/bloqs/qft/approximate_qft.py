@@ -20,7 +20,7 @@ import numpy as np
 from attr import field
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QFxp, QUInt, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 
 
@@ -119,3 +119,23 @@ class ApproximateQFT(GateWithRegisters):
         if self.with_reverse:
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
+
+
+@bloq_example
+def _approximate_qft_small() -> ApproximateQFT:
+    approximate_qft_small = ApproximateQFT(6, 5)
+    return approximate_qft_small
+
+
+@bloq_example
+def _approximate_qft_from_epsilon() -> ApproximateQFT:
+    epsilon = 1e-5
+    approximate_qft_from_epsilon = ApproximateQFT.from_epsilon(50, epsilon)
+    return approximate_qft_from_epsilon
+
+
+_CC_AQFT_DOC = BloqDocSpec(
+    bloq_cls=ApproximateQFT,
+    import_line='from qualtran.bloqs.qft.approximate_qft import ApproximateQFT',
+    examples=(_approximate_qft_small, _approximate_qft_from_epsilon),
+)

@@ -21,7 +21,11 @@ import pytest
 
 from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
-from qualtran.bloqs.qft.approximate_qft import ApproximateQFT
+from qualtran.bloqs.qft.approximate_qft import (
+    _approximate_qft_from_epsilon,
+    _approximate_qft_small,
+    ApproximateQFT,
+)
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -49,6 +53,14 @@ class TestApproximateQFT(GateWithRegisters):
         )
         bb.add(PhaseGradientState(self.phase_bitsize).adjoint(), phase_grad=phase_grad)
         return {'q': q}
+
+
+def test_approximate_qft_small_auto(bloq_autotester):
+    bloq_autotester(_approximate_qft_small)
+
+
+def test_approximate_qft_from_epsilon_auto(bloq_autotester):
+    bloq_autotester(_approximate_qft_from_epsilon)
 
 
 @pytest.mark.parametrize('n', [2, 3, 4, 5])

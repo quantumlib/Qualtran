@@ -67,6 +67,7 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -324,6 +325,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Two Bit FFFT Gate',
         module=qualtran.bloqs.qft.two_bit_ffft,
         bloq_specs=[qualtran.bloqs.qft.two_bit_ffft._TWO_BIT_FFFT_DOC],
+    ),
+    NotebookSpecV2(
+        title='Approximate QFT',
+        module=qualtran.bloqs.qft.approximate_qft,
+        bloq_specs=[qualtran.bloqs.qft.approximate_qft._CC_AQFT_DOC],
     ),
 ]
 
