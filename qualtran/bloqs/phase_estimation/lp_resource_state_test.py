@@ -14,27 +14,55 @@
 import numpy as np
 import pytest
 
-from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
+from qualtran.bloqs.phase_estimation.lp_resource_state import (
+    _lp_resource_state_small,
+    _lprs_interim_prep,
+    LPResourceState,
+    LPRSInterimPrep,
+)
 from qualtran.cirq_interop.testing import (
     assert_decompose_is_consistent_with_t_complexity,
     GateHelper,
 )
 
 
+def test_lprs_interim_auto(bloq_autotester):
+    bloq_autotester(_lprs_interim_prep)
+
+
+def test_lp_resource_state_auto(bloq_autotester):
+    bloq_autotester(_lp_resource_state_small)
+
+
+def get_interim_resource_state(m: int) -> np.ndarray:
+    N = 2**m
+    state_vector = np.zeros(2 * N, dtype=np.complex128)
+    state_vector[:N] = np.cos(np.pi * (1 + np.arange(N)) / (1 + N))
+    state_vector[N:] = 1j * np.sin(np.pi * (1 + np.arange(N)) / (1 + N))
+    return np.sqrt(1 / N) * state_vector
+
+
+def get_resource_state(m: int) -> np.ndarray:
+    N = 2**m
+    return np.sqrt(2 / (1 + N)) * np.sin(np.pi * (1 + np.arange(N)) / (1 + N))
+
+
+@pytest.mark.parametrize('n', [*range(1, 14, 2)])
+def test_intermediate_resource_state(n):
+    bloq = LPRSInterimPrep(n)
+    state = GateHelper(bloq).circuit.final_state_vector()
+    np.testing.assert_allclose(state, get_interim_resource_state(n))
+
+
 @pytest.mark.parametrize('n', [*range(1, 14, 2)])
 def test_prepares_resource_state(n):
     bloq = LPResourceState(n)
     state = GateHelper(bloq).circuit.final_state_vector()
-    np.testing.assert_allclose(state, bloq.state())
+    np.testing.assert_allclose(state, get_resource_state(n))
 
 
 @pytest.mark.parametrize('n', [*range(1, 14, 2)])
 def test_t_complexity(n):
     bloq = LPResourceState(n)
-    if n == 1:
-        # n=1 fails due to https://github.com/quantumlib/Qualtran/issues/785
-        with pytest.raises(AssertionError):
-            assert_decompose_is_consistent_with_t_complexity(bloq)
-    else:
-        assert_decompose_is_consistent_with_t_complexity(bloq)
-        assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6
+    assert_decompose_is_consistent_with_t_complexity(bloq)
+    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6 + 3 * (n == 1)

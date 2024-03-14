@@ -332,7 +332,10 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Optimal resource states for Phase Estimation by A. Luis and J. Peřina',
         module=qualtran.bloqs.phase_estimation.lp_resource_state,
-        bloq_specs=[qualtran.bloqs.phase_estimation.lp_resource_state._CC_LP_RESOURCE_STATE_DOC],
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.lp_resource_state._CC_LPRS_INTERIM_PREP_DOC,
+            qualtran.bloqs.phase_estimation.lp_resource_state._CC_LP_RESOURCE_STATE_DOC,
+        ],
     ),
 ]
 

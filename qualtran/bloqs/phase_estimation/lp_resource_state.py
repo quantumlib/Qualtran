@@ -32,11 +32,18 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen
-class _LPRSHelper(GateWithRegisters):
-    """Helper Bloq to prepare an intermediate resource state which can be used in AA
+class LPRSInterimPrep(GateWithRegisters):
+    r"""Helper Bloq to prepare an intermediate resource state which can be used in AA
 
-    Prepares the intermediate resource state described in Eq 19 of
-    https://arxiv.org/pdf/1805.03662.pdf, which can then be used in a single round of
+    Specifically, this prepares the state
+
+    $$
+        \sqrt{\frac{1}{2^{m}}}\sum_{n=0}^{2^m - 1}\left(\cos{\left(\frac{\pi(n+1)}{2^m+1}\right)}
+        |n\rangle|0\rangle + i\sin{\left(\frac{\pi(n+1)}{2^m+1}\right)}|n\rangle|1\rangle\right)
+    $$
+
+    This is the state obtained after applying the Hadamard on the flag qubit as described in
+    Eq 19 of https://arxiv.org/pdf/1805.03662.pdf, which can then be used in a single round of
     Amplitude Amplification to boost the amplitude of desired resource state to 1.
     """
 
@@ -103,10 +110,6 @@ class LPResourceState(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature([Register('m', QUInt(self.bitsize), side=Side.RIGHT)])
 
-    def state(self):
-        N = 2**self.bitsize
-        return np.sqrt(2 / (1 + N)) * np.sin(np.pi * (1 + np.arange(N)) / (1 + N))
-
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
@@ -118,20 +121,20 @@ class LPResourceState(GateWithRegisters):
 
         # Prepare initial state
         yield Ry(angle=flag_angle).on(flag)
-        yield _LPRSHelper(self.bitsize).on(*q, anc)
+        yield LPRSInterimPrep(self.bitsize).on(*q, anc)
 
         # Reflect around the target state
         yield CZPowGate().on(flag, anc)
 
         # Reflect around the initial state
-        yield _LPRSHelper(self.bitsize).adjoint().on(*q, anc)
+        yield LPRSInterimPrep(self.bitsize).adjoint().on(*q, anc)
         yield Ry(angle=-flag_angle).on(flag)
 
         yield XGate().on(flag)
         yield MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z).on(*q, anc, flag)
         yield XGate().on(flag)
 
-        yield _LPRSHelper(self.bitsize).on(*q, anc)
+        yield LPRSInterimPrep(self.bitsize).on(*q, anc)
         yield Ry(angle=flag_angle).on(flag)
 
         # Reset ancilla to |0> state.
@@ -145,14 +148,27 @@ class LPResourceState(GateWithRegisters):
         flag_angle = acos(1 / (1 + 2**self.bitsize))
 
         return {
-            (_LPRSHelper(self.bitsize), 2),
-            (_LPRSHelper(self.bitsize).adjoint(), 1),
+            (LPRSInterimPrep(self.bitsize), 2),
+            (LPRSInterimPrep(self.bitsize).adjoint(), 1),
             (Ry(angle=flag_angle), 3),
             (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
             (XGate(), 4),
             (CirqGateAsBloq(cirq.GlobalPhaseGate(1j)), 1),
             (CZPowGate(), 1),
         }
+
+
+@bloq_example
+def _lprs_interim_prep() -> LPRSInterimPrep:
+    lprs_interim_prep = LPRSInterimPrep(5)
+    return lprs_interim_prep
+
+
+_CC_LPRS_INTERIM_PREP_DOC = BloqDocSpec(
+    bloq_cls=LPRSInterimPrep,
+    import_line='from qualtran.bloqs.phase_estimation.lp_resource_state import LPRSInterimPrep',
+    examples=(_lprs_interim_prep,),
+)
 
 
 @bloq_example
