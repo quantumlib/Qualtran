@@ -57,6 +57,7 @@ class ApproximateQFT(GateWithRegisters):
 
     References:
         [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
+        [Approximation Errors](https://arxiv.org/pdf/quant-ph/0008056.pdf)
     """
 
     bitsize: int
