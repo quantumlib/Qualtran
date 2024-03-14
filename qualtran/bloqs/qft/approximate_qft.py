@@ -13,10 +13,11 @@
 #  limitations under the License.
 import math
 from functools import cached_property
-from typing import Callable
 
 import attrs
 import cirq
+import numpy as np
+from attr import field
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QFxp, QUInt, Signature
@@ -25,9 +26,7 @@ from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 
 @attrs.frozen
 class ApproximateQFT(GateWithRegisters):
-    r"""
-    An approximate QFT, using the phase gradient trick, where we delete controlled z-power gates
-    smaller than a user-defined threshold.
+    r"""An approximate QFT in which phase shifts smaller than a certain threshold are deleted.
 
     Given a b-bit phase gradient state $|\phi\rangle$ prepared as
 
@@ -35,18 +34,20 @@ class ApproximateQFT(GateWithRegisters):
         |\phi\rangle = \frac{1}{\sqrt{2^{b}}} \sum_{k=0}^{2^{b} - 1} \omega_{b}^{-k} |k\rangle
     $$
 
-    The QFT uses exponentially small z-power gates. In practice, it is often sufficient to perform
-    an approximate qft, where z-power gates smaller than a certain threshold are dropped.
-
     Phase gradient rotations can be synthesized via additions into the phase gradient register.
     This leads to significant reductions in T/Toffoli complexity and requires 0 arbitrary
     rotations (given a one-time cost to prepare the gradient register). See the linked reference
     for more details.
 
+    The QFT uses exponentially small z-power gates. In practice, it is often sufficient to perform
+    an approximate qft, where z-power gates smaller than a certain threshold are dropped. When using
+    the "add into phase-gradient trick", this amounts to doing smaller additions with a smaller
+    phase gradient register.
+
+
     Args:
         bitsize: Size of input register to apply QFT on.
-        b: The size of the phase gradient register. This is a function of the bitsize
-           and defaults to being math.ceil(math.log2(bitsize)).
+        phase_bitsize: The size of the phase gradient register. Defaults to being math.ceil(math.log2(bitsize)).
         with_reverse: Whether or not to include the swaps at the end
             of the circuit decomposition that reverse the order of the
             qubits. If True, the swaps are inserted. Defaults to True.
@@ -59,15 +60,40 @@ class ApproximateQFT(GateWithRegisters):
     """
 
     bitsize: int
-    b: Callable = lambda n: math.ceil(math.log2(n))
+    phase_bitsize: int = field()
     with_reverse: bool = True
+
+    @phase_bitsize.default
+    def ceiling_of_log(self):
+        return math.ceil(math.log2(self.bitsize))
+
+    @classmethod
+    def from_epsilon(cls, n: int, eps: float) -> 'ApproximateQFT':
+        """
+        From a given error threshold, epsilon, calculates what size the
+        phase register should be and returns an ApproximateQFT instance.
+
+        Args:
+            n: The size of the input register.
+            eps: The error threshold.
+
+        Returns:
+            An ApproximateQFT instance.
+        """
+        assert n > 30, "This approximation is only accurate for sufficiently large n"
+
+        # solving for k in quant-ph/0008056 (12)
+        # This equation is transcendental because it involves both
+        # algebraic and exponential terms in k. Therefore, I upper-bounded
+        # the error by replacing (n - k) with n.
+        phase_bitsize = math.ceil(-1 * np.log2(eps / (n * np.pi * 2**0.5)))
+        return cls(n, phase_bitsize)
 
     @cached_property
     def signature(self) -> 'Signature':
-        phase_grad_bitsize = self.b(self.bitsize)
-        assert phase_grad_bitsize > 0
+        assert self.phase_bitsize > 0
         return Signature.build_from_dtypes(
-            q=QUInt(self.bitsize), phase_grad=QFxp(phase_grad_bitsize, phase_grad_bitsize)
+            q=QUInt(self.bitsize), phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize)
         )
 
     def decompose_from_registers(
@@ -82,7 +108,8 @@ class ApproximateQFT(GateWithRegisters):
                 yield cirq.H(q[i])
                 continue
             addition_bitsize = min(i, len(phase_grad) - 1)
-            a, b = q[:addition_bitsize], phase_grad[: addition_bitsize + 1]
+            addition_start_index = i - addition_bitsize
+            a, b = q[addition_start_index:i], phase_grad[: addition_bitsize + 1]
             yield PlusEqualProduct(addition_bitsize, 1, addition_bitsize + 1).on_registers(
                 a=a[::-1], b=q[i], result=b
             )

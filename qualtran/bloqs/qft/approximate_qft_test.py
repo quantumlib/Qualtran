@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 @attrs.frozen
 class TestApproximateQFT(GateWithRegisters):
     bitsize: int
+    phase_bitsize: int
     with_reverse: bool
 
     @property
@@ -39,22 +40,21 @@ class TestApproximateQFT(GateWithRegisters):
         return Signature.build(q=self.bitsize)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        def b(n):
-            return n
-
-        phase_grad = bb.add(PhaseGradientState(b(self.bitsize), exponent=-1))
+        phase_grad = bb.add(PhaseGradientState(self.phase_bitsize, exponent=-1))
 
         q, phase_grad = bb.add(
-            ApproximateQFT(self.bitsize, b, self.with_reverse), q=q, phase_grad=phase_grad
+            ApproximateQFT(self.bitsize, self.phase_bitsize, self.with_reverse),
+            q=q,
+            phase_grad=phase_grad,
         )
-        bb.add(PhaseGradientState(self.bitsize).adjoint(), phase_grad=phase_grad)
+        bb.add(PhaseGradientState(self.phase_bitsize).adjoint(), phase_grad=phase_grad)
         return {'q': q}
 
 
 @pytest.mark.parametrize('n', [2, 3, 4, 5])
 @pytest.mark.parametrize('without_reverse', [True, False])
-def test_qft_with_phase_gradient(n: int, without_reverse: bool):
-    qft_bloq = TestApproximateQFT(n, not without_reverse)
+def test_approximate_qft_exact(n: int, without_reverse: bool):
+    qft_bloq = TestApproximateQFT(n, n, not without_reverse)
     qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
     np.testing.assert_allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
     np.testing.assert_allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
@@ -62,8 +62,36 @@ def test_qft_with_phase_gradient(n: int, without_reverse: bool):
     assert_valid_bloq_decomposition(qft_bloq)
 
 
+@pytest.mark.slow
+def test_approximate_qft():
+    num_qubits = 7
+    phase_bitsize = 6
+    qft_bloq = TestApproximateQFT(num_qubits, phase_bitsize, True)
+    qft_cirq = cirq.QuantumFourierTransformGate(num_qubits, without_reverse=False)
+    np.testing.assert_allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq), rtol=1e-2, atol=1e-2)
+
+    assert_valid_bloq_decomposition(qft_bloq)
+
+
+@pytest.mark.parametrize('n', [1000, 2000, 10000])
+@pytest.mark.parametrize('bits_of_precision', [4, 7, 10])
+def test_approximate_qft_with_eps(n: int, bits_of_precision: int):
+    epsilon = 2 ** (-1 * bits_of_precision)
+    phase_bitsize_for_single_bit_precision = ApproximateQFT.from_epsilon(n, 2**-1).phase_bitsize
+
+    # factor of 2 takes care of the roughness of the upper-bound
+    assert phase_bitsize_for_single_bit_precision < 2 * math.log2(n)
+    approximate_qft = ApproximateQFT.from_epsilon(n, epsilon)
+
+    # for each extra bit of precision, we only need 1 more bit in the phase register
+    assert (
+        approximate_qft.phase_bitsize
+        == phase_bitsize_for_single_bit_precision + bits_of_precision - 1
+    )
+
+
 @pytest.mark.parametrize('n', [10, 123])
-def test_qft_text_book_t_complexity(n: int):
+def test_approximate_qft_t_complexity(n: int):
     qft_bloq = ApproximateQFT(n, with_reverse=False)
 
     def f(n, b):
