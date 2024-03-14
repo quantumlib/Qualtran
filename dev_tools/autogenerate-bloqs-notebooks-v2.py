@@ -67,6 +67,7 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -324,6 +325,17 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Two Bit FFFT Gate',
         module=qualtran.bloqs.qft.two_bit_ffft,
         bloq_specs=[qualtran.bloqs.qft.two_bit_ffft._TWO_BIT_FFFT_DOC],
+    ),
+    # --------------------------------------------------------------------------
+    # -----   Phase Estimation          -----------------------------------------------------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Optimal resource states for Phase Estimation by A. Luis and J. Peřina',
+        module=qualtran.bloqs.phase_estimation.lp_resource_state,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.lp_resource_state._CC_LPRS_INTERIM_PREP_DOC,
+            qualtran.bloqs.phase_estimation.lp_resource_state._CC_LP_RESOURCE_STATE_DOC,
+        ],
     ),
 ]
 
