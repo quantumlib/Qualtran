@@ -282,8 +282,8 @@ class GeneralizedQSP(GateWithRegisters):
     """
 
     U: GateWithRegisters
-    P: Sequence[complex]
-    Q: Sequence[complex]
+    P: Tuple[complex, ...] = field(converter=tuple)
+    Q: Tuple[complex, ...] = field(converter=tuple)
     negative_power: int = field(default=0, kw_only=True)
 
     @cached_property
@@ -342,9 +342,6 @@ class GeneralizedQSP(GateWithRegisters):
 
         for _ in range(num_inverse_applications):
             yield self.U.adjoint().on_registers(**quregs)
-
-    def __hash__(self):
-        return hash((self.U, *self.signal_rotations, self.negative_power))
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         degree = len(self.P)
