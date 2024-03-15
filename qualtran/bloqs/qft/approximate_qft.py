@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import defaultdict
 from functools import cached_property
 from typing import Set, TYPE_CHECKING
 
@@ -23,7 +24,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
-from qualtran.bloqs.basic_gates import Hadamard
+from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 from qualtran.resource_counting.symbolic_counting_utils import (
     ceil,
     is_symbolic,
@@ -133,10 +134,17 @@ class ApproximateQFT(GateWithRegisters):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (Hadamard(), self.bitsize),
-            (PlusEqualProduct(self.phase_bitsize - 1, 1, self.phase_bitsize), self.bitsize),
-        }
+        phase_dict = defaultdict(int)
+        if is_symbolic(self.bitsize, self.phase_bitsize):
+            phase_dict[PlusEqualProduct(self.phase_bitsize, 1, self.phase_bitsize)] = self.bitsize
+        else:
+            for i in range(1, self.bitsize):
+                b = min(i, self.phase_bitsize - 1)
+                phase_dict[PlusEqualProduct(b, 1, b + 1)] += 1
+        ret = {(Hadamard(), self.bitsize), *phase_dict.items()}
+        if self.with_reverse:
+            ret |= {(TwoBitSwap(), self.bitsize // 2)}
+        return ret
 
 
 @bloq_example

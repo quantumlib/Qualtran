@@ -27,6 +27,7 @@ from qualtran.bloqs.qft.approximate_qft import (
     ApproximateQFT,
 )
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
+from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
 from qualtran.testing import assert_valid_bloq_decomposition
 
 if TYPE_CHECKING:
@@ -103,8 +104,9 @@ def test_approximate_qft_with_eps(n: int, bits_of_precision: int):
 
 
 @pytest.mark.parametrize('n', [10, 123])
-def test_approximate_qft_t_complexity(n: int):
-    qft_bloq = ApproximateQFT(n, with_reverse=False)
+@pytest.mark.parametrize('with_reverse', [True, False])
+def test_approximate_qft_t_complexity(n: int, with_reverse: bool):
+    qft_bloq = ApproximateQFT(n, with_reverse=with_reverse)
 
     def f(n, b):
         t_complexity = 0
@@ -113,7 +115,7 @@ def test_approximate_qft_t_complexity(n: int):
         return t_complexity
 
     qft_t_complexity = qft_bloq.t_complexity()
+    assert_decompose_is_consistent_with_t_complexity(qft_bloq)
     b = math.ceil(math.log2(n))
-
     assert qft_t_complexity.t == f(n, b) <= 8 * n * (math.log2(n) ** 2)
     assert qft_t_complexity.rotations == 0
