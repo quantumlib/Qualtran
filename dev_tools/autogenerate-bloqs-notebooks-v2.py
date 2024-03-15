@@ -67,11 +67,8 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
-<<<<<<< HEAD
-import qualtran.bloqs.qft.approximate_qft
-=======
 import qualtran.bloqs.phase_estimation.lp_resource_state
->>>>>>> 6b6900f71a2f226fa5b8ee6557bcb3073897edcd
+import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -334,6 +331,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Approximate QFT',
         module=qualtran.bloqs.qft.approximate_qft,
         bloq_specs=[qualtran.bloqs.qft.approximate_qft._CC_AQFT_DOC],
+    ),
     # --------------------------------------------------------------------------
     # -----   Phase Estimation          -----------------------------------------------------
     # --------------------------------------------------------------------------
@@ -344,7 +342,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.phase_estimation.lp_resource_state._CC_LPRS_INTERIM_PREP_DOC,
             qualtran.bloqs.phase_estimation.lp_resource_state._CC_LP_RESOURCE_STATE_DOC,
         ],
-g    ),
+    ),
 ]
 
 

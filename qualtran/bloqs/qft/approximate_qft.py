@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import math
 from functools import cached_property
-from typing import Set, Union
+from typing import Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -24,8 +23,17 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
-from qualtran.bloqs.basic_gates import Hadamard, TGate
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
+from qualtran.bloqs.basic_gates import Hadamard
+from qualtran.resource_counting.symbolic_counting_utils import (
+    ceil,
+    is_symbolic,
+    log2,
+    SymbolicFloat,
+    SymbolicInt,
+)
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @attrs.frozen
@@ -60,23 +68,22 @@ class ApproximateQFT(GateWithRegisters):
             performing later operations on different qubits.
 
     References:
-        [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
-        [Approximation Errors](https://arxiv.org/pdf/quant-ph/0008056.pdf)
+        1. [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
+        2. [Approximation Errors](https://arxiv.org/pdf/quant-ph/0008056.pdf)
     """
 
-    bitsize: Union[int, sympy.Expr]
-    phase_bitsize: Union[int, sympy.Expr] = field()
+    bitsize: SymbolicInt
+    phase_bitsize: SymbolicInt = field()
     with_reverse: bool = True
 
     @phase_bitsize.default
-    def ceiling_of_log(self):
+    def ceiling_of_log_bitsize(self):
         return ceil(log2(self.bitsize))
 
     @classmethod
-    def from_epsilon(
-        cls, n: Union[int, sympy.Expr], eps: Union[float, sympy.Expr]
-    ) -> 'ApproximateQFT':
-        """
+    def from_epsilon(cls, n: SymbolicInt, eps: SymbolicFloat) -> 'ApproximateQFT':
+        """Builds an ApproximateQFT instance using total tolerable error `eps`.
+
         From a given error threshold, epsilon, calculates what size the
         phase register should be and returns an ApproximateQFT instance.
 
@@ -92,7 +99,8 @@ class ApproximateQFT(GateWithRegisters):
         # This equation is transcendental because it involves both
         # algebraic and exponential terms in k. Therefore, I upper-bounded
         # the error by replacing (n - k) with n.
-        phase_bitsize = ceil(-1 * log2(eps / (n * np.pi * 2**0.5)))
+        num = sympy.pi * sympy.sqrt(2) if is_symbolic(n, eps) else np.pi * np.sqrt(2)
+        phase_bitsize = ceil(log2((n * num) / eps))
         return cls(n, phase_bitsize)
 
     @cached_property
@@ -125,7 +133,6 @@ class ApproximateQFT(GateWithRegisters):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        print()
         return {
             (Hadamard(), self.bitsize),
             (PlusEqualProduct(self.phase_bitsize - 1, 1, self.phase_bitsize), self.bitsize),
