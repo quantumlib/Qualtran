@@ -204,7 +204,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/',
-        path_stem_name=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/trotter',
+        path_stem=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/trotter',
     ),
     NotebookSpecV2(
         title='Tensor Hypercontraction',

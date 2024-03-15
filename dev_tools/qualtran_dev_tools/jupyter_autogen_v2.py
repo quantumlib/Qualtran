@@ -52,7 +52,7 @@ class NotebookSpecV2:
     module: ModuleType
     bloq_specs: List[BloqDocSpec]
     directory: str = field()
-    path_stem_name: Optional[str] = None
+    _path_stem: Optional[str] = None
 
     @directory.default
     def _default_directory(self) -> str:
@@ -60,9 +60,9 @@ class NotebookSpecV2:
 
     @property
     def path_stem(self):
-        if self.path_stem_name is None:
+        if self._path_stem is None:
             return self.module.__name__.split('.')[-1]
-        return self.path_stem_name
+        return self._path_stem
 
 
 def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> List[str]:
