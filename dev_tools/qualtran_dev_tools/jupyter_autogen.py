@@ -105,8 +105,51 @@ class NotebookSpec:
         return self._path_stem
 
 
+@frozen(kw_only=True)
+class Reference:
+    """A structured reference from the References section"""
+
+    url: str
+    title: str
+    extra: str
+
+    @property
+    def text(self):
+        return f'[{self.title}]({self.url}). {self.extra}'
+
+
+@frozen
+class UnparsedReference:
+    """Fallback for a reference that couldn't be parsed."""
+
+    text: str
+
+
+ReferenceT = Union[Reference, UnparsedReference]
+
+
+def parse_reference(ref_text: str) -> ReferenceT:
+    ref_text = re.sub(r'\n', ' ', ref_text)
+
+    # To match the title and accept as many printable ascii characters as possible
+    # besides square brackets, I have modified the range approach from
+    # https://stackoverflow.com/a/31740504.
+    link_match = re.match(r'^\[([ -Z^-~]+)]\((https?://[\w\d./?=#\-]+)\)\.?\s?(.*)$', ref_text)
+    if link_match:
+        title = link_match.group(1)
+        url = link_match.group(2)
+        rest_of_ref = link_match.group(3)
+        return Reference(title=title, url=url, extra=rest_of_ref)
+
+    return UnparsedReference(ref_text)
+
+
 class _GoogleDocstringToMarkdown(GoogleDocstring):
     """Subclass of sphinx's parser to emit Markdown from Google-style docstrings."""
+
+    def __init__(self, *args, **kwargs):
+        self.references: List[ReferenceT] = []
+        super().__init__(*args, **kwargs)
 
     def _load_custom_sections(self) -> None:
         super()._load_custom_sections()
@@ -128,7 +171,16 @@ class _GoogleDocstringToMarkdown(GoogleDocstring):
     def _parse_references_section(self, section: str) -> List[str]:
         """Sphinx method to emit a 'References' section."""
         lines = self._dedent(self._consume_to_next_section())
-        return ['#### References', '\n'.join(line for line in lines), '']
+
+        full_reference_text = '\n'.join(lines)
+        reference_texts = re.split(r'\n\n', full_reference_text)
+        my_refs = []
+        for ref_text in reference_texts:
+            ref = parse_reference(ref_text)
+            my_refs.append(ref)
+
+        self.references.extend(my_refs)
+        return ['#### References', '\n'.join(f' - {ref.text}' for ref in my_refs), '']
 
     def _parse_registers_section(self, section: str) -> List[str]:
         def _template(name, desc_lines):
@@ -157,6 +209,14 @@ def get_markdown_docstring_lines(cls: Type) -> List[str]:
     lines = [re.sub(r':py:func:`(\w+)`', r'`\1`', line) for line in lines]
 
     return lines
+
+
+def get_references(cls: Type) -> List[ReferenceT]:
+    """Get reference information for a class from the References section of its docstring."""
+    config = Config()
+    docstring = cls.__doc__ if cls.__doc__ else ""
+    gds = _GoogleDocstringToMarkdown(inspect.cleandoc(docstring), config=config, what='class')
+    return gds.references
 
 
 def _get_lines_for_constructing_an_object(func: Callable):

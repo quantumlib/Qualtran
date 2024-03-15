@@ -229,7 +229,7 @@ class SumOfSquares(Bloq):
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
-        Quantization](https://arxiv.org/abs/2105.12767) pg 80 give a Toffoli
+        Quantization](https://arxiv.org/abs/2105.12767) pg 80 gives a Toffoli
         complexity for squaring.
     """
 

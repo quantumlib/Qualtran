@@ -128,8 +128,8 @@ class SignedIntegerToTwosComplement(Bloq):
         y: output signed integer register in two's complement.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 24, 4th paragraph from the bottom.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        page 24, 4th paragraph from the bottom.
     """
 
     bitsize: int

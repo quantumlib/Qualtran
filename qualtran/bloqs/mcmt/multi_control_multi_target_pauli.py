@@ -47,7 +47,8 @@ class MultiTargetCNOT(GateWithRegisters):
     containing only CNOT gates.
 
     References:
-        Appendix B.1 of https://arxiv.org/abs/1812.00954.
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Appendix B.1.
     """
 
     bitsize: int
