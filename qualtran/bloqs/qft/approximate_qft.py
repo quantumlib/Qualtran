@@ -13,15 +13,19 @@
 #  limitations under the License.
 import math
 from functools import cached_property
+from typing import Set, Union
 
 import attrs
 import cirq
 import numpy as np
+import sympy
 from attr import field
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
+from qualtran.bloqs.basic_gates import Hadamard, TGate
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
 
 
 @attrs.frozen
@@ -60,16 +64,18 @@ class ApproximateQFT(GateWithRegisters):
         [Approximation Errors](https://arxiv.org/pdf/quant-ph/0008056.pdf)
     """
 
-    bitsize: int
-    phase_bitsize: int = field()
+    bitsize: Union[int, sympy.Expr]
+    phase_bitsize: Union[int, sympy.Expr] = field()
     with_reverse: bool = True
 
     @phase_bitsize.default
     def ceiling_of_log(self):
-        return math.ceil(math.log2(self.bitsize))
+        return ceil(log2(self.bitsize))
 
     @classmethod
-    def from_epsilon(cls, n: int, eps: float) -> 'ApproximateQFT':
+    def from_epsilon(
+        cls, n: Union[int, sympy.Expr], eps: Union[float, sympy.Expr]
+    ) -> 'ApproximateQFT':
         """
         From a given error threshold, epsilon, calculates what size the
         phase register should be and returns an ApproximateQFT instance.
@@ -81,18 +87,16 @@ class ApproximateQFT(GateWithRegisters):
         Returns:
             An ApproximateQFT instance.
         """
-        assert n > 30, "This approximation is only accurate for sufficiently large n"
 
         # solving for k in quant-ph/0008056 (12)
         # This equation is transcendental because it involves both
         # algebraic and exponential terms in k. Therefore, I upper-bounded
         # the error by replacing (n - k) with n.
-        phase_bitsize = math.ceil(-1 * np.log2(eps / (n * np.pi * 2**0.5)))
+        phase_bitsize = ceil(-1 * log2(eps / (n * np.pi * 2**0.5)))
         return cls(n, phase_bitsize)
 
     @cached_property
     def signature(self) -> 'Signature':
-        assert self.phase_bitsize > 0
         return Signature.build_from_dtypes(
             q=QUInt(self.bitsize), phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize)
         )
@@ -119,6 +123,13 @@ class ApproximateQFT(GateWithRegisters):
         if self.with_reverse:
             for i in range(self.bitsize // 2):
                 yield cirq.SWAP(q[i], q[-i - 1])
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        print()
+        return {
+            (Hadamard(), self.bitsize),
+            (PlusEqualProduct(self.phase_bitsize - 1, 1, self.phase_bitsize), self.bitsize),
+        }
 
 
 @bloq_example
