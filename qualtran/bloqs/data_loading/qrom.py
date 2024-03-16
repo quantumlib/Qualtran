@@ -15,7 +15,7 @@
 """Quantum read-only memory."""
 
 from functools import cached_property
-from typing import Callable, Dict, Sequence, Set, Tuple
+from typing import Callable, Dict, Sequence, Set, Tuple, Any
 
 import attrs
 import cirq
@@ -82,6 +82,7 @@ class QROM(UnaryIterationGate):
             num_controls=num_controls,
         )
 
+
     def __attrs_post_init__(self):
         shapes = [d.shape for d in self.data]
         assert all([isinstance(s, int) for s in self.selection_bitsizes])
@@ -96,22 +97,6 @@ class QROM(UnaryIterationGate):
         )
         assert isinstance(self.selection_bitsizes, tuple)
         assert isinstance(self.target_bitsizes, tuple)
-
-    def get_builder_args(self):
-        return {
-            "data": np.array(self.data),
-            "num_controls": self.num_controls,
-            "num_arrays": len(self.data),
-        }
-
-    @classmethod
-    def set_builder_with_kwargs(cls, kwargs):
-        if kwargs["num_arrays"] > 1:
-            data = [item for item in kwargs["data"]]
-            assert len(data) == kwargs["num_arrays"]
-        else:
-            data = kwargs["data"]
-        return cls.build(*data, num_controls=kwargs["num_controls"])
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:

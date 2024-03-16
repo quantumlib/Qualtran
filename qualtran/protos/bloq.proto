@@ -39,8 +39,18 @@ message BloqArg {
     bytes cirq_json_gzip = 8;
     // data type
     QDataType qdata_type = 9;
+    // list type
+    NDArray list_val = 10;
+    // tuple type
+    NDArray tuple_val = 11;
+    // A list of arrays
+    NDArray list_of_arrays_val = 12;
+
+
   }
 }
+
+
 
 
 // A library of Bloqs. BloqLibrary should be used to represent both primitive Bloqs and

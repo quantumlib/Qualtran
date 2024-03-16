@@ -379,7 +379,7 @@ def _extract_bloq_from_op(op: 'cirq.Operation') -> Bloq:
     true cirq gates with `CirqGateAsBloq`.
     """
     if op.gate is None:
-        raise DecomposeNotImplementedError(f"Only gate operations are supported, not {op}.")
+        raise ValueError(f"Only gate operations are supported, not {op}.")
     return _cirq_gate_to_bloq(op.gate)
 
 
@@ -452,12 +452,11 @@ def cirq_optree_to_cbloq(
 
     # 2. Add each operation to the composite Bloq.
     for op in circuit.all_operations():
-        # try:
-        #     bloq = _extract_bloq_from_op(op)
-        # except DecomposeNotImplementedError as e:
-        #     raise e
-        bloq = _extract_bloq_from_op(op)
 
+        try:
+            bloq = _extract_bloq_from_op(op)
+        except ValueError:
+            raise DecomposeNotImplementedError("Decomposition for classical gates is not supported. ")
         if bloq.signature == Signature([]):
             bb.add(bloq)
             continue

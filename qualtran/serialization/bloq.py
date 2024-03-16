@@ -112,6 +112,13 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
         return bloq_pb2.BloqArg(name=name, cirq_json_gzip=cirq.to_json_gzip(val))
     if isinstance(val, QDType):
         return bloq_pb2.BloqArg(name=name, qdata_type=data_types.data_type_to_proto(val))
+    if isinstance(val, tuple):
+        return bloq_pb2.BloqArg(name=name, tuple_val=args.list_or_tuple_to_proto(val))
+    if isinstance(val, list):
+        if isinstance(val[0], np.ndarray):
+            return bloq_pb2.BloqArg(name=name, list_of_arrays_val=args.list_or_tuple_to_proto(val))
+        else:
+            return bloq_pb2.BloqArg(name=name, list_val=args.list_or_tuple_to_proto(val))
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
@@ -130,6 +137,13 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
         return {arg.name: cirq.read_json_gzip(gzip_raw=arg.cirq_json_gzip)}
     if arg.HasField("qdata_type"):
         return {arg.name: data_types.data_type_from_proto(arg.qdata_type)}
+    if arg.HasField("tuple_val"):
+        return {arg.name: args.tuple_from_proto(arg.tuple_val)}
+    if arg.HasField("list_val"):
+        return {arg.name: args.list_from_proto(arg.list_val)}
+    if arg.HasField("list_of_arrays_val"):
+        array_list = [np.array(array) for array in args.list_from_proto(arg.list_of_arrays_val)]
+        return {arg.name: array_list}
     raise ValueError(f"Cannot deserialize {arg=}")
 
 
@@ -172,11 +186,7 @@ class _BloqLibDeserializer:
     def _construct_bloq(self, name: str, **kwargs):
         """Construct a Bloq using serialized name and BloqArgs. Initializes bloq with builder
         if 'set_builder_with_kwargs' is overriden. Otherwise, it will try to initialize the bloq directly with kwargs."""
-        bloq = RESOLVER_DICT[name]
-        try:
-            return bloq.set_builder_with_kwargs(kwargs)
-        except NotImplementedError:
-            return RESOLVER_DICT[name](**kwargs)
+        return RESOLVER_DICT[name](**kwargs)
 
     def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
         return Connection(
@@ -372,13 +382,9 @@ def _bloq_args_to_proto(
 ) -> Optional[List[bloq_pb2.BloqArg]]:
     if isinstance(bloq, CompositeBloq):
         return None
-    # Check if "get_builder_args" has been overriden.
+
     try:
-        builder_args = bloq.get_builder_args().items()
-        ret = [
-            _bloq_arg_to_proto(name=name, val=value, bloq_to_idx=bloq_to_idx)
-            for name, value in builder_args
-        ]
+        ret = [_bloq_to_proto(name=key, val=val) for key, val in bloq._kwargs_().items()]
     except NotImplementedError:
         ret = [
             _bloq_arg_to_proto(
