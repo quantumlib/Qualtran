@@ -27,6 +27,7 @@ from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.factoring.mod_exp import ModExp
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -236,3 +237,12 @@ def test_qrom():
     deserialized = bloq_serialization.bloqs_from_proto(proto_lib)
     assert isinstance(deserialized[0], QROM)
     assert deserialized[0].data[0].shape == np.array(array1).shape
+
+
+def test_qvr_zpow():
+    qvr_zpow = QvrZPow.from_bitsize(12)
+    proto_lib = bloq_serialization.bloqs_to_proto(qvr_zpow)
+    assert len(proto_lib.table) == 15
+    deserialized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert isinstance(deserialized[0], QvrZPow)
+    print("here")

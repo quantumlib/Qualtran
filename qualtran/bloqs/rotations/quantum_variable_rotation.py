@@ -132,6 +132,22 @@ class QvrZPow(QvrInterface):
         cost_reg = Register("x", QFxp(bitsize, bitsize, signed=False))
         return QvrZPow(cost_reg, gamma=gamma, eps=eps)
 
+    @classmethod
+    def build(
+        cls,
+        bitsize: int,
+        gamma: Union[float, sympy.Expr] = 1.0,
+        eps: Union[float, sympy.Expr] = 1e-9,
+    ) -> 'QvrZPow':
+        """
+        Wraps 'from_bitsize' so that it can override the parent class' 'build' method.
+        """
+
+        return cls.from_bitsize(bitsize, gamma, eps)
+
+    def get_kwargs(self):
+        return {"bitsize:": self.cost_reg.bitsize, "gamma": self.gamma, "eps": self.eps}
+
     @cached_property
     def cost_dtype(self) -> QFxp:
         dtype = self.cost_reg.dtype

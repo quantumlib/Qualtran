@@ -102,6 +102,32 @@ class Bloq(metaclass=abc.ABCMeta):
         about this bloq.
         """
 
+    def get_kwargs(self) -> Dict[str, Any]:
+        """
+        Override this to give args used to construct the Bloq as a dictionary.
+
+        Some bloqs are initialized using a builder method rather than straight from the class.
+        These bloqs usually have initialization args that are not serializable. Override this
+        method to return the args a dictionary of the arguments that are used by the Bloq's
+        constructor. Each item in this dictionary must be serializable.
+        """
+
+        raise NotImplementedError(
+            "Override this method to return the arguments used in the 'build' method as a dictionary"
+        )
+
+    @classmethod
+    def build(cls):
+        """
+        Override this method to use a factory to construct an instance of this class.
+
+        Some bloqs are initialized using a builder method rather than straight from the class.
+        Add the logic for the builder here. This method can take in any args and return an instance of this class.
+        """
+        raise NotImplementedError(
+            "Override this method to use a factory to construct the class instance."
+        )
+
     def pretty_name(self) -> str:
         return self.__class__.__name__
 
