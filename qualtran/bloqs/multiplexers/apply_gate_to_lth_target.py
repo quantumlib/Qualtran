@@ -22,7 +22,7 @@ import numpy as np
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
+from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 
 
 @attrs.frozen
@@ -125,6 +125,6 @@ def _apply_z_to_odd() -> ApplyGateToLthQubit:
 
 _APPLYLTH_DOC = BloqDocSpec(
     bloq_cls=ApplyGateToLthQubit,
-    import_line='from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit',
+    import_line='from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit',
     examples=(_apply_z_to_odd,),
 )

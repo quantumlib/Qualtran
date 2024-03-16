@@ -30,8 +30,8 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.select_and_prepare import SelectOracle
-from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.cirq_interop import CirqGateAsBloq
 
 if TYPE_CHECKING:

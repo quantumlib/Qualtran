@@ -39,10 +39,11 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
-from qualtran._infra.data_types import QAny, QBit
+from qualtran._infra.data_types import BoundedQUInt, QAny, QBit, QFxp, QUInt
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
+from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
 from qualtran.bloqs.util_bloqs import Join
 
@@ -492,6 +493,31 @@ def test_flatten():
 
     cbloq3 = cbloq.flatten(lambda binst: binst.bloq.supports_decompose_bloq())
     assert len(cbloq3.bloq_instances) == 5 * 2
+
+
+def test_type_error():
+    bb = BloqBuilder()
+    a = bb.add_register_from_dtype('i', BoundedQUInt(4, 3))
+    b = bb.add_register_from_dtype('j', QFxp(8, 6, True))
+    c = bb.add_register_from_dtype('k', QFxp(8, 8))
+    d = bb.add_register_from_dtype('l', QUInt(8))
+    a, b, c, d = bb.add(TestMultiTypedRegister(), a=a, b=b, c=c, d=d)
+    with pytest.raises(BloqError, match=r'.*register dtypes are not consistent.*'):
+        b, a = bb.add(TestQFxp(), xx=b, yy=a)
+    bb = BloqBuilder()
+    a = bb.add_register_from_dtype('i', BoundedQUInt(4, 3))
+    b = bb.add_register_from_dtype('j', QFxp(8, 6, True))
+    c = bb.add_register_from_dtype('k', QFxp(8, 8))
+    d = bb.add_register_from_dtype('l', QUInt(8))
+    e = bb.add_register_from_dtype('m', QFxp(8, 7, True))
+    a, b, c, d = bb.add(TestMultiTypedRegister(), a=a, b=b, c=c, d=d)
+    # Correct: literal type comparison
+    b, c = bb.add(TestQFxp(), xx=b, yy=c)
+    # Correct: uints
+    b, d = bb.add(TestQFxp(), xx=b, yy=d)
+    # incorrect: sign
+    with pytest.raises(BloqError, match=r'.*register dtypes are not consistent.*'):
+        b, e = bb.add(TestQFxp(), xx=b, yy=e)
 
 
 def test_t_complexity():
