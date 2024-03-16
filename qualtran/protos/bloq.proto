@@ -45,8 +45,6 @@ message BloqArg {
     NDArray tuple_val = 11;
     // A list of arrays
     NDArray list_of_arrays_val = 12;
-
-
   }
 }
 
