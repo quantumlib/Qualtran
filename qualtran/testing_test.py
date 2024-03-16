@@ -28,11 +28,16 @@ from qualtran import (
     Connection,
     LeftDangle,
     QBit,
+    QDType,
+    QFxp,
+    QInt,
+    QUInt,
     Register,
     RightDangle,
     Signature,
     Soquet,
 )
+from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestTwoBitOp
 from qualtran.testing import (
@@ -68,6 +73,24 @@ def _manually_make_test_cbloq_cxns():
     ], signature
 
 
+def _manually_make_test_cbloq_typed_cxns(dtype_a: QDType, dtype_b: QDType):
+    signature = Signature.build_from_dtypes(q1=dtype_a, q2=dtype_b)
+    q1, q2 = signature
+    add = Add(dtype=QInt(4))
+    a, b = add.signature
+    binst1 = BloqInstance(add, 1)
+    binst2 = BloqInstance(add, 2)
+    assert binst1 != binst2
+    return [
+        Connection(Soquet(LeftDangle, q1), Soquet(binst1, a)),
+        Connection(Soquet(LeftDangle, q2), Soquet(binst1, b)),
+        Connection(Soquet(binst1, a), Soquet(binst2, b)),
+        Connection(Soquet(binst1, b), Soquet(binst2, a)),
+        Connection(Soquet(binst2, a), Soquet(RightDangle, q1)),
+        Connection(Soquet(binst2, b), Soquet(RightDangle, q2)),
+    ], signature
+
+
 def test_assert_registers_match_parent():
     @frozen
     class BadRegBloq(Bloq):
@@ -90,21 +113,6 @@ def test_assert_registers_match_dangling():
     cbloq = CompositeBloq(cxns, signature=Signature.build(ctrl=1, target=1))
     with pytest.raises(BloqError, match=r'.*.*does not match the registers of the bloq.*'):
         assert_registers_match_dangling(cbloq)
-
-
-def test_assert_connections_compatible():
-    from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
-
-    bb = BloqBuilder()
-    ctrl = bb.add_register('c', 1)
-    x = bb.add_register('x', 10)
-    y = bb.add_register('y', 10)
-    ctrl, x, y = bb.add(CSwap(10), ctrl=ctrl, x=x, y=y)
-    ctrl, x, y = bb.add(TwoBitCSwap(), ctrl=ctrl, x=x, y=y)
-    cbloq = bb.finalize(c=ctrl, x=x, y=y)
-    assert_registers_match_dangling(cbloq)
-    with pytest.raises(BloqError, match=r'.*bitsizes are incompatible.*'):
-        assert_connections_compatible(cbloq)
 
 
 def test_assert_soquets_belong_to_registers():
@@ -201,3 +209,20 @@ def test_check_bloq_decompose_missing():
     with pytest.raises(BloqCheckException) as raises_ctx:
         assert_bloq_example_decompose(_my_bloq)
         assert raises_ctx.value.check_result is BloqCheckResult.MISSING
+
+
+@pytest.mark.parametrize(
+    'dtype_a, dtype_b, expect_raise',
+    (
+        (QInt(4), QUInt(4), False),
+        (QInt(4), QInt(5), True),
+        (QUInt(4), QFxp(4, 4), False),
+        (QUInt(4), QFxp(4, 2), True),
+    ),
+)
+def test_assert_connections_compatible(dtype_a, dtype_b, expect_raise):
+    cxns, signature = _manually_make_test_cbloq_typed_cxns(dtype_a, dtype_b)
+    cbloq = CompositeBloq(cxns, signature=signature)
+    if expect_raise:
+        with pytest.raises(BloqError, match=r'.*QDTypes are incompatible.*'):
+            assert_connections_compatible(cbloq)

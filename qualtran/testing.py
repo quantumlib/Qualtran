@@ -32,6 +32,7 @@ from qualtran import (
     Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
+from qualtran._infra.data_types import check_dtypes_consistent
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -109,8 +110,8 @@ def assert_connections_compatible(cbloq: CompositeBloq):
         lr = cxn.left.reg
         rr = cxn.right.reg
 
-        if lr.bitsize != rr.bitsize:
-            raise BloqError(f"{cxn}'s bitsizes are incompatible: {lr} -> {rr}")
+        if not check_dtypes_consistent(lr.dtype, rr.dtype):
+            raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
 
         # Check the left side of the connection relative to the `Register.side`.
         if cxn.left.binst is LeftDangle:

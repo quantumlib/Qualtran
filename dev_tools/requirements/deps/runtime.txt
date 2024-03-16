@@ -24,6 +24,10 @@ dash
 # quimb simulation
 quimb
 
+#qsharp resource estimator interop
+qsharp
+qsharp-widgets
+
 # serialization
 protobuf
 
