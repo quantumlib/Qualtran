@@ -19,7 +19,7 @@ import numpy as np
 import quimb.tensor as qtn
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, DanglingT, Signature, Soquet, SoquetT
+from qualtran import Bloq, BloqBuilder, DanglingT, QAny, Signature, Soquet, SoquetT
 from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.simulation.tensor import cbloq_to_quimb
 
@@ -64,8 +64,8 @@ def test_cbloq_to_quimb_with_no_ops_on_register():
     signature = Signature.build(selection=2, target=1)
     bb, soqs = BloqBuilder().from_signature(signature=signature)
     selection, target = soqs['selection'], soqs['target']
-    selection = bb.add(Split(2), reg=selection)
-    selection = bb.add(Join(2), reg=selection)
+    selection = bb.add(Split(QAny(2)), reg=selection)
+    selection = bb.add(Join(QAny(2)), reg=selection)
     cbloq = bb.finalize(selection=selection, target=soqs['target'])
     np.testing.assert_allclose(cbloq.tensor_contract(), np.eye(2**3))
 

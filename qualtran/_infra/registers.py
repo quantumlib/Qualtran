@@ -16,13 +16,13 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple, Union
+from typing import Dict, Iterable, Iterator, List, overload, Tuple
 
 import attrs
 import numpy as np
 from attrs import field, frozen
 
-from .data_types import BoundedQUInt, QAny, QBit, QDType
+from .data_types import QAny, QBit, QDType
 
 
 class Side(enum.Flag):
@@ -61,24 +61,15 @@ class Register:
     """
 
     name: str
-    _bitsize: Union[int, QDType] = field(
-        converter=lambda v: v if isinstance(v, QDType) else QBit() if v == 1 else QAny(v)
-    )
+    dtype: QDType
     shape: Tuple[int, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
 
     def __attrs_post_init__(self):
-        if isinstance(self._bitsize, BoundedQUInt):
-            if len(self.shape) != 0:
-                raise ValueError(
-                    f'{self.name} with BoundedQUInt dtype should be flat. Found {self.shape=}'
-                )
-
-    @property
-    def dtype(self) -> QDType:
-        return self._bitsize
+        if not isinstance(self.dtype, QDType):
+            raise ValueError(f'dtype must be a QDType: found {type(self.dtype)}')
 
     @property
     def bitsize(self) -> int:
@@ -144,7 +135,9 @@ class Signature:
             registers: keyword arguments mapping register name to bitsize. All registers
                 will be 0-dimensional and THRU.
         """
-        return cls(Register(name=k, bitsize=v) for k, v in registers.items() if v)
+        return cls(
+            Register(name=k, dtype=QBit() if v == 1 else QAny(v)) for k, v in registers.items() if v
+        )
 
     @classmethod
     def build_from_dtypes(cls, **registers: QDType) -> 'Signature':
@@ -154,7 +147,7 @@ class Signature:
             registers: keyword arguments mapping register name to QDType. All registers
                 will be 0-dimensional and THRU.
         """
-        return cls(Register(name=k, bitsize=v) for k, v in registers.items() if v.num_qubits)
+        return cls(Register(name=k, dtype=v) for k, v in registers.items() if v.num_qubits)
 
     def lefts(self) -> Iterable[Register]:
         """Iterable over all registers that appear on the LEFT as input."""
@@ -186,6 +179,17 @@ class Signature:
     def adjoint(self) -> 'Signature':
         """Swap all RIGHT and LEFT registers in this collection."""
         return Signature(reg.adjoint() for reg in self._registers)
+
+    def n_qubits(self) -> int:
+        """The number of qubits in the signature.
+
+        If the signature has LEFT and RIGHT registers, the number of qubits in the signature
+        is taken to be the greater of the number of left or right qubits. A bloq with this
+        signature uses at least this many qubits.
+        """
+        left_size = sum(reg.total_bits() for reg in self.lefts())
+        right_size = sum(reg.total_bits() for reg in self.rights())
+        return max(left_size, right_size)
 
     def __repr__(self):
         return f'Signature({repr(self._registers)})'

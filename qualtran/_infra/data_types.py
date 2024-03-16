@@ -368,3 +368,101 @@ class QFxp(QDType):
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         pass  # TODO: implement
+
+
+@attrs.frozen
+class QMontgomeryUInt(QDType):
+    """Montgomery form of an unsigned integer of a given width bitsize which wraps around upon
+        overflow.
+
+    Similar to unsigned integer types in C. Any intended wrap around effect is
+    expected to be handled by the developer. Any QMontgomeryUInt can be treated as a QUInt, but not
+    every QUInt can be treated as a QMontgomeryUInt. Montgomery form is used in order to compute
+    fast modular multiplication.
+
+    In order to convert an unsigned integer from a finite field x % p into Montgomery form you
+    first must choose a value r > p where gcd(r, p) = 1. Typically this value is a power of 2.
+
+    Conversion to Montgomery form:
+        [x] = (x * r) % p
+
+    Conversion from Montgomery form to normal form:
+        x = REDC([x])
+
+    Pseudocode for REDC(u) can be found in the resource below.
+
+    Attributes:
+        bitsize: The number of qubits used to represent the integer.
+
+    References:
+        [Montgomery modular multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication)
+    """
+
+    bitsize: Union[int, sympy.Expr]
+
+    @property
+    def num_qubits(self):
+        return self.bitsize
+
+    def get_classical_domain(self) -> Iterable[Any]:
+        return range(2 ** (self.bitsize))
+
+    def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        if val < 0:
+            raise ValueError(f"Negative classical value encountered in {debug_str}")
+        if val >= 2**self.bitsize:
+            raise ValueError(f"Too-large classical value encountered in {debug_str}")
+
+    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+        if np.any(val_array < 0):
+            raise ValueError(f"Negative classical values encountered in {debug_str}")
+        if np.any(val_array >= 2**self.bitsize):
+            raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+
+QAnyInt = (QInt, QUInt, BoundedQUInt, QMontgomeryUInt)
+QAnyUInt = (QUInt, BoundedQUInt, QMontgomeryUInt)
+
+
+def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
+    """A uint is consistent with a whole or totally fractional unsigned QFxp."""
+    if b.signed:
+        return False
+    return a.num_qubits == b.num_qubits and (b.num_frac == 0 or b.num_int == 0)
+
+
+def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType, strict: bool = False) -> bool:
+    """Check if two types are consistent given our current definition on consistent types.
+
+    Args:
+        dtype_a: The dtype to check against the reference.
+        dtype_b: The reference dtype.
+        strict: Whether to compare types literally
+
+    Returns:
+        True if the types are consistent.
+    """
+    if dtype_a == dtype_b:
+        return True
+    if strict:
+        return False
+    same_n_qubits = dtype_a.num_qubits == dtype_b.num_qubits
+    if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
+        # QAny -> any dtype and any dtype -> QAny
+        return same_n_qubits
+    elif dtype_a.num_qubits == 1 and same_n_qubits:
+        # Single qubit types are ok.
+        return True
+    elif isinstance(dtype_a, QAnyInt) and isinstance(dtype_b, QAnyInt):
+        # A subset of the integers should be freely interchangeable.
+        return same_n_qubits
+    elif isinstance(dtype_a, QAnyUInt) and isinstance(dtype_b, QFxp):
+        # unsigned Fxp which is wholy an integer or < 1 part is a uint.
+        return _check_uint_fxp_consistent(dtype_a, dtype_b)
+    elif isinstance(dtype_b, QAnyUInt) and isinstance(dtype_a, QFxp):
+        # unsigned Fxp which is wholy an integer or < 1 part is a uint.
+        return _check_uint_fxp_consistent(dtype_b, dtype_a)
+    else:
+        return False

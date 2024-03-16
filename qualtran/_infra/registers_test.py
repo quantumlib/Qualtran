@@ -55,8 +55,6 @@ def test_selection_registers_indexing(n, N, m, M):
 
 
 def test_selection_registers_consistent():
-    with pytest.raises(ValueError, match="should be flat"):
-        _ = Register('a', BoundedQUInt(3, 5), shape=(3, 5))
     with pytest.raises(ValueError, match=".*iteration length is too large "):
         _ = Register('a', BoundedQUInt(3, 10))
 
@@ -87,6 +85,7 @@ def test_signature():
     r3 = Register("r3", QBit())
     signature = Signature([r1, r2, r3])
     assert len(signature) == 3
+    assert signature.n_qubits() == 8
 
     assert signature[0] == r1
     assert signature[1] == r2
@@ -124,6 +123,7 @@ def test_signature_build():
     sig1 = Signature([Register("r1", QAny(5)), Register("r2", QAny(2))])
     sig2 = Signature.build(r1=5, r2=2)
     assert sig1 == sig2
+    assert sig1.n_qubits() == 7
     sig1 = Signature([Register("r1", QInt(7)), Register("r2", QBit())])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QBit())
     assert sig1 == sig2
@@ -141,6 +141,7 @@ def test_and_regs():
         Register('control', QAny(2)),
         Register('target', QBit(), side=Side.RIGHT),
     ]
+    assert signature.n_qubits() == 3
 
     adj = signature.adjoint()
     assert list(adj.rights()) == [Register('control', QAny(2))]
@@ -148,6 +149,7 @@ def test_and_regs():
         Register('control', QAny(2)),
         Register('target', QBit(), side=Side.LEFT),
     ]
+    assert adj.n_qubits() == 3
 
 
 def test_agg_split():
@@ -163,10 +165,11 @@ def test_agg_split():
     assert sorted([k for k, v in sig.groups()]) == ['control', 'target']
     assert len(list(sig.lefts())) == 2
     assert len(list(sig.rights())) == 2
+    assert sig.n_qubits() == n_targets + 1
 
 
 def test_get_named_qubits_multidim():
-    regs = Signature([Register('q', shape=(2, 3), bitsize=4)])
+    regs = Signature([Register('q', shape=(2, 3), dtype=QAny(4))])
     quregs = get_named_qubits(regs.lefts())
     assert quregs['q'].shape == (2, 3, 4)
     assert quregs['q'][1, 2, 3] == cirq.NamedQubit('q[1, 2][3]')

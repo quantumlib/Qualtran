@@ -13,8 +13,9 @@
 #  limitations under the License.
 import cirq
 
-from qualtran.bloqs.and_bloq import And, MultiAnd
+from qualtran import QAny
 from qualtran.bloqs.basic_gates import CNOT, Rx, TwoBitSwap
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.resource_counting.bloq_counts import _make_composite_generalizer
@@ -32,14 +33,14 @@ from qualtran.resource_counting.generalizers import (
 _BLOQS_TO_FILTER = [
     CNOT(),
     CirqGateAsBloq(cirq.CNOT),
-    Split(n=5),
-    Join(n=5),
+    Split(QAny(bitsize=5)),
+    Join(QAny(bitsize=5)),
     TwoBitSwap(),
     And(0, 0),
     MultiAnd((1, 0, 1, 0)),
     Rx(0.123),
-    Allocate(n=5),
-    Free(n=5),
+    Allocate(QAny(bitsize=5)),
+    Free(QAny(bitsize=5)),
 ]
 
 
@@ -48,14 +49,14 @@ def test_ignore_split_join():
     assert bloqs == [
         CNOT(),
         CirqGateAsBloq(cirq.CNOT),
-        None,  # Split(n=5)
-        None,  # Join(n=5)
+        None,  # Split(QAny(bitsize=5))
+        None,  # Join(QAny(bitsize=5))
         TwoBitSwap(),
         And(0, 0),
         MultiAnd((1, 0, 1, 0)),
         Rx(0.123),
-        Allocate(n=5),
-        Free(n=5),
+        Allocate(QAny(bitsize=5)),
+        Free(QAny(bitsize=5)),
     ]
 
 
@@ -64,14 +65,14 @@ def test_ignore_alloc_free():
     assert bloqs == [
         CNOT(),
         CirqGateAsBloq(cirq.CNOT),
-        Split(n=5),
-        Join(n=5),
+        Split(QAny(bitsize=5)),
+        Join(QAny(bitsize=5)),
         TwoBitSwap(),
         And(0, 0),
         MultiAnd((1, 0, 1, 0)),
         Rx(0.123),
-        None,  # Allocate(n=5)
-        None,  # Free(n=5)
+        None,  # Allocate(QAny(bitsize=5))
+        None,  # Free(QAny(bitsize=5))
     ]
 
 
@@ -80,14 +81,14 @@ def test_generalize_rotation_angle():
     assert bloqs == [
         CNOT(),
         CirqGateAsBloq(cirq.CNOT),
-        Split(n=5),
-        Join(n=5),
+        Split(QAny(bitsize=5)),
+        Join(QAny(bitsize=5)),
         TwoBitSwap(),
         And(0, 0),
         MultiAnd((1, 0, 1, 0)),
         Rx(PHI),  # this one is generalized
-        Allocate(n=5),
-        Free(n=5),
+        Allocate(QAny(bitsize=5)),
+        Free(QAny(bitsize=5)),
     ]
 
 
@@ -96,14 +97,14 @@ def test_generalize_cvs():
     assert bloqs == [
         CNOT(),
         CirqGateAsBloq(cirq.CNOT),
-        Split(n=5),
-        Join(n=5),
+        Split(QAny(bitsize=5)),
+        Join(QAny(bitsize=5)),
         TwoBitSwap(),
         And(CV, CV),  # changed
         MultiAnd((CV,) * 4),  # changed
         Rx(0.123),
-        Allocate(n=5),
-        Free(n=5),
+        Allocate(QAny(bitsize=5)),
+        Free(QAny(bitsize=5)),
     ]
 
 
@@ -112,14 +113,14 @@ def test_ignore_cliffords():
     assert bloqs == [
         None,  # CNOT(),
         CirqGateAsBloq(cirq.CNOT),
-        Split(n=5),
-        Join(n=5),
+        Split(QAny(bitsize=5)),
+        Join(QAny(bitsize=5)),
         None,  # TwoBitSwap(),
         And(0, 0),
         MultiAnd((1, 0, 1, 0)),
         Rx(0.123),
-        Allocate(n=5),
-        Free(n=5),
+        Allocate(QAny(bitsize=5)),
+        Free(QAny(bitsize=5)),
     ]
 
 
@@ -129,14 +130,14 @@ def test_ignore_cliffords_with_cirq():
     assert bloqs == [
         None,  # CNOT(),
         None,  # CirqGateAsBloq(cirq.CNOT),
-        Split(n=5),
-        Join(n=5),
+        Split(QAny(bitsize=5)),
+        Join(QAny(bitsize=5)),
         None,  # TwoBitSwap(),
         And(0, 0),
         MultiAnd((1, 0, 1, 0)),
         Rx(0.123),
-        Allocate(n=5),
-        Free(n=5),
+        Allocate(QAny(bitsize=5)),
+        Free(QAny(bitsize=5)),
     ]
 
 
@@ -154,12 +155,12 @@ def test_many_generalizers():
     assert bloqs == [
         # CNOT(),
         # CirqGateAsBloq(cirq.CNOT),
-        # Split(n=5),
-        # Join(n=5),
+        # Split(QAny(n=5)),
+        # Join(QAny(n=5)),
         # TwoBitSwap(),
         And(CV, CV),
         MultiAnd((CV,) * 4),
         Rx(PHI),
-        # Allocate(n=5),
-        # Free(n=5),
+        # Allocate(QAny(n=5)),
+        # Free(QAny(n=5)),
     ]

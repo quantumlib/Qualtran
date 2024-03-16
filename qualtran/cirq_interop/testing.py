@@ -138,3 +138,12 @@ def assert_decompose_is_consistent_with_t_complexity(val: Any):
         raise AssertionError("No consistent t_complexity: no decomposition.")
     from_decomposition = t_complexity(decomposition, fail_quietly=False)
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'
+
+    from qualtran import Bloq
+    from qualtran.bloqs.basic_gates import TGate
+
+    if not isinstance(val, Bloq):
+        return
+    _, sigma = val.call_graph()
+    actual = sigma.get(TGate(), 0) + sigma.get(TGate(is_adjoint=True), 0)
+    assert expected.t == actual, f'{expected.t} != {actual}'

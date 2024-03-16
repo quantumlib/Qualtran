@@ -20,6 +20,7 @@ import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import Bloq, Signature, SoquetT
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
@@ -61,3 +62,6 @@ class YGate(Bloq):
 
         (q,) = q
         return cirq.Y(q), {'q': [q]}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(clifford=1)

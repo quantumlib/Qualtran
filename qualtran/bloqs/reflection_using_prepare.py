@@ -17,11 +17,12 @@ from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
+import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
@@ -87,10 +88,12 @@ class ReflectionUsingPrepare(GateWithRegisters):
         # 1. PREPARE†
         yield cirq.inverse(prepare_op)
         # 2. MultiControlled Z, controlled on |000..00> state.
-        phase_control = merge_qubits(self.selection_registers, **state_prep_selection_regs)
+        phase_control = np.array(
+            merge_qubits(self.selection_registers, **state_prep_selection_regs)
+        )
         yield cirq.X(phase_target) if not self.control_val else []
         yield MultiControlPauli([0] * len(phase_control), target_gate=cirq.Z).on_registers(
-            controls=phase_control, target=phase_target
+            controls=phase_control.reshape(phase_control.shape + (1,)), target=phase_target
         )
         yield cirq.X(phase_target) if not self.control_val else []
         # 3. PREPARE

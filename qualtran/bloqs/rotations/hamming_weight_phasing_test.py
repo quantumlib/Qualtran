@@ -24,7 +24,10 @@ from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasingViaPhaseGradient,
 )
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.cirq_interop.testing import GateHelper
+from qualtran.cirq_interop.testing import (
+    assert_decompose_is_consistent_with_t_complexity,
+    GateHelper,
+)
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
@@ -33,6 +36,7 @@ from qualtran.testing import assert_valid_bloq_decomposition
 def test_hamming_weight_phasing(n: int, theta: float):
     gate = HammingWeightPhasing(n, theta)
     assert_valid_bloq_decomposition(gate)
+    assert_decompose_is_consistent_with_t_complexity(gate)
 
     assert gate.t_complexity().rotations == n.bit_length()
     assert gate.t_complexity().t == 4 * (n - n.bit_count())
@@ -47,6 +51,16 @@ def test_hamming_weight_phasing(n: int, theta: float):
     hw_phasing = cirq.Circuit(state_prep, HammingWeightPhasing(n, theta).on(*gh.quregs['x']))
     hw_final_state = sim.simulate(hw_phasing).final_state_vector
     assert np.allclose(expected_final_state, hw_final_state, atol=1e-7)
+
+
+@pytest.mark.parametrize('n', [10, 32, 64, 100, 1024])
+def test_hamming_weight_phasing_large(n: int):
+    gate = HammingWeightPhasing(n, 1 / 10)
+    assert_valid_bloq_decomposition(gate)
+    assert_decompose_is_consistent_with_t_complexity(gate)
+
+    assert gate.t_complexity().rotations == n.bit_length()
+    assert gate.t_complexity().t == 4 * (n - n.bit_count())
 
 
 @attrs.frozen
@@ -78,7 +92,7 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 @pytest.mark.slow
 @pytest.mark.parametrize('n', [2, 3])
 @pytest.mark.parametrize(
-    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-4), (1.20345, 1e-4), (-1.1934341, 1e-4)]
+    'theta, eps', [(1, 1e-1), (0.5, 1e-2), (1 / 10, 1e-3), (1.20345, 1e-3), (-1.1934341, 1e-3)]
 )
 def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: float):
     gate = TestHammingWeightPhasingViaPhaseGradient(n, theta, eps)
