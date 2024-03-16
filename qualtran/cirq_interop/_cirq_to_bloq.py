@@ -455,8 +455,10 @@ def cirq_optree_to_cbloq(
 
         try:
             bloq = _extract_bloq_from_op(op)
-        except ValueError:
-            raise DecomposeNotImplementedError("Decomposition for classical gates is not supported.")
+        except ValueError as exc:
+            raise DecomposeNotImplementedError(
+                "Decomposition for classical gates is not supported."
+            ) from exc
         if bloq.signature == Signature([]):
             bb.add(bloq)
             continue

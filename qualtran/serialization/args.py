@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from io import BytesIO
-from typing import Union, List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 import sympy
@@ -43,11 +43,14 @@ def ndarray_from_proto(arr: args_pb2.NDArray) -> np.ndarray:
     arr_bytes = BytesIO(arr.ndarray)
     return np.load(arr_bytes, allow_pickle=False)
 
+
 def list_or_tuple_to_proto(arr: list) -> args_pb2.NDArray:
     return ndarray_to_proto(np.array(arr))
 
+
 def list_from_proto(arr: args_pb2.NDArray) -> List[Union[int, float, str]]:
     return ndarray_from_proto(arr).tolist()
+
 
 def tuple_from_proto(arr: args_pb2.NDArray) -> Tuple[Union[int, float, str]]:
     return tuple(ndarray_from_proto(arr).tolist())

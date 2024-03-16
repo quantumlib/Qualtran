@@ -383,9 +383,7 @@ def _bloq_args_to_proto(
         return None
 
     ret = [
-        _bloq_arg_to_proto(
-            name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx
-        )
+        _bloq_arg_to_proto(name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx)
         for field in _iter_fields(bloq)
     ]
     return ret if ret else None
