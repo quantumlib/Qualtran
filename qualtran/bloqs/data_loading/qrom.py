@@ -15,7 +15,7 @@
 """Quantum read-only memory."""
 
 from functools import cached_property
-from typing import Callable, Dict, Sequence, Set, Tuple, Any
+from typing import Callable, Dict, Sequence, Set, Tuple
 
 import attrs
 import cirq
@@ -81,7 +81,6 @@ class QROM(UnaryIterationGate):
             target_bitsizes=target_bitsizes,
             num_controls=num_controls,
         )
-
 
     def __attrs_post_init__(self):
         shapes = [d.shape for d in self.data]

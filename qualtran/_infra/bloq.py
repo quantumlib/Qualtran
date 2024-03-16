@@ -515,17 +515,3 @@ class Bloq(metaclass=abc.ABCMeta):
         from qualtran.drawing import directional_text_box
 
         return directional_text_box(text=soq.pretty(), side=soq.reg.side)
-
-    def _kwargs_(self) -> Dict[str, Any]:
-        """
-        Override this to give args used to construct the Bloq as a dictionary.
-
-        Some bloqs are initialized using a builder method rather than straight from the class.
-        These bloqs usually have initialization args that are not serializable. Override this
-        method to return the args a dictionary of the arguments that are used by the Bloq's
-        constructor. Each item in this dictionary must be serializable.
-        """
-
-        raise NotImplementedError(
-            "Override this method to return the arguments used in the 'build' method as a dictionary"
-        )

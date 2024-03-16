@@ -184,8 +184,7 @@ class _BloqLibDeserializer:
         return self.idx_to_bloq[bloq_id]
 
     def _construct_bloq(self, name: str, **kwargs):
-        """Construct a Bloq using serialized name and BloqArgs. Initializes bloq with builder
-        if 'set_builder_with_kwargs' is overriden. Otherwise, it will try to initialize the bloq directly with kwargs."""
+        """Construct a Bloq using serialized name and BloqArgs."""
         return RESOLVER_DICT[name](**kwargs)
 
     def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
@@ -383,15 +382,12 @@ def _bloq_args_to_proto(
     if isinstance(bloq, CompositeBloq):
         return None
 
-    try:
-        ret = [_bloq_to_proto(name=key, val=val) for key, val in bloq._kwargs_().items()]
-    except NotImplementedError:
-        ret = [
-            _bloq_arg_to_proto(
-                name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx
-            )
-            for field in _iter_fields(bloq)
-        ]
+    ret = [
+        _bloq_arg_to_proto(
+            name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx
+        )
+        for field in _iter_fields(bloq)
+    ]
     return ret if ret else None
 
 
