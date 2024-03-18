@@ -67,6 +67,8 @@ import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.phase_estimation.lp_resource_state
+import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -93,6 +95,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Toffoli',
         module=qualtran.bloqs.basic_gates.toffoli,
         bloq_specs=[qualtran.bloqs.basic_gates.toffoli._TOFFOLI_DOC],
+    ),
+    NotebookSpecV2(
+        title='Hadamard',
+        module=qualtran.bloqs.basic_gates.hadamard,
+        bloq_specs=[qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC],
     ),
     NotebookSpecV2(
         title='Swap Network',
@@ -122,13 +129,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.state_preparation.prepare_uniform_superposition._PREP_UNIFORM_DOC
         ],
-        directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
         title='Apply to Lth Target',
         module=qualtran.bloqs.multiplexers.apply_gate_to_lth_target,
         bloq_specs=[qualtran.bloqs.multiplexers.apply_gate_to_lth_target._APPLYLTH_DOC],
-        directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
         title='QROM',
@@ -198,7 +203,8 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/',
+        path_stem=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/trotter',
     ),
     NotebookSpecV2(
         title='Tensor Hypercontraction',
@@ -217,7 +223,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.mcmt.and_bloq._AND_DOC,
             qualtran.bloqs.mcmt.and_bloq._MULTI_AND_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/',
     ),
     NotebookSpecV2(
         title='Block Encoding',
@@ -241,7 +246,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._C_MULTI_NOT_DOC,
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/',
+        directory=f'{SOURCE_DIR}/bloqs/mcmt/',
     ),
     # --------------------------------------------------------------------------
     # -----   Arithmetic   -----------------------------------------------------
@@ -324,6 +329,22 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Two Bit FFFT Gate',
         module=qualtran.bloqs.qft.two_bit_ffft,
         bloq_specs=[qualtran.bloqs.qft.two_bit_ffft._TWO_BIT_FFFT_DOC],
+    ),
+    NotebookSpecV2(
+        title='Approximate QFT',
+        module=qualtran.bloqs.qft.approximate_qft,
+        bloq_specs=[qualtran.bloqs.qft.approximate_qft._CC_AQFT_DOC],
+    ),
+    # --------------------------------------------------------------------------
+    # -----   Phase Estimation          -----------------------------------------------------
+    # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Optimal resource states for Phase Estimation by A. Luis and J. Peřina',
+        module=qualtran.bloqs.phase_estimation.lp_resource_state,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.lp_resource_state._CC_LPRS_INTERIM_PREP_DOC,
+            qualtran.bloqs.phase_estimation.lp_resource_state._CC_LP_RESOURCE_STATE_DOC,
+        ],
     ),
 ]
 

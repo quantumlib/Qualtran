@@ -186,8 +186,8 @@ def _t_complexity_for_gate_or_op(
 ) -> Optional[TComplexity]:
     strategies = [
         _has_t_complexity,
-        _is_clifford_or_t,
         _from_bloq_build_call_graph,
+        _is_clifford_or_t,
         _from_cirq_decomposition,
     ]
     return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
