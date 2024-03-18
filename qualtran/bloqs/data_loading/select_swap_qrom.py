@@ -83,9 +83,8 @@ class SelectSwapQROM(GateWithRegisters):
     For more details, see the reference below:
 
     References:
-        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
-        (https://arxiv.org/abs/1812.00954).
-            Low, Kliuchnikov, Schaeffer. 2018.
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low, Kliuchnikov, Schaeffer. 2018.
     """
 
     def __init__(
