@@ -35,10 +35,10 @@ def int_or_sympy_from_proto(val: args_pb2.IntOrSympy) -> Union[int, sympy.Expr]:
 
 def ndarray_to_proto(arr: np.ndarray) -> args_pb2.NDArray:
     arr_bytes = BytesIO()
-    np.save(arr_bytes, arr, allow_pickle=False)
+    np.save(arr_bytes, arr, allow_pickle=True)
     return args_pb2.NDArray(ndarray=arr_bytes.getvalue())
 
 
 def ndarray_from_proto(arr: args_pb2.NDArray) -> np.ndarray:
     arr_bytes = BytesIO(arr.ndarray)
-    return np.load(arr_bytes, allow_pickle=False)
+    return np.load(arr_bytes, allow_pickle=True)

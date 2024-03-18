@@ -488,3 +488,50 @@ def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqChec
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''
+
+
+def assert_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+
+    bloq = bloq_ex.make()
+
+    try:
+        bloq_lib = bloqs_to_proto(bloq)
+    except Exception as e:
+        raise BloqCheckException.fail('Serialization Failed:\n' + str(e)) from e
+    try:
+        bloq_roundtrip = bloqs_from_proto(bloq_lib)[0]
+    except Exception as e:
+        raise BloqCheckException.fail('DeSerialization Failed:\n' + str(e)) from e
+
+    try:
+        assert bloq == bloq_roundtrip
+    except AssertionError as e:
+        raise BloqCheckException.fail(
+            f'Roundtrip equality failed.\n{bloq=}\n{bloq_roundtrip=}\n{bloq == bloq_roundtrip}'
+        )
+
+
+def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample has consistent bloq counts.
+
+    Bloq counts can be annotated directly via the `Bloq.build_call_graph` override.
+    They can be inferred from a bloq's decomposition. This function checks that both
+    data sources are present and that they produce the same values.
+
+    If both sources are present, and they disagree, that results in a `FAIL`. If only one source
+    is present, an `UNVERIFIED` result is returned. If neither are present, a `MISSING` result
+    is returned.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        assert_bloq_example_serialize(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''

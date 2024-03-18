@@ -20,3 +20,8 @@ Unary iteration can be used to implement unitaries of the form
      U = \sum_{l=0}^{2^n-1} U_{l}|l\rangle \langle l|
  $$
 """
+
+from .apply_gate_to_lth_target import ApplyGateToLthQubit
+from .select_pauli_lcu import SelectPauliLCU
+from .selected_majorana_fermion import SelectedMajoranaFermion
+from .unary_iteration_bloq import unary_iteration, UnaryIterationGate

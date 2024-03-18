@@ -12,13 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
-    PrepareUniformSuperposition,
-)
-from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
-    StatePreparationAliasSampling,
-)
-from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
-    PRGAViaPhaseGradient,
-    StatePreparationViaRotations,
-)
+from qualtran import CtrlSpec
+from qualtran.protos import ctrl_spec_pb2
+from qualtran.serialization import args, data_types
+
+
+def ctrl_spec_from_proto(spec: ctrl_spec_pb2.CtrlSpec) -> CtrlSpec:
+    return CtrlSpec(
+        qdtype=data_types.data_type_from_proto(spec.qdtype), cvs=args.ndarray_from_proto(spec.cvs)
+    )
+
+
+def ctrl_spec_to_proto(spec: CtrlSpec) -> ctrl_spec_pb2.CtrlSpec:
+    return ctrl_spec_pb2.CtrlSpec(
+        qdtype=data_types.data_type_to_proto(spec.qdtype), cvs=args.ndarray_to_proto(spec.cvs)
+    )

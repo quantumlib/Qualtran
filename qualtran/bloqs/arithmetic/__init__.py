@@ -12,7 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.arithmetic.addition import Add, AddConstantMod, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.addition import (
+    Add,
+    AddConstantMod,
+    OutOfPlaceAdder,
+    SimpleAddConstant,
+)
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
     EqualsAConstant,
@@ -20,6 +25,7 @@ from qualtran.bloqs.arithmetic.comparison import (
     GreaterThanConstant,
     LessThanConstant,
     LessThanEqual,
+    LinearDepthGreaterThan,
     SingleQubitCompare,
 )
 from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement, ToContiguousIndex
@@ -33,3 +39,4 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SquareRealNumber,
     SumOfSquares,
 )
+from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
