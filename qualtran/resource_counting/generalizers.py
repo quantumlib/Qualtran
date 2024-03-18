@@ -76,8 +76,6 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
 
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
-    import cirq
-
     from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
     from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
     from qualtran.bloqs.util_bloqs import ArbitraryClifford
