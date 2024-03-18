@@ -14,7 +14,6 @@
 
 from .atom import TestAtom, TestTwoBitOp
 from .casting import TestCastToFrom
-from .interior_alloc import InteriorAlloc
-from .many_registers import TestBoundedQUInt, TestMultiRegister, TestMultiTypedRegister, TestQFxp
+from .many_registers import TestMultiRegister
 from .with_call_graph import TestBloqWithCallGraph
-from .with_decomposition import TestIndependentParallelCombo, TestParallelCombo, TestSerialCombo
+from .with_decomposition import TestParallelCombo, TestSerialCombo

@@ -19,6 +19,5 @@ from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
     StatePreparationAliasSampling,
 )
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
-    PRGAViaPhaseGradient,
     StatePreparationViaRotations,
 )
