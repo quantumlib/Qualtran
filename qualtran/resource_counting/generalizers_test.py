@@ -43,6 +43,7 @@ _BLOQS_TO_FILTER = [
     Free(QAny(bitsize=5)),
     Adjoint(TwoBitSwap()),
     Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
+    CirqGateAsBloq(cirq.S),
 ]
 
 
@@ -61,6 +62,7 @@ def test_ignore_split_join():
         Free(QAny(bitsize=5)),
         Adjoint(TwoBitSwap()),
         None,  # Partition(5, (Register('x', QAny(2)), Register('y', QAny(3))))
+        CirqGateAsBloq(cirq.S),
     ]
 
 
@@ -79,6 +81,7 @@ def test_ignore_alloc_free():
         None,  # Free(QAny(bitsize=5))
         Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
+        CirqGateAsBloq(cirq.S),
     ]
 
 
@@ -97,6 +100,7 @@ def test_generalize_rotation_angle():
         Free(QAny(bitsize=5)),
         Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
+        CirqGateAsBloq(cirq.S),
     ]
 
 
@@ -115,6 +119,7 @@ def test_generalize_cvs():
         Free(QAny(bitsize=5)),
         Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
+        CirqGateAsBloq(cirq.S),
     ]
 
 
@@ -133,6 +138,7 @@ def test_ignore_cliffords():
         Free(QAny(bitsize=5)),
         None,  # Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
+        CirqGateAsBloq(cirq.S),
     ]
 
 
@@ -152,6 +158,7 @@ def test_ignore_cliffords_with_cirq():
         Free(QAny(bitsize=5)),
         None,  # Adjoint(TwoBitSwap()),
         Partition(5, (Register('x', QAny(2)), Register('y', QAny(3)))),
+        None,  # cirq.S,
     ]
 
 
@@ -179,4 +186,5 @@ def test_many_generalizers():
         # Free(QAny(n=5)),
         # Adjoint(TwoBitSwap()),
         # Partition(5, (Register('x', QAny(2)), Register('y', QAny(3))))
+        # cirq.S,
     ]
