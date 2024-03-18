@@ -513,15 +513,15 @@ def assert_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult
 
 
 def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
-    """Check that the BloqExample has consistent bloq counts.
+    """Check that the BloqExample has consistent serialization.
 
-    Bloq counts can be annotated directly via the `Bloq.build_call_graph` override.
-    They can be inferred from a bloq's decomposition. This function checks that both
-    data sources are present and that they produce the same values.
+    This function checks that the given bloq can be serialized to a proto format and the
+    corresponding proto can be deserialized back to a bloq which is equal to the original
+    bloq.
 
-    If both sources are present, and they disagree, that results in a `FAIL`. If only one source
-    is present, an `UNVERIFIED` result is returned. If neither are present, a `MISSING` result
-    is returned.
+    If the given Bloq cannot be serialized / deserialized OR if the deserialized Bloq is not
+    equal to the given Bloq, then the result is `FAIL`. If the roundtrip succeeds, the result
+    is `PASS`.
 
     Returns:
         result: The `BloqCheckResult`.
