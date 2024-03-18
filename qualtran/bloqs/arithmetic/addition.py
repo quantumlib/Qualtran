@@ -210,11 +210,7 @@ def _add_large() -> Add:
     return add_large
 
 
-_ADD_DOC = BloqDocSpec(
-    bloq_cls=Add,
-    import_line='from qualtran import QInt, QUInt\nfrom qualtran.bloqs.arithmetic.addition import Add',
-    examples=(_add_symb, _add_small, _add_large),
-)
+_ADD_DOC = BloqDocSpec(bloq_cls=Add, examples=[_add_symb, _add_small, _add_large])
 
 
 @frozen
@@ -322,9 +318,7 @@ def _add_oop_large() -> OutOfPlaceAdder:
 
 
 _ADD_OOP_DOC = BloqDocSpec(
-    bloq_cls=OutOfPlaceAdder,
-    import_line='from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder',
-    examples=(_add_oop_symb, _add_oop_small, _add_oop_large),
+    bloq_cls=OutOfPlaceAdder, examples=[_add_oop_symb, _add_oop_small, _add_oop_large]
 )
 
 
@@ -355,8 +349,10 @@ class SimpleAddConstant(Bloq):
 
     bitsize: int
     k: int
-    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
-    signed: bool
+    cvs: Tuple[int, ...] = field(
+        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
+    )
+    signed: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -441,6 +437,23 @@ class SimpleAddConstant(Bloq):
 
     def short_name(self) -> str:
         return f'x += {self.k}'
+
+
+@bloq_example
+def _simple_add_k_small() -> SimpleAddConstant:
+    simple_add_k_small = SimpleAddConstant(bitsize=4, k=2, signed=False)
+    return simple_add_k_small
+
+
+@bloq_example
+def _simple_add_k_large() -> SimpleAddConstant:
+    simple_add_k_large = SimpleAddConstant(bitsize=64, k=-23, signed=True)
+    return simple_add_k_large
+
+
+_SIMPLE_ADD_K_DOC = BloqDocSpec(
+    bloq_cls=SimpleAddConstant, examples=[_simple_add_k_small, _simple_add_k_large]
+)
 
 
 @frozen(auto_attribs=True)
@@ -552,7 +565,5 @@ def _add_k_large() -> AddConstantMod:
 
 
 _ADD_K_DOC = BloqDocSpec(
-    bloq_cls=AddConstantMod,
-    import_line='from qualtran.bloqs.arithmetic.addition import AddConstantMod',
-    examples=(_add_k_symb, _add_k_small, _add_k_large),
+    bloq_cls=AddConstantMod, examples=[_add_k_symb, _add_k_small, _add_k_large]
 )
