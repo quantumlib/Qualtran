@@ -109,11 +109,7 @@ def _to_contg_index() -> ToContiguousIndex:
     return to_contg_index
 
 
-_TO_CONTG_INDX = BloqDocSpec(
-    bloq_cls=ToContiguousIndex,
-    import_line='from qualtran.bloqs.arithmetic.conversions import ToContiguousIndex',
-    examples=(_to_contg_index,),
-)
+_TO_CONTG_INDX = BloqDocSpec(bloq_cls=ToContiguousIndex, examples=[_to_contg_index])
 
 
 @frozen
@@ -155,8 +151,4 @@ def _signed_to_twos() -> SignedIntegerToTwosComplement:
     return signed_to_twos
 
 
-_SIGNED_TO_TWOS = BloqDocSpec(
-    bloq_cls=SignedIntegerToTwosComplement,
-    import_line='from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement',
-    examples=(_signed_to_twos,),
-)
+_SIGNED_TO_TWOS = BloqDocSpec(bloq_cls=SignedIntegerToTwosComplement, examples=[_signed_to_twos])
