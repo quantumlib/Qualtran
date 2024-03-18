@@ -127,6 +127,6 @@ def _c_prep_uniform() -> PrepareUniformSuperposition:
 
 _PREP_UNIFORM_DOC = BloqDocSpec(
     bloq_cls=PrepareUniformSuperposition,
-    import_line='from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition',
+    import_line='from qualtran.bloqs.state_preparation import PrepareUniformSuperposition',
     examples=(_prep_uniform, _c_prep_uniform),
 )
