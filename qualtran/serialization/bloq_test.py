@@ -21,9 +21,13 @@ import numpy as np
 import pytest
 import sympy
 
-from qualtran import Bloq, Signature
+from qualtran import Bloq, QUInt, Signature
 from qualtran._infra.composite_bloq_test import TestTwoCNOT
+from qualtran.bloqs.arithmetic import Add
+from qualtran.bloqs.basic_gates import CNOT
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.factoring.mod_exp import ModExp
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -71,6 +75,15 @@ def test_bloq_to_proto_cnot():
     deserialized_bloqs = bloq_serialization.bloqs_from_proto(proto_lib)
     assert cnot in deserialized_bloqs
     assert CirqGateAsBloq(cirq.CNOT) in deserialized_bloqs
+
+
+def test_cnot_to_proto():
+    cnot = CNOT()
+    proto_lib = bloq_serialization.bloqs_to_proto(cnot)
+    assert len(proto_lib.table) == 1
+    deseralized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert len(deseralized) == 1
+    assert isinstance(deseralized[0], CNOT)
 
 
 def test_cbloq_to_proto_two_cnot():
@@ -192,3 +205,44 @@ def test_meta_bloq_to_proto():
 
     assert proto_lib == bloq_serialization.bloqs_to_proto(bloq, bloq, TestTwoCSwap(20), max_depth=2)
     assert bloq in bloq_serialization.bloqs_from_proto(proto_lib)
+
+
+def test_add():
+    add = Add(dtype=QUInt(bitsize=2))
+    proto_lib = bloq_serialization.bloqs_to_proto(add)
+    assert len(proto_lib.table) == 6
+    deseralized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert len(deseralized) == 6
+    assert isinstance(deseralized[0], Add)
+    assert deseralized[0].dtype == QUInt(bitsize=2)
+
+
+def test_add_sympy():
+    bitsize = sympy.Symbol("a") * sympy.Symbol("b")
+    add = Add(dtype=QUInt(bitsize=bitsize))
+    proto_lib = bloq_serialization.bloqs_to_proto(add)
+    assert len(proto_lib.table) == 4
+    deseralized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert len(deseralized) == 4
+    assert isinstance(deseralized[0], Add)
+    assert deseralized[0].dtype == QUInt(bitsize=bitsize)
+
+
+def test_qrom():
+    array1 = [1, 2, 3]
+    array2 = [4, 5, 6]
+    qrom = QROM.build(array1, array2, num_controls=3)
+    proto_lib = bloq_serialization.bloqs_to_proto(qrom)
+    assert len(proto_lib.table) == 11
+    deserialized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert isinstance(deserialized[0], QROM)
+    assert deserialized[0].data[0].shape == np.array(array1).shape
+
+
+def test_qvr_zpow():
+    qvr_zpow = QvrZPow.from_bitsize(12)
+    proto_lib = bloq_serialization.bloqs_to_proto(qvr_zpow)
+    assert len(proto_lib.table) == 15
+    deserialized = bloq_serialization.bloqs_from_proto(proto_lib)
+    assert isinstance(deserialized[0], QvrZPow)
+    print("here")

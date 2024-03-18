@@ -47,6 +47,9 @@ class BloqArg(google.protobuf.message.Message):
     SUBBLOQ_FIELD_NUMBER: builtins.int
     CIRQ_JSON_GZIP_FIELD_NUMBER: builtins.int
     QDATA_TYPE_FIELD_NUMBER: builtins.int
+    LIST_VAL_FIELD_NUMBER: builtins.int
+    TUPLE_VAL_FIELD_NUMBER: builtins.int
+    LIST_OF_ARRAYS_VAL_FIELD_NUMBER: builtins.int
     name: builtins.str
     int_val: builtins.int
     float_val: builtins.float
@@ -63,6 +66,15 @@ class BloqArg(google.protobuf.message.Message):
     @property
     def qdata_type(self) -> qualtran.protos.data_types_pb2.QDataType:
         """data type"""
+    @property
+    def list_val(self) -> qualtran.protos.args_pb2.NDArray:
+        """list type"""
+    @property
+    def tuple_val(self) -> qualtran.protos.args_pb2.NDArray:
+        """tuple type"""
+    @property
+    def list_of_arrays_val(self) -> qualtran.protos.args_pb2.NDArray:
+        """A list of arrays"""
     def __init__(
         self,
         *,
@@ -75,10 +87,13 @@ class BloqArg(google.protobuf.message.Message):
         subbloq: builtins.int = ...,
         cirq_json_gzip: builtins.bytes = ...,
         qdata_type: qualtran.protos.data_types_pb2.QDataType | None = ...,
+        list_val: qualtran.protos.args_pb2.NDArray | None = ...,
+        tuple_val: qualtran.protos.args_pb2.NDArray | None = ...,
+        list_of_arrays_val: qualtran.protos.args_pb2.NDArray | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "list_of_arrays_val", b"list_of_arrays_val", "list_val", b"list_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "tuple_val", b"tuple_val", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "list_of_arrays_val", b"list_of_arrays_val", "list_val", b"list_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "tuple_val", b"tuple_val", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type", "list_val", "tuple_val", "list_of_arrays_val"] | None: ...
 
 global___BloqArg = BloqArg
 

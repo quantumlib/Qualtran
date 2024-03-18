@@ -37,9 +37,13 @@ from qualtran import (
     Signature,
     Soquet,
 )
+from qualtran._infra.adjoint import Adjoint
 from qualtran.bloqs import arithmetic, basic_gates, factoring, swap_network
 from qualtran.bloqs.arithmetic import sorting
+from qualtran.bloqs.basic_gates.rotation import ZPowGate
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.mcmt import and_bloq
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
 from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.protos import bloq_pb2
@@ -89,6 +93,11 @@ RESOLVER_DICT = {
     'ArbitraryClifford': ArbitraryClifford,
     'Controlled': Controlled,
     'CirqGateAsBloq': CirqGateAsBloq,
+    'Toffoli': basic_gates.Toffoli,
+    'QROM': QROM,
+    'Adjoint': Adjoint,
+    'QvrZPow': QvrZPow,
+    'ZPowGate': ZPowGate,
 }
 
 
@@ -107,6 +116,13 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
         return bloq_pb2.BloqArg(name=name, cirq_json_gzip=cirq.to_json_gzip(val))
     if isinstance(val, QDType):
         return bloq_pb2.BloqArg(name=name, qdata_type=data_types.data_type_to_proto(val))
+    if isinstance(val, tuple):
+        return bloq_pb2.BloqArg(name=name, tuple_val=args.list_or_tuple_to_proto(val))
+    if isinstance(val, list):
+        if isinstance(val[0], np.ndarray):
+            return bloq_pb2.BloqArg(name=name, list_of_arrays_val=args.list_or_tuple_to_proto(val))
+        else:
+            return bloq_pb2.BloqArg(name=name, list_val=args.list_or_tuple_to_proto(val))
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
@@ -125,6 +141,13 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
         return {arg.name: cirq.read_json_gzip(gzip_raw=arg.cirq_json_gzip)}
     if arg.HasField("qdata_type"):
         return {arg.name: data_types.data_type_from_proto(arg.qdata_type)}
+    if arg.HasField("tuple_val"):
+        return {arg.name: args.tuple_from_proto(arg.tuple_val)}
+    if arg.HasField("list_val"):
+        return {arg.name: args.list_from_proto(arg.list_val)}
+    if arg.HasField("list_of_arrays_val"):
+        array_list = [np.array(array) for array in args.list_from_proto(arg.list_of_arrays_val)]
+        return {arg.name: array_list}
     raise ValueError(f"Cannot deserialize {arg=}")
 
 
@@ -165,8 +188,16 @@ class _BloqLibDeserializer:
         return self.idx_to_bloq[bloq_id]
 
     def _construct_bloq(self, name: str, **kwargs):
-        """Construct a Bloq using serialized name and BloqArgs."""
-        return RESOLVER_DICT[name](**kwargs)
+        """Construct a Bloq using serialized name and BloqArgs.
+
+        Returns a bloq initialized by its default constructor. If this renders a TypeError, then it is assumed
+        that the bloq should be initialized with the build method.
+        """
+        bloq = RESOLVER_DICT[name]
+        try:
+            return bloq(**kwargs)
+        except TypeError:
+            return bloq.build(kwargs)
 
     def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
         return Connection(
@@ -226,6 +257,8 @@ def bloqs_to_proto(
                 for b, c in sorted(bloq.bloq_counts().items(), key=lambda x: x[1])
             }
         except stop_recursing_exceptions:
+            bloq_counts = None
+        except TypeError:
             bloq_counts = None
 
         library.table.add(
@@ -319,6 +352,8 @@ def _populate_bloq_to_idx(
         except NotImplementedError:
             # NotImplementedError is raised if `bloq` does not have a decomposition.
             ...
+        except DecomposeTypeError:
+            ...
 
         # Approximately decompose the current Bloq and its decomposed Bloqs.
         try:
@@ -359,10 +394,20 @@ def _bloq_args_to_proto(
     if isinstance(bloq, CompositeBloq):
         return None
 
-    ret = [
-        _bloq_arg_to_proto(name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx)
-        for field in _iter_fields(bloq)
-    ]
+    # If bloq has a build method, serialze build args. Otherwise, serialize instance args. We know it has a build method
+    # if get_kwargs is overriden.
+    if bloq.get_kwargs.__func__ is not Bloq.get_kwargs:
+        ret = [
+            _bloq_arg_to_proto(name=name, val=value, bloq_to_idx=bloq_to_idx)
+            for name, value in bloq.get_kwargs().items()
+        ]
+    else:
+        ret = [
+            _bloq_arg_to_proto(
+                name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx
+            )
+            for field in _iter_fields(bloq)
+        ]
     return ret if ret else None
 
 
