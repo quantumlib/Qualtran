@@ -29,8 +29,9 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import TGate, Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import smax
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -102,6 +103,9 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
         _add_my_tensors_from_gate(
             self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TGate(), 8 * smax(self.a_bitsize, self.b_bitsize) ** 2)}
 
 
 @bloq_example

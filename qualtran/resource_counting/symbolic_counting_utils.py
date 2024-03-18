@@ -24,6 +24,10 @@ SymbolicInt = Union[int, sympy.Expr]
 document(SymbolicFloat, """A floating point value or a sympy expression.""")
 
 
+def is_symbolic(*args) -> bool:
+    return any(isinstance(x, sympy.Basic) for x in args)
+
+
 def log2(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log2
 
