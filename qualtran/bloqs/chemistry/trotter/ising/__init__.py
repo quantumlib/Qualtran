@@ -15,7 +15,7 @@ r"""Bloqs implementing Trotter steps for the 1D Ising model under periodic bound
 
 The Ising model is given as
 $$
-H = -J\sum_{k=0}^{L-1}\sigma_{k}^{Z}\sigma_{(k+1)\%L}^{Z} - \Gamma\sum_{k=0}^{L-1}\sigma_{k}^{X}
+H = -J\sum_{k=0}^{L-1}\sigma_{k}^{Z}\sigma_{(k+1)}^{Z} - \Gamma\sum_{k=0}^{L-1}\sigma_{k}^{X}
 $$
 
 where $J$ and $\Gamma$ are coupling parameters.

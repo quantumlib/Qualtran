@@ -110,7 +110,7 @@ class TrotterizedUnitary(Bloq):
 
 @bloq_example
 def _trott_unitary() -> TrotterizedUnitary:
-    from qualtran.bloqs.for_testing.ising import IsingXUnitary, IsingZZUnitary
+    from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary, IsingZZUnitary
 
     nsites = 3
     j_zz = 2
@@ -130,7 +130,6 @@ def _trott_unitary() -> TrotterizedUnitary:
 _TROTT_UNITARY_DOC = BloqDocSpec(
     bloq_cls=TrotterizedUnitary,
     import_line=(
-        'from qualtran.bloqs.for_testing.ising import IsingXUnitary, IsingZZUnitary\n'
         'from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary'
     ),
     examples=(_trott_unitary,),
