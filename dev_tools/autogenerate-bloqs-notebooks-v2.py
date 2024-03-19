@@ -221,7 +221,10 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
     NotebookSpecV2(
         title='Ising Trotter Bloqs',
         module=qualtran.bloqs.chemistry.trotter.ising,
-        bloq_specs=[qualtran.bloqs.chemistry.trotter.ising.unitaries._ISING_X_UNITARY_DOC, qualtran.bloqs.chemistry.trotter.ising.unitaries._ISING_ZZ_UNITARY_DOC],
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.ising.unitaries._ISING_X_UNITARY_DOC,
+            qualtran.bloqs.chemistry.trotter.ising.unitaries._ISING_ZZ_UNITARY_DOC,
+        ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/ising',
     ),
     NotebookSpecV2(

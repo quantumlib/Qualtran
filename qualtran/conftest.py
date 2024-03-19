@@ -85,6 +85,7 @@ def assert_bloq_example_serialize_for_pytest(bloq_ex: BloqExample):
         'modexp_symb',
         'apply_z_to_odd',
         'lp_resource_state_symbolic',
+        'trott_unitary',
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 

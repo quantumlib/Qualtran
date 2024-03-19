@@ -82,6 +82,7 @@ class IsingZZUnitary(Bloq):
             system[iq_a], system[iq_b] = bb.add(CNOT(), ctrl=system[iq_a], target=system[iq_b])
         return {'system': bb.join(system)}
 
+
 @bloq_example
 def _ising_zz() -> IsingZZUnitary:
     nsites = 3
@@ -89,6 +90,7 @@ def _ising_zz() -> IsingZZUnitary:
     dt = 0.01
     ising_zz = IsingZZUnitary(nsites=nsites, angle=2 * dt * j_zz)
     return ising_zz
+
 
 @bloq_example
 def _ising_x() -> IsingXUnitary:
@@ -101,9 +103,7 @@ def _ising_x() -> IsingXUnitary:
 
 _ISING_ZZ_UNITARY_DOC = BloqDocSpec(
     bloq_cls=IsingZZUnitary,
-    import_line=(
-        'from qualtran.bloqs.chemistry.trotter.ising.unitaries import IsingZZUnitary'
-    ),
+    import_line=('from qualtran.bloqs.chemistry.trotter.ising.unitaries import IsingZZUnitary'),
     examples=(_ising_zz,),
 )
 
