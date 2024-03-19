@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.for_testing.ising import get_1d_Ising_hamiltonian, get_1d_Ising_lcu_coeffs
+from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian, get_1d_ising_lcu_coeffs
 from qualtran.bloqs.select_pauli_lcu import SelectPauliLCU
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
@@ -42,7 +42,7 @@ def test_ising_zero_bitflip_select(control_val):
 
     # Get dense PauliString Hamiltonian terms
     # right now we only handle positive interaction term values
-    ham = get_1d_Ising_hamiltonian(target, 1, 1)
+    ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
     op = SelectPauliLCU(
@@ -92,7 +92,7 @@ def test_ising_one_bitflip_select():
 
     # Get dense PauliString Hamiltonian terms
     # right now we only handle positive interaction term values
-    ham = get_1d_Ising_hamiltonian(target, 1, 1)
+    ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
     op = SelectPauliLCU(
@@ -165,7 +165,7 @@ def test_select_application_to_eigenstates():
 
     # Get dense PauliString Hamiltonian terms
     # right now we only handle positive interaction term values
-    ham = get_1d_Ising_hamiltonian(target, 1, 1)
+    ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
     op = SelectPauliLCU(
@@ -180,7 +180,7 @@ def test_select_application_to_eigenstates():
     select_circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = select_circuit.all_qubits()
 
-    coeffs = get_1d_Ising_lcu_coeffs(num_sites, 1, 1)
+    coeffs = get_1d_ising_lcu_coeffs(num_sites, 1, 1)
     prep_circuit = _fake_prepare(np.sqrt(coeffs), selection)
     turn_on_control = cirq.Circuit(cirq.X.on(control))
 
@@ -214,7 +214,7 @@ def test_select_pauli_lcu_consistent_protocols_and_controlled():
     select_bitsize, num_select, num_sites = 3, 6, 3
     # Get Ising Hamiltonian
     target = cirq.LineQubit.range(num_sites)
-    ham = get_1d_Ising_hamiltonian(target, 1, 1)
+    ham = get_1d_ising_hamiltonian(target, 1, 1)
     dps_hamiltonian = [tt.dense(target) for tt in ham]
     assert len(dps_hamiltonian) == num_select
 
