@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Tuple
+from typing import Sequence, Tuple
 
 import numpy as np
 import pytest
@@ -25,41 +25,21 @@ from qualtran.testing import assert_valid_bloq_decomposition
 
 # these gates can be approximated exactly with the given phase_bitsize
 @pytest.mark.parametrize(
+    # fmt: off
     "phase_bitsize, gate_cols",
     [
-        [2, ((0, ((0.5 + 0.5j), (0.5 - 0.5j))), (1, ((-0.5 - 0.5j), (0.5 - 0.5j))))],
-        [
-            4,
-            (
-                (
-                    0,
-                    (
-                        (-0.191341716182545 + 0.961939766255644j),
-                        (-0.038060233744357 + 0.191341716182545j),
-                    ),
-                ),
-                (
-                    1,
-                    (
-                        (0.038060233744356 - 0.191341716182545j),
-                        (-0.191341716182545 + 0.961939766255644j),
-                    ),
-                ),
-            ),
-        ],
-        [
-            2,
-            (
-                (0, ((-0 - 0.5j), (0.5 - 0j), (-0.5 + 0.5j), -0j)),
-                (1, ((0.5 + 0.5j), (0.5 - 0.5j), 0j, 0j)),
-                (2, (0.5j, (-0.5 + 0j), (-0.5 + 0.5j), 0j)),
-                (3, (0j, 0j, (-0 + 0j), (-1 + 0j))),
-            ),
-        ],
+        [2, ((0, (0.5 + 0.5j, 0.5 - 0.5j)), (1, (-0.5 - 0.5j, 0.5 - 0.5j)))],
+        [4, ((0, (-0.19134171618254 + 0.96193976625564j, -0.03806023374435 + 0.19134171618254j)),
+             (1, (0.03806023374435 - 0.19134171618254j, -0.19134171618254 + 0.96193976625564j)))],
+        [2, ((0, (-0 - 0.5j, 0.5 - 0j, -0.5 + 0.5j, -0j)),
+             (1, (0.5 + 0.5j, 0.5 - 0.5j, 0j, 0j)),
+             (2, (0.5j, -0.5 + 0j, -0.5 + 0.5j, 0j)),
+             (3, (0j, 0j, -0 + 0j, -1 + 0j)))],
     ],
+    # fmt: on
 )
 def test_exact_gate_synthesis(
-    phase_bitsize: int, gate_cols: Tuple[Tuple[int, Tuple[complex, ...]], ...]
+    phase_bitsize: int, gate_cols: Sequence[Tuple[int, Sequence[complex]]]
 ):
     gate_compiler = SynthesizeGateViaHR(phase_bitsize, tuple(gate_cols), internal_phase_grad=True)
     assert_valid_bloq_decomposition(gate_compiler)
@@ -68,32 +48,18 @@ def test_exact_gate_synthesis(
 
 
 @pytest.mark.parametrize(
+    # fmt: off
     "phase_bitsize, gate_cols",
     [
-        [
-            4,
-            (
-                (
-                    0,
-                    (
-                        (-0.191341716182545 + 0.961939766255644j),
-                        (-0.038060233744357 + 0.191341716182545j),
-                    ),
-                ),
-            ),
-        ],
-        [
-            2,
-            (
-                (0, ((-0 - 0.5j), (0.5 - 0j), (-0.5 + 0.5j), -0j)),
-                (1, ((0.5 + 0.5j), (0.5 - 0.5j), 0j, 0j)),
-                (2, (0.5j, (-0.5 + 0j), (-0.5 + 0.5j), 0j)),
-            ),
-        ],
+        [4, ((0, (-0.19134171618254 + 0.96193976625564j,-0.03806023374435 + 0.19134171618254j)),)],
+        [2, ((0, (-0 - 0.5j, 0.5 - 0j, -0.5 + 0.5j, -0j)),
+             (1, (0.5 + 0.5j, 0.5 - 0.5j, 0j, 0j)),
+             (2, (0.5j, -0.5 + 0j, -0.5 + 0.5j, 0j)))],
     ],
+    # fmt: on
 )
 def test_partial_gate_synthesis(
-    phase_bitsize: int, gate_cols: Tuple[Tuple[int, Tuple[complex, ...]], ...]
+    phase_bitsize: int, gate_cols: Sequence[Tuple[int, Sequence[complex]]]
 ):
     gate_compiler = SynthesizeGateViaHR(phase_bitsize, tuple(gate_cols), internal_phase_grad=True)
     assert_valid_bloq_decomposition(gate_compiler)
@@ -104,22 +70,19 @@ def test_partial_gate_synthesis(
 
 
 @pytest.mark.parametrize(
+    # fmt: off
     "phase_bitsize, gate_cols",
     [
-        [2, ((0, ((0.5 + 0.5j), (0.5 - 0.5j))), (1, ((-0.5 - 0.5j), (0.5 - 0.5j))))],
-        [
-            2,
-            (
-                (0, ((-0 - 0.5j), (0.5 - 0j), (-0.5 + 0.5j), -0j)),
-                (1, ((0.5 + 0.5j), (0.5 - 0.5j), 0j, 0j)),
-                (2, (0.5j, (-0.5 + 0j), (-0.5 + 0.5j), 0j)),
-                (3, (0j, 0j, (-0 + 0j), (-1 + 0j))),
-            ),
-        ],
+        [2, ((0, (0.5 + 0.5j, 0.5 - 0.5j)), (1, (-0.5 - 0.5j, 0.5 - 0.5j)))],
+        [2, ((0, (-0 - 0.5j, 0.5 - 0j, -0.5 + 0.5j, -0j)),
+             (1, (0.5 + 0.5j, 0.5 - 0.5j, 0j, 0j)),
+             (2, (0.5j, -0.5 + 0j, -0.5 + 0.5j, 0j)),
+             (3, (0j, 0j, -0 + 0j, -1 + 0j)))],
     ],
+    # fmt: on
 )
 def test_gate_synthesis_adjoint(
-    phase_bitsize: int, gate_cols: Tuple[Tuple[int, Tuple[complex, ...]], ...]
+    phase_bitsize: int, gate_cols: Sequence[Tuple[int, Sequence[complex]]]
 ):
     gate_compiler = SynthesizeGateViaHR(
         gate_cols=gate_cols,

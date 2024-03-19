@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import attrs
 import numpy as np
@@ -31,7 +31,7 @@ from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
 
 @attrs.frozen
 class SynthesizeGateViaHR(Bloq):
-    r"""Given all or some columns of an unitary, it is generated via Householder reflections.
+    r"""Generates an unitary via Householder reflections given all or some of its columns.
 
     This bloq implements the algorithm described in [1], which basically implements an arbitrary
     unitary operator $U$ with a reflection ancilla as
@@ -47,14 +47,15 @@ class SynthesizeGateViaHR(Bloq):
         |0\rangle\langle 1| U + |1\rangle\langle 0| U^\dagger$.
     $$
 
-    For a detailed description of how to use this bloq refer to its tutorial.
+    For a detailed description of how to use this bloq refer to its tutorial:
+    synthesize_gate_hr_tutorial.ipynb.
 
     Args:
         phase_bitsize: size of the register that is used to store the rotation angles. Bigger values
             increase the accuracy of the results.
         gate_cols: tuple that contains, for each entry, a pair where the first element is the
             index of the column and the second a tuple that contains the complex values of each
-            column. For example, for the gate [[a,b,],[c,d]] it would be ((0,(a,c)), (1(b,d))).
+            column. For example, for the gate [[a,b,],[c,d]] it would be ((0,(a,c)), (1,(b,d))).
         uncompute: wether to implement U or U^t. Either case the gate_cols to be provided are those
             of U.
         internal_phase_grad: a phase gradient state is needed for the decomposition. It can be
@@ -70,22 +71,20 @@ class SynthesizeGateViaHR(Bloq):
             Kliuchnikov 2013.
     """
     phase_bitsize: int  # number of ancilla qubits used to encode the state preparation's rotations
-    gate_cols: Tuple[
-        int, Tuple[complex, ...]
-    ]  # tuple with the columns of the gate that are specified
+    gate_cols: Sequence[Tuple[int, Sequence[complex]]]  # columns of the gate that are specified
     uncompute: bool = False
     internal_phase_grad: bool = False
     internal_refl_ancilla: bool = True
 
     def __attrs_post_init__(self):
-        # at least one column has to be specified
-        assert len(self.gate_cols) > 0
-        # there can't be more columns that rows
-        assert len(self.gate_cols) <= len(self.gate_cols[0][1])
+        assert len(self.gate_cols) > 0, "at least one column has to be specified"
+        assert len(self.gate_cols) <= len(
+            self.gate_cols[0][1]
+        ), "there can't be more columns than rows"
         # all cols must be the same length and a power of two
         lengths = set([len(c[1]) for c in self.gate_cols])
-        assert len(lengths) == 1
-        assert list(lengths)[0] == 2**self.gate_bitsize
+        assert len(lengths) == 1, "all cols must be the same length"
+        assert list(lengths)[0] == 2**self.gate_bitsize, "all cols must have length power of two"
 
     @property
     def signature(self):
@@ -102,11 +101,10 @@ class SynthesizeGateViaHR(Bloq):
     def build_composite_bloq(
         self, bb: BloqBuilder, *, gate_input: SoquetT, **soqs: SoquetT
     ) -> Dict[str, SoquetT]:
-        """Extra soquets inside soqs are:
-        * phase_grad: a phase gradient state of size phase_bitsize if internal_phase_gradient
-                    is set to False
-        * refl_ancilla: a clean qubit in |0> if internal_refl_ancilla is set to False
-        """
+        # Extra soquets inside soqs are:
+        # * phase_grad: a phase gradient state of size phase_bitsize if internal_phase_gradient
+        #               is set to False
+        # * refl_ancilla: a clean qubit in |0> if internal_refl_ancilla is set to False
         if self.internal_refl_ancilla:
             refl_ancilla = bb.allocate(1)
         else:
@@ -180,7 +178,6 @@ class PrepareOracleDecomposeeGateReflection(PrepareOracle):
                 ),
             ),
         )
-
 
     @property
     def signature(self) -> Signature:

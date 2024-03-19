@@ -85,14 +85,14 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
+    QUInt,
     Signature,
     SoquetT,
-    QUInt
 )
+from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.qrom import QROM
-from qualtran.bloqs.arithmetic.addition import Add
 
 
 @attrs.frozen
