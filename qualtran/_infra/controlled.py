@@ -12,10 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Protocol, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, List, Protocol, Sequence, Set, Tuple, TYPE_CHECKING
 
+import attrs
 import numpy as np
-from attrs import frozen
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
+@attrs.frozen(eq=False)
 class CtrlSpec:
     """A specification for how to control a bloq.
 
@@ -59,27 +60,17 @@ class CtrlSpec:
             are active.
     """
 
-    def __init__(self, qdtype: QDType = QBit(), cvs: Union[int, NDArray[int], Iterable[int]] = 1):
-        self._qdtype = qdtype
-
-        if isinstance(cvs, (int, np.integer)):
-            cvs = np.array(cvs)
-
-        self._cvs = np.asarray(cvs)
-        self._cvs_tuple = tuple(self._cvs.reshape(-1))
-        self._hash = None
-
-    @property
-    def qdtype(self) -> QDType:
-        return self._qdtype
-
-    @property
-    def cvs(self) -> NDArray[int]:
-        return self._cvs
+    qdtype: QDType = attrs.field(default=QBit())
+    cvs: NDArray[int] = attrs.field(
+        default=1,
+        converter=lambda cvs: np.array(cvs)
+        if isinstance(cvs, (int, np.integer))
+        else np.asarray(cvs),
+    )
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        return self._cvs.shape
+        return self.cvs.shape
 
     def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[int, ...]]]:
         """The data types that serve as input to the 'activation function'.
@@ -136,26 +127,22 @@ class CtrlSpec:
         cv = self.cvs[soq.idx]
         return TextBox(f'{cv}')
 
+    @cached_property
+    def _cvs_tuple(self):
+        return tuple(self.cvs.reshape(-1))
+
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CtrlSpec):
             return False
 
         return (
-            other._qdtype == self._qdtype
+            other.qdtype == self.qdtype
             and other.shape == self.shape
             and other._cvs_tuple == self._cvs_tuple
         )
 
     def __hash__(self):
-        if self._hash is None:
-            self._hash = hash((self._qdtype, self.shape, self._cvs_tuple))
-        return self._hash
-
-    def __repr__(self) -> str:
-        return f'CtrlSpec({self._qdtype!r}, {self.cvs!r})'
-
-    def __str__(self) -> str:
-        return self.__repr__()
+        return hash((self.qdtype, self.shape, self._cvs_tuple))
 
 
 class AddControlledT(Protocol):
@@ -203,7 +190,7 @@ def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
     return tuple(names)
 
 
-@frozen
+@attrs.frozen
 class Controlled(Bloq):
     """A controlled version of `subbloq`.
 

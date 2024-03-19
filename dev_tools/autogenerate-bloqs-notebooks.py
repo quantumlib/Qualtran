@@ -53,7 +53,6 @@ import qualtran.bloqs.basic_gates.hadamard_test
 import qualtran.bloqs.basic_gates.rotation_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
-import qualtran.bloqs.swap_network_test
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 

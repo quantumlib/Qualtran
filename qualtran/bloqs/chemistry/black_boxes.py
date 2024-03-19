@@ -141,7 +141,7 @@ class QROAMTwoRegs(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
+        return Signature.build(sel=(self.data_a_size - 1).bit_length(), trg=self.target_bitsize)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost = int(np.ceil(self.data_a_size / self.data_a_block_size))
@@ -197,13 +197,11 @@ class ApplyControlledZs(Bloq):
         return Circle(filled)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', ctrls: SoquetT, system: SoquetT):
-        ctrls = bb.join(ctrls)
         split_sys = bb.split(system)
         ctrls, split_sys[0] = bb.add(
             MultiControlPauli(self.cvs, cirq.Z), controls=ctrls, target=split_sys[0]
         )
         system = bb.join(split_sys)
-        ctrls = bb.split(ctrls)
         return {'ctrls': ctrls, 'system': system}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:

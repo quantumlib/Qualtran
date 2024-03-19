@@ -39,7 +39,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.data_types import QMontgomeryUInt
-from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
+from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -82,8 +82,6 @@ class Add(Bloq):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
         if isinstance(val.num_qubits, sympy.Expr):
             return
-        if val.num_qubits <= 1:
-            raise ValueError("Bitsize must be 2 or greater.")
 
     @property
     def signature(self):
@@ -180,14 +178,15 @@ class Add(Bloq):
         context.qubit_manager.qfree(ancillas)
 
     def _t_complexity_(self):
-        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
-        num_t_gates = 4 * self.dtype.bitsize - 4
-        return TComplexity(t=num_t_gates, clifford=num_clifford)
+        n = self.dtype.bitsize
+        num_clifford = (n - 2) * 19 + 16
+        num_toffoli = n - 1
+        return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_clifford = (self.dtype.bitsize - 2) * 19 + 16
-        num_toffoli = self.dtype.bitsize - 1
-        return {(Toffoli(), num_toffoli), (ArbitraryClifford(n=1), num_clifford)}
+        n = self.dtype.bitsize
+        n_cnot = (n - 2) * 6 + 3
+        return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
 
 @bloq_example
@@ -209,11 +208,7 @@ def _add_large() -> Add:
     return add_large
 
 
-_ADD_DOC = BloqDocSpec(
-    bloq_cls=Add,
-    import_line='from qualtran import QInt, QUInt\nfrom qualtran.bloqs.arithmetic.addition import Add',
-    examples=(_add_symb, _add_small, _add_large),
-)
+_ADD_DOC = BloqDocSpec(bloq_cls=Add, examples=[_add_symb, _add_small, _add_large])
 
 
 @frozen
@@ -321,9 +316,7 @@ def _add_oop_large() -> OutOfPlaceAdder:
 
 
 _ADD_OOP_DOC = BloqDocSpec(
-    bloq_cls=OutOfPlaceAdder,
-    import_line='from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder',
-    examples=(_add_oop_symb, _add_oop_small, _add_oop_large),
+    bloq_cls=OutOfPlaceAdder, examples=[_add_oop_symb, _add_oop_small, _add_oop_large]
 )
 
 
@@ -354,8 +347,10 @@ class SimpleAddConstant(Bloq):
 
     bitsize: int
     k: int
-    cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
-    signed: bool
+    cvs: Tuple[int, ...] = field(
+        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
+    )
+    signed: bool = False
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -440,6 +435,23 @@ class SimpleAddConstant(Bloq):
 
     def short_name(self) -> str:
         return f'x += {self.k}'
+
+
+@bloq_example
+def _simple_add_k_small() -> SimpleAddConstant:
+    simple_add_k_small = SimpleAddConstant(bitsize=4, k=2, signed=False)
+    return simple_add_k_small
+
+
+@bloq_example
+def _simple_add_k_large() -> SimpleAddConstant:
+    simple_add_k_large = SimpleAddConstant(bitsize=64, k=-23, signed=True)
+    return simple_add_k_large
+
+
+_SIMPLE_ADD_K_DOC = BloqDocSpec(
+    bloq_cls=SimpleAddConstant, examples=[_simple_add_k_small, _simple_add_k_large]
+)
 
 
 @frozen(auto_attribs=True)
@@ -551,7 +563,5 @@ def _add_k_large() -> AddConstantMod:
 
 
 _ADD_K_DOC = BloqDocSpec(
-    bloq_cls=AddConstantMod,
-    import_line='from qualtran.bloqs.arithmetic.addition import AddConstantMod',
-    examples=(_add_k_symb, _add_k_small, _add_k_large),
+    bloq_cls=AddConstantMod, examples=[_add_k_symb, _add_k_small, _add_k_large]
 )

@@ -26,7 +26,7 @@ from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, So
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.unary_iteration_bloq import UnaryIterationGate
+from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT
 from qualtran.simulation.classical_sim import ClassicalValT
@@ -65,9 +65,13 @@ class QROM(UnaryIterationGate):
             Babbush et. al. (2020). Figure 3.
     """
 
-    data: Sequence[NDArray]
-    selection_bitsizes: Tuple[int, ...]
-    target_bitsizes: Tuple[int, ...]
+    data: Sequence[NDArray] = attrs.field(converter=tuple)
+    selection_bitsizes: Tuple[int, ...] = attrs.field(
+        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+    )
+    target_bitsizes: Tuple[int, ...] = attrs.field(
+        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+    )
     num_controls: int = 0
 
     @classmethod
@@ -257,6 +261,6 @@ def _qrom_multi_dim() -> QROM:
 
 _QROM_DOC = BloqDocSpec(
     bloq_cls=QROM,
-    import_line='from qualtran.bloqs.qrom import QROM',
+    import_line='from qualtran.bloqs.data_loading.qrom import QROM',
     examples=[_qrom_small, _qrom_multi_data, _qrom_multi_dim],
 )

@@ -13,6 +13,7 @@
 #  limitations under the License.
 import cirq
 import numpy as np
+import pytest
 
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import Hadamard, OneState
@@ -39,3 +40,16 @@ def test_to_cirq():
 
 def test_hadamard(bloq_autotester):
     bloq_autotester(_hadamard)
+
+
+def test_unitary_vs_cirq():
+    h = Hadamard()
+    unitary = h.tensor_contract()
+    cirq_unitary = cirq.unitary(cirq.H)
+    np.testing.assert_allclose(unitary, cirq_unitary)
+
+
+def test_not_classical():
+    h = Hadamard()
+    with pytest.raises(NotImplementedError, match=r'.*is not classically simulable\.'):
+        h.call_classically(q=0)

@@ -90,7 +90,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
 
@@ -120,7 +120,7 @@ class StatePreparationViaRotations(GateWithRegisters):
     """
 
     phase_bitsize: int
-    state_coefficients: Tuple[complex, ...]
+    state_coefficients: Tuple[complex, ...] = attrs.field(converter=tuple)
     control_bitsize: int = 0
     uncompute: bool = False
 

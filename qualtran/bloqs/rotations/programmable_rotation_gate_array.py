@@ -23,7 +23,7 @@ from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.cirq_interop.bit_tools import iter_bits
 
 

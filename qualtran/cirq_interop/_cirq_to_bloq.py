@@ -310,6 +310,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         Rx,
         Ry,
         Rz,
+        SGate,
         TGate,
         Toffoli,
         TwoBitSwap,
@@ -338,6 +339,8 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     CIRQ_GATE_TO_BLOQ_MAP = {
         cirq.T: TGate(),
         cirq.T**-1: TGate().adjoint(),
+        cirq.S: SGate(),
+        cirq.S**-1: SGate().adjoint(),
         cirq.H: Hadamard(),
         cirq.CNOT: CNOT(),
         cirq.TOFFOLI: Toffoli(),
@@ -534,6 +537,12 @@ def decompose_from_cirq_style_method(
     context = cirq.DecompositionContext(qubit_manager=qm)
     dfr_method = getattr(bloq, method_name)
     decomposed_optree = dfr_method(context=context, **all_quregs)
-    return cirq_optree_to_cbloq(
-        decomposed_optree, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
-    )
+    try:
+        return cirq_optree_to_cbloq(
+            decomposed_optree, signature=bloq.signature, in_quregs=in_quregs, out_quregs=out_quregs
+        )
+    except ValueError as exc:
+        if "Only gate operations are supported" in str(exc):
+            raise DecomposeNotImplementedError(str(exc)) from exc
+        else:
+            raise exc

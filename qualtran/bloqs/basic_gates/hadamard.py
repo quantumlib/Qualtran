@@ -46,10 +46,10 @@ class Hadamard(Bloq):
 
     This converts between the X and Z basis.
 
-    $$
+    $$\begin{aligned}
     H |0\rangle = |+\rangle \\
     H |-\rangle = |1\rangle
-    $$
+    \end{aligned}$$
 
     Registers:
         q: The qubit

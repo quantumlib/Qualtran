@@ -16,6 +16,7 @@ import itertools
 from functools import cached_property
 from typing import Dict
 
+import cirq
 import numpy as np
 import pytest
 from attrs import frozen
@@ -227,3 +228,20 @@ def test_multiand_adjoint():
 
     ret = cbloq.call_classically(q0=1, q1=1, q2=1)
     assert ret == (1, 1, 1)
+
+
+def test_multiand_diagram():
+    circuit = cirq.Circuit(MultiAnd(cvs=(1, 0, 1)).on(*cirq.LineQubit.range(5)))
+    cirq.testing.assert_has_diagram(
+        circuit,
+        """\
+0: ───@─────────
+      │
+1: ───(0)───────
+      │
+2: ───@─────────
+      │
+3: ───junk[0]───
+      │
+4: ───∧─────────""",
+    )
