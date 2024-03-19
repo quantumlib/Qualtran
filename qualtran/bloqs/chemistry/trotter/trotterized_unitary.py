@@ -55,7 +55,8 @@ class TrotterizedUnitary(Bloq):
 
     Args:
         bloqs: A tuple of bloqs of length $\Gamma$ which implement the unitaries for
-            each term in the Hamiltonian.
+            each term in the Hamiltonian. Each bloq should be a frozen attrs
+            dataclass, have an `angle` parameter. All bloqs should have the same signature.
         indices: A tuple of integers which specifies which bloq to apply when
             forming the unitary as a product of unitaries.
         coeffs: The coefficients $a$ which appear in the expression for the unitary.
@@ -79,8 +80,15 @@ class TrotterizedUnitary(Bloq):
 
     def __attrs_post_init__(self):
         ref_sig = self.bloqs[0].signature
-        for bloq in self.bloqs[1:]:
-            assert bloq.signature == ref_sig
+        for bloq in self.bloqs:
+            if bloq.signature != ref_sig:
+                raise ValueError(
+                    f"Bloqs must have the same signature. Got {ref_sig} and {bloq.signature}"
+                )
+            if not attrs.has(bloq.__class__):
+                raise ValueError("Bloq must be an attrs dataclass.")
+            if attrs.fields_dict(bloq.__class__).get('angle') is None:
+                raise ValueError("Bloq must have a parameter named 'angle'.")
 
     @cached_property
     def signature(self) -> Signature:

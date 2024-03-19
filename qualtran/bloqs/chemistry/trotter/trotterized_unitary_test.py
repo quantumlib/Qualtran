@@ -15,12 +15,67 @@ import attrs
 import numpy as np
 import pytest
 
+from qualtran import Bloq, Signature
 from qualtran.bloqs.chemistry.trotter.trotterized_unitary import _trott_unitary, TrotterizedUnitary
 from qualtran.bloqs.for_testing.ising import IsingXUnitary, IsingZZUnitary
 
 
 def test_trotterized_unitary(bloq_autotester):
     bloq_autotester(_trott_unitary)
+
+
+def test_construction_checks(bloq_autotester):
+    class NotAnAttrsClass(Bloq):
+        def __init__(self, angle: float, b: int):
+            self.angle = angle
+            self.b = b
+
+        @property
+        def signature(self) -> 'Signature':
+            return Signature.build(a=1, b=1)
+
+    @attrs.frozen
+    class CustomSignature(Bloq):
+        angle: float
+        bitsize_a: int
+        bitsize_b: int
+
+        @property
+        def signature(self) -> 'Signature':
+            return Signature.build(a=self.bitsize_a, b=self.bitsize_b)
+
+    @attrs.frozen
+    class NoAngle(Bloq):
+        bitsize_a: int
+        bitsize_b: int
+
+        @property
+        def signature(self) -> 'Signature':
+            return Signature.build(a=self.bitsize_a, b=self.bitsize_b)
+
+    with pytest.raises(ValueError, match=r'Bloq must be an attrs.*'):
+        TrotterizedUnitary(
+            bloqs=(NotAnAttrsClass(0.1, 2.0), NotAnAttrsClass(0.2, 2.0)),
+            indices=(0, 1),
+            coeffs=(0.55, 0.2),
+            timestep=0.1,
+        )
+
+    with pytest.raises(ValueError, match=r'Bloqs must have the same.*'):
+        TrotterizedUnitary(
+            bloqs=(
+                CustomSignature(angle=0.1, bitsize_a=2, bitsize_b=2),
+                CustomSignature(angle=0.2, bitsize_a=2, bitsize_b=3),
+            ),
+            indices=(0, 1),
+            coeffs=(0.55, 0.2),
+            timestep=0.1,
+        )
+
+    with pytest.raises(ValueError, match=r'Bloq must have a parameter named.*'):
+        TrotterizedUnitary(
+            bloqs=(NoAngle(2, 2), NoAngle(2, 2)), indices=(0, 1), coeffs=(0.55, 0.2), timestep=0.1
+        )
 
 
 @pytest.mark.parametrize('nsites', (2, 3, 4))
