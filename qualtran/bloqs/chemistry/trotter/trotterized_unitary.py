@@ -36,7 +36,7 @@ class TrotterizedUnitary(Bloq):
     formula
 
     $$
-        S_p(t) = \prod_{v=1}^{\Upsilon}\prod_{k=1}^\Gamma e^{-it a_{v,\gamma} H_{\pi_v(\gamma)}}
+        S_p(t) = \prod_{v=1}^{\Upsilon}\prod_{\gamma=1}^\Gamma e^{-it a_{v,\gamma} H_{\pi_v(\gamma)}}
     $$
 
     where $\Upsilon$ is the number of `stages`, $a_{v, \gamma}$ are real numbers
