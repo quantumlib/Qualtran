@@ -86,7 +86,7 @@ def assert_bloq_example_serialize_for_pytest(bloq_ex: BloqExample):
         'apply_z_to_odd',
         'lp_resource_state_symbolic',
     ]:
-        return
+        pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
     try:
         qlt_testing.assert_bloq_example_serialize(bloq_ex)

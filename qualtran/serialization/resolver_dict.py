@@ -308,4 +308,5 @@ RESOLVER_DICT = {
 
 
 def add_to_resolver_dict(*bloqs: Type[Bloq]):
+    """Adds given Bloqs to the resolver dict using fully qualified Bloq names as keys."""
     RESOLVER_DICT.update({bloq.__module__ + '.' + bloq.__qualname__: bloq for bloq in bloqs})

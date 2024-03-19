@@ -58,16 +58,18 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
         return bloq_pb2.BloqArg(name=name, string_val=val)
     if isinstance(val, sympy.Expr):
         return bloq_pb2.BloqArg(name=name, sympy_expr=str(val))
-    if isinstance(val, (np.ndarray, tuple, list)):
-        return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(val))
     if isinstance(val, Register):
         return bloq_pb2.BloqArg(name=name, register=registers.register_to_proto(val))
+    if isinstance(val, tuple) and all(isinstance(x, Register) for x in val):
+        return bloq_pb2.BloqArg(name=name, registers=registers.registers_to_proto(val))
     if isinstance(val, cirq.Gate):
         return bloq_pb2.BloqArg(name=name, cirq_json_gzip=cirq.to_json_gzip(val))
     if isinstance(val, QDType):
         return bloq_pb2.BloqArg(name=name, qdata_type=data_types.data_type_to_proto(val))
     if isinstance(val, CtrlSpec):
         return bloq_pb2.BloqArg(name=name, ctrl_spec=ctrl_spec.ctrl_spec_to_proto(val))
+    if isinstance(val, (np.ndarray, tuple, list)):
+        return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(val))
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
@@ -80,16 +82,18 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
         return {arg.name: arg.string_val}
     if arg.HasField("sympy_expr"):
         return {arg.name: parse_expr(arg.sympy_expr)}
-    if arg.HasField("ndarray"):
-        return {arg.name: args.ndarray_from_proto(arg.ndarray)}
     if arg.HasField("register"):
         return {arg.name: registers.register_from_proto(arg.register)}
+    if arg.HasField("registers"):
+        return {arg.name: registers.registers_from_proto(arg.registers)}
     if arg.HasField("cirq_json_gzip"):
         return {arg.name: cirq.read_json_gzip(gzip_raw=arg.cirq_json_gzip)}
     if arg.HasField("qdata_type"):
         return {arg.name: data_types.data_type_from_proto(arg.qdata_type)}
     if arg.HasField("ctrl_spec"):
         return {arg.name: ctrl_spec.ctrl_spec_from_proto(arg.ctrl_spec)}
+    if arg.HasField("ndarray"):
+        return {arg.name: args.ndarray_from_proto(arg.ndarray)}
     raise ValueError(f"Cannot deserialize {arg=}")
 
 
