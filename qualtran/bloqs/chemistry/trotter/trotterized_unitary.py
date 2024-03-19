@@ -42,12 +42,20 @@ class TrotterizedUnitary(Bloq):
     where $\Upsilon$ is the number of `stages`, $a_{v, \gamma}$ are real numbers
     and $\pi_v(\gamma)$ is a permutation of the Hamiltonian term labels.
 
-    To construct the unitary we adopt the convention from the second reference
-    which simply requires a list of the coefficients and a list of indices which
-    index the hamiltonian terms.
+    In practice, to construct the unitary we adopt the convention from the second reference
+    which expands the product above and merges neighbouring unitaries where
+    possible.
+    In particular, the trotterized unitary can be specified by
+    
+    $$
+        S_p(t) = \prod_{k}^M e^{-it c_k H_{l_k}}
+    $$
+    
+    where the coefficients $c_k$ are real numbers and $l_k$ is an integer 
+    indexing which term of the Hamiltonian to apply. 
 
-    For example, the second order Suzuki splitting would have indicies = (0, 1, 0)
-    and coeffs = (0.5, 1, 0.5), which would build
+    For example, the second order Suzuki splitting would have indicies $(l)$ = (0, 1, 0)
+    and coeffs = $(c)$ = (0.5, 1, 0.5), which would build
 
     $$
         e^{-i \frac{t}{2} H_0} e^{-i t H_1} e^{-i \frac{t}{2} H_0}
@@ -95,8 +103,8 @@ class TrotterizedUnitary(Bloq):
         return self.bloqs[0].signature
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'Soquet']:
-        for i, c in zip(self.indices, self.coeffs):
-            soqs |= bb.add_d(attrs.evolve(self.bloqs[i], angle=2 * c * self.timestep), **soqs)
+        for i, a in zip(self.indices, self.coeffs):
+            soqs |= bb.add_d(attrs.evolve(self.bloqs[i], angle=2 * a * self.timestep), **soqs)
         return soqs
 
 
