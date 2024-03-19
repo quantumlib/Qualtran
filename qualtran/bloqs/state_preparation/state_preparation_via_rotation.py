@@ -120,7 +120,7 @@ class StatePreparationViaRotations(GateWithRegisters):
     """
 
     phase_bitsize: int
-    state_coefficients: Tuple[complex, ...]
+    state_coefficients: Tuple[complex, ...] = attrs.field(converter=tuple)
     control_bitsize: int = 0
     uncompute: bool = False
 

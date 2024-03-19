@@ -82,8 +82,6 @@ class Add(Bloq):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
         if isinstance(val.num_qubits, sympy.Expr):
             return
-        if val.num_qubits <= 1:
-            raise ValueError("Bitsize must be 2 or greater.")
 
     @property
     def signature(self):

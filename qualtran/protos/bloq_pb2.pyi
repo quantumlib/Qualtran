@@ -23,6 +23,7 @@ import google.protobuf.internal.containers
 import google.protobuf.message
 import qualtran.protos.annotations_pb2
 import qualtran.protos.args_pb2
+import qualtran.protos.ctrl_spec_pb2
 import qualtran.protos.data_types_pb2
 import qualtran.protos.registers_pb2
 import sys
@@ -47,6 +48,9 @@ class BloqArg(google.protobuf.message.Message):
     SUBBLOQ_FIELD_NUMBER: builtins.int
     CIRQ_JSON_GZIP_FIELD_NUMBER: builtins.int
     QDATA_TYPE_FIELD_NUMBER: builtins.int
+    REGISTER_FIELD_NUMBER: builtins.int
+    REGISTERS_FIELD_NUMBER: builtins.int
+    CTRL_SPEC_FIELD_NUMBER: builtins.int
     name: builtins.str
     int_val: builtins.int
     float_val: builtins.float
@@ -63,6 +67,15 @@ class BloqArg(google.protobuf.message.Message):
     @property
     def qdata_type(self) -> qualtran.protos.data_types_pb2.QDataType:
         """data type"""
+    @property
+    def register(self) -> qualtran.protos.registers_pb2.Register:
+        """A Register object, accepted as an argument."""
+    @property
+    def registers(self) -> qualtran.protos.registers_pb2.Registers:
+        """A repeated list of one or more registers, accepted as arguments."""
+    @property
+    def ctrl_spec(self) -> qualtran.protos.ctrl_spec_pb2.CtrlSpec:
+        """Ctrl Spec for controlled bloqs"""
     def __init__(
         self,
         *,
@@ -75,10 +88,13 @@ class BloqArg(google.protobuf.message.Message):
         subbloq: builtins.int = ...,
         cirq_json_gzip: builtins.bytes = ...,
         qdata_type: qualtran.protos.data_types_pb2.QDataType | None = ...,
+        register: qualtran.protos.registers_pb2.Register | None = ...,
+        registers: qualtran.protos.registers_pb2.Registers | None = ...,
+        ctrl_spec: qualtran.protos.ctrl_spec_pb2.CtrlSpec | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type", "register", "registers", "ctrl_spec"] | None: ...
 
 global___BloqArg = BloqArg
 
