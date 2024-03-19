@@ -20,7 +20,6 @@ from qualtran import Bloq
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
-    ignore_partition,
     ignore_split_join,
 )
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
@@ -89,7 +88,7 @@ def classify_t_count_by_bloq_type(
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
     keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
-    basic_generalizer = [ignore_split_join, ignore_alloc_free, ignore_cliffords, ignore_partition]
+    basic_generalizer = [ignore_split_join, ignore_alloc_free, ignore_cliffords]
     if generalizer is not None:
         if isinstance(generalizer, (list, tuple)):
             basic_generalizer = basic_generalizer + list(generalizer)
