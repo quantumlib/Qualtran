@@ -19,6 +19,7 @@ import pandas.io.formats.style
 from qualtran import Bloq, BloqExample
 from qualtran.testing import (
     BloqCheckResult,
+    check_bloq_example_classical_action,
     check_bloq_example_decompose,
     check_bloq_example_make,
     check_equivalent_bloq_example_counts,
@@ -65,17 +66,12 @@ def bloq_classes_with_no_examples(
 
 
 IDCOLS = ['package', 'bloq_cls', 'name']
-CHECKCOLS = ['make', 'decomp', 'counts']
+CHECKCOLS = ['make', 'decomp', 'counts', 'classical']
 
 
 def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
-    return {
-        'bloq_cls': k.__name__,
-        'package': _get_package(k),
-        'name': '-',
-        'make': BloqCheckResult.MISSING,
-        'decomp': BloqCheckResult.MISSING,
-        'counts': BloqCheckResult.MISSING,
+    return {'bloq_cls': k.__name__, 'package': _get_package(k), 'name': '-'} | {
+        checkcol: BloqCheckResult.MISSING for checkcol in CHECKCOLS
     }
 
 
@@ -87,6 +83,7 @@ def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
         'make': check_bloq_example_make(be)[0],
         'decomp': check_bloq_example_decompose(be)[0],
         'counts': check_equivalent_bloq_example_counts(be)[0],
+        'classical': check_bloq_example_classical_action(be)[0],
     }
 
 
