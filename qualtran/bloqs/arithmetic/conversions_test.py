@@ -12,6 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import pytest
+
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran.bloqs.arithmetic.conversions import (
     _signed_to_twos,
@@ -49,3 +52,8 @@ def test_signed_to_twos_complement_t_complexity():
     cbloq = bb.finalize(x=q0)
     _, sigma = cbloq.call_graph()
     assert sigma[TGate()] == 4 * (5 - 2)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook("conversions")

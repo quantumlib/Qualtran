@@ -310,6 +310,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         Rx,
         Ry,
         Rz,
+        SGate,
         TGate,
         Toffoli,
         TwoBitSwap,
@@ -338,6 +339,8 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     CIRQ_GATE_TO_BLOQ_MAP = {
         cirq.T: TGate(),
         cirq.T**-1: TGate().adjoint(),
+        cirq.S: SGate(),
+        cirq.S**-1: SGate().adjoint(),
         cirq.H: Hadamard(),
         cirq.CNOT: CNOT(),
         cirq.TOFFOLI: Toffoli(),
