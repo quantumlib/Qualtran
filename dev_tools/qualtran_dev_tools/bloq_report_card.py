@@ -21,6 +21,7 @@ from qualtran.testing import (
     BloqCheckResult,
     check_bloq_example_decompose,
     check_bloq_example_make,
+    check_bloq_example_serialize,
     check_equivalent_bloq_example_counts,
 )
 
@@ -65,7 +66,7 @@ def bloq_classes_with_no_examples(
 
 
 IDCOLS = ['package', 'bloq_cls', 'name']
-CHECKCOLS = ['make', 'decomp', 'counts']
+CHECKCOLS = ['make', 'decomp', 'counts', 'serialize']
 
 
 def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
@@ -76,6 +77,7 @@ def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
         'make': BloqCheckResult.MISSING,
         'decomp': BloqCheckResult.MISSING,
         'counts': BloqCheckResult.MISSING,
+        'serialize': BloqCheckResult.MISSING,
     }
 
 
@@ -87,6 +89,7 @@ def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
         'make': check_bloq_example_make(be)[0],
         'decomp': check_bloq_example_decompose(be)[0],
         'counts': check_equivalent_bloq_example_counts(be)[0],
+        'serialize': check_bloq_example_serialize(be)[0],
     }
 
 

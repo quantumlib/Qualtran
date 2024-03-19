@@ -20,8 +20,10 @@ import "qualtran/protos/annotations.proto";
 import "qualtran/protos/args.proto";
 import "qualtran/protos/registers.proto";
 import "qualtran/protos/data_types.proto";
+import "qualtran/protos/ctrl_spec.proto";
 
 package qualtran;
+
 
 message BloqArg {
   string name = 1;
@@ -39,6 +41,12 @@ message BloqArg {
     bytes cirq_json_gzip = 8;
     // data type
     QDataType qdata_type = 9;
+    // A Register object, accepted as an argument.
+    Register register = 10;
+    // A repeated list of one or more registers, accepted as arguments.
+    Registers registers = 11;
+    // Ctrl Spec for controlled bloqs
+    CtrlSpec ctrl_spec = 12;
   }
 }
 
