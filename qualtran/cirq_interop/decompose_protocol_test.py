@@ -13,8 +13,6 @@
 #  limitations under the License.
 
 import cirq
-import numpy as np
-import pytest
 
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
 

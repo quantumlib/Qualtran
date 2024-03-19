@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, FrozenSet, Sequence
+from typing import Any
 
 import cirq
 from cirq.protocols.decompose_protocol import DecomposeResult
