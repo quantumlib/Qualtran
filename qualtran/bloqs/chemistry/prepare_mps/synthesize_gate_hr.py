@@ -30,7 +30,7 @@ from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
 
 
 @attrs.frozen
-class DecomposeGateViaHR(Bloq):
+class SynthesizeGateViaHR(Bloq):
     r"""Given all or some columns of an unitary, it is generated via Householder reflections.
 
     This bloq implements the algorithm described in [1], which basically implements an arbitrary
