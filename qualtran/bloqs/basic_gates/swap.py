@@ -159,10 +159,9 @@ class TwoBitCSwap(Bloq):
         """The t complexity.
 
         References:
-            [An algorithm for the T-count](https://arxiv.org/abs/1308.4134). Gosset et. al. 2013.
-            Figure 5.2.
+            [An algorithm for the T-count](https://arxiv.org/abs/1308.4134).
+            Gosset et. al. 2013. Figure 5.2.
         """
-        # https://arxiv.org/abs/1308.4134
         return TComplexity(t=7, clifford=10)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -307,7 +306,7 @@ class CSwap(GateWithRegisters):
             return Circle(filled=True)
 
     def _t_complexity_(self) -> TComplexity:
-        return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
+        return TComplexity(t=7 * self.bitsize, clifford=14 * self.bitsize)
 
     def adjoint(self) -> 'Bloq':
         return self
