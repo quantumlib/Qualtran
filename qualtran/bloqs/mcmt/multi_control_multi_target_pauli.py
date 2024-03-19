@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple
+from typing import Any, Dict, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -33,8 +33,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -91,7 +93,7 @@ def _c_multi_not() -> MultiTargetCNOT:
 
 _C_MULTI_NOT_DOC = BloqDocSpec(
     bloq_cls=MultiTargetCNOT,
-    import_line='from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT',
+    import_line='from qualtran.bloqs.mcmt import MultiTargetCNOT',
     examples=(_c_multi_not_symb, _c_multi_not),
 )
 
@@ -108,50 +110,87 @@ class MultiControlPauli(GateWithRegisters):
     """
 
     cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
-    target_gate: cirq.Pauli = cirq.X
+    target_gate: cirq.Pauli
 
     @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(controls=len(self.cvs), target=1)
+    def signature(self) -> 'Signature':
+        ctrl = Register('controls', QBit(), shape=(len(self.cvs),))
+        target = Register('target', QBit())
+        return Signature([ctrl, target] if len(self.cvs) > 0 else [target])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
     ) -> cirq.OP_TREE:
-        controls, target = quregs.get('controls', ()), quregs['target']
-        if len(self.cvs) < 2:
+        controls, target = quregs.get('controls', np.array([])), quregs['target']
+        if len(self.cvs) <= 2:
+            controls = controls.flatten()
+            yield [cirq.X(q) for cv, q in zip(self.cvs, controls) if cv == 0]
             yield self.target_gate.on(*target).controlled_by(*controls)
+            yield [cirq.X(q) for cv, q in zip(self.cvs, controls) if cv == 0]
             return
         qm = context.qubit_manager
         and_ancilla, and_target = np.array(qm.qalloc(len(self.cvs) - 2)), qm.qalloc(1)
-        ctrl, junk = controls[:, np.newaxis], and_ancilla[:, np.newaxis]
-        if len(self.cvs) == 2:
-            and_op = And(*self.cvs).on_registers(ctrl=ctrl, target=and_target)
-        else:
-            and_op = MultiAnd(self.cvs).on_registers(ctrl=ctrl, junk=junk, target=and_target)
+        and_op = MultiAnd(self.cvs).on_registers(
+            ctrl=controls, junk=and_ancilla[:, np.newaxis], target=and_target
+        )
         yield and_op
         yield self.target_gate.on(*target).controlled_by(*and_target)
         yield and_op**-1
         qm.qfree([*and_ancilla, *and_target])
 
     def short_name(self) -> str:
-        return r'$C^{n}(P)$'
+        n = len(self.cvs)
+        ctrl = f'C^{n}' if n > 2 else ['', 'C', 'CC'][n]
+        return f'{ctrl}{self.target_gate!s}'
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["@" if b else "@(0)" for b in self.cvs]
         wire_symbols += [str(self.target_gate)]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def _t_complexity_(self) -> TComplexity:
-        if len(self.cvs) < 2:
-            return TComplexity(clifford=1)
-        and_gate = And(*self.cvs) if len(self.cvs) == 2 else MultiAnd(self.cvs)
-        and_cost = t_complexity(and_gate)
-        controlled_pauli_cost = t_complexity(self.target_gate.controlled(1))
-        and_inv_cost = t_complexity(and_gate**-1)
-        return and_cost + controlled_pauli_cost + and_inv_cost
+    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+        controls, target = vals.get('controls', np.array([])), vals.get('target')
+        if self.target_gate not in (cirq.X, XGate()):
+            raise NotImplementedError(f"{self} is not classically simulatable.")
+
+        if (self.cvs == controls).all():
+            target = (target + 1) % 2
+
+        return {'controls': controls, 'target': target}
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
+
+        n = len(self.cvs)
+        if n > 2:
+            return {
+                (MultiAnd(self.cvs), 1),
+                (MultiAnd(self.cvs).adjoint(), 1),
+                (_cirq_gate_to_bloq(self.target_gate.controlled(1)), 1),
+            }
+        n_pre_post_x = 2 * (len(self.cvs) - sum(self.cvs))
+        pre_post_graph = {(XGate(), n_pre_post_x)} if n_pre_post_x else set({})
+        return {(_cirq_gate_to_bloq(self.target_gate.controlled(n)), 1)} | pre_post_graph
 
     def _apply_unitary_(self, args: 'cirq.ApplyUnitaryArgs') -> np.ndarray:
-        return cirq.apply_unitary(self.target_gate.controlled(control_values=self.cvs), args)
+        cpauli = (
+            self.target_gate.controlled(control_values=self.cvs) if self.cvs else self.target_gate
+        )
+        return cirq.apply_unitary(cpauli, args)
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
 
     def _has_unitary_(self) -> bool:
         return True
@@ -165,7 +204,7 @@ def _ccpauli() -> MultiControlPauli:
 
 _CC_PAULI_DOC = BloqDocSpec(
     bloq_cls=MultiControlPauli,
-    import_line='from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli',
+    import_line='from qualtran.bloqs.mcmt import MultiControlPauli',
     examples=(_ccpauli,),
 )
 

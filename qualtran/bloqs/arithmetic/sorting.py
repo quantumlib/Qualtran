@@ -75,11 +75,7 @@ def _cmp_symb() -> Comparator:
     return cmp_symb
 
 
-_COMPARATOR_DOC = BloqDocSpec(
-    bloq_cls=Comparator,
-    import_line='from qualtran.bloqs.arithmetic.sorting import Comparator',
-    examples=(_cmp_symb,),
-)
+_COMPARATOR_DOC = BloqDocSpec(bloq_cls=Comparator, examples=[_cmp_symb])
 
 
 @frozen
@@ -131,8 +127,4 @@ def _bitonic_sort() -> BitonicSort:
     return bitonic_sort
 
 
-_BITONIC_SORT_DOC = BloqDocSpec(
-    bloq_cls=BitonicSort,
-    import_line='from qualtran.bloqs.arithmetic.sorting import BitonicSort',
-    examples=(_bitonic_sort,),
-)
+_BITONIC_SORT_DOC = BloqDocSpec(bloq_cls=BitonicSort, examples=[_bitonic_sort])
