@@ -53,39 +53,53 @@ class CtrlSpec:
     following two equivalent CtrlSpecs:
 
         CtrlSpec()
-        CtrlSpec(qdtype=QBit(), cvs=1)
+        CtrlSpec(qdtypes=QBit(), cvs=1)
 
     This class supports additional control specifications:
      1. 'negative' controls where the bloq is active if the input is |0>.
      2. integer-equality controls where a QInt input must match an integer control value.
      3. ndarrays of control values, where the bloq is active if **all** inputs are active.
+     4. Multiple control registers, control values for each of which can be specified
+        using 1-3 above.
 
-    For example: `CtrlSpec(cvs=[0, 1, 0, 1])` is active if the four input bits match the pattern.
+    For example:
+    1. `CtrlSpec(qdtypes=QUInt(4), cvs=0b0101)`:
+            Ctrl for a single register, of type `QUInt(4)` and shape `()`, is active when the
+            soquet of the input register takes value 5.
+    2. `CtrlSpec(cvs=[0, 1, 1, 0])`:
+            Ctrl for a single register, of type `QBit()` and shape `(4,)`, is active when soquets
+            of input register take values `[0, 1, 1, 0]`.
+    3. `CtrlSpec(qdtypes=[QBit(), QBit()], cvs=[[0, 1], [1, 0]]).is_active([0, 1], [1, 0])`:
+            Ctrl for 2 registers, each of type `QBit()` and shape `(2,)`, is active when the
+            soquet for each register takes values `[0, 1]` and  `[1, 0]` respectively.
 
-    A generalized control spec could support any number of "activation functions". The methods
-    `activation_function_dtypes` and `is_active` are defined for future extensibility.
+    This `CtrlSpec` class represents control values as a single `AND` clause, that applies
+    simultaneously to all control registers. The functions The methods `activation_function_dtypes`
+    and `is_active` are defined for future extensibility; such that one could define a ctrl spec
+    that can represent more general control values as a union of `AND` clauses where the control
+    is active if any of the `AND` clause is satisfied.
 
     Args:
-        qdtype: The quantum data type of the control input.
+        qdtypes: The quantum data type of the control input.
         cvs: The control value(s). If more than one value is provided, they must all be
             compatible with `qdtype` and the bloq is implied to be active if **all** inputs
             are active.
     """
 
-    qdtype: Tuple[QDType, ...] = attrs.field(
+    qdtypes: Tuple[QDType, ...] = attrs.field(
         default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
     )
     cvs: Tuple[NDArray[int], ...] = attrs.field(default=1, converter=_cvs_convert)
 
     def __attrs_post_init__(self):
-        assert len(self.qdtype) == len(self.cvs)
+        assert len(self.qdtypes) == len(self.cvs)
 
     @cached_property
     def num_ctrl_reg(self) -> int:
-        return len(self.qdtype)
+        return len(self.qdtypes)
 
     @cached_property
-    def shape(self) -> Tuple[Tuple[int, ...], ...]:
+    def shapes(self) -> Tuple[Tuple[int, ...], ...]:
         return tuple(cv.shape for cv in self.cvs)
 
     def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[int, ...]]]:
@@ -95,12 +109,10 @@ class CtrlSpec:
         whether the bloq should be active. This method is useful for setting up appropriate
         control registers for a ControlledBloq.
 
-        This implementation returns one entry of type `self.qdtype` and shape `self.shape`.
-
         Returns:
             A sequence of (type, shape) tuples analogous to the arguments to `Register`.
         """
-        return [(qdtype, cv.shape) for qdtype, cv in zip(self.qdtype, self.cvs)]
+        return [(qdtype, cv.shape) for qdtype, cv in zip(self.qdtypes, self.cvs)]
 
     def is_active(self, *vals: 'ClassicalValT') -> bool:
         """A classical implementation of the 'activation function'.
@@ -124,6 +136,8 @@ class CtrlSpec:
         for val, cv in zip(vals, self.cvs):
             if isinstance(val, (int, np.integer)):
                 val = np.array(val)
+            else:
+                val = np.asarray(val)
             if val.shape != cv.shape:
                 raise ValueError(f"Incorrect input shape for {self}: {val.shape} != {cv.shape}.")
             if np.any(val != cv):
@@ -142,21 +156,21 @@ class CtrlSpec:
         return TextBox(f'{cv}')
 
     @cached_property
-    def _cvs_tuple(self):
-        return tuple(tuple(cv.reshape(-1)) for cv in self.cvs)
+    def _cvs_tuple(self) -> Tuple[int, ...]:
+        return tuple(cv for cvs in self.cvs for cv in tuple(cvs.reshape(-1)))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CtrlSpec):
             return False
 
         return (
-            other.qdtype == self.qdtype
-            and other.shape == self.shape
+            other.qdtypes == self.qdtypes
+            and other.shapes == self.shapes
             and other._cvs_tuple == self._cvs_tuple
         )
 
     def __hash__(self):
-        return hash((self.qdtype, self.shape, self._cvs_tuple))
+        return hash((self.qdtypes, self.shapes, self._cvs_tuple))
 
 
 class AddControlledT(Protocol):

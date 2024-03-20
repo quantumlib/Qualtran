@@ -29,7 +29,7 @@ def test_ctrl_spec():
     assert cspec1 == CtrlSpec(QBit(), cvs=1)
 
     cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
-    assert cspec2.shape == ((3, 3, 3),)
+    assert cspec2.shapes == ((3, 3, 3),)
     assert cspec2 != cspec1
 
     test_hashable = {cspec1: 1, cspec2: 2}
@@ -37,16 +37,16 @@ def test_ctrl_spec():
 
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3 != cspec1
-    assert cspec3.qdtype[0].num_qubits == 64
+    assert cspec3.qdtypes[0].num_qubits == 64
     assert cspec3.cvs[0] == 234234
     assert cspec3.cvs[0][tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(qdtype=(QInt(bitsize=64),), cvs=(array(234234),))'
+    assert repr(cspec3) == 'CtrlSpec(qdtypes=(QInt(bitsize=64),), cvs=(array(234234),))'
 
 
 def test_ctrl_spec_shape():
     c1 = CtrlSpec(QBit(), cvs=1)
     c2 = CtrlSpec(QBit(), cvs=(1,))
-    assert c1.shape != c2.shape
+    assert c1.shapes != c2.shapes
     assert c1 != c2
 
 
