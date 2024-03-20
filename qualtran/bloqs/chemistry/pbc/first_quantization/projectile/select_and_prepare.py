@@ -73,8 +73,8 @@ class PrepareTUVSuperpositions(Bloq):
             kinetic, kinetic (mean-projectile), UV, and projectile only.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 15, section A
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 15, section A
     """
     num_bits_t: int
     eta: int
