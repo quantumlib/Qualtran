@@ -84,9 +84,5 @@ class PrepareOracle(GateWithRegisters):
         return ()
 
     @cached_property
-    def extra_registers(self) -> Tuple[Register, ...]:
-        return ()
-
-    @cached_property
     def signature(self) -> Signature:
         return Signature([*self.selection_registers, *self.junk_registers])
