@@ -17,11 +17,10 @@ import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
-from qualtran.bloqs.multiplexers.select_pauli_lcu_test import get_1d_Ising_hamiltonian
 from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalkOperator
-from qualtran.bloqs.reflection_using_prepare_test import construct_gate_helper_and_qubit_order
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -41,14 +40,14 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
     return QubitizationWalkOperator(select=select, prepare=prepare)
 
 
-def get_walk_operator_for_1d_Ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
-    ham = get_1d_Ising_hamiltonian(cirq.LineQubit.range(num_sites))
+def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
     return walk_operator_for_pauli_hamiltonian(ham, eps)
 
 
 @pytest.mark.parametrize('num_sites,eps', [(4, 2e-1), (3, 1e-1)])
 def test_qubitization_walk_operator(num_sites: int, eps: float):
-    ham = get_1d_Ising_hamiltonian(cirq.LineQubit.range(num_sites))
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
     qubitization_lambda = np.sum(ham_coeff)
 
@@ -89,7 +88,7 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
 
 def test_qubitization_walk_operator_diagrams():
     num_sites, eps = 4, 1e-1
-    walk = get_walk_operator_for_1d_Ising_model(num_sites, eps)
+    walk = get_walk_operator_for_1d_ising_model(num_sites, eps)
     # 1. Diagram for $W = SELECT.R_{L}$
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk, decompose_once=True)
     cirq.testing.assert_has_diagram(
@@ -207,7 +206,7 @@ target3: ──────SelectPauliLCU─────────────
 
 
 def test_qubitization_walk_operator_consistent_protocols_and_controlled():
-    gate = get_walk_operator_for_1d_Ising_model(4, 1e-1)
+    gate = get_walk_operator_for_1d_ising_model(4, 1e-1)
     op = gate.on_registers(**get_named_qubits(gate.signature))
     # Build controlled gate
     equals_tester = cirq.testing.EqualsTester()
