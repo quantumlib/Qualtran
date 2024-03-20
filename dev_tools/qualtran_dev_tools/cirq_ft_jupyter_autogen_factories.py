@@ -78,6 +78,6 @@ def _make_StatePreparationAliasSampling():
 
 
 def _make_QubitizationWalkOperator():
-    from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_Ising_model
+    from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
 
-    return get_walk_operator_for_1d_Ising_model(4, 2e-1)
+    return get_walk_operator_for_1d_ising_model(4, 2e-1)
