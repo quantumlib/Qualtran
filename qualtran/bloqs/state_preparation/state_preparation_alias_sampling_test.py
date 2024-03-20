@@ -17,9 +17,16 @@ import numpy as np
 import pytest
 
 from qualtran.bloqs.multiplexers.select_pauli_lcu_test import get_1d_Ising_lcu_coeffs
-from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+    _state_prep_alias,
+    StatePreparationAliasSampling,
+)
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+
+
+def test_state_prep_alias_sampling_autotest(bloq_autotester):
+    bloq_autotester(_state_prep_alias)
 
 
 def assert_state_preparation_valid_for_coefficient(lcu_coefficients: float, epsilon: float):

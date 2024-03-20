@@ -18,10 +18,14 @@ import numpy as np
 import pytest
 
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
+from qualtran.bloqs.multiplexers.select_pauli_lcu import _select_pauli_lcu, SelectPauliLCU
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+
+
+def test_select_pauli_lcu_autotest(bloq_autotester):
+    bloq_autotester(_select_pauli_lcu)
 
 
 def get_1d_Ising_hamiltonian(

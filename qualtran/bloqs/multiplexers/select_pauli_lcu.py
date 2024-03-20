@@ -22,9 +22,14 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, QAny, QBit, Register
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.bloqs.select_and_prepare import SelectOracle
+from qualtran.resource_counting.generalizers import (
+    cirq_to_bloqs,
+    ignore_cliffords,
+    ignore_split_join,
+)
 
 
 @attrs.frozen
@@ -134,3 +139,19 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
+
+
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _select_pauli_lcu() -> SelectPauliLCU:
+    target_bitsize = 4
+    us = ['XIXI', 'YIYI', 'ZZZZ', 'ZXYZ']
+    us = [cirq.DensePauliString(u) for u in us]
+    selection_bitsize = int(np.ceil(np.log2(len(us))))
+    return SelectPauliLCU(selection_bitsize, target_bitsize, select_unitaries=us)
+
+
+_SELECT_PAULI_LCU_DOC = BloqDocSpec(
+    bloq_cls=SelectPauliLCU,
+    import_line='from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU',
+    examples=(_select_pauli_lcu,),
+)

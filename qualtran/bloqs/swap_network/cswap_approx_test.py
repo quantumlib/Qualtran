@@ -32,12 +32,6 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 random.seed(12345)
 
 
-def _make_CSwapApprox():
-    from qualtran.bloqs.swap_network import CSwapApprox
-
-    return CSwapApprox(bitsize=64)
-
-
 def test_cswap_approx_decomp():
     csa = CSwapApprox(10)
     assert_valid_bloq_decomposition(csa)
