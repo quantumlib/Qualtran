@@ -29,7 +29,7 @@ def test_ctrl_spec():
     assert cspec1 == CtrlSpec(QBit(), cvs=1)
 
     cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
-    assert cspec2.shape == (3, 3, 3)
+    assert cspec2.shape == ((3, 3, 3),)
     assert cspec2 != cspec1
 
     test_hashable = {cspec1: 1, cspec2: 2}
@@ -37,10 +37,10 @@ def test_ctrl_spec():
 
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3 != cspec1
-    assert cspec3.qdtype.num_qubits == 64
-    assert cspec3.cvs == 234234
-    assert cspec3.cvs[tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(qdtype=QInt(bitsize=64), cvs=array(234234))'
+    assert cspec3.qdtype[0].num_qubits == 64
+    assert cspec3.cvs[0] == 234234
+    assert cspec3.cvs[0][tuple()] == 234234
+    assert repr(cspec3) == 'CtrlSpec(qdtype=(QInt(bitsize=64),), cvs=(array(234234),))'
 
 
 def test_ctrl_spec_shape():
@@ -73,6 +73,12 @@ def test_ctrl_spec_activation_3():
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3.is_active(234234)
     assert not cspec3.is_active(432432)
+
+
+def test_ctrl_spec_activation_4():
+    cspec3 = CtrlSpec([QInt(32), QInt(64)], cvs=[np.array(1234), np.array(234234)])
+    assert cspec3.is_active(1234, 234234)
+    assert not cspec3.is_active(12345, 432432)
 
 
 def test_controlled_serial():
@@ -206,6 +212,30 @@ def test_classical_sim_int():
 
     vals = bloq.call_classically(ctrl=88, q=0)
     assert vals == (88, 1)
+
+
+def test_classical_sim_int_arr():
+    ctrl_spec = CtrlSpec(QInt(64), cvs=[1234, 234234])
+    bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
+
+    vals = bloq.call_classically(ctrl=[1234, 234234], q=0)
+    np.testing.assert_array_equal(vals[0], (1234, 234234))
+    assert vals[1] == 1
+
+    vals = bloq.call_classically(ctrl=[123, 234234], q=0)
+    np.testing.assert_array_equal(vals[0], (123, 234234))
+    assert vals[1] == 0
+
+
+def test_classical_sim_int_multi_reg():
+    ctrl_spec = CtrlSpec([QInt(32), QInt(64)], cvs=[np.array(1234), np.array(234234)])
+    bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
+
+    vals = bloq.call_classically(ctrl1=1234, ctrl2=234234, q=0)
+    assert vals == (1234, 234234, 1)
+
+    vals = bloq.call_classically(ctrl1=123, ctrl2=234234, q=0)
+    assert vals == (123, 234234, 0)
 
 
 @pytest.mark.notebook

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Protocol, Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, Protocol, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -27,6 +27,18 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+
+
+def _cvs_convert(
+    cvs: Union[int, Sequence[int], Sequence[Sequence[int]]]
+) -> Tuple[NDArray[int], ...]:
+    if isinstance(cvs, (int, np.integer)):
+        return (np.array(cvs),)
+    if isinstance(cvs, np.ndarray):
+        return (cvs,)
+    if all(isinstance(cv, (int, np.integer)) for cv in cvs):
+        return (np.asarray(cvs),)
+    return tuple(np.asarray(cv) for cv in cvs)
 
 
 @attrs.frozen(eq=False)
@@ -60,17 +72,21 @@ class CtrlSpec:
             are active.
     """
 
-    qdtype: QDType = attrs.field(default=QBit())
-    cvs: NDArray[int] = attrs.field(
-        default=1,
-        converter=lambda cvs: np.array(cvs)
-        if isinstance(cvs, (int, np.integer))
-        else np.asarray(cvs),
+    qdtype: Tuple[QDType, ...] = attrs.field(
+        default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
     )
+    cvs: Tuple[NDArray[int], ...] = attrs.field(default=1, converter=_cvs_convert)
 
-    @property
-    def shape(self) -> Tuple[int, ...]:
-        return self.cvs.shape
+    def __attrs_post_init__(self):
+        assert len(self.qdtype) == len(self.cvs)
+
+    @cached_property
+    def num_ctrl_reg(self) -> int:
+        return len(self.qdtype)
+
+    @cached_property
+    def shape(self) -> Tuple[Tuple[int, ...], ...]:
+        return tuple(cv.shape for cv in self.cvs)
 
     def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[int, ...]]]:
         """The data types that serve as input to the 'activation function'.
@@ -84,9 +100,7 @@ class CtrlSpec:
         Returns:
             A sequence of (type, shape) tuples analogous to the arguments to `Register`.
         """
-        # CtrlSpec assumes your inputs can be expressed with one register, but this could
-        # be generalized. Open a GitHub issue if interested.
-        return [(self.qdtype, self.shape)]
+        return [(qdtype, cv.shape) for qdtype, cv in zip(self.qdtype, self.cvs)]
 
     def is_active(self, *vals: 'ClassicalValT') -> bool:
         """A classical implementation of the 'activation function'.
@@ -104,32 +118,32 @@ class CtrlSpec:
         Returns:
             True if the specific input values evaluate to `True` for this CtrlSpec.
         """
-        # CtrlSpec assumes your inputs can be expressed with one ClassicalValT, but this could
-        # be generalized. Open a GitHub issue if interested.
-        if len(vals) != 1:
+        if len(vals) != self.num_ctrl_reg:
             raise ValueError(f"Incorrect number of inputs for {self}: {len(vals)}.")
-        (val,) = vals
-        if isinstance(val, (int, np.integer)):
-            val = np.array(val)
-        if val.shape != self.shape:
-            raise ValueError(f"Incorrect input shape for {self}: {val.shape}.")
 
-        return np.all(val == self.cvs)
+        for val, cv in zip(vals, self.cvs):
+            if isinstance(val, (int, np.integer)):
+                val = np.array(val)
+            if val.shape != cv.shape:
+                raise ValueError(f"Incorrect input shape for {self}: {val.shape} != {cv.shape}.")
+            if np.any(val != cv):
+                return False
+        return True
 
     def wire_symbol(self, i: int, soq: 'Soquet') -> 'WireSymbol':
         # Return a circle for bits; a box otherwise.
         from qualtran.drawing import Circle, TextBox
 
         if soq.reg.bitsize == 1:
-            cv = self.cvs[soq.idx]
+            cv = self.cvs[i][soq.idx]
             return Circle(filled=(cv == 1))
 
-        cv = self.cvs[soq.idx]
+        cv = self.cvs[i][soq.idx]
         return TextBox(f'{cv}')
 
     @cached_property
     def _cvs_tuple(self):
-        return tuple(self.cvs.reshape(-1))
+        return tuple(tuple(cv.reshape(-1)) for cv in self.cvs)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CtrlSpec):

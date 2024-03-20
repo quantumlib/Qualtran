@@ -22,6 +22,6 @@ import "qualtran/protos/args.proto";
 package qualtran;
 
 message CtrlSpec {
-  QDataType qdtype = 1;
-  NDArray cvs = 2;
+  repeated QDataType qdtype = 1;
+  repeated NDArray cvs = 2;
 }
