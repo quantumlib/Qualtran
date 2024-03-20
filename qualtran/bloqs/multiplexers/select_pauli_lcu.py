@@ -147,7 +147,8 @@ def _select_pauli_lcu() -> SelectPauliLCU:
     us = ['XIXI', 'YIYI', 'ZZZZ', 'ZXYZ']
     us = [cirq.DensePauliString(u) for u in us]
     selection_bitsize = int(np.ceil(np.log2(len(us))))
-    return SelectPauliLCU(selection_bitsize, target_bitsize, select_unitaries=us)
+    select_pauli_lcu = SelectPauliLCU(selection_bitsize, target_bitsize, select_unitaries=us)
+    return select_pauli_lcu
 
 
 _SELECT_PAULI_LCU_DOC = BloqDocSpec(

@@ -160,4 +160,8 @@ def _walk_op() -> QubitizationWalkOperator:
     return walk_op
 
 
-_QUBITIZATION_WALK_DOC = BloqDocSpec(bloq_cls=QubitizationWalkOperator, examples=(_walk_op,))
+_QUBITIZATION_WALK_DOC = BloqDocSpec(
+    bloq_cls=QubitizationWalkOperator,
+    import_line='from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator',
+    examples=(_walk_op,),
+)
