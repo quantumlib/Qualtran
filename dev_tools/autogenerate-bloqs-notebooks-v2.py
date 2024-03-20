@@ -205,7 +205,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
-<<<<<<< HEAD
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham',
     ),
     NotebookSpecV2(
@@ -213,10 +212,6 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.chemistry.trotter.trotterized_unitary,
         bloq_specs=[qualtran.bloqs.chemistry.trotter.trotterized_unitary._TROTT_UNITARY_DOC],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
-=======
-        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/',
-        path_stem=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/trotter',
->>>>>>> main
     ),
     NotebookSpecV2(
         title='Ising Trotter Bloqs',

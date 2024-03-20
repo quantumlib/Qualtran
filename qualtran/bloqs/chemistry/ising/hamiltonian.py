@@ -74,7 +74,7 @@ def get_1d_ising_hamiltonian(
 def get_1d_ising_lcu_coeffs(
     n_spins: int, j_zz_strength: float = np.pi / 3, gamma_x_strength: float = np.pi / 7
 ) -> np.ndarray:
-    """Get LCU coefficients for a 1d ising Hamiltonian.
+    r"""Get LCU coefficients for a 1d ising Hamiltonian.
 
     The order of the terms is according to `get_1d_ising_hamiltonian`, namely: ZZ's and X's
     interleaved.
