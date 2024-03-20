@@ -29,6 +29,7 @@ from qualtran.cirq_interop._cirq_to_bloq_test import TestCNOT as TestCNOTCirq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
+from qualtran.serialization import resolver_dict
 
 
 @pytest.mark.parametrize(
@@ -54,7 +55,7 @@ def test_arg_to_proto_round_trip(arg):
 
 
 def test_bloq_to_proto_cnot():
-    bloq_serialization.RESOLVER_DICT.update({'TestCNOT': TestCNOTCirq})
+    resolver_dict.add_to_resolver_dict(TestCNOTCirq)
 
     cnot = TestCNOTCirq()
     proto_lib = bloq_serialization.bloqs_to_proto(cnot)
@@ -63,7 +64,7 @@ def test_bloq_to_proto_cnot():
     assert len(proto_lib.table[1].decomposition) == 0
 
     proto = proto_lib.table[0].bloq
-    assert proto.name == "TestCNOT"
+    assert proto.name == "qualtran.cirq_interop._cirq_to_bloq_test.TestCNOT"
     assert len(proto.registers.registers) == 2
     assert proto.registers.registers[0].name == 'control'
     assert proto.registers.registers[0].side == registers_pb2.Register.Side.THRU
@@ -74,7 +75,7 @@ def test_bloq_to_proto_cnot():
 
 
 def test_cbloq_to_proto_two_cnot():
-    bloq_serialization.RESOLVER_DICT.update({'TestTwoCNOT': TestTwoCNOT})
+    resolver_dict.add_to_resolver_dict(TestTwoCNOT)
 
     cbloq = TestTwoCNOT().decompose_bloq()
     proto_lib = bloq_serialization.bloqs_to_proto(cbloq)
@@ -112,15 +113,14 @@ class TestTwoCSwap(Bloq):
 
 
 def test_cbloq_to_proto_test_two_cswap():
-    bloq_serialization.RESOLVER_DICT.update({'TestCSwap': TestCSwap})
-    bloq_serialization.RESOLVER_DICT.update({'TestTwoCSwap': TestTwoCSwap})
+    resolver_dict.add_to_resolver_dict(TestCSwap, TestTwoCSwap)
 
     bitsize = sympy.Symbol("a") * sympy.Symbol("b")
     cswap_proto_lib = bloq_serialization.bloqs_to_proto(TestCSwap(bitsize))
     assert len(cswap_proto_lib.table) == 1
     assert len(cswap_proto_lib.table[0].decomposition) == 0
     cswap_proto = cswap_proto_lib.table[0].bloq
-    assert cswap_proto.name == "TestCSwap"
+    assert cswap_proto.name.split('.')[-1] == "TestCSwap"
     assert len(cswap_proto.args) == 1
     assert cswap_proto.args[0].name == "bitsize"
     assert sympy.parse_expr(cswap_proto.args[0].sympy_expr) == bitsize
@@ -170,9 +170,7 @@ class TestMetaBloq(Bloq):
 
 
 def test_meta_bloq_to_proto():
-    bloq_serialization.RESOLVER_DICT.update({'TestCSwap': TestCSwap})
-    bloq_serialization.RESOLVER_DICT.update({'TestTwoCSwap': TestTwoCSwap})
-    bloq_serialization.RESOLVER_DICT.update({'TestMetaBloq': TestMetaBloq})
+    resolver_dict.add_to_resolver_dict(TestCSwap, TestTwoCSwap, TestMetaBloq)
 
     sub_bloq_one = TestTwoCSwap(20)
     sub_bloq_two = TestTwoCSwap(20).decompose_bloq()
@@ -184,10 +182,10 @@ def test_meta_bloq_to_proto():
     proto_lib = bloq_serialization.bloqs_to_proto(bloq, max_depth=2)
     assert len(proto_lib.table) == 4  # TestMetaBloq, TestTwoCSwap, CompositeBloq, TestCSwap
 
-    assert proto_lib.table[0].bloq.name == 'TestMetaBloq'
+    assert proto_lib.table[0].bloq.name.split('.')[-1] == 'TestMetaBloq'
     assert len(proto_lib.table[0].decomposition) == 9
 
-    assert proto_lib.table[1].bloq.name == 'TestTwoCSwap'
+    assert proto_lib.table[1].bloq.name.split('.')[-1] == 'TestTwoCSwap'
     assert len(proto_lib.table[1].decomposition) == 9
 
     assert proto_lib == bloq_serialization.bloqs_to_proto(bloq, bloq, TestTwoCSwap(20), max_depth=2)

@@ -64,7 +64,7 @@ class LPRSInterimPrep(GateWithRegisters):
         yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]
         for i in range(self.bitsize):
             rz_angle = -2 * np.pi * (2**i) / (2**self.bitsize + 1)
-            yield Rz(angle=rz_angle).controlled().on(q[i], *anc)
+            yield cirq.Rz(rads=rz_angle).controlled().on(q[i], *anc)
         yield Rz(angle=-2 * np.pi / (2**self.bitsize + 1)).on(*anc)
         yield Hadamard().on(*anc)
 

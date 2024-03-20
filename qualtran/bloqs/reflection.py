@@ -41,8 +41,8 @@ class Reflection(Bloq):
         bitsizes: The bitsizes of each of the registers to reflect about.
         cvs: The control values for each register.
     """
-    bitsizes: Tuple[int]
-    cvs: Tuple[int]
+    bitsizes: Tuple[int, ...] = attrs.field(converter=tuple)
+    cvs: Tuple[int] = attrs.field(converter=tuple)
 
     def __attrs_post_init__(self):
         if len(self.bitsizes) != len(self.cvs):

@@ -65,9 +65,13 @@ class QROM(UnaryIterationGate):
             Babbush et. al. (2020). Figure 3.
     """
 
-    data: Sequence[NDArray]
-    selection_bitsizes: Tuple[int, ...]
-    target_bitsizes: Tuple[int, ...]
+    data: Sequence[NDArray] = attrs.field(converter=tuple)
+    selection_bitsizes: Tuple[int, ...] = attrs.field(
+        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+    )
+    target_bitsizes: Tuple[int, ...] = attrs.field(
+        converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
+    )
     num_controls: int = 0
 
     @classmethod
