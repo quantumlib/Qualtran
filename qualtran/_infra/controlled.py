@@ -80,10 +80,11 @@ class CtrlSpec:
     is active if any of the `AND` clause is satisfied.
 
     Args:
-        qdtypes: The quantum data type of the control input.
-        cvs: The control value(s). If more than one value is provided, they must all be
-            compatible with `qdtype` and the bloq is implied to be active if **all** inputs
-            are active.
+        qdtypes: A tuple of quantum data types, one per ctrl register.
+        cvs: A tuple of control value(s), one per ctrl register. For each element in the tuple,
+            if more than one ctrl value is provided, they must all be compatible with `qdtype`
+            and the bloq is implied to be active if **all** inputs are active (i.e. the "shape"
+            of the ctrl register is implied to be `cv.shape`).
     """
 
     qdtypes: Tuple[QDType, ...] = attrs.field(
