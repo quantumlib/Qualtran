@@ -101,6 +101,7 @@ class CtrlSpec:
 
     @cached_property
     def shapes(self) -> Tuple[Tuple[int, ...], ...]:
+        """Tuple of shapes of control registers represented by this CtrlSpec."""
         return tuple(cv.shape for cv in self.cvs)
 
     def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[int, ...]]]:
