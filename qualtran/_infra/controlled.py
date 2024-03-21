@@ -23,6 +23,8 @@ from .data_types import QBit, QDType
 from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -278,6 +280,53 @@ class Controlled(Bloq):
             (bloq.controlled(self.ctrl_spec), n)
             for bloq, n in self.subbloq.build_call_graph(ssa=ssa)
         }
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        """Special support for tensor simulation of controlled bloqs.
+
+        Use the CtrlSpec to build a "control tensor" that has an additional index
+        that is True/False depending on the control registers.
+
+        Use quimb functionality to add an extra index to the subbloq's tensor that replaces
+        the subbloq with the identity when that index value is 1.
+
+        Join the two tensors along the internal control index, and we've got the tensors
+        for a controlled bloq.
+        """
+        import quimb.tensor as qtn
+
+        from qualtran.simulation.tensor._controlled import (
+            _get_ctrl_tensor,
+            _get_ctrled_tensor_for_bloq,
+        )
+
+        # Special support requires only bit-valued control indices.
+        if self.ctrl_spec.qdtype != QBit():
+            return super().add_my_tensors(tn=tn, tag=tag, incoming=incoming, outgoing=outgoing)
+
+        internal_ctrl_ind = qtn.rand_uuid()
+        ctrl_tensor = _get_ctrl_tensor(
+            self.ctrl_reg_names,
+            is_active_func=self.ctrl_spec.is_active,
+            incoming=incoming,
+            outgoing=outgoing,
+            internal_ctrl_ind=internal_ctrl_ind,
+        )
+        ctrl_tensor.modify(tags=['CTRL', tag])
+
+        subbloq_tensor = _get_ctrled_tensor_for_bloq(
+            self.subbloq, incoming=incoming, outgoing=outgoing, internal_ctrl_ind=internal_ctrl_ind
+        )
+        subbloq_tensor.modify(tags=[self.short_name(), tag])
+        tn.add(ctrl_tensor)
+        tn.add(subbloq_tensor)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         ctrl_vals = [vals[reg_name] for reg_name in self.ctrl_reg_names]

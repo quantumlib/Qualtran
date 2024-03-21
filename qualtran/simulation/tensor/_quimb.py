@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import itertools
-from typing import Dict, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import quimb.tensor as qtn
@@ -65,7 +65,7 @@ def cbloq_to_quimb(
         don't have to have string names, so we use a Soquet.
 
         Each binst makes a qtn.Tensor, and we use a soquet to name each index. We choose
-        the convention that each binst will respect its predecessors outgoing index names but
+        the convention that each binst will respect its predecessors' outgoing index names but
         is in charge of its own outgoing index names.
 
         This convention breaks down at the end of our graph because we wish our external quimb
@@ -102,11 +102,11 @@ def cbloq_to_quimb(
 
     # Special case: Add variables corresponding to all registers that don't connect to any Bloq.
     # This is needed because `CompositeBloq.iter_bloqnections` ignores `LeftDangle/RightDangle`
-    # bloqs and therefore we never see connections the exist only b/w LeftDangle and
+    # bloqs, and therefore we never see connections that exist only between LeftDangle and
     # RightDangle bloqs.
     for cxn in cbloq.connections:
         if cxn.left.binst is LeftDangle and cxn.right.binst is RightDangle:
-            # This register has no Bloq acting  on it, and thus it would not have a variable in the
+            # This register has no Bloq acting on it, and thus it would not have a variable in
             # the tensor network. Add an identity tensor acting on this register to make sure the
             # tensor network has variables corresponding to all input / output registers.
             tn.add(qtn.Tensor(data=np.eye(2**cxn.left.reg.bitsize), inds=[cxn.right, cxn.left]))
@@ -114,33 +114,47 @@ def cbloq_to_quimb(
     return tn, fix
 
 
+def _get_index(soq: Soquet, d: Dict[str, SoquetT]) -> Soquet:
+    # Helper function to index into `d` according to soq.reg.name and soq.idx.
+    soq_or_arr = d[soq.reg.name]
+    if soq.idx:
+        return soq_or_arr[soq.idx]
+    return soq_or_arr
+
+
 def cbloq_as_contracted_tensor(
-    cbloq: CompositeBloq, incoming: Dict[str, SoquetT], outgoing: Dict[str, SoquetT], tags
+    cbloq: CompositeBloq,
+    incoming: Dict[str, SoquetT],
+    outgoing: Dict[str, SoquetT],
+    tags: Optional[Sequence[Any]] = None,
 ) -> qtn.Tensor:
     """`add_my_tensors` helper for contracting `cbloq` and adding it as a dense tensor.
 
     First, we turn the composite bloq into a TensorNetwork with `cbloq_to_quimb`. Then
-    we contract it to a dense ndarray. This function returns the dense array as well as
-    the indices munged from `incoming` and `outgoing` to match the structure of the ndarray.
+    we contract it to a single tensor. We then make sure the indices match the desired
+    `incoming` and `outgoing` indices.
     """
+    # Contract into one tensor.
+    tn, _ = cbloq_to_quimb(cbloq)
+    tensor: qtn.Tensor = tn.contract(preserve_tensor=True)
+    assert isinstance(tensor, qtn.Tensor), tensor
 
-    # Turn into a dense ndarray, but instead of folding into a 1- or 2-
-    # dimensional state/effect or unitary; we keep all the indices as
-    # distinct dimensions.
+    # TODO: choose one way of doing this.
     signature = cbloq.signature
     rsoqs = _get_flat_dangling_soqs(signature, right=True)
     lsoqs = _get_flat_dangling_soqs(signature, right=False)
-    inds_for_contract = rsoqs + lsoqs
-    assert len(inds_for_contract) > 0
-    tn, _ = cbloq_to_quimb(cbloq)
-    data = tn.to_dense(*([x] for x in inds_for_contract))
-    assert data.ndim == len(inds_for_contract)
+    lsoqs2 = [soq for soq in tensor.inds if soq.binst is LeftDangle]
+    rsoqs2 = [soq for soq in tensor.inds if soq.binst is RightDangle]
+    assert set(lsoqs) == set(lsoqs2), f'{lsoqs} != {lsoqs2}'
+    assert set(rsoqs) == set(rsoqs2)
+    # TODO: end duplicate region
 
-    # Now we just need to make sure the Soquets provided to us are in the correct
-    # order: namely the same order as how we got the indices to contract the composite bloq.
-    osoqs = (outgoing[reg.name] for reg in signature.rights())
-    isoqs = (incoming[reg.name] for reg in signature.lefts())
-    inds_for_adding = _flatten_soquet_collection(itertools.chain(osoqs, isoqs))
-    assert len(inds_for_adding) == len(inds_for_contract)
+    # Now we just need to make sure the indices (soquets) are the ones requested
+    # by the caller of this function.
+    ind_map = {soq: _get_index(soq, incoming) for soq in lsoqs}
+    ind_map |= {soq: _get_index(soq, outgoing) for soq in rsoqs}
+    tensor.reindex(ind_map, inplace=True)
 
-    return qtn.Tensor(data=data, inds=inds_for_adding, tags=tags)
+    # We'll also set the tags.
+    tensor.modify(tags=tags)
+    return tensor
