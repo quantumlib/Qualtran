@@ -39,8 +39,8 @@ class ApplyNuclearPhase(Bloq):
         nu: The momentum transfer register.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) pg 25, paragraph 2.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        pg 25, paragraph 2.
     """
 
     num_bits_p: int
@@ -88,8 +88,7 @@ class SelectUVFirstQuantization(Bloq):
     Registers:
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int

@@ -46,8 +46,8 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         mu: the register to prepare the superposition over.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 21, Eq 77.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 21, Eq 77.
     """
     num_bits_p: int
     adjoint: bool = False
@@ -86,8 +86,8 @@ class PrepareNuSuperPositionState(Bloq):
         nu: the momentum transfer register.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 21, Eq 78.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 21, Eq 78.
     """
     num_bits_p: int
     adjoint: bool = False
@@ -121,8 +121,8 @@ class FlagZeroAsFailure(Bloq):
         flag_minus_zero: a flag bit for failure of the state preparation.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 21, Eq 80.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 21, Eq 80.
     """
     num_bits_p: int
     adjoint: bool = False
@@ -161,8 +161,8 @@ class TestNuLessThanMu(Bloq):
         flag_nu_lt_mu: a flag bit for failure of the state preparation.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 21, Eq 80.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 21, Eq 80.
     """
     num_bits_p: int
     adjoint: bool = False
@@ -216,8 +216,8 @@ class TestNuInequality(Bloq):
         succ: a flag bit for failure of the state preparation.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 21, Eq 80.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 21, Eq 80.
     """
     num_bits_p: int
     num_bits_m: int
@@ -297,8 +297,8 @@ class PrepareNuState(Bloq):
         flag_nu: Flag for success of the state preparation.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 19, section B
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 19, section B
     """
     num_bits_p: int
     m_param: int

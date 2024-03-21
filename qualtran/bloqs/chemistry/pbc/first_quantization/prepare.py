@@ -39,8 +39,8 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         j: a n_eta bit register for unary encoding of eta numbers.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
-        (https://arxiv.org/abs/2105.12767) page 18, section A, around Eq 62.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        page 18, section A, around Eq 62.
     """
     eta: int
     num_bits_rot_aa: int

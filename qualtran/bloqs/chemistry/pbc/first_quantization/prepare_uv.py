@@ -55,8 +55,8 @@ class PrepareUVFirstQuantization(Bloq):
         flag_nu: Flag for success of the state preparation.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 19, section B
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 19, section B
     """
     num_bits_p: int
     eta: int
