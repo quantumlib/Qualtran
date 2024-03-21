@@ -226,13 +226,10 @@ class CtrlSpec:
         idx = 0
         bloq_cvs = []
 
-        def _make_from_bits(qdtype: QDType):
-            return lambda bits: qdtype.from_bits(*bits)
-
         for qdtype, shape in zip(qdtypes, shapes):
             full_shape = shape + (qdtype.num_qubits,)
             curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
-            curr_cvs = np.apply_along_axis(_make_from_bits(qdtype), -1, curr_cvs_bits)
+            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
