@@ -225,7 +225,7 @@ class SumOfSquares(Bloq):
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
-        Quantization](https://arxiv.org/abs/2105.12767) pg 80 give a Toffoli
+        Quantization](https://arxiv.org/abs/2105.12767) pg 80 gives a Toffoli
         complexity for squaring.
     """
 
@@ -420,8 +420,8 @@ class MultiplyTwoReals(Bloq):
         result: bitsize output register
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
-            https://arxiv.org/pdf/2007.07391.pdf) pg 71.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix D. Section 5. (p. 71).
     """
 
     bitsize: int
@@ -480,8 +480,8 @@ class SquareRealNumber(Bloq):
         result: bitsize output register
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
-            ](https://arxiv.org/pdf/2007.07391.pdf) pg 74.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix D. Section 6. (p. 74).
     """
 
     bitsize: int

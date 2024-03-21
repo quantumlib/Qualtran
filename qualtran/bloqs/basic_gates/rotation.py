@@ -66,7 +66,8 @@ class ZPowGate(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -146,7 +147,8 @@ class XPowGate(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -198,7 +200,8 @@ class YPowGate(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -227,7 +230,8 @@ class Rz(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """

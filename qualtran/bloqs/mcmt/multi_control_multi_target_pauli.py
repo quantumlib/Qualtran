@@ -47,7 +47,8 @@ class MultiTargetCNOT(GateWithRegisters):
     containing only CNOT gates.
 
     References:
-        Appendix B.1 of https://arxiv.org/abs/1812.00954.
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Appendix B.1.
     """
 
     bitsize: int
@@ -223,8 +224,7 @@ class MultiControlX(Bloq):
         x: A 1-bit input register bit-flipped based on the values in the ctrls register.
 
     References:
-        [Constructing Large CNOTS]
-        (https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html).
+        [Constructing Large CNOTS](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html).
         Section title "$n−2$ Ancilla Bits", Figure titled $C^n$NOT from $n-2$ zeroed bits.
     """
 

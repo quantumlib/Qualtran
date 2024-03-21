@@ -46,8 +46,8 @@ class PreparePowerTwoState(Bloq):
         r: The register we want to prepare the state over.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
-        (https://arxiv.org/abs/2105.12767) Eq 67-69, pg 19-20
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        Eq 67-69, pg 19-20
     """
     bitsize: int
 
@@ -90,8 +90,8 @@ class PrepareTFirstQuantization(Bloq):
         s: a register encoding bits for each component of the momenta.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 19, section B
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 19, section B
     """
 
     num_bits_p: int
