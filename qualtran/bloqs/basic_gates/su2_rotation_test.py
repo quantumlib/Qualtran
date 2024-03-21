@@ -14,8 +14,6 @@
 import cirq
 import numpy as np
 
-from qualtran.cirq_interop import BloqAsCirqGate
-
 from .su2_rotation import SU2RotationGate
 
 
@@ -29,6 +27,4 @@ def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
 
         gate = SU2RotationGate(theta, phi, lambd)
 
-        expected = gate.rotation_matrix
-        actual = cirq.unitary(BloqAsCirqGate(gate))
-        np.testing.assert_allclose(actual, expected)
+        np.testing.assert_allclose(cirq.unitary(gate), gate.rotation_matrix)
