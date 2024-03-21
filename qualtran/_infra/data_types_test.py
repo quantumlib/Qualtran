@@ -207,3 +207,62 @@ def test_single_qubit_consistency():
     assert check_dtypes_consistent(QAny(1), QBit())
     assert check_dtypes_consistent(BoundedQUInt(1), QBit())
     assert check_dtypes_consistent(QFxp(1, 1), QBit())
+
+
+def test_to_and_from_bits():
+    # QInt
+    qint4 = QInt(4)
+    for x in range(-8, 8):
+        assert qint4.from_bits(*qint4.to_bits(x)) == x
+    assert list(qint4.to_bits(-2)) == [1, 1, 1, 0]
+    assert list(QInt(4).to_bits(2)) == [0, 0, 1, 0]
+    assert qint4.from_bits(*qint4.to_bits(-2)) == -2
+    assert qint4.from_bits(*qint4.to_bits(2)) == 2
+    with pytest.raises(ValueError):
+        QInt(4).to_bits(10)
+
+    # QUInt
+    quint4 = QUInt(4)
+    assert list(quint4.to_bits(10)) == [1, 0, 1, 0]
+    assert quint4.from_bits(*quint4.to_bits(10)) == 10
+    for x in range(16):
+        assert quint4.from_bits(*quint4.to_bits(x)) == x
+    with pytest.raises(ValueError):
+        quint4.to_bits(16)
+
+    # BoundedQUInt
+    bquint4 = BoundedQUInt(4, 12)
+    assert list(bquint4.to_bits(10)) == [1, 0, 1, 0]
+    with pytest.raises(ValueError):
+        BoundedQUInt(4, 12).to_bits(13)
+
+    # QBit
+    assert list(QBit().to_bits(0)) == [0]
+    assert list(QBit().to_bits(1)) == [1]
+    with pytest.raises(ValueError):
+        QBit().to_bits(2)
+
+    # QAny
+    assert list(QAny(4).to_bits(10)) == [1, 0, 1, 0]
+
+    # QIntOnesComp
+    qintones4 = QIntOnesComp(4)
+    assert list(qintones4.to_bits(-2)) == [1, 1, 0, 1]
+    assert list(qintones4.to_bits(2)) == [0, 0, 1, 0]
+    for x in range(-7, 8):
+        assert qintones4.from_bits(*qintones4.to_bits(x)) == x
+
+    # QFxp: Negative numbers are stored as ones complement
+    qfxp_4_3 = QFxp(4, 3, True)
+    assert list(qfxp_4_3.to_bits(0.5)) == [0, 1, 0, 0]
+    assert qfxp_4_3.from_bits(*qfxp_4_3.to_bits(0.5)).get_val() == 0.5
+    assert list(qfxp_4_3.to_bits(-0.5)) == [1, 1, 0, 0]
+    assert qfxp_4_3.from_bits(*qfxp_4_3.to_bits(-0.5)).get_val() == -0.5
+    assert list(qfxp_4_3.to_bits(0.625)) == [0, 1, 0, 1]
+    assert qfxp_4_3.from_bits(*qfxp_4_3.to_bits(+0.625)).get_val() == +0.625
+    assert qfxp_4_3.from_bits(*qfxp_4_3.to_bits(-0.625)).get_val() == -0.625
+    assert list(QFxp(4, 3, True).to_bits(-(1 - 0.625))) == [1, 1, 0, 1]
+    assert qfxp_4_3.from_bits(*qfxp_4_3.to_bits(0.375)).get_val() == 0.375
+    assert qfxp_4_3.from_bits(*qfxp_4_3.to_bits(-0.375)).get_val() == -0.375
+    assert list(QFxp(7, 3, True).to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
+    assert list(QFxp(7, 3, True).to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]
