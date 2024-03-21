@@ -158,7 +158,7 @@ class QvrZPow(QvrInterface):
                 ZPowGate(exponent=(2**power_of_two) * self.gamma * 2, eps=self.eps / len(out)),
                 q=out[-(i + 1)],
             )
-        return {self.cost_reg.name: bb.join(out)}
+        return {self.cost_reg.name: bb.join(out, self.cost_reg.dtype)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         zpow = ZPowGate(exponent=self.gamma, eps=self.eps / self.cost_dtype.bitsize)
