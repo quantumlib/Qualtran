@@ -39,8 +39,7 @@ class Comparator(Bloq):
         out: A single bit output register which will store the result of the comparator.
 
     References:
-        [Improved techniques for preparing eigenstates of fermionic
-        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5),
+        [Improved techniques for preparing eigenstates of fermionic Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5).
         Fig. 1. in main text.
     """
 
@@ -93,8 +92,7 @@ class BitonicSort(Bloq):
         input: List of k integers we want to sort.
 
     References:
-        [Improved techniques for preparing eigenstates of fermionic
-        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5),
+        [Improved techniques for preparing eigenstates of fermionic Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5).
         Supporting Information Sec. II.
     """
 
