@@ -101,8 +101,7 @@ class PhaseGradientState(GateWithRegisters):
     to the `PhaseGradientUnitary` bloq defined above.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391)
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
         Appendix A: Addition for controlled rotations
     """
 
@@ -148,8 +147,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         - phase_grad : Phase gradient THRU register.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
+        Appendix A: Addition for controlled rotations
     """
     x_bitsize: int
     phase_bitsize: int
@@ -273,8 +272,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         - phase_grad : Phase gradient THRU register.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391), Appendix A: Addition for controlled rotations
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
+        Appendix A: Addition for controlled rotations
     """
 
     x_dtype: QFxp

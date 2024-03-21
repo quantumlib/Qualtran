@@ -75,9 +75,10 @@ class And(GateWithRegisters):
         target [right]: The output bit.
 
     References:
-     - [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
             Babbush et. al. 2018. Section III.A. and Fig. 4.
-     - [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
+
+        [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
     cv1: int = 1

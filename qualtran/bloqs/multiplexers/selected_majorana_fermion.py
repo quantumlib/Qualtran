@@ -42,7 +42,8 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         target_gate: Single qubit gate to be applied to the target qubits.
 
     References:
-        See Fig 9 of https://arxiv.org/abs/1805.03662 for more details.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Fig 9.
     """
 
     selection_regs: Tuple[Register, ...] = attrs.field(

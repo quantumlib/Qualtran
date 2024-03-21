@@ -54,8 +54,8 @@ class MultiplexedCSwap(UnaryIterationGate):
             labelled x`i`, where i is an integer and TO a single register called y
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 20 paragraph 2.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 20 paragraph 2.
     """
     selection_regs: Tuple[Register, ...] = field(
         converter=lambda v: (v,) if isinstance(v, Register) else tuple(v)
