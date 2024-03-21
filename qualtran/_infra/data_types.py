@@ -49,7 +49,7 @@ respectively.
 """
 
 import abc
-from typing import Any, Iterable, Union
+from typing import Any, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
@@ -72,11 +72,11 @@ class QDType(metaclass=abc.ABCMeta):
         by this type."""
 
     @abc.abstractmethod
-    def to_bits(self, x) -> Iterable[int]:
+    def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
 
     @abc.abstractmethod
-    def from_bits(self, *bits: int):
+    def from_bits(self, bits: Sequence[int]):
         """Combine individual bits to form x"""
 
     @abc.abstractmethod
@@ -119,12 +119,12 @@ class QBit(QDType):
         if not (val == 0 or val == 1):
             raise ValueError(f"Bad {self} value {val} in {debug_str}")
 
-    def to_bits(self, x) -> Iterable[int]:
+    def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
-        return (int(x),)
+        return [int(x)]
 
-    def from_bits(self, *bits: int) -> int:
+    def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
         assert len(bits) == 1
         return bits[0]
@@ -147,13 +147,13 @@ class QAny(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
 
-    def to_bits(self, x) -> Iterable[Any]:
+    def to_bits(self, x) -> List[int]:
         # TODO: Raise an error once usage of `QAny` is minimized across the library
         return QUInt(self.bitsize).to_bits(x)
 
-    def from_bits(self, *bits: int) -> int:
+    def from_bits(self, bits: Sequence[int]) -> int:
         # TODO: Raise an error once usage of `QAny` is minimized across the library
-        return QUInt(self.bitsize).from_bits(*bits)
+        return QUInt(self.bitsize).from_bits(bits)
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         pass
@@ -179,21 +179,19 @@ class QInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[int]:
-        return range(-(2 ** (self.bitsize - 1)), 2 ** (self.bitsize - 1))
+        max_val = 1 << (self.bitsize - 1)
+        return range(-max_val, max_val)
 
-    def to_bits(self, x: int) -> Iterable[int]:
+    def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
-        from qualtran.cirq_interop.bit_tools import iter_bits_twos_complement
-
-        if isinstance(x, np.integer):
-            x = int(x)
         self.assert_valid_classical_val(x)
-        return iter_bits_twos_complement(x, self.bitsize)
+        mask = (1 << self.bitsize) - 1
+        return QUInt(self.bitsize).to_bits(int(x) & mask)
 
-    def from_bits(self, *bits: int) -> int:
+    def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
         sign = bits[0]
-        x = QUInt(self.bitsize - 1).from_bits(*[1 - x if sign else x for x in bits[1:]])
+        x = QUInt(self.bitsize - 1).from_bits([1 - x if sign else x for x in bits[1:]])
         return ~x if sign else x
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
@@ -232,29 +230,28 @@ class QIntOnesComp(QDType):
     def num_qubits(self):
         return self.bitsize
 
-    def to_bits(self, x: int) -> Iterable[int]:
+    def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
-        from qualtran.cirq_interop.bit_tools import iter_bits
-
-        if isinstance(x, np.integer):
-            x = int(x)
-
         self.assert_valid_classical_val(x)
-        ret = [*iter_bits(x, self.bitsize, signed=True)]
-        for i in range(1, self.bitsize):
-            ret[i] ^= ret[0]
-        return ret
+        return [int(x < 0)] + [y ^ int(x < 0) for y in QUInt(self.bitsize - 1).to_bits(abs(x))]
 
-    def from_bits(self, *bits: int) -> int:
+    def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
-        x = QUInt(self.bitsize).from_bits(*[x ^ bits[0] for x in bits[1:]])
+        x = QUInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
         return (-1) ** bits[0] * x
 
-    def get_classical_domain(self) -> Iterable[Any]:
-        raise NotImplementedError()
+    def get_classical_domain(self) -> Iterable[int]:
+        max_val = 1 << (self.bitsize - 1)
+        return range(-max_val + 1, max_val)
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
-        pass  # TODO: implement
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        max_val = 1 << (self.bitsize - 1)
+        if not -max_val <= val <= max_val:
+            raise ValueError(
+                f"Classical value {val} must be in range [-{max_val}, +{max_val}] in {debug_str}"
+            )
 
 
 @attrs.frozen
@@ -275,19 +272,14 @@ class QUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2 ** (self.bitsize))
+        return range(2**self.bitsize)
 
-    def to_bits(self, x: int) -> Iterable[int]:
+    def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
-        from qualtran.cirq_interop.bit_tools import iter_bits
-
-        if isinstance(x, np.integer):
-            x = int(x)
-
         self.assert_valid_classical_val(x)
-        return iter_bits(x, self.bitsize)
+        return [int(x) for x in f'{int(x):0{self.bitsize}b}']
 
-    def from_bits(self, *bits: int) -> int:
+    def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
         return int("".join(str(x) for x in bits), 2)
 
@@ -383,16 +375,14 @@ class BoundedQUInt(QDType):
         if val >= self.iteration_length:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def to_bits(self, x: int) -> Iterable[int]:
+    def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
-        from qualtran.cirq_interop.bit_tools import iter_bits
+        self.assert_valid_classical_val(x, debug_str='val')
+        return QUInt(self.bitsize).to_bits(x)
 
-        self.assert_valid_classical_val(x)
-        return iter_bits(x, self.bitsize, signed=False)
-
-    def from_bits(self, *bits: int) -> int:
+    def from_bits(self, bits: Sequence[int]) -> int:
         """Combine individual bits to form x"""
-        return QUInt(self.bitsize).from_bits(*bits)
+        return QUInt(self.bitsize).from_bits(bits)
 
     def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
         if np.any(val_array < 0):
@@ -443,17 +433,17 @@ class QFxp(QDType):
     def _fxp_dtype(self) -> Fxp:
         return Fxp(None, dtype=self.fxp_dtype_str)
 
-    def to_bits(self, x: Union[float, Fxp]) -> Iterable[int]:
+    def to_bits(self, x: Union[float, Fxp]) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
-        self.assert_valid_classical_val(x)
+        self._assert_valid_classical_val(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
         return [int(x) for x in fxp.like(self._fxp_dtype).bin()]
 
-    def from_bits(self, *bits: int) -> Fxp:
+    def from_bits(self, bits: Sequence[int]) -> Fxp:
         """Combine individual bits to form x"""
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
-        return Fxp(fxp_bin).like(self._fxp_dtype)
+        return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
 
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):
@@ -464,11 +454,22 @@ class QFxp(QDType):
             if self.bitsize < self.num_frac:
                 raise ValueError("bitsize must be >= num_frac.")
 
-    def get_classical_domain(self) -> Iterable[Any]:
-        raise NotImplementedError()
+    def get_classical_domain(self) -> Iterable[Fxp]:
+        qint = QIntOnesComp(self.bitsize) if self.signed else QUInt(self.bitsize)
+        for x in qint.get_classical_domain():
+            yield Fxp(x / 2**self.num_frac, dtype=self.fxp_dtype_str)
 
-    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
-        pass  # TODO: implement
+    def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
+        fxp_val = val if isinstance(val, Fxp) else Fxp(val)
+        if fxp_val.get_val() != fxp_val.like(self._fxp_dtype).get_val():
+            raise ValueError(
+                f"{debug_str}={val} cannot be accurately represented using Fxp {fxp_val}"
+            )
+
+    def assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
+        # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
+        # is currently not propagated correctly through Bloqs
+        pass
 
 
 @attrs.frozen
@@ -506,12 +507,12 @@ class QMontgomeryUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2 ** (self.bitsize))
+        return range(2**self.bitsize)
 
-    def to_bits(self, x: int) -> Iterable[int]:
+    def to_bits(self, x: int) -> List[int]:
         raise NotImplementedError(f"to_bits not implemented for {self}")
 
-    def from_bits(self, *bits: int) -> int:
+    def from_bits(self, bits: Sequence[int]) -> int:
         raise NotImplementedError(f"from_bits not implemented for {self}")
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
