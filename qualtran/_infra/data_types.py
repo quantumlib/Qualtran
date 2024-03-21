@@ -190,7 +190,7 @@ class QInt(QDType):
         self.assert_valid_classical_val(x)
         return iter_bits_twos_complement(x, self.bitsize)
 
-    def from_bits(self, *bits: int):
+    def from_bits(self, *bits: int) -> int:
         """Combine individual bits to form x"""
         sign = bits[0]
         x = QUInt(self.bitsize - 1).from_bits(*[1 - x if sign else x for x in bits[1:]])
@@ -245,7 +245,7 @@ class QIntOnesComp(QDType):
             ret[i] ^= ret[0]
         return ret
 
-    def from_bits(self, *bits: int):
+    def from_bits(self, *bits: int) -> int:
         """Combine individual bits to form x"""
         x = QUInt(self.bitsize).from_bits(*[x ^ bits[0] for x in bits[1:]])
         return (-1) ** bits[0] * x
@@ -287,7 +287,7 @@ class QUInt(QDType):
         self.assert_valid_classical_val(x)
         return iter_bits(x, self.bitsize)
 
-    def from_bits(self, *bits: int):
+    def from_bits(self, *bits: int) -> int:
         """Combine individual bits to form x"""
         return int("".join(str(x) for x in bits), 2)
 
@@ -390,7 +390,7 @@ class BoundedQUInt(QDType):
         self.assert_valid_classical_val(x)
         return iter_bits(x, self.bitsize, signed=False)
 
-    def from_bits(self, *bits: int):
+    def from_bits(self, *bits: int) -> int:
         """Combine individual bits to form x"""
         return QUInt(self.bitsize).from_bits(*bits)
 
@@ -508,10 +508,10 @@ class QMontgomeryUInt(QDType):
     def get_classical_domain(self) -> Iterable[Any]:
         return range(2 ** (self.bitsize))
 
-    def to_bits(self, n: int) -> Iterable[Any]:
+    def to_bits(self, x: int) -> Iterable[int]:
         raise NotImplementedError(f"to_bits not implemented for {self}")
 
-    def from_bits(self, n: int) -> Iterable[Any]:
+    def from_bits(self, *bits: int) -> int:
         raise NotImplementedError(f"from_bits not implemented for {self}")
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
