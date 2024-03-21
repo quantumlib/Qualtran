@@ -212,6 +212,7 @@ def test_single_qubit_consistency():
 def test_to_and_from_bits():
     # QInt
     qint4 = QInt(4)
+    assert [*qint4.get_classical_domain()] == [*range(-8, 8)]
     for x in range(-8, 8):
         assert qint4.from_bits(qint4.to_bits(x)) == x
     assert list(qint4.to_bits(-2)) == [1, 1, 1, 0]
@@ -223,6 +224,7 @@ def test_to_and_from_bits():
 
     # QUInt
     quint4 = QUInt(4)
+    assert [*quint4.get_classical_domain()] == [*range(0, 16)]
     assert list(quint4.to_bits(10)) == [1, 0, 1, 0]
     assert quint4.from_bits(quint4.to_bits(10)) == 10
     for x in range(16):
@@ -235,6 +237,7 @@ def test_to_and_from_bits():
 
     # BoundedQUInt
     bquint4 = BoundedQUInt(4, 12)
+    assert [*bquint4.get_classical_domain()] == [*range(0, 12)]
     assert list(bquint4.to_bits(10)) == [1, 0, 1, 0]
     with pytest.raises(ValueError):
         BoundedQUInt(4, 12).to_bits(13)
@@ -252,6 +255,7 @@ def test_to_and_from_bits():
     qintones4 = QIntOnesComp(4)
     assert list(qintones4.to_bits(-2)) == [1, 1, 0, 1]
     assert list(qintones4.to_bits(2)) == [0, 0, 1, 0]
+    assert [*qintones4.get_classical_domain()] == [*range(-7, 8)]
     for x in range(-7, 8):
         assert qintones4.from_bits(qintones4.to_bits(x)) == x
     with pytest.raises(ValueError):
@@ -281,6 +285,10 @@ def test_to_and_from_bits():
     assert qfxp_4_3.from_bits(qfxp_4_3.to_bits(-1 / 2 - 1 / 4 - 1 / 8)) == -1 / 2 - 1 / 4 - 1 / 8
     with pytest.raises(ValueError):
         _ = qfxp_4_3.to_bits(1 / 2 + 1 / 4 + 1 / 8 + 1 / 16)
+
+    for qfxp in [QFxp(4, 3, True), QFxp(3, 3, False), QFxp(7, 3, False), QFxp(7, 3, True)]:
+        for x in qfxp.get_classical_domain():
+            assert qfxp.from_bits(qfxp.to_bits(x)) == x
 
     assert list(QFxp(7, 3, True).to_bits(-4.375)) == [1] + [0, 1, 1] + [1, 0, 1]
     assert list(QFxp(7, 3, True).to_bits(+4.625)) == [0] + [1, 0, 0] + [1, 0, 1]

@@ -49,13 +49,12 @@ respectively.
 """
 
 import abc
-from typing import Any, Iterable, Union, List, Sequence
+from typing import Any, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
 import sympy
 from fxpmath import Fxp
-import itertools
 from numpy.typing import NDArray
 
 
@@ -180,7 +179,8 @@ class QInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[int]:
-        return range(-(2 ** (self.bitsize - 1)), 2 ** (self.bitsize - 1))
+        max_val = 1 << (self.bitsize - 1)
+        return range(-max_val, max_val)
 
     def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
@@ -240,8 +240,9 @@ class QIntOnesComp(QDType):
         x = QUInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
         return (-1) ** bits[0] * x
 
-    def get_classical_domain(self) -> Iterable[Any]:
-        raise NotImplementedError()
+    def get_classical_domain(self) -> Iterable[int]:
+        max_val = 1 << (self.bitsize - 1)
+        return range(-max_val + 1, max_val)
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -434,7 +435,7 @@ class QFxp(QDType):
 
     def to_bits(self, x: Union[float, Fxp]) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
-        self.assert_valid_classical_val(x)
+        self._assert_valid_classical_val(x)
         fxp = x if isinstance(x, Fxp) else Fxp(x)
         return [int(x) for x in fxp.like(self._fxp_dtype).bin()]
 
@@ -442,7 +443,7 @@ class QFxp(QDType):
         """Combine individual bits to form x"""
         bits_bin = "".join(str(x) for x in bits[:])
         fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
-        return Fxp(fxp_bin).like(self._fxp_dtype)
+        return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
 
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):
@@ -454,15 +455,21 @@ class QFxp(QDType):
                 raise ValueError("bitsize must be >= num_frac.")
 
     def get_classical_domain(self) -> Iterable[Fxp]:
-        for bits in itertools.product([0, 1], repeat=self.bitsize):
-            yield self.from_bits(bits)
+        qint = QIntOnesComp(self.bitsize) if self.signed else QUInt(self.bitsize)
+        for x in qint.get_classical_domain():
+            yield Fxp(x / 2**self.num_frac, dtype=self.fxp_dtype_str)
 
-    def assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
+    def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
         fxp_val = val if isinstance(val, Fxp) else Fxp(val)
-        if fxp_val != fxp_val.like(self._fxp_dtype):
+        if fxp_val.get_val() != fxp_val.like(self._fxp_dtype).get_val():
             raise ValueError(
                 f"{debug_str}={val} cannot be accurately represented using Fxp {fxp_val}"
             )
+
+    def assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
+        # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
+        # is currently not propagated correctly through Bloqs
+        pass
 
 
 @attrs.frozen
@@ -500,7 +507,7 @@ class QMontgomeryUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2 ** (self.bitsize))
+        return range(2**self.bitsize)
 
     def to_bits(self, x: int) -> List[int]:
         raise NotImplementedError(f"to_bits not implemented for {self}")
