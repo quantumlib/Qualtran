@@ -11,17 +11,41 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List
+from typing import Dict, List, Tuple
 
+import attrs
 import cirq
 import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, Controlled, CtrlSpec, QBit, QInt, QUInt
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    Controlled,
+    CtrlSpec,
+    QBit,
+    QInt,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
-from qualtran.bloqs.basic_gates import Swap, XGate
+from qualtran.bloqs.basic_gates import (
+    CSwap,
+    IntEffect,
+    IntState,
+    OneState,
+    Swap,
+    XGate,
+    YGate,
+    ZeroState,
+    ZGate,
+)
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
+from qualtran.bloqs.mcmt import And
+from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
 
@@ -294,3 +318,84 @@ def test_classical_sim_int_multi_reg():
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('../Controlled')
+
+
+def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
+    cbloq = Controlled(bloq, ctrl_spec)
+    cgate = gate.controlled(control_values=ctrl_spec.to_cirq_cv())
+    np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
+
+
+interesting_ctrl_specs = [
+    CtrlSpec(),
+    CtrlSpec(cvs=0),
+    CtrlSpec(qdtypes=QUInt(4), cvs=0b0110),
+    CtrlSpec(cvs=[0, 1, 1, 0]),
+    CtrlSpec(qdtypes=[QBit(), QBit()], cvs=[[0, 1], [1, 0]]),
+]
+
+
+@pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
+def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
+    # Test one qubit unitaries
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, XGate(), cirq.X)
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, YGate(), cirq.Y)
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, ZGate(), cirq.Z)
+    # Test multi-qubit unitaries with non-trivial signature
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, CSwap(3), CSwap(3))
+
+
+@attrs.frozen
+class TestCtrlStatePrepAnd(Bloq):
+    """Decomposes into a Controlled-AND gate + int effects & targets where ctrl is active.
+
+    Tensor contraction should give the output state vector corresponding to applying an
+    `And(and_ctrl)`; assuming all the control bits are active.
+    """
+
+    ctrl_spec: CtrlSpec
+    and_ctrl: Tuple[int, int]
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', QBit(), shape=(3,), side=Side.RIGHT)])
+
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+        one_or_zero = [ZeroState(), OneState()]
+        cbloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
+
+        ctrl_soqs = {}
+        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+            soqs = np.empty(shape=reg.shape, dtype=object)
+            for idx in reg.all_idxs():
+                soqs[idx] = bb.add(IntState(val=cvs[idx], bitsize=reg.dtype.num_qubits))
+            ctrl_soqs[reg.name] = soqs
+
+        and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
+
+        ctrl_soqs = bb.add_d(cbloq, **ctrl_soqs, ctrl=and_ctrl)
+        out_soqs = [*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')]
+
+        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+            for idx in reg.all_idxs():
+                ctrl_soq = np.asarray(ctrl_soqs[reg.name])[idx]
+                bb.add(IntEffect(val=cvs[idx], bitsize=reg.dtype.num_qubits), val=ctrl_soq)
+        return {'x': out_soqs}
+
+
+def _verify_ctrl_tensor_for_and(ctrl_spec: CtrlSpec, and_ctrl: Tuple[int, int]):
+    cbloq = TestCtrlStatePrepAnd(ctrl_spec, and_ctrl)
+    bloq_tensor = cbloq.tensor_contract()
+    cirq_state_vector = GateHelper(And(*and_ctrl)).circuit.final_state_vector(
+        initial_state=and_ctrl + (0,)
+    )
+    np.testing.assert_allclose(bloq_tensor, cirq_state_vector, atol=1e-8)
+
+
+@pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
+def test_controlled_tensor_for_and_bloq(ctrl_spec: CtrlSpec):
+    # Test AND gate with one-sided signature (aka controlled state preparation).
+    _verify_ctrl_tensor_for_and(ctrl_spec, (1, 1))
+    _verify_ctrl_tensor_for_and(ctrl_spec, (1, 0))
+    _verify_ctrl_tensor_for_and(ctrl_spec, (0, 1))
+    _verify_ctrl_tensor_for_and(ctrl_spec, (0, 0))
