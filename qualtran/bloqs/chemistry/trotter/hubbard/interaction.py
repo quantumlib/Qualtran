@@ -43,8 +43,8 @@ class Interaction(Bloq):
         system: The system register of size 2 `length`.
 
     References:
-        [Early fault-tolerant simulations of the Hubbard model](
-            https://arxiv.org/abs/2012.09238) Eq. 6 page 2 and page 13 paragraph 1.
+        [Early fault-tolerant simulations of the Hubbard model](https://arxiv.org/abs/2012.09238)
+        Eq. 6 page 2 and page 13 paragraph 1.
     """
 
     length: Union[int, sympy.Expr]

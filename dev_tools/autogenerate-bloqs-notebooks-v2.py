@@ -229,6 +229,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         module=qualtran.bloqs.chemistry.trotter.hubbard,
         bloq_specs=[
             qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._PLAQUETTE_DOC,
             qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',

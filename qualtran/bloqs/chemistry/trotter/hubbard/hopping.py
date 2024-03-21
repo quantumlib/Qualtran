@@ -62,8 +62,8 @@ class HoppingPlaquette(Bloq):
         qubits: A register of four qubits this unitary should act on.
 
     References:
-        [Early fault-tolerant simulations of the Hubbard model](
-            https://arxiv.org/abs/2012.09238) page 13 Eq. E4 and E5 (Appendix E)
+        [Early fault-tolerant simulations of the Hubbard model](https://arxiv.org/abs/2012.09238)
+        page 13 Eq. E4 and E5 (Appendix E)
     """
 
     kappa: Union[float, sympy.Expr]
@@ -105,8 +105,8 @@ class HoppingTile(Bloq):
         system: The system register of size 2 `length`.
 
     References:
-        [Early fault-tolerant simulations of the Hubbard model](
-            https://arxiv.org/abs/2012.09238) see Eq. 21 and App E.
+        [Early fault-tolerant simulations of the Hubbard model](https://arxiv.org/abs/2012.09238)
+        see Eq. 21 and App E.
     """
 
     length: Union[int, sympy.Expr]
