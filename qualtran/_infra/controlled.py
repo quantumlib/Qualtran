@@ -12,9 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Protocol, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
+import cirq
 import numpy as np
 from numpy.typing import NDArray
 
@@ -24,6 +37,7 @@ from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT
+    from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -173,6 +187,54 @@ class CtrlSpec:
 
     def __hash__(self):
         return hash((self.qdtypes, self.shapes, self._cvs_tuple))
+
+    def to_cirq_cv(self) -> cirq.SumOfProducts:
+        """Convert CtrlSpec to cirq.SumOfProducts representation of control values."""
+        cirq_cv = []
+        for qdtype, cv in zip(self.qdtypes, self.cvs):
+            for idx in Register('', qdtype, cv.shape).all_idxs():
+                cirq_cv += [*qdtype.to_bits(cv[idx])]
+        return cirq.SumOfProducts([tuple(cirq_cv)])
+
+    @classmethod
+    def from_cirq_cv(
+        cls,
+        cirq_cv: cirq.ops.AbstractControlValues,
+        *,
+        qdtypes: Optional[Sequence[QDType]] = None,
+        shapes: Optional[Sequence[Tuple[int, ...]]] = None,
+    ) -> 'CtrlSpec':
+        """Construct a CtrlSpec from cirq.SumOfProducts representation of control values."""
+        conjunctions = [*cirq_cv.expand()]
+        if len(conjunctions) > 1:
+            raise ValueError(
+                "CtrlSpec currently only supports converting SumOfProduct representation with a single AND clause."
+            )
+
+        cv = conjunctions[0]
+        # Use a single ctrl register with flat list of qubits if nothing specified.
+        qdtypes = qdtypes if qdtypes is not None else [QBit()]
+        shapes = shapes if shapes is not None else [(len(cv),) if len(cv) > 1 else ()]
+
+        # Verify that the given values for qdtypes and shapes are compatible with cv.
+        if sum(dt.num_qubits * np.prod(sh) for dt, sh in zip(qdtypes, shapes)) != len(cv):
+            raise ValueError(
+                f"Sum of qubits across {qdtypes=} and {shapes=} should match {len(cv)=}"
+            )
+
+        # Convert the AND clause to a CtrlSpec.
+        idx = 0
+        bloq_cvs = []
+
+        def _make_from_bits(qdtype: QDType):
+            return lambda bits: qdtype.from_bits(*bits)
+
+        for qdtype, shape in zip(qdtypes, shapes):
+            full_shape = shape + (qdtype.num_qubits,)
+            curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
+            curr_cvs = np.apply_along_axis(_make_from_bits(qdtype), -1, curr_cvs_bits)
+            bloq_cvs.append(curr_cvs)
+        return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
 
 class AddControlledT(Protocol):
@@ -338,3 +400,14 @@ class Controlled(Bloq):
 
     def __str__(self) -> str:
         return f'C[{self.subbloq}]'
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
+        ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
+        sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)
+        return (
+            sub_op.controlled_by(*ctrl_qubits, control_values=self.ctrl_spec.to_cirq_cv()),
+            cirq_quregs | ctrl_regs,
+        )
