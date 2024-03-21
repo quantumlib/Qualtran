@@ -12,19 +12,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, TYPE_CHECKING, Union
 
-import cirq
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Signature
+from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import Ry, ZPowGate
+from qualtran.drawing import TextBox
+
+if TYPE_CHECKING:
+    import cirq
+
+    from qualtran import BloqBuilder, Soquet, SoquetT
+    from qualtran.cirq_interop import CirqQuregT
+    from qualtran.drawing import WireSymbol
 
 
 @frozen
-class SU2RotationGate(Bloq):
+class SU2RotationGate(GateWithRegisters):
     r"""Implements an arbitrary SU(2) rotation.
 
     The rotation is represented by the matrix:
@@ -35,9 +42,6 @@ class SU2RotationGate(Bloq):
         e^{i\lambda} \sin(\theta) & - \cos(\theta)
         \end{matrix}
         $$
-
-    Returns:
-        A 2x2 rotation matrix
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -53,7 +57,7 @@ class SU2RotationGate(Bloq):
         return Signature.build(q=1)
 
     @cached_property
-    def rotation_matrix(self):
+    def rotation_matrix(self) -> NDArray[np.complex_]:
         return np.array(
             [
                 [
@@ -64,9 +68,27 @@ class SU2RotationGate(Bloq):
             ]
         )
 
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        import cirq
+
+        (qubit,) = q
+        return cirq.PhasedXZGate(
+            x_exponent=2 * self.theta / np.pi,
+            z_exponent=1 - (self.lambd + self.phi) / np.pi,
+            axis_phase_exponent=self.lambd / np.pi - 0.5,
+        ).on(qubit), {'q': q}
+
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         q = bb.add(ZPowGate(exponent=2, global_shift=0.5), q=q)
         q = bb.add(ZPowGate(exponent=1 - self.lambd / np.pi, global_shift=-1), q=q)
         q = bb.add(Ry(angle=2 * self.theta), q=q)
         q = bb.add(ZPowGate(exponent=-self.phi / np.pi, global_shift=-1), q=q)
         return {'q': q}
+
+    def pretty_name(self) -> str:
+        return f'SU_2({self.theta}, {self.phi}, {self.lambd})'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        return TextBox(self.pretty_name())
