@@ -18,7 +18,7 @@ import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import Ry, ZPowGate
 from qualtran.drawing import TextBox
 
@@ -36,12 +36,12 @@ class SU2RotationGate(GateWithRegisters):
 
     The rotation is represented by the matrix:
 
-        $$
-        \begin{matrix}
+    $$
+        \begin{pmatrix}
         e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
         e^{i\lambda} \sin(\theta) & - \cos(\theta)
-        \end{matrix}
-        $$
+        \end{pmatrix}
+    $$
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -88,7 +88,20 @@ class SU2RotationGate(GateWithRegisters):
         return {'q': q}
 
     def pretty_name(self) -> str:
-        return f'SU_2({self.theta}, {self.phi}, {self.lambd})'
+        return 'SU_2'
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        return TextBox(self.pretty_name())
+        return TextBox(f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd})")
+
+
+@bloq_example
+def _su2_rotation_gate() -> SU2RotationGate:
+    su2_rotation_gate = SU2RotationGate(np.pi / 4, np.pi / 2, np.pi / 2)
+    return su2_rotation_gate
+
+
+_SU2_ROTATION_GATE_DOC = BloqDocSpec(
+    bloq_cls=SU2RotationGate,
+    import_line='from qualtran.bloqs.basic_gates import SU2RotationGate',
+    examples=[_su2_rotation_gate],
+)
