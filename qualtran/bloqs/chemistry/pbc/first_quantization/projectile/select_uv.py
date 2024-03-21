@@ -47,10 +47,10 @@ class SelectUVFirstQuantizationWithProj(Bloq):
     Registers:
 
     References:
-        [Quantum computation of stopping power for inertial fusion target design](
-            https://arxiv.org/abs/2308.12352) page 11, C also page 34 App A. Sec 3.
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Quantum computation of stopping power for inertial fusion target design](https://arxiv.org/abs/2308.12352)
+        page 11, C also page 34 App A. Sec 3.
+
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int

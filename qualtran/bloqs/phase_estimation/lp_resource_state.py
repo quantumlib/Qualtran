@@ -64,7 +64,7 @@ class LPRSInterimPrep(GateWithRegisters):
         yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]
         for i in range(self.bitsize):
             rz_angle = -2 * np.pi * (2**i) / (2**self.bitsize + 1)
-            yield Rz(angle=rz_angle).controlled().on(q[i], *anc)
+            yield cirq.Rz(rads=rz_angle).controlled().on(q[i], *anc)
         yield Rz(angle=-2 * np.pi / (2**self.bitsize + 1)).on(*anc)
         yield Hadamard().on(*anc)
 
@@ -86,8 +86,8 @@ class LPRSInterimPrep(GateWithRegisters):
 class LPResourceState(GateWithRegisters):
     r"""Prepares optimal resource state $\chi_{m}$ proposed by A. Luis and J. Peřina (1996)
 
-    Uses a single round of amplitude amplification, as described in Ref[2], to prepare the
-    resource state from Ref[1] described as
+    Uses a single round of amplitude amplification, as described in Ref 2, to prepare the
+    resource state from Ref 1 described as
 
     $$
     \chi_{m} = \sqrt{\frac{2}{2^m + 1}}\sum_{n=0}^{2^m - 1}\sin{\frac{\pi(n+1)}{2^m+1}}|n\rangle
@@ -98,9 +98,10 @@ class LPResourceState(GateWithRegisters):
 
 
     References:
-        1. [Optimum phase-shift estimation and the quantum description of the phase
+        [Optimum phase-shift estimation and the quantum description of the phase
         difference](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.54.4564)
-        2. [Encoding Electronic Spectra in Quantum Circuits with Linear T
+
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T
         Complexity](https://arxiv.org/abs/1805.03662) Section II-B
     """
 

@@ -63,6 +63,8 @@ import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.chemistry.trotter.ising.unitaries
+import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
@@ -203,8 +205,22 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/',
-        path_stem=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham/trotter',
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham',
+    ),
+    NotebookSpecV2(
+        title='Trotterization',
+        module=qualtran.bloqs.chemistry.trotter.trotterized_unitary,
+        bloq_specs=[qualtran.bloqs.chemistry.trotter.trotterized_unitary._TROTT_UNITARY_DOC],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter',
+    ),
+    NotebookSpecV2(
+        title='Ising Trotter Bloqs',
+        module=qualtran.bloqs.chemistry.trotter.ising,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.ising.unitaries._ISING_X_UNITARY_DOC,
+            qualtran.bloqs.chemistry.trotter.ising.unitaries._ISING_ZZ_UNITARY_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/ising',
     ),
     NotebookSpecV2(
         title='Tensor Hypercontraction',
@@ -257,6 +273,7 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.addition._ADD_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
+            qualtran.bloqs.arithmetic.addition._SIMPLE_ADD_K_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
     ),
@@ -294,9 +311,13 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         title='Comparison',
         module=qualtran.bloqs.arithmetic.comparison,
         bloq_specs=[
+            qualtran.bloqs.arithmetic.comparison._LT_K_DOC,
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_DOC,
             qualtran.bloqs.arithmetic.comparison._GREATER_THAN_K_DOC,
             qualtran.bloqs.arithmetic.comparison._EQUALS_K_DOC,
+            qualtran.bloqs.arithmetic.comparison._BI_QUBITS_MIXER_DOC,
+            qualtran.bloqs.arithmetic.comparison._SQ_CMP_DOC,
+            qualtran.bloqs.arithmetic.comparison._LEQ_DOC,
         ],
     ),
     NotebookSpecV2(
@@ -307,6 +328,9 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.arithmetic.conversions._TO_CONTG_INDX,
         ],
     ),
+    # --------------------------------------------------------------------------
+    # -----   Rotations    -----------------------------------------------------
+    # --------------------------------------------------------------------------
     NotebookSpecV2(
         title='Quantum Variable Rotation',
         module=qualtran.bloqs.rotations.quantum_variable_rotation,
