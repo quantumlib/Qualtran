@@ -12,15 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Sequence, Tuple
+from typing import Sequence, Set, Tuple
 
 import cirq
 import numpy as np
-from attrs import frozen
+from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, Register, Signature
+from qualtran import CtrlSpec, GateWithRegisters, QBit, Register, Signature
 
 
 @frozen
@@ -239,9 +239,11 @@ def qsp_phase_factors(
 class GeneralizedQSP(GateWithRegisters):
     r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
 
+    Can optionally provide a negative power offset $k$ (defaults to 0),
+    to obtain $U^{-k} P(U)$. (Theorem 6)
     This gate represents the following unitary:
 
-        $$ \begin{bmatrix} P(U) & \cdot \\ \cdot & \cdot \end{bmatrix} $$
+        $$ \begin{bmatrix} U^{-k} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix} $$
 
     The polynomial $P$ must satisfy:
     $\abs{P(e^{i \theta})}^2 \le 1$ for every $\theta \in \mathbb{R}$.
@@ -251,22 +253,28 @@ class GeneralizedQSP(GateWithRegisters):
     Args:
         U: Unitary operation.
         P: Co-efficients of a complex polynomial.
+        negative_power: value of $k$, which effectively applies $z^{-k} P(z)$. defaults to 0.
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-            Motlagh and Wiebe. (2023). Theorem 3; Figure 2.
+            Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
     """
 
     U: GateWithRegisters
-    P: Sequence[complex]
+    P: Tuple[complex, ...] = field(converter=tuple)
+    Q: Tuple[complex, ...] = field(converter=tuple)
+    negative_power: int = field(default=0, kw_only=True)
 
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('signal', QBit()), *self.U.signature])
 
-    @cached_property
-    def Q(self):
-        return qsp_complementary_polynomial(self.P)
+    @classmethod
+    def from_qsp_polynomial(
+        cls, U: GateWithRegisters, P: Sequence[complex], *, negative_power: int = 0
+    ) -> 'GeneralizedQSP':
+        Q = qsp_complementary_polynomial(P)
+        return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
     def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:
@@ -284,13 +292,41 @@ class GeneralizedQSP(GateWithRegisters):
     def _lambda(self) -> float:
         return self._qsp_phases[2]
 
+    @cached_property
+    def signal_rotations(self) -> NDArray[SU2RotationGate]:
+        return np.array(
+            [
+                SU2RotationGate(theta, phi, self._lambda if i == 0 else 0)
+                for i, (theta, phi) in enumerate(zip(self._theta, self._phi))
+            ]
+        )
+
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         assert len(signal) == 1
         signal_qubit = signal[0]
 
-        yield SU2RotationGate(self._theta[0], self._phi[0], self._lambda).on(signal_qubit)
-        for theta, phi in zip(self._theta[1:], self._phi[1:]):
-            yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
-            yield SU2RotationGate(theta, phi, 0).on(signal_qubit)
+        num_inverse_applications = self.negative_power
+
+        yield self.signal_rotations[0].on(signal_qubit)
+        for signal_rotation in self.signal_rotations[1:]:
+            if num_inverse_applications > 0:
+                # apply C-U^\dagger
+                yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
+                num_inverse_applications -= 1
+            else:
+                # apply C[0]-U
+                yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
+            yield signal_rotation.on(signal_qubit)
+
+        for _ in range(num_inverse_applications):
+            yield self.U.adjoint().on_registers(**quregs)
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        degree = len(self.P)
+        return {
+            (self.U.adjoint().controlled(), min(degree, self.negative_power)),
+            (self.U.controlled(ctrl_spec=CtrlSpec(cvs=0)), max(0, degree - self.negative_power)),
+            (self.U.adjoint(), max(0, self.negative_power - degree)),
+        } | {(rotation, 1) for rotation in self.signal_rotations}
