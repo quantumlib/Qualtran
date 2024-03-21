@@ -37,3 +37,4 @@ types (``Register``), and algorithms (``CompositeBloq``).
    drawing/graphviz.ipynb
    drawing/musical_score.ipynb
    simulation/xcheck_classical_quimb.ipynb
+   Autodoc.ipynb

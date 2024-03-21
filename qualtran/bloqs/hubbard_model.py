@@ -110,7 +110,8 @@ class SelectHubbard(SelectOracle):
         target: The system register to apply the select operation.
 
     References:
-        Section V. and Fig. 19 of https://arxiv.org/abs/1805.03662.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Section V. and Fig. 19.
     """
 
     x_dim: int
@@ -278,7 +279,8 @@ class PrepareHubbard(PrepareOracle):
         junk: Temporary Work space.
 
     References:
-        Section V. and Fig. 20 of https://arxiv.org/abs/1805.03662.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Section V. and Fig. 20.
     """
 
     x_dim: int

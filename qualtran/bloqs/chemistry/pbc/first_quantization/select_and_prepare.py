@@ -59,8 +59,8 @@ class PrepareTUVSuperpositions(Bloq):
         uv: a single qubit rotated to appropriately weight U or V.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 15, section A
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 15, section A
     """
     num_bits_t: int
     eta: int
@@ -97,8 +97,8 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         j: a n_eta bit register for unary encoding of eta numbers.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
-        (https://arxiv.org/abs/2105.12767) page 18, section A, around Eq 62.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        page 18, section A, around Eq 62.
     """
     eta: int
     num_bits_rot_aa: int
@@ -226,8 +226,7 @@ class PrepareFirstQuantization(PrepareOracle):
         l: The register for selecting the nuclei.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int
@@ -398,8 +397,7 @@ class SelectFirstQuantization(SelectOracle):
             compents of size num_bits_p.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int
