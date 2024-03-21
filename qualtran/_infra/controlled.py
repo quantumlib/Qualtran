@@ -14,8 +14,8 @@
 from functools import cached_property
 from typing import Any, Dict, Iterable, List, Protocol, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
+import attrs
 import numpy as np
-from attrs import frozen
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -29,6 +29,19 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
+def _cvs_convert(
+    cvs: Union[int, Sequence[int], Sequence[Sequence[int]]]
+) -> Tuple[NDArray[int], ...]:
+    if isinstance(cvs, (int, np.integer)):
+        return (np.array(cvs),)
+    if isinstance(cvs, np.ndarray):
+        return (cvs,)
+    if all(isinstance(cv, (int, np.integer)) for cv in cvs):
+        return (np.asarray(cvs),)
+    return tuple(np.asarray(cv) for cv in cvs)
+
+
+@attrs.frozen(eq=False)
 class CtrlSpec:
     """A specification for how to control a bloq.
 
@@ -40,46 +53,53 @@ class CtrlSpec:
     following two equivalent CtrlSpecs:
 
         CtrlSpec()
-        CtrlSpec(qdtype=QBit(), cvs=1)
+        CtrlSpec(qdtypes=QBit(), cvs=1)
 
     This class supports additional control specifications:
      1. 'negative' controls where the bloq is active if the input is |0>.
      2. integer-equality controls where a QInt input must match an integer control value.
      3. ndarrays of control values, where the bloq is active if **all** inputs are active.
+     4. Multiple control registers, control values for each of which can be specified
+        using 1-3 above.
 
-    For example: `CtrlSpec(cvs=[0, 1, 0, 1])` is active if the four input bits match the pattern.
+    For example:
+    1. `CtrlSpec(qdtypes=QUInt(4), cvs=0b0110)`:
+            Ctrl for a single register, of type `QUInt(4)` and shape `()`, is active when the
+            soquet of the input register takes value 6.
+    2. `CtrlSpec(cvs=[0, 1, 1, 0])`:
+            Ctrl for a single register, of type `QBit()` and shape `(4,)`, is active when soquets
+            of input register take values `[0, 1, 1, 0]`.
+    3. `CtrlSpec(qdtypes=[QBit(), QBit()], cvs=[[0, 1], [1, 0]]).is_active([0, 1], [1, 0])`:
+            Ctrl for 2 registers, each of type `QBit()` and shape `(2,)`, is active when the
+            soquet for each register takes values `[0, 1]` and  `[1, 0]` respectively.
 
-    A generalized control spec could support any number of "activation functions". The methods
-    `activation_function_dtypes` and `is_active` are defined for future extensibility.
+    CtrlSpec uses logical AND among all control register clauses. If you need a different boolean
+    function, open a GitHub issue.
 
     Args:
-        qdtype: The quantum data type of the control input.
-        cvs: The control value(s). If more than one value is provided, they must all be
-            compatible with `qdtype` and the bloq is implied to be active if **all** inputs
-            are active.
+        qdtypes: A tuple of quantum data types, one per ctrl register.
+        cvs: A tuple of control value(s), one per ctrl register. For each element in the tuple,
+            if more than one ctrl value is provided, they must all be compatible with `qdtype`
+            and the bloq is implied to be active if **all** inputs are active (i.e. the "shape"
+            of the ctrl register is implied to be `cv.shape`).
     """
 
-    def __init__(self, qdtype: QDType = QBit(), cvs: Union[int, NDArray[int], Iterable[int]] = 1):
-        self._qdtype = qdtype
+    qdtypes: Tuple[QDType, ...] = attrs.field(
+        default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
+    )
+    cvs: Tuple[NDArray[int], ...] = attrs.field(default=1, converter=_cvs_convert)
 
-        if isinstance(cvs, (int, np.integer)):
-            cvs = np.array(cvs)
+    def __attrs_post_init__(self):
+        assert len(self.qdtypes) == len(self.cvs)
 
-        self._cvs = np.asarray(cvs)
-        self._cvs_tuple = tuple(self._cvs.reshape(-1))
-        self._hash = None
+    @cached_property
+    def num_ctrl_reg(self) -> int:
+        return len(self.qdtypes)
 
-    @property
-    def qdtype(self) -> QDType:
-        return self._qdtype
-
-    @property
-    def cvs(self) -> NDArray[int]:
-        return self._cvs
-
-    @property
-    def shape(self) -> Tuple[int, ...]:
-        return self._cvs.shape
+    @cached_property
+    def shapes(self) -> Tuple[Tuple[int, ...], ...]:
+        """Tuple of shapes of control registers represented by this CtrlSpec."""
+        return tuple(cv.shape for cv in self.cvs)
 
     def activation_function_dtypes(self) -> Sequence[Tuple[QDType, Tuple[int, ...]]]:
         """The data types that serve as input to the 'activation function'.
@@ -88,14 +108,10 @@ class CtrlSpec:
         whether the bloq should be active. This method is useful for setting up appropriate
         control registers for a ControlledBloq.
 
-        This implementation returns one entry of type `self.qdtype` and shape `self.shape`.
-
         Returns:
             A sequence of (type, shape) tuples analogous to the arguments to `Register`.
         """
-        # CtrlSpec assumes your inputs can be expressed with one register, but this could
-        # be generalized. Open a GitHub issue if interested.
-        return [(self.qdtype, self.shape)]
+        return [(qdtype, cv.shape) for qdtype, cv in zip(self.qdtypes, self.cvs)]
 
     def is_active(self, *vals: 'ClassicalValT') -> bool:
         """A classical implementation of the 'activation function'.
@@ -113,49 +129,47 @@ class CtrlSpec:
         Returns:
             True if the specific input values evaluate to `True` for this CtrlSpec.
         """
-        # CtrlSpec assumes your inputs can be expressed with one ClassicalValT, but this could
-        # be generalized. Open a GitHub issue if interested.
-        if len(vals) != 1:
+        if len(vals) != self.num_ctrl_reg:
             raise ValueError(f"Incorrect number of inputs for {self}: {len(vals)}.")
-        (val,) = vals
-        if isinstance(val, (int, np.integer)):
-            val = np.array(val)
-        if val.shape != self.shape:
-            raise ValueError(f"Incorrect input shape for {self}: {val.shape}.")
 
-        return np.all(val == self.cvs)
+        for val, cv in zip(vals, self.cvs):
+            if isinstance(val, (int, np.integer)):
+                val = np.array(val)
+            else:
+                val = np.asarray(val)
+            if val.shape != cv.shape:
+                raise ValueError(f"Incorrect input shape for {self}: {val.shape} != {cv.shape}.")
+            if np.any(val != cv):
+                return False
+        return True
 
     def wire_symbol(self, i: int, soq: 'Soquet') -> 'WireSymbol':
         # Return a circle for bits; a box otherwise.
         from qualtran.drawing import Circle, TextBox
 
         if soq.reg.bitsize == 1:
-            cv = self.cvs[soq.idx]
+            cv = self.cvs[i][soq.idx]
             return Circle(filled=(cv == 1))
 
-        cv = self.cvs[soq.idx]
+        cv = self.cvs[i][soq.idx]
         return TextBox(f'{cv}')
+
+    @cached_property
+    def _cvs_tuple(self) -> Tuple[int, ...]:
+        return tuple(cv for cvs in self.cvs for cv in tuple(cvs.reshape(-1)))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, CtrlSpec):
             return False
 
         return (
-            other._qdtype == self._qdtype
-            and other.shape == self.shape
+            other.qdtypes == self.qdtypes
+            and other.shapes == self.shapes
             and other._cvs_tuple == self._cvs_tuple
         )
 
     def __hash__(self):
-        if self._hash is None:
-            self._hash = hash((self._qdtype, self.shape, self._cvs_tuple))
-        return self._hash
-
-    def __repr__(self) -> str:
-        return f'CtrlSpec({self._qdtype!r}, {self.cvs!r})'
-
-    def __str__(self) -> str:
-        return self.__repr__()
+        return hash((self.qdtypes, self.shapes, self._cvs_tuple))
 
 
 class AddControlledT(Protocol):
@@ -203,7 +217,7 @@ def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
     return tuple(names)
 
 
-@frozen
+@attrs.frozen
 class Controlled(Bloq):
     """A controlled version of `subbloq`.
 

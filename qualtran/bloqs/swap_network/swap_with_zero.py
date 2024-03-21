@@ -48,9 +48,8 @@ class SwapWithZero(GateWithRegisters):
     upon.
 
     References:
-        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
-        (https://arxiv.org/abs/1812.00954).
-            Low, Kliuchnikov, Schaeffer. 2018.
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low, Kliuchnikov, Schaeffer. 2018.
     """
 
     selection_bitsize: int

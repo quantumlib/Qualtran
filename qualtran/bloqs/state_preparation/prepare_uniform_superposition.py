@@ -44,7 +44,8 @@ class PrepareUniformSuperposition(GateWithRegisters):
             of the gate is constructed.
 
     References:
-        See Fig 12 of https://arxiv.org/abs/1805.03662 for more details.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Fig 12.
     """
 
     n: int

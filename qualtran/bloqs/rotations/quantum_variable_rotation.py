@@ -289,9 +289,8 @@ class QvrPhaseGradient(QvrInterface):
     as $\mathcal{O}\left(\log^2{\frac{1}{\epsilon}} \log{\log{\frac{1}{\epsilon}}}\right)$
 
     References:
-
-      1. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391) Section II-C: Oracles for phasing by cost function
-      2. [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391) Appendix A: Addition for controlled rotations
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled rotations
     """
 
     cost_reg: Register

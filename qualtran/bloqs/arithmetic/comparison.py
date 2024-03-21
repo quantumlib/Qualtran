@@ -395,7 +395,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     over `d` registers giving 4d + O(1). This totals 8n + 4d + O(1).
 
     References:
-        Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity. https://arxiv.org/abs/1805.03662.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
 
         Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians.
         https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
@@ -641,8 +641,9 @@ class LinearDepthGreaterThan(Bloq):
         target: A single bit output register to store the result of a > b.
 
     References:
-        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
-        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585)
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
     bitsize: int
     signed: bool

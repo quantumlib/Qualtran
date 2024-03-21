@@ -80,7 +80,7 @@ def test_get_markdown_docstring_lines():
         ' - `y`: The variable y used by `my_function`. ',
         '',
         '#### References',
-        '[Google](www.google.com). Brin et. al. 1999.',
+        ' - [Google](www.google.com). Brin et. al. 1999.',
         '',
     ]
 

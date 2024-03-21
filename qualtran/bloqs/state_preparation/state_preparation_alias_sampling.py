@@ -82,8 +82,7 @@ class StatePreparationAliasSampling(PrepareOracle):
     The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
 
     References:
-            [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
-        (https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.D. and Figure 11.
     """
     selection_registers: Tuple[Register, ...] = attrs.field(

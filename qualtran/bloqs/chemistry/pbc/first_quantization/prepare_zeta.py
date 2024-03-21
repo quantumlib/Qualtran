@@ -41,8 +41,8 @@ class PrepareZetaState(Bloq):
         l: the register indexing the atomic number.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 23-24, last 3 paragraphs.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 23-24, last 3 paragraphs.
     """
     num_atoms: int
     lambda_zeta: int

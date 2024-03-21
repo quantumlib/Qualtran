@@ -402,8 +402,7 @@ class UnaryIterationGate(GateWithRegisters):
     range `[l, r)` for which the corresponding unary iteration circuit should be built.
 
     References:
-            [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
-        (https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.A.
     """
 
