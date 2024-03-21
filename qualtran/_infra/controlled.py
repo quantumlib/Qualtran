@@ -63,9 +63,9 @@ class CtrlSpec:
         using 1-3 above.
 
     For example:
-    1. `CtrlSpec(qdtypes=QUInt(4), cvs=0b0101)`:
+    1. `CtrlSpec(qdtypes=QUInt(4), cvs=0b0110)`:
             Ctrl for a single register, of type `QUInt(4)` and shape `()`, is active when the
-            soquet of the input register takes value 5.
+            soquet of the input register takes value 6.
     2. `CtrlSpec(cvs=[0, 1, 1, 0])`:
             Ctrl for a single register, of type `QBit()` and shape `(4,)`, is active when soquets
             of input register take values `[0, 1, 1, 0]`.
@@ -73,11 +73,8 @@ class CtrlSpec:
             Ctrl for 2 registers, each of type `QBit()` and shape `(2,)`, is active when the
             soquet for each register takes values `[0, 1]` and  `[1, 0]` respectively.
 
-    This `CtrlSpec` class represents control values as a single `AND` clause, that applies
-    simultaneously to all control registers. The functions The methods `activation_function_dtypes`
-    and `is_active` are defined for future extensibility; such that one could define a ctrl spec
-    that can represent more general control values as a union of `AND` clauses where the control
-    is active if any of the `AND` clause is satisfied.
+    CtrlSpec uses logical AND among all control register clauses. If you need a different boolean
+    function, open a GitHub issue.
 
     Args:
         qdtypes: A tuple of quantum data types, one per ctrl register.
