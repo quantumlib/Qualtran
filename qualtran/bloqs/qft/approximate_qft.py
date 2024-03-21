@@ -57,7 +57,6 @@ class ApproximateQFT(GateWithRegisters):
     the "add into phase-gradient trick", this amounts to doing smaller additions with a smaller
     phase gradient register.
 
-
     Args:
         bitsize: Size of input register to apply QFT on.
         phase_bitsize: The size of the phase gradient register. Defaults to being math.ceil(math.log2(bitsize)).
@@ -69,8 +68,11 @@ class ApproximateQFT(GateWithRegisters):
             performing later operations on different qubits.
 
     References:
-        1. [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
-        2. [Approximation Errors](https://arxiv.org/pdf/quant-ph/0008056.pdf)
+        [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620).
+        Gidney, C. 2016.
+
+        [Approximation Errors](https://arxiv.org/abs/quant-ph/0008056).
+        Panike, N. 2000.
     """
 
     bitsize: SymbolicInt

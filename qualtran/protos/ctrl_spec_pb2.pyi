@@ -17,7 +17,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import builtins
+import collections.abc
 import google.protobuf.descriptor
+import google.protobuf.internal.containers
 import google.protobuf.message
 import qualtran.protos.args_pb2
 import qualtran.protos.data_types_pb2
@@ -37,16 +39,15 @@ class CtrlSpec(google.protobuf.message.Message):
     QDTYPE_FIELD_NUMBER: builtins.int
     CVS_FIELD_NUMBER: builtins.int
     @property
-    def qdtype(self) -> qualtran.protos.data_types_pb2.QDataType: ...
+    def qdtype(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.data_types_pb2.QDataType]: ...
     @property
-    def cvs(self) -> qualtran.protos.args_pb2.NDArray: ...
+    def cvs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qualtran.protos.args_pb2.NDArray]: ...
     def __init__(
         self,
         *,
-        qdtype: qualtran.protos.data_types_pb2.QDataType | None = ...,
-        cvs: qualtran.protos.args_pb2.NDArray | None = ...,
+        qdtype: collections.abc.Iterable[qualtran.protos.data_types_pb2.QDataType] | None = ...,
+        cvs: collections.abc.Iterable[qualtran.protos.args_pb2.NDArray] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["cvs", b"cvs", "qdtype", b"qdtype"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["cvs", b"cvs", "qdtype", b"qdtype"]) -> None: ...
 
 global___CtrlSpec = CtrlSpec

@@ -16,7 +16,7 @@ from qualtran.protos import data_types_pb2 as qualtran_dot_protos_dot_data__type
 from qualtran.protos import args_pb2 as qualtran_dot_protos_dot_args__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1fqualtran/protos/ctrl_spec.proto\x12\x08qualtran\x1a qualtran/protos/data_types.proto\x1a\x1aqualtran/protos/args.proto\"O\n\x08\x43trlSpec\x12#\n\x06qdtype\x18\x01 \x01(\x0b\x32\x13.qualtran.QDataType\x12\x1e\n\x03\x63vs\x18\x02 \x01(\x0b\x32\x11.qualtran.NDArrayb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1fqualtran/protos/ctrl_spec.proto\x12\x08qualtran\x1a qualtran/protos/data_types.proto\x1a\x1aqualtran/protos/args.proto\"O\n\x08\x43trlSpec\x12#\n\x06qdtype\x18\x01 \x03(\x0b\x32\x13.qualtran.QDataType\x12\x1e\n\x03\x63vs\x18\x02 \x03(\x0b\x32\x11.qualtran.NDArrayb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
