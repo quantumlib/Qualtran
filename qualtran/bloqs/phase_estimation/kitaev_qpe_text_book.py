@@ -18,7 +18,7 @@ from typing import Tuple
 import attrs
 import cirq
 
-from qualtran import Bloq, GateWithRegisters, Register, Signature
+from qualtran import Bloq, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 
@@ -76,7 +76,7 @@ class KitaevQPE(GateWithRegisters):
 
     @cached_property
     def phase_registers(self) -> Tuple[Register, ...]:
-        return tuple(Signature.build(qpe_reg=self.m_bits))
+        return (Register('qpe_reg', QFxp(self.m_bits, self.m_bits)),)
 
     @cached_property
     def signature(self) -> Signature:

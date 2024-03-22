@@ -15,31 +15,12 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.basic_gates import ZPowGate
+from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
-from qualtran.bloqs.phase_estimation.kitaev_qpe_text_book import KitaevQPE
+from qualtran.bloqs.phase_estimation.kitaev_qpe_text_book_test import simulate_theta_estimate
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
+from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE
 from qualtran.cirq_interop.testing import GateHelper
-
-
-def simulate_theta_estimate(circuit, measurement_register) -> float:
-    sim = cirq.Simulator()
-    qubit_order = cirq.QubitOrder.explicit(measurement_register, fallback=cirq.QubitOrder.DEFAULT)
-    final_state = sim.simulate(circuit, qubit_order=qubit_order).final_state_vector
-    m_bits = len(measurement_register)
-    samples = cirq.sample_state_vector(final_state, indices=[*range(m_bits)], repetitions=1000)
-    counts = np.bincount(samples.dot(1 << np.arange(samples.shape[-1] - 1, -1, -1)))
-    assert len(counts) <= 2**m_bits
-    return np.argmax(counts) / 2**m_bits
-
-
-@pytest.mark.parametrize('theta', [0.234, 0.78, 0.54])
-def test_kitaev_phase_estimation_zpow_theta(theta):
-    precision, error_bound = 3, 0.1
-    gh = GateHelper(KitaevQPE(ZPowGate(exponent=2 * theta), precision))
-    circuit = cirq.Circuit(cirq.X(*gh.quregs['q']), cirq.decompose_once(gh.operation))
-    precision_register = gh.quregs['qpe_reg']
-    assert abs(simulate_theta_estimate(circuit, precision_register) - theta) < error_bound
 
 
 @pytest.mark.parametrize('num_terms', [2, 3, 4])
@@ -56,9 +37,10 @@ def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_sta
 
     eigen_values, eigen_vectors = np.linalg.eigh(ham.matrix())
 
-    state_prep = LPResourceState(precision) if use_resource_state else OnEach(precision, Hadamard())
-    gh = GateHelper(KitaevQPE(walk, precision, state_prep=state_prep))
     # 1. Construct QPE bloq
+
+    state_prep = LPResourceState(precision) if use_resource_state else OnEach(precision, Hadamard())
+    gh = GateHelper(QubitizationQPE(walk, precision, state_prep=state_prep))
     qpe_reg, selection, target = (gh.quregs['qpe_reg'], gh.quregs['selection'], gh.quregs['target'])
     for eig_idx, eig_val in enumerate(eigen_values):
         # Apply QPE to determine eigenvalue for walk operator W on initial state |L>|k>
@@ -76,7 +58,9 @@ def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_sta
         assert 0 <= theta <= 1
 
         # 5. Verify that the estimated phase is correct.
-        phase = theta * 2 * np.pi
-        np.testing.assert_allclose(
-            np.abs(eig_val / qubitization_lambda), np.abs(np.cos(phase)), atol=eps
-        )
+        phase = theta * np.pi
+        is_close = [
+            np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.cos(phase)), atol=eps),
+            np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.sin(phase)), atol=eps),
+        ]
+        assert np.any(is_close)
