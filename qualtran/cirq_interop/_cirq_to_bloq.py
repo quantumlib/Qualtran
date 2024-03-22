@@ -65,8 +65,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cirq_gate(self) -> cirq.Gate:
-        ...
+    def cirq_gate(self) -> cirq.Gate: ...
 
     @cached_property
     def signature(self) -> 'Signature':
