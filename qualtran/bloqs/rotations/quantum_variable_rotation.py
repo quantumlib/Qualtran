@@ -84,13 +84,11 @@ class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cost_registers(self) -> Sequence[Register]:
-        ...
+    def cost_registers(self) -> Sequence[Register]: ...
 
     @property
     @abc.abstractmethod
-    def extra_registers(self) -> Sequence[Register]:
-        ...
+    def extra_registers(self) -> Sequence[Register]: ...
 
     @cached_property
     def signature(self) -> Signature:
@@ -118,6 +116,7 @@ class QvrZPow(QvrInterface):
             floating point number.
         eps: Precision for synthesizing the phases.
     """
+
     cost_reg: Register
     gamma: Union[float, sympy.Expr] = 1.0
     eps: Union[float, sympy.Expr] = 1e-9
