@@ -78,6 +78,24 @@ class SU2RotationGate(GateWithRegisters):
             ]
         )
 
+    @staticmethod
+    def from_matrix(mat: NDArray[np.complex_]) -> 'SU2RotationGate':
+        theta = np.arctan2(np.abs(mat[1, 0]), np.abs(mat[0, 0]))
+        if np.isclose(np.cos(theta), 0):
+            alpha = 0
+            phi = np.angle(mat[0, 1] / np.sin(theta))
+            lambd = np.angle(mat[1, 0] / np.sin(theta))
+        else:
+            alpha = np.angle(-mat[1, 1] / np.cos(theta))
+            if np.isclose(np.sin(theta), 0):
+                phi = np.angle(mat[0, 0] / np.cos(theta) * np.exp(-1j * alpha))
+                lambd = 0
+            else:
+                phi = np.angle(mat[0, 1] / np.sin(theta) * np.exp(-1j * alpha))
+                lambd = np.angle(mat[1, 0] / np.sin(theta) * np.exp(-1j * alpha))
+
+        return SU2RotationGate(theta, phi, lambd, alpha)
+
     def add_my_tensors(
         self,
         tn: 'qtn.TensorNetwork',
