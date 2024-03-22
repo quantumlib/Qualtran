@@ -70,8 +70,7 @@ class HammingWeightPhasing(GateWithRegisters):
         out = bb.split(out)
         for i in range(len(out)):
             out[-(i + 1)] = bb.add(
-                ZPowGate(exponent=(2**i) * self.exponent, eps=self.eps / len(out)),
-                q=out[-(i + 1)],
+                ZPowGate(exponent=(2**i) * self.exponent, eps=self.eps / len(out)), q=out[-(i + 1)]
             )
         out = bb.join(out, dtype=QUInt(self.bitsize.bit_length()))
         soqs['x'] = bb.add(

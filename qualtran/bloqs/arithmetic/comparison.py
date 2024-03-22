@@ -577,6 +577,7 @@ class GreaterThan(Bloq):
         b: n-bit-sized input registers.
         target: A single bit output register to store the result of A > B.
     """
+
     a_bitsize: int
     b_bitsize: int
 
@@ -645,6 +646,7 @@ class LinearDepthGreaterThan(Bloq):
 
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
+
     bitsize: int
     signed: bool
 
