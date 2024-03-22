@@ -13,12 +13,14 @@
 #  limitations under the License.
 from typing import List
 
+import cirq
 import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import Controlled, CtrlSpec, QBit, QInt
-from qualtran.bloqs.basic_gates import XGate
+from qualtran import Bloq, Controlled, CtrlSpec, QBit, QInt, QUInt
+from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
+from qualtran.bloqs.basic_gates import Swap, XGate
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
@@ -48,6 +50,57 @@ def test_ctrl_spec_shape():
     c2 = CtrlSpec(QBit(), cvs=(1,))
     assert c1.shapes != c2.shapes
     assert c1 != c2
+
+
+def test_ctrl_spec_to_cirq_cv_roundtrip():
+    cirq_cv = cirq.ProductOfSums([0, 1, 0, 1])
+    assert CtrlSpec.from_cirq_cv(cirq_cv) == CtrlSpec(cvs=[0, 1, 0, 1])
+
+    ctrl_specs = [
+        CtrlSpec(qdtypes=QUInt(4), cvs=0b0101),
+        CtrlSpec(cvs=[0, 1, 0, 1]),
+        CtrlSpec(qdtypes=[QBit()] * 4, cvs=[[0], [1], [0], [1]]),
+    ]
+
+    for ctrl_spec in ctrl_specs:
+        assert ctrl_spec.to_cirq_cv() == cirq_cv.expand()
+        assert CtrlSpec.from_cirq_cv(cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.shapes)
+
+
+def test_ctrl_bloq_as_cirq_op():
+    subbloq = XGate()
+
+    def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
+        left_quregs = get_named_qubits(bloq.signature.lefts())
+        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(**left_quregs)
+        circuit2 = cirq.Circuit(
+            gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
+        )
+        cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+    # Simple ctrl spec
+    _test_cirq_equivalence(subbloq, cirq.X)
+    _test_cirq_equivalence(subbloq.controlled(), cirq.X.controlled())
+
+    # Different ways of specifying qubit registers get "expanded" into a flat list of qubits when
+    # converting to Cirq.
+    cirq_gate = cirq.X.controlled(control_values=[0, 1, 0, 1])
+    _test_cirq_equivalence(subbloq.controlled(CtrlSpec(qdtypes=QUInt(4), cvs=0b0101)), cirq_gate)
+
+    _test_cirq_equivalence(subbloq.controlled(CtrlSpec(cvs=[0, 1, 0, 1])), cirq_gate)
+
+    _test_cirq_equivalence(
+        subbloq.controlled(CtrlSpec(qdtypes=[QBit()] * 4, cvs=[[0], [1], [0], [1]])), cirq_gate
+    )
+    # Also works for more complicated bloqs that can decompose into a Cirq circuit.
+    bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
+    quregs = get_named_qubits(bloq.signature)
+    ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
+    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(**quregs)
+    circuit2 = cirq.Circuit(
+        cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
 
 
 def test_ctrl_spec_activation_1():
