@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -23,10 +23,9 @@ from qualtran.bloqs.basic_gates import Ry, ZPowGate
 from qualtran.drawing import TextBox
 
 if TYPE_CHECKING:
-    import cirq
+    import quimb.tensor as qtn
 
     from qualtran import BloqBuilder, Soquet, SoquetT
-    from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
 
 
@@ -68,17 +67,23 @@ class SU2RotationGate(GateWithRegisters):
             ]
         )
 
-    def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
-        import cirq
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
 
-        (qubit,) = q
-        return cirq.PhasedXZGate(
-            x_exponent=2 * self.theta / np.pi,
-            z_exponent=1 - (self.lambd + self.phi) / np.pi,
-            axis_phase_exponent=self.lambd / np.pi - 0.5,
-        ).on(qubit), {'q': q}
+        tn.add(
+            qtn.Tensor(
+                data=self.rotation_matrix,
+                inds=(outgoing['q'], incoming['q']),
+                tags=[self.short_name(), tag],
+            )
+        )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         q = bb.add(ZPowGate(exponent=2, global_shift=0.5), q=q)
