@@ -535,3 +535,49 @@ def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
         return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
 
     return BloqCheckResult.PASS, ''
+
+
+def assert_registers_dtypes_match_parent(bloq: Bloq) -> CompositeBloq:
+    """Check that the registers following decomposition match the dtypes of the original bloq.
+
+    This is a strict condition of the `decompose_bloq()` protocol. A decomposition is only
+    valid if it takes exactly the same inputs and outputs.
+
+    This returns the decomposed bloq for further checking.
+    """
+    cbloq = bloq.decompose_bloq()
+
+    if bloq.signature != cbloq.signature:
+        err = "Parent registers do not match registers"
+        for reg, dreg in itertools.zip_longest(bloq.signature, cbloq.signature):
+            if reg != dreg:
+                raise BloqError(f'{err}: {reg} != {dreg}')
+
+        raise BloqError(f'{err}: {bloq}')
+
+    return cbloq
+
+
+def check_bloq_example_dtypes_match_parent(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample has consistent serialization.
+
+    This function checks that the given bloq can be serialized to a proto format and the
+    corresponding proto can be deserialized back to a bloq which is equal to the original
+    bloq.
+
+    If the given Bloq cannot be serialized / deserialized OR if the deserialized Bloq is not
+    equal to the given Bloq, then the result is `FAIL`. If the roundtrip succeeds, the result
+    is `PASS`.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        assert_bloq_example_serialize(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''
