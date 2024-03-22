@@ -49,6 +49,7 @@ respectively.
 """
 
 import abc
+from enum import Enum
 from typing import Any, Iterable, List, Sequence, Union
 
 import attrs
@@ -534,6 +535,19 @@ QAnyInt = (QInt, QUInt, BoundedQUInt, QMontgomeryUInt)
 QAnyUInt = (QUInt, BoundedQUInt, QMontgomeryUInt)
 
 
+class QDTypeCheckingSeverity(Enum):
+    """The level of type checking to enforce"""
+
+    LOOSE = 0
+    """Allow most type conversions between QAnyInt, QFxp and QAny."""
+
+    ANY = 1
+    """Disallow numeric type conversions but allow QAny and single bit conversion."""
+
+    STRICT = 1
+    """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
+
+
 def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
     """A uint is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
@@ -541,29 +555,37 @@ def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
     return a.num_qubits == b.num_qubits and (b.num_frac == 0 or b.num_int == 0)
 
 
-def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType, strict: bool = False) -> bool:
+def check_dtypes_consistent(
+    dtype_a: QDType,
+    dtype_b: QDType,
+    type_checking_severity: QDTypeCheckingSeverity = QDTypeCheckingSeverity.LOOSE,
+) -> bool:
     """Check if two types are consistent given our current definition on consistent types.
 
     Args:
         dtype_a: The dtype to check against the reference.
         dtype_b: The reference dtype.
-        strict: Whether to compare types literally
+        type_checking_severity: Severity of type checking to perform.
 
     Returns:
         True if the types are consistent.
     """
-    if dtype_a == dtype_b:
-        return True
-    if strict:
-        return False
+    same_dtypes = dtype_a == dtype_b
     same_n_qubits = dtype_a.num_qubits == dtype_b.num_qubits
-    if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
-        # QAny -> any dtype and any dtype -> QAny
-        return same_n_qubits
+    if same_dtypes:
+        # Same types are always ok.
+        return True
     elif dtype_a.num_qubits == 1 and same_n_qubits:
         # Single qubit types are ok.
         return True
-    elif isinstance(dtype_a, QAnyInt) and isinstance(dtype_b, QAnyInt):
+    if type_checking_severity == QDTypeCheckingSeverity.STRICT:
+        return False
+    if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
+        # QAny -> any dtype and any dtype -> QAny
+        return same_n_qubits
+    if type_checking_severity == QDTypeCheckingSeverity.ANY:
+        return False
+    if isinstance(dtype_a, QAnyInt) and isinstance(dtype_b, QAnyInt):
         # A subset of the integers should be freely interchangeable.
         return same_n_qubits
     elif isinstance(dtype_a, QAnyUInt) and isinstance(dtype_b, QFxp):

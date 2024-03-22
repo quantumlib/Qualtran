@@ -32,7 +32,7 @@ from qualtran import (
     Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
-from qualtran._infra.data_types import check_dtypes_consistent
+from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -131,6 +131,20 @@ def assert_connections_compatible(cbloq: CompositeBloq):
             rr_side_should_be = Side.LEFT
         if not (rr.side & rr_side_should_be):
             raise BloqError(f"{cxn}'s right side is associated with a register with side {rr.side}")
+
+
+def assert_connections_preserve_types(
+    cbloq: CompositeBloq,
+    type_checking_severity: QDTypeCheckingSeverity = QDTypeCheckingSeverity.LOOSE,
+):
+    """Check that connections have consistent dtypes accounting for type_checking_severity."""
+    for cxn in cbloq.connections:
+        lr = cxn.left.reg
+        rr = cxn.right.reg
+        if not check_dtypes_consistent(
+            lr.dtype, rr.dtype, type_checking_severity=type_checking_severity
+        ):
+            raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
 
 
 def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
@@ -537,44 +551,46 @@ def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
     return BloqCheckResult.PASS, ''
 
 
-def assert_registers_dtypes_match_parent(bloq: Bloq) -> CompositeBloq:
-    """Check that the registers following decomposition match the dtypes of the original bloq.
+def assert_bloq_example_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """ """
+    bloq = bloq_ex.make()
+    # First check it's not atomic / doesn't decompose
+    try:
+        cbloq = bloq.decompose_bloq()
+    except (DecomposeTypeError, DecomposeNotImplementedError):
+        raise BloqCheckException.missing(
+            r"Atomic bloqs or non-decomposable bloqs don't require type checking."
+        )
+    try:
+        assert_connections_preserve_types(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.LOOSE
+        )
+    except Exception as e:
+        raise BloqCheckException.fail('Loose type checking failed.\n' + str(e)) from e
+    try:
+        assert_connections_preserve_types(cbloq, type_checking_severity=QDTypeCheckingSeverity.ANY)
+    except Exception as e:
+        raise BloqCheckException.unverified('QAny and QBit type checking failed.\n' + str(e)) from e
+    try:
+        assert_connections_preserve_types(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.STRICT
+        )
+    except Exception as e:
+        raise BloqCheckException.unverified('Strict type checking failed.\n' + str(e)) from e
 
-    This is a strict condition of the `decompose_bloq()` protocol. A decomposition is only
-    valid if it takes exactly the same inputs and outputs.
 
-    This returns the decomposed bloq for further checking.
-    """
-    cbloq = bloq.decompose_bloq()
+def check_connections_preserve_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample has consistent typing.
 
-    if bloq.signature != cbloq.signature:
-        err = "Parent registers do not match registers"
-        for reg, dreg in itertools.zip_longest(bloq.signature, cbloq.signature):
-            if reg != dreg:
-                raise BloqError(f'{err}: {reg} != {dreg}')
-
-        raise BloqError(f'{err}: {bloq}')
-
-    return cbloq
-
-
-def check_bloq_example_dtypes_match_parent(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
-    """Check that the BloqExample has consistent serialization.
-
-    This function checks that the given bloq can be serialized to a proto format and the
-    corresponding proto can be deserialized back to a bloq which is equal to the original
-    bloq.
-
-    If the given Bloq cannot be serialized / deserialized OR if the deserialized Bloq is not
-    equal to the given Bloq, then the result is `FAIL`. If the roundtrip succeeds, the result
-    is `PASS`.
+    This checks that the composite bloq's register dtypes are strictly the same, i.e.
+    no casting occurs.
 
     Returns:
         result: The `BloqCheckResult`.
         msg: A message providing details from the check.
     """
     try:
-        assert_bloq_example_serialize(bloq_ex)
+        assert_bloq_example_preserves_types(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
     except Exception as e:  # pylint: disable=broad-except
