@@ -59,7 +59,7 @@ class SU2RotationGate(GateWithRegisters):
 
     theta: float
     phi: float
-    lambd: float
+    lambd: float  # cannot use `lambda` as it is a python keyword
     global_shift: float = 0
 
     @cached_property
