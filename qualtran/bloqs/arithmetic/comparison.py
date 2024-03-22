@@ -771,12 +771,12 @@ class LinearDepthGreaterThan(Bloq):
         if not self.signed:
             a_split = bb.split(a)
             a_sign = a_split[0]
-            a = bb.join(a_split[1:], dtype=QUInt(a.reg.bitsize))
+            a = bb.join(a_split[1:], dtype=QUInt(self.bitsize))
             bb.free(a_sign)
 
             b_split = bb.split(b)
             b_sign = b_split[0]
-            b = bb.join(b_split[1:], dtype=QUInt(b.reg.bitsize))
+            b = bb.join(b_split[1:], dtype=QUInt(self.bitsize))
             bb.free(b_sign)
 
         # Return the output registers.
