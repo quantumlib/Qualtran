@@ -17,6 +17,8 @@ from typing import Optional
 
 from attrs import field, frozen
 
+from qualtran.surface_code.reference import Reference
+
 
 @frozen
 class QuantumErrorCorrectionSchemeSummary(abc.ABC):
@@ -37,12 +39,12 @@ class QuantumErrorCorrectionSchemeSummary(abc.ABC):
     Attributes:
         error_rate_scaler: Logical error rate coefficient.
         error_rate_threshold: Logical error rate threshold.
-        reference: source of the estimates in a human-readable format.
+        reference: source of the estimates.
     """
 
     error_rate_scaler: float = field(repr=lambda x: f'{x:g}')
     error_rate_threshold: float = field(repr=lambda x: f'{x:g}')
-    reference: Optional[str] = None
+    reference: Optional[Reference] = None
 
     def logical_error_rate(self, code_distance: int, physical_error_rate: float) -> float:
         """Logical error suppressed with code distance for this physical error rate.
@@ -112,26 +114,26 @@ BeverlandSuperconductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=0.4,  # Equals 4*t_gate+2*t_meas where t_gate=50ns and t_meas=100ns.
-    reference='https://arxiv.org/abs/2211.07629',
+    reference=Reference(source='https://arxiv.org/abs/2211.07629', page=20),
 )
 
 FowlerSuperconductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.1,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=1,
-    reference='https://arxiv.org/abs/1808.06709',
+    reference=Reference(source='https://arxiv.org/abs/1808.06709'),
 )
 
 BeverlandMajoranaQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=0.6,  # Equals 4*t_gate+2*t_meas where t_gate=100ns and t_meas=100ns.
-    reference='https://arxiv.org/abs/2211.07629',
+    reference=Reference(source='https://arxiv.org/abs/2211.07629', page=20),
 )
 
 BeverlandTrappedIonQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=600,  # Equals 4*t_gate+2*t_meas where t_gate=100us and t_meas=100us.
-    reference='https://arxiv.org/abs/2211.07629',
+    reference=Reference(source='https://arxiv.org/abs/2211.07629', page=20),
 )

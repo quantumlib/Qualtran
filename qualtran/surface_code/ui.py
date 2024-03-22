@@ -317,6 +317,7 @@ def create_ouputs():
 
 
 app = Dash(__name__)
+app.title = 'Qualtran Resource Estimation'
 app.layout = html.Div(
     [
         html.H4('Interactive QEC overhead estimation'),

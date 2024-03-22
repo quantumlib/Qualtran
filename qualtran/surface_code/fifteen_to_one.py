@@ -24,6 +24,7 @@ from qualtran.surface_code.quantum_error_correction_scheme_summary import (
     FowlerSuperconductingQubits,
     QuantumErrorCorrectionSchemeSummary,
 )
+from qualtran.surface_code.reference import Reference
 from qualtran.surface_code.t_factory_utils import NoisyPauliRotation, storage_error
 
 
@@ -39,13 +40,14 @@ class FifteenToOne(MagicStateFactory):
         d_Z: Side length of the surface code along which Z measurements happen.
         d_m: Number of code cycles used in lattice surgery.
         qec: Quantum error correction scheme being used.
+        reference: A description of the source of the factory.
     """
 
     d_X: int
     d_Z: int
     d_m: int
     qec: QuantumErrorCorrectionSchemeSummary = FowlerSuperconductingQubits
-    reference: Optional[str] = None
+    reference: Optional[Reference] = None
 
     def __attrs_post_init__(self):
         assert 0 < self.d_X <= 3 * self.d_m
@@ -378,6 +380,10 @@ def _build_factory(
     return factory
 
 
-FifteenToOne733 = FifteenToOne(7, 3, 3, reference='https://arxiv.org/abs/1905.06903')
+FifteenToOne733 = FifteenToOne(
+    7, 3, 3, reference=Reference(source='https://arxiv.org/abs/1905.06903')
+)
 
-FifteenToOne933 = FifteenToOne(9, 3, 3, reference='https://arxiv.org/abs/1905.06903')
+FifteenToOne933 = FifteenToOne(
+    9, 3, 3, reference=Reference(source='https://arxiv.org/abs/1905.06903')
+)
