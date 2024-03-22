@@ -766,8 +766,8 @@ class LinearDepthGreaterThan(Bloq):
         for i in range(true_bitsize):
             b_split[i] = bb.add(XGate(), q=b_split[i])
 
-        a = bb.join(a_split, dtype=a.reg.dtype)
-        b = bb.join(b_split, dtype=b.reg.dtype)
+        a = bb.join(a_split, dtype=QUInt(self.bitsize))
+        b = bb.join(b_split, dtype=QUInt(self.bitsize))
 
         # If the input registers were unsigned we free the ancilla sign bits.
         if not self.signed:
