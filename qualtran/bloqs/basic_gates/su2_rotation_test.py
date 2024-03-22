@@ -14,6 +14,7 @@
 import cirq
 import numpy as np
 
+from . import Hadamard, TGate
 from .su2_rotation import _hadamard, _su2_rotation_gate, _t_gate, SU2RotationGate
 
 
@@ -21,8 +22,8 @@ def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
     random_state = np.random.default_rng(42)
 
     for _ in range(20):
-        theta, phi, lambd = random_state.random(size=3) * 2 * np.pi
-        gate = SU2RotationGate(theta, phi, lambd)
+        theta, phi, lambd, global_shift = random_state.random(size=4) * 2 * np.pi
+        gate = SU2RotationGate(theta, phi, lambd, global_shift)
 
         np.testing.assert_allclose(cirq.unitary(gate), gate.rotation_matrix)
 
@@ -31,8 +32,8 @@ def test_tensors():
     random_state = np.random.default_rng(42)
 
     for _ in range(20):
-        theta, phi, lambd = random_state.random(size=3) * 2 * np.pi
-        gate = SU2RotationGate(theta, phi, lambd)
+        theta, phi, lambd, global_shift = random_state.random(size=4) * 2 * np.pi
+        gate = SU2RotationGate(theta, phi, lambd, global_shift)
 
         np.testing.assert_allclose(gate.tensor_contract(), gate.rotation_matrix)
 
@@ -41,3 +42,8 @@ def test_su2_rotation_gates(bloq_autotester):
     bloq_autotester(_su2_rotation_gate)
     bloq_autotester(_t_gate)
     bloq_autotester(_hadamard)
+
+
+def test_su2_rotation_gate_example_unitaries_match():
+    np.testing.assert_allclose(_t_gate().tensor_contract(), TGate().tensor_contract())
+    np.testing.assert_allclose(_hadamard().tensor_contract(), Hadamard().tensor_contract())
