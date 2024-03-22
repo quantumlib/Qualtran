@@ -58,6 +58,8 @@ def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_sta
         assert 0 <= theta <= 1
 
         # 5. Verify that the estimated phase is correct.
+        # Since we apply U^\dagger for 0-control; the phase difference is twice
+        # and therefore phase is pi * theta instead of 2 * pi * theta
         phase = theta * np.pi
         is_close = [
             np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.cos(phase)), atol=eps),

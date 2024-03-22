@@ -15,7 +15,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.basic_gates import ZPowGate
+from qualtran.bloqs.basic_gates import Hadamard, OnEach, ZPowGate
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
 from qualtran.bloqs.phase_estimation.kitaev_qpe_text_book import KitaevQPE
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
