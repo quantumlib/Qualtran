@@ -14,17 +14,30 @@
 import cirq
 import numpy as np
 
-from .su2_rotation import SU2RotationGate
+from .su2_rotation import _hadamard, _su2_rotation_gate, _t_gate, SU2RotationGate
 
 
 def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
     random_state = np.random.default_rng(42)
 
     for _ in range(20):
-        theta = random_state.random() * 2 * np.pi
-        phi = random_state.random() * 2 * np.pi
-        lambd = random_state.random() * 2 * np.pi
-
+        theta, phi, lambd = random_state.random(size=3) * 2 * np.pi
         gate = SU2RotationGate(theta, phi, lambd)
 
         np.testing.assert_allclose(cirq.unitary(gate), gate.rotation_matrix)
+
+
+def test_tensors():
+    random_state = np.random.default_rng(42)
+
+    for _ in range(20):
+        theta, phi, lambd = random_state.random(size=3) * 2 * np.pi
+        gate = SU2RotationGate(theta, phi, lambd)
+
+        np.testing.assert_allclose(gate.tensor_contract(), gate.rotation_matrix)
+
+
+def test_su2_rotation_gates(bloq_autotester):
+    bloq_autotester(_su2_rotation_gate)
+    bloq_autotester(_t_gate)
+    bloq_autotester(_hadamard)
