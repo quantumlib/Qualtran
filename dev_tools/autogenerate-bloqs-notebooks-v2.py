@@ -63,6 +63,8 @@ import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.chemistry.trotter.hubbard.hopping
+import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
@@ -224,6 +226,16 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.ising.unitaries._ISING_ZZ_UNITARY_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/ising',
+    ),
+    NotebookSpecV2(
+        title='Trotterized Hubbard',
+        module=qualtran.bloqs.chemistry.trotter.hubbard,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._PLAQUETTE_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
     ),
     NotebookSpecV2(
         title='Tensor Hypercontraction',
