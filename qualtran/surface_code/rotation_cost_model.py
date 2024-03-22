@@ -49,6 +49,7 @@ class RotationLogarithmicModel(RotationCostModel):
         approximation_protocol: A description or reference to the approximation protocol
         reference: A description of the source of the model.
     """
+
     slope: float
     overhead: float
     gateset: Optional[str] = None
