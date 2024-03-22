@@ -36,4 +36,5 @@ You can also install the latest state of the main branch:
 ## Resource Estimation UI
 Qualtran provides a UI for estimating the resources (qubits, magic states, runtime, ..etc) required to run a quantum algorithm. The UI can be run locally by running:
     
+    cd $QUALTRAN_HOME
     python -m qualtran.surface_code.ui
