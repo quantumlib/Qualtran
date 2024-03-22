@@ -19,11 +19,16 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
+from qualtran.resource_counting.generalizers import (
+    cirq_to_bloqs,
+    ignore_cliffords,
+    ignore_split_join,
+)
 
 
 @attrs.frozen(cache_hash=True)
@@ -145,3 +150,18 @@ class QubitizationWalkOperator(GateWithRegisters):
         if self.power > 1:
             return self.power * t_complexity(self.with_power(1))
         return NotImplemented
+
+
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _walk_op() -> QubitizationWalkOperator:
+    from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
+
+    walk_op = get_walk_operator_for_1d_ising_model(4, 2e-1)
+    return walk_op
+
+
+_QUBITIZATION_WALK_DOC = BloqDocSpec(
+    bloq_cls=QubitizationWalkOperator,
+    import_line='from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator',
+    examples=(_walk_op,),
+)
