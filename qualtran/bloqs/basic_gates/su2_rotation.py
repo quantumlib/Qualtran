@@ -20,6 +20,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import Ry, ZPowGate
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox
 
 if TYPE_CHECKING:
@@ -36,20 +37,30 @@ class SU2RotationGate(GateWithRegisters):
     The rotation is represented by the matrix:
 
     $$
+        e^{i \alpha}
         \begin{pmatrix}
         e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
         e^{i\lambda} \sin(\theta) & - \cos(\theta)
         \end{pmatrix}
     $$
 
+    where $s$ is the global phase shift.
+
+    Args:
+        theta: rotation angle $\theta$ in the above matrix.
+        phi: phase angle $\theta$ in the above matrix.
+        lambd: phase angle $\lambda$ in the above matrix.
+        global_shift: phase angle $\alpha$, i.e. apply a global phase shift of $e^{i \alpha}$.
+
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-            Motlagh and Wiebe. (2023). Equation 7.
+        Motlagh and Wiebe. (2023). Equation 7.
     """
 
     theta: float
     phi: float
     lambd: float
+    global_shift: float = 0
 
     @cached_property
     def signature(self) -> Signature:
@@ -57,7 +68,7 @@ class SU2RotationGate(GateWithRegisters):
 
     @cached_property
     def rotation_matrix(self) -> NDArray[np.complex_]:
-        return np.array(
+        return np.exp(1j * self.global_shift) * np.array(
             [
                 [
                     np.exp(1j * (self.lambd + self.phi)) * np.cos(self.theta),
@@ -86,7 +97,7 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        q = bb.add(ZPowGate(exponent=2, global_shift=0.5), q=q)
+        q = bb.add(ZPowGate(exponent=2, global_shift=0.5 + self.global_shift / (2 * np.pi)), q=q)
         q = bb.add(ZPowGate(exponent=1 - self.lambd / np.pi, global_shift=-1), q=q)
         q = bb.add(Ry(angle=2 * self.theta), q=q)
         q = bb.add(ZPowGate(exponent=-self.phi / np.pi, global_shift=-1), q=q)
@@ -96,7 +107,12 @@ class SU2RotationGate(GateWithRegisters):
         return 'SU_2'
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        return TextBox(f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd})")
+        return TextBox(
+            f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
+        )
+
+    def _t_complexity_(self) -> TComplexity:
+        return TComplexity(rotations=1)
 
 
 @bloq_example
@@ -113,7 +129,7 @@ def _hadamard() -> SU2RotationGate:
 
 @bloq_example
 def _t_gate() -> SU2RotationGate:
-    t_gate = SU2RotationGate(0, 3 * np.pi / 4, 0)
+    t_gate = SU2RotationGate(0, 3 * np.pi / 4, 0, -3 * np.pi / 4)
     return t_gate
 
 
