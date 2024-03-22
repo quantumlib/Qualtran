@@ -109,7 +109,7 @@ class ModExp(Bloq):
             exponent[j], x = bb.add(self._CtrlModMul(k=base), ctrl=exponent[j], x=x)
             base = base * base % self.mod
 
-        return {'exponent': bb.join(exponent, dtype=x.reg.dtype), 'x': x}
+        return {'exponent': bb.join(exponent, dtype=QUInt(self.exp_bitsize)), 'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
