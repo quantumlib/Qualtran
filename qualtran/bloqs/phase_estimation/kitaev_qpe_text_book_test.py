@@ -77,6 +77,4 @@ def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_sta
 
         # 5. Verify that the estimated phase is correct.
         phase = theta * 2 * np.pi
-        np.testing.assert_allclose(
-            np.abs(eig_val / qubitization_lambda), np.abs(np.cos(phase)), atol=eps
-        )
+        np.testing.assert_allclose(eig_val / qubitization_lambda, np.cos(phase), atol=eps)

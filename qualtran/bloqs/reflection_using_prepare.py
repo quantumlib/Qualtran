@@ -30,7 +30,7 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle
 class ReflectionUsingPrepare(GateWithRegisters):
     r"""Applies reflection around a state prepared by `prepare_gate`
 
-    Applies $R_{s} = I - 2|s><s|$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$ s.t. $P|0> = |s>$.
+    Applies $R_{s} = 2|s><s| - I$ using $R_{s} = P(2|0><0|) - I) P^{\dagger}$ s.t. $P|0> = |s>$.
     Here
         $|s>$: The state along which we want to reflect.
         $P$: Unitary that prepares that state $|s>$ from the zero state $|0>$
@@ -95,6 +95,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
         yield MultiControlPauli([0] * len(phase_control), target_gate=cirq.Z).on_registers(
             controls=phase_control.reshape(phase_control.shape + (1,)), target=phase_target
         )
+        yield cirq.global_phase_operation(-1) if self.control_val is None else cirq.Z(phase_target)
         yield cirq.X(phase_target) if not self.control_val else []
         # 3. PREPARE
         yield prepare_op

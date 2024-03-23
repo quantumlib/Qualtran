@@ -25,13 +25,14 @@ from qualtran.cirq_interop.testing import GateHelper
 
 @pytest.mark.parametrize('num_terms', [2, 3, 4])
 @pytest.mark.parametrize('use_resource_state', [True, False])
-def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_state: bool):
+def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_state: bool):
     precision, eps = 5, 0.05
     ham, walk = get_uniform_pauli_qubitized_walk(num_terms)
 
-    ham_coeff = [abs(ps.coefficient.real) for ps in ham]
+    ham_coeff = np.array([abs(ps.coefficient.real) for ps in ham])
     qubitization_lambda = np.sum(ham_coeff)
     g = GateHelper(walk)
+    # matrix = cirq.unitary(walk)
     L_state = np.zeros(2 ** len(g.quregs['selection']))
     L_state[: len(ham_coeff)] = np.sqrt(ham_coeff / qubitization_lambda)
 
@@ -60,7 +61,10 @@ def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_sta
         # 5. Verify that the estimated phase is correct.
         # Since we apply U^\dagger for 0-control; the phase difference is twice
         # and therefore phase is pi * theta instead of 2 * pi * theta
-        phase = theta * np.pi
+        phase = np.pi * theta
+
+        # We can measure either `2 * arccos(Ek/λ)` or `2 * arccos(Ek/λ) + pi`;
+        # therefore Ek/λ = cos(theta/2) OR cos((theta - pi) / 2) = sin(theta/2)
         is_close = [
             np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.cos(phase)), atol=eps),
             np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.sin(phase)), atol=eps),
