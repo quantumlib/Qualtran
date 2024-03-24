@@ -549,10 +549,18 @@ class QDTypeCheckingSeverity(Enum):
 
 
 def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
-    """A uint is consistent with a whole or totally fractional unsigned QFxp."""
+    """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False
     return a.num_qubits == b.num_qubits and (b.num_frac == 0 or b.num_int == 0)
+
+
+def _check_fxp_consistent(a: QFxp, b: QFxp) -> bool:
+    """QFxp s are consistent with each other if they are wholly fractional or wholly integral."""
+    if a.signed ^ b.signed:
+        # cannot have conflicting signedness
+        return False
+    return a.num_qubits == b.num_qubits and (a.num_frac == 0 or b.num_frac == 0)
 
 
 def check_dtypes_consistent(
@@ -594,5 +602,8 @@ def check_dtypes_consistent(
     elif isinstance(dtype_b, QAnyUInt) and isinstance(dtype_a, QFxp):
         # unsigned Fxp which is wholy an integer or < 1 part is a uint.
         return _check_uint_fxp_consistent(dtype_b, dtype_a)
+    elif isinstance(dtype_a, QFxp) and isinstance(dtype_b, QFxp):
+        # Fxp consistency
+        return _check_fxp_consistent(dtype_b, dtype_a)
     else:
         return False

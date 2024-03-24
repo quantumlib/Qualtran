@@ -692,11 +692,11 @@ class LinearDepthGreaterThan(Bloq):
         if not self.signed:
             a_sign = bb.allocate(n=1)
             a_split = bb.split(a)
-            a = bb.join(np.concatenate([[a_sign], a_split]), dtype=QUInt(1 + a.reg.bitsize))
+            a = bb.join(np.concatenate([[a_sign], a_split]), dtype=QUInt(self.bitsize + 1))
 
             b_sign = bb.allocate(n=1)
             b_split = bb.split(b)
-            b = bb.join(np.concatenate([[b_sign], b_split]), dtype=QUInt(1 + b.reg.bitsize))
+            b = bb.join(np.concatenate([[b_sign], b_split]), dtype=QUInt(self.bitsize + 1))
 
         # Create variable true_bitsize to account for sign bit in bloq construction.
         true_bitsize = self.bitsize if self.signed else (self.bitsize + 1)
@@ -766,8 +766,8 @@ class LinearDepthGreaterThan(Bloq):
         for i in range(true_bitsize):
             b_split[i] = bb.add(XGate(), q=b_split[i])
 
-        a = bb.join(a_split, dtype=QUInt(self.bitsize))
-        b = bb.join(b_split, dtype=QUInt(self.bitsize))
+        a = bb.join(a_split, dtype=QUInt(true_bitsize))
+        b = bb.join(b_split, dtype=QUInt(true_bitsize))
 
         # If the input registers were unsigned we free the ancilla sign bits.
         if not self.signed:
