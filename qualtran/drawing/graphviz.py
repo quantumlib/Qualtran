@@ -26,7 +26,9 @@ from qualtran import (
     Connection,
     DanglingT,
     LeftDangle,
+    QBit,
     QDType,
+    QFxp,
     Register,
     RightDangle,
     Side,
@@ -405,7 +407,12 @@ class PrettyGraphDrawer(GraphDrawer):
 class TypedGraphDrawer(PrettyGraphDrawer):
     @staticmethod
     def _fmt_dtype(dtype: QDType):
-        label = f'{dtype.__class__.__name__}({dtype.num_qubits})'
+        if isinstance(dtype, QFxp):
+            label = f'{dtype.__class__.__name__}({dtype.num_qubits}, {dtype.num_frac})'
+        elif isinstance(dtype, QBit):
+            label = f'{dtype.__class__.__name__}()'
+        else:
+            label = f'{dtype.__class__.__name__}({dtype.num_qubits})'
         return label
 
     def cxn_label(self, cxn: Connection) -> str:
@@ -414,6 +421,8 @@ class TypedGraphDrawer(PrettyGraphDrawer):
         l, r = cxn.left.reg.dtype, cxn.right.reg.dtype
         if l == r:
             return self._fmt_dtype(l)
+        elif l.num_qubits == 1:
+            return self._fmt_dtype(l if isinstance(l, QBit) else r)
         else:
             return f'{self._fmt_dtype(l)}-{self._fmt_dtype(r)}'
 
