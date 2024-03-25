@@ -95,7 +95,9 @@ class MeanEstimationOperator(GateWithRegisters):
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
         return ReflectionUsingPrepare(
-            self.code.synthesizer, control_val=None if self.cv == () else self.cv[0]
+            self.code.synthesizer,
+            control_val=None if self.cv == () else self.cv[0],
+            global_phase=-1,
         )
 
     @cached_property
@@ -126,10 +128,7 @@ class MeanEstimationOperator(GateWithRegisters):
         reflect_op = self.reflect.on_registers(**reflect_reg)
         for _ in range(self.power):
             yield select_op
-            # Add a -1 global phase since `ReflectUsingPrepare` applies $R_{s} = I - 2|s><s|$
-            # but we want to apply $R_{s} = 2|s><s| - I$ and this algorithm is sensitive to global
-            # phase.
-            yield [reflect_op, cirq.global_phase_operation(-1)]
+            yield reflect_op
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = [] if self.cv == () else [["@(0)", "@"][self.cv[0]]]
