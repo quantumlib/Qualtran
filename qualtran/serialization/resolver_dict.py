@@ -61,6 +61,8 @@ import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.kinetic
 import qualtran.bloqs.chemistry.trotter.grid_ham.potential
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.chemistry.trotter.hubbard.hopping
+import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
@@ -232,6 +234,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.chemistry.trotter.grid_ham.qvr.QuantumVariableRotation": qualtran.bloqs.chemistry.trotter.grid_ham.qvr.QuantumVariableRotation,
     "qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingXUnitary": qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingXUnitary,
     "qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingZZUnitary": qualtran.bloqs.chemistry.trotter.ising.unitaries.IsingZZUnitary,
+    "qualtran.bloqs.chemistry.trotter.hubbard.interaction.Interaction": qualtran.bloqs.chemistry.trotter.hubbard.interaction.Interaction,
+    "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingPlaquette": qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingPlaquette,
+    "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTile": qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTile,
     "qualtran.bloqs.chemistry.trotter.trotterized_unitary": qualtran.bloqs.chemistry.trotter.trotterized_unitary,
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,

@@ -40,7 +40,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
             spanned by $|s>$.
         $g$: The global phase to control the behavior of the reflection. For example:
             We often use $g=-1$ in literature to denote the reflection operator as
-            $R_{s} = 2|s><s| - I$
+            $R_{s} = -1 (I - 2|s><s|) = 2|s><s| - I$
 
     The composite gate corresponds to implementing the following circuit:
 
