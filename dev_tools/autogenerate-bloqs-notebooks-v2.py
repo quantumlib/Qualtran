@@ -435,7 +435,7 @@ OTHER: List[NotebookSpecV2] = [
 CONCEPTS = [
     # Note! These are just straight paths to existing notebooks. Used to generate
     # the table of contents.
-    'unary_iteration.ipynb',
+    'multiplexers/unary_iteration.ipynb',
     'arithmetic/t_complexity_of_comparison_gates.ipynb',
     'arithmetic/error_analysis_for_fxp_arithmetic.ipynb',
     'phase_estimation_of_quantum_walk.ipynb',
@@ -443,6 +443,7 @@ CONCEPTS = [
     'chemistry/resource_estimation.ipynb',
     'chemistry/writing_algorithms.ipynb',
     'factoring/factoring-via-modexp.ipynb',
+    'state_preparation/state_preparation_via_rotation_tutorial.ipynb',
 ]
 
 NB_BY_SECTION = [
