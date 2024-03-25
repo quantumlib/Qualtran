@@ -380,10 +380,6 @@ def _build_factory(
     return factory
 
 
-FifteenToOne733 = FifteenToOne(
-    7, 3, 3, reference=Reference(source='https://arxiv.org/abs/1905.06903')
-)
+FifteenToOne733 = FifteenToOne(7, 3, 3, reference=Reference(url='https://arxiv.org/abs/1905.06903'))
 
-FifteenToOne933 = FifteenToOne(
-    9, 3, 3, reference=Reference(source='https://arxiv.org/abs/1905.06903')
-)
+FifteenToOne933 = FifteenToOne(9, 3, 3, reference=Reference(url='https://arxiv.org/abs/1905.06903'))

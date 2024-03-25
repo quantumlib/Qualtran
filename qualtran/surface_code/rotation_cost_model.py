@@ -98,15 +98,15 @@ BeverlandEtAlRotationCost = RotationLogarithmicModel(
     overhead=5.3,
     gateset='Clifford+T',
     approximation_protocol=Reference(
-        source='https://arxiv.org/abs/2203.10064', comment='Mixed fallback'
+        url='https://arxiv.org/abs/2203.10064', comment='Mixed fallback'
     ),
-    reference=Reference(source='https://arxiv.org/abs/2211.07629:D2'),
+    reference=Reference(url='https://arxiv.org/abs/2211.07629:D2'),
 )
 
 SevenDigitsOfPrecisionConstantCost = ConstantWithOverheadRotationCost(
     bitsize=7,
     overhead_rotation_cost=BeverlandEtAlRotationCost,
     reference=Reference(
-        source='https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.1.020312'
+        url='https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.1.020312'
     ),
 )

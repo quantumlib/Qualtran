@@ -114,26 +114,26 @@ BeverlandSuperconductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=0.4,  # Equals 4*t_gate+2*t_meas where t_gate=50ns and t_meas=100ns.
-    reference=Reference(source='https://arxiv.org/abs/2211.07629', page=20),
+    reference=Reference(url='https://arxiv.org/abs/2211.07629', page=20),
 )
 
 FowlerSuperconductingQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.1,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=1,
-    reference=Reference(source='https://arxiv.org/abs/1808.06709'),
+    reference=Reference(url='https://arxiv.org/abs/1808.06709'),
 )
 
 BeverlandMajoranaQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=0.6,  # Equals 4*t_gate+2*t_meas where t_gate=100ns and t_meas=100ns.
-    reference=Reference(source='https://arxiv.org/abs/2211.07629', page=20),
+    reference=Reference(url='https://arxiv.org/abs/2211.07629', page=20),
 )
 
 BeverlandTrappedIonQubits = SimpliedSurfaceCode(
     error_rate_scaler=0.03,
     error_rate_threshold=0.01,
     single_stabilizer_time_us=600,  # Equals 4*t_gate+2*t_meas where t_gate=100us and t_meas=100us.
-    reference=Reference(source='https://arxiv.org/abs/2211.07629', page=20),
+    reference=Reference(url='https://arxiv.org/abs/2211.07629', page=20),
 )

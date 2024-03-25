@@ -21,14 +21,11 @@ from qualtran.surface_code import Reference
     "reference, expected",
     [
         (Reference(), 'Reference()'),
-        (Reference(source='xyz'), "Reference(source='xyz')"),
+        (Reference(url='xyz'), "Reference(url='xyz')"),
         (Reference(page=1), 'Reference(page=1)'),
         (Reference(comment='xyz'), "Reference(comment='xyz')"),
-        (Reference(source='a', page=3), "Reference(source='a', page=3)"),
-        (
-            Reference(source='a', page=5, comment='xyz'),
-            "Reference(source='a', page=5, comment='xyz')",
-        ),
+        (Reference(url='a', page=3), "Reference(url='a', page=3)"),
+        (Reference(url='a', page=5, comment='xyz'), "Reference(url='a', page=5, comment='xyz')"),
     ],
 )
 def test_representation(reference: Reference, expected: str):

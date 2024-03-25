@@ -22,19 +22,19 @@ class Reference:
     """A reference to a source material.
 
     Attributes:
-        source: A link to a paper/article (e.g. https://link-to-paper).
+        url: A link to a paper/article (e.g. https://link-to-paper).
         page: A page number.
         comment: An explanation or a pointer to a specific part of the source (e.g. `table 2`, `Fig 1e`, `third paragraph`).
     """
 
-    source: Optional[str] = None
+    url: Optional[str] = None
     page: Optional[int] = None
     comment: Optional[str] = None
 
     def __str__(self) -> str:
         not_none = []
-        if self.source is not None:
-            not_none.append(f"source='{self.source}'")
+        if self.url is not None:
+            not_none.append(f"url='{self.url}'")
         if self.page is not None:
             not_none.append(f'page={self.page}')
         if self.comment is not None:
