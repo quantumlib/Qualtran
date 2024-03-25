@@ -46,7 +46,7 @@ Usage as a script:
     python dev_tools/autogenerate-bloqs-notebooks-v2.py
 """
 
-from typing import Iterable, List, Tuple
+from typing import Iterable, List
 
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
