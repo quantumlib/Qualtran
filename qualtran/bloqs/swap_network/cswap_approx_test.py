@@ -27,6 +27,7 @@ from qualtran.bloqs.swap_network.cswap_approx import (
     CSwapApprox,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 random.seed(12345)
@@ -53,8 +54,15 @@ def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
-def test_t_complexity(n):
-    cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
+def test_t_complexity_cswap(n):
+    # Note: if you use the cirq decompose protocol, clifford counts won't
+    # match because cirq.FREDKIN has 14 cliffords per two-bit-cswap.
+    cswap = CSwap(n)
+    assert t_complexity(cswap) == t_complexity(cswap.decompose_bloq())
+
+
+@pytest.mark.parametrize("n", [*range(1, 6)])
+def test_t_complexity_cswap_approx(n):
     cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwapApprox(n))
 
 

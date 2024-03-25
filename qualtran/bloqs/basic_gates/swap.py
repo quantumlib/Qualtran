@@ -34,6 +34,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -41,7 +42,6 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 from .t_gate import TGate
 
 if TYPE_CHECKING:
-    from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -112,6 +112,10 @@ class TwoBitCSwap(Bloq):
         ctrl: the control bit
         x: the first bit
         y: the second bit
+
+    References:
+        [An algorithm for the T-count](https://arxiv.org/abs/1308.4134).
+        Gosset et. al. 2013. Figure 5.2.
     """
 
     def short_name(self) -> str:
@@ -120,6 +124,31 @@ class TwoBitCSwap(Bloq):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=1, y=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        ctrl: NDArray[cirq.Qid],
+        x: NDArray[cirq.Qid],
+        y: NDArray[cirq.Qid],
+    ) -> cirq.OP_TREE:
+        (ctrl,) = ctrl
+        (x,) = x
+        (y,) = y
+        yield [cirq.CNOT(y, x)]
+        yield [cirq.CNOT(ctrl, x), cirq.H(y)]
+        yield [cirq.T(ctrl), cirq.T(x) ** -1, cirq.T(y)]
+        yield [cirq.CNOT(y, x)]
+        yield [cirq.CNOT(ctrl, y), cirq.T(x)]
+        yield [cirq.CNOT(ctrl, x), cirq.T(y) ** -1]
+        yield [cirq.T(x) ** -1, cirq.CNOT(ctrl, y)]
+        yield [cirq.CNOT(y, x)]
+        yield [cirq.T(x), cirq.H(y)]
+        yield [cirq.CNOT(y, x)]
 
     def as_cirq_op(
         self,
@@ -156,12 +185,6 @@ class TwoBitCSwap(Bloq):
         raise ValueError("Bad control value for TwoBitCSwap classical simulation.")
 
     def _t_complexity_(self) -> 'TComplexity':
-        """The t complexity.
-
-        References:
-            [An algorithm for the T-count](https://arxiv.org/abs/1308.4134).
-            Gosset et. al. 2013. Figure 5.2.
-        """
         return TComplexity(t=7, clifford=10)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -306,7 +329,7 @@ class CSwap(GateWithRegisters):
             return Circle(filled=True)
 
     def _t_complexity_(self) -> TComplexity:
-        return TComplexity(t=7 * self.bitsize, clifford=14 * self.bitsize)
+        return TComplexity(t=7 * self.bitsize, clifford=10 * self.bitsize)
 
     def adjoint(self) -> 'Bloq':
         return self

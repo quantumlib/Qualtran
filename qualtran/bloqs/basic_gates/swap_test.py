@@ -37,6 +37,7 @@ from qualtran.bloqs.basic_gates.swap import (
     _swap_matrix,
     _swap_small,
 )
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 
@@ -91,6 +92,9 @@ def _set_ctrl_two_bit_swap(ctrl_bit):
 def test_two_bit_cswap():
     cswap = TwoBitCSwap()
     np.testing.assert_array_equal(cswap.tensor_contract(), cirq.unitary(cirq.CSWAP))
+    np.testing.assert_allclose(
+        cswap.decompose_bloq().tensor_contract(), cirq.unitary(cirq.CSWAP), atol=1e-8
+    )
 
     # Zero ctrl -- it's identity
     np.testing.assert_array_equal(np.eye(4), _set_ctrl_two_bit_swap(0).tensor_contract())
@@ -194,6 +198,9 @@ def test_cswap_bloq_counts():
 
     counts2 = bloq.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
     assert counts1 == counts2
+
+    assert t_complexity(CSwap(1)) == TComplexity(t=7, clifford=10)
+    assert t_complexity(TwoBitCSwap()) == TComplexity(t=7, clifford=10)
 
 
 def test_cswap_symbolic():
