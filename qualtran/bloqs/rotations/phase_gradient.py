@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union, Optional
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
