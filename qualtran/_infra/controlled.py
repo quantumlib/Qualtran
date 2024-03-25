@@ -389,31 +389,23 @@ class Controlled(Bloq):
         outgoing: Dict[str, 'SoquetT'],
     ):
         from qualtran._infra.composite_bloq import _flatten_soquet_collection
-        from qualtran.cirq_interop._cirq_to_bloq import (
-            _tensor_data_from_unitary_and_signature,
-            _tensor_shape_from_signature,
+        from qualtran.simulation.tensor._tensor_data_manipulation import (
+            active_space_for_ctrl_spec,
+            eye_tensor_for_signature,
+            tensor_shape_from_signature,
         )
 
         # Create an identity tensor corresponding to the signature of current Bloq
-        data = _tensor_data_from_unitary_and_signature(
-            np.eye(2 ** self.signature.n_qubits(), dtype=np.complex128), self.signature
-        )
+        data = eye_tensor_for_signature(self.signature)
         # Verify it has the right shape
         in_ind = _flatten_soquet_collection(incoming[reg.name] for reg in self.signature.lefts())
         out_ind = _flatten_soquet_collection(outgoing[reg.name] for reg in self.signature.rights())
         assert data.shape == tuple(2**soq.reg.bitsize for ind in [out_ind, in_ind] for soq in ind)
         # Figure out the ctrl indexes for which the ctrl is "active"
-        active_idx: List[Union[int, slice]] = [slice(x) for x in data.shape]
-        ctrl_idx = 0
-        for cv, ctrl_reg in zip(self.ctrl_spec.cvs, self.ctrl_regs):
-            for idx in ctrl_reg.all_idxs():
-                active_idx[ctrl_idx] = int(cv[idx])
-                active_idx[ctrl_idx + len(out_ind)] = int(cv[idx])
-                ctrl_idx += 1
+        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
         # Put the subbloq tensor at indices where ctrl is active.
-        subbloq_shape = _tensor_shape_from_signature(self.subbloq.signature)
-        data[tuple(active_idx)] = self.subbloq.tensor_contract().reshape(subbloq_shape)
-
+        subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
+        data[active_idx] = self.subbloq.tensor_contract().reshape(subbloq_shape)
         # Add the data to the tensor network.
         tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.short_name(), tag]))
 
