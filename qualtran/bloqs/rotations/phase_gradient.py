@@ -197,28 +197,38 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
-    def apply(self, ctrl: int, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
-        out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
-        return out['ctrl'], out['x'], out['phase_grad']
+    def apply(self, *args) -> Union[int, Iterable[int]]:
+        if self.controlled:
+            ctrl, x, phase_grad = args
+            out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
+            return out['ctrl'], out['x'], out['phase_grad']
 
-    def on_classical_vals(self, ctrl: int, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
-        phase_grad_out = (phase_grad + self.sign * ctrl * self.scaled_val(x)) % (
-            2**self.phase_bitsize
-        )
-        return {'ctrl': ctrl, 'x': x, 'phase_grad': phase_grad_out}
+        x, phase_grad = args
+        out = self.on_classical_vals(x=x, phase_grad=phase_grad)
+        return out['x'], out['phase_grad']
+
+    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
+        x, phase_grad = kwargs['x'], kwargs['phase_grad']
+        if self.controlled:
+            ctrl = kwargs['ctrl']
+            phase_grad_out = (phase_grad + self.sign * ctrl * self.scaled_val(x)) % (
+                2**self.phase_bitsize
+            )
+            return {'ctrl': ctrl, 'x': x, 'phase_grad': phase_grad_out}
+
+        phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
+        return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        num_toffoli = self.phase_bitsize - 2
         if self.controlled == False:
-            num_toffoli = self.phase_bitsize - 2
             return {(Toffoli(), num_toffoli)}
-        return {(TGate(), 8 * self.phase_bitsize)}
+        else:
+            return {(TGate(), 2 * num_toffoli)}
 
     def _t_complexity_(self) -> 'TComplexity':
-        if self.controlled == False:
-            ((toffoli, n),) = self.bloq_counts().items()
-            return n * toffoli.t_complexity()
-        ((_, n),) = self.bloq_counts().items()
-        return TComplexity(t=n)
+        ((toffoli, n),) = self.bloq_counts().items()
+        return n * toffoli.t_complexity()
 
     def add_my_tensors(
         self,
