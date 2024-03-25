@@ -15,7 +15,6 @@
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 import abc
 import itertools
-import warnings
 from collections import defaultdict
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
@@ -70,8 +69,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cirq_gate(self) -> cirq.Gate:
-        ...
+    def cirq_gate(self) -> cirq.Gate: ...
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -310,10 +308,7 @@ def _ensure_in_reg_exists(
         num_qubits_to_join = len(soqs_to_join)
         if reg_dtype.num_qubits != num_qubits_to_join:
             if isinstance(reg_dtype, QFxp):
-                warnings.warn(
-                    f"Joining registers into a QFxp of different size is ambiguous. "
-                    f"Assuming unsigned QFxp with {num_qubits_to_join} fractional bits. "
-                )
+                # TODO: This should be handled more gracefully. The type conversion is ambiguous.
                 reg_dtype = QFxp(bitsize=num_qubits_to_join, num_frac=num_qubits_to_join)
             else:
                 reg_dtype = type(reg_dtype)(num_qubits_to_join)

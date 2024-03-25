@@ -560,7 +560,7 @@ def _check_fxp_consistent(a: QFxp, b: QFxp) -> bool:
     if a.signed ^ b.signed:
         # cannot have conflicting signedness
         return False
-    return a.num_qubits == b.num_qubits and (a.num_frac == 0 or b.num_frac == 0)
+    return a.num_qubits == b.num_qubits and (a.num_frac == 0 and b.num_int == 0)
 
 
 def check_dtypes_consistent(
