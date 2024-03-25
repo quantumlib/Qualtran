@@ -84,11 +84,13 @@ class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def cost_registers(self) -> Sequence[Register]: ...
+    def cost_registers(self) -> Sequence[Register]:
+        ...
 
     @property
     @abc.abstractmethod
-    def extra_registers(self) -> Sequence[Register]: ...
+    def extra_registers(self) -> Sequence[Register]:
+        ...
 
     @cached_property
     def signature(self) -> Signature:
