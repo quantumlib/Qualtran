@@ -23,7 +23,6 @@ from attr import field
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
-from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 from qualtran.bloqs.rotations import AddIntoPhaseGrad
 from qualtran.resource_counting.symbolic_counting_utils import (
