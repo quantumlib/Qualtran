@@ -95,7 +95,9 @@ class MeanEstimationOperator(GateWithRegisters):
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
         return ReflectionUsingPrepare(
-            self.code.synthesizer, control_val=None if self.cv == () else self.cv[0]
+            self.code.synthesizer,
+            control_val=None if self.cv == () else self.cv[0],
+            global_phase=-1,
         )
 
     @cached_property
