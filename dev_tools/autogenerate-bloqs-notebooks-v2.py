@@ -63,19 +63,24 @@ import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
+import qualtran.bloqs.chemistry.trotter.hubbard.hopping
+import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
+import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
+import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
+import qualtran.bloqs.state_preparation.state_preparation_alias_sampling
 import qualtran.bloqs.swap_network.cswap_approx
 import qualtran.bloqs.swap_network.multiplexed_cswap
 import qualtran.bloqs.swap_network.swap_with_zero
@@ -223,6 +228,16 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/ising',
     ),
     NotebookSpecV2(
+        title='Trotterized Hubbard',
+        module=qualtran.bloqs.chemistry.trotter.hubbard,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._HOPPING_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.hopping._PLAQUETTE_DOC,
+            qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
+    ),
+    NotebookSpecV2(
         title='Tensor Hypercontraction',
         module=qualtran.bloqs.chemistry.thc,
         bloq_specs=[
@@ -263,6 +278,18 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.mcmt.multi_control_multi_target_pauli._CC_PAULI_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/mcmt/',
+    ),
+    NotebookSpecV2(
+        title='Generic Select',
+        module=qualtran.bloqs.multiplexers.select_pauli_lcu,
+        bloq_specs=[qualtran.bloqs.multiplexers.select_pauli_lcu._SELECT_PAULI_LCU_DOC],
+    ),
+    NotebookSpecV2(
+        title='State Preparation via Alias Sampling',
+        module=qualtran.bloqs.state_preparation.state_preparation_alias_sampling,
+        bloq_specs=[
+            qualtran.bloqs.state_preparation.state_preparation_alias_sampling._STATE_PREP_ALIAS_DOC
+        ],
     ),
     # --------------------------------------------------------------------------
     # -----   Arithmetic   -----------------------------------------------------
@@ -369,6 +396,11 @@ NOTEBOOK_SPECS: List[NotebookSpecV2] = [
             qualtran.bloqs.phase_estimation.lp_resource_state._CC_LPRS_INTERIM_PREP_DOC,
             qualtran.bloqs.phase_estimation.lp_resource_state._CC_LP_RESOURCE_STATE_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='Qubitization Walk Operator',
+        module=qualtran.bloqs.qubitization_walk_operator,
+        bloq_specs=[qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
     ),
 ]
 
