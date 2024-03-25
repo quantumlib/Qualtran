@@ -23,9 +23,10 @@ from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
-from qualtran.bloqs.basic_gates import Hadamard, Toffoli
+from qualtran.bloqs.basic_gates import Hadamard, TGate, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -50,6 +51,7 @@ class PhaseGradientUnitary(GateWithRegisters):
 
     The implementation simply decomposes into $n$ (controlled-) rotations, one on each qubit.
     """
+
     bitsize: int
     exponent: float = 1
     controlled: bool = False
@@ -150,10 +152,12 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
         Appendix A: Addition for controlled rotations
     """
+
     x_bitsize: int
     phase_bitsize: int
     right_shift: int = 0
     sign: int = +1
+    controlled: bool = False
 
     def pretty_name(self) -> str:
         sign = '+' if self.sign > 0 else '-'
@@ -161,9 +165,17 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(
-            x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-            phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
+        return (
+            Signature.build_from_dtypes(
+                ctrl=QBit(),
+                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
+                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
+            )
+            if self.controlled
+            else Signature.build_from_dtypes(
+                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
+                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
+            )
         )
 
     @cached_property
@@ -171,6 +183,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if self.controlled:
+            return [2], [2] * self.x_bitsize, [2] * self.phase_bitsize
         return [2] * self.x_bitsize, [2] * self.phase_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
@@ -183,21 +197,28 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
-    def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
-        out = self.on_classical_vals(x=x, phase_grad=phase_grad)
-        return out['x'], out['phase_grad']
+    def apply(self, ctrl: int, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
+        out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
+        return out['ctrl'], out['x'], out['phase_grad']
 
-    def on_classical_vals(self, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
-        phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
-        return {'x': x, 'phase_grad': phase_grad_out}
+    def on_classical_vals(self, ctrl: int, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
+        phase_grad_out = (phase_grad + self.sign * ctrl * self.scaled_val(x)) % (
+            2**self.phase_bitsize
+        )
+        return {'ctrl': ctrl, 'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_toffoli = self.phase_bitsize - 2
-        return {(Toffoli(), num_toffoli)}
+        if self.controlled == False:
+            num_toffoli = self.phase_bitsize - 2
+            return {(Toffoli(), num_toffoli)}
+        return {(TGate(), 8 * self.phase_bitsize)}
 
     def _t_complexity_(self) -> 'TComplexity':
-        ((toffoli, n),) = self.bloq_counts().items()
-        return n * toffoli.t_complexity()
+        if self.controlled == False:
+            ((toffoli, n),) = self.bloq_counts().items()
+            return n * toffoli.t_complexity()
+        ((_, n),) = self.bloq_counts().items()
+        return TComplexity(t=n)
 
     def add_my_tensors(
         self,
