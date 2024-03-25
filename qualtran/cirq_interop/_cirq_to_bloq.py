@@ -293,11 +293,15 @@ def _ensure_in_reg_exists(
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        for _, s in soqs_to_join.items():
-            if isinstance(s.binst, DanglingT):
-                continue
-            if isinstance(s.binst.bloq, Split):
-                reg_dtype = s.binst.bloq.dtype
+        # Not matching up with the right signature
+        if reg_dtype is None:
+            # Check for splits.
+            for _, s in soqs_to_join.items():
+                if isinstance(s.binst, DanglingT):
+                    continue
+                if isinstance(s.binst.bloq, Split):
+                    reg_dtype = s.binst.bloq.dtype
+        # Fall back to any
         if reg_dtype is None:
             reg_dtype = QAny(len(soqs_to_join))
         # A split is not necessarily matched with a join of the same size so we

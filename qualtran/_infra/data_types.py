@@ -544,7 +544,7 @@ class QDTypeCheckingSeverity(Enum):
     ANY = 1
     """Disallow numeric type conversions but allow QAny and single bit conversion."""
 
-    STRICT = 1
+    STRICT = 2
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
