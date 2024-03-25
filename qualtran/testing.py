@@ -557,7 +557,7 @@ def assert_bloq_example_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheck
     # First check it's not atomic / doesn't decompose
     try:
         cbloq = bloq.decompose_bloq()
-    except (DecomposeTypeError, DecomposeNotImplementedError):
+    except (DecomposeTypeError, DecomposeNotImplementedError) as exc:
         raise BloqCheckException.missing(
             r"Atomic bloqs or non-decomposable bloqs don't require type checking."
         )
