@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.qft.approximate_qft import (
     _approximate_qft_from_epsilon,
     _approximate_qft_small,
