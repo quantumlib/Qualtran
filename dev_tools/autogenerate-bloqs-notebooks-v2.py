@@ -211,7 +211,7 @@ CHEMISTRY: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._PAIR_POTENTIAL,
             qualtran.bloqs.chemistry.trotter.grid_ham.potential._POTENTIAL_ENERGY,
         ],
-        directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/grid_ham',
+        path_stem='trotter',
     ),
     NotebookSpecV2(
         title='Trotterization',

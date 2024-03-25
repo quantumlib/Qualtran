@@ -41,7 +41,7 @@ Bloqs Library
     chemistry/thc/thc.ipynb
     chemistry/pbc/first_quantization/first_quantization.ipynb
     chemistry/pbc/first_quantization/projectile/projectile.ipynb
-    chemistry/trotter/grid_ham/grid_ham.ipynb
+    chemistry/trotter/grid_ham/trotter.ipynb
     chemistry/trotter/trotterized_unitary.ipynb
     chemistry/trotter/ising/ising.ipynb
     chemistry/trotter/hubbard/hubbard.ipynb
