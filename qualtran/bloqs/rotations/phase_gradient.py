@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union, Optional
 
 import attrs
 import cirq
@@ -157,7 +157,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     phase_bitsize: int
     right_shift: int = 0
     sign: int = +1
-    controlled: bool = False
+    controlled: Optional[bool] = None
 
     def pretty_name(self) -> str:
         sign = '+' if self.sign > 0 else '-'
