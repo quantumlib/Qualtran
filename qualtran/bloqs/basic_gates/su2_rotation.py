@@ -14,7 +14,9 @@
 from functools import cached_property
 from typing import Any, Dict, TYPE_CHECKING
 
+import cirq
 import numpy as np
+import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
@@ -116,20 +118,21 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def _unitary_(self):
+        if self._is_parameterized_():
+            return None
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
+        pi = sympy.pi if self._is_parameterized_() else np.pi
+
+        # global phase of $-e^{i \alpha}$
         q = bb.add(
-            ZPowGate(
-                exponent=2, global_shift=0.5 + self.global_shift / (2 * np.pi), eps=self.eps / 4
-            ),
+            ZPowGate(exponent=2, global_shift=0.5 + self.global_shift / (2 * pi), eps=self.eps / 4),
             q=q,
         )
-        q = bb.add(
-            ZPowGate(exponent=1 - self.lambd / np.pi, global_shift=-1, eps=self.eps / 4), q=q
-        )
+        q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
         q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
-        q = bb.add(ZPowGate(exponent=-self.phi / np.pi, global_shift=-1, eps=self.eps / 4), q=q)
+        q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
         return {'q': q}
 
     def pretty_name(self) -> str:
@@ -142,6 +145,12 @@ class SU2RotationGate(GateWithRegisters):
 
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=3, clifford=1)
+
+    def _is_parameterized_(self) -> bool:
+        return any(
+            cirq.is_parameterized(param)
+            for param in [self.theta, self.phi, self.lambd, self.global_shift]
+        )
 
 
 @bloq_example
