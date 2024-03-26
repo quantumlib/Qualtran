@@ -25,6 +25,7 @@ types (``Register``), and algorithms (``CompositeBloq``).
 
    surface_code/azure_cost_model.ipynb
    surface_code/thc_compilation.ipynb
+   surface_code/msft_resource_estimator_interop.ipynb
 
 .. toctree::
    :maxdepth: 1
