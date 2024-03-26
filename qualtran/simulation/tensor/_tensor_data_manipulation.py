@@ -65,6 +65,8 @@ def active_space_for_ctrl_spec(
     """Returns the "active" subspace corresponding to `signature` and `ctrl_spec`.
 
     Assumes first n-registers for `signature` are control registers corresponding to `ctrl_spec`.
+    Returns a tuple of indices/slices that can be used to address into the ndarray, representing
+    tensor data of shape `tensor_shape_from_signature(signature)`, and access the active subspace.
     """
     out_ind, inp_ind = tensor_out_inp_shape_from_signature(signature)
     data_shape = out_ind + inp_ind
