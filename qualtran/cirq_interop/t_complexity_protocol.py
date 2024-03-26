@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Callable, Hashable, Iterable, Literal, Optional, overload, Protocol, Union
+from typing import Any, Callable, Hashable, Iterable, Optional, Protocol, Union
 
 import attrs
 import cachetools
