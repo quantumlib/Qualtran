@@ -64,6 +64,10 @@ class NotebookSpecV2:
             return self.module.__name__.split('.')[-1]
         return self._path_stem
 
+    @property
+    def path(self) -> Path:
+        return Path(self.directory) / f'{self.path_stem}.ipynb'
+
 
 def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> List[str]:
     """Parse out the source code from a factory function, so we can render it into a cell.
