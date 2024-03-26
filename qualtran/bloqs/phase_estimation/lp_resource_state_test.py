@@ -14,15 +14,18 @@
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.phase_estimation.lp_resource_state import (
     _lp_resource_state_small,
     _lprs_interim_prep,
     LPResourceState,
     LPRSInterimPrep,
 )
-from qualtran.cirq_interop.testing import (
-    assert_decompose_is_consistent_with_t_complexity,
-    GateHelper,
+from qualtran.cirq_interop.testing import GateHelper
+from qualtran.resource_counting.generalizers import (
+    generalize_rotation_angle,
+    ignore_alloc_free,
+    ignore_split_join,
 )
 
 
@@ -64,5 +67,8 @@ def test_prepares_resource_state(n):
 @pytest.mark.parametrize('n', [*range(1, 14, 2)])
 def test_t_complexity(n):
     bloq = LPResourceState(n)
-    assert_decompose_is_consistent_with_t_complexity(bloq)
+    qlt_testing.assert_equivalent_bloq_counts(
+        bloq, [ignore_split_join, ignore_alloc_free, generalize_rotation_angle]
+    )
+    # NOTE: for n = 1, _is_clifford_or_t will turn this into one rotation.
     assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6 + 3 * (n == 1)

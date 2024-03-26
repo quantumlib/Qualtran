@@ -20,7 +20,6 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, Signature, Soquet, SoquetT
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -74,9 +73,6 @@ class TGate(Bloq):
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=1)
 
     def add_my_tensors(
         self,

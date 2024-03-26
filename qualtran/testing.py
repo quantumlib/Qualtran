@@ -33,6 +33,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent
+from qualtran.resource_counting import GeneralizerT
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -463,6 +464,21 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from build_call_graph')
     if has_decomp_counts:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from decomposition.')
+
+
+def assert_equivalent_bloq_counts(bloq: Bloq, generalizer: GeneralizerT = lambda x: x) -> None:
+    """Assert that the BloqExample has consistent bloq counts.
+
+    See the documentation for `assert_equivalent_bloq_example_counts` for details on this function.
+    """
+    assert_equivalent_bloq_example_counts(
+        BloqExample(
+            lambda: bloq,
+            name=bloq.__class__.__name__,
+            bloq_cls=bloq.__class__,
+            generalizer=generalizer,
+        )
+    )
 
 
 def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:

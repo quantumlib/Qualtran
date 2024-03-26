@@ -78,19 +78,15 @@ def test_t_complexity_for_bloq_via_build_call_graph():
 def test_t_complexity_for_bloq_does_not_support():
     with pytest.raises(TypeError):
         _ = t_complexity(DoesNotSupportTComplexityBloq())
-    assert t_complexity(DoesNotSupportTComplexityBloq(), True) == None
 
 
 def test_t_complexity():
     with pytest.raises(TypeError):
         _ = t_complexity(DoesNotSupportTComplexity())
-
+    with pytest.raises(TypeError):
+        t_complexity([DoesNotSupportTComplexity()])
     with pytest.raises(TypeError):
         _ = t_complexity(DoesNotSupportTComplexityGate())
-
-    assert t_complexity(DoesNotSupportTComplexity(), fail_quietly=True) is None
-    assert t_complexity([DoesNotSupportTComplexity()], fail_quietly=True) is None
-    assert t_complexity(DoesNotSupportTComplexityGate(), fail_quietly=True) is None
 
     assert t_complexity(SupportTComplexity()) == TComplexity(t=1)
     assert t_complexity(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)

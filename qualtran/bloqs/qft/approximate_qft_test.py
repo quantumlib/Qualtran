@@ -19,6 +19,7 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.qft.approximate_qft import (
@@ -27,8 +28,7 @@ from qualtran.bloqs.qft.approximate_qft import (
     ApproximateQFT,
 )
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -72,7 +72,7 @@ def test_approximate_qft_exact(n: int, without_reverse: bool):
     np.testing.assert_allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
     np.testing.assert_allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
 
-    assert_valid_bloq_decomposition(qft_bloq)
+    qlt_testing.assert_valid_bloq_decomposition(qft_bloq)
 
 
 @pytest.mark.slow
@@ -83,7 +83,7 @@ def test_approximate_qft():
     qft_cirq = cirq.QuantumFourierTransformGate(num_qubits, without_reverse=False)
     np.testing.assert_allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq), rtol=1e-2, atol=1e-2)
 
-    assert_valid_bloq_decomposition(qft_bloq)
+    qlt_testing.assert_valid_bloq_decomposition(qft_bloq)
 
 
 @pytest.mark.parametrize('n', [1000, 2000, 10000])
@@ -114,8 +114,8 @@ def test_approximate_qft_t_complexity(n: int, with_reverse: bool):
             t_complexity += PlusEqualProduct(min(i, b - 1), 1, min(i, b - 1) + 1).t_complexity().t
         return t_complexity
 
+    qlt_testing.assert_equivalent_bloq_counts(qft_bloq, ignore_split_join)
     qft_t_complexity = qft_bloq.t_complexity()
-    assert_decompose_is_consistent_with_t_complexity(qft_bloq)
     b = math.ceil(math.log2(n))
     assert qft_t_complexity.t == f(n, b) <= 8 * n * (math.log2(n) ** 2)
     assert qft_t_complexity.rotations == 0

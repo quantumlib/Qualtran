@@ -50,10 +50,13 @@ def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
 
 def generalize_rotation_angle(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces rotation angles with a shared symbol."""
-    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, SGate, TGate
+    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, SGate, TGate, XPowGate, YPowGate, ZPowGate
 
     if isinstance(b, (Rx, Ry, Rz)):
         return attrs.evolve(b, angle=PHI)
+
+    if isinstance(b, (XPowGate, YPowGate, ZPowGate)):
+        return attrs.evolve(b, exponent=PHI, global_shift=0)
 
     if isinstance(b, (TGate, SGate)):
         # ignore `is_adjoint`.

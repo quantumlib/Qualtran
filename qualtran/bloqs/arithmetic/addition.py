@@ -177,12 +177,6 @@ class Add(Bloq):
         yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
-    def _t_complexity_(self):
-        n = self.dtype.bitsize
-        num_clifford = (n - 2) * 19 + 16
-        num_toffoli = n - 1
-        return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.dtype.bitsize
         n_cnot = (n - 2) * 6 + 3
@@ -534,10 +528,6 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
 
     def __pow__(self, power: int) -> 'AddConstantMod':
         return AddConstantMod(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
-
-    def _t_complexity_(self) -> TComplexity:
-        # Rough cost as given in https://arxiv.org/abs/1905.09749
-        return 5 * Add(QUInt(self.bitsize)).t_complexity()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Add(QUInt(self.bitsize)), 5)}

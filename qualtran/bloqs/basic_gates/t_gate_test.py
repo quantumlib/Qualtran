@@ -20,6 +20,7 @@ import numpy as np
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, PlusState, TGate
 from qualtran.bloqs.basic_gates.t_gate import _t_gate
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 def test_t_gate(bloq_autotester):
@@ -29,6 +30,7 @@ def test_t_gate(bloq_autotester):
 def test_call_graph():
     g, simga = TGate().call_graph()
     assert simga == {TGate(): 1}
+    assert TGate().t_complexity() == TComplexity(t=1)
 
 
 def test_to_cirq():
