@@ -114,6 +114,9 @@ class SU2RotationGate(GateWithRegisters):
             )
         )
 
+    def _unitary_(self):
+        return self.rotation_matrix
+
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         q = bb.add(ZPowGate(exponent=2, global_shift=0.5 + self.global_shift / (2 * np.pi)), q=q)
         q = bb.add(ZPowGate(exponent=1 - self.lambd / np.pi, global_shift=-1), q=q)
