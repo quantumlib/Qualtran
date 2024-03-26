@@ -16,18 +16,21 @@ import numpy as np
 
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import Hadamard, TGate, XGate, YGate, ZGate
+from qualtran.cirq_interop import BloqAsCirqGate
 
 from .su2_rotation import _hadamard, _su2_rotation_gate, _t_gate, SU2RotationGate
 
 
-def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
+def test_decompose_SU2_to_single_qubit_pauli_gates():
     random_state = np.random.default_rng(42)
 
     for _ in range(20):
         theta, phi, lambd, global_shift = random_state.random(size=4) * 2 * np.pi
         gate = SU2RotationGate(theta, phi, lambd, global_shift)
 
-        np.testing.assert_allclose(cirq.unitary(gate), gate.rotation_matrix)
+        np.testing.assert_allclose(
+            cirq.unitary(BloqAsCirqGate(gate.decompose_bloq())), gate.rotation_matrix
+        )
 
 
 def test_tensors():
