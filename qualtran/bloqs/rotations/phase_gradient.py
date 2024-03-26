@@ -221,10 +221,10 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toffoli = self.phase_bitsize - 2
-        if self.controlled == False:
-            return {(Toffoli(), num_toffoli)}
-        else:
+        if self.controlled:
             return {(TGate(), 2 * num_toffoli)}
+
+        return {(Toffoli(), num_toffoli)}
 
     def _t_complexity_(self) -> 'TComplexity':
         ((toffoli, n),) = self.bloq_counts().items()
