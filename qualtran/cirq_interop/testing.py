@@ -22,8 +22,8 @@ from numpy.typing import NDArray
 
 from qualtran import Signature
 from qualtran._infra.gate_with_registers import GateWithRegisters, get_named_qubits, merge_qubits
+from qualtran.cirq_interop import t_complexity_protocol
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 
 
 @dataclass(frozen=True)
@@ -126,17 +126,14 @@ def get_circuit_inp_out_cirqsim(
 
 
 def assert_decompose_is_consistent_with_t_complexity(val: Any):
-    for method in ['_t_complexity_', 't_complexity']:
-        t_complexity_method = getattr(val, method, None)
-        expected = NotImplemented if t_complexity_method is None else t_complexity_method()
-        if not (expected is NotImplemented or expected is None):
-            break
+    t_complexity_method = getattr(val, '_t_complexity_', None)
+    expected = NotImplemented if t_complexity_method is None else t_complexity_method()
     if expected is NotImplemented or expected is None:
         raise AssertionError("No consistent t_complexity: no _t_complexity_.")
     decomposition = _decompose_once_considering_known_decomposition(val)
     if decomposition is None:
         raise AssertionError("No consistent t_complexity: no decomposition.")
-    from_decomposition = t_complexity(decomposition, fail_quietly=False)
+    from_decomposition = t_complexity_protocol._from_iterable(decomposition)
     assert expected == from_decomposition, f'{expected} != {from_decomposition}'
 
     from qualtran import Bloq

@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from typing import Any, Callable, Hashable, Iterable, Literal, Optional, overload, Protocol, Union
 
 import attrs
@@ -23,6 +22,7 @@ from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering
 from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
+_ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)
 
 
 @attrs.frozen
@@ -77,7 +77,7 @@ class SupportsTComplexity(Protocol):
         """Returns the TComplexity."""
 
 
-def _has_t_complexity(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+def _from_explicit_annotation(stc: Any) -> Optional[TComplexity]:
     """Returns TComplexity of stc by calling `stc._t_complexity_()` method, if it exists."""
     estimator = getattr(stc, '_t_complexity_', None)
     if estimator is not None:
@@ -85,12 +85,17 @@ def _has_t_complexity(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
         if result is not NotImplemented:
             return result
     if isinstance(stc, cirq.Operation) and stc.gate is not None:
-        return _has_t_complexity(stc.gate, fail_quietly)
+        return _from_explicit_annotation(stc.gate)
     return None
 
 
-def _is_clifford_or_t(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
-    """Attempts to infer the type of a gate/operation as one of clifford, T or Rotation."""
+def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
+    """Directly count a clifford, T or Rotation (if it is one)."""
+    from qualtran.bloqs.basic_gates import TGate
+
+    if isinstance(stc, TGate):
+        return TComplexity(t=1)
+
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
 
@@ -105,25 +110,28 @@ def _is_clifford_or_t(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
         # T-gate.
         return TComplexity(t=1)  # T gate
 
+    if stc in _ROTS_GATESET:
+        return TComplexity(rotations=1)
+
     if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
         # Single qubit rotation operation.
         return TComplexity(rotations=1)
     return None
 
 
-def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
+def _from_iterable(it: Any) -> Optional[TComplexity]:
     if not isinstance(it, Iterable):
         return None
     t = TComplexity()
     for v in it:
-        r = t_complexity(v, fail_quietly=fail_quietly)
+        r = t_complexity(v)
         if r is None:
             return None
         t = t + r
     return t
 
 
-def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+def _from_bloq_build_call_graph(stc: Any) -> Optional[TComplexity]:
     # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
     if not isinstance(stc, Bloq):
         return None
@@ -133,19 +141,19 @@ def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TCompl
         return None
     ret = TComplexity()
     for bloq, n in sigma.items():
-        r = t_complexity(bloq, fail_quietly=fail_quietly)
+        r = t_complexity(bloq)
         if r is None:
             return None
-        ret += n * t_complexity(bloq)
+        ret += n * r
     return ret
 
 
-def _from_cirq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+def _from_cirq_decomposition(stc: Any) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
     decomposition = _decompose_once_considering_known_decomposition(stc)
     if decomposition is None:
         return None
-    return _is_iterable(decomposition, fail_quietly=fail_quietly)
+    return _from_iterable(decomposition)
 
 
 def _get_hash(val: Any, fail_quietly: bool = False):
@@ -170,11 +178,11 @@ def _get_hash(val: Any, fail_quietly: bool = False):
 
 
 def _t_complexity_from_strategies(
-    stc: Any, fail_quietly: bool, strategies: Iterable[Callable[[Any, bool], Optional[TComplexity]]]
+    stc: Any, strategies: Iterable[Callable[[Any], Optional[TComplexity]]]
 ):
     ret = None
     for strategy in strategies:
-        ret = strategy(stc, fail_quietly)
+        ret = strategy(stc)
         if ret is not None:
             break
     return ret
@@ -182,15 +190,16 @@ def _t_complexity_from_strategies(
 
 @cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
 def _t_complexity_for_gate_or_op(
-    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq], fail_quietly: bool
+    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
 ) -> Optional[TComplexity]:
+
     strategies = [
-        _has_t_complexity,
+        _from_explicit_annotation,
         _from_bloq_build_call_graph,
-        _is_clifford_or_t,
+        _from_directly_countable,
         _from_cirq_decomposition,
     ]
-    return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
+    return _t_complexity_from_strategies(gate_or_op, strategies)
 
 
 @overload
@@ -203,7 +212,7 @@ def t_complexity(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     ...
 
 
-def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
+def t_complexity(stc: Any) -> Optional[TComplexity]:
     """Returns the TComplexity.
 
     Args:
@@ -217,18 +226,18 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
     if isinstance(stc, (cirq.Gate, cirq.Operation, Bloq)) and isinstance(stc, Hashable):
-        ret = _t_complexity_for_gate_or_op(stc, fail_quietly)
+        ret = _t_complexity_for_gate_or_op(stc)
     else:
         strategies = [
-            _has_t_complexity,
-            _is_clifford_or_t,
+            _from_explicit_annotation,
+            _from_directly_countable,
             _from_bloq_build_call_graph,
             _from_cirq_decomposition,
-            _is_iterable,
+            _from_iterable,
         ]
-        ret = _t_complexity_from_strategies(stc, fail_quietly, strategies)
+        ret = _t_complexity_from_strategies(stc, strategies)
 
-    if ret is None and not fail_quietly:
+    if ret is None:
         raise TypeError("couldn't compute TComplexity of:\n" f"type: {type(stc)}\n" f"value: {stc}")
     return ret
 
