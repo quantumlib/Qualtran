@@ -27,7 +27,6 @@ from qualtran.bloqs.swap_network.cswap_approx import (
     CSwapApprox,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 random.seed(12345)
