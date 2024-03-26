@@ -61,6 +61,7 @@ class SU2RotationGate(GateWithRegisters):
     phi: float
     lambd: float  # cannot use `lambda` as it is a python keyword
     global_shift: float = 0
+    eps: float = 1e-11
 
     @cached_property
     def signature(self) -> Signature:
@@ -118,10 +119,17 @@ class SU2RotationGate(GateWithRegisters):
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        q = bb.add(ZPowGate(exponent=2, global_shift=0.5 + self.global_shift / (2 * np.pi)), q=q)
-        q = bb.add(ZPowGate(exponent=1 - self.lambd / np.pi, global_shift=-1), q=q)
-        q = bb.add(Ry(angle=2 * self.theta), q=q)
-        q = bb.add(ZPowGate(exponent=-self.phi / np.pi, global_shift=-1), q=q)
+        q = bb.add(
+            ZPowGate(
+                exponent=2, global_shift=0.5 + self.global_shift / (2 * np.pi), eps=self.eps / 4
+            ),
+            q=q,
+        )
+        q = bb.add(
+            ZPowGate(exponent=1 - self.lambd / np.pi, global_shift=-1, eps=self.eps / 4), q=q
+        )
+        q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
+        q = bb.add(ZPowGate(exponent=-self.phi / np.pi, global_shift=-1, eps=self.eps / 4), q=q)
         return {'q': q}
 
     def pretty_name(self) -> str:
