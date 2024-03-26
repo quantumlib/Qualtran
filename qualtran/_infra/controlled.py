@@ -251,7 +251,8 @@ class AddControlledT(Protocol):
 
     def __call__(
         self, bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]: ...
+    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+        ...
 
 
 def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:

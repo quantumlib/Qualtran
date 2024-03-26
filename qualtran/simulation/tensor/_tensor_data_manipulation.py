@@ -78,10 +78,14 @@ def active_space_for_ctrl_spec(
     return tuple(active_idx)
 
 
+def _n_qubits(signature: Signature) -> int:
+    return sum(reg.total_bits() for reg in signature)
+
+
 def eye_tensor_for_signature(signature: Signature) -> np.ndarray:
     """Returns an identity tensor with shape `tensor_shape_from_signature(signature)`"""
     return tensor_data_from_unitary_and_signature(
-        np.eye(2 ** signature.n_qubits(), dtype=np.complex128), signature
+        np.eye(2 ** _n_qubits(signature), dtype=np.complex128), signature
     )
 
 
@@ -92,14 +96,15 @@ def tensor_data_from_unitary_and_signature(unitary: np.ndarray, signature: Signa
     input qubits corresponding to LEFT registers and output qubits corresponding to RIGHT
     registers in `signature` are 0.
 
-    The input unitary is assumed to act on `signature.n_qubits()`, and thus is of shape
-    `(2 ** signature.n_qubits(), 2 ** signature.n_qubits())`
+    The input unitary is assumed to act on `_n_qubits(signature)`, and thus is of shape
+    `(2 ** _n_qubits(signature), 2 ** _n_qubits(signature))` where `_n_qubits(signature)`
+    is `sum(reg.total_bits() for reg in signature)`.
 
     The shape of the returned tensor matches `tensor_shape_from_signature(signature)`.
     """
 
     # Reshape the unitary into correct shape assuming all registers are THRU registers.
-    assert unitary.shape == (2 ** signature.n_qubits(),) * 2
+    assert unitary.shape == (2 ** _n_qubits(signature),) * 2
     signature_ignoring_sides = Signature([attrs.evolve(reg, side=Side.THRU) for reg in signature])
     unitary_shape = tensor_shape_from_signature(signature_ignoring_sides)
     n = len(unitary_shape) // 2
