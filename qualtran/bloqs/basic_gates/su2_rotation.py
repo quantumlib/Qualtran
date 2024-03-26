@@ -133,7 +133,7 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def _t_complexity_(self) -> TComplexity:
-        return TComplexity(rotations=1)
+        return TComplexity(rotations=3, clifford=1)
 
 
 @bloq_example
