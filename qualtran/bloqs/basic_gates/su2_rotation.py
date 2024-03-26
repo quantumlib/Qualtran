@@ -46,11 +46,9 @@ class SU2RotationGate(GateWithRegisters):
         \end{pmatrix}
     $$
 
-    where $s$ is the global phase shift.
-
     Args:
         theta: rotation angle $\theta$ in the above matrix.
-        phi: phase angle $\theta$ in the above matrix.
+        phi: phase angle $\phi$ in the above matrix.
         lambd: phase angle $\lambda$ in the above matrix.
         global_shift: phase angle $\alpha$, i.e. apply a global phase shift of $e^{i \alpha}$.
 
