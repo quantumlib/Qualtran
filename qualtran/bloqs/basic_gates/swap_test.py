@@ -109,13 +109,6 @@ def test_two_bit_cswap():
     ctrl, x, y = cswap.call_classically(ctrl=1, x=1, y=0)
     assert (ctrl, x, y) == (1, 0, 1)
 
-    # cirq
-    c1 = cirq.Circuit([cirq.CSWAP(*cirq.LineQubit.range(3))]).freeze()
-    c2, _ = cswap.as_composite_bloq().to_cirq_circuit(
-        ctrl=[cirq.LineQubit(0)], x=[cirq.LineQubit(1)], y=[cirq.LineQubit(2)]
-    )
-    assert c1 == c2
-
 
 def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
     states = [ZeroState(), OneState()]
@@ -158,10 +151,6 @@ y1: ─────×(y)───────×───┼───
 y2: ─────×(y)───────────×───
     ''',
     )
-    expected_circuit = cirq.Circuit(
-        cswap_op, [cirq.CSWAP(*quregs['ctrl'], x, y) for (x, y) in zip(quregs['x'], quregs['y'])]
-    )
-    cirq.testing.assert_same_circuits(circuit, expected_circuit)
 
 
 def test_cswap_unitary():

@@ -118,9 +118,6 @@ class TwoBitCSwap(Bloq):
         Gosset et. al. 2013. Figure 5.2.
     """
 
-    def short_name(self) -> str:
-        return 'swap'
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=1, y=1)
@@ -149,18 +146,6 @@ class TwoBitCSwap(Bloq):
         yield [cirq.CNOT(y, x)]
         yield [cirq.T(x), cirq.H(y)]
         yield [cirq.CNOT(y, x)]
-
-    def as_cirq_op(
-        self,
-        qubit_manager: 'cirq.QubitManager',
-        ctrl: 'CirqQuregT',
-        x: 'CirqQuregT',
-        y: 'CirqQuregT',
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
-        (ctrl,) = ctrl
-        (x,) = x
-        (y,) = y
-        return cirq.CSWAP.on(ctrl, x, y), {'ctrl': [ctrl], 'x': [x], 'y': [y]}
 
     def add_my_tensors(
         self,
@@ -192,6 +177,15 @@ class TwoBitCSwap(Bloq):
 
     def adjoint(self) -> 'Bloq':
         return self
+
+    def short_name(self) -> str:
+        return 'swap'
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'ctrl':
+            return Circle(filled=True)
+        else:
+            return TextBox('×')
 
 
 @frozen
