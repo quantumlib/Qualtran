@@ -25,10 +25,7 @@ from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasingViaPhaseGradient,
 )
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.cirq_interop.testing import (
-    assert_decompose_is_consistent_with_t_complexity,
-    GateHelper,
-)
+from qualtran.cirq_interop.testing import GateHelper
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,

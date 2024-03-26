@@ -156,7 +156,7 @@ def _from_cirq_decomposition(stc: Any) -> Optional[TComplexity]:
     return _from_iterable(decomposition)
 
 
-def _get_hash(val: Any, fail_quietly: bool = False):
+def _get_hash(val: Any):
     """Returns hash keys for caching a cirq.Operation and cirq.Gate.
 
     The hash of a cirq.Operation changes depending on its qubits, tags,
@@ -202,28 +202,17 @@ def _t_complexity_for_gate_or_op(
     return _t_complexity_from_strategies(gate_or_op, strategies)
 
 
-@overload
-def t_complexity(stc: Any, fail_quietly: Literal[False] = False) -> TComplexity:
-    ...
-
-
-@overload
-def t_complexity(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
-    ...
-
-
-def t_complexity(stc: Any) -> Optional[TComplexity]:
+def t_complexity(stc: Any) -> TComplexity:
     """Returns the TComplexity.
 
     Args:
         stc: an object to compute its TComplexity.
-        fail_quietly: bool whether to return None on failure or raise an error.
 
     Returns:
-        The TComplexity of the given object or None on failure (and fail_quietly=True).
+        The TComplexity of the given object.
 
     Raises:
-        TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
+        TypeError: if the methods fails to compute TComplexity.
     """
     if isinstance(stc, (cirq.Gate, cirq.Operation, Bloq)) and isinstance(stc, Hashable):
         ret = _t_complexity_for_gate_or_op(stc)

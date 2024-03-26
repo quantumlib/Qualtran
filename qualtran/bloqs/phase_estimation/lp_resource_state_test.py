@@ -21,10 +21,7 @@ from qualtran.bloqs.phase_estimation.lp_resource_state import (
     LPResourceState,
     LPRSInterimPrep,
 )
-from qualtran.cirq_interop.testing import (
-    assert_decompose_is_consistent_with_t_complexity,
-    GateHelper,
-)
+from qualtran.cirq_interop.testing import GateHelper
 from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
     ignore_alloc_free,

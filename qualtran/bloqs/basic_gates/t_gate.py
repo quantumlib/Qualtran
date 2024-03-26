@@ -20,7 +20,6 @@ import numpy as np
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, Signature, Soquet, SoquetT
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
