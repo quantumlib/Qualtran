@@ -189,7 +189,9 @@ def get_ccz2t_costs(
     )
     failure_prob = distillation_error + data_error
     footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
-    duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
+    duration_hr = (cycle_time_us * n_cycles * data_block.n_timesteps_to_consume_a_magic_state()) / (
+        1_000_000 * 60 * 60
+    )
 
     return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
 
