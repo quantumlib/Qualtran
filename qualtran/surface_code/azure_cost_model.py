@@ -15,27 +15,11 @@
 import math
 
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
+from qualtran.surface_code.data_block import FastDataBlock
 from qualtran.surface_code.quantum_error_correction_scheme_summary import (
     QuantumErrorCorrectionSchemeSummary,
 )
 from qualtran.surface_code.rotation_cost_model import RotationCostModel
-
-
-def logical_qubits(algorithm_specs: AlgorithmSummary) -> int:
-    r"""Number of logical qubits needed for the algorithm.
-
-    Equals:
-    $$
-        2 Q_\mathrm{alg} + \lceil \sqrt{8 Q_\mathrm{alg}} \rceil + 1
-    $$
-
-    Source: Equation D1 in https://arxiv.org/abs/2211.07629.
-
-    Args:
-        algorithm_specs: A summary of an algorithm/circuit.
-    """
-    q_alg = algorithm_specs.algorithm_qubits
-    return math.ceil(2 * q_alg + math.sqrt(8 * q_alg) + 1)
 
 
 def minimum_time_steps(
@@ -94,7 +78,7 @@ def code_distance(
         qec: Quantum Error Correction Scheme.
         physical_error_rate: The physical error rate of the device.
     """
-    q = logical_qubits(alg)
+    q = FastDataBlock.grid_size(n_algo_qubits=alg.algorithm_qubits)
     return qec.code_distance_from_budget(physical_error_rate, error_budget / (3 * q * time_steps))
 
 

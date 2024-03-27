@@ -26,7 +26,6 @@ from qualtran.surface_code.rotation_cost_model import BeverlandEtAlRotationCost
 @frozen
 class Test:
     alg: AlgorithmSummary
-    q_alg: float
 
     error_budget: float
     c_min: float
@@ -45,7 +44,6 @@ _TESTS = [
             measurements=1.4 * 10**6,
             rotation_circuit_depth=501,
         ),
-        q_alg=230,
         error_budget=1e-3,
         c_min=1.5e6,
         time_steps=1.5e5,
@@ -61,7 +59,6 @@ _TESTS = [
             toffoli_gates=1.35e11,
             measurements=1.37e9,
         ),
-        q_alg=2740,
         error_budget=1e-2,
         c_min=4.1e11,
         time_steps=4.1e11,
@@ -77,7 +74,6 @@ _TESTS = [
             toffoli_gates=3.73e9,
             measurements=1.08e9,
         ),
-        q_alg=25481,
         error_budget=1 / 3,
         c_min=1.23e10,
         time_steps=1.23e10,
@@ -85,11 +81,6 @@ _TESTS = [
         t_states=1.49e10,
     ),
 ]
-
-
-@pytest.mark.parametrize('test', _TESTS)
-def test_logical_qubits(test: Test):
-    assert azure_cost_model.logical_qubits(test.alg) == test.q_alg
 
 
 @pytest.mark.parametrize('test', _TESTS)
