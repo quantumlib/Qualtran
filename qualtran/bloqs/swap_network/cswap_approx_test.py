@@ -53,8 +53,12 @@ def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
 
 
 @pytest.mark.parametrize("n", [*range(1, 6)])
-def test_t_complexity(n):
+def test_t_complexity_cswap(n):
     cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwap(n))
+
+
+@pytest.mark.parametrize("n", [*range(1, 6)])
+def test_t_complexity_cswap_approx(n):
     cq_testing.assert_decompose_is_consistent_with_t_complexity(CSwapApprox(n))
 
 
