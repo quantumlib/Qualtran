@@ -16,6 +16,7 @@ import cirq
 import numpy as np
 
 from qualtran.bloqs.basic_gates.global_phase import _global_phase, GlobalPhase
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 def test_unitary():
@@ -25,6 +26,10 @@ def test_unitary():
         coefficient = np.exp(2j * np.pi * alpha)
         bloq = GlobalPhase(coefficient)
         np.testing.assert_allclose(cirq.unitary(bloq), coefficient)
+
+
+def test_t_complexity():
+    assert GlobalPhase(1j).t_complexity() == TComplexity()
 
 
 def test_global_phase(bloq_autotester):

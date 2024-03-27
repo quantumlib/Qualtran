@@ -19,6 +19,7 @@ from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
@@ -45,6 +46,9 @@ class GlobalPhase(CirqGateAsBloqBase):
 
     def pretty_name(self) -> str:
         return 'GPhase'
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity()
 
 
 @bloq_example
