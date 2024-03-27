@@ -128,7 +128,7 @@ class ApproximateQFT(GateWithRegisters):
             a, b = q[addition_start_index:i], phase_grad[: addition_bitsize + 1]
 
             yield AddIntoPhaseGrad(
-                addition_bitsize, addition_bitsize + 1, right_shift=1, controlled=True
+                addition_bitsize, addition_bitsize + 1, right_shift=1, controlled=1
             ).on_registers(ctrl=q[i], x=a[::-1], phase_grad=b)
             yield cirq.H(q[i])
 
