@@ -237,17 +237,20 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         ((toffoli, n),) = self.bloq_counts().items()
         return n * toffoli.t_complexity()
 
+    def adjoint(self) -> 'Bloq':
+        return AddIntoPhaseGrad(
+            self.x_bitsize,
+            self.phase_bitsize,
+            self.right_shift,
+            sign=-1 * self.sign,
+            controlled=self.controlled,
+        )
+
     def __pow__(self, power):
         if power == 1:
             return self
         if power == -1:
-            return AddIntoPhaseGrad(
-                self.x_bitsize,
-                self.phase_bitsize,
-                self.right_shift,
-                sign=-1 * self.sign,
-                controlled=self.controlled,
-            )
+            return self.adjoint()
         raise NotImplementedError("AddIntoPhaseGrad.__pow__ defined only for powers +1/-1.")
 
     def add_my_tensors(
