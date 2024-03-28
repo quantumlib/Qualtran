@@ -21,57 +21,7 @@ from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, Register, Signature
-
-
-@frozen
-class SU2RotationGate(GateWithRegisters):
-    theta: float
-    phi: float
-    lambd: float
-
-    @cached_property
-    def signature(self) -> Signature:
-        return Signature.build(q=1)
-
-    @cached_property
-    def rotation_matrix(self):
-        r"""Implements an arbitrary SU(2) rotation.
-
-        The rotation is represented by the matrix:
-
-            $$
-            \begin{matrix}
-            e^{i(\lambda + \phi)} \cos(\theta) & e^{i\phi} \sin(\theta) \\
-            e^{i\lambda} \sin(\theta) & - \cos(\theta)
-            \end{matrix}
-            $$
-
-        Returns:
-            A 2x2 rotation matrix
-
-        References:
-            [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-                Motlagh and Wiebe. (2023). Equation 7.
-        """
-        return np.array(
-            [
-                [
-                    np.exp(1j * (self.lambd + self.phi)) * np.cos(self.theta),
-                    np.exp(1j * self.phi) * np.sin(self.theta),
-                ],
-                [np.exp(1j * self.lambd) * np.sin(self.theta), -np.cos(self.theta)],
-            ]
-        )
-
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
-        qubit = q[0]
-
-        yield cirq.Rz(rads=np.pi - self.lambd).on(qubit)
-        yield cirq.Ry(rads=2 * self.theta).on(qubit)
-        yield cirq.Rz(rads=-self.phi).on(qubit)
-        yield cirq.GlobalPhaseGate(np.exp(1j * (np.pi + self.lambd + self.phi) / 2)).on()
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
 
 def qsp_complementary_polynomial(
