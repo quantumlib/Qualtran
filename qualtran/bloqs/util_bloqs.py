@@ -20,12 +20,13 @@ from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 import attrs
 import numpy as np
 import quimb.tensor as qtn
-from attrs import frozen
+from attrs import field, frozen
 from sympy import Expr
 
 from qualtran import (
     Bloq,
     BloqBuilder,
+    CompositeBloq,
     QAny,
     QBit,
     QDType,
@@ -471,3 +472,61 @@ class Cast(Bloq):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
+
+
+@frozen
+class Wrap(Bloq):
+    """Wrap a bloq with a Partition so that splits / joins can be avoided in diagrams.
+
+    Args:
+        bloq: The bloq you wish to wrap
+        outer_registers: The register you wished the bloq accepted
+        inner_registers: The (groups of) registers the bloq does accept
+
+    Registers:
+        outer_registers: The registers you want to wire into the bloq.
+    """
+
+    bloq: Bloq
+    outer_registers: Tuple[Register]
+    inner_registers: Tuple[Tuple[Register]]
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        return Signature(self.outer_registers)
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return self.bloq._t_complexity_()
+
+    def adjoint(self):
+        return Wrap(attrs.evolve(self.bloq))
+
+    def short_name(self) -> str:
+        return self.bloq.short_name()
+
+    def pretty_name(self) -> str:
+        return self.bloq.pretty_name()
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        all_regs = {}
+        partitions = []
+        # partitition register k into registers in v
+        for wrap_reg, bloq_regs in zip(self.outer_registers, self.inner_registers):
+            bitsize = sum(r.bitsize for r in bloq_regs)
+            part = Partition(bitsize, regs=bloq_regs)
+            partitions.append(part)
+            all_regs |= bb.add_d(part, x=soqs.pop(wrap_reg.name))
+        all_regs |= bb.add_d(self.bloq, **all_regs)
+        # un-partitition register k into registers in v
+        def _extract_regs_for_partition(part: Bloq, **soqs: Soquet) -> Dict[str, 'SoquetT']:
+            return {reg.name: soqs.pop(reg.name) for reg in part.signature.rights()}
+
+        out_regs = {}
+        for ipart, (wrap_reg, bloq_regs) in enumerate(
+            zip(self.outer_registers, self.inner_registers)
+        ):
+            out_regs |= bb.add_d(
+                partitions[ipart].adjoint(),
+                **_extract_regs_for_partition(partitions[ipart], **all_regs),
+            )
+        return out_regs

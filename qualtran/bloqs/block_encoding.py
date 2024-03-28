@@ -230,7 +230,7 @@ class BlackBoxBlockEncoding(Bloq):
             [
                 Register('selection', QAny(self.prepare.selection_bitsize)),
                 Register('junk', QAny(self.prepare.junk_bitsize)),
-                Register('system', QAny(self.select.system_bitsize)),
+                Register('system', QAny(self.select.signature.get_left('system').bitsize)),
             ]
         )
 
