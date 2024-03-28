@@ -14,10 +14,15 @@
 
 import abc
 import math
+from typing import TypeVar, Optional
 
 from attrs import frozen
 
 import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
+from qualtran.surface_code.reference import Reference
+
+
+DataBlock_T = TypeVar('DataBlock_T', bound='DataBlock')
 
 
 class DataBlock(metaclass=abc.ABCMeta):
@@ -41,6 +46,10 @@ class DataBlock(metaclass=abc.ABCMeta):
     def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
 
+    @abc.abstractmethod
+    def n_timesteps_to_consume_a_magic_state(self) -> float:
+        """The worst case number of timesteps needed to consume a magic state."""
+
 
 @frozen
 class SimpleDataBlock(DataBlock):
@@ -55,6 +64,7 @@ class SimpleDataBlock(DataBlock):
     data_d: int
     routing_overhead: float = 0.5
     qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
+    reference: Optional[Reference] = None
 
     def n_logical_qubits(self, n_algo_qubits: int) -> int:
         """Number of logical qubits including overhead.
@@ -76,3 +86,57 @@ class SimpleDataBlock(DataBlock):
         return data_cells * self.qec_scheme.logical_error_rate(
             physical_error_rate=phys_err, code_distance=self.data_d
         )
+
+    def n_timesteps_to_consume_a_magic_state(self) -> float:
+        return 1.0
+
+
+class CompactDataBlock(SimpleDataBlock):
+    routing_overhead: float = 0.5
+    reference = Reference(url='https://arxiv.org/abs/1808.02892', page=7)
+
+    def n_timesteps_to_consume_a_magic_state(self) -> float:
+        return 9.0
+
+
+class IntermediateDataBlock(SimpleDataBlock):
+    routing_overhead: float = 1.5
+    reference = Reference(url='https://arxiv.org/abs/1808.02892', page=8)
+
+    def n_timesteps_to_consume_a_magic_state(self) -> float:
+        return 5.0
+
+
+@frozen
+class FastDataBlock(DataBlock):
+
+    data_d: int
+    qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
+    reference = Reference(url='https://arxiv.org/abs/1808.02892', page=9)
+
+    @staticmethod
+    def grid_size(n_algo_qubits: int) -> int:
+        return math.ceil(2 * n_algo_qubits + math.sqrt(8 * n_algo_qubits) + 1)
+
+    def footprint(self, n_algo_qubits: int) -> int:
+        return FastDataBlock.grid_size(n_algo_qubits)
+
+    def data_error(self, n_algo_qubits: int, n_cycles: int, phys_err: float) -> float:
+        data_cells = self.n_logical_qubits(n_algo_qubits) * n_cycles
+        return data_cells * self.qec_scheme.logical_error_rate(
+            physical_error_rate=phys_err, code_distance=self.data_d
+        )
+
+    def n_timesteps_to_consume_a_magic_state(self) -> float:
+        return 1.0
+
+    @staticmethod
+    def from_error_budget(
+        error_budget: float,
+        n_algo_qubits: int,
+        qec_scheme: qec.QuantumErrorCorrectionSchemeSummary,
+        physical_error_rate: float,
+    ) -> 'FastDataBlock':
+        q = FastDataBlock.grid_size(n_algo_qubits)
+        d = qec_scheme.code_distance_from_budget(physical_error_rate, error_budget / q)
+        return FastDataBlock(data_d=d, qec_scheme=qec_scheme)
