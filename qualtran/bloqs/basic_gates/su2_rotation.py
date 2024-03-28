@@ -21,7 +21,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
-from qualtran.bloqs.basic_gates import Ry, ZPowGate
+from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox
 
@@ -123,11 +123,7 @@ class SU2RotationGate(GateWithRegisters):
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         pi = sympy.pi if self._is_parameterized_() else np.pi
 
-        # global phase of $-e^{i \alpha}$
-        q = bb.add(
-            ZPowGate(exponent=2, global_shift=0.5 + self.global_shift / (2 * pi), eps=self.eps / 4),
-            q=q,
-        )
+        bb.add(GlobalPhase(coefficient=-np.exp(1j * self.global_shift), eps=self.eps / 4))
         q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
         q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
         q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
