@@ -12,13 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Sequence, Tuple, Union, Optional
+from typing import Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
 import pytest
 import sympy
-from attrs import define, frozen
+from attrs import define, field, frozen
 from cirq.testing import random_unitary
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
@@ -113,15 +113,16 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
 
 
 @frozen
-@cirq.value_equality
 class RandomGate(GateWithRegisters):
     bitsize: int
-    matrix: Tuple[Tuple[int, ...], ...]
+    matrix: Tuple[Tuple[complex, ...], ...] = field(
+        converter=lambda mat: tuple(tuple(row) for row in mat)
+    )
 
     @staticmethod
     def create(bitsize: int, *, random_state=None) -> 'RandomGate':
         matrix = random_unitary(2**bitsize, random_state=random_state)
-        return RandomGate(bitsize, tuple(tuple(x) for x in matrix.tolist()))
+        return RandomGate(bitsize, matrix)
 
     @property
     def signature(self) -> Signature:
@@ -130,16 +131,13 @@ class RandomGate(GateWithRegisters):
     def _unitary_(self):
         return np.array(self.matrix)
 
-    def adjoint(self) -> GateWithRegisters:
-        return RandomGate(self.bitsize, self.matrix.conj().T)
+    def adjoint(self) -> 'RandomGate':
+        return RandomGate(self.bitsize, np.conj(self.matrix).T)
 
     def __pow__(self, power):
         if power == -1:
             return self.adjoint()
         return NotImplemented
-
-    def _value_equality_values_(self):
-        return tuple(np.ravel(self.matrix))
 
 
 def evaluate_polynomial_of_matrix(
