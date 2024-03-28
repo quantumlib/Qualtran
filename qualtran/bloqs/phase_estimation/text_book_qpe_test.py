@@ -17,8 +17,8 @@ import pytest
 
 from qualtran.bloqs.basic_gates import Hadamard, OnEach, ZPowGate
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
-from qualtran.bloqs.phase_estimation.kitaev_qpe_text_book import KitaevQPE
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
+from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 from qualtran.cirq_interop.testing import GateHelper
 
 
@@ -34,17 +34,18 @@ def simulate_theta_estimate(circuit, measurement_register) -> float:
 
 
 @pytest.mark.parametrize('theta', [0.234, 0.78, 0.54])
-def test_kitaev_phase_estimation_zpow_theta(theta):
+def test_textbook_phase_estimation_zpow_theta(theta):
     precision, error_bound = 3, 0.1
-    gh = GateHelper(KitaevQPE(ZPowGate(exponent=2 * theta), precision))
+    gh = GateHelper(TextbookQPE(ZPowGate(exponent=2 * theta), precision))
     circuit = cirq.Circuit(cirq.X(*gh.quregs['q']), cirq.decompose_once(gh.operation))
     precision_register = gh.quregs['qpe_reg']
     assert abs(simulate_theta_estimate(circuit, precision_register) - theta) < error_bound
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('num_terms', [2, 3, 4])
 @pytest.mark.parametrize('use_resource_state', [True, False])
-def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_state: bool):
+def test_textbook_phase_estimation_qubitized_walk(num_terms: int, use_resource_state: bool):
     precision, eps = 5, 0.05
     ham, walk = get_uniform_pauli_qubitized_walk(num_terms)
 
@@ -57,7 +58,7 @@ def test_kitaev_phase_estimation_qubitized_walk(num_terms: int, use_resource_sta
     eigen_values, eigen_vectors = np.linalg.eigh(ham.matrix())
 
     state_prep = LPResourceState(precision) if use_resource_state else OnEach(precision, Hadamard())
-    gh = GateHelper(KitaevQPE(walk, precision, state_prep=state_prep))
+    gh = GateHelper(TextbookQPE(walk, precision, ctrl_state_prep=state_prep))
     # 1. Construct QPE bloq
     qpe_reg, selection, target = (gh.quregs['qpe_reg'], gh.quregs['selection'], gh.quregs['target'])
     for eig_idx, eig_val in enumerate(eigen_values):

@@ -17,9 +17,9 @@ import pytest
 
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
-from qualtran.bloqs.phase_estimation.kitaev_qpe_text_book_test import simulate_theta_estimate
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE
+from qualtran.bloqs.phase_estimation.text_book_qpe_test import simulate_theta_estimate
 from qualtran.cirq_interop.testing import GateHelper
 
 
@@ -41,7 +41,7 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
     # 1. Construct QPE bloq
 
     state_prep = LPResourceState(precision) if use_resource_state else OnEach(precision, Hadamard())
-    gh = GateHelper(QubitizationQPE(walk, precision, state_prep=state_prep))
+    gh = GateHelper(QubitizationQPE(walk, precision, ctrl_state_prep=state_prep))
     qpe_reg, selection, target = (gh.quregs['qpe_reg'], gh.quregs['selection'], gh.quregs['target'])
     for eig_idx, eig_val in enumerate(eigen_values):
         # Apply QPE to determine eigenvalue for walk operator W on initial state |L>|k>
@@ -65,6 +65,10 @@ def test_qubitization_phase_estimation_of_walk(num_terms: int, use_resource_stat
 
         # We can measure either `2 * arccos(Ek/λ)` or `2 * arccos(Ek/λ) + pi`;
         # therefore Ek/λ = cos(theta/2) OR cos((theta - pi) / 2) = sin(theta/2)
+        # TODO: Fig-2 of https://arxiv.org/abs/1805.03662 says the value of the first bit can be used
+        #       to differentiate between the two cases, but I couldn't reproduce the argument here.
+        #       Hence, we don't have a deterministic check to figure out correct value of
+        #       `eig_val / qubitization_lambda` by the estimated `phase`.
         is_close = [
             np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.cos(phase)), atol=eps),
             np.allclose(np.abs(eig_val / qubitization_lambda), np.abs(np.sin(phase)), atol=eps),
