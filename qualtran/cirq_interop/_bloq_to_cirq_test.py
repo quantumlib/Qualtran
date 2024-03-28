@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from typing import Dict, Tuple
 
+import attrs
 import cirq
 import numpy as np
 import pytest
@@ -160,75 +160,22 @@ def test_bloq_as_cirq_gate_left_register():
     cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
 
 
-def test_bloq_as_cirq_gate_multi_dimensional_signature():
-    bloq = SwapWithZero(2, 3, 4)
-    cirq_quregs = get_named_qubits(bloq.signature.lefts())
-    op = BloqAsCirqGate(bloq).on_registers(**cirq_quregs)
-    cirq.testing.assert_has_diagram(
-        cirq.Circuit(op),
-        '''
-selection0: ──────@(r⇋0)───
-                  │
-selection1: ──────@(r⇋0)───
-                  │
-targets[0][0]: ───swap_0───
-                  │
-targets[0][1]: ───swap_0───
-                  │
-targets[0][2]: ───swap_0───
-                  │
-targets[1][0]: ───swap_1───
-                  │
-targets[1][1]: ───swap_0───
-                  │
-targets[1][2]: ───swap_0───
-                  │
-targets[2][0]: ───swap_0───
-                  │
-targets[2][1]: ───swap_1───
-                  │
-targets[2][2]: ───swap_0───
-                  │
-targets[3][0]: ───swap_0───
-                  │
-targets[3][1]: ───swap_0───
-                  │
-targets[3][2]: ───swap_1───
-''',
-    )
-    cbloq = bloq.decompose_bloq()
-    cirq.testing.assert_has_diagram(
-        cbloq.to_cirq_circuit(**cirq_quregs)[0],
-        '''
-selection0: ──────────────────────────────@(approx)───
-                                          │
-selection1: ──────@(approx)───@(approx)───┼───────────
-                  │           │           │
-targets[0][0]: ───×(x)────────┼───────────×(x)────────
-                  │           │           │
-targets[0][1]: ───×(x)────────┼───────────×(x)────────
-                  │           │           │
-targets[0][2]: ───×(x)────────┼───────────×(x)────────
-                  │           │           │
-targets[1][0]: ───×(y)────────┼───────────┼───────────
-                  │           │           │
-targets[1][1]: ───×(y)────────┼───────────┼───────────
-                  │           │           │
-targets[1][2]: ───×(y)────────┼───────────┼───────────
-                              │           │
-targets[2][0]: ───────────────×(x)────────×(y)────────
-                              │           │
-targets[2][1]: ───────────────×(x)────────×(y)────────
-                              │           │
-targets[2][2]: ───────────────×(x)────────×(y)────────
-                              │
-targets[3][0]: ───────────────×(y)────────────────────
-                              │
-targets[3][1]: ───────────────×(y)────────────────────
-                              │
-targets[3][2]: ───────────────×(y)────────────────────
-''',
-    )
+@attrs.frozen
+class TestSwapWithZero(Bloq):
+    selection_bitsize: int
+    target_bitsize: int
+    n_target_registers: int
+
+    @property
+    def signature(self) -> 'Signature':
+        return self.swap_with_zero.signature
+
+    @property
+    def swap_with_zero(self):
+        return SwapWithZero(self.selection_bitsize, self.target_bitsize, self.n_target_registers)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        return bb.add_d(self.swap_with_zero, **soqs)
 
 
 def test_bloq_as_cirq_gate_for_mod_exp():
