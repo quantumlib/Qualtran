@@ -32,10 +32,12 @@ def _get_all_rotation_types() -> Tuple['_HasEps', ...]:
     """Returns all classes defined in bloqs.basic_gates which have an attribute `eps`."""
     import qualtran.bloqs.basic_gates  # pylint: disable=unused-import
 
+    bloqs_to_exclude = [qualtran.bloqs.basic_gates.GlobalPhase]
+
     return tuple(
         v
-        for (k, v) in inspect.getmembers(sys.modules['qualtran.bloqs.basic_gates'], inspect.isclass)
-        if hasattr(v, 'eps')
+        for (_, v) in inspect.getmembers(sys.modules['qualtran.bloqs.basic_gates'], inspect.isclass)
+        if hasattr(v, 'eps') and v not in bloqs_to_exclude
     )
 
 

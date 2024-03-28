@@ -31,6 +31,7 @@ Bloqs Library
     basic_gates/s_gate.ipynb
     mcmt/and_bloq.ipynb
     swap_network/swap_network.ipynb
+    basic_gates/global_phase.ipynb
 
 .. toctree::
     :maxdepth: 2

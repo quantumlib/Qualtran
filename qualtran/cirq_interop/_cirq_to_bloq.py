@@ -278,6 +278,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         CNOT,
         CSwap,
         CZPowGate,
+        GlobalPhase,
         Hadamard,
         Rx,
         Ry,
@@ -342,6 +343,9 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](
             exponent=gate.exponent, global_shift=gate.global_shift
         )
+
+    if isinstance(gate, cirq.GlobalPhaseGate):
+        return GlobalPhase(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
     return CirqGateAsBloq(gate)

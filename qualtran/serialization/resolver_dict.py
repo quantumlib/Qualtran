@@ -145,6 +145,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.arithmetic.sorting.BitonicSort": qualtran.bloqs.arithmetic.sorting.BitonicSort,
     "qualtran.bloqs.arithmetic.sorting.Comparator": qualtran.bloqs.arithmetic.sorting.Comparator,
     "qualtran.bloqs.basic_gates.cnot.CNOT": qualtran.bloqs.basic_gates.cnot.CNOT,
+    "qualtran.bloqs.basic_gates.global_phase.GlobalPhase": qualtran.bloqs.basic_gates.global_phase.GlobalPhase,
     "qualtran.bloqs.basic_gates.hadamard.Hadamard": qualtran.bloqs.basic_gates.hadamard.Hadamard,
     "qualtran.bloqs.basic_gates.on_each.OnEach": qualtran.bloqs.basic_gates.on_each.OnEach,
     "qualtran.bloqs.basic_gates.rotation.CZPowGate": qualtran.bloqs.basic_gates.rotation.CZPowGate,
