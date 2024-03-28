@@ -15,7 +15,7 @@
 """Bloqs for virtual operations and register reshaping."""
 
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -37,6 +37,7 @@ from qualtran import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
 if TYPE_CHECKING:
@@ -471,3 +472,42 @@ class Cast(Bloq):
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
+
+
+@frozen
+class Power(Bloq):
+    """Wrapper that repeats the given `bloq` `power` times.
+
+    `Bloq` must have only THRU registers.
+
+    Args:
+        bloq: Bloq to repeat
+        power: Number of times to repeat the Bloq
+
+    Registers:
+        Same as `self.bloq.signature`
+    """
+
+    bloq: Bloq
+    power: SymbolicInt
+
+    def __attrs_post_init__(self):
+        if any(reg.side != Side.THRU for reg in self.bloq.signature):
+            raise ValueError('Bloq to repeat must have only THRU registers')
+        if self.power < 1:
+            raise ValueError(f'{self.power=} must be a positive integer.')
+
+    def adjoint(self) -> 'Bloq':
+        return Power(self.bloq.adjoint(), self.power)
+
+    @cached_property
+    def signature(self) -> Signature:
+        return self.bloq.signature
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        for _ in range(self.power):
+            soqs = bb.add_d(self.bloq, **soqs)
+        return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(self.bloq, self.power)}

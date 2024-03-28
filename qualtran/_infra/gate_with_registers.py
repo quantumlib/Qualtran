@@ -21,6 +21,7 @@ from numpy.typing import NDArray
 
 from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import CompositeBloq
+from qualtran._infra.controlled import Controlled, CtrlSpec
 from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
 
@@ -317,13 +318,42 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         control_values=None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
     ) -> 'cirq.Gate':
-        # Multiple inheritance: use the `cirq.Gate` method.
-        return cirq.Gate.controlled(
+        from qualtran.cirq_interop import BloqAsCirqGate
+
+        controlled_gate = cirq.ControlledGate(
             self,
             num_controls=num_controls,
             control_values=control_values,
             control_qid_shape=control_qid_shape,
         )
+        ctrl_spec = CtrlSpec.from_cirq_cv(controlled_gate.control_values)
+        return BloqAsCirqGate(Controlled(self, ctrl_spec))
+
+    def _unitary_(self):
+        return NotImplemented
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: 'Any',
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        if not self._unitary_.__qualname__.startswith('GateWithRegisters.'):
+            from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+
+            _add_my_tensors_from_gate(
+                self,
+                self.signature,
+                self.short_name(),
+                tn,
+                tag,
+                incoming=incoming,
+                outgoing=outgoing,
+            )
+        else:
+            return super().add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         """Default diagram info that uses register names to name the boxes in multi-qubit gates.

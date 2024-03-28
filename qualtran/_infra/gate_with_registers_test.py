@@ -15,6 +15,7 @@
 from typing import Dict
 
 import cirq
+import numpy as np
 import pytest
 
 from qualtran import GateWithRegisters, QAny, QBit, Register, Side, Signature, SoquetT
@@ -47,6 +48,22 @@ def test_gate_with_registers():
     op1 = tg.on_registers(r1=qubits[:5], r2=qubits[6:], r3=qubits[5])
     op2 = tg.on(*qubits[:5], *qubits[6:], qubits[5])
     assert op1 == op2
+
+    np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
+
+
+class _TestGateAtomic(GateWithRegisters):
+    @property
+    def signature(self) -> Signature:
+        return Signature.build(q=4)
+
+    def _unitary_(self) -> cirq.OP_TREE:
+        return cirq.unitary(cirq.Circuit(cirq.H.on_each(cirq.LineQubit.range(4))))
+
+
+def test_gate_with_registers_uses_unitary_for_tensor_contraction():
+    tg = _TestGateAtomic()
+    np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
 
 
 class BloqWithDecompose(GateWithRegisters):
