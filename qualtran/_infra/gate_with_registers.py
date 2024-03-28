@@ -318,7 +318,6 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         control_values=None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
     ) -> 'cirq.Gate':
-        # Multiple inheritance: use the `cirq.Gate` method.
         from qualtran.cirq_interop import BloqAsCirqGate
 
         controlled_gate = cirq.ControlledGate(

@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
-import attrs
 import cirq
 import numpy as np
 import pytest
@@ -24,7 +23,6 @@ from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
-from qualtran.bloqs.swap_network import SwapWithZero
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
@@ -42,6 +40,18 @@ class SwapTwoBitsTest(Bloq):
         (x,) = x
         (y,) = y
         return cirq.SWAP(x, y), {'x': np.array([x]), 'y': np.array([y])}
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.bloqs.basic_gates import TwoBitSwap
+
+        TwoBitSwap().add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
 
 
 def test_swap_two_bits_to_cirq():
@@ -79,6 +89,32 @@ class SwapTest(Bloq):
         for i in range(self.n):
             xs[i], ys[i] = bb.add(SwapTwoBitsTest(), x=xs[i], y=ys[i])
         return {'x': bb.join(xs), 'y': bb.join(ys)}
+
+
+@frozen
+class SwapTestWithOnlyTensorData(Bloq):
+    n: int
+
+    @property
+    def signature(self):
+        return Signature.build(x=self.n, y=self.n)
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        SwapTest(self.n).add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
+
+
+@pytest.mark.parametrize('n', [1, 2, 3, 4])
+def test_bloq_as_cirq_gate_uses_tensor_data_for_unitary(n: int):
+    unitary_one = cirq.unitary(BloqAsCirqGate(SwapTest(n)))
+    unitary_two = cirq.unitary(BloqAsCirqGate(SwapTestWithOnlyTensorData(n)))
+    np.testing.assert_allclose(unitary_one, unitary_two)
 
 
 def test_swap():
@@ -158,24 +194,6 @@ def test_bloq_as_cirq_gate_left_register():
     cbloq = bb.finalize()
     circuit, _ = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
-
-
-@attrs.frozen
-class TestSwapWithZero(Bloq):
-    selection_bitsize: int
-    target_bitsize: int
-    n_target_registers: int
-
-    @property
-    def signature(self) -> 'Signature':
-        return self.swap_with_zero.signature
-
-    @property
-    def swap_with_zero(self):
-        return SwapWithZero(self.selection_bitsize, self.target_bitsize, self.n_target_registers)
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        return bb.add_d(self.swap_with_zero, **soqs)
 
 
 def test_bloq_as_cirq_gate_for_mod_exp():

@@ -318,6 +318,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.util_bloqs.Free": qualtran.bloqs.util_bloqs.Free,
     "qualtran.bloqs.util_bloqs.Join": qualtran.bloqs.util_bloqs.Join,
     "qualtran.bloqs.util_bloqs.Partition": qualtran.bloqs.util_bloqs.Partition,
+    "qualtran.bloqs.util_bloqs.Power": qualtran.bloqs.util_bloqs.Power,
     "qualtran.bloqs.util_bloqs.Split": qualtran.bloqs.util_bloqs.Split,
 }
 
