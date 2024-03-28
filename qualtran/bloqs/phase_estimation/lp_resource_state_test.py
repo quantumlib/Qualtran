@@ -65,4 +65,4 @@ def test_prepares_resource_state(n):
 def test_t_complexity(n):
     bloq = LPResourceState(n)
     assert_decompose_is_consistent_with_t_complexity(bloq)
-    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6 + 3 * (n == 1)
+    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6
