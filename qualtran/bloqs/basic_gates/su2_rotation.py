@@ -138,7 +138,7 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def _t_complexity_(self) -> TComplexity:
-        return TComplexity(rotations=3, clifford=1)
+        return TComplexity(rotations=3)
 
     def _is_parameterized_(self) -> bool:
         return any(
