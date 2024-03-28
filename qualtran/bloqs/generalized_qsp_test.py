@@ -23,13 +23,14 @@ from cirq.testing import random_unitary
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran.bloqs.generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
     SU2RotationGate,
 )
+from qualtran.resource_counting import SympySymbolAllocator
 
 
 def assert_angles_almost_equal(
@@ -112,6 +113,7 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
 
 
 @frozen
+@cirq.value_equality
 class RandomGate(GateWithRegisters):
     bitsize: int
     matrix: Tuple[Tuple[int, ...], ...]
@@ -136,8 +138,8 @@ class RandomGate(GateWithRegisters):
             return self.adjoint()
         return NotImplemented
 
-    def __hash__(self):
-        return hash(tuple(np.ravel(self.matrix)))
+    def _value_equality_values_(self):
+        return tuple(np.ravel(self.matrix))
 
 
 def evaluate_polynomial_of_matrix(
@@ -213,6 +215,34 @@ def test_generalized_qsp_with_complex_poly_on_random_unitaries(
         U = RandomGate.create(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state)
         verify_generalized_qsp(U, P, negative_power=negative_power)
+
+
+@pytest.mark.parametrize("negative_power", [0, 1, 2])
+def test_call_graph(negative_power: int):
+    random_state = np.random.RandomState(42)
+
+    ssa = SympySymbolAllocator()
+    theta = ssa.new_symbol("theta")
+    phi = ssa.new_symbol("phi")
+    lambd = ssa.new_symbol("lambda")
+    arbitrary_rotation = SU2RotationGate(theta, phi, lambd)
+
+    def catch_rotations(bloq: Bloq) -> Bloq:
+        if isinstance(bloq, SU2RotationGate):
+            return arbitrary_rotation
+        return bloq
+
+    U = RandomGate.create(1, random_state=random_state)
+    P = (0.5, 0, 0.5)
+    gsqp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
+
+    g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
+
+    expected_counts = {U.controlled(control_values=[0]): 3 - negative_power, arbitrary_rotation: 3}
+    if negative_power > 0:
+        expected_counts[U.adjoint().controlled()] = negative_power
+
+    assert sigma == expected_counts
 
 
 @define(slots=False)
