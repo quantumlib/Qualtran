@@ -20,7 +20,7 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import CtrlSpec, GateWithRegisters, QBit, Register, Signature
+from qualtran import GateWithRegisters, QBit, Register, Signature
 
 
 @frozen
@@ -325,8 +325,15 @@ class GeneralizedQSP(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         degree = len(self.P)
-        return {
-            (self.U.adjoint().controlled(), min(degree, self.negative_power)),
-            (self.U.controlled(ctrl_spec=CtrlSpec(cvs=0)), max(0, degree - self.negative_power)),
-            (self.U.adjoint(), max(0, self.negative_power - degree)),
-        } | {(rotation, 1) for rotation in self.signal_rotations}
+
+        counts = {(rotation, 1) for rotation in self.signal_rotations}
+
+        if degree > self.negative_power:
+            counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
+        elif self.negative_power > degree:
+            counts.add((self.U.adjoint(), self.negative_power - degree))
+
+        if self.negative_power > 0:
+            counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
+
+        return counts
