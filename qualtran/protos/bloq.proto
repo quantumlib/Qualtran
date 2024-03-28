@@ -47,6 +47,7 @@ message BloqArg {
     Registers registers = 11;
     // Ctrl Spec for controlled bloqs
     CtrlSpec ctrl_spec = 12;
+    Complex complex_val = 13;
   }
 }
 
