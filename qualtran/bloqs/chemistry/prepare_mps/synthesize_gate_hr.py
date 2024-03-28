@@ -142,7 +142,7 @@ class SynthesizeGateViaHR(Bloq):
     def _ith_reflection(
         self, bb: BloqBuilder, i: int, reflection_reg: SoquetT, phase_grad: SoquetT
     ):
-        reflection_prep = PrepareOracleDecomposeeGateReflection(
+        reflection_prep = PrepareOracleSynthesizeGateReflection(
             state_coefs=self.gate_cols[i][1],
             phase_bitsize=self.phase_bitsize,
             index=self.gate_cols[i][0],
@@ -157,7 +157,7 @@ class SynthesizeGateViaHR(Bloq):
 
 
 @attrs.frozen
-class PrepareOracleDecomposeeGateReflection(PrepareOracle):
+class PrepareOracleSynthesizeGateReflection(PrepareOracle):
     r"""Prepares the state $|0,u_i\rangle - |1,i\rangle$, used by DecomposeGateViaHR."""
     state_coefs: Tuple  # state |u_i>
     phase_bitsize: int  # number of ancilla qubits used to encode the state preparation's rotations
