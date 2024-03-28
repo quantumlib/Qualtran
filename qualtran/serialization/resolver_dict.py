@@ -89,6 +89,8 @@ import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
 import qualtran.bloqs.multiplexers.unary_iteration_bloq
 import qualtran.bloqs.phase_estimation.lp_resource_state
+import qualtran.bloqs.phase_estimation.qubitization_qpe
+import qualtran.bloqs.phase_estimation.text_book_qpe
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.qft_phase_gradient
 import qualtran.bloqs.qft.qft_text_book
@@ -280,6 +282,8 @@ RESOLVER_DICT = {
     "qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate": qualtran.bloqs.multiplexers.unary_iteration_bloq.UnaryIterationGate,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep": qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep,
     "qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState": qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState,
+    "qualtran.bloqs.phase_estimation.qubitization_qpe.QubitizationQPE": qualtran.bloqs.phase_estimation.qubitization_qpe.QubitizationQPE,
+    "qualtran.bloqs.phase_estimation.text_book_qpe.TextbookQPE": qualtran.bloqs.phase_estimation.text_book_qpe.TextbookQPE,
     "qualtran.bloqs.qft.approximate_qft.ApproximateQFT": qualtran.bloqs.qft.approximate_qft.ApproximateQFT,
     "qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient": qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient,
     "qualtran.bloqs.qft.qft_text_book.QFTTextBook": qualtran.bloqs.qft.qft_text_book.QFTTextBook,
