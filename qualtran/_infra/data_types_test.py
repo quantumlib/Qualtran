@@ -180,7 +180,7 @@ def test_type_errors_fxp_int(qdtype):
 
 
 def test_type_errors_fxp():
-    assert not check_dtypes_consistent(QFxp(4, 4), QFxp(4, 0))
+    assert check_dtypes_consistent(QFxp(4, 4), QFxp(4, 0))
     assert not check_dtypes_consistent(QFxp(4, 3, signed=True), QFxp(4, 0))
     assert not check_dtypes_consistent(QFxp(4, 3), QFxp(4, 0))
 

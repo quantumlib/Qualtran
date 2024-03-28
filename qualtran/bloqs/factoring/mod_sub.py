@@ -70,7 +70,7 @@ class MontgomeryModSub(Bloq):
         x_split = bb.split(x)
         for i in range(self.bitsize):
             x_split[i] = bb.add(XGate(), q=x_split[i])
-        x = bb.join(x_split)
+        x = bb.join(x_split, dtype=QMontgomeryUInt(self.bitsize))
 
         # Add constant p+1 to the x register.
         x = bb.add(SimpleAddConstant(bitsize=self.bitsize, k=self.p + 1, signed=False, cvs=()), x=x)
@@ -88,7 +88,7 @@ class MontgomeryModSub(Bloq):
         x_split = bb.split(x)
         for i in range(self.bitsize):
             x_split[i] = bb.add(XGate(), q=x_split[i])
-        x = bb.join(x_split)
+        x = bb.join(x_split, dtype=QMontgomeryUInt(self.bitsize))
 
         # Return the output registers.
         return {'x': x, 'y': y}
