@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Dict, Type
 
@@ -24,7 +23,7 @@ from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signat
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.for_testing import TestCastToFrom, TestMultiRegister
-from qualtran.bloqs.util_bloqs import Allocate, Cast, Free, Join, Partition, Split
+from qualtran.bloqs.util_bloqs import Allocate, Cast, Free, Join, Partition, Power, Split
 from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -216,6 +215,22 @@ def test_cast_classical_sim():
     (a, b) = bloq.call_classically(a=7, b=2)
     assert a == 7
     assert b == 9
+
+
+def test_power():
+    with pytest.raises(ValueError, match="THRU"):
+        from qualtran.bloqs.mcmt import And
+
+        _ = Power(And(), 2)
+
+    bloq = TestMultiRegister()
+    with pytest.raises(ValueError, match="positive"):
+        _ = Power(bloq, -2)
+
+    bloq_raised_to_power = Power(bloq, 10)
+    assert bloq_raised_to_power.signature == bloq.signature
+    cbloq = bloq_raised_to_power.decompose_bloq()
+    assert [binst.bloq for binst, _, _ in cbloq.iter_bloqnections()] == [bloq] * 10
 
 
 @pytest.mark.notebook

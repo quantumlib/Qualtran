@@ -31,6 +31,7 @@ Bloqs Library
     basic_gates/s_gate.ipynb
     mcmt/and_bloq.ipynb
     swap_network/swap_network.ipynb
+    basic_gates/global_phase.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -68,6 +69,7 @@ Bloqs Library
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
     phase_estimation/lp_resource_state.ipynb
+    phase_estimation/text_book_qpe.ipynb
     qubitization_walk_operator.ipynb
 
 .. toctree::

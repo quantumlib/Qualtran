@@ -28,6 +28,10 @@ def is_symbolic(*args) -> bool:
     return any(isinstance(x, sympy.Basic) for x in args)
 
 
+def pi(*args) -> SymbolicFloat:
+    return sympy.pi if is_symbolic(*args) else np.pi
+
+
 def log2(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log2
 

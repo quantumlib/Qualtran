@@ -15,6 +15,8 @@ from typing import Optional
 
 from attrs import field, frozen
 
+from qualtran.surface_code.reference import Reference
+
 
 @frozen
 class PhysicalParameters:
@@ -32,12 +34,12 @@ class PhysicalParameters:
 
     physical_error_rate: float = field(default=1e-3, repr=lambda x: f'{x:g}')
 
-    reference: Optional[str] = None
+    reference: Optional[Reference] = None
 
 
 BEVERLAND_PARAMS = PhysicalParameters(
     t_gate_ns=50,  # 50ns
     t_meas_ns=100,  # 100ns
     physical_error_rate=1e-4,
-    reference='https://arxiv.org/abs/2211.07629',
+    reference=Reference(url='https://arxiv.org/abs/2211.07629'),
 )

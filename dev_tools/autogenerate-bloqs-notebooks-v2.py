@@ -134,6 +134,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
         ],
     ),
+    NotebookSpecV2(
+        title='Global Phase',
+        module=qualtran.bloqs.basic_gates.global_phase,
+        bloq_specs=[qualtran.bloqs.basic_gates.global_phase._GLOBAL_PHASE_DOC],
+    ),
 ]
 
 
@@ -353,6 +358,13 @@ ROT_QFT_PE = [
         bloq_specs=[
             qualtran.bloqs.phase_estimation.lp_resource_state._CC_LPRS_INTERIM_PREP_DOC,
             qualtran.bloqs.phase_estimation.lp_resource_state._CC_LP_RESOURCE_STATE_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Textbook Quantum Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.text_book_qpe,
+        bloq_specs=[
+            qualtran.bloqs.phase_estimation.text_book_qpe._CC_TEXTBOOK_PHASE_ESTIMATION_DOC
         ],
     ),
     NotebookSpecV2(
