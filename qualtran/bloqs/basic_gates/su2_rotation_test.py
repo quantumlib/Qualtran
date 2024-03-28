@@ -13,9 +13,19 @@
 #  limitations under the License.
 import cirq
 import numpy as np
+import sympy
 
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import Hadamard, TGate, XGate, YGate, ZGate
+from qualtran.bloqs.basic_gates import (
+    GlobalPhase,
+    Hadamard,
+    Ry,
+    TGate,
+    XGate,
+    YGate,
+    ZGate,
+    ZPowGate,
+)
 from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
 
@@ -80,3 +90,17 @@ def test_from_matrix_on_standard_gates():
         np.testing.assert_allclose(
             SU2RotationGate.from_matrix(mat).rotation_matrix, mat, atol=1e-15
         )
+
+
+def test_call_graph():
+    theta, phi, lambd, alpha, eps = sympy.symbols("theta, phi, lambd, alpha, eps")
+    pi = sympy.pi
+
+    gate = SU2RotationGate(theta, phi, lambd, alpha, eps)
+    _, sigma = gate.call_graph()
+    assert sigma == {
+        GlobalPhase(-sympy.exp(1j * alpha), eps / 4): 1,
+        ZPowGate(-phi / pi, -1, eps / 4): 1,
+        ZPowGate(-lambd / pi + 1, -1, eps / 4): 1,
+        Ry(2 * theta, eps / 4): 1,
+    }

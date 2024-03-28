@@ -122,8 +122,9 @@ class SU2RotationGate(GateWithRegisters):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
         pi = sympy.pi if self._is_parameterized_() else np.pi
+        exp = sympy.exp if self._is_parameterized_() else np.exp
 
-        bb.add(GlobalPhase(coefficient=-np.exp(1j * self.global_shift), eps=self.eps / 4))
+        bb.add(GlobalPhase(coefficient=-exp(1j * self.global_shift), eps=self.eps / 4))
         q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
         q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
         q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
