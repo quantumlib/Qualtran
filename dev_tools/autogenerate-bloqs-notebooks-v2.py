@@ -134,6 +134,11 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.swap_network.multiplexed_cswap._MULTIPLEXED_CSWAP_DOC,
         ],
     ),
+    NotebookSpecV2(
+        title='Global Phase',
+        module=qualtran.bloqs.basic_gates.global_phase,
+        bloq_specs=[qualtran.bloqs.basic_gates.global_phase._GLOBAL_PHASE_DOC],
+    ),
 ]
 
 
