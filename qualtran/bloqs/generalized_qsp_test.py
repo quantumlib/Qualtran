@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Sequence, Union
+from typing import Sequence, Tuple, Union
 
 import cirq
 import numpy as np
@@ -113,19 +113,19 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
 @frozen
 class RandomGate(GateWithRegisters):
     bitsize: int
-    matrix: NDArray
+    matrix: Tuple[Tuple[int, ...], ...]
 
     @staticmethod
     def create(bitsize: int, *, random_state=None) -> 'RandomGate':
         matrix = random_unitary(2**bitsize, random_state=random_state)
-        return RandomGate(bitsize, matrix)
+        return RandomGate(bitsize, tuple(tuple(x) for x in matrix.tolist()))
 
     @property
     def signature(self) -> Signature:
         return Signature.build(q=self.bitsize)
 
     def _unitary_(self):
-        return self.matrix
+        return np.array(self.matrix)
 
 
 def evaluate_polynomial_of_matrix(P: Sequence[complex], U: NDArray) -> NDArray:
