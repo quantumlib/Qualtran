@@ -94,6 +94,11 @@ def _is_clifford_or_t(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
 
+    if isinstance(stc, cirq.GlobalPhaseGate) or (
+        isinstance(stc, cirq.Operation) and isinstance(stc.gate, cirq.GlobalPhaseGate)
+    ):
+        return TComplexity()
+
     if isinstance(stc, cirq.ClassicallyControlledOperation):
         stc = stc.without_classical_controls()
 
