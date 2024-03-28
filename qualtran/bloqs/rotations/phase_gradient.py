@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -26,6 +26,7 @@ from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -50,6 +51,7 @@ class PhaseGradientUnitary(GateWithRegisters):
 
     The implementation simply decomposes into $n$ (controlled-) rotations, one on each qubit.
     """
+
     bitsize: int
     exponent: float = 1
     controlled: bool = False
@@ -141,8 +143,12 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
             shifted before adding to the phase gradient register.
         sign: Whether the input register x should be  added or subtracted from the phase gradient
             register.
+        controlled: Whether to control this bloq with a ctrl register. When controlled=None, this bloq
+            is not controlled. When controlled=0, this bloq is active when the ctrl register is 0. When
+            controlled=1, this bloq is active when the ctrl register is 1.
 
     Registers:
+        - ctrl: Control THRU register
         - x : Input THRU register storing input value x to be added to the phase gradient register.
         - phase_grad : Phase gradient THRU register.
 
@@ -150,10 +156,12 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391)
         Appendix A: Addition for controlled rotations
     """
+
     x_bitsize: int
     phase_bitsize: int
     right_shift: int = 0
     sign: int = +1
+    controlled: Optional[int] = None
 
     def pretty_name(self) -> str:
         sign = '+' if self.sign > 0 else '-'
@@ -161,9 +169,17 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(
-            x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
-            phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
+        return (
+            Signature.build_from_dtypes(
+                ctrl=QBit(),
+                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
+                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
+            )
+            if self.controlled is not None
+            else Signature.build_from_dtypes(
+                x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
+                phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
+            )
         )
 
     @cached_property
@@ -171,6 +187,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if self.controlled is not None:
+            return [2], [2] * self.x_bitsize, [2] * self.phase_bitsize
         return [2] * self.x_bitsize, [2] * self.phase_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
@@ -183,21 +201,57 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
-    def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
+    def apply(self, *args) -> Union[int, Iterable[int]]:
+        if self.controlled is not None:
+            ctrl, x, phase_grad = args
+            out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
+            return out['ctrl'], out['x'], out['phase_grad']
+
+        x, phase_grad = args
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
-    def on_classical_vals(self, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
+        x, phase_grad = kwargs['x'], kwargs['phase_grad']
+        if self.controlled is not None:
+            ctrl = kwargs['ctrl']
+            if ctrl == self.controlled:
+                phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (
+                    2**self.phase_bitsize
+                )
+            else:
+                phase_grad_out = phase_grad
+            return {'ctrl': ctrl, 'x': x, 'phase_grad': phase_grad_out}
+
         phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (2**self.phase_bitsize)
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toffoli = self.phase_bitsize - 2
+        if self.controlled is not None:
+            return {(Toffoli(), 2 * num_toffoli)}
+
         return {(Toffoli(), num_toffoli)}
 
     def _t_complexity_(self) -> 'TComplexity':
         ((toffoli, n),) = self.bloq_counts().items()
         return n * toffoli.t_complexity()
+
+    def adjoint(self) -> 'Bloq':
+        return AddIntoPhaseGrad(
+            self.x_bitsize,
+            self.phase_bitsize,
+            self.right_shift,
+            sign=-1 * self.sign,
+            controlled=self.controlled,
+        )
+
+    def __pow__(self, power):
+        if power == 1:
+            return self
+        if power == -1:
+            return self.adjoint()
+        raise NotImplementedError("AddIntoPhaseGrad.__pow__ defined only for powers +1/-1.")
 
     def add_my_tensors(
         self,
