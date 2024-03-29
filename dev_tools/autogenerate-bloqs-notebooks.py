@@ -52,14 +52,7 @@ import qualtran.bloqs.basic_gates.rotation_test
 
 SOURCE_DIR = get_git_root() / 'qualtran/'
 
-NOTEBOOK_SPECS: List[NotebookSpec] = [
-    NotebookSpec(
-        title='Basic Gates',
-        module=qualtran.bloqs.basic_gates,
-        gate_specs=[],
-        directory=f'{SOURCE_DIR}/bloqs/basic_gates',
-    )
-]
+NOTEBOOK_SPECS: List[NotebookSpec] = []
 
 
 def render_notebooks():
