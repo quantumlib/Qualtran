@@ -67,7 +67,7 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
             BloqNbSpec(qualtran.bloqs.basic_gates.rotation_test._make_Rz),
             BloqNbSpec(qualtran.bloqs.basic_gates.hadamard_test._make_Hadamard),
         ],
-        directory=f'{SOURCE_DIR}/bloqs',
+        directory=f'{SOURCE_DIR}/bloqs/basic_gates',
     )
 ]
 
