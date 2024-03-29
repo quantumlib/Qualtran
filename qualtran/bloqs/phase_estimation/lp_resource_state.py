@@ -33,7 +33,6 @@ from qualtran.bloqs.basic_gates import (
     ZPowGate,
 )
 from qualtran.bloqs.mcmt import MultiControlPauli
-from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
