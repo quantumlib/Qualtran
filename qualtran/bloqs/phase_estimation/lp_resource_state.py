@@ -22,7 +22,16 @@ import numpy as np
 from numpy._typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Register, Side, Signature
-from qualtran.bloqs.basic_gates import CZPowGate, Hadamard, OnEach, Ry, Rz, XGate, ZPowGate
+from qualtran.bloqs.basic_gates import (
+    CZPowGate,
+    GlobalPhase,
+    Hadamard,
+    OnEach,
+    Ry,
+    Rz,
+    XGate,
+    ZPowGate,
+)
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -154,7 +163,7 @@ class LPResourceState(GateWithRegisters):
             (Ry(angle=flag_angle), 3),
             (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
             (XGate(), 4),
-            (CirqGateAsBloq(cirq.GlobalPhaseGate(1j)), 1),
+            (GlobalPhase(coefficient=1j), 1),
             (CZPowGate(), 1),
         }
 
