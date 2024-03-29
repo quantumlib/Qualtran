@@ -33,8 +33,8 @@ from .jupyter_autogen import (
     _init_notebook,
     _K_CQ_AUTOGEN,
     _md_nbnode,
-    get_markdown_docstring_lines,
 )
+from .parse_docstrings import get_markdown_docstring_lines
 
 
 @frozen(kw_only=True)
