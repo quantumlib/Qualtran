@@ -50,7 +50,7 @@ from typing import Iterable, List
 
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
-from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
+from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting

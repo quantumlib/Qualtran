@@ -11,32 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-"""Tests for jupyter autogen.
-
-This module is used as a mock NotebookSpec module, so this docstring shows up in the tests.
-"""
 import inspect
-
-import numpy as np
 
 import qualtran.bloqs.for_testing
 from qualtran import bloq_example, BloqDocSpec
 from qualtran.bloqs.for_testing.atom import TestAtom
 
-from .jupyter_autogen_v2 import (
+from .jupyter_autogen import (
     _get_bloq_example_source_lines,
     _MarkdownCell,
     _PyCell,
     get_cells,
     NotebookSpecV2,
 )
-
-
-def _make_QROM():
-    from qualtran.bloqs.data_loading.qrom import QROM
-
-    return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
 
 
 def test_notebook_spec():
