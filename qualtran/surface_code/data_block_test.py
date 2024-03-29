@@ -12,3 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
+import pytest
+
+from qualtran.surface_code import FastDataBlock
+
+
+@pytest.mark.parametrize(
+    ["logical_qubits", "logical_qubits_with_routing"], [[100, 230], [1318, 2740], [12581, 25481]]
+)
+def test_fast_block(logical_qubits, logical_qubits_with_routing):
+    assert FastDataBlock.grid_size(n_algo_qubits=logical_qubits) == logical_qubits_with_routing
