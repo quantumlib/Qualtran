@@ -61,6 +61,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         (https://arxiv.org/abs/1805.03662).
             Babbush et. al. (2018). Figure 1.
     """
+
     select: SelectOracle
     prepare: PrepareOracle
     control_val: Optional[int] = None
@@ -89,7 +90,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
-        return ReflectionUsingPrepare(self.prepare, control_val=self.control_val)
+        return ReflectionUsingPrepare(self.prepare, control_val=self.control_val, global_phase=-1)
 
     def decompose_from_registers(
         self,

@@ -15,7 +15,6 @@
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 import abc
 import itertools
-from collections import defaultdict
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
@@ -50,6 +49,9 @@ from qualtran._infra.gate_with_registers import (
 from qualtran._infra.quantum_graph import DanglingT
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
+from qualtran.simulation.tensor._tensor_data_manipulation import (
+    tensor_data_from_unitary_and_signature,
+)
 
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
@@ -198,37 +200,7 @@ def _add_my_tensors_from_gate(
             f"CirqGateAsBloq.add_my_tensors is currently supported only for unitary gates. "
             f"Found {gate}."
         )
-    unitary_shape = []
-    reg_to_idx = defaultdict(list)
-    for reg in signature:
-        start = len(unitary_shape)
-        for i in range(int(np.prod(reg.shape))):
-            reg_to_idx[reg.name].append(start + i)
-            unitary_shape.append(2**reg.bitsize)
-
-    unitary_shape = (*unitary_shape, *unitary_shape)
-    unitary = cirq.unitary(gate).reshape(unitary_shape)
-    idx: List[Union[int, slice]] = [slice(x) for x in unitary_shape]
-    n = len(unitary_shape) // 2
-    for reg in signature:
-        if reg.side == Side.LEFT:
-            for i in reg_to_idx[reg.name]:
-                # LEFT register ends, extract right subspace that's equivalent to 0.
-                idx[i] = 0
-        if reg.side == Side.RIGHT:
-            for i in reg_to_idx[reg.name]:
-                # Right register begins, extract the left subspace that's equivalent to 0.
-                idx[i + n] = 0
-    unitary = unitary[tuple(idx)]
-    new_shape = tuple(
-        [
-            *itertools.chain.from_iterable(
-                (2**reg.bitsize,) * int(np.prod(reg.shape))
-                for reg in [*signature.rights(), *signature.lefts()]
-            )
-        ]
-    )
-    assert unitary.shape == new_shape
+    unitary = tensor_data_from_unitary_and_signature(cirq.unitary(gate), signature)
     incoming_list = [
         *itertools.chain.from_iterable(
             [np.array(incoming[reg.name]).flatten() for reg in signature.lefts()]
@@ -343,6 +315,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         CNOT,
         CSwap,
         CZPowGate,
+        GlobalPhase,
         Hadamard,
         Rx,
         Ry,
@@ -407,6 +380,9 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         return CIRQ_TYPE_TO_BLOQ_MAP[gate.__class__](
             exponent=gate.exponent, global_shift=gate.global_shift
         )
+
+    if isinstance(gate, cirq.GlobalPhaseGate):
+        return GlobalPhase(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
     return CirqGateAsBloq(gate)

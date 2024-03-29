@@ -98,6 +98,44 @@ def test_add_into_phase_grad():
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
 
 
+@pytest.mark.parametrize('controlled', [0, 1])
+def test_add_into_phase_grad_controlled(controlled: int):
+    from qualtran.bloqs.rotations.phase_gradient import _fxp
+
+    x_bit, phase_bit = 4, 7
+    bloq = AddIntoPhaseGrad(x_bit, phase_bit, controlled=controlled)
+    basis_map = {}
+    num_bits = 1 + x_bit + phase_bit
+    expected_unitary = np.zeros((2**num_bits, 2**num_bits))
+    for control in range(2):
+        for x in range(2**x_bit):
+            for phase_grad in range(2**phase_bit):
+                phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
+                x_fxp = _fxp(x / 2**x_bit, x_bit).like(phase_fxp)
+                if control == controlled:
+                    phase_grad_out = int((phase_fxp + x_fxp).astype(float) * 2**phase_bit)
+                else:
+                    phase_grad_out = phase_grad
+                # Test Bloq style classical simulation.
+                assert bloq.call_classically(ctrl=control, x=x, phase_grad=phase_grad) == (
+                    control,
+                    x,
+                    phase_grad_out,
+                )
+                # Prepare basis states mapping for cirq-style simulation.
+                input_state = int(
+                    f'{control}' + f'{x:0{x_bit}b}' + f'{phase_grad:0{phase_bit}b}', 2
+                )
+                output_state = int(
+                    f'{control}' + f'{x:0{x_bit}b}' + f'{phase_grad_out:0{phase_bit}b}', 2
+                )
+                expected_unitary[output_state, input_state] = 1
+    # Test cirq style simulation.
+    assert len(basis_map) == len(set(basis_map.values()))
+    circuit = cirq.Circuit(bloq.on(*cirq.LineQubit.range(num_bits)))
+    np.testing.assert_allclose(circuit.unitary(), expected_unitary, atol=1e-8)
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize(
     'bloq',

@@ -13,14 +13,24 @@
 #  limitations under the License.
 
 import cirq
+import numpy as np
 
-from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
+from qualtran.bloqs.basic_gates.global_phase import _global_phase, GlobalPhase
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
-def test_known_decomposition_empty_unitary():
-    class DecomposeEmptyList(cirq.testing.SingleQubitGate):
-        def _decompose_(self, _):
-            return []
+def test_unitary():
+    random_state = np.random.RandomState(2)
 
-    gate = DecomposeEmptyList()
-    assert _decompose_once_considering_known_decomposition(gate) == []
+    for alpha in random_state.random(size=20):
+        coefficient = np.exp(2j * np.pi * alpha)
+        bloq = GlobalPhase(coefficient)
+        np.testing.assert_allclose(cirq.unitary(bloq), coefficient)
+
+
+def test_t_complexity():
+    assert GlobalPhase(1j).t_complexity() == TComplexity()
+
+
+def test_global_phase(bloq_autotester):
+    bloq_autotester(_global_phase)

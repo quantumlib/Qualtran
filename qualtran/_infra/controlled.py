@@ -29,6 +29,7 @@ from typing import (
 import attrs
 import cirq
 import numpy as np
+import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -250,7 +251,8 @@ class AddControlledT(Protocol):
 
     def __call__(
         self, bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
-    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]: ...
+    ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+        ...
 
 
 def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
@@ -327,13 +329,16 @@ class Controlled(Bloq):
         return _get_nice_ctrl_reg_names(reg_names, n)
 
     @cached_property
-    def signature(self) -> 'Signature':
-        # Prepend register(s) corresponding to `ctrl_spec`.
-        ctrl_regs = tuple(
+    def ctrl_regs(self) -> Tuple[Register, ...]:
+        return tuple(
             Register(name=self.ctrl_reg_names[i], dtype=qdtype, shape=shape, side=Side.THRU)
             for i, (qdtype, shape) in enumerate(self.ctrl_spec.activation_function_dtypes())
         )
-        return Signature(ctrl_regs + tuple(self.subbloq.signature))
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        # Prepend register(s) corresponding to `ctrl_spec`.
+        return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         # Use subbloq's decomposition but wire up the additional ctrl_soqs.
@@ -375,6 +380,35 @@ class Controlled(Bloq):
             return rets
 
         return vals
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran._infra.composite_bloq import _flatten_soquet_collection
+        from qualtran.simulation.tensor._tensor_data_manipulation import (
+            active_space_for_ctrl_spec,
+            eye_tensor_for_signature,
+            tensor_shape_from_signature,
+        )
+
+        # Create an identity tensor corresponding to the signature of current Bloq
+        data = eye_tensor_for_signature(self.signature)
+        # Verify it has the right shape
+        in_ind = _flatten_soquet_collection(incoming[reg.name] for reg in self.signature.lefts())
+        out_ind = _flatten_soquet_collection(outgoing[reg.name] for reg in self.signature.rights())
+        assert data.shape == tuple(2**soq.reg.bitsize for ind in [out_ind, in_ind] for soq in ind)
+        # Figure out the ctrl indexes for which the ctrl is "active"
+        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
+        # Put the subbloq tensor at indices where ctrl is active.
+        subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
+        data[active_idx] = self.subbloq.tensor_contract().reshape(subbloq_shape)
+        # Add the data to the tensor network.
+        tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.short_name(), tag]))
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.name not in self.ctrl_reg_names:
