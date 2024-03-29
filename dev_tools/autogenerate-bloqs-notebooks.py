@@ -60,7 +60,6 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         module=qualtran.bloqs.basic_gates,
         gate_specs=[
             BloqNbSpec(qualtran.bloqs.basic_gates.x_basis_test._make_plus_state),
-            BloqNbSpec(qualtran.bloqs.basic_gates.z_basis_test._make_zero_state),
             BloqNbSpec(qualtran.bloqs.basic_gates.rotation_test._make_Rz),
         ],
         directory=f'{SOURCE_DIR}/bloqs/basic_gates',

@@ -130,6 +130,20 @@ BASIC_GATES: List[NotebookSpecV2] = [
         ],
     ),
     NotebookSpecV2(
+        title='States and Effects',
+        module=qualtran.bloqs.basic_gates.z_basis,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.z_basis._ZERO_STATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._ZERO_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.z_basis._ONE_STATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._ONE_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.z_basis._INT_STATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._INT_EFFECT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/basic_gates',
+        path_stem='states_and_effects',
+    ),
+    NotebookSpecV2(
         title='Swap Network',
         module=qualtran.bloqs.swap_network,
         bloq_specs=[
