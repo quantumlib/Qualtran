@@ -48,7 +48,6 @@ from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import BloqNbSpec, NotebookSpec, render_notebook
 
 import qualtran.bloqs.arithmetic
-import qualtran.bloqs.basic_gates.cnot_test
 import qualtran.bloqs.basic_gates.rotation_test
 import qualtran.bloqs.basic_gates.x_basis_test
 import qualtran.bloqs.basic_gates.z_basis_test
@@ -60,7 +59,6 @@ NOTEBOOK_SPECS: List[NotebookSpec] = [
         title='Basic Gates',
         module=qualtran.bloqs.basic_gates,
         gate_specs=[
-            BloqNbSpec(qualtran.bloqs.basic_gates.cnot_test._make_CNOT),
             BloqNbSpec(qualtran.bloqs.basic_gates.x_basis_test._make_plus_state),
             BloqNbSpec(qualtran.bloqs.basic_gates.z_basis_test._make_zero_state),
             BloqNbSpec(qualtran.bloqs.basic_gates.rotation_test._make_Rz),
