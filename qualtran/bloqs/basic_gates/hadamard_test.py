@@ -20,11 +20,6 @@ from qualtran.bloqs.basic_gates import Hadamard, OneState
 from qualtran.bloqs.basic_gates.hadamard import _hadamard
 
 
-def _make_Hadamard():
-    from qualtran.bloqs.basic_gates import Hadamard
-
-    return Hadamard()
-
 
 def test_to_cirq():
     bb = BloqBuilder()
