@@ -94,7 +94,7 @@ def _get_bloq_example_source_lines(bloq_ex: 'BloqExample') -> List[str]:
     #   - Non-greedy match any character until we get to the end of the type annotation
     ma = re.match(r'^.*?def .*?\) -> .*?:\n', source, flags=re.MULTILINE | re.DOTALL)
     if ma is None:
-        raise ValueError("The bloq example function source was not in the form we expected.")
+        raise ValueError(f"{bloq_ex.name} function source was not in the form we expected.")
     def_start, body_start = ma.span()
     assert def_start == 0, 'The regex failed to trim off the function definition'
     lines = source[body_start:].splitlines()
