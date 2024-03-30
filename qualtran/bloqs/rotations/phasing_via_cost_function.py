@@ -65,8 +65,8 @@ class PhasingViaCostFunction(Bloq):
             allocated by `cost_eval_oracle` as a THRU input.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391),
-            Appendix C: Oracles for phasing by cost function
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix C: Oracles for phasing by cost function
     """
     cost_eval_oracle: Bloq
     phase_oracle: QvrInterface

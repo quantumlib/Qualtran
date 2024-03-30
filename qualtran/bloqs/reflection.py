@@ -22,8 +22,9 @@ import numpy as np
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import Toffoli
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.drawing import Circle, WireSymbol
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -40,8 +41,8 @@ class Reflection(Bloq):
         bitsizes: The bitsizes of each of the registers to reflect about.
         cvs: The control values for each register.
     """
-    bitsizes: Tuple[int]
-    cvs: Tuple[int]
+    bitsizes: Tuple[int, ...] = attrs.field(converter=tuple)
+    cvs: Tuple[int] = attrs.field(converter=tuple)
 
     def __attrs_post_init__(self):
         if len(self.bitsizes) != len(self.cvs):
@@ -68,9 +69,8 @@ class Reflection(Bloq):
         # the last qubit is used as the target for the Z
         mcp = MultiControlPauli(cvs=unpacked_cvs[:-1], target_gate=cirq.Z)
         split_regs = np.concatenate([bb.split(r) for r in regs.values()])
-        ctrls, target = bb.add(mcp, controls=bb.join(split_regs[:-1]), target=split_regs[-1])
-        splt_ctrls = bb.split(ctrls)
-        join_regs = np.concatenate([splt_ctrls, [target]])
+        ctrls, target = bb.add(mcp, controls=split_regs[:-1], target=split_regs[-1])
+        join_regs = np.concatenate([ctrls, [target]])
         out_regs = {}
         start = 0
         for i, b in enumerate(self.bitsizes):
@@ -83,7 +83,7 @@ class Reflection(Bloq):
         return {(Toffoli(), nbits - 1)}
 
 
-@bloq_example
+@bloq_example(generalizer=ignore_split_join)
 def _reflection() -> Reflection:
     reflection = Reflection(bitsizes=(2, 3, 1), cvs=(0, 1, 1))
     return reflection

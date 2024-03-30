@@ -15,9 +15,11 @@ import inspect
 import sys
 from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
 
+import cirq
+
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 if TYPE_CHECKING:
     import sympy
@@ -30,22 +32,24 @@ def _get_all_rotation_types() -> Tuple['_HasEps', ...]:
     """Returns all classes defined in bloqs.basic_gates which have an attribute `eps`."""
     import qualtran.bloqs.basic_gates  # pylint: disable=unused-import
 
+    bloqs_to_exclude = [qualtran.bloqs.basic_gates.GlobalPhase]
+
     return tuple(
         v
-        for (k, v) in inspect.getmembers(sys.modules['qualtran.bloqs.basic_gates'], inspect.isclass)
-        if hasattr(v, 'eps')
+        for (_, v) in inspect.getmembers(sys.modules['qualtran.bloqs.basic_gates'], inspect.isclass)
+        if hasattr(v, 'eps') and v not in bloqs_to_exclude
     )
 
 
 def t_counts_from_sigma(
     sigma: Dict['Bloq', Union[int, 'sympy.Expr']],
     rotation_types: Optional[Tuple['_HasEps', ...]] = None,
-) -> SymbolicFloat:
+) -> SymbolicInt:
     """Aggregates T-counts from a sigma dictionary by summing T-costs for all rotation bloqs."""
     if rotation_types is None:
         rotation_types = _get_all_rotation_types()
     ret = sigma.get(TGate(), 0)
     for bloq, counts in sigma.items():
-        if isinstance(bloq, rotation_types):
+        if isinstance(bloq, rotation_types) and not cirq.has_stabilizer_effect(bloq):
             ret += TComplexity.rotation_cost(bloq.eps) * counts
     return ret

@@ -22,7 +22,9 @@ from qualtran import Bloq, bloq_example, QUInt, Signature
 from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.black_boxes import QROAM
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -50,8 +52,8 @@ class InnerPrepareDoubleFactorization(Bloq):
         p: Register for inner state preparation.
 
     Refererences:
-        [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://arxiv.org/abs/2011.03494).  Step 3. Page 52.
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor Hypercontraction](https://arxiv.org/abs/2011.03494).
+        Step 3. Page 52.
     """
 
     num_aux: int

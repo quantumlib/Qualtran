@@ -16,9 +16,17 @@ pydot
 ipython
 matplotlib
 ipywidgets
+plotly
+
+# ui
+dash
 
 # quimb simulation
 quimb
+
+#qsharp resource estimator interop
+qsharp
+qsharp-widgets
 
 # serialization
 protobuf

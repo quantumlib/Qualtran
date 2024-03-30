@@ -26,6 +26,7 @@ from qualtran import (
     Bloq,
     Connection,
     DecomposeNotImplementedError,
+    DecomposeTypeError,
     LeftDangle,
     Register,
     RightDangle,
@@ -77,6 +78,7 @@ class BloqAsCirqGate(cirq.Gate):
     """
 
     def __init__(self, bloq: Bloq):
+        assert not isinstance(bloq, cirq.Gate)
         for _, regs in bloq.signature.groups():
             if len(regs) > 1:
                 raise ValueError(
@@ -136,12 +138,23 @@ class BloqAsCirqGate(cirq.Gate):
             return _cirq_style_decompose_from_decompose_bloq(
                 bloq=self.bloq, quregs=quregs, context=context
             )
-        except DecomposeNotImplementedError:
+        except (DecomposeNotImplementedError, DecomposeTypeError):
             pass
         return NotImplemented
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
         return self._decompose_with_context_(qubits)
+
+    def _unitary_(self):
+        if (
+            all(reg.side == Side.THRU for reg in self.signature)
+            and not self.bloq.supports_decompose_bloq()
+        ):
+            tensor = self.bloq.tensor_contract()
+            if tensor.ndim != 2:
+                return NotImplemented
+            return tensor
+        return NotImplemented
 
     def on_registers(
         self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
@@ -160,8 +173,16 @@ class BloqAsCirqGate(cirq.Gate):
         if power == 1:
             return self
         if power == -1:
-            return BloqAsCirqGate(self.bloq.adjoint())
-        raise ValueError(f"Bad power: {power}")
+            return self.bloq.adjoint()
+
+        from qualtran.bloqs.util_bloqs import Power
+
+        bloq = self.bloq if power > 0 else self.bloq.adjoint()
+
+        try:
+            return BloqAsCirqGate(Power(bloq, abs(power)))
+        except ValueError as e:
+            raise ValueError(f"Bad power {power}") from e
 
     def __eq__(self, other):
         if not isinstance(other, BloqAsCirqGate):
@@ -296,7 +317,7 @@ def _wire_symbol_to_cirq_diagram_info(
             if ws.filled:
                 return '@'
             else:
-                return '@(0)'
+                return '(0)'
         if isinstance(ws, (TextBox, RarrowTextBox, LarrowTextBox)):
             return ws.text
         if isinstance(ws, ModPlus):

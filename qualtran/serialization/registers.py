@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Iterable, List
+from typing import Iterable, Tuple
 
 from qualtran import Register, Side
 from qualtran.protos import registers_pb2
@@ -24,8 +24,8 @@ def registers_to_proto(registers: Iterable[Register]) -> registers_pb2.Registers
     return registers_pb2.Registers(registers=[register_to_proto(reg) for reg in registers])
 
 
-def registers_from_proto(registers: registers_pb2.Registers) -> List[Register]:
-    return [register_from_proto(reg) for reg in registers.registers]
+def registers_from_proto(registers: registers_pb2.Registers) -> Tuple[Register, ...]:
+    return tuple(register_from_proto(reg) for reg in registers.registers)
 
 
 def register_to_proto(register: Register) -> registers_pb2.Register:

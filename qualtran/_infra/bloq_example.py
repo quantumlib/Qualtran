@@ -39,7 +39,9 @@ class BloqExample:
     _func: Callable[[], Bloq] = field(repr=False, hash=False)
     name: str
     bloq_cls: Type[Bloq]
-    generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
+    generalizer: Callable[[Bloq], Optional[Bloq]] = field(
+        converter=lambda x: tuple(x) if isinstance(x, Sequence) else x, default=lambda x: x
+    )
 
     def make(self) -> Bloq:
         """Make the bloq."""
@@ -114,7 +116,7 @@ def _to_tuple(T: Type):
     return _t
 
 
-@frozen
+@frozen(kw_only=True)
 class BloqDocSpec:
     """A collection of bloq examples and specifications for documenting a bloq class.
 
@@ -139,9 +141,15 @@ class BloqDocSpec:
     """
 
     bloq_cls: Type[Bloq]
-    import_line: str
     examples: Sequence[BloqExample] = field(converter=_to_tuple(BloqExample), factory=tuple)
+    import_line: str = field()
     call_graph_example: Union[BloqExample, None] = field()
+
+    @import_line.default
+    def _import_line_default(self) -> str:
+        pkg = '.'.join(self.bloq_cls.__module__.split('.')[:-1])
+        line = f'from {pkg} import {self.bloq_cls.__name__}'
+        return line
 
     @call_graph_example.default
     def _call_graph_example_default(self) -> Union[BloqExample, None]:
