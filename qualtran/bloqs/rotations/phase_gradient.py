@@ -27,6 +27,7 @@ from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -85,8 +86,14 @@ class PhaseGradientUnitary(GateWithRegisters):
         return PhaseGradientUnitary(self.bitsize, self.exponent * power, self.controlled, self.eps)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        rot_bloq = CZPowGate if self.controlled else ZPowGate
-        return {(rot_bloq(exponent=1, eps=self.eps / self.bitsize), self.bitsize)}
+        exp, eps = self.exponent / (2 ** (self.bitsize - 1)), self.eps / self.bitsize
+        rot_bloq = (CZPowGate if self.controlled else ZPowGate)(exponent=exp, eps=eps)
+        if is_symbolic(self.bitsize):
+            return {(rot_bloq, self.bitsize)}
+        else:
+            return {
+                (attrs.evolve(rot_bloq, exponent=exp * (2**i)), 1) for i in range(self.bitsize)
+            }
 
 
 @attrs.frozen

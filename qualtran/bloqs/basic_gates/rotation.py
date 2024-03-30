@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Protocol, Set
+from typing import Protocol
 
 import cirq
 import numpy as np
@@ -134,9 +134,6 @@ class ZZPowGate(CirqGateAsBloqBase):
         yield CZPowGate(
             exponent=-2 * self.exponent, global_shift=-self.global_shift / 2, eps=self.eps / 3
         )(*q)
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(rotations=1)
 
 
 @frozen
