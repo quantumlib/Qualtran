@@ -12,24 +12,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 import cirq
 import numpy as np
 import pytest
 import sympy
-from attrs import define, frozen
+from attrs import define, field, frozen
 from cirq.testing import random_unitary
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran.bloqs.generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
     SU2RotationGate,
 )
+from qualtran.resource_counting import SympySymbolAllocator
 
 
 def assert_angles_almost_equal(
@@ -99,6 +100,7 @@ def test_complementary_polynomial(degree: int):
         check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
 def test_real_polynomial_has_real_complementary_polynomial(degree: int):
     random_state = np.random.RandomState(42)
@@ -113,12 +115,14 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
 @frozen
 class RandomGate(GateWithRegisters):
     bitsize: int
-    matrix: Tuple[Tuple[int, ...], ...]
+    matrix: Tuple[Tuple[complex, ...], ...] = field(
+        converter=lambda mat: tuple(tuple(row) for row in mat)
+    )
 
     @staticmethod
     def create(bitsize: int, *, random_state=None) -> 'RandomGate':
         matrix = random_unitary(2**bitsize, random_state=random_state)
-        return RandomGate(bitsize, tuple(tuple(x) for x in matrix.tolist()))
+        return RandomGate(bitsize, matrix)
 
     @property
     def signature(self) -> Signature:
@@ -127,11 +131,21 @@ class RandomGate(GateWithRegisters):
     def _unitary_(self):
         return np.array(self.matrix)
 
+    def adjoint(self) -> 'RandomGate':
+        return RandomGate(self.bitsize, np.conj(self.matrix).T)
 
-def evaluate_polynomial_of_matrix(P: Sequence[complex], U: NDArray) -> NDArray:
+    def __pow__(self, power):
+        if power == -1:
+            return self.adjoint()
+        return NotImplemented
+
+
+def evaluate_polynomial_of_matrix(
+    P: Sequence[complex], U: NDArray, *, negative_power: int = 0
+) -> NDArray:
     assert U.ndim == 2 and U.shape[0] == U.shape[1]
 
-    pow_U = np.identity(U.shape[0], dtype=U.dtype)
+    pow_U = np.linalg.matrix_power(U.conj().T, negative_power)
     result = np.zeros(U.shape, dtype=U.dtype)
 
     for c in P:
@@ -146,17 +160,30 @@ def assert_matrices_almost_equal(A: NDArray, B: NDArray):
     assert np.linalg.norm(A - B) <= 1e-5
 
 
-def verify_generalized_qsp(U: GateWithRegisters, P: Sequence[complex]):
+def verify_generalized_qsp(
+    U: GateWithRegisters,
+    P: Sequence[complex],
+    Q: Optional[Sequence[complex]] = None,
+    *,
+    negative_power: int = 0,
+):
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
-    gqsp_U = GeneralizedQSP(U, P)
+    if Q is None:
+        gqsp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
+    else:
+        gqsp_U = GeneralizedQSP(U, P, Q, negative_power=negative_power)
     result_unitary = cirq.unitary(gqsp_U)
 
-    expected_top_left = evaluate_polynomial_of_matrix(P, input_unitary)
+    expected_top_left = evaluate_polynomial_of_matrix(
+        P, input_unitary, negative_power=negative_power
+    )
     actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left)
 
-    expected_bottom_left = evaluate_polynomial_of_matrix(gqsp_U.Q, input_unitary)
+    expected_bottom_left = evaluate_polynomial_of_matrix(
+        gqsp_U.Q, input_unitary, negative_power=negative_power
+    )
     actual_bottom_left = result_unitary[N:, :N]
     assert_matrices_almost_equal(expected_bottom_left, actual_bottom_left)
 
@@ -176,13 +203,44 @@ def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree
 @pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 50, 100, 120])
-def test_generalized_qsp_with_complex_poly_on_random_unitaries(bitsize: int, degree: int):
+@pytest.mark.parametrize("negative_power", [0, 1, 2])
+def test_generalized_qsp_with_complex_poly_on_random_unitaries(
+    bitsize: int, degree: int, negative_power: int
+):
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
         U = RandomGate.create(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state)
-        verify_generalized_qsp(U, P)
+        verify_generalized_qsp(U, P, negative_power=negative_power)
+
+
+@pytest.mark.parametrize("negative_power", [0, 1, 2])
+def test_call_graph(negative_power: int):
+    random_state = np.random.RandomState(42)
+
+    ssa = SympySymbolAllocator()
+    theta = ssa.new_symbol("theta")
+    phi = ssa.new_symbol("phi")
+    lambd = ssa.new_symbol("lambda")
+    arbitrary_rotation = SU2RotationGate(theta, phi, lambd)
+
+    def catch_rotations(bloq: Bloq) -> Bloq:
+        if isinstance(bloq, SU2RotationGate):
+            return arbitrary_rotation
+        return bloq
+
+    U = RandomGate.create(1, random_state=random_state)
+    P = (0.5, 0, 0.5)
+    gsqp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
+
+    g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
+
+    expected_counts = {U.controlled(control_values=[0]): 3 - negative_power, arbitrary_rotation: 3}
+    if negative_power > 0:
+        expected_counts[U.adjoint().controlled()] = negative_power
+
+    assert sigma == expected_counts
 
 
 @define(slots=False)
