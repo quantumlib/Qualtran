@@ -21,7 +21,6 @@ from qualtran import Bloq, bloq_example, GateWithRegisters, QFxp, Register, Sign
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.resource_counting.generalizers import cirq_to_bloqs
 from qualtran.resource_counting.symbolic_counting_utils import (
     ceil,
     is_symbolic,
