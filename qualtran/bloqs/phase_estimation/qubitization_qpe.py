@@ -17,10 +17,11 @@ from typing import Set, Tuple
 import attrs
 import cirq
 
-from qualtran import Bloq, GateWithRegisters, QFxp, Register, Signature
+from qualtran import Bloq, bloq_example, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.resource_counting.generalizers import cirq_to_bloqs
 from qualtran.resource_counting.symbolic_counting_utils import (
     ceil,
     is_symbolic,
@@ -141,7 +142,7 @@ class QubitizationQPE(GateWithRegisters):
         yield self.ctrl_state_prep.on(*qpre_reg)
         yield walk_controlled.on_registers(**walk_regs, control=qpre_reg[-1])
         walk = self.walk**2
-        for i in range(self.m_bits - 2, 0, -1):
+        for i in range(self.m_bits - 2, -1, -1):
             yield reflect_controlled.on_registers(control=qpre_reg[i], **reflect_regs)
             yield walk.on_registers(**walk_regs)
             walk = walk**2
@@ -150,13 +151,49 @@ class QubitizationQPE(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Assumes self.unitary is not fast forwardable.
-        from qualtran.cirq_interop import BloqAsCirqGate
-
         M = 2**self.m_bits
         return {
             (self.ctrl_state_prep, 1),
-            (BloqAsCirqGate(self.walk.reflect.controlled(control_values=[0])), M - 2),
-            (BloqAsCirqGate(self.walk.controlled(control_values=[1])), 1),
+            (self.walk.controlled(control_values=[1]), 1),
+            (self.walk.reflect.controlled(control_values=[0]), 2 * (self.m_bits - 1)),
             (self.walk, M - 2),
             (self.qft_inv, 1),
         }
+
+
+@bloq_example
+def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
+    import numpy as np
+
+    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.phase_estimation import QubitizationQPE
+
+    x_dim, y_dim, t = 2, 2, 2
+    mu = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+
+    algo_eps = t / 100
+    N = x_dim * y_dim * 2
+    qlambda = 2 * N * t + (N * mu) // 2
+    qpe_eps = algo_eps / (qlambda * np.sqrt(2))
+    qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    return qubitization_qpe_hubbard_model
+
+
+@bloq_example
+def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
+    import numpy as np
+
+    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+    from qualtran.bloqs.phase_estimation import QubitizationQPE
+
+    x_dim, y_dim, t = 20, 20, 20
+    mu = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+
+    algo_eps = t / 100
+    N = x_dim * y_dim * 2
+    qlambda = 2 * N * t + (N * mu) // 2
+    qpe_eps = algo_eps / (qlambda * np.sqrt(2))
+    qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    return qubitization_qpe_hubbard_model

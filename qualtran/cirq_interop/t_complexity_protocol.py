@@ -125,9 +125,11 @@ def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
 
 def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
+    from qualtran.resource_counting.generalizers import cirq_to_bloqs
+
     if not isinstance(stc, Bloq):
         return None
-    _, sigma = stc.call_graph(max_depth=1)
+    _, sigma = stc.call_graph(max_depth=1, generalizer=cirq_to_bloqs)
     if sigma == {stc: 1}:
         # No decomposition found.
         return None
