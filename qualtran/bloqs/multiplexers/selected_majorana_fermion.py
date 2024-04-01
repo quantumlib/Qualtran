@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Set, Tuple, Union
 
 import attrs
 import cirq
@@ -23,7 +23,9 @@ from numpy.typing import NDArray
 from qualtran import QAny, QBit, Register
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import total_bits
+from qualtran.bloqs.basic_gates import CNOT, CZPowGate
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
+from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
 
 
 @attrs.frozen
@@ -120,3 +122,6 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         yield cirq.CNOT(control, *accumulator)
         yield self.target_gate(target[target_idx]).controlled_by(control)
         yield cirq.CZ(*accumulator, target[target_idx])
+
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
+        return {(CNOT(), 1), (_cirq_gate_to_bloq(self.target_gate), 1), (CZPowGate(), 1)}
