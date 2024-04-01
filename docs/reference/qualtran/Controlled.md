@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L206-L323">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L280-L440">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -51,6 +51,9 @@ which may return a tailored Bloq that is controlled in the desired way.
 `ctrl_reg_names`<a id="ctrl_reg_names"></a>
 : &nbsp;
 
+`ctrl_regs`<a id="ctrl_regs"></a>
+: &nbsp;
+
 `ctrl_spec`<a id="ctrl_spec"></a>
 : &nbsp;
 
@@ -75,7 +78,7 @@ which may return a tailored Bloq that is controlled in the desired way.
 
 <h3 id="make_ctrl_system"><code>make_ctrl_system</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L224-L244">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L298-L318">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@classmethod</code>
@@ -90,7 +93,7 @@ See <a href="../qualtran/Bloq.html#get_ctrl_system"><code>Bloq.get_ctrl_system</
 
 <h3 id="decompose_bloq"><code>decompose_bloq</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L266-L287">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L343-L364">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_bloq() -> 'CompositeBloq'
@@ -118,7 +121,7 @@ Raises
 
 <h3 id="build_call_graph"><code>build_call_graph</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L289-L293">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L366-L370">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>build_call_graph(
@@ -142,7 +145,7 @@ the provided `SympySymbolAllocator`.
 
 <h3 id="on_classical_vals"><code>on_classical_vals</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L295-L305">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L372-L382">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_classical_vals(
@@ -177,9 +180,52 @@ Returns
 
 
 
+<h3 id="add_my_tensors"><code>add_my_tensors</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L384-L411">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>add_my_tensors(
+    tn: 'qtn.TensorNetwork',
+    tag: Any,
+    *,
+    incoming: Dict[str, 'SoquetT'],
+    outgoing: Dict[str, 'SoquetT']
+)
+</code></pre>
+
+Override this method to support native quimb simulation of this Bloq.
+
+This method is responsible for adding a tensor corresponding to the unitary, state, or
+effect of the bloq to the provided tensor network `tn`. Often, this method will add
+one tensor for a given Bloq, but some bloqs can be represented in a factorized form
+requiring the addition of more than one tensor.
+
+If this method is not overriden, the default implementation will try to use the bloq's
+decomposition to find a dense representation for this bloq.
+
+Args
+
+`tn`
+: The tensor network to which we add our tensor(s)
+
+`tag`
+: An arbitrary tag that must be forwarded to `qtn.Tensor`'s `tag` attribute.
+
+`incoming`
+: A mapping from register name to SoquetT to order left indices for
+  the tensor network.
+
+`outgoing`
+: A mapping from register name to SoquetT to order right indices for
+  the tensor network.
+
+
+
+
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L307-L314">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L413-L420">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(
@@ -199,7 +245,7 @@ attribute.
 
 <h3 id="pretty_name"><code>pretty_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L316-L317">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L422-L423">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>pretty_name() -> str
@@ -210,11 +256,55 @@ attribute.
 
 <h3 id="short_name"><code>short_name</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L319-L320">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L425-L426">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>short_name() -> str
 </code></pre>
+
+
+
+
+<h3 id="as_cirq_op"><code>as_cirq_op</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/controlled.py#L431-L440">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>as_cirq_op(
+    qubit_manager: 'cirq.QubitManager', **cirq_quregs
+) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]
+</code></pre>
+
+Override this method to support conversion to a Cirq operation.
+
+If this method is not overriden, the default implementation will wrap this bloq
+in a `BloqAsCirqGate` shim.
+
+Args
+
+`qubit_manager`
+: A `cirq.QubitManager` for allocating `cirq.Qid`s.
+
+`**cirq_quregs`
+: kwargs mapping from this bloq's left register names to an ndarray of
+  `cirq.Qid`. The final dimension of this array corresponds to the registers
+  `bitsize` size. Any additional dimensions come first and correspond to the
+  register `shape` sizes.
+
+
+
+
+Returns
+
+`op`
+: A cirq operation corresponding to this bloq acting on the provided cirq qubits or
+  None. This method should return None if and only if the bloq instance truly should
+  not be included in the Cirq circuit (e.g. for reshaping bloqs). A bloq with no cirq
+  equivalent should raise an exception instead.
+
+`cirq_quregs`
+: A mapping from this bloq's right register of the same format as the
+  `cirq_quregs` argument. The returned dictionary corresponds to the output qubits.
 
 
 

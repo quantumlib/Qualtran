@@ -15,3 +15,7 @@
 
 [`t_complexity(...)`](../../qualtran/cirq_interop/t_complexity_protocol/t_complexity.md): Returns the TComplexity.
 
+## Type Aliases
+
+[`SymbolicFloat`](../../qualtran/cirq_interop/t_complexity_protocol/SymbolicFloat.md)
+

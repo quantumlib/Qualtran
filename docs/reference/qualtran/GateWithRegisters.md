@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L155-L344">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L155-L368">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -164,22 +164,9 @@ Returns
 
 
 
-<h3 id="t_complexity"><code>t_complexity</code></h3>
-
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L265-L268">View source</a>
-
-<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>t_complexity() -> 'TComplexity'
-</code></pre>
-
-The `TComplexity` for this bloq.
-
-By default, this will recurse into this bloq's decomposition but this
-method can be overriden with a known value.
-
 <h3 id="wire_symbol"><code>wire_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L270-L273">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L265-L268">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>wire_symbol(
@@ -199,7 +186,7 @@ attribute.
 
 <h3 id="decompose_from_registers"><code>decompose_from_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L280-L283">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L275-L278">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>decompose_from_registers(
@@ -212,7 +199,7 @@ attribute.
 
 <h3 id="on"><code>on</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L308-L312">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L303-L307">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on(
@@ -242,7 +229,7 @@ See Also
 
 <h3 id="on_registers"><code>on_registers</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L314-L317">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L309-L312">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>on_registers(
@@ -271,7 +258,7 @@ See Also
 
 <h3 id="controlled"><code>controlled</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L320-L332">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L315-L330">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>controlled(
@@ -299,6 +286,49 @@ Args
 
 
 Returns
+
+
+
+
+<h3 id="add_my_tensors"><code>add_my_tensors</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/gate_with_registers.py#L335-L356">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>add_my_tensors(
+    tn: 'qtn.TensorNetwork',
+    tag: 'Any',
+    *,
+    incoming: Dict[str, 'SoquetT'],
+    outgoing: Dict[str, 'SoquetT']
+)
+</code></pre>
+
+Override this method to support native quimb simulation of this Bloq.
+
+This method is responsible for adding a tensor corresponding to the unitary, state, or
+effect of the bloq to the provided tensor network `tn`. Often, this method will add
+one tensor for a given Bloq, but some bloqs can be represented in a factorized form
+requiring the addition of more than one tensor.
+
+If this method is not overriden, the default implementation will try to use the bloq's
+decomposition to find a dense representation for this bloq.
+
+Args
+
+`tn`
+: The tensor network to which we add our tensor(s)
+
+`tag`
+: An arbitrary tag that must be forwarded to `qtn.Tensor`'s `tag` attribute.
+
+`incoming`
+: A mapping from register name to SoquetT to order left indices for
+  the tensor network.
+
+`outgoing`
+: A mapping from register name to SoquetT to order right indices for
+  the tensor network.
 
 
 

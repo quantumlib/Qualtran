@@ -34,7 +34,4 @@ LEFT<a id="LEFT"></a>
 RIGHT<a id="RIGHT"></a>
 : `<Side.RIGHT: 2>`
 
-THRU<a id="THRU"></a>
-: `<Side.THRU: 3>`
-
 

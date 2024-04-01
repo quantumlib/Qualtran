@@ -49,6 +49,10 @@ represents a qubit or register of qubits.
 
 [`get_musical_score_data(...)`](../../qualtran/drawing/get_musical_score_data.md): Get the musical score data for a (composite) bloq.
 
+## Type Aliases
+
+[`NDArray`](../../qualtran/drawing/musical_score/NDArray.md)
+
 
 
 <h2 class="add-link">Other Members</h2>

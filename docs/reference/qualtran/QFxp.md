@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L319-L370">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L394-L472">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -66,12 +66,38 @@ signed, with num_int determined as `(bitsize - num_frac - n_sign)`.
 
 ## Methods
 
-<h3 id="get_classical_domain"><code>get_classical_domain</code></h3>
+<h3 id="to_bits"><code>to_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L366-L367">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L436-L440">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>get_classical_domain() -> Iterable[Any]
+<code>to_bits(
+    x: Union[float, Fxp]
+) -> List[int]
+</code></pre>
+
+Yields individual bits corresponding to binary representation of x
+
+
+<h3 id="from_bits"><code>from_bits</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L442-L446">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>from_bits(
+    bits: Sequence[int]
+) -> Fxp
+</code></pre>
+
+Combine individual bits to form x
+
+
+<h3 id="get_classical_domain"><code>get_classical_domain</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L457-L460">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>get_classical_domain() -> Iterable[Fxp]
 </code></pre>
 
 Yields all possible classical (computational basis state) values representable by this type.
@@ -79,11 +105,11 @@ Yields all possible classical (computational basis state) values representable b
 
 <h3 id="assert_valid_classical_val"><code>assert_valid_classical_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L369-L370">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L469-L472">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val(
-    val, debug_str: str = &#x27;val&#x27;
+    val: Union[float, Fxp], debug_str: str = &#x27;val&#x27;
 )
 </code></pre>
 

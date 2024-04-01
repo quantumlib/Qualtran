@@ -11,6 +11,8 @@ Classes for drawing bloqs with Graphviz.
 
 [`class PrettyGraphDrawer`](../../qualtran/drawing/PrettyGraphDrawer.md): A class to encapsulate methods for displaying a CompositeBloq as a graph using graphviz.
 
+[`class TypedGraphDrawer`](../../qualtran/drawing/graphviz/TypedGraphDrawer.md): A class to encapsulate methods for displaying a CompositeBloq as a graph using graphviz.
+
 
 
 <h2 class="add-link">Other Members</h2>

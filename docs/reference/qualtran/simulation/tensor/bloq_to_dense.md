@@ -18,7 +18,7 @@ Return a contracted, dense ndarray representing the composite bloq.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.simulation.tensor.bloq_to_dense(
     bloq: <a href="../../../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>
-) -> NDArray
+) -> <a href="../../../qualtran/drawing/musical_score/NDArray.html"><code>qualtran.drawing.musical_score.NDArray</code></a>
 </code></pre>
 
 

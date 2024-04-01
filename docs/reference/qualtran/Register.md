@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L44-L106">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L44-L97">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -18,9 +18,9 @@ A data type describing a register of qubits.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.Register(
     name,
-    bitsize,
+    dtype,
     shape=attr_dict[&#x27;shape&#x27;].default,
-    side=<a href="../qualtran/Side.html#THRU"><code>qualtran.Side.THRU</code></a>
+    side=attr_dict[&#x27;side&#x27;].default
 )
 </code></pre>
 
@@ -65,7 +65,7 @@ a bloq's signature, see the `Signature` class.
 
 <h3 id="all_idxs"><code>all_idxs</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L87-L89">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L78-L80">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>all_idxs() -> Iterable[Tuple[int, ...]]
@@ -76,7 +76,7 @@ Iterate over all possible indices of a multidimensional register.
 
 <h3 id="total_bits"><code>total_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L91-L96">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L82-L87">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>total_bits() -> int
@@ -88,7 +88,7 @@ This is the product of bitsize and each of the dimensions in `shape`.
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L98-L106">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/registers.py#L89-L97">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'Register'

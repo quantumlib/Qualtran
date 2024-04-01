@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L325-L436">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/cirq_interop/_cirq_to_bloq.py#L365-L476">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -41,9 +41,9 @@ Convert a Cirq OP-TREE into a `CompositeBloq` with signature `signature`.
  which are mappings of cirq qubits used in the OP-TREE corresponding to the `LEFT` & `RIGHT`
  registers in `signature`. If `signature` has registers with entry
 
-    - `Register('x', bitsize=2, shape=(3, 4), side=Side.THRU)`
-    - `Register('y', bitsize=1, shape=(10, 20), side=Side.LEFT)`
-    - `Register('z', bitsize=1, shape=(10, 20), side=Side.RIGHT)`
+    - `Register('x', QAny(bitsize=2), shape=(3, 4), side=Side.THRU)`
+    - `Register('y', QBit(), shape=(10, 20), side=Side.LEFT)`
+    - `Register('z', QBit(), shape=(10, 20), side=Side.RIGHT)`
 
 then `in_quregs` should have one entry corresponding to registers `x` and `y` as follows:
 

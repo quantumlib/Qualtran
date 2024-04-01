@@ -17,7 +17,11 @@
 
 [`assert_bloq_example_make(...)`](../qualtran/testing/assert_bloq_example_make.md): Assert that the BloqExample returns the desired bloq.
 
+[`assert_bloq_example_serialize(...)`](../qualtran/testing/assert_bloq_example_serialize.md)
+
 [`assert_connections_compatible(...)`](../qualtran/testing/assert_connections_compatible.md): Check that all connections are between compatible registers.
+
+[`assert_equivalent_bloq_example_counts(...)`](../qualtran/testing/assert_equivalent_bloq_example_counts.md): Assert that the BloqExample has consistent bloq counts.
 
 [`assert_registers_match_dangling(...)`](../qualtran/testing/assert_registers_match_dangling.md): Check that connections to LeftDangle and RightDangle match the declared registers.
 
@@ -36,6 +40,10 @@
 [`check_bloq_example_decompose(...)`](../qualtran/testing/check_bloq_example_decompose.md): Check that the BloqExample has a valid decomposition.
 
 [`check_bloq_example_make(...)`](../qualtran/testing/check_bloq_example_make.md): Check that the BloqExample returns the desired bloq.
+
+[`check_bloq_example_serialize(...)`](../qualtran/testing/check_bloq_example_serialize.md): Check that the BloqExample has consistent serialization.
+
+[`check_equivalent_bloq_example_counts(...)`](../qualtran/testing/check_equivalent_bloq_example_counts.md): Check that the BloqExample has consistent bloq counts.
 
 [`execute_notebook(...)`](../qualtran/testing/execute_notebook.md): Execute a jupyter notebook in the caller's directory.
 

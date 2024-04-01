@@ -12,6 +12,8 @@ isort:skip_file
 
 [`generalizers`](../qualtran/resource_counting/generalizers.md): Bloq counting generalizers.
 
+[`symbolic_counting_utils`](../qualtran/resource_counting/symbolic_counting_utils.md) module
+
 ## Classes
 
 [`class SympySymbolAllocator`](../qualtran/resource_counting/SympySymbolAllocator.md): A class that allocates unique sympy symbols for integrating out bloq attributes.

@@ -28,6 +28,7 @@
    qualtran/QFxp.md
    qualtran/QInt.md
    qualtran/QIntOnesComp.md
+   qualtran/QMontgomeryUInt.md
    qualtran/QUInt.md
    qualtran/Register.md
    qualtran/Side.md
@@ -45,20 +46,15 @@
 
 .. toctree::
    :hidden:
-   :caption: simulation
-
-   qualtran/simulation/classical_sim.md
-   qualtran/simulation/tensor.md
-
-.. toctree::
-   :hidden:
    :caption: testing
 
    qualtran/testing/BloqCheckException.md
    qualtran/testing/BloqCheckResult.md
    qualtran/testing/assert_bloq_example_decompose.md
    qualtran/testing/assert_bloq_example_make.md
+   qualtran/testing/assert_bloq_example_serialize.md
    qualtran/testing/assert_connections_compatible.md
+   qualtran/testing/assert_equivalent_bloq_example_counts.md
    qualtran/testing/assert_registers_match_dangling.md
    qualtran/testing/assert_registers_match_parent.md
    qualtran/testing/assert_soquets_belong_to_registers.md
@@ -68,33 +64,9 @@
    qualtran/testing/assert_wire_symbols_match_expected.md
    qualtran/testing/check_bloq_example_decompose.md
    qualtran/testing/check_bloq_example_make.md
+   qualtran/testing/check_bloq_example_serialize.md
+   qualtran/testing/check_equivalent_bloq_example_counts.md
    qualtran/testing/execute_notebook.md
-
-.. toctree::
-   :hidden:
-   :caption: cirq_interop
-
-   qualtran/cirq_interop/BloqAsCirqGate.md
-   qualtran/cirq_interop/CirqGateAsBloq.md
-   qualtran/cirq_interop/CirqGateAsBloqBase.md
-   qualtran/cirq_interop/cirq_optree_to_cbloq.md
-   qualtran/cirq_interop/decompose_from_cirq_style_method.md
-   qualtran/cirq_interop/decompose_protocol.md
-   qualtran/cirq_interop/t_complexity_protocol.md
-
-.. toctree::
-   :hidden:
-   :caption: resource_counting
-
-   qualtran/resource_counting/BloqCountT.md
-   qualtran/resource_counting/GeneralizerT.md
-   qualtran/resource_counting/SympySymbolAllocator.md
-   qualtran/resource_counting/big_O.md
-   qualtran/resource_counting/bloq_counts.md
-   qualtran/resource_counting/build_cbloq_call_graph.md
-   qualtran/resource_counting/generalizers.md
-   qualtran/resource_counting/get_bloq_call_graph.md
-   qualtran/resource_counting/print_counts_graph.md
 
 .. toctree::
    :hidden:
@@ -133,39 +105,84 @@
 
 .. toctree::
    :hidden:
-   :caption: tensor
+   :caption: resource_counting
 
-   qualtran/simulation/tensor/bloq_has_custom_tensors.md
-   qualtran/simulation/tensor/bloq_to_dense.md
-   qualtran/simulation/tensor/cbloq_as_contracted_tensor.md
-   qualtran/simulation/tensor/cbloq_to_quimb.md
-   qualtran/simulation/tensor/flatten_for_tensor_contraction.md
-   qualtran/simulation/tensor/get_right_and_left_inds.md
-
-.. toctree::
-   :hidden:
-   :caption: classical_sim
-
-   qualtran/simulation/classical_sim/ClassicalValT.md
-   qualtran/simulation/classical_sim/bits_to_ints.md
-   qualtran/simulation/classical_sim/call_cbloq_classically.md
-   qualtran/simulation/classical_sim/format_classical_truth_table.md
-   qualtran/simulation/classical_sim/get_classical_truth_table.md
-   qualtran/simulation/classical_sim/ints_to_bits.md
+   qualtran/resource_counting/BloqCountT.md
+   qualtran/resource_counting/GeneralizerT.md
+   qualtran/resource_counting/SympySymbolAllocator.md
+   qualtran/resource_counting/big_O.md
+   qualtran/resource_counting/bloq_counts.md
+   qualtran/resource_counting/build_cbloq_call_graph.md
+   qualtran/resource_counting/generalizers.md
+   qualtran/resource_counting/get_bloq_call_graph.md
+   qualtran/resource_counting/print_counts_graph.md
+   qualtran/resource_counting/symbolic_counting_utils.md
 
 .. toctree::
    :hidden:
-   :caption: decompose_protocol
+   :caption: cirq_interop
 
-   qualtran/cirq_interop/decompose_protocol/DecomposeResult.md
+   qualtran/cirq_interop/BloqAsCirqGate.md
+   qualtran/cirq_interop/CirqGateAsBloq.md
+   qualtran/cirq_interop/CirqGateAsBloqBase.md
+   qualtran/cirq_interop/CirqQuregT.md
+   qualtran/cirq_interop/cirq_optree_to_cbloq.md
+   qualtran/cirq_interop/decompose_from_cirq_style_method.md
+   qualtran/cirq_interop/decompose_protocol.md
+   qualtran/cirq_interop/t_complexity_protocol.md
 
 .. toctree::
    :hidden:
-   :caption: t_complexity_protocol
+   :caption: simulation
 
-   qualtran/cirq_interop/t_complexity_protocol/SupportsTComplexity.md
-   qualtran/cirq_interop/t_complexity_protocol/TComplexity.md
-   qualtran/cirq_interop/t_complexity_protocol/t_complexity.md
+   qualtran/simulation/classical_sim.md
+   qualtran/simulation/tensor.md
+
+.. toctree::
+   :hidden:
+   :caption: surface_code
+
+   qualtran/surface_code/AlgorithmSummary.md
+   qualtran/surface_code/CCZ2TFactory.md
+   qualtran/surface_code/ConstantWithOverheadRotationCost.md
+   qualtran/surface_code/MagicCount.md
+   qualtran/surface_code/MagicStateFactory.md
+   qualtran/surface_code/MultiFactory.md
+   qualtran/surface_code/PhysicalCost.md
+   qualtran/surface_code/PhysicalParameters.md
+   qualtran/surface_code/QuantumErrorCorrectionSchemeSummary.md
+   qualtran/surface_code/Reference.md
+   qualtran/surface_code/RotationCostModel.md
+   qualtran/surface_code/RotationLogarithmicModel.md
+   qualtran/surface_code/algorithm_summary.md
+   qualtran/surface_code/ccz2t_cost_model.md
+   qualtran/surface_code/data_block.md
+   qualtran/surface_code/get_ccz2t_costs.md
+   qualtran/surface_code/get_ccz2t_costs_from_error_budget.md
+   qualtran/surface_code/get_ccz2t_costs_from_grid_search.md
+   qualtran/surface_code/magic_count.md
+   qualtran/surface_code/magic_state_factory.md
+   qualtran/surface_code/multi_factory.md
+   qualtran/surface_code/physical_cost.md
+   qualtran/surface_code/physical_parameters.md
+   qualtran/surface_code/quantum_error_correction_scheme_summary.md
+   qualtran/surface_code/reference.md
+   qualtran/surface_code/rotation_cost_model.md
+
+.. toctree::
+   :hidden:
+   :caption: musical_score
+
+   qualtran/drawing/musical_score/MusicalScoreEncoder.md
+   qualtran/drawing/musical_score/NDArray.md
+   qualtran/drawing/musical_score/SoqData.md
+   qualtran/drawing/musical_score/frozen.md
+
+.. toctree::
+   :hidden:
+   :caption: graphviz
+
+   qualtran/drawing/graphviz/TypedGraphDrawer.md
 
 .. toctree::
    :hidden:
@@ -180,9 +197,75 @@
 
 .. toctree::
    :hidden:
-   :caption: musical_score
+   :caption: symbolic_counting_utils
 
-   qualtran/drawing/musical_score/MusicalScoreEncoder.md
-   qualtran/drawing/musical_score/SoqData.md
-   qualtran/drawing/musical_score/frozen.md
+   qualtran/resource_counting/symbolic_counting_utils/SymbolicInt.md
+   qualtran/resource_counting/symbolic_counting_utils/acos.md
+   qualtran/resource_counting/symbolic_counting_utils/ceil.md
+   qualtran/resource_counting/symbolic_counting_utils/is_symbolic.md
+   qualtran/resource_counting/symbolic_counting_utils/log2.md
+   qualtran/resource_counting/symbolic_counting_utils/pi.md
+   qualtran/resource_counting/symbolic_counting_utils/smax.md
+
+.. toctree::
+   :hidden:
+   :caption: t_complexity_protocol
+
+   qualtran/cirq_interop/t_complexity_protocol/SupportsTComplexity.md
+   qualtran/cirq_interop/t_complexity_protocol/SymbolicFloat.md
+   qualtran/cirq_interop/t_complexity_protocol/TComplexity.md
+   qualtran/cirq_interop/t_complexity_protocol/t_complexity.md
+
+.. toctree::
+   :hidden:
+   :caption: decompose_protocol
+
+   qualtran/cirq_interop/decompose_protocol/DecomposeResult.md
+
+.. toctree::
+   :hidden:
+   :caption: classical_sim
+
+   qualtran/simulation/classical_sim/ClassicalValT.md
+   qualtran/simulation/classical_sim/bits_to_ints.md
+   qualtran/simulation/classical_sim/call_cbloq_classically.md
+   qualtran/simulation/classical_sim/format_classical_truth_table.md
+   qualtran/simulation/classical_sim/get_classical_truth_table.md
+   qualtran/simulation/classical_sim/ints_to_bits.md
+
+.. toctree::
+   :hidden:
+   :caption: tensor
+
+   qualtran/simulation/tensor/active_space_for_ctrl_spec.md
+   qualtran/simulation/tensor/bloq_has_custom_tensors.md
+   qualtran/simulation/tensor/bloq_to_dense.md
+   qualtran/simulation/tensor/cbloq_as_contracted_tensor.md
+   qualtran/simulation/tensor/cbloq_to_quimb.md
+   qualtran/simulation/tensor/eye_tensor_for_signature.md
+   qualtran/simulation/tensor/flatten_for_tensor_contraction.md
+   qualtran/simulation/tensor/get_right_and_left_inds.md
+   qualtran/simulation/tensor/tensor_data_from_unitary_and_signature.md
+   qualtran/simulation/tensor/tensor_out_inp_shape_from_signature.md
+   qualtran/simulation/tensor/tensor_shape_from_signature.md
+
+.. toctree::
+   :hidden:
+   :caption: data_block
+
+   qualtran/surface_code/data_block/DataBlock.md
+   qualtran/surface_code/data_block/SimpleDataBlock.md
+
+.. toctree::
+   :hidden:
+   :caption: ccz2t_cost_model
+
+   qualtran/surface_code/ccz2t_cost_model/iter_ccz2t_factories.md
+   qualtran/surface_code/ccz2t_cost_model/iter_simple_data_blocks.md
+
+.. toctree::
+   :hidden:
+   :caption: quantum_error_correction_scheme_summary
+
+   qualtran/surface_code/quantum_error_correction_scheme_summary/SimpliedSurfaceCode.md
 

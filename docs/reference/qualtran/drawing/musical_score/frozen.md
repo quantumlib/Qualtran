@@ -10,6 +10,14 @@
 partial(func, *args, **keywords) - new function with partial application of the given arguments and keywords.
 
 
+<section class="expandable">
+  <h4 class="showalways">View aliases</h4>
+  <p>
+<b>Main aliases</b>
+<p>`qualtran.surface_code.algorithm_summary.frozen`, `qualtran.surface_code.ccz2t_cost_model.frozen`, `qualtran.surface_code.data_block.frozen`, `qualtran.surface_code.magic_count.frozen`, `qualtran.surface_code.multi_factory.frozen`, `qualtran.surface_code.physical_cost.frozen`, `qualtran.surface_code.physical_parameters.frozen`, `qualtran.surface_code.quantum_error_correction_scheme_summary.frozen`, `qualtran.surface_code.reference.frozen`, `qualtran.surface_code.rotation_cost_model.frozen`</p>
+</p>
+</section>
+
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.drawing.musical_score.frozen(
     maybe_cls=None,

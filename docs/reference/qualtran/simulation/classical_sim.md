@@ -21,6 +21,8 @@ Functionality for the <a href="../../qualtran/Bloq.html#call_classically"><code>
 
 [`ClassicalValT`](../../qualtran/simulation/classical_sim/ClassicalValT.md)
 
+[`NDArray`](../../qualtran/drawing/musical_score/NDArray.md)
+
 
 
 <h2 class="add-link">Other Members</h2>

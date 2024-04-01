@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L117-L150">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L119-L158">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -17,7 +17,11 @@ A collection of bloq examples and specifications for documenting a bloq class.
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.BloqDocSpec(
-    bloq_cls, import_line, examples=NOTHING, call_graph_example=NOTHING
+    *,
+    bloq_cls,
+    examples=NOTHING,
+    import_line=NOTHING,
+    call_graph_example=NOTHING
 )
 </code></pre>
 

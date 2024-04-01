@@ -26,3 +26,7 @@ isort:skip_file
 
 [`decompose_from_cirq_style_method(...)`](../qualtran/cirq_interop/decompose_from_cirq_style_method.md): Return a `CompositeBloq` decomposition using a cirq-style decompose method.
 
+## Type Aliases
+
+[`CirqQuregT`](../qualtran/cirq_interop/CirqQuregT.md)
+
