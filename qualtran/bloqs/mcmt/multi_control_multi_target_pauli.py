@@ -101,7 +101,7 @@ _C_MULTI_NOT_DOC = BloqDocSpec(
 
 @frozen
 class MultiControlPauli(GateWithRegisters):
-    """Implements multi-control, single-target C^{n}P gate.
+    r"""Implements multi-control, single-target C^{n}P gate.
 
     Implements $C^{n}P = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| P^{n}$ using $n-1$
     clean ancillas using a multi-controlled `AND` gate. Uses the Toffoli ladder
