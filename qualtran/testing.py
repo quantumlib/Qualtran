@@ -32,6 +32,7 @@ from qualtran import (
     Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
+from qualtran._infra.data_types import check_dtypes_consistent
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -109,8 +110,8 @@ def assert_connections_compatible(cbloq: CompositeBloq):
         lr = cxn.left.reg
         rr = cxn.right.reg
 
-        if lr.bitsize != rr.bitsize:
-            raise BloqError(f"{cxn}'s bitsizes are incompatible: {lr} -> {rr}")
+        if not check_dtypes_consistent(lr.dtype, rr.dtype):
+            raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
 
         # Check the left side of the connection relative to the `Register.side`.
         if cxn.left.binst is LeftDangle:
@@ -481,6 +482,53 @@ def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqChec
     """
     try:
         assert_equivalent_bloq_example_counts(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''
+
+
+def assert_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
+
+    bloq = bloq_ex.make()
+
+    try:
+        bloq_lib = bloqs_to_proto(bloq)
+    except Exception as e:
+        raise BloqCheckException.fail('Serialization Failed:\n' + str(e)) from e
+    try:
+        bloq_roundtrip = bloqs_from_proto(bloq_lib)[0]
+    except Exception as e:
+        raise BloqCheckException.fail('DeSerialization Failed:\n' + str(e)) from e
+
+    try:
+        assert bloq == bloq_roundtrip
+    except AssertionError as e:
+        raise BloqCheckException.fail(
+            f'Roundtrip equality failed.\n{bloq=}\n{bloq_roundtrip=}\n'
+        ) from e
+
+
+def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample has consistent serialization.
+
+    This function checks that the given bloq can be serialized to a proto format and the
+    corresponding proto can be deserialized back to a bloq which is equal to the original
+    bloq.
+
+    If the given Bloq cannot be serialized / deserialized OR if the deserialized Bloq is not
+    equal to the given Bloq, then the result is `FAIL`. If the roundtrip succeeds, the result
+    is `PASS`.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        assert_bloq_example_serialize(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
     except Exception as e:  # pylint: disable=broad-except

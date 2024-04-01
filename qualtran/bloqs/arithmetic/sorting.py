@@ -39,8 +39,7 @@ class Comparator(Bloq):
         out: A single bit output register which will store the result of the comparator.
 
     References:
-        [Improved techniques for preparing eigenstates of fermionic
-        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5),
+        [Improved techniques for preparing eigenstates of fermionic Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5).
         Fig. 1. in main text.
     """
 
@@ -75,11 +74,7 @@ def _cmp_symb() -> Comparator:
     return cmp_symb
 
 
-_COMPARATOR_DOC = BloqDocSpec(
-    bloq_cls=Comparator,
-    import_line='from qualtran.bloqs.arithmetic.sorting import Comparator',
-    examples=(_cmp_symb,),
-)
+_COMPARATOR_DOC = BloqDocSpec(bloq_cls=Comparator, examples=[_cmp_symb])
 
 
 @frozen
@@ -97,8 +92,7 @@ class BitonicSort(Bloq):
         input: List of k integers we want to sort.
 
     References:
-        [Improved techniques for preparing eigenstates of fermionic
-        Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5),
+        [Improved techniques for preparing eigenstates of fermionic Hamiltonians](https://www.nature.com/articles/s41534-018-0071-5).
         Supporting Information Sec. II.
     """
 
@@ -131,8 +125,4 @@ def _bitonic_sort() -> BitonicSort:
     return bitonic_sort
 
 
-_BITONIC_SORT_DOC = BloqDocSpec(
-    bloq_cls=BitonicSort,
-    import_line='from qualtran.bloqs.arithmetic.sorting import BitonicSort',
-    examples=(_bitonic_sort,),
-)
+_BITONIC_SORT_DOC = BloqDocSpec(bloq_cls=BitonicSort, examples=[_bitonic_sort])

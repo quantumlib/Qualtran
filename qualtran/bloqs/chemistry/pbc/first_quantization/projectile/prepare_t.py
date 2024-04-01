@@ -47,10 +47,11 @@ class PreparePowerTwoStateWithProj(Bloq):
         r: The register we want to prepare the state over.
 
     References:
-        [Quantum computation of stopping power for inertial fusion target design](
-            https://arxiv.org/abs/2308.12352) page 11, C3 also page 31 App A. Sec 2 b.
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 19, section B
+        [Quantum computation of stopping power for inertial fusion target design](https://arxiv.org/abs/2308.12352)
+        page 11, C3 also page 31 App A. Sec 2 b.
+
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 19, section B
     """
     bitsize_n: int
     bitsize_p: int

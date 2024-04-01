@@ -31,3 +31,10 @@ def test_ndarray_to_proto():
     proto = args.ndarray_to_proto(x)
     x_from_proto = args.ndarray_from_proto(proto)
     assert np.allclose(x, x_from_proto)
+
+
+@pytest.mark.parametrize('arg', [1j, np.complex64(1j)])
+def test_complex_to_proto(arg):
+    proto = args.complex_to_proto(arg)
+    arg_from_proto = args.complex_from_proto(proto)
+    assert arg_from_proto == arg

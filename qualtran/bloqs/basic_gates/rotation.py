@@ -19,7 +19,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import bloq_example
+from qualtran import bloq_example, CompositeBloq, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -66,7 +66,8 @@ class ZPowGate(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -74,6 +75,9 @@ class ZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -89,6 +93,9 @@ class CZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -140,13 +147,17 @@ class XPowGate(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
     exponent: float = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -189,13 +200,17 @@ class YPowGate(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
     exponent: float = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -215,13 +230,17 @@ class Rz(CirqGateAsBloqBase):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
     angle: float
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -233,6 +252,9 @@ class Rx(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
@@ -242,6 +264,9 @@ class Rx(CirqGateAsBloqBase):
 class Ry(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:

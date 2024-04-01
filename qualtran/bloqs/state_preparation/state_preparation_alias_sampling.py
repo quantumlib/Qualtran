@@ -28,14 +28,21 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.arithmetic import LessThanEqual
 from qualtran.bloqs.basic_gates.swap import CSwap
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.select_and_prepare import PrepareOracle
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.resource_counting.generalizers import (
+    cirq_to_bloqs,
+    ignore_cliffords,
+    ignore_split_join,
+)
 
 
 @cirq.value_equality()
@@ -80,8 +87,7 @@ class StatePreparationAliasSampling(PrepareOracle):
     The 1 ancilla in work qubits is for the `LessThanEqualGate` followed by coherent swap.
 
     References:
-            [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
-        (https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
         Babbush et. al. (2018). Section III.D. and Figure 11.
     """
     selection_registers: Tuple[Register, ...] = attrs.field(
@@ -174,3 +180,20 @@ class StatePreparationAliasSampling(PrepareOracle):
         yield qrom_gate.on_registers(selection=selection, target0_=alt, target1_=keep)
         yield LessThanEqual(self.mu, self.mu).on(*keep, *sigma_mu, *less_than_equal)
         yield CSwap.make_on(ctrl=less_than_equal, x=alt, y=selection)
+
+
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _state_prep_alias() -> StatePreparationAliasSampling:
+    coeffs = np.array([1.0, 1, 3, 2])
+    mu = 3
+    state_prep_alias = StatePreparationAliasSampling.from_lcu_probs(
+        coeffs, probability_epsilon=2**-mu / len(coeffs)
+    )
+    return state_prep_alias
+
+
+_STATE_PREP_ALIAS_DOC = BloqDocSpec(
+    bloq_cls=StatePreparationAliasSampling,
+    import_line='from qualtran.bloqs.state_preparation import StatePreparationAliasSampling',
+    examples=(_state_prep_alias,),
+)

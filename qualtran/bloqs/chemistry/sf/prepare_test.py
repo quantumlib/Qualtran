@@ -21,7 +21,9 @@ from qualtran.bloqs.chemistry.sf.prepare import (
     InnerPrepareSingleFactorization,
     OuterPrepareSingleFactorization,
 )
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 
 def test_prep_inner(bloq_autotester):

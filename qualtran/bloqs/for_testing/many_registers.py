@@ -18,7 +18,7 @@ from typing import Dict
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, QAny, QBit, Register, Signature
+from qualtran import Bloq, BoundedQUInt, QAny, QBit, QFxp, QUInt, Register, Signature
 
 from .atom import TestAtom, TestTwoBitOp
 
@@ -54,3 +54,49 @@ class TestMultiRegister(Bloq):
 
     def short_name(self) -> str:
         return 'xyz'
+
+
+@frozen
+class TestBoundedQUInt(Bloq):
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature([Register('xx', BoundedQUInt(4, 3)), Register('yy', QUInt(8, 6, True))])
+
+
+@frozen
+class TestQFxp(Bloq):
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature([Register('xx', QFxp(8, 6, True)), Register('yy', QFxp(8, 8))])
+
+
+@frozen
+class TestMultiTypedRegister(Bloq):
+    """A bloq with multiple, interesting registers.
+
+    Registers:
+        xx: A one-bit register that gets an operation applied to it.
+        yy: A matrix of 2-bit registers each of which gets a two bit operation applied to it.
+        zz: A three-bit register that is split and re-joined.
+    """
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature(
+            [
+                Register('a', BoundedQUInt(4, 3)),
+                Register('b', QFxp(8, 6, True)),
+                Register('c', QFxp(8, 8)),
+                Register('d', QUInt(8)),
+            ]
+        )
+
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: 'SoquetT', b: 'SoquetT', c: 'SoquetT', d: 'SoquetT'
+    ) -> Dict[str, 'Soquet']:
+        a, b = bb.add(TestBoundedQUInt(), xx=a, yy=d)
+        b, c = bb.add(TestQFxp(), xx=b, yy=c)
+        return {'a': a, 'b': bb, 'c': c, 'd': d}
+
+    def short_name(self) -> str:
+        return 'abcd[T]'

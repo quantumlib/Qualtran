@@ -35,9 +35,10 @@ def test_to_cirq():
     bb = BloqBuilder()
     q = bb.add(PlusState())
     q = bb.add(TGate(), q=q)
+    q = bb.add(TGate(is_adjoint=True), q=q)
     cbloq = bb.finalize(q=q)
     circuit, _ = cbloq.to_cirq_circuit()
-    cirq.testing.assert_has_diagram(circuit, "_c(0): ───H───T───")
+    cirq.testing.assert_has_diagram(circuit, "_c(0): ───H───T───T^-1───")
 
 
 def test_tensors():

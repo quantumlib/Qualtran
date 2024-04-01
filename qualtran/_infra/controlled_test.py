@@ -11,15 +11,41 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List
+from typing import Dict, List, Tuple
 
+import attrs
+import cirq
 import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import Controlled, CtrlSpec, QBit, QInt
-from qualtran.bloqs.basic_gates import XGate
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    Controlled,
+    CtrlSpec,
+    QBit,
+    QInt,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+)
+from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
+from qualtran.bloqs.basic_gates import (
+    CSwap,
+    IntEffect,
+    IntState,
+    OneState,
+    Swap,
+    XGate,
+    YGate,
+    ZeroState,
+    ZGate,
+)
 from qualtran.bloqs.for_testing import TestAtom, TestParallelCombo, TestSerialCombo
+from qualtran.bloqs.mcmt import And
+from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
 
@@ -29,7 +55,7 @@ def test_ctrl_spec():
     assert cspec1 == CtrlSpec(QBit(), cvs=1)
 
     cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
-    assert cspec2.shape == (3, 3, 3)
+    assert cspec2.shapes == ((3, 3, 3),)
     assert cspec2 != cspec1
 
     test_hashable = {cspec1: 1, cspec2: 2}
@@ -37,17 +63,68 @@ def test_ctrl_spec():
 
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3 != cspec1
-    assert cspec3.qdtype.num_qubits == 64
-    assert cspec3.cvs == 234234
-    assert cspec3.cvs[tuple()] == 234234
-    assert repr(cspec3) == 'CtrlSpec(QInt(bitsize=64), array(234234))'
+    assert cspec3.qdtypes[0].num_qubits == 64
+    assert cspec3.cvs[0] == 234234
+    assert cspec3.cvs[0][tuple()] == 234234
+    assert repr(cspec3) == 'CtrlSpec(qdtypes=(QInt(bitsize=64),), cvs=(array(234234),))'
 
 
 def test_ctrl_spec_shape():
     c1 = CtrlSpec(QBit(), cvs=1)
     c2 = CtrlSpec(QBit(), cvs=(1,))
-    assert c1.shape != c2.shape
+    assert c1.shapes != c2.shapes
     assert c1 != c2
+
+
+def test_ctrl_spec_to_cirq_cv_roundtrip():
+    cirq_cv = cirq.ProductOfSums([0, 1, 0, 1])
+    assert CtrlSpec.from_cirq_cv(cirq_cv) == CtrlSpec(cvs=[0, 1, 0, 1])
+
+    ctrl_specs = [
+        CtrlSpec(qdtypes=QUInt(4), cvs=0b0101),
+        CtrlSpec(cvs=[0, 1, 0, 1]),
+        CtrlSpec(qdtypes=[QBit()] * 4, cvs=[[0], [1], [0], [1]]),
+    ]
+
+    for ctrl_spec in ctrl_specs:
+        assert ctrl_spec.to_cirq_cv() == cirq_cv.expand()
+        assert CtrlSpec.from_cirq_cv(cirq_cv, qdtypes=ctrl_spec.qdtypes, shapes=ctrl_spec.shapes)
+
+
+def test_ctrl_bloq_as_cirq_op():
+    subbloq = XGate()
+
+    def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
+        left_quregs = get_named_qubits(bloq.signature.lefts())
+        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(**left_quregs)
+        circuit2 = cirq.Circuit(
+            gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
+        )
+        cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+    # Simple ctrl spec
+    _test_cirq_equivalence(subbloq, cirq.X)
+    _test_cirq_equivalence(subbloq.controlled(), cirq.X.controlled())
+
+    # Different ways of specifying qubit registers get "expanded" into a flat list of qubits when
+    # converting to Cirq.
+    cirq_gate = cirq.X.controlled(control_values=[0, 1, 0, 1])
+    _test_cirq_equivalence(subbloq.controlled(CtrlSpec(qdtypes=QUInt(4), cvs=0b0101)), cirq_gate)
+
+    _test_cirq_equivalence(subbloq.controlled(CtrlSpec(cvs=[0, 1, 0, 1])), cirq_gate)
+
+    _test_cirq_equivalence(
+        subbloq.controlled(CtrlSpec(qdtypes=[QBit()] * 4, cvs=[[0], [1], [0], [1]])), cirq_gate
+    )
+    # Also works for more complicated bloqs that can decompose into a Cirq circuit.
+    bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
+    quregs = get_named_qubits(bloq.signature)
+    ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
+    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(**quregs)
+    circuit2 = cirq.Circuit(
+        cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
 
 
 def test_ctrl_spec_activation_1():
@@ -73,6 +150,12 @@ def test_ctrl_spec_activation_3():
     cspec3 = CtrlSpec(QInt(64), cvs=np.int64(234234))
     assert cspec3.is_active(234234)
     assert not cspec3.is_active(432432)
+
+
+def test_ctrl_spec_activation_4():
+    cspec3 = CtrlSpec([QInt(32), QInt(64)], cvs=[np.array(1234), np.array(234234)])
+    assert cspec3.is_active(1234, 234234)
+    assert not cspec3.is_active(12345, 432432)
 
 
 def test_controlled_serial():
@@ -208,6 +291,111 @@ def test_classical_sim_int():
     assert vals == (88, 1)
 
 
+def test_classical_sim_int_arr():
+    ctrl_spec = CtrlSpec(QInt(64), cvs=[1234, 234234])
+    bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
+
+    vals = bloq.call_classically(ctrl=[1234, 234234], q=0)
+    np.testing.assert_array_equal(vals[0], (1234, 234234))
+    assert vals[1] == 1
+
+    vals = bloq.call_classically(ctrl=[123, 234234], q=0)
+    np.testing.assert_array_equal(vals[0], (123, 234234))
+    assert vals[1] == 0
+
+
+def test_classical_sim_int_multi_reg():
+    ctrl_spec = CtrlSpec([QInt(32), QInt(64)], cvs=[np.array(1234), np.array(234234)])
+    bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
+
+    vals = bloq.call_classically(ctrl1=1234, ctrl2=234234, q=0)
+    assert vals == (1234, 234234, 1)
+
+    vals = bloq.call_classically(ctrl1=123, ctrl2=234234, q=0)
+    assert vals == (123, 234234, 0)
+
+
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('../Controlled')
+
+
+def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
+    cbloq = Controlled(bloq, ctrl_spec)
+    cgate = gate.controlled(control_values=ctrl_spec.to_cirq_cv())
+    np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
+
+
+interesting_ctrl_specs = [
+    CtrlSpec(),
+    CtrlSpec(cvs=0),
+    CtrlSpec(qdtypes=QUInt(4), cvs=0b0110),
+    CtrlSpec(cvs=[0, 1, 1, 0]),
+    CtrlSpec(qdtypes=[QBit(), QBit()], cvs=[[0, 1], [1, 0]]),
+]
+
+
+@pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
+def test_controlled_tensor_for_unitary(ctrl_spec: CtrlSpec):
+    # Test one qubit unitaries
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, XGate(), cirq.X)
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, YGate(), cirq.Y)
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, ZGate(), cirq.Z)
+    # Test multi-qubit unitaries with non-trivial signature
+    _verify_ctrl_tensor_for_unitary(ctrl_spec, CSwap(3), CSwap(3))
+
+
+@attrs.frozen
+class TestCtrlStatePrepAnd(Bloq):
+    """Decomposes into a Controlled-AND gate + int effects & targets where ctrl is active.
+
+    Tensor contraction should give the output state vector corresponding to applying an
+    `And(and_ctrl)`; assuming all the control bits are active.
+    """
+
+    ctrl_spec: CtrlSpec
+    and_ctrl: Tuple[int, int]
+
+    @property
+    def signature(self) -> 'Signature':
+        return Signature([Register('x', QBit(), shape=(3,), side=Side.RIGHT)])
+
+    def build_composite_bloq(self, bb: 'BloqBuilder') -> Dict[str, 'SoquetT']:
+        one_or_zero = [ZeroState(), OneState()]
+        cbloq = Controlled(And(*self.and_ctrl), ctrl_spec=self.ctrl_spec)
+
+        ctrl_soqs = {}
+        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+            soqs = np.empty(shape=reg.shape, dtype=object)
+            for idx in reg.all_idxs():
+                soqs[idx] = bb.add(IntState(val=cvs[idx], bitsize=reg.dtype.num_qubits))
+            ctrl_soqs[reg.name] = soqs
+
+        and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
+
+        ctrl_soqs = bb.add_d(cbloq, **ctrl_soqs, ctrl=and_ctrl)
+        out_soqs = [*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')]
+
+        for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
+            for idx in reg.all_idxs():
+                ctrl_soq = np.asarray(ctrl_soqs[reg.name])[idx]
+                bb.add(IntEffect(val=cvs[idx], bitsize=reg.dtype.num_qubits), val=ctrl_soq)
+        return {'x': out_soqs}
+
+
+def _verify_ctrl_tensor_for_and(ctrl_spec: CtrlSpec, and_ctrl: Tuple[int, int]):
+    cbloq = TestCtrlStatePrepAnd(ctrl_spec, and_ctrl)
+    bloq_tensor = cbloq.tensor_contract()
+    cirq_state_vector = GateHelper(And(*and_ctrl)).circuit.final_state_vector(
+        initial_state=and_ctrl + (0,)
+    )
+    np.testing.assert_allclose(bloq_tensor, cirq_state_vector, atol=1e-8)
+
+
+@pytest.mark.parametrize('ctrl_spec', interesting_ctrl_specs)
+def test_controlled_tensor_for_and_bloq(ctrl_spec: CtrlSpec):
+    # Test AND gate with one-sided signature (aka controlled state preparation).
+    _verify_ctrl_tensor_for_and(ctrl_spec, (1, 1))
+    _verify_ctrl_tensor_for_and(ctrl_spec, (1, 0))
+    _verify_ctrl_tensor_for_and(ctrl_spec, (0, 1))
+    _verify_ctrl_tensor_for_and(ctrl_spec, (0, 0))

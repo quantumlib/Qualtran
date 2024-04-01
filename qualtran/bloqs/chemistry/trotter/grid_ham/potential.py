@@ -38,7 +38,7 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
     PolynmomialEvaluationInverseSquareRoot,
 )
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
-from qualtran.bloqs.qrom import QROM
+from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.util_bloqs import Cast
 
 
@@ -65,7 +65,9 @@ class PairPotential(Bloq):
     """
 
     bitsize: int
-    qrom_data: Tuple[Tuple[int], ...] = field(repr=False)
+    qrom_data: Tuple[Tuple[int], ...] = field(
+        repr=False, converter=lambda d: tuple(tuple(x) for x in d)
+    )
     poly_bitsize: int = 15
     inv_sqrt_bitsize: int = 24
     label: str = "V"

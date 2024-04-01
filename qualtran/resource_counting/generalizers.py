@@ -24,7 +24,7 @@ from typing import Optional
 import attrs
 import sympy
 
-from qualtran import Bloq
+from qualtran import Adjoint, Bloq
 
 PHI = sympy.Symbol(r'\phi')
 CV = sympy.Symbol("cv")
@@ -32,9 +32,9 @@ CV = sympy.Symbol("cv")
 
 def ignore_split_join(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores split and join operations."""
-    from qualtran.bloqs.util_bloqs import Join, Split
+    from qualtran.bloqs.util_bloqs import Cast, Join, Partition, Split
 
-    if isinstance(b, (Split, Join)):
+    if isinstance(b, (Split, Join, Partition, Cast)):
         return None
     return b
 
@@ -50,21 +50,21 @@ def ignore_alloc_free(b: Bloq) -> Optional[Bloq]:
 
 def generalize_rotation_angle(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces rotation angles with a shared symbol."""
-    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, TGate
+    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, SGate, TGate
 
     if isinstance(b, (Rx, Ry, Rz)):
         return attrs.evolve(b, angle=PHI)
 
-    if isinstance(b, TGate):
+    if isinstance(b, (TGate, SGate)):
         # ignore `is_adjoint`.
-        return TGate()
+        return attrs.evolve(b, is_adjoint=False)
 
     return b
 
 
 def generalize_cvs(b: Bloq) -> Optional[Bloq]:
     """A generalizer that replaces control variables with a shared symbol."""
-    from qualtran.bloqs.and_bloq import And, MultiAnd
+    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
     if isinstance(b, And):
         return attrs.evolve(b, cv1=CV, cv2=CV)
@@ -76,21 +76,17 @@ def generalize_cvs(b: Bloq) -> Optional[Bloq]:
 
 def ignore_cliffords(b: Bloq) -> Optional[Bloq]:
     """A generalizer that ignores known clifford bloqs."""
-    import cirq
-
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, TwoBitSwap, XGate, ZGate
-    from qualtran.bloqs.multi_control_multi_target_pauli import MultiTargetCNOT
+    from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, TwoBitSwap, XGate, ZGate
+    from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
     from qualtran.bloqs.util_bloqs import ArbitraryClifford
-    from qualtran.cirq_interop import CirqGateAsBloq
+
+    if isinstance(b, Adjoint):
+        b = b.subbloq
 
     if isinstance(
-        b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT, MultiTargetCNOT)
+        b, (TwoBitSwap, Hadamard, XGate, ZGate, ArbitraryClifford, CNOT, MultiTargetCNOT, SGate)
     ):
         return None
-
-    if isinstance(b, CirqGateAsBloq):
-        if b.gate == cirq.S or b.gate == cirq.S**-1:
-            return None
 
     return b
 

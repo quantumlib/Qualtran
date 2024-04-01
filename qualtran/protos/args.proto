@@ -29,3 +29,8 @@ message NDArray {
   // A Numpy array serialized as bytes using np.save() / np.load().
   bytes ndarray = 1;
 }
+
+message Complex {
+  float real = 1;
+  float imag = 2;
+}
