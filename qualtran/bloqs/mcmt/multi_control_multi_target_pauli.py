@@ -104,7 +104,12 @@ class MultiControlPauli(GateWithRegisters):
     """Implements multi-control, single-target C^{n}P gate.
 
     Implements $C^{n}P = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| P^{n}$ using $n-1$
-    clean ancillas using a multi-controlled `AND` gate.
+    clean ancillas using a multi-controlled `AND` gate. Uses the Toffoli ladder
+    construction described in "n−2 Ancilla Bits" section of Ref[1] but uses an
+    $\text{AND} / \text{AND}^\dagger$ ladder instead for computing / uncomputing
+    using clean ancillas instead of the Toffoli ladder. The measurement based
+    uncomputation of $\text{AND}$ does not consume any magic states and thus has
+    better constant factors.
 
     References:
         [Constructing Large Controlled Nots](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
