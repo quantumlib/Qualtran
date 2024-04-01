@@ -14,10 +14,9 @@
 
 """Classes for drawing bloqs with FlameGraph."""
 import functools
-import tempfile
 import pathlib
 import subprocess
-
+import tempfile
 from typing import List, Optional, Sequence, Union
 
 import IPython.display
