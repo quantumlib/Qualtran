@@ -22,12 +22,6 @@ from qualtran.simulation.classical_sim import (
 )
 
 
-def _make_plus_state():
-    from qualtran.bloqs.basic_gates import PlusState
-
-    return PlusState()
-
-
 def test_plus_state():
     bloq = PlusState()
     vector = bloq.tensor_contract()
