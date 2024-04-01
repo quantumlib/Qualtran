@@ -44,8 +44,8 @@ def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> int:
 
 
 def _keep_if_small(bloq: Bloq) -> bool:
-    from qualtran.bloqs.and_bloq import And
     from qualtran.bloqs.basic_gates import CSwap, Toffoli
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     if isinstance(bloq, (And, Toffoli, CSwap)):
         return True
