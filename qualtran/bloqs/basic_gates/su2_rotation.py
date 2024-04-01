@@ -142,10 +142,7 @@ class SU2RotationGate(GateWithRegisters):
         return TComplexity(rotations=3)
 
     def _is_parameterized_(self) -> bool:
-        return any(
-            cirq.is_parameterized(param)
-            for param in [self.theta, self.phi, self.lambd, self.global_shift]
-        )
+        return cirq.is_parameterized((self.theta, self.phi, self.lambd, self.global_shift))
 
 
 @bloq_example
