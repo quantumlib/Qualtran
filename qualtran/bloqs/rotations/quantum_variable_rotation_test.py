@@ -110,9 +110,9 @@ def test_eps_set_by_cost_size(n: int):
     qvr = QvrPhaseGradient.from_bitsize(n, gamma, eps=eps)
     assert qvr.b_phase == n
     assert qvr.gamma_dtype.bitsize == n
-    expected_num_additions = min((n + 2) // 2, num.bit_count())
+    expected_num_additions = (n + 2) // 2
     assert qvr.num_additions == expected_num_additions
-    expected_b_grad = np.ceil(np.log2(expected_num_additions * 2 * np.pi / eps))
+    expected_b_grad = np.ceil(np.log2(expected_num_additions)) + n
     assert qvr.b_grad_via_formula == expected_b_grad
     # `b_grad_via_fxp_optimization` can be higher than `b_grad_via_formula` because we haven't
     # implemented the optimization where we represent `gamma` is represented as a sum of positive
