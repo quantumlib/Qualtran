@@ -45,6 +45,7 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
     Q: Union[Sequence[complex], Polynomial],
     *,
     random_state: np.random.RandomState,
+    rtol: float = 1e-7,
     n_points: int = 1000,
 ):
     P = Polynomial(P)
@@ -52,7 +53,7 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
 
     for _ in range(n_points):
         z = np.exp(random_state.random() * np.pi * 2j)
-        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1)
+        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)
 
 
 def random_qsp_polynomial(

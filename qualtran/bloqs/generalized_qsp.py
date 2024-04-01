@@ -73,28 +73,13 @@ def qsp_complementary_polynomial(
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
 
     for r in roots:
+        assert not (np.abs(r) <= 1e-5), "zero root!"
         if np.allclose(np.abs(r), 1):
             units.append(r)
         elif np.abs(r) > 1:
             larger_roots.append(r)
         else:
             smaller_roots.append(r)
-
-    if verify:
-        # verify that the non-unit roots indeed occur in conjugate pairs.
-        def is_permutation(A, B):
-            assert len(A) == len(B)
-            A = list(A)
-            for z in B:
-                for w in A:
-                    if np.allclose(z, w):
-                        A.remove(w)
-                        break
-                else:
-                    return False
-            return True
-
-        assert is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
     # pair up roots in `units`, claimed in Eq. 40 and the explanation preceding it.
     # all unit roots must have even multiplicity.
@@ -107,14 +92,45 @@ def qsp_complementary_polynomial(
                 matched_z = w
                 break
 
-        if matched_z:
+        if matched_z is not None:
             paired_units.append(z)
             unpaired_units.remove(matched_z)
         else:
             unpaired_units.append(z)
 
+    unpaired_conj_units: list[complex] = []
+    for z in unpaired_units:
+        matched_z_conj = None
+        for w in unpaired_conj_units:
+            if np.allclose(z.conjugate(), w):
+                matched_z_conj = w
+                break
+
+        if matched_z_conj is not None:
+            smaller_roots.append(z)
+            larger_roots.append(matched_z_conj)
+            unpaired_conj_units.remove(matched_z_conj)
+        else:
+            unpaired_conj_units.append(z)
+
     if verify:
-        assert len(unpaired_units) == 0
+        assert len(unpaired_conj_units) == 0
+
+        # verify that the non-unit roots indeed occur in conjugate pairs.
+        def assert_is_permutation(A, B):
+            assert len(A) == len(B)
+            A = list(A)
+            unmatched = []
+            for z in B:
+                for w in A:
+                    if np.allclose(z, w, rtol=1e-5, atol=1e-5):
+                        A.remove(w)
+                        break
+                else:
+                    unmatched.append(z)
+            assert len(unmatched) == 0
+
+        assert_is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
     # Q = G \hat{G}, where
     # - \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
@@ -166,7 +182,7 @@ def qsp_phase_factors(
     lambd = 0
 
     def safe_angle(x):
-        return 0 if np.isclose(x, 0) else np.angle(x)
+        return 0 if np.isclose(x, 0, atol=1e-10) else np.angle(x)
 
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
@@ -174,7 +190,7 @@ def qsp_phase_factors(
         a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
         # \phi_d = arg(a / b)
-        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a * np.conj(b))
+        phi[d] = 0 if np.isclose(np.abs(b), 0, atol=1e-10) else safe_angle(a * np.conj(b))
 
         if d == 0:
             lambd = safe_angle(b)
@@ -254,8 +270,7 @@ class GeneralizedQSP(GateWithRegisters):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        assert len(signal) == 1
-        signal_qubit = signal[0]
+        (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power
 
