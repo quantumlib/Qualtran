@@ -256,9 +256,6 @@ class PrepareTHC(PrepareOracle):
     keep: Tuple[int, ...] = field(repr=False)
     keep_bitsize: int
 
-    def pretty_name(self) -> str:
-        return f'PrepareTHC[{self.num_mu}][{self.num_spin_orb}][{self.keep_bitsize}]'
-
     @classmethod
     def from_hamiltonian_coeffs(
         cls, t_l: NDArray[np.float64], zeta: NDArray[np.float64], num_bits_state_prep: int = 8

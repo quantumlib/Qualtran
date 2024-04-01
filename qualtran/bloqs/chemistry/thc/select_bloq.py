@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
-import attrs
 import numpy as np
 from attrs import frozen
 
@@ -202,7 +201,6 @@ class SelectTHC(SelectOracle):
         rot: SoquetT,
         sys_a: SoquetT,
         sys_b: SoquetT,
-        **kwargs,
     ) -> Dict[str, 'SoquetT']:
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
 
@@ -308,17 +306,7 @@ class SelectTHC(SelectOracle):
             'rot': rot,
             'sys_a': sys_a,
             'sys_b': sys_b,
-            **kwargs,
         }
-
-    def controlled(
-        self, num_controls=None, control_values=None, control_qid_shape=None
-    ) -> 'SelectTHC':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        return attrs.evolve(self, control_val=control_values[0])
 
 
 @bloq_example

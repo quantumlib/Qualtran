@@ -50,9 +50,6 @@ class Reflection(Bloq):
                 f"cvs must be same length as bitsizes: {len(self.cvs)} vs {len(self.bitsizes)}"
             )
 
-    def pretty_name(self) -> str:
-        return 'Reflection'
-
     def short_name(self) -> str:
         return 'Refl'
 
