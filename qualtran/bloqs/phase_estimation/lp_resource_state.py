@@ -22,16 +22,7 @@ import numpy as np
 from numpy._typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Register, Side, Signature
-from qualtran.bloqs.basic_gates import (
-    CZPowGate,
-    GlobalPhase,
-    Hadamard,
-    OnEach,
-    Ry,
-    Rz,
-    XGate,
-    ZPowGate,
-)
+from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi
