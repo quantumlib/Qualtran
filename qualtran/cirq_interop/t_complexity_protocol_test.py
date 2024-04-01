@@ -128,6 +128,9 @@ def test_gates():
 
     assert t_complexity(cirq.FREDKIN) == TComplexity(t=7, clifford=14)
 
+    # Global phase
+    assert t_complexity(cirq.GlobalPhaseGate(1j)) == TComplexity()
+
 
 def test_operations():
     q = cirq.NamedQubit('q')
@@ -140,6 +143,8 @@ def test_operations():
     gate = And() ** -1
     op = gate.on_registers(**get_named_qubits(gate.signature))
     assert t_complexity(op) == TComplexity(clifford=4)
+
+    assert t_complexity(cirq.global_phase_operation(1j)) == TComplexity()
 
 
 def test_circuits():

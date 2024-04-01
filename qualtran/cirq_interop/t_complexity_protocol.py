@@ -99,6 +99,11 @@ def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
 
+    if isinstance(stc, cirq.GlobalPhaseGate) or (
+        isinstance(stc, cirq.Operation) and isinstance(stc.gate, cirq.GlobalPhaseGate)
+    ):
+        return TComplexity()
+
     if isinstance(stc, cirq.ClassicallyControlledOperation):
         stc = stc.without_classical_controls()
 
