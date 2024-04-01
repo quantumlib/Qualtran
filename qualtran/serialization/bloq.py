@@ -21,6 +21,7 @@ import cirq
 import numpy as np
 import sympy
 from sympy.parsing.sympy_parser import parse_expr
+from qualtran.protos import sympy_pb2
 
 from qualtran import (
     Bloq,
@@ -48,6 +49,111 @@ from qualtran.serialization import (
     resolver_dict,
 )
 
+# example
+# mult = sympy_pb2.Function.MULTIPLICATION
+# parameter1 = sympy_pb2.Parameter(const_int=-1)
+# parameter2 = sympy_pb2.Parameter(const_int=5)
+# operand1 = sympy_pb2.Operand(parameter=parameter1)
+# operand2 = sympy_pb2.Operand(parameter=parameter2)
+# sympy_pb2.Term(function=mult, operand=[operand1, operand2])
+
+def _get_sympy_function_type(expr: sympy.Expr)->int:
+    if isinstance(expr, sympy.core.mul.Mul):
+        return sympy_pb2.Function.MULTIPLICATION
+    if isinstance(expr, sympy.core.add.Add):
+        return sympy_pb2.Function.ADDITION
+    if isinstance(expr, sympy.core.power.Pow):
+        return sympy_pb2.Function.POWER
+    if isinstance(expr, sympy.core.Mod):
+        return sympy_pb2.Function.MOD
+    else:
+        return sympy_pb2.Function.NONE
+    # if isinstance(expr, sympy.core.symbol.Symbol) or issubclass(expr.__class__, sympy.core.numbers.Number):
+    #     return sympy_pb2.Function.TERM
+
+def _get_sympy_from_enum(enum: int):
+    enum_to_sympy = {
+        sympy_pb2.Function.MULTIPLICATION: sympy.core.mul.Mul,
+        sympy_pb2.Function.ADDITION: sympy.core.add.Add,
+        sympy_pb2.Function.POWER: sympy.core.power.Pow,
+        sympy_pb2.Function.MOD: sympy.core.Mod,
+        sympy_pb2.Function.NONE: None
+    }
+
+    # DO NOT SUBMIT: Remove this line
+    if enum == sympy_pb2.Function.MULTIPLICATION:
+        print("here")
+
+    return enum_to_sympy[enum]
+
+def _get_sympy_operand(expr: sympy.Expr):
+    if isinstance(expr, sympy.core.symbol.Symbol):
+        return sympy_pb2.Parameter(symbol=str(expr))
+    if issubclass(expr.__class__, sympy.core.numbers.Integer):
+        result = expr.numerator
+        if not isinstance(result, int):
+            raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
+        return sympy_pb2.Parameter(const_int=result)
+    if issubclass(expr.__class__, sympy.core.numbers.Number):
+        return sympy_pb2.Parameter(const_irrat=expr.name)
+
+
+def decompose_sympy(expr: sympy.Expr):
+    function = _get_sympy_function_type(expr)
+    operands = []
+    if function == sympy_pb2.Function.NONE:
+        parameter = _get_sympy_operand(expr)
+        operands.append(sympy_pb2.Operand(parameter=parameter))
+
+    else:
+        for term in expr.args:
+            inner_term = decompose_sympy(term)
+
+            operands.append(sympy_pb2.Operand(term=inner_term))
+
+    return sympy_pb2.Term(function=function, operands=operands)
+
+def _get_parameter(operand):
+    parameter_type = operand.parameter.WhichOneof("parameter")
+    if parameter_type == "symbol":
+        parameter = sympy.symbols(operand.parameter.symbol)
+    elif parameter_type == "const_int":
+        parameter = operand.parameter.const_int
+    elif parameter_type == "const_irrat":
+        # TODO: Check that this works
+        parameter = sympy.parse_expr(operand.parameter.const_irrat)
+
+    return parameter
+
+def _set_function(function, parameters):
+    return function(parameters)
+
+def compose_sympy(expr: sympy.Expr):
+    function = _get_sympy_from_enum(expr.function)
+    parameters = []
+    for operand in expr.operands:
+        if operand.HasField("term"):
+            parameters.append(compose_sympy(operand.term))
+        else:
+            parameter = _get_parameter(operand)
+            parameters.append(parameter)
+
+    if function:
+        return function(*parameters)
+    else:
+        if len(parameters) == 1:
+            return parameters[0]
+
+
+
+
+
+# expr.operands[1].term.operands[0].term.operands[0].term.operands[0].parameter.symbol
+
+
+
+
+
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, int):
@@ -57,7 +163,7 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, str):
         return bloq_pb2.BloqArg(name=name, string_val=val)
     if isinstance(val, sympy.Expr):
-        return bloq_pb2.BloqArg(name=name, sympy_expr=str(val))
+        return bloq_pb2.BloqArg(name=name, sympy_expr=decompose_sympy(val))
     if isinstance(val, Register):
         return bloq_pb2.BloqArg(name=name, register=registers.register_to_proto(val))
     if isinstance(val, tuple) and all(isinstance(x, Register) for x in val):
@@ -81,7 +187,7 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
     if arg.HasField("string_val"):
         return {arg.name: arg.string_val}
     if arg.HasField("sympy_expr"):
-        return {arg.name: parse_expr(arg.sympy_expr)}
+        return {arg.name: compose_sympy(arg.sympy_expr)}
     if arg.HasField("register"):
         return {arg.name: registers.register_from_proto(arg.register)}
     if arg.HasField("registers"):
