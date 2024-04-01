@@ -14,10 +14,12 @@
 
 """Classes for drawing bloqs with FlameGraph."""
 import functools
+import tempfile
 import pathlib
+import subprocess
+
 from typing import List, Optional, Sequence, Union
 
-import attrs
 import IPython.display
 import networkx as nx
 
@@ -78,7 +80,7 @@ def get_flame_graph_data(
     file_path: Union[None, pathlib.Path, str] = None,
     keep: Optional[Sequence['Bloq']] = _keep_if_small,
     **kwargs,
-) -> str:
+) -> List[str]:
     data = []
     for bloq in bloqs:
         call_graph, _ = bloq.call_graph(keep=keep, **kwargs)
@@ -88,37 +90,33 @@ def get_flame_graph_data(
         with open(file_path, 'w') as f:
             f.write('\n'.join(data))
     else:
-        return '\n'.join(data)
+        return data
 
 
-def show_flame_graph(
+def get_flame_graph_svg_data(
     *bloqs: Bloq, file_path: Union[None, pathlib.Path, str] = None, **kwargs
-) -> None:
+) -> Optional[str]:
     data = get_flame_graph_data(*bloqs, **kwargs)
-    import pathlib
-    import subprocess
 
-    pipe = subprocess.Popen(
-        [pathlib.Path(__file__).resolve().parent / "flamegraph.pl --countname='TCounts' "],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+    data_file = tempfile.TemporaryFile(mode='w')
+    data_file_path = tempfile.gettempdir() + f'/{data_file.name}'
+    flame_graph_path = pathlib.Path(__file__).resolve().parent.parent / "third_party/flamegraph.pl"
+
+    data_file.write('\n'.join(data))
+    svg_data = subprocess.run(
+        [flame_graph_path, "--countname", "TCounts", f'{data_file_path}'],
+        capture_output=True,
         text=True,
-        shell=True,
-    )
-    pipe.stdin.write(data)
-    svg_data = pipe.communicate(input=data)[0]
-    pipe.stdin.close()
+    ).stdout
+    data_file.close()
+
     if file_path:
         with open(file_path, 'w') as f:
             f.write(svg_data)
     else:
+        return svg_data
 
-        @attrs.frozen
-        class _InteractiveSVG:
-            svg_content: str
 
-            def _repr_html_(self):
-                return self.svg_content
-
-        IPython.display.display(_InteractiveSVG(svg_data))
+def show_flame_graph(*bloqs: Bloq, **kwargs) -> None:
+    svg_data = get_flame_graph_svg_data(*bloqs, **kwargs)
+    IPython.display.display(IPython.display.SVG(svg_data))
