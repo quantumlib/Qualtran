@@ -17,7 +17,7 @@ from typing import Dict, Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, Register, Side, Signature, SoquetT
+from qualtran import Bloq, bloq_example, BloqBuilder, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
     FlagZeroAsFailure,
@@ -25,7 +25,9 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
     TestNuInequality,
     TestNuLessThanMu,
 )
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -55,8 +57,8 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
         mu: the register to prepare the superposition over.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 21, Eq 77.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 21, Eq 77.
     """
     bitsize_n: int
     bitsize_p: int
@@ -68,7 +70,9 @@ class PrepareMuUnaryEncodedOneHotWithProj(Bloq):
 
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register("mu", self.bitsize_n), Register("flag", 1, side=Side.RIGHT)])
+        return Signature(
+            [Register("mu", QAny(self.bitsize_n)), Register("flag", QBit(), side=Side.RIGHT)]
+        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.adjoint:
@@ -105,8 +109,8 @@ class PrepareNuStateWithProj(Bloq):
         flag_nu: Flag for success of the state preparation.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 19, section B
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 19, section B
     """
     num_bits_p: int
     num_bits_n: int
@@ -118,10 +122,10 @@ class PrepareNuStateWithProj(Bloq):
         n_m = (self.m_param - 1).bit_length()
         return Signature(
             [
-                Register("mu", bitsize=self.num_bits_n),
-                Register("nu", bitsize=self.num_bits_n + 1, shape=(3,)),
-                Register("m", bitsize=n_m),
-                Register("flag_nu", bitsize=1),
+                Register("mu", QAny(bitsize=self.num_bits_n)),
+                Register("nu", QAny(bitsize=self.num_bits_n + 1), shape=(3,)),
+                Register("m", QAny(bitsize=n_m)),
+                Register("flag_nu", QBit()),
             ]
         )
 

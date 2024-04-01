@@ -16,7 +16,7 @@ import attrs
 import pytest
 import sympy
 
-from qualtran import Register, Side
+from qualtran import QAny, Register, Side
 from qualtran.serialization.registers import (
     register_from_proto,
     register_to_proto,
@@ -39,7 +39,7 @@ from qualtran.serialization.registers import (
     ],
 )
 def test_registers_to_proto(bitsize, shape, side):
-    reg = Register('my_reg', bitsize=bitsize, shape=shape, side=side)
+    reg = Register('my_reg', dtype=QAny(bitsize), shape=shape, side=side)
     reg_proto = register_to_proto(reg)
     assert reg_proto.name == 'my_reg'
     if shape and isinstance(shape[0], sympy.Expr):
@@ -47,9 +47,9 @@ def test_registers_to_proto(bitsize, shape, side):
     else:
         assert tuple(s.int_val for s in reg_proto.shape) == shape
     if isinstance(bitsize, int):
-        assert reg_proto.bitsize.int_val == bitsize
+        assert reg_proto.dtype.qany.bitsize.int_val == bitsize
     else:
-        assert sympy.parse_expr(reg_proto.bitsize.sympy_expr) == bitsize
+        assert sympy.parse_expr(reg_proto.dtype.qany.bitsize.sympy_expr) == bitsize
     assert reg_proto.side == side.value
 
     assert register_from_proto(reg_proto) == reg
@@ -60,4 +60,4 @@ def test_registers_to_proto(bitsize, shape, side):
     registers_proto = registers_to_proto(registers)
     assert list(registers_proto.registers) == [register_to_proto(r) for r in registers]
 
-    assert registers_from_proto(registers_proto) == registers
+    assert registers_from_proto(registers_proto) == tuple(registers)

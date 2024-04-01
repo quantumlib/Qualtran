@@ -22,7 +22,9 @@ from qualtran.bloqs.arithmetic.comparison import LessThanEqual
 from qualtran.bloqs.arithmetic.conversions import ToContiguousIndex
 from qualtran.bloqs.basic_gates import CSwap, Toffoli
 from qualtran.bloqs.chemistry.black_boxes import QROAM, QROAMTwoRegs
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

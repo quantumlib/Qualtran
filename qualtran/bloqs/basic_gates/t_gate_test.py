@@ -19,12 +19,11 @@ import numpy as np
 
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Hadamard, PlusState, TGate
+from qualtran.bloqs.basic_gates.t_gate import _t_gate
 
 
-def _make_t_gate():
-    from qualtran.bloqs.basic_gates import TGate
-
-    return TGate()
+def test_t_gate(bloq_autotester):
+    bloq_autotester(_t_gate)
 
 
 def test_call_graph():
@@ -36,9 +35,10 @@ def test_to_cirq():
     bb = BloqBuilder()
     q = bb.add(PlusState())
     q = bb.add(TGate(), q=q)
+    q = bb.add(TGate(is_adjoint=True), q=q)
     cbloq = bb.finalize(q=q)
     circuit, _ = cbloq.to_cirq_circuit()
-    cirq.testing.assert_has_diagram(circuit, "_c(0): ───H───T───")
+    cirq.testing.assert_has_diagram(circuit, "_c(0): ───H───T───T^-1───")
 
 
 def test_tensors():

@@ -21,7 +21,7 @@ from qualtran._infra.gate_with_registers import get_named_qubits
 
 
 def test_register():
-    r = Register("my_reg", 5)
+    r = Register("my_reg", QAny(5))
     assert r.name == 'my_reg'
     assert r.bitsize == 5
     assert r.shape == tuple()
@@ -32,7 +32,7 @@ def test_register():
 
 
 def test_multidim_register():
-    r = Register("my_reg", bitsize=1, shape=(2, 3), side=Side.RIGHT)
+    r = Register("my_reg", QBit(), shape=(2, 3), side=Side.RIGHT)
     idxs = list(r.all_idxs())
     assert len(idxs) == 2 * 3
 
@@ -40,7 +40,7 @@ def test_multidim_register():
     assert r.side & Side.THRU
     assert r.total_bits() == 2 * 3
 
-    assert r.adjoint() == Register("my_reg", bitsize=1, shape=(2, 3), side=Side.LEFT)
+    assert r.adjoint() == Register("my_reg", QBit(), shape=(2, 3), side=Side.LEFT)
 
 
 @pytest.mark.parametrize('n, N, m, M', [(4, 10, 5, 19), (4, 16, 5, 32)])
@@ -55,8 +55,6 @@ def test_selection_registers_indexing(n, N, m, M):
 
 
 def test_selection_registers_consistent():
-    with pytest.raises(ValueError, match="should be flat"):
-        _ = Register('a', BoundedQUInt(3, 5), shape=(3, 5))
     with pytest.raises(ValueError, match=".*iteration length is too large "):
         _ = Register('a', BoundedQUInt(3, 10))
 
@@ -82,11 +80,12 @@ def test_registers_getitem_raises():
 
 
 def test_signature():
-    r1 = Register("r1", 5)
-    r2 = Register("r2", 2)
-    r3 = Register("r3", 1)
+    r1 = Register("r1", QAny(5))
+    r2 = Register("r2", QAny(2))
+    r3 = Register("r3", QBit())
     signature = Signature([r1, r2, r3])
     assert len(signature) == 3
+    assert signature.n_qubits() == 8
 
     assert signature[0] == r1
     assert signature[1] == r2
@@ -121,9 +120,10 @@ def test_signature():
 
 
 def test_signature_build():
-    sig1 = Signature([Register("r1", 5), Register("r2", 2)])
+    sig1 = Signature([Register("r1", QAny(5)), Register("r2", QAny(2))])
     sig2 = Signature.build(r1=5, r2=2)
     assert sig1 == sig2
+    assert sig1.n_qubits() == 7
     sig1 = Signature([Register("r1", QInt(7)), Register("r2", QBit())])
     sig2 = Signature.build_from_dtypes(r1=QInt(7), r2=QBit())
     assert sig1 == sig2
@@ -133,35 +133,43 @@ def test_signature_build():
 
 
 def test_and_regs():
-    signature = Signature([Register('control', 2), Register('target', 1, side=Side.RIGHT)])
-    assert list(signature.lefts()) == [Register('control', 2)]
+    signature = Signature(
+        [Register('control', QAny(2)), Register('target', QBit(), side=Side.RIGHT)]
+    )
+    assert list(signature.lefts()) == [Register('control', QAny(2))]
     assert list(signature.rights()) == [
-        Register('control', 2),
-        Register('target', 1, side=Side.RIGHT),
+        Register('control', QAny(2)),
+        Register('target', QBit(), side=Side.RIGHT),
     ]
+    assert signature.n_qubits() == 3
 
     adj = signature.adjoint()
-    assert list(adj.rights()) == [Register('control', 2)]
-    assert list(adj.lefts()) == [Register('control', 2), Register('target', 1, side=Side.LEFT)]
+    assert list(adj.rights()) == [Register('control', QAny(2))]
+    assert list(adj.lefts()) == [
+        Register('control', QAny(2)),
+        Register('target', QBit(), side=Side.LEFT),
+    ]
+    assert adj.n_qubits() == 3
 
 
 def test_agg_split():
     n_targets = 3
     sig = Signature(
         [
-            Register('control', 1),
-            Register('target', bitsize=n_targets, shape=tuple(), side=Side.LEFT),
-            Register('target', bitsize=1, shape=(n_targets,), side=Side.RIGHT),
+            Register('control', QBit()),
+            Register('target', QAny(n_targets), shape=tuple(), side=Side.LEFT),
+            Register('target', QBit(), shape=(n_targets,), side=Side.RIGHT),
         ]
     )
     assert len(list(sig.groups())) == 2
     assert sorted([k for k, v in sig.groups()]) == ['control', 'target']
     assert len(list(sig.lefts())) == 2
     assert len(list(sig.rights())) == 2
+    assert sig.n_qubits() == n_targets + 1
 
 
 def test_get_named_qubits_multidim():
-    regs = Signature([Register('q', shape=(2, 3), bitsize=4)])
+    regs = Signature([Register('q', shape=(2, 3), dtype=QAny(4))])
     quregs = get_named_qubits(regs.lefts())
     assert quregs['q'].shape == (2, 3, 4)
     assert quregs['q'][1, 2, 3] == cirq.NamedQubit('q[1, 2][3]')
@@ -169,21 +177,21 @@ def test_get_named_qubits_multidim():
 
 def test_duplicate_names():
     regs = Signature(
-        [Register('control', 1, side=Side.LEFT), Register('control', 1, side=Side.RIGHT)]
+        [Register('control', QBit(), side=Side.LEFT), Register('control', QBit(), side=Side.RIGHT)]
     )
     assert len(list(regs.lefts())) == 1
 
     with pytest.raises(ValueError, match=r'.*control is specified more than once per side.'):
-        Signature([Register('control', 1), Register('control', 1)])
+        Signature([Register('control', QBit()), Register('control', QBit())])
 
 
 def test_dtypes_converter():
-    r1 = Register("my_reg", 5)
+    r1 = Register("my_reg", QAny(5))
     r2 = Register("my_reg", QAny(5))
     assert r1 == r2
-    r1 = Register("my_reg", 1)
+    r1 = Register("my_reg", QBit())
     r2 = Register("my_reg", QBit())
     assert r1 == r2
-    r2 = Register("my_reg", 5)
+    r2 = Register("my_reg", QAny(5))
     r2 = Register("my_reg", QInt(5))
     assert r1 != r2

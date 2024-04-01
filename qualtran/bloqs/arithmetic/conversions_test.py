@@ -12,6 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import pytest
+
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran.bloqs.arithmetic.conversions import (
     _signed_to_twos,
@@ -35,7 +38,7 @@ def test_to_contiguous_index_t_complexity():
     bitsize = 5
     q0 = bb.add_register('mu', bitsize)
     q1 = bb.add_register('nu', bitsize)
-    out = bb.add_register('s', 1)
+    out = bb.add_register('s', 2 * bitsize)
     q0, q1, out = bb.add(ToContiguousIndex(bitsize, 2 * bitsize), mu=q0, nu=q1, s=out)
     cbloq = bb.finalize(mu=q0, nu=q1, s=out)
     assert cbloq.t_complexity().t == 4 * 29
@@ -49,3 +52,8 @@ def test_signed_to_twos_complement_t_complexity():
     cbloq = bb.finalize(x=q0)
     _, sigma = cbloq.call_graph()
     assert sigma[TGate()] == 4 * (5 - 2)
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook("conversions")

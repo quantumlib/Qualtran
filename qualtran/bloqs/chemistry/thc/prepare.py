@@ -20,7 +20,17 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran.bloqs.arithmetic import (
     EqualsAConstant,
@@ -29,16 +39,15 @@ from qualtran.bloqs.arithmetic import (
     LessThanEqual,
     ToContiguousIndex,
 )
-from qualtran.bloqs.basic_gates import Hadamard, Ry, Toffoli, XGate
-from qualtran.bloqs.basic_gates.swap import CSwap
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.bloqs.on_each import OnEach
+from qualtran.bloqs.basic_gates import CSwap, Hadamard, Ry, Toffoli, XGate
+from qualtran.bloqs.basic_gates.on_each import OnEach
+from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
-from qualtran.bloqs.select_swap_qrom import SelectSwapQROM
-from qualtran.bloqs.swap_network import CSwap
 from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
+from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -86,11 +95,11 @@ class UniformSuperpositionTHC(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("mu", bitsize=self.num_mu.bit_length()),
-                Register("nu", bitsize=self.num_mu.bit_length()),
-                Register("nu_eq_mp1", bitsize=1),
-                Register("succ", bitsize=1),
-                Register("rot", bitsize=1),
+                Register("mu", QAny(bitsize=self.num_mu.bit_length())),
+                Register("nu", QAny(bitsize=self.num_mu.bit_length())),
+                Register("nu_eq_mp1", QBit()),
+                Register("succ", QBit()),
+                Register("rot", QBit()),
             ]
         )
 
@@ -173,11 +182,11 @@ class UniformSuperpositionTHC(Bloq):
             GreaterThanConstant(num_bits_mu, self.num_spin_orb // 2), x=mu, target=gt_mu_n
         )
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
-        ctrls = bb.join(np.array([lte_nu_mp1, lte_mu_nu, junk]))
-        ctrls, succ = bb.add(
-            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X), controls=ctrls, target=succ
+        (lte_nu_mp1, lte_mu_nu, junk), succ = bb.add(
+            MultiControlPauli(cvs=(1, 1, 1), target_gate=cirq.X),
+            controls=np.array([lte_nu_mp1, lte_mu_nu, junk]),
+            target=succ,
         )
-        lte_nu_mp1, lte_mu_nu, junk = bb.split(ctrls)
         (nu_eq_mp1, gt_mu_n), junk = bb.add(Toffoli(), ctrl=[nu_eq_mp1, gt_mu_n], target=junk)
         nu, lte_nu_mp1 = bb.add(lt_gate, x=nu, target=lte_nu_mp1)
         mu, nu, lte_mu_nu = bb.add(lte_gate, x=mu, y=nu, target=lte_mu_nu)
@@ -313,6 +322,8 @@ class PrepareTHC(PrepareOracle):
             Register("plus_b", BoundedQUInt(bitsize=1)),
             Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
             Register("rot", BoundedQUInt(bitsize=1)),
+            Register('succ', QBit()),
+            Register('nu_eq_mp1', QBit()),
         )
 
     @cached_property
@@ -320,15 +331,13 @@ class PrepareTHC(PrepareOracle):
         data_size = self.num_spin_orb // 2 + self.num_mu * (self.num_mu + 1) // 2
         log_mu = self.num_mu.bit_length()
         return (
-            Register('succ', bitsize=1),
-            Register('nu_eq_mp1', bitsize=1),
-            Register('theta', bitsize=1),
-            Register('s', bitsize=(data_size - 1).bit_length()),
-            Register('alt_mn', bitsize=log_mu, shape=(2,)),
-            Register('alt_theta', bitsize=1),
-            Register('keep', bitsize=self.keep_bitsize),
-            Register('less_than', bitsize=1),
-            Register('extra_ctrl', bitsize=1),
+            Register('theta', QBit()),
+            Register('s', QAny(bitsize=(data_size - 1).bit_length())),
+            Register('alt_mn', QAny(bitsize=log_mu), shape=(2,)),
+            Register('alt_theta', QBit()),
+            Register('keep', QAny(bitsize=self.keep_bitsize)),
+            Register('less_than', QBit()),
+            Register('extra_ctrl', QBit()),
         )
 
     def build_composite_bloq(
@@ -396,11 +405,11 @@ class PrepareTHC(PrepareOracle):
         plus_a = bb.add(Hadamard(), q=plus_a)
         plus_b = bb.add(Hadamard(), q=plus_b)
         plus_mn = bb.add(Hadamard(), q=plus_mn)
-        ctrls = bb.join(np.array([nu_eq_mp1, plus_a]))
-        ctrls, extra_ctrl = bb.add(
-            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X), controls=ctrls, target=extra_ctrl
+        (nu_eq_mp1, plus_a), extra_ctrl = bb.add(
+            MultiControlPauli(cvs=(0, 1), target_gate=cirq.X),
+            controls=np.array([nu_eq_mp1, plus_a]),
+            target=extra_ctrl,
         )
-        nu_eq_mp1, plus_a = bb.split(ctrls)
         extra_ctrl, mu, nu = bb.add(CSwap(bitsize=log_mu), ctrl=extra_ctrl, x=mu, y=nu)
         out_regs = {
             'mu': mu,
@@ -448,7 +457,7 @@ def _thc_uni() -> UniformSuperpositionTHC:
     return thc_uni
 
 
-@bloq_example
+@bloq_example(generalizer=[ignore_split_join, ignore_cliffords])
 def _thc_prep() -> PrepareTHC:
     num_spat = 4
     num_mu = 8

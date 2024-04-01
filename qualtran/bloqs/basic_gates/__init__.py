@@ -22,9 +22,13 @@ requirements.
 """
 
 from .cnot import CNOT
+from .global_phase import GlobalPhase
 from .hadamard import Hadamard
-from .rotation import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
-from .swap import CSwap, TwoBitCSwap, TwoBitSwap
+from .on_each import OnEach
+from .rotation import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+from .s_gate import SGate
+from .su2_rotation import SU2RotationGate
+from .swap import CSwap, Swap, TwoBitCSwap, TwoBitSwap
 from .t_gate import TGate
 from .toffoli import Toffoli
 from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate

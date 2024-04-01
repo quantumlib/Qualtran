@@ -17,72 +17,88 @@ import inspect
 from typing import Any, Callable, Dict, List, Optional
 
 import attrs
+import cirq
+import numpy as np
+import sympy
+from sympy.parsing.sympy_parser import parse_expr
 
 from qualtran import (
     Bloq,
     BloqInstance,
     CompositeBloq,
     Connection,
-    Controlled,
+    CtrlSpec,
     DanglingT,
     DecomposeNotImplementedError,
     DecomposeTypeError,
     LeftDangle,
+    QDType,
+    Register,
     RightDangle,
     Signature,
     Soquet,
 )
-from qualtran.bloqs import and_bloq, arithmetic, basic_gates, factoring, sorting, swap_network
-from qualtran.bloqs.util_bloqs import Allocate, ArbitraryClifford, Free, Join, Split
-from qualtran.cirq_interop import CirqGateAsBloq
-from qualtran.protos import args_pb2, bloq_pb2
-from qualtran.serialization import annotations, args, registers
+from qualtran.protos import bloq_pb2
+from qualtran.serialization import (
+    annotations,
+    args,
+    ctrl_spec,
+    data_types,
+    registers,
+    resolver_dict,
+)
 
-RESOLVER_DICT = {
-    'CNOT': basic_gates.CNOT,
-    'Rx': basic_gates.Rx,
-    'Ry': basic_gates.Ry,
-    'Rz': basic_gates.Rz,
-    'CSwap': basic_gates.CSwap,
-    'TwoBitCSwap': basic_gates.TwoBitCSwap,
-    'TwoBitSwap': basic_gates.TwoBitSwap,
-    'TGate': basic_gates.TGate,
-    'MinusEffect': basic_gates.MinusEffect,
-    'MinusState': basic_gates.MinusState,
-    'PlusState': basic_gates.PlusState,
-    'PlusEffect': basic_gates.PlusEffect,
-    'XGate': basic_gates.XGate,
-    'IntEffect': basic_gates.IntEffect,
-    'IntState': basic_gates.IntState,
-    'OneEffect': basic_gates.OneEffect,
-    'OneState': basic_gates.OneState,
-    'ZeroEffect': basic_gates.ZeroEffect,
-    'ZeroState': basic_gates.ZeroState,
-    'ZGate': basic_gates.ZGate,
-    'CtrlAddK': factoring.CtrlAddK,
-    'CtrlModAddK': factoring.CtrlModAddK,
-    'CtrlScaleModAdd': factoring.CtrlScaleModAdd,
-    'ModExp': factoring.ModExp,
-    'CtrlModMul': factoring.CtrlModMul,
-    'And': and_bloq.And,
-    'MultiAnd': and_bloq.MultiAnd,
-    'Add': arithmetic.Add,
-    'Square': arithmetic.Square,
-    'SumOfSquares': arithmetic.SumOfSquares,
-    'Product': arithmetic.Product,
-    'GreaterThan': arithmetic.GreaterThan,
-    'Comparator': sorting.Comparator,
-    'BitonicSort': sorting.BitonicSort,
-    'CSwapApprox': swap_network.CSwapApprox,
-    'SwapWithZero': swap_network.SwapWithZero,
-    'Split': Split,
-    'Join': Join,
-    'Allocate': Allocate,
-    'Free': Free,
-    'ArbitraryClifford': ArbitraryClifford,
-    'Controlled': Controlled,
-    'CirqGateAsBloq': CirqGateAsBloq,
-}
+
+def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
+    if isinstance(val, int):
+        return bloq_pb2.BloqArg(name=name, int_val=val)
+    if isinstance(val, float):
+        return bloq_pb2.BloqArg(name=name, float_val=val)
+    if isinstance(val, str):
+        return bloq_pb2.BloqArg(name=name, string_val=val)
+    if isinstance(val, sympy.Expr):
+        return bloq_pb2.BloqArg(name=name, sympy_expr=str(val))
+    if isinstance(val, Register):
+        return bloq_pb2.BloqArg(name=name, register=registers.register_to_proto(val))
+    if isinstance(val, tuple) and all(isinstance(x, Register) for x in val):
+        return bloq_pb2.BloqArg(name=name, registers=registers.registers_to_proto(val))
+    if isinstance(val, cirq.Gate):
+        return bloq_pb2.BloqArg(name=name, cirq_json_gzip=cirq.to_json_gzip(val))
+    if isinstance(val, QDType):
+        return bloq_pb2.BloqArg(name=name, qdata_type=data_types.data_type_to_proto(val))
+    if isinstance(val, CtrlSpec):
+        return bloq_pb2.BloqArg(name=name, ctrl_spec=ctrl_spec.ctrl_spec_to_proto(val))
+    if isinstance(val, (np.ndarray, tuple, list)):
+        return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(val))
+    if np.iscomplexobj(val):
+        return bloq_pb2.BloqArg(name=name, complex_val=args.complex_to_proto(val))
+    raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
+
+
+def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
+    if arg.HasField("int_val"):
+        return {arg.name: arg.int_val}
+    if arg.HasField("float_val"):
+        return {arg.name: arg.float_val}
+    if arg.HasField("string_val"):
+        return {arg.name: arg.string_val}
+    if arg.HasField("sympy_expr"):
+        return {arg.name: parse_expr(arg.sympy_expr)}
+    if arg.HasField("register"):
+        return {arg.name: registers.register_from_proto(arg.register)}
+    if arg.HasField("registers"):
+        return {arg.name: registers.registers_from_proto(arg.registers)}
+    if arg.HasField("cirq_json_gzip"):
+        return {arg.name: cirq.read_json_gzip(gzip_raw=arg.cirq_json_gzip)}
+    if arg.HasField("qdata_type"):
+        return {arg.name: data_types.data_type_from_proto(arg.qdata_type)}
+    if arg.HasField("ctrl_spec"):
+        return {arg.name: ctrl_spec.ctrl_spec_from_proto(arg.ctrl_spec)}
+    if arg.HasField("ndarray"):
+        return {arg.name: args.ndarray_from_proto(arg.ndarray)}
+    if arg.HasField("complex_val"):
+        return {arg.name: args.complex_from_proto(arg.complex_val)}
+    raise ValueError(f"Cannot deserialize {arg=}")
 
 
 class _BloqLibDeserializer:
@@ -102,20 +118,20 @@ class _BloqLibDeserializer:
         if bloq_id in self.idx_to_bloq:
             return self.idx_to_bloq[bloq_id]
         bloq_proto: bloq_pb2.BloqLibrary.BloqWithDecomposition = self.idx_to_proto[bloq_id]
-        if bloq_proto.bloq.name == 'CompositeBloq':
+        if bloq_proto.bloq.name.endswith('.CompositeBloq'):
             self.idx_to_bloq[bloq_id] = CompositeBloq(
                 connections=tuple(
                     self._connection_from_proto(cxn) for cxn in bloq_proto.decomposition
                 ),
                 signature=Signature(registers.registers_from_proto(bloq_proto.bloq.registers)),
             )
-        elif bloq_proto.bloq.name in RESOLVER_DICT:
+        elif bloq_proto.bloq.name in resolver_dict.RESOLVER_DICT:
             kwargs = {}
             for arg in bloq_proto.bloq.args:
                 if arg.HasField('subbloq'):
                     kwargs[arg.name] = self.bloq_id_to_bloq(arg.subbloq)
                 else:
-                    kwargs.update(args.arg_from_proto(arg))
+                    kwargs.update(arg_from_proto(arg))
             self.idx_to_bloq[bloq_id] = self._construct_bloq(bloq_proto.bloq.name, **kwargs)
         else:
             raise ValueError(f"Unable to find a Bloq corresponding to {bloq_proto.bloq.name=}")
@@ -123,7 +139,7 @@ class _BloqLibDeserializer:
 
     def _construct_bloq(self, name: str, **kwargs):
         """Construct a Bloq using serialized name and BloqArgs."""
-        return RESOLVER_DICT[name](**kwargs)
+        return resolver_dict.RESOLVER_DICT[name](**kwargs)
 
     def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
         return Connection(
@@ -180,7 +196,7 @@ def bloqs_to_proto(
         try:
             bloq_counts = {
                 bloq_to_idx[b]: args.int_or_sympy_to_proto(c)
-                for b, c in sorted(bloq.bloq_counts().items(), key=lambda x: x[1])
+                for b, c in sorted(bloq.bloq_counts().items(), key=lambda x: type(x[0]).__name__)
             }
         except stop_recursing_exceptions:
             bloq_counts = None
@@ -273,8 +289,9 @@ def _populate_bloq_to_idx(
                     _populate_bloq_to_idx(binst.bloq, bloq_to_idx, pred, max_depth - 1)
                 else:
                     _populate_bloq_to_idx(binst.bloq, bloq_to_idx, pred, 0)
-        except NotImplementedError:
-            # NotImplementedError is raised if `bloq` does not have a decomposition.
+        except (DecomposeTypeError, DecomposeNotImplementedError) as e:
+            # DecomposeTypeError/DecomposeNotImplementedError are raised if `bloq` does not have a
+            # decomposition.
             ...
 
         # Approximately decompose the current Bloq and its decomposed Bloqs.
@@ -302,8 +319,9 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
     except (DecomposeTypeError, DecomposeNotImplementedError, TypeError):
         t_complexity = None
 
+    name = bloq.__module__ + "." + bloq.__class__.__qualname__
     return bloq_pb2.Bloq(
-        name=bloq.__class__.__name__,
+        name=name,
         registers=registers.registers_to_proto(bloq.signature),
         t_complexity=t_complexity,
         args=_bloq_args_to_proto(bloq, bloq_to_idx=bloq_to_idx),
@@ -312,18 +330,19 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
 
 def _bloq_args_to_proto(
     bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]
-) -> Optional[List[args_pb2.BloqArg]]:
+) -> Optional[List[bloq_pb2.BloqArg]]:
     if isinstance(bloq, CompositeBloq):
         return None
 
     ret = [
         _bloq_arg_to_proto(name=field.name, val=getattr(bloq, field.name), bloq_to_idx=bloq_to_idx)
         for field in _iter_fields(bloq)
+        if getattr(bloq, field.name) is not None
     ]
     return ret if ret else None
 
 
-def _bloq_arg_to_proto(name: str, val: Any, bloq_to_idx: Dict[Bloq, int]) -> args_pb2.BloqArg:
+def _bloq_arg_to_proto(name: str, val: Any, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.BloqArg:
     if isinstance(val, Bloq):
-        return args_pb2.BloqArg(name=name, subbloq=bloq_to_idx[val])
-    return args.arg_to_proto(name=name, val=val)
+        return bloq_pb2.BloqArg(name=name, subbloq=bloq_to_idx[val])
+    return arg_to_proto(name=name, val=val)

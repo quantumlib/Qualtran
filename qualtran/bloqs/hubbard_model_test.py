@@ -73,9 +73,11 @@ def test_hubbard_model_consistent_protocols():
     assert cirq.circuit_diagram_info(select_gate).wire_symbols == tuple(expected_symbols)
 
 
+@pytest.mark.notebook
 def test_hubbard_model_notebook():
     execute_notebook('hubbard_model')
 
 
+@pytest.mark.notebook
 def test_phase_estimation_of_qubitized_hubbard_model():
     execute_notebook('phase_estimation_of_quantum_walk')

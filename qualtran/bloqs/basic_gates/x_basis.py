@@ -22,7 +22,9 @@ from attrs import frozen
 from qualtran import (
     AddControlledT,
     Bloq,
+    bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     CtrlSpec,
     QBit,
     Register,
@@ -129,6 +131,15 @@ class PlusState(_XVector):
         return PlusEffect()
 
 
+@bloq_example
+def _plus_state() -> PlusState:
+    plus_state = PlusState()
+    return plus_state
+
+
+_PLUS_STATE_DOC = BloqDocSpec(bloq_cls=PlusState, examples=[_plus_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class PlusEffect(_XVector):
     """The effect <+|"""
@@ -138,6 +149,15 @@ class PlusEffect(_XVector):
 
     def adjoint(self) -> 'Bloq':
         return PlusState()
+
+
+@bloq_example
+def _plus_effect() -> PlusEffect:
+    plus_effect = PlusEffect()
+    return plus_effect
+
+
+_PLUS_EFFECT_DOC = BloqDocSpec(bloq_cls=PlusEffect, examples=[_plus_effect])
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -151,6 +171,15 @@ class MinusState(_XVector):
         return MinusEffect()
 
 
+@bloq_example
+def _minus_state() -> MinusState:
+    minus_state = MinusState()
+    return minus_state
+
+
+_MINUS_STATE_DOC = BloqDocSpec(bloq_cls=MinusState, examples=[_minus_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class MinusEffect(_XVector):
     """The effect <-|"""
@@ -160,6 +189,15 @@ class MinusEffect(_XVector):
 
     def adjoint(self) -> 'Bloq':
         return MinusState()
+
+
+@bloq_example
+def _minus_effect() -> MinusEffect:
+    minus_effect = MinusEffect()
+    return minus_effect
+
+
+_MINUS_EFFECT_DOC = BloqDocSpec(bloq_cls=MinusEffect, examples=[_minus_effect])
 
 
 @frozen
@@ -225,7 +263,7 @@ class XGate(Bloq):
         (q,) = q
         return cirq.X(q), {'q': [q]}
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         return TComplexity(clifford=1)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':

@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 
@@ -39,8 +39,8 @@ class ApplyNuclearPhase(Bloq):
         nu: The momentum transfer register.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) pg 25, paragraph 2.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        pg 25, paragraph 2.
     """
 
     num_bits_p: int
@@ -50,9 +50,9 @@ class ApplyNuclearPhase(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("l", bitsize=self.num_bits_nuc),
-                Register("Rl", bitsize=self.num_bits_nuc),
-                Register("nu", bitsize=self.num_bits_p, shape=(3,)),
+                Register("l", QAny(bitsize=self.num_bits_nuc)),
+                Register("Rl", QAny(bitsize=self.num_bits_nuc)),
+                Register("nu", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 
@@ -88,8 +88,7 @@ class SelectUVFirstQuantization(Bloq):
     Registers:
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int
@@ -102,13 +101,13 @@ class SelectUVFirstQuantization(Bloq):
         n_nu = self.num_bits_p + 1
         return Signature(
             [
-                Register("flag_tuv", bitsize=1),
-                Register("flag_uv", bitsize=1),
-                Register("l", bitsize=(self.num_atoms - 1).bit_length()),
-                Register("rl", bitsize=self.num_bits_nuc_pos),
-                Register("nu", bitsize=n_nu, shape=(3,)),
-                Register("p", bitsize=self.num_bits_p, shape=(3,)),
-                Register("q", bitsize=self.num_bits_p, shape=(3,)),
+                Register("flag_tuv", QBit()),
+                Register("flag_uv", QBit()),
+                Register("l", QAny(bitsize=(self.num_atoms - 1).bit_length())),
+                Register("rl", QAny(bitsize=self.num_bits_nuc_pos)),
+                Register("nu", QAny(bitsize=n_nu), shape=(3,)),
+                Register("p", QAny(bitsize=self.num_bits_p), shape=(3,)),
+                Register("q", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 
@@ -117,7 +116,7 @@ class SelectUVFirstQuantization(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost_tc = (SignedIntegerToTwosComplement(self.num_bits_p), 6)
-        cost_add = (Add(self.num_bits_p + 1), 6)  # + 2?
+        cost_add = (Add(QInt(self.num_bits_p + 1)), 6)  # + 2?
         cost_ctrl_add = (Toffoli(), 6 * (self.num_bits_p + 1))
         # + 2 as these numbers are larger from addition of $\nu$
         cost_inv_tc = (SignedIntegerToTwosComplement(self.num_bits_p + 2), 6)

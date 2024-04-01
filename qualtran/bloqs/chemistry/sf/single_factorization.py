@@ -33,7 +33,8 @@ from qualtran import (
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
-    BoundedQUInt,
+    QAny,
+    QBit,
     Register,
     Signature,
     SoquetT,
@@ -47,7 +48,6 @@ from qualtran.bloqs.chemistry.sf.prepare import (
 )
 from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
 from qualtran.bloqs.reflection import Reflection
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -105,9 +105,9 @@ class SingleFactorizationOneBody(Bloq):
     @property
     def control_registers(self) -> Iterable[Register]:
         return (
-            Register("succ_l", bitsize=1),
-            Register("l_ne_zero", bitsize=1),
-            Register('succ_pq', bitsize=1),
+            Register("succ_l", QBit()),
+            Register("l_ne_zero", QBit()),
+            Register('succ_pq', QBit()),
         )
 
     @property
@@ -138,7 +138,7 @@ class SingleFactorizationOneBody(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", bitsize=self.num_spin_orb // 2, shape=(2,)),)
+        return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @property
     def junk_registers(self) -> Iterable[Register]:
@@ -239,7 +239,7 @@ class SingleFactorizationOneBody(Bloq):
             (iprep_dag, 1),
             (CSwap(n), 2),
             (SelectSingleFactorization(num_spin_orb=self.num_spin_orb), 1),
-            (ArbitraryClifford(1), 4),
+            (Hadamard(), 4),
         }
 
 
@@ -291,16 +291,16 @@ class SingleFactorizationBlockEncoding(Bloq):
 
     @property
     def control_registers(self) -> Iterable[Register]:
-        return (Register('ctrl', bitsize=1, shape=(3,)),)
+        return (Register('ctrl', QBit(), shape=(3,)),)
 
     @property
     def selection_registers(self) -> Iterable[Register]:
         return (
-            Register("l", bitsize=self.num_aux.bit_length()),
-            Register("pq", bitsize=(self.num_spin_orb // 2 - 1).bit_length(), shape=(2,)),
-            Register("rot_aa", bitsize=1, shape=(2,)),
-            Register("swap_pq", bitsize=1),
-            Register("spin", bitsize=1),
+            Register("l", QAny(bitsize=self.num_aux.bit_length())),
+            Register("pq", QAny(bitsize=(self.num_spin_orb // 2 - 1).bit_length()), shape=(2,)),
+            Register("rot_aa", QBit(), shape=(2,)),
+            Register("swap_pq", QBit()),
+            Register("spin", QBit()),
         )
 
     @property
@@ -309,7 +309,7 @@ class SingleFactorizationBlockEncoding(Bloq):
 
     @property
     def target_registers(self) -> Iterable[Register]:
-        return (Register("sys", bitsize=self.num_spin_orb // 2, shape=(2,)),)
+        return (Register("sys", QAny(bitsize=self.num_spin_orb // 2), shape=(2,)),)
 
     @cached_property
     def signature(self) -> Signature:

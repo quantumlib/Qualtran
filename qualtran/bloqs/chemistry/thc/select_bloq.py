@@ -18,8 +18,18 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Register, Signature, SoquetT
-from qualtran._infra.data_types import BoundedQUInt
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqBuilder,
+    BloqDocSpec,
+    BoundedQUInt,
+    QAny,
+    QBit,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.select_and_prepare import SelectOracle
@@ -69,10 +79,10 @@ class THCRotations(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("nu_eq_mp1", bitsize=1),
-                Register("data", bitsize=self.num_bits_theta),
-                Register("sel", bitsize=self.num_mu.bit_length()),
-                Register("trg", bitsize=self.num_spin_orb // 2),
+                Register("nu_eq_mp1", QBit()),
+                Register("data", QAny(bitsize=self.num_bits_theta)),
+                Register("sel", QAny(bitsize=self.num_mu.bit_length())),
+                Register("trg", QAny(bitsize=self.num_spin_orb // 2)),
             ]
         )
 
@@ -117,6 +127,9 @@ class SelectTHC(SelectOracle):
         kr2: block sizes for QROM erasure for outputting rotation angles. This
             is for the second QROM (eq 35)
         control_val: A control bit for the entire gate.
+        keep_bitsize: number of bits for keep register for coherent alias
+        sampling. This can be determined from the PrepareTHC bloq. See
+        https://github.com/quantumlib/Qualtran/issues/549
 
     Registers:
         succ: success flag qubit from uniform state preparation
@@ -138,13 +151,14 @@ class SelectTHC(SelectOracle):
     num_mu: int
     num_spin_orb: int
     num_bits_theta: int
+    keep_bitsize: int
     kr1: int = 1
     kr2: int = 1
     control_val: Optional[int] = None
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -162,13 +176,15 @@ class SelectTHC(SelectOracle):
             Register("plus_mn", BoundedQUInt(bitsize=1)),
             Register("plus_a", BoundedQUInt(bitsize=1)),
             Register("plus_b", BoundedQUInt(bitsize=1)),
+            Register("sigma", BoundedQUInt(bitsize=self.keep_bitsize)),
+            Register("rot", BoundedQUInt(bitsize=1)),
         )
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("sys_a", bitsize=self.num_spin_orb // 2),
-            Register("sys_b", bitsize=self.num_spin_orb // 2),
+            Register("sys_a", QAny(bitsize=self.num_spin_orb // 2)),
+            Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
     def build_composite_bloq(
@@ -181,6 +197,8 @@ class SelectTHC(SelectOracle):
         plus_mn: SoquetT,
         plus_a: SoquetT,
         plus_b: SoquetT,
+        sigma: SoquetT,
+        rot: SoquetT,
         sys_a: SoquetT,
         sys_b: SoquetT,
     ) -> Dict[str, 'SoquetT']:
@@ -284,6 +302,8 @@ class SelectTHC(SelectOracle):
             'plus_mn': plus_mn,
             'plus_a': plus_a,
             'plus_b': plus_b,
+            'sigma': sigma,
+            'rot': rot,
             'sys_a': sys_a,
             'sys_b': sys_b,
         }
@@ -294,7 +314,9 @@ def _thc_sel() -> SelectTHC:
     num_mu = 8
     num_mu = 10
     num_spin_orb = 2 * 4
-    thc_sel = SelectTHC(num_mu=num_mu, num_spin_orb=num_spin_orb, num_bits_theta=12)
+    thc_sel = SelectTHC(
+        num_mu=num_mu, num_spin_orb=num_spin_orb, num_bits_theta=12, keep_bitsize=10
+    )
     return thc_sel
 
 

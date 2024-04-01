@@ -16,6 +16,7 @@ from typing import Optional
 
 import attrs
 import numpy as np
+import pytest
 import sympy
 
 from qualtran import Bloq
@@ -24,12 +25,6 @@ from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.bloqs.util_bloqs import Join, Split
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.testing import execute_notebook
-
-
-def _make_modexp():
-    from qualtran.bloqs.factoring.mod_exp import ModExp
-
-    return ModExp(base=3, mod=15, exp_bitsize=3, x_bitsize=2048)
 
 
 def test_mod_exp_consistent_classical():
@@ -70,7 +65,6 @@ def test_modexp_symb_manual():
 
 
 def test_mod_exp_consistent_counts():
-
     bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
     counts1 = bloq.bloq_counts()
 
@@ -99,9 +93,11 @@ def test_modexp_symb(bloq_autotester):
     bloq_autotester(_modexp_symb)
 
 
+@pytest.mark.notebook
 def test_intro_notebook():
     execute_notebook('factoring-via-modexp')
 
 
-def test_ref_notebook():
-    execute_notebook('ref-factoring')
+@pytest.mark.notebook
+def test_notebook():
+    execute_notebook('mod_exp')

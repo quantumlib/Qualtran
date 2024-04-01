@@ -26,6 +26,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     CompositeBloq,
     DecomposeTypeError,
     QAny,
@@ -38,7 +39,6 @@ from qualtran import (
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting import big_O
 from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
@@ -159,6 +159,9 @@ def _zero_state() -> ZeroState:
     return zero_state
 
 
+_ZERO_STATE_DOC = BloqDocSpec(bloq_cls=ZeroState, examples=[_zero_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class ZeroEffect(_ZVector):
     """The effect <0|"""
@@ -174,6 +177,9 @@ class ZeroEffect(_ZVector):
 def _zero_effect() -> ZeroEffect:
     zero_effect = ZeroEffect()
     return zero_effect
+
+
+_ZERO_EFFECT_DOC = BloqDocSpec(bloq_cls=ZeroEffect, examples=[_zero_effect])
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -193,6 +199,9 @@ def _one_state() -> OneState:
     return one_state
 
 
+_ONE_STATE_DOC = BloqDocSpec(bloq_cls=OneState, examples=[_one_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class OneEffect(_ZVector):
     """The effect <1|"""
@@ -208,6 +217,9 @@ class OneEffect(_ZVector):
 def _one_effect() -> OneEffect:
     one_effect = OneEffect()
     return one_effect
+
+
+_ONE_EFFECT_DOC = BloqDocSpec(bloq_cls=OneEffect, examples=[_one_effect])
 
 
 @frozen
@@ -251,6 +263,9 @@ class ZGate(Bloq):
 
         (q,) = q
         return cirq.Z(q), {'q': [q]}
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(clifford=1)
 
 
 @bloq_example
@@ -350,12 +365,13 @@ class _IntVector(Bloq):
             return {'val': self.val}
 
         assert val == self.val, val
+        return {}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(ArbitraryClifford(self.bitsize), big_O(1))}
+        return {(ArbitraryClifford(self.bitsize), 1)}
 
     def short_name(self) -> str:
         return f'{self.val}'
@@ -392,6 +408,9 @@ def _int_state() -> IntState:
     return int_state
 
 
+_INT_STATE_DOC = BloqDocSpec(bloq_cls=IntState, examples=[_int_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class IntEffect(_IntVector):
     """The effect <val| for non-negative integer val
@@ -412,3 +431,6 @@ class IntEffect(_IntVector):
 def _int_effect() -> IntEffect:
     int_effect = IntEffect(55, bitsize=8)
     return int_effect
+
+
+_INT_EFFECT_DOC = BloqDocSpec(bloq_cls=IntEffect, examples=[_int_effect])

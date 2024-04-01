@@ -63,5 +63,6 @@ def test_graphviz(draw_cls):
     assert isinstance(svg_widget, IPython.display.DisplayObject)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('graphviz')

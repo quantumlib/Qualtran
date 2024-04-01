@@ -12,21 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import abc
 from functools import cached_property
-from typing import Protocol, Set, TYPE_CHECKING
+from typing import Protocol
 
 import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import bloq_example
-from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-
-if TYPE_CHECKING:
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 class _HasEps(Protocol):
@@ -35,23 +30,8 @@ class _HasEps(Protocol):
     eps: float
 
 
-class _RotationBloq(CirqGateAsBloqBase, metaclass=abc.ABCMeta):
-    def t_complexity(self: _HasEps):
-        # TODO Determine precise clifford count and/or ignore.
-        # This is an improvement over Ref. 2 from the docstring which provides
-        # a bound of 3 log(1/eps).
-        # See: https://github.com/quantumlib/Qualtran/issues/219
-        # See: https://github.com/quantumlib/Qualtran/issues/217
-        num_t = int(np.ceil(1.149 * np.log2(1.0 / self.eps) + 9.2))
-        return TComplexity(t=num_t)
-
-    def build_call_graph(self: _HasEps, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_t = _RotationBloq.t_complexity(self).t
-        return {(TGate(), num_t)}
-
-
 @frozen
-class ZPowGate(_RotationBloq):
+class ZPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Z axis of the Bloch sphere.
 
     The unitary matrix of `ZPowGate(exponent=t, global_shift=s)` is:
@@ -86,7 +66,8 @@ class ZPowGate(_RotationBloq):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -94,6 +75,9 @@ class ZPowGate(_RotationBloq):
     exponent: float = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -104,17 +88,31 @@ class ZPowGate(_RotationBloq):
         return ZPowGate(g.exponent, g.global_shift, self.eps)
 
 
+@bloq_example
+def _z_pow() -> ZPowGate:
+    z_pow = ZPowGate(exponent=0.123, eps=1e-8)
+    return z_pow
+
+
+_Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
+
+
 @frozen
 class CZPowGate(CirqGateAsBloqBase):
     exponent: float = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.CZPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
     def _t_complexity_(self) -> 'TComplexity':
+        if cirq.has_stabilizer_effect(self.cirq_gate):
+            return TComplexity(clifford=1)
         return TComplexity(rotations=1)
 
     def __pow__(self, power):
@@ -123,7 +121,7 @@ class CZPowGate(CirqGateAsBloqBase):
 
 
 @frozen
-class XPowGate(_RotationBloq):
+class XPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the X axis of the Bloch sphere.
 
     The unitary matrix of `XPowGate(exponent=t, global_shift=s)` is:
@@ -158,7 +156,8 @@ class XPowGate(_RotationBloq):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -166,13 +165,25 @@ class XPowGate(_RotationBloq):
     global_shift: float = 0.0
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
 
+@bloq_example
+def _x_pow() -> XPowGate:
+    x_pow = XPowGate(exponent=0.123, eps=1e-8)
+    return x_pow
+
+
+_X_POW_DOC = BloqDocSpec(bloq_cls=XPowGate, examples=[_x_pow])
+
+
 @frozen
-class YPowGate(_RotationBloq):
+class YPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
 
     The unitary matrix of `YPowGate(exponent=t)` is:
@@ -207,7 +218,8 @@ class YPowGate(_RotationBloq):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -215,13 +227,25 @@ class YPowGate(_RotationBloq):
     global_shift: float = 0.0
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
 
+@bloq_example
+def _y_pow() -> YPowGate:
+    y_pow = YPowGate(exponent=0.123, eps=1e-8)
+    return y_pow
+
+
+_Y_POW_DOC = BloqDocSpec(bloq_cls=YPowGate, examples=[_y_pow])
+
+
 @frozen
-class Rz(_RotationBloq):
+class Rz(CirqGateAsBloqBase):
     """Single-qubit Rz gate.
 
     Args:
@@ -233,7 +257,8 @@ class Rz(_RotationBloq):
 
     References:
         [Efficient synthesis of universal Repeat-Until-Success
-        circuits](https://arxiv.org/abs/1404.5320), which offers a small improvement
+        circuits](https://arxiv.org/abs/1404.5320). Offers a small improvement
+
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
@@ -241,15 +266,21 @@ class Rz(_RotationBloq):
     angle: float
     eps: float = 1e-11
 
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
 
 
 @frozen
-class Rx(_RotationBloq):
+class Rx(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
@@ -257,9 +288,12 @@ class Rx(_RotationBloq):
 
 
 @frozen
-class Ry(_RotationBloq):
+class Ry(CirqGateAsBloqBase):
     angle: float
     eps: float = 1e-11
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
 
     @cached_property
     def cirq_gate(self) -> cirq.Gate:

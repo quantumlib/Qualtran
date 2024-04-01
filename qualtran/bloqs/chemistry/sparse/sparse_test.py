@@ -19,7 +19,9 @@ from openfermion.resource_estimates.utils import power_two, QI
 
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse import PrepareSparse, SelectSparse
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 from qualtran.testing import execute_notebook
 
 
@@ -77,5 +79,6 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     assert adjusted_cost_qualtran == cost_of
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook("sparse")

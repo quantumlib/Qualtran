@@ -29,8 +29,9 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import TGate, Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import smax
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -103,6 +104,9 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):
             self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(TGate(), 8 * smax(self.a_bitsize, self.b_bitsize) ** 2)}
+
 
 @bloq_example
 def _plus_equal_product() -> PlusEqualProduct:
@@ -111,11 +115,7 @@ def _plus_equal_product() -> PlusEqualProduct:
     return plus_equal_product
 
 
-_PLUS_EQUALS_PRODUCT_DOC = BloqDocSpec(
-    bloq_cls=PlusEqualProduct,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct',
-    examples=(_plus_equal_product,),
-)
+_PLUS_EQUALS_PRODUCT_DOC = BloqDocSpec(bloq_cls=PlusEqualProduct, examples=[_plus_equal_product])
 
 
 @frozen
@@ -161,7 +161,7 @@ class Square(Bloq):
     def short_name(self) -> str:
         return "a^2"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -202,11 +202,7 @@ def _square() -> Square:
     return square
 
 
-_SQUARE_DOC = BloqDocSpec(
-    bloq_cls=Square,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import Square',
-    examples=(_square,),
-)
+_SQUARE_DOC = BloqDocSpec(bloq_cls=Square, examples=[_square])
 
 
 @frozen
@@ -229,7 +225,7 @@ class SumOfSquares(Bloq):
 
     References:
         [Fault-Tolerant Quantum Simulations of Chemistry in First
-        Quantization](https://arxiv.org/abs/2105.12767) pg 80 give a Toffoli
+        Quantization](https://arxiv.org/abs/2105.12767) pg 80 gives a Toffoli
         complexity for squaring.
     """
 
@@ -252,7 +248,7 @@ class SumOfSquares(Bloq):
     def short_name(self) -> str:
         return "SOS"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -274,11 +270,7 @@ def _sum_of_squares() -> SumOfSquares:
     return sum_of_squares
 
 
-_SUM_OF_SQUARES_DOC = BloqDocSpec(
-    bloq_cls=SumOfSquares,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import SumOfSquares',
-    examples=(_sum_of_squares,),
-)
+_SUM_OF_SQUARES_DOC = BloqDocSpec(bloq_cls=SumOfSquares, examples=[_sum_of_squares])
 
 
 @frozen
@@ -319,7 +311,7 @@ class Product(Bloq):
     def short_name(self) -> str:
         return "a*b"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
@@ -337,11 +329,7 @@ def _product() -> Product:
     return product
 
 
-_PRODUCT_DOC = BloqDocSpec(
-    bloq_cls=Product,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import Product',
-    examples=(_product,),
-)
+_PRODUCT_DOC = BloqDocSpec(bloq_cls=Product, examples=[_product])
 
 
 @frozen
@@ -388,7 +376,7 @@ class ScaleIntByReal(Bloq):
     def short_name(self) -> str:
         return "r*i"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # Eq. D8, we are assuming dA and dB there are assumed as inputs and the
         # user has ensured these are large enough for their desired precision.
         num_toff = self.r_bitsize * (2 * self.i_bitsize - 1) - self.i_bitsize**2
@@ -408,11 +396,7 @@ def _scale_int_by_real() -> ScaleIntByReal:
     return scale_int_by_real
 
 
-_SCALE_INT_BY_REAL_DOC = BloqDocSpec(
-    bloq_cls=ScaleIntByReal,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import ScaleIntByReal',
-    examples=(_scale_int_by_real,),
-)
+_SCALE_INT_BY_REAL_DOC = BloqDocSpec(bloq_cls=ScaleIntByReal, examples=[_scale_int_by_real])
 
 
 @frozen
@@ -436,8 +420,8 @@ class MultiplyTwoReals(Bloq):
         result: bitsize output register
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
-            https://arxiv.org/pdf/2007.07391.pdf) pg 71.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix D. Section 5. (p. 71).
     """
 
     bitsize: int
@@ -455,7 +439,7 @@ class MultiplyTwoReals(Bloq):
     def short_name(self) -> str:
         return "a*b"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         # Eq. D13, there it is suggested keeping both registers the same size is optimal.
         num_toff = self.bitsize**2 - self.bitsize - 1
         return TComplexity(t=4 * num_toff)
@@ -472,11 +456,7 @@ def _multiply_two_reals() -> MultiplyTwoReals:
     return multiply_two_reals
 
 
-_MULTIPLY_TWO_REALS_DOC = BloqDocSpec(
-    bloq_cls=MultiplyTwoReals,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import MultiplyTwoReals',
-    examples=(_multiply_two_reals,),
-)
+_MULTIPLY_TWO_REALS_DOC = BloqDocSpec(bloq_cls=MultiplyTwoReals, examples=[_multiply_two_reals])
 
 
 @frozen
@@ -500,8 +480,8 @@ class SquareRealNumber(Bloq):
         result: bitsize output register
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization
-            ](https://arxiv.org/pdf/2007.07391.pdf) pg 74.
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix D. Section 6. (p. 74).
     """
 
     bitsize: int
@@ -523,7 +503,7 @@ class SquareRealNumber(Bloq):
     def short_name(self) -> str:
         return "a^2"
 
-    def t_complexity(self):
+    def _t_complexity_(self):
         num_toff = self.bitsize**2 // 2 - 4
         return TComplexity(t=4 * num_toff)
 
@@ -539,8 +519,4 @@ def _square_real_number() -> SquareRealNumber:
     return square_real_number
 
 
-_SQUARE_REAL_NUMBER_DOC = BloqDocSpec(
-    bloq_cls=SquareRealNumber,
-    import_line='from qualtran.bloqs.arithmetic.multiplication import SquareRealNumber',
-    examples=(_square_real_number,),
-)
+_SQUARE_REAL_NUMBER_DOC = BloqDocSpec(bloq_cls=SquareRealNumber, examples=[_square_real_number])

@@ -85,7 +85,7 @@ class ToContiguousIndex(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'mu': mu, 'nu': nu, 's': nu * (nu + 1) // 2 + mu}
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         num_toffoli = self.bitsize**2 + self.bitsize - 1
         return TComplexity(t=4 * num_toffoli)
 
@@ -109,11 +109,7 @@ def _to_contg_index() -> ToContiguousIndex:
     return to_contg_index
 
 
-_TO_CONTG_INDX = BloqDocSpec(
-    bloq_cls=ToContiguousIndex,
-    import_line='from qualtran.bloqs.arithmetic.conversions import ToContiguousIndex',
-    examples=(_to_contg_index,),
-)
+_TO_CONTG_INDX = BloqDocSpec(bloq_cls=ToContiguousIndex, examples=[_to_contg_index])
 
 
 @frozen
@@ -128,8 +124,8 @@ class SignedIntegerToTwosComplement(Bloq):
         y: output signed integer register in two's complement.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 24, 4th paragraph from the bottom.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        page 24, 4th paragraph from the bottom.
     """
 
     bitsize: int
@@ -155,8 +151,4 @@ def _signed_to_twos() -> SignedIntegerToTwosComplement:
     return signed_to_twos
 
 
-_SIGNED_TO_TWOS = BloqDocSpec(
-    bloq_cls=SignedIntegerToTwosComplement,
-    import_line='from qualtran.bloqs.arithmetic.conversions import SignedIntegerToTwosComplement',
-    examples=(_signed_to_twos,),
-)
+_SIGNED_TO_TWOS = BloqDocSpec(bloq_cls=SignedIntegerToTwosComplement, examples=[_signed_to_twos])

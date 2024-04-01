@@ -18,7 +18,9 @@ import attrs
 import cachetools
 import cirq
 
+from qualtran import Bloq
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
+from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 
@@ -30,6 +32,20 @@ class TComplexity:
     t: int = 0
     clifford: int = 0
     rotations: int = 0
+
+    @staticmethod
+    def rotation_cost(eps: SymbolicFloat) -> SymbolicFloat:
+        return ceil(1.149 * log2(1.0 / eps) + 9.2)
+
+    def t_incl_rotations(self, eps: float = 1e-11) -> int:
+        """Return the total number of T gates after compiling rotations"""
+
+        # TODO Determine precise clifford count and/or ignore.
+        # This is an improvement over Ref. 2 from the docstring which provides
+        # a bound of 3 log(1/eps).
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
+        return self.t + self.rotation_cost(eps) * self.rotations
 
     def __add__(self, other: 'TComplexity') -> 'TComplexity':
         return TComplexity(
@@ -78,10 +94,15 @@ def _is_clifford_or_t(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     if not isinstance(stc, (cirq.Gate, cirq.Operation)):
         return None
 
+    if isinstance(stc, cirq.GlobalPhaseGate) or (
+        isinstance(stc, cirq.Operation) and isinstance(stc.gate, cirq.GlobalPhaseGate)
+    ):
+        return TComplexity()
+
     if isinstance(stc, cirq.ClassicallyControlledOperation):
         stc = stc.without_classical_controls()
 
-    if cirq.has_stabilizer_effect(stc):
+    if cirq.num_qubits(stc) <= 2 and cirq.has_stabilizer_effect(stc):
         # Clifford operation.
         return TComplexity(clifford=1)
 
@@ -107,7 +128,26 @@ def _is_iterable(it: Any, fail_quietly: bool) -> Optional[TComplexity]:
     return t
 
 
-def _from_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+def _from_bloq_build_call_graph(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
+    # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
+    from qualtran.resource_counting.generalizers import cirq_to_bloqs
+
+    if not isinstance(stc, Bloq):
+        return None
+    _, sigma = stc.call_graph(max_depth=1, generalizer=cirq_to_bloqs)
+    if sigma == {stc: 1}:
+        # No decomposition found.
+        return None
+    ret = TComplexity()
+    for bloq, n in sigma.items():
+        r = t_complexity(bloq, fail_quietly=fail_quietly)
+        if r is None:
+            return None
+        ret += n * t_complexity(bloq)
+    return ret
+
+
+def _from_cirq_decomposition(stc: Any, fail_quietly: bool) -> Optional[TComplexity]:
     # Decompose the object and recursively compute the complexity.
     decomposition = _decompose_once_considering_known_decomposition(stc)
     if decomposition is None:
@@ -149,9 +189,14 @@ def _t_complexity_from_strategies(
 
 @cachetools.cached(cachetools.LRUCache(128), key=_get_hash, info=True)
 def _t_complexity_for_gate_or_op(
-    gate_or_op: Union[cirq.Gate, cirq.Operation], fail_quietly: bool
+    gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq], fail_quietly: bool
 ) -> Optional[TComplexity]:
-    strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition]
+    strategies = [
+        _has_t_complexity,
+        _from_bloq_build_call_graph,
+        _is_clifford_or_t,
+        _from_cirq_decomposition,
+    ]
     return _t_complexity_from_strategies(gate_or_op, fail_quietly, strategies)
 
 
@@ -178,10 +223,16 @@ def t_complexity(stc: Any, fail_quietly: bool = False) -> Optional[TComplexity]:
     Raises:
         TypeError: if fail_quietly=False and the methods fails to compute TComplexity.
     """
-    if isinstance(stc, (cirq.Gate, cirq.Operation)) and isinstance(stc, Hashable):
+    if isinstance(stc, (cirq.Gate, cirq.Operation, Bloq)) and isinstance(stc, Hashable):
         ret = _t_complexity_for_gate_or_op(stc, fail_quietly)
     else:
-        strategies = [_has_t_complexity, _is_clifford_or_t, _from_decomposition, _is_iterable]
+        strategies = [
+            _has_t_complexity,
+            _is_clifford_or_t,
+            _from_bloq_build_call_graph,
+            _from_cirq_decomposition,
+            _is_iterable,
+        ]
         ret = _t_complexity_from_strategies(stc, fail_quietly, strategies)
 
     if ret is None and not fail_quietly:

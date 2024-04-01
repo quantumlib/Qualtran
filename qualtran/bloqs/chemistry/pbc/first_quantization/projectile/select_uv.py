@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, Register, Signature
+from qualtran import Bloq, bloq_example, QAny, QBit, QInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, SignedIntegerToTwosComplement
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import ApplyNuclearPhase
@@ -47,10 +47,10 @@ class SelectUVFirstQuantizationWithProj(Bloq):
     Registers:
 
     References:
-        [Quantum computation of stopping power for inertial fusion target design](
-            https://arxiv.org/abs/2308.12352) page 11, C also page 34 App A. Sec 3.
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Quantum computation of stopping power for inertial fusion target design](https://arxiv.org/abs/2308.12352)
+        page 11, C also page 34 App A. Sec 3.
+
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int
@@ -64,13 +64,13 @@ class SelectUVFirstQuantizationWithProj(Bloq):
         n_nu = self.num_bits_n + 1
         return Signature(
             [
-                Register("flag_tuv", bitsize=1),
-                Register("flag_uv", bitsize=1),
-                Register("l", bitsize=(self.num_atoms - 1).bit_length()),
-                Register("rl", bitsize=self.num_bits_nuc_pos),
-                Register("nu", bitsize=n_nu, shape=(3,)),
-                Register("p", bitsize=self.num_bits_n, shape=(3,)),
-                Register("q", bitsize=self.num_bits_p, shape=(3,)),
+                Register("flag_tuv", QBit()),
+                Register("flag_uv", QBit()),
+                Register("l", QAny(bitsize=(self.num_atoms - 1).bit_length())),
+                Register("rl", QAny(bitsize=self.num_bits_nuc_pos)),
+                Register("nu", QAny(bitsize=n_nu), shape=(3,)),
+                Register("p", QAny(bitsize=self.num_bits_n), shape=(3,)),
+                Register("q", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 
@@ -82,8 +82,8 @@ class SelectUVFirstQuantizationWithProj(Bloq):
         cost_tc_p = (SignedIntegerToTwosComplement(self.num_bits_p), 3)
         cost_tc_n = (SignedIntegerToTwosComplement(self.num_bits_n), 3)
         # Adding nu into p / q. Nu is one bit larger than p.
-        cost_add_p = (Add(self.num_bits_p + 1), 3)
-        cost_add_n = (Add(self.num_bits_n + 1), 3)
+        cost_add_p = (Add(QInt(self.num_bits_p + 1)), 3)
+        cost_add_n = (Add(QInt(self.num_bits_n + 1)), 3)
         cost_ctrl_add_p = (Toffoli(), 3 * (self.num_bits_p + 1))
         cost_ctrl_add_n = (Toffoli(), 3 * (self.num_bits_n + 1))
         # + 2 as these numbers are larger from addition of $\nu$

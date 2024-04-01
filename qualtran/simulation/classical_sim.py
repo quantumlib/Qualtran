@@ -166,6 +166,8 @@ def _binst_on_classical_vals(
 
     # Apply function
     out_vals = bloq.on_classical_vals(**in_vals)
+    if not isinstance(out_vals, dict):
+        raise TypeError(f"{bloq.__class__.__name__}.on_classical_vals should return a dictionary.")
     _update_assign_from_vals(bloq.signature.rights(), binst, out_vals, soq_assign)
 
 

@@ -18,8 +18,12 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder
 from qualtran.bloqs.arithmetic.comparison import (
+    _eq_k,
+    _greater_than,
+    _gt_k,
     EqualsAConstant,
     GreaterThan,
     GreaterThanConstant,
@@ -32,29 +36,18 @@ from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
 )
-from qualtran.testing import (
-    assert_valid_bloq_decomposition,
-    assert_wire_symbols_match_expected,
-    execute_notebook,
-)
 
 
-def _make_greater_than():
-    from qualtran.bloqs.arithmetic import GreaterThan
-
-    return GreaterThan(a_bitsize=4, b_bitsize=4)
+def test_greater_than(bloq_autotester):
+    bloq_autotester(_greater_than)
 
 
-def _make_greater_than_constant():
-    from qualtran.bloqs.arithmetic import GreaterThanConstant
-
-    return GreaterThanConstant(bitsize=4, val=13)
+def test_gt_k(bloq_autotester):
+    bloq_autotester(_gt_k)
 
 
-def _make_equals_a_constant():
-    from qualtran.bloqs.arithmetic import EqualsAConstant
-
-    return EqualsAConstant(bitsize=4, val=13)
+def test_eq_k(bloq_autotester):
+    bloq_autotester(_eq_k)
 
 
 def identity_map(n: int):
@@ -125,7 +118,7 @@ def test_less_than_consistent_protocols(n: int, val: int):
     # Test the unitary is self-inverse
     u = cirq.unitary(g)
     np.testing.assert_allclose(u @ u, np.eye(2 ** (n + 1)))
-    assert_valid_bloq_decomposition(g)
+    qlt_testing.assert_valid_bloq_decomposition(g)
 
 
 def test_multi_in_less_equal_than_gate():
@@ -155,7 +148,7 @@ def test_multi_in_less_equal_than_gate():
 def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     g = LessThanEqual(x_bitsize, y_bitsize)
     assert_decompose_is_consistent_with_t_complexity(g)
-    assert_valid_bloq_decomposition(g)
+    qlt_testing.assert_valid_bloq_decomposition(g)
 
     # Decomposition works even when context is None.
     qubits = cirq.LineQid.range(x_bitsize + y_bitsize + 1, dimension=2)
@@ -176,7 +169,7 @@ def test_less_than_equal_consistent_protocols(x_bitsize: int, y_bitsize: int):
     assert g.with_registers([2] * 4, [2] * 5, [2]) == LessThanEqual(4, 5)
 
 
-def test_greater_than():
+def test_greater_than_manual():
     bb = BloqBuilder()
     bitsize = 5
     q0 = bb.add_register('a', bitsize)
@@ -185,14 +178,16 @@ def test_greater_than():
     q0, q1, anc = bb.add(GreaterThan(bitsize, bitsize), a=q0, b=q1, target=anc)
     cbloq = bb.finalize(a=q0, b=q1, result=anc)
     cbloq.t_complexity()
-    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
+    qlt_testing.assert_wire_symbols_match_expected(
+        GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
+    )
 
 
 @pytest.mark.parametrize('bitsize', [1, 2, 5])
 @pytest.mark.parametrize('signed', [False, True])
 def test_linear_depth_greater_than_decomp(bitsize, signed):
     bloq = LinearDepthGreaterThan(bitsize=bitsize, signed=signed)
-    assert_valid_bloq_decomposition(bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 # TODO: write tests for signed integer comparison
@@ -233,7 +228,9 @@ def test_greater_than_constant():
     q0, anc = bb.add(GreaterThanConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
-    assert_wire_symbols_match_expected(GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)'])
+    qlt_testing.assert_wire_symbols_match_expected(
+        GreaterThanConstant(bitsize, 17), ['In(x)', '⨁(x > 17)']
+    )
 
 
 def test_equals_a_constant():
@@ -244,12 +241,16 @@ def test_equals_a_constant():
     q0, anc = bb.add(EqualsAConstant(bitsize, 17), x=q0, target=anc)
     cbloq = bb.finalize(x=q0, result=anc)
     cbloq.t_complexity()
-    assert_wire_symbols_match_expected(EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)'])
+    qlt_testing.assert_wire_symbols_match_expected(
+        EqualsAConstant(bitsize, 17), ['In(x)', '⨁(x = 17)']
+    )
 
 
-def test_comparison_gates_notebook():
-    execute_notebook('comparison_gates')
+@pytest.mark.notebook
+def test_t_complexity_of_comparison_gates_notebook():
+    qlt_testing.execute_notebook('t_complexity_of_comparison_gates')
 
 
-def test_arithmetic_notebook():
-    execute_notebook('arithmetic')
+@pytest.mark.notebook
+def test_comparison_notebook():
+    qlt_testing.execute_notebook('comparison')

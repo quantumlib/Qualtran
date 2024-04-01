@@ -25,13 +25,15 @@ from qualtran import (
     BloqBuilder,
     DecomposeNotImplementedError,
     GateWithRegisters,
+    QAny,
+    QBit,
     Register,
     Side,
     Signature,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.and_bloq import And
-from qualtran.bloqs.basic_gates import OneState
+from qualtran.bloqs.basic_gates import CNOT, OneState
+from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -146,9 +148,9 @@ def test_cirq_optree_to_cbloq():
         def signature(self) -> Signature:
             return Signature([self.reg])
 
-    reg1 = Register('x', shape=(3, 4), bitsize=2)
-    reg2 = Register('y', shape=12, bitsize=2)
-    anc_reg = Register('anc', shape=4, bitsize=2)
+    reg1 = Register('x', QAny(2), shape=(3, 4))
+    reg2 = Register('y', QAny(2), shape=12)
+    anc_reg = Register('anc', QAny(2), shape=4)
     qubits = cirq.LineQubit.range(24)
     anc_qubits = cirq.NamedQubit.range(4, prefix='anc')
     circuit = cirq.Circuit(
@@ -159,30 +161,28 @@ def test_cirq_optree_to_cbloq():
     # Test-1: When no signature is specified, the method uses a default signature. Ancilla qubits
     # are also included in the signature itself, so no allocations / deallocations are needed.
     cbloq = cirq_optree_to_cbloq(circuit)
-    assert cbloq.signature == qualtran.Signature(
-        [qualtran.Register(name='qubits', bitsize=1, shape=(28,))]
-    )
+    assert cbloq.signature == qualtran.Signature([qualtran.Register('qubits', QBit(), shape=(28,))])
     bloq_instances = [binst for binst, _, _ in cbloq.iter_bloqnections()]
-    assert all(bloq_instances[i].bloq == Join(2) for i in range(14))
+    assert all(bloq_instances[i].bloq == Join(QAny(2)) for i in range(14))
     assert bloq_instances[14].bloq == CirqGateWithRegisters(reg1)
     assert bloq_instances[14].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='x', bitsize=2, shape=(3, 4))]
+        [qualtran.Register('x', QAny(bitsize=2), shape=(3, 4))]
     )
     assert bloq_instances[15].bloq == CirqGateWithRegisters(anc_reg)
     assert bloq_instances[15].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='anc', bitsize=2, shape=(4,))]
+        [qualtran.Register('anc', QAny(bitsize=2), shape=(4,))]
     )
     assert bloq_instances[16].bloq == CirqGateWithRegisters(reg2)
     assert bloq_instances[16].bloq.signature == qualtran.Signature(
-        [qualtran.Register(name='y', bitsize=2, shape=(12,))]
+        [qualtran.Register('y', QAny(bitsize=2), shape=(12,))]
     )
-    assert all(bloq_instances[-i].bloq == Split(2) for i in range(1, 15))
+    assert all(bloq_instances[-i].bloq == Split(QAny(2)) for i in range(1, 15))
     # Test-2: If you provide an explicit signature, you must also provide a mapping of cirq qubits
     # matching the signature. The additional ancilla allocations are automatically handled.
     new_signature = qualtran.Signature(
         [
-            qualtran.Register('xx', bitsize=3, shape=(3, 2)),
-            qualtran.Register('yy', bitsize=1, shape=(2, 3)),
+            qualtran.Register('xx', QAny(bitsize=3), shape=(3, 2)),
+            qualtran.Register('yy', QBit(), shape=(2, 3)),
         ]
     )
     cirq_quregs = {
@@ -195,17 +195,17 @@ def test_cirq_optree_to_cbloq():
     assert cbloq.signature == new_signature
     # Splits, joins, Alloc, Free are automatically inserted.
     bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
-    assert bloqs_list.count(Split(3)) == 6
-    assert bloqs_list.count(Join(3)) == 6
-    assert bloqs_list.count(Allocate(2)) == 2
-    assert bloqs_list.count(Free(2)) == 2
+    assert bloqs_list.count(Split(QAny(3))) == 6
+    assert bloqs_list.count(Join(QAny(3))) == 6
+    assert bloqs_list.count(Allocate(QAny(2))) == 2
+    assert bloqs_list.count(Free(QAny(2))) == 2
 
 
 def test_cirq_gate_as_bloq_for_left_only_gates():
     class LeftOnlyGate(GateWithRegisters):
         @property
         def signature(self):
-            return Signature([Register('junk', 2, side=Side.LEFT)])
+            return Signature([Register('junk', QAny(2), side=Side.LEFT)])
 
         def decompose_from_registers(self, *, context, junk) -> cirq.OP_TREE:
             yield cirq.CNOT(*junk)
@@ -214,9 +214,9 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
     # Using InteropQubitManager enables support for LeftOnlyGate's in CirqGateAsBloq.
     cbloq = CirqGateAsBloq(gate=LeftOnlyGate()).decompose_bloq()
     bloqs_list = [binst.bloq for binst in cbloq.bloq_instances]
-    assert bloqs_list.count(Split(2)) == 1
-    assert bloqs_list.count(Free(1)) == 2
-    assert bloqs_list.count(CirqGateAsBloq(cirq.CNOT)) == 1
+    assert bloqs_list.count(Split(QAny(2))) == 1
+    assert bloqs_list.count(Free(QBit())) == 2
+    assert bloqs_list.count(CNOT()) == 1
     assert bloqs_list.count(CirqGateAsBloq(cirq.ResetChannel())) == 2
 
 

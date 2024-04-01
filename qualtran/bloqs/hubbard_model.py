@@ -54,16 +54,18 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, Register, Signature
+from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran.bloqs.and_bloq import MultiAnd
-from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.arithmetic import AddConstantMod
 from qualtran.bloqs.basic_gates import CSwap
-from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition
+from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
+from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
+from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+    PrepareUniformSuperposition,
+)
 
 
 @attrs.frozen
@@ -108,7 +110,8 @@ class SelectHubbard(SelectOracle):
         target: The system register to apply the select operation.
 
     References:
-        Section V. and Fig. 19 of https://arxiv.org/abs/1805.03662.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Section V. and Fig. 19.
     """
 
     x_dim: int
@@ -121,7 +124,7 @@ class SelectHubbard(SelectOracle):
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
-        return () if self.control_val is None else (Register('control', 1),)
+        return () if self.control_val is None else (Register('control', QBit()),)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -138,7 +141,7 @@ class SelectHubbard(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register('target', self.x_dim * self.y_dim * 2),)
+        return (Register('target', QAny(self.x_dim * self.y_dim * 2)),)
 
     @cached_property
     def signature(self) -> Signature:
@@ -208,7 +211,7 @@ class SelectHubbard(SelectOracle):
                 ),
             ),
             nth_gate=lambda *_: cirq.Z,
-            control_regs=Register('control', 1 + total_bits(self.control_registers)),
+            control_regs=Register('control', QAny(1 + total_bits(self.control_registers))),
         ).on_registers(
             q_x=q_x, q_y=q_y, control=[*V, *control], target=target_qubits_for_apply_to_lth_gate
         )
@@ -276,7 +279,8 @@ class PrepareHubbard(PrepareOracle):
         junk: Temporary Work space.
 
     References:
-        Section V. and Fig. 20 of https://arxiv.org/abs/1805.03662.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Section V. and Fig. 20.
     """
 
     x_dim: int
@@ -303,7 +307,7 @@ class PrepareHubbard(PrepareOracle):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (Register('temp', 2),)
+        return (Register('temp', QAny(2)),)
 
     @cached_property
     def signature(self) -> Signature:

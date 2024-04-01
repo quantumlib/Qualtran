@@ -24,6 +24,8 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    QAny,
+    QBit,
     Register,
     Signature,
     SoquetT,
@@ -57,8 +59,8 @@ class PrepareTUVSuperpositions(Bloq):
         uv: a single qubit rotated to appropriately weight U or V.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 15, section A
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 15, section A
     """
     num_bits_t: int
     eta: int
@@ -95,8 +97,8 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         j: a n_eta bit register for unary encoding of eta numbers.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization]
-        (https://arxiv.org/abs/2105.12767) page 18, section A, around Eq 62.
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767).
+        page 18, section A, around Eq 62.
     """
     eta: int
     num_bits_rot_aa: int
@@ -126,8 +128,8 @@ class MultiplexedCSwap3D(Bloq):
         return Signature(
             [
                 Register('sel', BoundedQUInt(bitsize=n_eta, iteration_length=self.eta)),
-                Register('targets', bitsize=self.num_bits_p, shape=(self.eta, 3)),
-                Register('junk', bitsize=self.num_bits_p, shape=(3,)),
+                Register('targets', QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),
+                Register('junk', QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 
@@ -224,8 +226,7 @@ class PrepareFirstQuantization(PrepareOracle):
         l: The register for selecting the nuclei.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int
@@ -268,7 +269,7 @@ class PrepareFirstQuantization(PrepareOracle):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        return (Register("succ_nu", bitsize=1), Register("plus_t", bitsize=1))
+        return (Register("succ_nu", QBit()), Register("plus_t", QBit()))
 
     def short_name(self) -> str:
         return r'PREP'
@@ -396,8 +397,7 @@ class SelectFirstQuantization(SelectOracle):
             compents of size num_bits_p.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767)
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
     """
 
     num_bits_p: int
@@ -413,10 +413,10 @@ class SelectFirstQuantization(SelectOracle):
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return (
-            Register("tuv", bitsize=1),
-            Register("uv", bitsize=1),
-            Register("i_ne_j", bitsize=1),
-            Register("plus_t", bitsize=1),
+            Register("tuv", QBit()),
+            Register("uv", QBit()),
+            Register("i_ne_j", QBit()),
+            Register("plus_t", QBit()),
         )
 
     @cached_property
@@ -441,7 +441,7 @@ class SelectFirstQuantization(SelectOracle):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        return (Register("sys", bitsize=self.num_bits_p, shape=(self.eta, 3)),)
+        return (Register("sys", QAny(bitsize=self.num_bits_p), shape=(self.eta, 3)),)
 
     @cached_property
     def signature(self) -> Signature:

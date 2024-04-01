@@ -15,8 +15,10 @@
 from typing import Dict
 
 import cirq
+import numpy as np
+import pytest
 
-from qualtran import GateWithRegisters, Register, Side, Signature, SoquetT
+from qualtran import GateWithRegisters, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
 from qualtran.testing import execute_notebook
 
@@ -24,9 +26,9 @@ from qualtran.testing import execute_notebook
 class _TestGate(GateWithRegisters):
     @property
     def signature(self) -> Signature:
-        r1 = Register("r1", 5)
-        r2 = Register("r2", 2)
-        r3 = Register("r3", 1)
+        r1 = Register("r1", QAny(5))
+        r2 = Register("r2", QAny(2))
+        r3 = Register("r3", QBit())
         regs = Signature([r1, r2, r3])
         return regs
 
@@ -47,15 +49,31 @@ def test_gate_with_registers():
     op2 = tg.on(*qubits[:5], *qubits[6:], qubits[5])
     assert op1 == op2
 
+    np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
+
+
+class _TestGateAtomic(GateWithRegisters):
+    @property
+    def signature(self) -> Signature:
+        return Signature.build(q=4)
+
+    def _unitary_(self) -> cirq.OP_TREE:
+        return cirq.unitary(cirq.Circuit(cirq.H.on_each(cirq.LineQubit.range(4))))
+
+
+def test_gate_with_registers_uses_unitary_for_tensor_contraction():
+    tg = _TestGateAtomic()
+    np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
+
 
 class BloqWithDecompose(GateWithRegisters):
     @property
     def signature(self) -> 'Signature':
         return Signature(
             [
-                Register('l', 1, side=Side.LEFT),
-                Register('t', 1, side=Side.THRU),
-                Register('r', 1, side=Side.RIGHT),
+                Register('l', QBit(), side=Side.LEFT),
+                Register('t', QBit(), side=Side.THRU),
+                Register('r', QBit(), side=Side.RIGHT),
             ]
         )
 
@@ -77,14 +95,15 @@ def test_gate_with_registers_decompose_from_context_auto_generated():
     cirq.testing.assert_has_diagram(
         circuit,
         """
-l: ───BloqWithDecompose───X──────────Free───
+l: ───BloqWithDecompose───X───────free───
       │
-r: ───r───────────────────Allocate───Z──────
+r: ───r───────────────────alloc───Z──────
       │
-t: ───t───────────────────Y─────────────────
+t: ───t───────────────────Y──────────────
 """,
     )
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('gate_with_registers')

@@ -18,14 +18,27 @@ from typing import Dict, Iterable, Iterator, List, Sequence, Set, TYPE_CHECKING,
 import attrs
 import cirq
 import numpy as np
+import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, QAny, QBit, QUInt, Register, Side, Signature, SoquetT
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    QAny,
+    QBit,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran._infra.quantum_graph import Soquet
-from qualtran.bloqs.and_bloq import And, MultiAnd
 from qualtran.bloqs.basic_gates import CNOT, TGate, XGate
-from qualtran.bloqs.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
@@ -146,14 +159,34 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
         return TComplexity(t=4 * n, clifford=15 * n + 3 * bin(self.less_than_val).count("1") + 2)
 
 
+@bloq_example
+def _lt_k() -> LessThanConstant:
+    lt_k = LessThanConstant(bitsize=8, less_than_val=5)
+    return lt_k
+
+
+@bloq_example
+def _lt_k_symb() -> LessThanConstant:
+    n, k = sympy.symbols("n k")
+    lt_k_symb = LessThanConstant(bitsize=n, less_than_val=k)
+    return lt_k_symb
+
+
+_LT_K_DOC = BloqDocSpec(
+    bloq_cls=LessThanConstant, examples=[_lt_k, _lt_k_symb]  # TODO: support symbolic call graph
+)
+
+
 @frozen
 class BiQubitsMixer(GateWithRegisters):
-    """Implements the COMPARE2 (Fig. 1) https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
+    """Implements the COMPARE2 subroutine from the reference (Fig. 1)
 
     This gates mixes the values in a way that preserves the result of comparison.
     The signature being compared are 2-qubit signature where
+
         x = 2*x_msb + x_lsb
         y = 2*y_msb + y_lsb
+
     The Gate mixes the 4 qubits so that sign(x - y) = sign(x_lsb' - y_lsb') where x_lsb' and y_lsb'
     are the final values of x_lsb' and y_lsb'.
 
@@ -161,6 +194,10 @@ class BiQubitsMixer(GateWithRegisters):
     should clean the qubits at a later point in time with the adjoint gate.
     See: https://github.com/quantumlib/Cirq/pull/6313 and
     https://github.com/quantumlib/Qualtran/issues/389
+
+    References:
+        Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians
+        https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
     """
 
     is_adjoint: bool = False
@@ -234,12 +271,24 @@ class BiQubitsMixer(GateWithRegisters):
         return not self.is_adjoint
 
 
+@bloq_example
+def _bi_qubits_mixer() -> BiQubitsMixer:
+    bi_qubits_mixer = BiQubitsMixer()
+    return bi_qubits_mixer
+
+
+_BI_QUBITS_MIXER_DOC = BloqDocSpec(bloq_cls=BiQubitsMixer, examples=[_bi_qubits_mixer])
+
+
 @frozen
 class SingleQubitCompare(GateWithRegisters):
     """Applies U|a>|b>|0>|0> = |a> |a=b> |(a<b)> |(a>b)>
 
-    Source: (FIG. 3) in https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
-    """  # pylint: disable=line-too-long
+    References:
+        Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians.
+        Figure 3.
+        https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
+    """
 
     is_adjoint: bool = False
 
@@ -294,9 +343,19 @@ class SingleQubitCompare(GateWithRegisters):
         return TComplexity(t=4, clifford=16)
 
 
+@bloq_example
+def _sq_cmp() -> SingleQubitCompare:
+    sq_cmp = SingleQubitCompare()
+    return sq_cmp
+
+
+_SQ_CMP_DOC = BloqDocSpec(bloq_cls=SingleQubitCompare, examples=[_sq_cmp])
+
+
 def _equality_with_zero(
     context: cirq.DecompositionContext, qubits: Sequence[cirq.Qid], z: cirq.Qid
 ) -> cirq.OP_TREE:
+    """Helper decomposition used in `LessThanEqual`"""
     if len(qubits) == 1:
         (q,) = qubits
         yield cirq.X(q)
@@ -311,7 +370,36 @@ def _equality_with_zero(
 
 @frozen
 class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
-    """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>"""
+    """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>
+
+    Decomposes the gate in a T-complexity optimal way.
+
+    The construction can be broken in 4 parts:
+     1. In case of differing bitsizes then a multicontrol And Gate
+        (Section III.A. of the first reference) is used to check whether
+        the extra prefix is equal to zero and the result is stored in the `prefix_equality` qubit.
+     2. The tree structure (Fig. 2) of the second reference.
+        followed by a `SingleQubitCompare` to compute the result of comparison of
+        the suffixes of equal length. The result is stored in `less_than` and `greater_than` and
+        equality in `qubits[-2]`
+     3. The results from the previous two steps are combined to update the target qubit.
+     4. The adjoint of the previous operations is added to restore the input qubits
+        to their original state and clean the ancilla qubits.
+
+    When both registers are of the same size the T complexity is
+    8n - 4 as in the second reference.
+
+    When the registers differ in size and `n` is the size of the smaller one and
+    `d` is the difference in size, the T complexity is the sum of the tree
+    decomposition as before giving 8n + O(1); and the T complexity of an `And` gate
+    over `d` registers giving 4d + O(1). This totals 8n + 4d + O(1).
+
+    References:
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+
+        Supplementary Materials: Improved Techniques for Preparing Eigenstates of Fermionic Hamiltonians.
+        https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
+    """
 
     x_bitsize: int
     y_bitsize: int
@@ -352,10 +440,6 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     def _decompose_via_tree(
         self, context: cirq.DecompositionContext, X: Sequence[cirq.Qid], Y: Sequence[cirq.Qid]
     ) -> cirq.OP_TREE:
-        """Returns comparison oracle from https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
-
-        This decomposition follows the tree structure of (FIG. 2)
-        """  # pylint: disable=line-too-long
         if len(X) == 1:
             return
         if len(X) == 2:
@@ -372,21 +456,6 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        """Decomposes the gate in a T-complexity optimal way.
-
-        The construction can be broken in 4 parts:
-            1. In case of differing bitsizes then a multicontrol And Gate
-                - Section III.A. https://arxiv.org/abs/1805.03662) is used to check whether
-                the extra prefix is equal to zero:
-                    - result stored in: `prefix_equality` qubit.
-            2. The tree structure (FIG. 2) https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
-                followed by a SingleQubitCompare to compute the result of comparison of
-                the suffixes of equal length:
-                    - result stored in: `less_than` and `greater_than` with equality in qubits[-2]
-            3. The results from the previous two steps are combined to update the target qubit.
-            4. The adjoint of the previous operations is added to restore the input qubits
-                to their original state and clean the ancilla qubits.
-        """  # pylint: disable=line-too-long
         lhs, rhs, (target,) = quregs['x'], quregs['y'], quregs['target']
 
         n = min(len(lhs), len(rhs))
@@ -450,7 +519,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         is_second_longer = self.y_bitsize > self.x_bitsize
         if d == 0:
             # When both registers are of the same size the T complexity is
-            # 8n - 4 same as in https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf.  pylint: disable=line-too-long
+            # 8n - 4 same as in the second reference.
             return TComplexity(t=8 * n - 4, clifford=46 * n - 17)
         else:
             # When the registers differ in size and `n` is the size of the smaller one and
@@ -467,6 +536,24 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
 
     def _has_unitary_(self):
         return True
+
+
+@bloq_example
+def _leq_symb() -> LessThanEqual:
+    n1, n2 = sympy.symbols('n1 n2')
+    leq_symb = LessThanEqual(x_bitsize=n1, y_bitsize=n2)
+    return leq_symb
+
+
+@bloq_example
+def _leq() -> LessThanEqual:
+    leq = LessThanEqual(x_bitsize=4, y_bitsize=8)
+    return leq
+
+
+_LEQ_DOC = BloqDocSpec(
+    bloq_cls=LessThanEqual, examples=[_leq, _leq_symb]  # TODO: support symbolic call graph
+)
 
 
 @frozen
@@ -502,7 +589,7 @@ class GreaterThan(Bloq):
     def short_name(self) -> str:
         return "a>b"
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def wire_symbol(self, soq: Soquet) -> WireSymbol:
@@ -519,6 +606,15 @@ class GreaterThan(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         t_complexity = self.t_complexity()
         return {(TGate(), t_complexity.t)}
+
+
+@bloq_example
+def _greater_than() -> GreaterThan:
+    greater_than = GreaterThan(a_bitsize=4, b_bitsize=4)
+    return greater_than
+
+
+_GREATER_THAN_DOC = BloqDocSpec(bloq_cls=GreaterThan, examples=[_greater_than])
 
 
 @frozen
@@ -545,8 +641,9 @@ class LinearDepthGreaterThan(Bloq):
         target: A single bit output register to store the result of a > b.
 
     References:
-        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
-        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585)
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648).
+
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
     bitsize: int
     signed: bool
@@ -716,7 +813,7 @@ class GreaterThanConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def t_complexity(self) -> TComplexity:
+    def _t_complexity_(self) -> TComplexity:
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
     def short_name(self) -> str:
@@ -734,6 +831,15 @@ class GreaterThanConstant(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         t_complexity = self.t_complexity()
         return {(TGate(), t_complexity.t)}
+
+
+@bloq_example
+def _gt_k() -> GreaterThanConstant:
+    gt_k = GreaterThanConstant(bitsize=4, val=13)
+    return gt_k
+
+
+_GREATER_THAN_K_DOC = BloqDocSpec(bloq_cls=GreaterThanConstant, examples=[_gt_k])
 
 
 @frozen
@@ -759,7 +865,7 @@ class EqualsAConstant(Bloq):
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
 
     def short_name(self) -> str:
@@ -775,3 +881,18 @@ class EqualsAConstant(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return {(TGate(), 4 * (self.bitsize - 1))}
+
+
+def _make_equals_a_constant():
+    from qualtran.bloqs.arithmetic import EqualsAConstant
+
+    return EqualsAConstant(bitsize=4, val=13)
+
+
+@bloq_example
+def _eq_k() -> EqualsAConstant:
+    eq_k = EqualsAConstant(bitsize=4, val=13)
+    return eq_k
+
+
+_EQUALS_K_DOC = BloqDocSpec(bloq_cls=EqualsAConstant, examples=[_eq_k])

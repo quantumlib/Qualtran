@@ -16,7 +16,9 @@ from functools import cached_property
 from typing import Dict, List, Set, Tuple, TYPE_CHECKING
 
 import attrs
+import cirq
 from attrs import frozen
+from numpy.typing import NDArray
 
 from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
 from .gate_with_registers import GateWithRegisters
@@ -141,6 +143,13 @@ class Adjoint(GateWithRegisters):
         """The decomposition is the adjoint of `subbloq`'s decomposition."""
         return self.subbloq.decompose_bloq().adjoint()
 
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        if isinstance(self.subbloq, GateWithRegisters):
+            return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
+        return super().decompose_from_registers(context=context, **quregs)
+
     def supports_decompose_bloq(self) -> bool:
         """Delegate to `subbloq.supports_decompose_bloq()`"""
         return self.subbloq.supports_decompose_bloq()
@@ -161,6 +170,10 @@ class Adjoint(GateWithRegisters):
         """The subbloq's pretty_name with a dagger."""
         return self.subbloq.pretty_name() + '†'
 
+    def __str__(self) -> str:
+        """Delegate to subbloq's `__str__` method."""
+        return f'Adjoint(subbloq={str(self.subbloq)})'
+
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
@@ -173,5 +186,14 @@ class Adjoint(GateWithRegisters):
         The cirq-style t complexity protocol does not leverage the heirarchical decomposition
         of high-level bloqs, so we need to shim in an extra `adjoint` boolean flag.
         """
-        # TODO: https://github.com/quantumlib/Qualtran/issues/489
-        return self.subbloq._t_complexity_(adjoint=True)
+        # TODO: https://github.com/quantumlib/Qualtran/issues/735
+        if not hasattr(self.subbloq, '_t_complexity_'):
+            return NotImplemented
+
+        try:
+            return self.subbloq._t_complexity_(adjoint=True)
+        except TypeError as e:
+            if 'adjoint' in str(e):
+                return self.subbloq._t_complexity_()
+            else:
+                raise e

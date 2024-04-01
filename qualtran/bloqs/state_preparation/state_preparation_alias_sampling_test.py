@@ -16,20 +16,26 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.select_pauli_lcu_test import get_1d_Ising_lcu_coeffs
-from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
+from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+    _state_prep_alias,
+    StatePreparationAliasSampling,
+)
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 
-@pytest.mark.parametrize("num_sites, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
-def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
-    lcu_coefficients = get_1d_Ising_lcu_coeffs(num_sites)
+def test_state_prep_alias_sampling_autotest(bloq_autotester):
+    bloq_autotester(_state_prep_alias)
+
+
+def assert_state_preparation_valid_for_coefficient(lcu_coefficients: float, epsilon: float):
     gate = StatePreparationAliasSampling.from_lcu_probs(
         lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
     )
 
     assert_valid_bloq_decomposition(gate)
+    _ = gate.call_graph()
 
     g = GateHelper(gate)
     qubit_order = g.operation.qubits
@@ -50,6 +56,17 @@ def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
     # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
     # same as `lcu_coefficients` upto `epsilon`.
     np.testing.assert_allclose(lcu_coefficients, abs(prepared_state) ** 2, atol=epsilon)
+
+
+@pytest.mark.parametrize("num_sites, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
+def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
+    lcu_coefficients = get_1d_ising_lcu_coeffs(num_sites)
+    assert_state_preparation_valid_for_coefficient(lcu_coefficients, epsilon)
+
+
+def test_state_preparation_via_coherent_alias_for_0_mu():
+    lcu_coefficients = np.array([1 / 8] * 8)
+    assert_state_preparation_valid_for_coefficient(lcu_coefficients, 2e-1)
 
 
 def test_state_preparation_via_coherent_alias_sampling_diagram():
@@ -90,5 +107,6 @@ less_than_equal: ─────────────────────
     )
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('state_preparation_alias_sampling')

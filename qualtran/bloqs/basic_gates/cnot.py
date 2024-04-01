@@ -25,6 +25,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     CompositeBloq,
     CtrlSpec,
     DecomposeTypeError,
@@ -137,7 +138,7 @@ class CNOT(Bloq):
             return ModPlus()
         raise ValueError(f'Bad wire symbol soquet: {soq}')
 
-    def t_complexity(self) -> 'TComplexity':
+    def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
 
 
@@ -145,3 +146,6 @@ class CNOT(Bloq):
 def _cnot() -> CNOT:
     cnot = CNOT()
     return cnot
+
+
+_CNOT_DOC = BloqDocSpec(bloq_cls=CNOT, examples=[_cnot])

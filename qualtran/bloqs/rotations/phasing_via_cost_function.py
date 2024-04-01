@@ -12,15 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, TYPE_CHECKING, Union
+from typing import Dict, TYPE_CHECKING
 
 import attrs
-import numpy as np
-import sympy
 
-from qualtran import Bloq, BloqBuilder, GateWithRegisters, QFxp, Register, Signature
-from qualtran.bloqs.basic_gates.rotation import ZPowGate
-from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Side, Signature
+from qualtran.bloqs.rotations.quantum_variable_rotation import QvrInterface
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -58,7 +55,7 @@ class PhasingViaCostFunction(Bloq):
 
 
     Different strategies for implementing the two oracles would give different costs tradeoffs.
-    See `PhaseOracleZPow` and `PhaseOraclePhaseGradient` for two different implementations of
+    See `QvrZPow` and `QvrPhaseGradient` for two different implementations of
     phase oracles described in the reference.
 
     Args:
@@ -68,21 +65,23 @@ class PhasingViaCostFunction(Bloq):
             allocated by `cost_eval_oracle` as a THRU input.
 
     References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization]
-        (https://arxiv.org/abs/2007.07391), Appendix C: Oracles for phasing by cost function
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
+        Appendix C: Oracles for phasing by cost function
     """
     cost_eval_oracle: Bloq
-    phase_oracle: Bloq
+    phase_oracle: QvrInterface
+
+    def __attrs_post_init__(self):
+        for cost_reg in self.phase_oracle.cost_registers:
+            cost_eval_right_reg = self.cost_eval_oracle.signature.get_right(cost_reg.name)
+            assert cost_reg.dtype.num_qubits == cost_eval_right_reg.dtype.num_qubits
+            assert cost_reg.shape == cost_eval_right_reg.shape
+            assert cost_reg.side == Side.THRU
+            assert cost_eval_right_reg.side == Side.RIGHT
 
     @cached_property
     def signature(self) -> 'Signature':
-        registers = [*self.cost_eval_oracle.signature.lefts()]
-        for reg in self.phase_oracle.signature.lefts():
-            try:
-                _ = self.cost_eval_oracle.signature.get_right(reg.name)
-            except KeyError:
-                registers.append(reg)
-        registers = list(dict.fromkeys(registers).keys())
+        registers = [*self.cost_eval_oracle.signature.lefts(), *self.phase_oracle.extra_registers]
         return Signature(registers)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -96,88 +95,36 @@ class PhasingViaCostFunction(Bloq):
         return soqs
 
 
-@attrs.frozen
-class PhaseOracleZPow(GateWithRegisters):
-    """Phasing oracle that simply applies a ZPow rotation to every qubit in the cost register"""
+@bloq_example
+def _square_via_zpow_phasing() -> PhasingViaCostFunction:
+    from qualtran import QFxp, Register
+    from qualtran.bloqs.arithmetic import Square
+    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
 
-    cost_reg: Register
-    gamma: float = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
-
-    @cached_property
-    def cost_dtype(self) -> QFxp:
-        dtype = self.cost_reg.dtype
-        assert isinstance(dtype, QFxp)
-        return dtype
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([self.cost_reg])
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        out = soqs[self.cost_reg.name]
-        out = bb.split(out)
-        eps = self.eps / len(out)
-        if self.cost_dtype.signed:
-            out[0] = bb.add(ZPowGate(exponent=1, eps=eps), q=out[0])
-        for i in range(self.cost_dtype.bitsize):
-            power_of_two = i - self.cost_dtype.num_frac
-            out[-(i + 1)] = bb.add(
-                ZPowGate(exponent=(2**power_of_two) * self.gamma * 2, eps=self.eps / len(out)),
-                q=out[-(i + 1)],
-            )
-        return {self.cost_reg.name: bb.join(out)}
+    n, gamma, eps = 5, 0.1234, 1e-8
+    cost_reg = Register('result', QFxp(2 * n, 2 * n, signed=False))
+    cost_eval_oracle = Square(n)
+    phase_oracle = QvrZPow(cost_reg, gamma, eps)
+    square_via_zpow_phasing = PhasingViaCostFunction(cost_eval_oracle, phase_oracle)
+    return square_via_zpow_phasing
 
 
-@attrs.frozen
-class PhaseOraclePhaseGradient(GateWithRegisters):
-    """Phasing oracle that applies a rotation via addition into the phase gradient register."""
+@bloq_example
+def _square_via_phase_gradient() -> PhasingViaCostFunction:
+    from qualtran import QFxp, Register
+    from qualtran.bloqs.arithmetic import Square
+    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 
-    cost_reg: Register
-    gamma: float = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    n, gamma, eps = 5, 0.1234, 1e-8
+    cost_reg = Register('result', QFxp(2 * n, 2 * n, signed=False))
+    cost_eval_oracle = Square(n)
+    phase_oracle = QvrPhaseGradient(cost_reg, gamma, eps)
+    square_via_phase_gradient = PhasingViaCostFunction(cost_eval_oracle, phase_oracle)
+    return square_via_phase_gradient
 
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([self.cost_reg, Register('phase_grad', QFxp(self.b_grad, self.b_grad))])
 
-    @cached_property
-    def cost_dtype(self) -> QFxp:
-        dtype = self.cost_reg.dtype
-        assert isinstance(dtype, QFxp)
-        return dtype
-
-    @cached_property
-    def b_phase(self) -> int:
-        return int(np.ceil(np.log2(1 / self.eps)))
-
-    @cached_property
-    def b_grad(self) -> int:
-        # Using Equation A7 from https://arxiv.org/abs/2007.07391
-        eq_a7 = int(np.ceil(np.log2((self.gamma_bitsize + 2) * np.pi / self.eps)))
-        # Using Equation 35 from https://arxiv.org/abs/2007.07391
-        eq_35 = self.b_phase + int(np.ceil(np.log2(self.b_phase)))
-        # TODO(#654): Eq A7 will result in a bigger gradient bitsize but blows up the cost
-        #   for doing phase gradient based cost computations significantly (which leads to
-        #   the cost using PhaseOracleZPow to be cheaper). Also, we don't yet have a test that
-        #   fails for Eq 35. The only concern is that value of `eq_35` can be smaller than
-        #   `cost_reg.bitsize`.
-        assert eq_a7 >= eq_35
-        return eq_35
-
-    @cached_property
-    def gamma_bitsize(self) -> int:
-        # Note: Paragraph b/w equation 34 & 35 of https://arxiv.org/abs/2007.07391 gives
-        # `gamma_bitsize` to be `log(gamma) + b_{phase} + O(1)`. However, this is incorrect, and
-        # we have tests that fail if you do `return self.b_phase`.
-        # The correct `gamma_bitsize` can be obtained using Equation D7 and is given below.
-        d_B = self.cost_dtype.bitsize
-        return d_B + int(np.ceil(np.log2(d_B / self.eps)))  # Using Equation D7
-
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        out, phase_grad = bb.add(
-            AddScaledValIntoPhaseReg(self.cost_dtype, self.b_grad, self.gamma, self.gamma_bitsize),
-            x=soqs[self.cost_reg.name],
-            phase_grad=soqs['phase_grad'],
-        )
-        return {self.cost_reg.name: out, 'phase_grad': phase_grad}
+_PHASING_VIA_COST_FUNCTION = BloqDocSpec(
+    bloq_cls=PhasingViaCostFunction,
+    import_line='from qualtran.bloqs.rotations.phasing_via_cost_function import PhasingViaCostFunction',
+    examples=(_square_via_phase_gradient, _square_via_zpow_phasing),
+)

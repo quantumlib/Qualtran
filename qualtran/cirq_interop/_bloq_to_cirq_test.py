@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 import cirq
 import numpy as np
@@ -21,10 +20,9 @@ from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.and_bloq import And, MultiAnd
-from qualtran.bloqs.basic_gates import XGate
+from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.factoring import ModExp
-from qualtran.bloqs.swap_network import SwapWithZero
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
@@ -42,6 +40,18 @@ class SwapTwoBitsTest(Bloq):
         (x,) = x
         (y,) = y
         return cirq.SWAP(x, y), {'x': np.array([x]), 'y': np.array([y])}
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran.bloqs.basic_gates import TwoBitSwap
+
+        TwoBitSwap().add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
 
 
 def test_swap_two_bits_to_cirq():
@@ -79,6 +89,32 @@ class SwapTest(Bloq):
         for i in range(self.n):
             xs[i], ys[i] = bb.add(SwapTwoBitsTest(), x=xs[i], y=ys[i])
         return {'x': bb.join(xs), 'y': bb.join(ys)}
+
+
+@frozen
+class SwapTestWithOnlyTensorData(Bloq):
+    n: int
+
+    @property
+    def signature(self):
+        return Signature.build(x=self.n, y=self.n)
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        SwapTest(self.n).add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)
+
+
+@pytest.mark.parametrize('n', [1, 2, 3, 4])
+def test_bloq_as_cirq_gate_uses_tensor_data_for_unitary(n: int):
+    unitary_one = cirq.unitary(BloqAsCirqGate(SwapTest(n)))
+    unitary_two = cirq.unitary(BloqAsCirqGate(SwapTestWithOnlyTensorData(n)))
+    np.testing.assert_allclose(unitary_one, unitary_two)
 
 
 def test_swap():
@@ -157,78 +193,7 @@ def test_bloq_as_cirq_gate_left_register():
     bb.free(q)
     cbloq = bb.finalize()
     circuit, _ = cbloq.to_cirq_circuit()
-    cirq.testing.assert_has_diagram(circuit, """_c(0): ───Allocate───X───Free───""")
-
-
-def test_bloq_as_cirq_gate_multi_dimensional_signature():
-    bloq = SwapWithZero(2, 3, 4)
-    cirq_quregs = get_named_qubits(bloq.signature.lefts())
-    op = BloqAsCirqGate(bloq).on_registers(**cirq_quregs)
-    cirq.testing.assert_has_diagram(
-        cirq.Circuit(op),
-        '''
-selection0: ──────SwapWithZero───
-                  │
-selection1: ──────selection──────
-                  │
-targets[0][0]: ───targets────────
-                  │
-targets[0][1]: ───targets────────
-                  │
-targets[0][2]: ───targets────────
-                  │
-targets[1][0]: ───targets────────
-                  │
-targets[1][1]: ───targets────────
-                  │
-targets[1][2]: ───targets────────
-                  │
-targets[2][0]: ───targets────────
-                  │
-targets[2][1]: ───targets────────
-                  │
-targets[2][2]: ───targets────────
-                  │
-targets[3][0]: ───targets────────
-                  │
-targets[3][1]: ───targets────────
-                  │
-targets[3][2]: ───targets────────
-''',
-    )
-    cbloq = bloq.decompose_bloq()
-    cirq.testing.assert_has_diagram(
-        cbloq.to_cirq_circuit(**cirq_quregs)[0],
-        '''
-selection0: ──────────────────────────────@(approx)───
-                                          │
-selection1: ──────@(approx)───@(approx)───┼───────────
-                  │           │           │
-targets[0][0]: ───×(x)────────┼───────────×(x)────────
-                  │           │           │
-targets[0][1]: ───×(x)────────┼───────────×(x)────────
-                  │           │           │
-targets[0][2]: ───×(x)────────┼───────────×(x)────────
-                  │           │           │
-targets[1][0]: ───×(y)────────┼───────────┼───────────
-                  │           │           │
-targets[1][1]: ───×(y)────────┼───────────┼───────────
-                  │           │           │
-targets[1][2]: ───×(y)────────┼───────────┼───────────
-                              │           │
-targets[2][0]: ───────────────×(x)────────×(y)────────
-                              │           │
-targets[2][1]: ───────────────×(x)────────×(y)────────
-                              │           │
-targets[2][2]: ───────────────×(x)────────×(y)────────
-                              │
-targets[3][0]: ───────────────×(y)────────────────────
-                              │
-targets[3][1]: ───────────────×(y)────────────────────
-                              │
-targets[3][2]: ───────────────×(y)────────────────────
-''',
-    )
+    cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
 
 
 def test_bloq_as_cirq_gate_for_mod_exp():
@@ -249,17 +214,17 @@ def test_bloq_as_cirq_gate_for_mod_exp():
     cirq.testing.assert_has_diagram(
         circuit,
         '''
-exponent0: ───ModExp──────────────────────────────────────────────────CtrlModMul───
-              │                                                       │
-exponent1: ───exponent───────────────────────────────────CtrlModMul───┼────────────
-              │                                          │            │
-exponent2: ───exponent──────────────────────CtrlModMul───┼────────────┼────────────
-              │                             │            │            │
-exponent3: ───exponent─────────CtrlModMul───┼────────────┼────────────┼────────────
-              │                │            │            │            │
-x0: ──────────x──────────|1>───x────────────x────────────x────────────x────────────
-              │          │     │            │            │            │
-x1: ──────────x──────────val───x────────────x────────────x────────────x────────────
+exponent0: ───exponent─────────────────────────@─────
+              │                                │
+exponent1: ───exponent───────────────────@─────┼─────
+              │                          │     │
+exponent2: ───exponent─────────────@─────┼─────┼─────
+              │                    │     │     │
+exponent3: ───exponent───────@─────┼─────┼─────┼─────
+              │              │     │     │     │
+x0: ──────────x──────────1───*=3───*=1───*=1───*=1───
+              │          │   │     │     │     │
+x1: ──────────x──────────1───*=3───*=1───*=1───*=1───
 ''',
     )
     # Alternatively, decompose the Bloq and then convert the composite Bloq to a Cirq circuit.
@@ -275,19 +240,45 @@ x1: ──────────x──────────val───x�
     cirq.testing.assert_has_diagram(
         circuit,
         '''
-_c(0): ───────x──────────|1>───x────────────x────────────x────────────x────────────
-              │          │     │            │            │            │
-_c(1): ───────x──────────val───x────────────x────────────x────────────x────────────
-              │                │            │            │            │
-exponent0: ───ModExp───────────┼────────────┼────────────┼────────────CtrlModMul───
-              │                │            │            │
-exponent1: ───exponent─────────┼────────────┼────────────CtrlModMul────────────────
-              │                │            │
-exponent2: ───exponent─────────┼────────────CtrlModMul─────────────────────────────
-              │                │
-exponent3: ───exponent─────────CtrlModMul──────────────────────────────────────────''',
+_c(0): ───────x──────────1───*=3───*=1───*=1───*=1───
+              │          │   │     │     │     │
+_c(1): ───────x──────────1───*=3───*=1───*=1───*=1───
+              │              │     │     │     │
+exponent0: ───exponent───────┼─────┼─────┼─────@─────
+              │              │     │     │
+exponent1: ───exponent───────┼─────┼─────@───────────
+              │              │     │
+exponent2: ───exponent───────┼─────@─────────────────
+              │              │
+exponent3: ───exponent───────@───────────────────────''',
     )
 
 
+def test_toffoli_circuit_diagram():
+    q = cirq.LineQubit.range(3)
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(Toffoli().on(*q)),
+        """
+0: ───@───
+      │
+1: ───@───
+      │
+2: ───X───
+""",
+    )
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(Toffoli().on(*q)),
+        """
+0: ---@---
+      |
+1: ---@---
+      |
+2: ---X---
+""",
+        use_unicode_characters=False,
+    )
+
+
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook('cirq_interop')

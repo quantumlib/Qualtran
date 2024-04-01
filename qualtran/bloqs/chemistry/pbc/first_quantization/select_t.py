@@ -17,7 +17,7 @@ from typing import Set, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
 
 if TYPE_CHECKING:
@@ -38,8 +38,8 @@ class SelectTFirstQuantization(Bloq):
         flag_T: a flag to control on the success of the $T$ state preparation.
 
     References:
-        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](
-            https://arxiv.org/abs/2105.12767) page 20, section B
+        [Fault-Tolerant Quantum Simulations of Chemistry in First Quantization](https://arxiv.org/abs/2105.12767)
+        page 20, section B
     """
     num_bits_p: int
     eta: int
@@ -48,12 +48,12 @@ class SelectTFirstQuantization(Bloq):
     def signature(self) -> Signature:
         return Signature(
             [
-                Register("flag_T", bitsize=1),
-                Register("plus", bitsize=1),
-                Register("w", bitsize=3),
-                Register("r", bitsize=self.num_bits_p),
-                Register("s", bitsize=self.num_bits_p),
-                Register("p", bitsize=self.num_bits_p, shape=(3,)),
+                Register("flag_T", QBit()),
+                Register("plus", QBit()),
+                Register("w", QAny(bitsize=3)),
+                Register("r", QAny(bitsize=self.num_bits_p)),
+                Register("s", QAny(bitsize=self.num_bits_p)),
+                Register("p", QAny(bitsize=self.num_bits_p), shape=(3,)),
             ]
         )
 
