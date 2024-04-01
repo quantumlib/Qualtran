@@ -28,8 +28,10 @@ Bloqs Library
     basic_gates/t_gate.ipynb
     basic_gates/toffoli.ipynb
     basic_gates/hadamard.ipynb
+    basic_gates/cnot.ipynb
     basic_gates/s_gate.ipynb
     mcmt/and_bloq.ipynb
+    basic_gates/states_and_effects.ipynb
     swap_network/swap_network.ipynb
     basic_gates/global_phase.ipynb
 
@@ -64,6 +66,7 @@ Bloqs Library
     :maxdepth: 2
     :caption: Rotations:
 
+    basic_gates/rotation.ipynb
     rotations/quantum_variable_rotation.ipynb
     rotations/phasing_via_cost_function.ipynb
     qft/two_bit_ffft.ipynb

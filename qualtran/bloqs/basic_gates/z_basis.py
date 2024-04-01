@@ -26,6 +26,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     CompositeBloq,
     DecomposeTypeError,
     QAny,
@@ -158,6 +159,9 @@ def _zero_state() -> ZeroState:
     return zero_state
 
 
+_ZERO_STATE_DOC = BloqDocSpec(bloq_cls=ZeroState, examples=[_zero_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class ZeroEffect(_ZVector):
     """The effect <0|"""
@@ -173,6 +177,9 @@ class ZeroEffect(_ZVector):
 def _zero_effect() -> ZeroEffect:
     zero_effect = ZeroEffect()
     return zero_effect
+
+
+_ZERO_EFFECT_DOC = BloqDocSpec(bloq_cls=ZeroEffect, examples=[_zero_effect])
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -192,6 +199,9 @@ def _one_state() -> OneState:
     return one_state
 
 
+_ONE_STATE_DOC = BloqDocSpec(bloq_cls=OneState, examples=[_one_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class OneEffect(_ZVector):
     """The effect <1|"""
@@ -207,6 +217,9 @@ class OneEffect(_ZVector):
 def _one_effect() -> OneEffect:
     one_effect = OneEffect()
     return one_effect
+
+
+_ONE_EFFECT_DOC = BloqDocSpec(bloq_cls=OneEffect, examples=[_one_effect])
 
 
 @frozen
@@ -395,6 +408,9 @@ def _int_state() -> IntState:
     return int_state
 
 
+_INT_STATE_DOC = BloqDocSpec(bloq_cls=IntState, examples=[_int_state])
+
+
 @frozen(init=False, field_transformer=_hide_base_fields)
 class IntEffect(_IntVector):
     """The effect <val| for non-negative integer val
@@ -415,3 +431,6 @@ class IntEffect(_IntVector):
 def _int_effect() -> IntEffect:
     int_effect = IntEffect(55, bitsize=8)
     return int_effect
+
+
+_INT_EFFECT_DOC = BloqDocSpec(bloq_cls=IntEffect, examples=[_int_effect])

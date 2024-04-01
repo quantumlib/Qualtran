@@ -34,6 +34,7 @@ from qualtran.bloqs.basic_gates import (
 )
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -77,14 +78,15 @@ class LPRSInterimPrep(GateWithRegisters):
         yield Hadamard().on(*anc)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (
-                CZPowGate(exponent=1 / ((2**self.bitsize + 1) * np.pi), global_shift=-0.5),
-                self.bitsize,
-            ),
-            (ZPowGate(exponent=1 / ((2**self.bitsize + 1) * np.pi), global_shift=-0.5), 1),
-            (Hadamard(), 2 + self.bitsize),
-        }
+        rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
+        ret = {(Rz(angle=rz_angle), 1), (Hadamard(), 2 + self.bitsize)}
+        if is_symbolic(self.bitsize):
+            ret |= {(Rz(angle=rz_angle).controlled().bloq, self.bitsize)}
+        else:
+            ret |= {
+                (Rz(angle=rz_angle * (2**i)).controlled().bloq, 1) for i in range(self.bitsize)
+            }
+        return ret
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(rotations=self.bitsize + 1, clifford=2 + self.bitsize)
@@ -117,7 +119,7 @@ class LPResourceState(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('m', QUInt(self.bitsize), side=Side.RIGHT)])
+        return Signature([Register('m', QUInt(self.bitsize), side=Side.THRU)])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -148,7 +150,7 @@ class LPResourceState(GateWithRegisters):
 
         # Reset ancilla to |0> state.
         yield [XGate().on(flag), XGate().on(anc)]
-        yield cirq.global_phase_operation(1j)
+        yield GlobalPhase(1j).on()
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -162,7 +164,7 @@ class LPResourceState(GateWithRegisters):
             (Ry(angle=flag_angle), 3),
             (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
             (XGate(), 4),
-            (GlobalPhase(coefficient=1j), 1),
+            (GlobalPhase(1j), 1),
             (CZPowGate(), 1),
         }
 
