@@ -12,25 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 import cirq
 import numpy as np
 import pytest
 import sympy
-from attrs import define, field, frozen
-from cirq.testing import random_unitary
+from attrs import define
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, Signature
+from qualtran import Bloq, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.bloqs.generalized_qsp import (
-    GeneralizedQSP,
-    qsp_complementary_polynomial,
-    qsp_phase_factors,
-)
+from qualtran.bloqs.for_testing.random_gate import RandomGate
 from qualtran.resource_counting import SympySymbolAllocator
+
+from .generalized_qsp import GeneralizedQSP, qsp_complementary_polynomial, qsp_phase_factors
 
 
 def assert_angles_almost_equal(
@@ -96,34 +93,6 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
         Q = qsp_complementary_polynomial(P, verify=True)
         Q = np.around(Q, decimals=8)
         assert np.isreal(Q).all()
-
-
-@frozen
-class RandomGate(GateWithRegisters):
-    bitsize: int
-    matrix: Tuple[Tuple[complex, ...], ...] = field(
-        converter=lambda mat: tuple(tuple(row) for row in mat)
-    )
-
-    @staticmethod
-    def create(bitsize: int, *, random_state=None) -> 'RandomGate':
-        matrix = random_unitary(2**bitsize, random_state=random_state)
-        return RandomGate(bitsize, matrix)
-
-    @property
-    def signature(self) -> Signature:
-        return Signature.build(q=self.bitsize)
-
-    def _unitary_(self):
-        return np.array(self.matrix)
-
-    def adjoint(self) -> 'RandomGate':
-        return RandomGate(self.bitsize, np.conj(self.matrix).T)
-
-    def __pow__(self, power):
-        if power == -1:
-            return self.adjoint()
-        return NotImplemented
 
 
 def evaluate_polynomial_of_matrix(
