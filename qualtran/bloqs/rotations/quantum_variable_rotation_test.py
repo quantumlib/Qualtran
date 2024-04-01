@@ -100,6 +100,29 @@ def test_qvr_phase_gradient_cost_reg_greater_than_b_grad(normalize: bool):
     np.testing.assert_allclose(final_state, expected_state, atol=eps)
 
 
+@pytest.mark.parametrize('n', range(2, 50))
+def test_eps_set_by_cost_size(n: int):
+    # We want `gamma` to have `n` set bits (`0.11111...11`) for the worst case comparison.
+    num, den = 2**n - 1, 2**n
+    gamma = num / den
+
+    eps = 2 * np.pi / (2**n)
+    qvr = QvrPhaseGradient.from_bitsize(n, gamma, eps=eps)
+    assert qvr.b_phase == n
+    assert qvr.gamma_dtype.bitsize == n
+    expected_num_additions = min((n + 2) // 2, num.bit_count())
+    assert qvr.num_additions == expected_num_additions
+    expected_b_grad = np.ceil(np.log2(expected_num_additions * 2 * np.pi / eps))
+    assert qvr.b_grad_via_formula == expected_b_grad
+    # `b_grad_via_fxp_optimization` can be higher than `b_grad_via_formula` because we haven't
+    # implemented the optimization where we represent `gamma` is represented as a sum of positive
+    # and negative terms so that the total number additions is `(gamma_bitsize + 2) // 2` instead
+    # of `gamma_bitsize`. Since `b_grad_via_fxp_optimization` is computed by actually doing the
+    # additions into the target register, the higher number of additions result in a higher error
+    # and thus need (at-most 1) more bit.
+    assert qvr.b_grad_via_fxp_optimization <= qvr.b_grad_via_formula + 1
+
+
 @pytest.mark.parametrize(
     'gamma, expected_additions, normalize',
     [

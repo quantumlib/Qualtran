@@ -74,7 +74,13 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
-from qualtran.resource_counting.symbolic_counting_utils import ceil, is_symbolic, log2, smax
+from qualtran.resource_counting.symbolic_counting_utils import (
+    bit_length,
+    ceil,
+    is_symbolic,
+    log2,
+    smax,
+)
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -368,18 +374,29 @@ class QvrPhaseGradient(QvrInterface):
         return ceil(log2(pi * 2 / self.eps))
 
     @cached_property
-    def b_grad(self) -> int:
+    def b_grad_via_formula(self) -> int:
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
         pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
-        b_grad_via_formula = ceil(log2(1 + self.num_additions * 2 * pi / self.eps))
-        if is_symbolic(b_grad_via_formula) or self.cost_dtype.bitsize >= 54:
+        return ceil(log2(self.num_additions * 2 * pi / self.eps))
+
+    @cached_property
+    def b_grad_via_fxp_optimization(self) -> int:
+        if is_symbolic(self.eps, self.gamma, self.cost_dtype.bitsize):
+            raise ValueError(
+                "Fxp optimization to find gradient register size works only for non-parameterized Bloqs."
+            )
+        return find_optimal_phase_grad_size(self.gamma_fxp, self.cost_dtype, self.eps / (2 * np.pi))
+
+    @cached_property
+    def b_grad(self) -> int:
+        if (
+            is_symbolic(self.eps, self.gamma, self.cost_dtype.bitsize)
+            or self.cost_dtype.bitsize >= 54
+        ):
             # Fxpmath library only supports precision < 54
-            return b_grad_via_formula
-        b_grad_opt = find_optimal_phase_grad_size(
-            self.gamma_fxp, self.cost_dtype, self.eps / (2 * np.pi)
-        )
+            return self.b_grad_via_formula
         # assert b_grad_opt <= b_grad_via_formula + 1, f'{b_grad_opt=}, {b_grad_via_formula=}'
-        return min(b_grad_opt, b_grad_via_formula)
+        return min(self.b_grad_via_formula, self.b_grad_via_fxp_optimization)
 
     @cached_property
     def num_additions(self) -> int:
@@ -415,7 +432,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = smax(0, ceil(log2(abs(self.gamma) + 1)))
+        n_int = smax(0, bit_length(abs(self.gamma)))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 
