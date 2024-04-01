@@ -61,6 +61,7 @@ from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
 import attrs
 import numpy as np
 import sympy
+from fxpmath import Fxp
 
 from qualtran import (
     bloq_example,
@@ -73,7 +74,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, smax
+from qualtran.resource_counting.symbolic_counting_utils import ceil, is_symbolic, log2, smax
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
@@ -176,6 +177,41 @@ _QVR_ZPOW = BloqDocSpec(
     import_line='from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow',
     examples=(_qvr_zpow,),
 )
+
+
+def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -> int:
+    """Finds the minimal size of the phase gradient register for a scaled addition by `gamma_fxp`
+
+    Finds the minimal size of the phase gradient register s.t. a scaled addition of the cost
+    register, of type `cost_dtype`, by a fixed point constant `gamma_fxp` has worst case error eps.
+
+    The error in fixed point multiplication via addition depends on size and value of the fixed
+    point numbers to be multiplied. For the cost register, we consider worst case value of
+    `(2**cost_dtype.bitsize - 1) / (2**cost_dtype.num_frac)`, which has all bits set in its binary
+    representation. Using the worst case value of the cost register, we binary search on the
+    smallest value of the output register s.t. the obtained result of multiplication via repeated
+    additions with `gamma_fxp` is `eps` close to the desired value.
+    """
+    from qualtran.bloqs.rotations.phase_gradient import _mul_via_repeated_add
+
+    cost_val = (2**cost_dtype.bitsize - 1) / (2**cost_dtype.num_frac)
+    cost_fxp = Fxp(cost_val, dtype=cost_dtype.fxp_dtype_str)
+    expected_val = (gamma_fxp.get_val() * cost_val) % 1
+
+    def is_good_phase_grad_size(phase_bitsize: int):
+        res = _mul_via_repeated_add(cost_fxp, gamma_fxp, phase_bitsize)
+        return np.abs(res.get_val() - expected_val) <= eps
+
+    low, high, ans = 1, 100, None
+    while low <= high:
+        mid = (low + high) // 2
+        if is_good_phase_grad_size(mid):
+            ans = mid
+            high = mid - 1
+        else:
+            low = mid + 1
+    assert is_good_phase_grad_size(ans)
+    return ans
 
 
 @attrs.frozen
@@ -335,11 +371,19 @@ class QvrPhaseGradient(QvrInterface):
     def b_grad(self) -> int:
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
         pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
-        return ceil(log2(self.num_additions * 2 * pi / self.eps))
+        b_grad_via_formula = ceil(log2(1 + self.num_additions * 2 * pi / self.eps))
+        if is_symbolic(b_grad_via_formula) or self.cost_dtype.bitsize >= 54:
+            # Fxpmath library only supports precision < 54
+            return b_grad_via_formula
+        b_grad_opt = find_optimal_phase_grad_size(
+            self.gamma_fxp, self.cost_dtype, self.eps / (2 * np.pi)
+        )
+        # assert b_grad_opt <= b_grad_via_formula + 1, f'{b_grad_opt=}, {b_grad_via_formula=}'
+        return min(b_grad_opt, b_grad_via_formula)
 
     @cached_property
     def num_additions(self) -> int:
-        # Number of additions contributing to the multiplicative error in the reference as
+        # Number of additions contributing to the multiplicative error in the reference is
         # assumed to be (gamma_bitsize+2)//2. That limit holds when 0 < gamma < 1 and
         # 0 < cost_reg < 1 and thus `gamma_bitsize` is equal to `b_phase`.
         # However, we support additional cases where both `gamma` and `cost_reg` can be arbitrary
@@ -353,7 +397,14 @@ class QvrPhaseGradient(QvrInterface):
         #   E(x.0 * a.b) = 0 # Since we only left shift `a.b` and thus do not discard any digit.
         #   E(0.y * a.b) = (y_bitsize-a_bitsize + 2)//2 # Assuming b_grad >= cost_reg.bitsize;
         #                           no digit is discarded for the first `a_bitsize` right shifts.
-        return (self.b_phase + 2) // 2
+        num_additions = (self.b_phase + 2) // 2
+        if not isinstance(self.gamma, sympy.Basic):
+            num_additions = min(num_additions, sum(int(bit) for bit in self.gamma_fxp.bin()))
+        return num_additions
+
+    @cached_property
+    def gamma_fxp(self) -> Fxp:
+        return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
 
     @cached_property
     def gamma_dtype(self) -> QFxp:
@@ -364,7 +415,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = smax(0, ceil(log2(abs(self.gamma))))
+        n_int = smax(0, ceil(log2(abs(self.gamma) + 1)))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 

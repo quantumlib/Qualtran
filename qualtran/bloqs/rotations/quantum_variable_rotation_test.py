@@ -61,6 +61,21 @@ class TestQvrPhaseGradient(GateWithRegisters):
         yield cirq.H.on_each(*phase_grad)
 
 
+def trace_distance(u, v):
+    dist = 1 - np.abs(np.trace(u @ v.conj().T)) / 2
+    if np.isclose(dist, 0):
+        dist = 0
+    return np.sqrt(dist)
+
+
+@pytest.mark.parametrize('gamma', [1 / 2, 1 / 4, 1 / 8, 1 / 16, 15 / 16])
+@pytest.mark.parametrize('eps', [1e-2, 1e-3, 1e-4, 1e-5])
+def test_qvr_phase_gradient_unitary(gamma: float, eps: float):
+    zpow = cirq.Z**gamma
+    zpow_qvr = TestQvrPhaseGradient(Register('x', QFxp(1, 1, signed=False)), gamma, eps)
+    assert trace_distance(cirq.unitary(zpow), cirq.unitary(zpow_qvr)) < eps
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize('normalize', [True, False])
 def test_qvr_phase_gradient_cost_reg_greater_than_b_grad(normalize: bool):
