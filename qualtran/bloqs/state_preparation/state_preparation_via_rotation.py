@@ -89,7 +89,6 @@ from qualtran import (
     Signature,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.data_loading.qrom import QROM
@@ -335,9 +334,9 @@ class PRGAViaPhaseGradient(Bloq):
         # phase kickback via phase_grad += rot_reg (line 2 of eq (8) in [1])
         soqs["target0_"], phase_grad = bb.add(
             # I needed to change this because AddIntoPhaseGrad does not declare bloq decomposition
-            Add(QUInt(self.phase_bitsize)),
-            a=soqs["target0_"],
-            b=phase_grad,
+            AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize),
+            x=soqs["target0_"],
+            phase_grad=phase_grad,
         )
         # uncompute angle load in rot_reg to disentangle it from selection register
         # (line 1 of eq (8) in [1])
