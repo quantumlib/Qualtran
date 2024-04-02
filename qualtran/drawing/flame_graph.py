@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import functools
 import pathlib
 import subprocess
 import tempfile
-from typing import List, Optional, Sequence, Union
+from typing import Any, List, Optional, Sequence, Union
 
 import networkx as nx
 import numpy as np
@@ -27,19 +27,25 @@ from qualtran.resource_counting.bloq_counts import _compute_sigma
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 
+def _pretty_arg(val: Any) -> str:
+    if isinstance(val, (tuple, np.ndarray)):
+        return f'{val.shape if isinstance(val, np.ndarray) else len(val)}'
+    if isinstance(val, Bloq):
+        return _pretty_name(val)
+    if isinstance(val, float):
+        if np.isclose(val, 0):
+            val = 0
+        return f'{val:0.2g}'
+    return f'{val}'
+
+
 def _pretty_name(bloq: Bloq) -> str:
     from qualtran.serialization.bloq import _iter_fields
 
     ret = bloq.pretty_name()
     if bloq.pretty_name.__qualname__.startswith('Bloq.'):
         for field in _iter_fields(bloq):
-            val = getattr(bloq, field.name)
-            if isinstance(val, (tuple, np.ndarray)):
-                ret += f'[{val.shape if isinstance(val, np.ndarray) else len(val)}]'
-            elif isinstance(val, Bloq):
-                ret += f'[{_pretty_name(val)}]'
-            else:
-                ret += f'[{val}]'
+            ret += f'[{_pretty_arg(getattr(bloq, field.name))}]'
     return ret
 
 
@@ -50,10 +56,10 @@ def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> int:
 
 
 def _keep_if_small(bloq: Bloq) -> bool:
-    from qualtran.bloqs.basic_gates import CSwap, Toffoli
+    from qualtran.bloqs.basic_gates import Toffoli, TwoBitCSwap
     from qualtran.bloqs.mcmt.and_bloq import And
 
-    if isinstance(bloq, (And, Toffoli, CSwap)):
+    if isinstance(bloq, (And, Toffoli, TwoBitCSwap)):
         return True
 
 
@@ -87,9 +93,11 @@ def get_flame_graph_data(
     keep: Optional[Sequence['Bloq']] = _keep_if_small,
     **kwargs,
 ) -> List[str]:
+    from qualtran.resource_counting.generalizers import cirq_to_bloqs
+
     data = []
     for bloq in bloqs:
-        call_graph, _ = bloq.call_graph(keep=keep, **kwargs)
+        call_graph, _ = bloq.call_graph(keep=keep, **kwargs, generalizer=cirq_to_bloqs)
         call_graph_t_counts, _ = bloq.call_graph()
         data += _populate_flame_graph_data(bloq, call_graph, call_graph_t_counts, prefix=[])
     if file_path:
