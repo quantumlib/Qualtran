@@ -67,6 +67,7 @@ Bloqs Library
     :caption: Rotations:
 
     basic_gates/rotation.ipynb
+    basic_gates/su2_rotation.ipynb
     rotations/quantum_variable_rotation.ipynb
     rotations/phasing_via_cost_function.ipynb
     qft/two_bit_ffft.ipynb
