@@ -21,7 +21,6 @@ import cirq
 import numpy as np
 import sympy
 from sympy.parsing.sympy_parser import parse_expr
-from qualtran.protos import sympy_pb2
 
 from qualtran import (
     Bloq,
@@ -39,7 +38,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.protos import bloq_pb2
+from qualtran.protos import bloq_pb2, sympy_pb2
 from qualtran.serialization import (
     annotations,
     args,
@@ -49,15 +48,8 @@ from qualtran.serialization import (
     resolver_dict,
 )
 
-# example
-# mult = sympy_pb2.Function.MULTIPLICATION
-# parameter1 = sympy_pb2.Parameter(const_int=-1)
-# parameter2 = sympy_pb2.Parameter(const_int=5)
-# operand1 = sympy_pb2.Operand(parameter=parameter1)
-# operand2 = sympy_pb2.Operand(parameter=parameter2)
-# sympy_pb2.Term(function=mult, operand=[operand1, operand2])
 
-def _get_sympy_function_type(expr: sympy.Expr)->int:
+def _get_sympy_function_type(expr: sympy.Expr) -> int:
     if isinstance(expr, sympy.core.mul.Mul):
         return sympy_pb2.Function.MULTIPLICATION
     if isinstance(expr, sympy.core.add.Add):
@@ -68,8 +60,7 @@ def _get_sympy_function_type(expr: sympy.Expr)->int:
         return sympy_pb2.Function.MOD
     else:
         return sympy_pb2.Function.NONE
-    # if isinstance(expr, sympy.core.symbol.Symbol) or issubclass(expr.__class__, sympy.core.numbers.Number):
-    #     return sympy_pb2.Function.TERM
+
 
 def _get_sympy_from_enum(enum: int):
     enum_to_sympy = {
@@ -77,7 +68,7 @@ def _get_sympy_from_enum(enum: int):
         sympy_pb2.Function.ADDITION: sympy.core.add.Add,
         sympy_pb2.Function.POWER: sympy.core.power.Pow,
         sympy_pb2.Function.MOD: sympy.core.Mod,
-        sympy_pb2.Function.NONE: None
+        sympy_pb2.Function.NONE: None,
     }
 
     # DO NOT SUBMIT: Remove this line
@@ -85,6 +76,7 @@ def _get_sympy_from_enum(enum: int):
         print("here")
 
     return enum_to_sympy[enum]
+
 
 def _get_sympy_operand(expr: sympy.Expr):
     if isinstance(expr, sympy.core.symbol.Symbol):
@@ -113,6 +105,7 @@ def decompose_sympy(expr: sympy.Expr):
 
     return sympy_pb2.Term(function=function, operands=operands)
 
+
 def _get_parameter(operand):
     parameter_type = operand.parameter.WhichOneof("parameter")
     if parameter_type == "symbol":
@@ -120,13 +113,14 @@ def _get_parameter(operand):
     elif parameter_type == "const_int":
         parameter = operand.parameter.const_int
     elif parameter_type == "const_irrat":
-        # TODO: Check that this works
         parameter = sympy.parse_expr(operand.parameter.const_irrat)
 
     return parameter
 
+
 def _set_function(function, parameters):
     return function(parameters)
+
 
 def compose_sympy(expr: sympy.Expr):
     function = _get_sympy_from_enum(expr.function)
@@ -140,19 +134,10 @@ def compose_sympy(expr: sympy.Expr):
 
     if function:
         return function(*parameters)
+    elif len(parameters) == 1:
+        return parameters[0]
     else:
-        if len(parameters) == 1:
-            return parameters[0]
-
-
-
-
-
-# expr.operands[1].term.operands[0].term.operands[0].term.operands[0].parameter.symbol
-
-
-
-
+        raise NotImplementedError(f"{expr.function} has not been fully implimented.")
 
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
