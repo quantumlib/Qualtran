@@ -116,7 +116,7 @@ class SelectUVFirstQuantization(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         cost_tc = (SignedIntegerToTwosComplement(self.num_bits_p), 6)
-        cost_add = (Add(QInt(self.num_bits_p + 1)), 6)  # + 2?
+        cost_add = (Add(QInt(self.num_bits_p + 1), QInt(self.num_bits_p + 1)), 6)  # + 2?
         cost_ctrl_add = (Toffoli(), 6 * (self.num_bits_p + 1))
         # + 2 as these numbers are larger from addition of $\nu$
         cost_inv_tc = (SignedIntegerToTwosComplement(self.num_bits_p + 2), 6)

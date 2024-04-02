@@ -174,7 +174,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             SquareRealNumber(self.poly_bitsize).t_complexity()
             + ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize).t_complexity()
             + 2 * MultiplyTwoReals(self.target_bitsize).t_complexity()
-            + Add(QInt(self.target_bitsize)).t_complexity()
+            + Add(QInt(self.target_bitsize), QInt(self.target_bitsize)).t_complexity()
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -190,7 +190,7 @@ class NewtonRaphsonApproxInverseSquareRoot(Bloq):
             # See: https://github.com/quantumlib/Qualtran/issues/655
             (ScaleIntByReal(self.poly_bitsize, self.x_sq_bitsize), 1),
             (MultiplyTwoReals(self.target_bitsize), 2),
-            (Add(QInt(self.target_bitsize)), 1),
+            (Add(QInt(self.target_bitsize), QInt(self.target_bitsize)), 1),
         }
 
 
@@ -233,14 +233,14 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
         # are not included in Fusion estimates as these can be achieved with
         # Clifford gates only.
         return 3 * (
-            Add(QInt(self.poly_bitsize)).t_complexity()
+            Add(QInt(self.poly_bitsize), QInt(self.poly_bitsize)).t_complexity()
             + MultiplyTwoReals(self.poly_bitsize).t_complexity()
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(QInt(self.poly_bitsize)), 3)}
+        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(QInt(self.poly_bitsize), QInt(self.poly_bitsize)), 3)}
 
 
 @bloq_example
