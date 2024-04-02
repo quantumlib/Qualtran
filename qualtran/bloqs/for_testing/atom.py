@@ -115,7 +115,9 @@ class TestTwoBitOp(Bloq):
 
 @frozen(repr=False)
 class TestGWRAtom(GateWithRegisters):
-    """An atomic gate with registers useful for generic testing and demonstration.
+    """An atomic gate that derives from `GateWithRegisters` which useful for testing.
+    
+    The single qubit gate has a unitary effect corresponding to a 2x2 identity matrix. 
 
     Args:
         tag: An optional string for differentiating `TestGWRAtom`s.
