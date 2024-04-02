@@ -357,28 +357,28 @@ class GeneralizedQSP(GateWithRegisters):
 
 @bloq_example
 def _gqsp() -> GeneralizedQSP:
-    from qualtran.bloqs.for_testing.atom import TestGWRAtom
+    from qualtran.bloqs.basic_gates import XPowGate
 
-    gqsp = GeneralizedQSP.from_qsp_polynomial(TestGWRAtom(), (0.5, 0.5))
+    gqsp = GeneralizedQSP.from_qsp_polynomial(XPowGate(), (0.5, 0.5))
     return gqsp
 
 
 @bloq_example
 def _gqsp_with_negative_power() -> GeneralizedQSP:
-    from qualtran.bloqs.for_testing.atom import TestGWRAtom
+    from qualtran.bloqs.basic_gates import XPowGate
 
     gqsp_with_negative_power = GeneralizedQSP.from_qsp_polynomial(
-        TestGWRAtom(), (0.5, 0, 0.5), negative_power=1
+        XPowGate(), (0.5, 0, 0.5), negative_power=1
     )
     return gqsp_with_negative_power
 
 
 @bloq_example
 def _gqsp_with_large_negative_power() -> GeneralizedQSP:
-    from qualtran.bloqs.for_testing.atom import TestGWRAtom
+    from qualtran.bloqs.basic_gates import XPowGate
 
     gqsp_with_large_negative_power = GeneralizedQSP.from_qsp_polynomial(
-        TestGWRAtom(), (0.5, 0, 0.5), negative_power=5
+        XPowGate(), (0.5, 0, 0.5), negative_power=5
     )
     return gqsp_with_large_negative_power
 
