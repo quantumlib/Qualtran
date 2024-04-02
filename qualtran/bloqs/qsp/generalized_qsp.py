@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
-from typing import Sequence, Set, Tuple
+from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -20,8 +21,21 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    Controlled,
+    CtrlSpec,
+    GateWithRegisters,
+    QBit,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.for_testing.random_gate import RandomGate
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 def qsp_complementary_polynomial(
@@ -231,6 +245,12 @@ class GeneralizedQSP(GateWithRegisters):
     Q: Tuple[complex, ...] = field(converter=tuple)
     negative_power: int = field(default=0, kw_only=True)
 
+    @P.validator
+    @Q.validator
+    def _check_polynomial(self, attribute, value):
+        if len(value) <= 1:
+            raise ValueError("GQSP Polynomial must have degree at least 1")
+
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('signal', QBit()), *self.U.signature])
@@ -289,16 +309,48 @@ class GeneralizedQSP(GateWithRegisters):
             yield self.U.adjoint().on_registers(**quregs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        degree = len(self.P)
+        degree = len(self.P) - 1
 
-        counts = {(rotation, 1) for rotation in self.signal_rotations}
+        counts = set(Counter(self.signal_rotations).items())
 
         if degree > self.negative_power:
-            counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
+            counts.add((Controlled(self.U, CtrlSpec(cvs=0)), degree - self.negative_power))
         elif self.negative_power > degree:
             counts.add((self.U.adjoint(), self.negative_power - degree))
 
         if self.negative_power > 0:
-            counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
+            counts.add((Controlled(self.U.adjoint(), CtrlSpec()), min(degree, self.negative_power)))
 
         return counts
+
+
+@bloq_example
+def _gqsp() -> GeneralizedQSP:
+    gqsp = GeneralizedQSP.from_qsp_polynomial(RandomGate.create(1, random_state=42), (0.5, 0.5))
+    return gqsp
+
+
+@bloq_example
+def _gqsp_with_negative_power() -> GeneralizedQSP:
+    gqsp_with_negative_power = GeneralizedQSP.from_qsp_polynomial(
+        RandomGate.create(1, random_state=42), (0.5, 0, 0.5), negative_power=1
+    )
+    return gqsp_with_negative_power
+
+
+@bloq_example
+def _gqsp_with_large_negative_power() -> GeneralizedQSP:
+    gqsp_with_large_negative_power = GeneralizedQSP.from_qsp_polynomial(
+        RandomGate.create(1, random_state=42), (0.5, 0, 0.5), negative_power=5
+    )
+    return gqsp_with_large_negative_power
+
+
+_Generalized_QSP_DOC = BloqDocSpec(
+    bloq_cls=GeneralizedQSP,
+    import_line=(
+        'from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, _catch_su2_rotations\n'
+        'from qualtran.bloqs.for_testing.random_gate import RandomGate'
+    ),
+    examples=[_gqsp, _gqsp_with_negative_power, _gqsp_with_large_negative_power],
+)
