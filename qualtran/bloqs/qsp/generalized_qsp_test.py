@@ -22,7 +22,7 @@ from attrs import define
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters
+from qualtran import Bloq, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.for_testing.random_gate import RandomGate
 from qualtran.resource_counting import SympySymbolAllocator
@@ -183,7 +183,7 @@ def test_generalized_qsp_with_complex_poly_on_random_unitaries(
         verify_generalized_qsp(U, P, negative_power=negative_power)
 
 
-@pytest.mark.parametrize("negative_power", [0, 1, 2])
+@pytest.mark.parametrize("negative_power", [0, 1, 2, 3, 4])
 def test_call_graph(negative_power: int):
     random_state = np.random.RandomState(42)
 
@@ -204,9 +204,13 @@ def test_call_graph(negative_power: int):
 
     g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    expected_counts = {U.controlled(control_values=[0]): 3 - negative_power, arbitrary_rotation: 3}
+    expected_counts = {arbitrary_rotation: 3}
+    if negative_power < 2:
+        expected_counts[Controlled(U, CtrlSpec(cvs=0))] = 2 - negative_power
     if negative_power > 0:
-        expected_counts[U.adjoint().controlled()] = negative_power
+        expected_counts[Controlled(U.adjoint(), CtrlSpec())] = min(2, negative_power)
+    if negative_power > 2:
+        expected_counts[U.adjoint()] = negative_power - 2
 
     assert sigma == expected_counts
 
