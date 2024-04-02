@@ -227,7 +227,7 @@ def test_add():
     bitsize = 4
     q0 = bb.add_register('a', bitsize)
     q1 = bb.add_register('b', bitsize)
-    a, b = bb.add(Add(QUInt(bitsize)), a=q0, b=q1)
+    a, b = bb.add(Add(QUInt(bitsize), QUInt(bitsize)), a=q0, b=q1)
     cbloq = bb.finalize(a=a, b=b)
     cbloq.t_complexity()
 
