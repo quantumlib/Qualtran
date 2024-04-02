@@ -446,7 +446,7 @@ class SimpleAddConstant(Bloq):
 
         # Rejoin the qubits representing k for in-place addition.
         k = bb.join(k_split, dtype=x.reg.dtype)
-        k, x = bb.add(Add(x.reg.dtype), a=k, b=x)
+        k, x = bb.add(Add(x.reg.dtype, x.reg.dtype), a=k, b=x)
 
         # Resplit the k qubits in order to undo the original bit flips to go from the binary
         # representation back to the zero state.
