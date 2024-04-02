@@ -75,10 +75,33 @@ def assert_equivalent_bloq_example_counts_for_pytest(bloq_ex: BloqExample):
         raise bce from bce
 
 
+def assert_bloq_example_serialize_for_pytest(bloq_ex: BloqExample):
+    if bloq_ex.name in [
+        'prep_sparse',
+        'thc_prep',
+        'modmul_symb',
+        'modexp',
+        'modexp_small',
+        'modexp_symb',
+        'apply_z_to_odd',
+        'lp_resource_state_symbolic',
+        'select_pauli_lcu',
+        'walk_op',
+        'trott_unitary',
+    ]:
+        pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
+
+    try:
+        qlt_testing.assert_bloq_example_serialize(bloq_ex)
+    except qlt_testing.BloqCheckException as bce:
+        raise bce from bce
+
+
 _TESTFUNCS = [
     ('make', assert_bloq_example_make_for_pytest),
     ('decompose', assert_bloq_example_decompose_for_pytest),
     ('counts', assert_equivalent_bloq_example_counts_for_pytest),
+    ('serialization', assert_bloq_example_serialize_for_pytest),
 ]
 
 

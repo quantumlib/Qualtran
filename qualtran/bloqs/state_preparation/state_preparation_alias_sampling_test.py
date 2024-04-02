@@ -16,10 +16,17 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.multiplexers.select_pauli_lcu_test import get_1d_Ising_lcu_coeffs
-from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
+from qualtran.bloqs.chemistry.ising import get_1d_ising_lcu_coeffs
+from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+    _state_prep_alias,
+    StatePreparationAliasSampling,
+)
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+
+
+def test_state_prep_alias_sampling_autotest(bloq_autotester):
+    bloq_autotester(_state_prep_alias)
 
 
 def assert_state_preparation_valid_for_coefficient(lcu_coefficients: float, epsilon: float):
@@ -53,7 +60,7 @@ def assert_state_preparation_valid_for_coefficient(lcu_coefficients: float, epsi
 
 @pytest.mark.parametrize("num_sites, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
 def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
-    lcu_coefficients = get_1d_Ising_lcu_coeffs(num_sites)
+    lcu_coefficients = get_1d_ising_lcu_coeffs(num_sites)
     assert_state_preparation_valid_for_coefficient(lcu_coefficients, epsilon)
 
 

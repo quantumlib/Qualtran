@@ -11,118 +11,66 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-"""Tests for jupyter autogen.
-
-This module is used as a mock NotebookSpec module, so this docstring shows up in the tests.
-"""
 import inspect
 
-import numpy as np
-
-from qualtran.bloqs.data_loading.qrom import QROM
+import qualtran.bloqs.for_testing
+from qualtran import bloq_example, BloqDocSpec
+from qualtran.bloqs.for_testing.atom import TestAtom
 
 from .jupyter_autogen import (
-    _get_code_for_demoing_a_gate,
-    _get_lines_for_constructing_an_object,
-    GateNbSpec,
-    get_markdown_docstring_lines,
-    NotebookSpec,
-    render_notebook_cells,
+    _get_bloq_example_source_lines,
+    _MarkdownCell,
+    _PyCell,
+    get_cells,
+    NotebookSpecV2,
 )
 
 
-def _make_QROM():
-    from qualtran.bloqs.data_loading.qrom import QROM
-
-    return QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))
-
-
-def test_gate_nb_spec():
-    gspec = GateNbSpec(factory=_make_QROM)
-    assert gspec.cqid == '_make_QROM'
-    assert gspec.gate_cls == QROM
-
-
 def test_notebook_spec():
-    import qualtran_dev_tools.jupyter_autogen_test  # pylint: disable=import-self
-
-    nbspec = NotebookSpec(
+    nbspec = NotebookSpecV2(
         title='test',
-        module=qualtran_dev_tools.jupyter_autogen_test,
-        gate_specs=[GateNbSpec(_make_QROM)],
+        module=qualtran.bloqs.for_testing,
+        bloq_specs=[BloqDocSpec(bloq_cls=TestAtom, examples=[])],
     )
     assert nbspec.title == 'test'
     assert inspect.ismodule(nbspec.module)
-    assert len(nbspec.gate_specs) == 1
+    assert len(nbspec.bloq_specs) == 1
 
 
-class ClassWithDocstrings:
-    """This class has some nifty docstrings.
-
-    Parameters:
-        x: The variable x
-        y: The variable y used by `my_function`.
-
-    References:
-        [Google](www.google.com). Brin et. al. 1999.
-    """
+@bloq_example
+def _my_bloq_example() -> TestAtom:
+    # Comment
+    x = 'y' + str(2)
+    my_bloq_example = TestAtom(tag=x)
+    return my_bloq_example
 
 
-def test_get_markdown_docstring_lines():
-    lines = get_markdown_docstring_lines(ClassWithDocstrings)
-    assert lines == [
-        '## `ClassWithDocstrings`',
-        'This class has some nifty docstrings.',
-        '',
-        '#### Parameters',
-        ' - `x`: The variable x',
-        ' - `y`: The variable y used by `my_function`. ',
-        '',
-        '#### References',
-        '[Google](www.google.com). Brin et. al. 1999.',
-        '',
-    ]
-
-
-def test_get_lines_for_constructing_an_object():
-    lines, obj_expr = _get_lines_for_constructing_an_object(_make_QROM)
-    assert lines == ['from qualtran.bloqs.data_loading.qrom import QROM', '']
+def test_get_bloq_example_source_lines():
+    lines = _get_bloq_example_source_lines(_my_bloq_example)
+    source = '\n'.join(lines)
     assert (
-        obj_expr
-        == 'QROM([np.array([1, 2, 3, 4, 5])], selection_bitsizes=(3,), target_bitsizes=(3,))'
+        source
+        == """\
+# Comment
+x = 'y' + str(2)
+my_bloq_example = TestAtom(tag=x)"""
     )
 
 
-def test_get_code_for_demoing_a_gate():
-    code = _get_code_for_demoing_a_gate(_make_QROM, vertical=False)
-    assert code.endswith('display_gate_and_compilation(g)')
+def test_get_cells():
 
-
-def test_render_notebook_cells():
-    import qualtran_dev_tools.jupyter_autogen_test  # pylint: disable=import-self
-
-    cells = render_notebook_cells(
-        NotebookSpec(
-            title='Test Notebook',
-            module=qualtran_dev_tools.jupyter_autogen_test,
-            gate_specs=[GateNbSpec(_make_QROM)],
-        )
+    bds = BloqDocSpec(bloq_cls=TestAtom, examples=[_my_bloq_example])
+    cells = get_cells(bds)
+    assert isinstance(cells[0], _MarkdownCell)
+    assert cells[0].text == (
+        '## `TestAtom`\n'
+        'An atomic bloq useful for generic testing and demonstration.\n'
+        '\n'
+        '#### Parameters\n'
+        ' - `tag`: An optional string for differentiating `TestAtom`s. \n'
+        '\n'
+        '#### Registers\n'
+        ' - `q`: One bit\n'
     )
-
-    assert cells.title_cell.metadata == {'cq.autogen': 'title_cell'}
-    assert cells.title_cell.source == '\n'.join(
-        [
-            '# Test Notebook',
-            '',
-            'Tests for jupyter autogen.',
-            '',
-            'This module is used as a mock NotebookSpec module, so this docstring shows up in the tests.',
-        ]
-    )
-    assert cells.top_imports.metadata == {'cq.autogen': 'top_imports'}
-
-    assert list(cells.gate_cells.keys()) == ['_make_QROM']
-    gcell = cells.gate_cells['_make_QROM']
-    assert gcell.md.source.startswith('## `QROM`')
-    assert gcell.py.source.startswith('from qualtran.bloqs.data_loading.qrom import QROM')
+    assert isinstance(cells[1], _PyCell)
+    assert cells[1].text == 'from qualtran.bloqs.for_testing import TestAtom'

@@ -11,11 +11,5 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
 
-from qualtran.testing import execute_notebook
-
-
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('basic_gates')
+from .hamiltonian import get_1d_ising_hamiltonian, get_1d_ising_lcu_coeffs, get_1d_ising_pauli_terms

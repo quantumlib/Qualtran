@@ -20,13 +20,12 @@ import numpy as np
 import pytest
 
 from qualtran import GateWithRegisters, Signature
-from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.qft.approximate_qft import (
     _approximate_qft_from_epsilon,
     _approximate_qft_small,
     ApproximateQFT,
 )
-from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
+from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad, PhaseGradientState
 from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -70,7 +69,7 @@ def test_approximate_qft_exact(n: int, without_reverse: bool):
     qft_bloq = TestApproximateQFT(n, n, not without_reverse)
     qft_cirq = cirq.QuantumFourierTransformGate(n, without_reverse=without_reverse)
     np.testing.assert_allclose(cirq.unitary(qft_bloq), cirq.unitary(qft_cirq))
-    np.testing.assert_allclose(cirq.unitary(qft_bloq**-1), cirq.unitary(qft_cirq**-1))
+    np.testing.assert_allclose(cirq.unitary(qft_bloq.adjoint()), cirq.unitary(qft_cirq**-1))
 
     assert_valid_bloq_decomposition(qft_bloq)
 
@@ -111,11 +110,13 @@ def test_approximate_qft_t_complexity(n: int, with_reverse: bool):
     def f(n, b):
         t_complexity = 0
         for i in range(1, n):
-            t_complexity += PlusEqualProduct(min(i, b - 1), 1, min(i, b - 1) + 1).t_complexity().t
+            t_complexity += (
+                AddIntoPhaseGrad(min(i, b - 1), min(i, b - 1) + 1, controlled=True).t_complexity().t
+            )
         return t_complexity
 
     qft_t_complexity = qft_bloq.t_complexity()
     assert_decompose_is_consistent_with_t_complexity(qft_bloq)
     b = math.ceil(math.log2(n))
-    assert qft_t_complexity.t == f(n, b) <= 8 * n * (math.log2(n) ** 2)
+    assert qft_t_complexity.t == f(n, b) <= 8 * n * (math.log2(n))
     assert qft_t_complexity.rotations == 0

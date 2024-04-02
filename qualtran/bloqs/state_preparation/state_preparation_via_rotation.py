@@ -114,13 +114,12 @@ class StatePreparationViaRotations(GateWithRegisters):
         control_bitsize: number of qubits of the control register. Set to zero for an uncontrolled gate.
 
     References:
-        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
-        (https://arxiv.org/abs/1812.00954).
-            Low, Kliuchnikov, Schaeffer. 2018.
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low, Kliuchnikov, Schaeffer. 2018.
     """
 
     phase_bitsize: int
-    state_coefficients: Tuple[complex, ...]
+    state_coefficients: Tuple[complex, ...] = attrs.field(converter=tuple)
     control_bitsize: int = 0
     uncompute: bool = False
 
@@ -297,9 +296,8 @@ class PRGAViaPhaseGradient(Bloq):
         control_bitsize: number of qubits of the control register. Set to zero for an uncontrolled gate.
 
     References:
-        [Trading T-gates for dirty qubits in state preparation and unitary synthesis]
-        (https://arxiv.org/abs/1812.00954).
-            Low, Kliuchnikov, Schaeffer. 2018.
+        [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
+        Low, Kliuchnikov, Schaeffer. 2018.
     """
 
     selection_bitsize: int

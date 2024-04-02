@@ -22,10 +22,10 @@ import numpy as np
 from numpy._typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Register, Side, Signature
-from qualtran.bloqs.basic_gates import CZPowGate, Hadamard, OnEach, Ry, Rz, XGate, ZPowGate
+from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
-from qualtran.cirq_interop import CirqGateAsBloq
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -64,19 +64,20 @@ class LPRSInterimPrep(GateWithRegisters):
         yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]
         for i in range(self.bitsize):
             rz_angle = -2 * np.pi * (2**i) / (2**self.bitsize + 1)
-            yield Rz(angle=rz_angle).controlled().on(q[i], *anc)
+            yield cirq.Rz(rads=rz_angle).controlled().on(q[i], *anc)
         yield Rz(angle=-2 * np.pi / (2**self.bitsize + 1)).on(*anc)
         yield Hadamard().on(*anc)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {
-            (
-                CZPowGate(exponent=1 / ((2**self.bitsize + 1) * np.pi), global_shift=-0.5),
-                self.bitsize,
-            ),
-            (ZPowGate(exponent=1 / ((2**self.bitsize + 1) * np.pi), global_shift=-0.5), 1),
-            (Hadamard(), 2 + self.bitsize),
-        }
+        rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
+        ret = {(Rz(angle=rz_angle), 1), (Hadamard(), 2 + self.bitsize)}
+        if is_symbolic(self.bitsize):
+            ret |= {(Rz(angle=rz_angle).controlled().bloq, self.bitsize)}
+        else:
+            ret |= {
+                (Rz(angle=rz_angle * (2**i)).controlled().bloq, 1) for i in range(self.bitsize)
+            }
+        return ret
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(rotations=self.bitsize + 1, clifford=2 + self.bitsize)
@@ -86,8 +87,8 @@ class LPRSInterimPrep(GateWithRegisters):
 class LPResourceState(GateWithRegisters):
     r"""Prepares optimal resource state $\chi_{m}$ proposed by A. Luis and J. Peřina (1996)
 
-    Uses a single round of amplitude amplification, as described in Ref[2], to prepare the
-    resource state from Ref[1] described as
+    Uses a single round of amplitude amplification, as described in Ref 2, to prepare the
+    resource state from Ref 1 described as
 
     $$
     \chi_{m} = \sqrt{\frac{2}{2^m + 1}}\sum_{n=0}^{2^m - 1}\sin{\frac{\pi(n+1)}{2^m+1}}|n\rangle
@@ -98,9 +99,10 @@ class LPResourceState(GateWithRegisters):
 
 
     References:
-        1. [Optimum phase-shift estimation and the quantum description of the phase
+        [Optimum phase-shift estimation and the quantum description of the phase
         difference](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.54.4564)
-        2. [Encoding Electronic Spectra in Quantum Circuits with Linear T
+
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T
         Complexity](https://arxiv.org/abs/1805.03662) Section II-B
     """
 
@@ -108,7 +110,7 @@ class LPResourceState(GateWithRegisters):
 
     @cached_property
     def signature(self) -> 'Signature':
-        return Signature([Register('m', QUInt(self.bitsize), side=Side.RIGHT)])
+        return Signature([Register('m', QUInt(self.bitsize), side=Side.THRU)])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -139,7 +141,7 @@ class LPResourceState(GateWithRegisters):
 
         # Reset ancilla to |0> state.
         yield [XGate().on(flag), XGate().on(anc)]
-        yield cirq.global_phase_operation(1j)
+        yield GlobalPhase(1j).on()
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -153,7 +155,7 @@ class LPResourceState(GateWithRegisters):
             (Ry(angle=flag_angle), 3),
             (MultiControlPauli((0,) * (self.bitsize + 1), target_gate=cirq.Z), 1),
             (XGate(), 4),
-            (CirqGateAsBloq(cirq.GlobalPhaseGate(1j)), 1),
+            (GlobalPhase(1j), 1),
             (CZPowGate(), 1),
         }
 

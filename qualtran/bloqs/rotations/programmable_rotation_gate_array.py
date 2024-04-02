@@ -54,10 +54,8 @@ class ProgrammableRotationGateArrayBase(GateWithRegisters):
     For more details, see the reference below:
 
     References:
-        Page 45; Section VII.B.1
-        [Quantum computing enhanced computational catalysis]
-        (https://arxiv.org/abs/2007.14460).
-            Burg, Low et. al. 2021.
+        [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
+        Burg, Low et. al. 2021. Page 45; Section VII.B.1
     """
 
     def __init__(self, *angles: Sequence[int], kappa: int, rotation_gate: cirq.Gate):

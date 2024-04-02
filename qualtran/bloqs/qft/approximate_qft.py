@@ -23,8 +23,8 @@ from attr import field
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
-from qualtran.bloqs.arithmetic.multiplication import PlusEqualProduct
 from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
+from qualtran.bloqs.rotations import AddIntoPhaseGrad
 from qualtran.resource_counting.symbolic_counting_utils import (
     ceil,
     is_symbolic,
@@ -57,7 +57,6 @@ class ApproximateQFT(GateWithRegisters):
     the "add into phase-gradient trick", this amounts to doing smaller additions with a smaller
     phase gradient register.
 
-
     Args:
         bitsize: Size of input register to apply QFT on.
         phase_bitsize: The size of the phase gradient register. Defaults to being math.ceil(math.log2(bitsize)).
@@ -69,8 +68,11 @@ class ApproximateQFT(GateWithRegisters):
             performing later operations on different qubits.
 
     References:
-        1. [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620)
-        2. [Approximation Errors](https://arxiv.org/pdf/quant-ph/0008056.pdf)
+        [Turning Gradients into Additions into QFTs](https://algassert.com/post/1620).
+        Gidney, C. 2016.
+
+        [Approximation Errors](https://arxiv.org/abs/quant-ph/0008056).
+        Panike, N. 2000.
     """
 
     bitsize: SymbolicInt
@@ -124,9 +126,10 @@ class ApproximateQFT(GateWithRegisters):
             addition_bitsize = min(i, len(phase_grad) - 1)
             addition_start_index = i - addition_bitsize
             a, b = q[addition_start_index:i], phase_grad[: addition_bitsize + 1]
-            yield PlusEqualProduct(addition_bitsize, 1, addition_bitsize + 1).on_registers(
-                a=a[::-1], b=q[i], result=b
-            )
+
+            yield AddIntoPhaseGrad(
+                addition_bitsize, addition_bitsize + 1, right_shift=1, controlled=1
+            ).on_registers(ctrl=q[i], x=a[::-1], phase_grad=b)
             yield cirq.H(q[i])
 
         if self.with_reverse:
@@ -136,11 +139,13 @@ class ApproximateQFT(GateWithRegisters):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         phase_dict = defaultdict(int)
         if is_symbolic(self.bitsize, self.phase_bitsize):
-            phase_dict[PlusEqualProduct(self.phase_bitsize, 1, self.phase_bitsize)] = self.bitsize
+            phase_dict[
+                AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize, controlled=True)
+            ] = self.bitsize
         else:
             for i in range(1, self.bitsize):
                 b = min(i, self.phase_bitsize - 1)
-                phase_dict[PlusEqualProduct(b, 1, b + 1)] += 1
+                phase_dict[AddIntoPhaseGrad(b, b + 1, controlled=True)] += 1
         ret = {(Hadamard(), self.bitsize), *phase_dict.items()}
         if self.with_reverse:
             ret |= {(TwoBitSwap(), self.bitsize // 2)}
