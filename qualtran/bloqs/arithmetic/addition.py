@@ -54,11 +54,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
-
-def to_tuple(dtype):
-    if not isinstance(dtype, Tuple):
-        dtype = dtype, dtype
-    return dtype
+def dtype_validation():
 
 
 @frozen
@@ -81,15 +77,11 @@ class Add(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    dtype: Union[
-        QInt,
-        QUInt,
-        QMontgomeryUInt,
-        Tuple[Union[QInt, QUInt, QMontgomeryUInt], Union[QInt, QUInt, QMontgomeryUInt]],
-    ] = field(converter=to_tuple)
+    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
 
-    @dtype.validator
-    def _dtype_validate(self, field, val):
+    @a_dtype.validator
+    def _a_dtype_validate(self, field, val):
         a_dtype, b_dtype = val
         if not isinstance(a_dtype, (QInt, QUInt, QMontgomeryUInt)) or not isinstance(
             b_dtype, (QInt, QUInt, QMontgomeryUInt)
