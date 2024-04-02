@@ -44,8 +44,8 @@ class DataBlock(metaclass=abc.ABCMeta):
         """The error associated with storing data on `n_algo_qubits` for `n_cycles`."""
 
     @abc.abstractmethod
-    def n_timesteps_to_consume_a_magic_state(self) -> float:
-        """The worst case number of timesteps needed to consume a magic state."""
+    def n_cycles_to_consume_a_magic_state(self) -> int:
+        """The worst case number of cycles needed to consume a magic state."""
 
 
 @frozen
@@ -84,8 +84,8 @@ class SimpleDataBlock(DataBlock):
             physical_error_rate=phys_err, code_distance=self.data_d
         )
 
-    def n_timesteps_to_consume_a_magic_state(self) -> float:
-        return 1.0
+    def n_cycles_to_consume_a_magic_state(self) -> int:
+        return self.data_d
 
 
 @frozen
@@ -95,7 +95,7 @@ class CompactDataBlock(SimpleDataBlock):
     The compact data block lays $n$ qubit batches in grid of shape (3, $n/2$) where
     the data batches are lined in the first and last row with the middle row being
     an ancilla region. This lowers the memory footprint of the block at the cost of an
-    increased number of timesteps to consume a magic state.
+    increased number of cycles to consume a magic state.
 
     References:
         [A Game of Surface Codes](https://arxiv.org/abs/1808.02892)
@@ -105,8 +105,8 @@ class CompactDataBlock(SimpleDataBlock):
     routing_overhead: float = 0.5
     reference: Reference = Reference(url='https://arxiv.org/abs/1808.02892', page=7)
 
-    def n_timesteps_to_consume_a_magic_state(self) -> float:
-        return 9.0
+    def n_cycles_to_consume_a_magic_state(self) -> int:
+        return 9 * self.data_d
 
 
 @frozen
@@ -124,8 +124,8 @@ class IntermediateDataBlock(SimpleDataBlock):
     routing_overhead: float = 1.0
     reference: Reference = Reference(url='https://arxiv.org/abs/1808.02892', page=8)
 
-    def n_timesteps_to_consume_a_magic_state(self) -> float:
-        return 5.0
+    def n_cycles_to_consume_a_magic_state(self) -> int:
+        return 5 * self.data_d
 
 
 @frozen
@@ -160,8 +160,8 @@ class FastDataBlock(DataBlock):
             physical_error_rate=phys_err, code_distance=self.data_d
         )
 
-    def n_timesteps_to_consume_a_magic_state(self) -> float:
-        return 1.0
+    def n_cycles_to_consume_a_magic_state(self) -> int:
+        return self.data_d
 
     @staticmethod
     def from_error_budget(

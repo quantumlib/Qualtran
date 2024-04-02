@@ -186,7 +186,7 @@ def get_ccz2t_costs(
     n_generation_cycles = factory.n_cycles(n_magic=n_magic)
     n_consumption_cycles = (
         n_magic.n_t / 4 + n_magic.n_ccz
-    ) * data_block.n_timesteps_to_consume_a_magic_state()
+    ) * data_block.n_cycles_to_consume_a_magic_state()
     n_cycles = max(n_generation_cycles, n_consumption_cycles)
     data_error = data_block.data_error(
         n_algo_qubits=n_algo_qubits, n_cycles=n_cycles, phys_err=phys_err
