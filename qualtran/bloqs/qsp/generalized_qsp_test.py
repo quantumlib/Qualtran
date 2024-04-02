@@ -27,7 +27,20 @@ from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.for_testing.random_gate import RandomGate
 from qualtran.resource_counting import SympySymbolAllocator
 
-from .generalized_qsp import GeneralizedQSP, qsp_complementary_polynomial, qsp_phase_factors
+from .generalized_qsp import (
+    _gqsp,
+    _gqsp_with_large_negative_power,
+    _gqsp_with_negative_power,
+    GeneralizedQSP,
+    qsp_complementary_polynomial,
+    qsp_phase_factors,
+)
+
+
+def test_gqsp_example(bloq_autotester):
+    bloq_autotester(_gqsp)
+    bloq_autotester(_gqsp_with_negative_power)
+    bloq_autotester(_gqsp_with_large_negative_power)
 
 
 def assert_angles_almost_equal(
