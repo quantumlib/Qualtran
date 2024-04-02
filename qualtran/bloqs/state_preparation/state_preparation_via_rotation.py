@@ -85,7 +85,6 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     GateWithRegisters,
-    QUInt,
     Signature,
     SoquetT,
 )
@@ -333,7 +332,6 @@ class PRGAViaPhaseGradient(Bloq):
         soqs = bb.add_d(qrom, **soqs)
         # phase kickback via phase_grad += rot_reg (line 2 of eq (8) in [1])
         soqs["target0_"], phase_grad = bb.add(
-            # I needed to change this because AddIntoPhaseGrad does not declare bloq decomposition
             AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize),
             x=soqs["target0_"],
             phase_grad=phase_grad,
