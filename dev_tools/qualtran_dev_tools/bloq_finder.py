@@ -122,7 +122,9 @@ def get_bloq_examples() -> List[BloqExample]:
     paths = get_bloq_module_paths(bloqs_root)
 
     # These examples are too large to run.
-    REJECTED_BEXAMPLES = set(["qubitization_qpe_hubbard_model_large","qubitization_qpe_hubbard_model_small"])
+    REJECTED_BEXAMPLES = set(
+        ["qubitization_qpe_hubbard_model_large", "qubitization_qpe_hubbard_model_small"]
+    )
 
     bexamples: List[BloqExample] = []
     for path in paths:
