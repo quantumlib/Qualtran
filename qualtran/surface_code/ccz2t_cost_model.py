@@ -183,15 +183,17 @@ def get_ccz2t_costs(
         data_block: data block configuration. Used to evaluate data error and footprint.
     """
     distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
-    n_cycles = factory.n_cycles(n_magic=n_magic)
+    n_generation_cycles = factory.n_cycles(n_magic=n_magic)
+    n_consumption_cycles = (
+        n_magic.n_t / 4 + n_magic.n_ccz
+    ) * data_block.n_timesteps_to_consume_a_magic_state()
+    n_cycles = max(n_generation_cycles, n_consumption_cycles)
     data_error = data_block.data_error(
         n_algo_qubits=n_algo_qubits, n_cycles=n_cycles, phys_err=phys_err
     )
     failure_prob = distillation_error + data_error
     footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
-    duration_hr = (cycle_time_us * n_cycles * data_block.n_timesteps_to_consume_a_magic_state()) / (
-        1_000_000 * 60 * 60
-    )
+    duration_hr = (cycle_time_us * n_cycles) / (1_000_000 * 60 * 60)
 
     return PhysicalCost(failure_prob=failure_prob, footprint=footprint, duration_hr=duration_hr)
 
