@@ -121,10 +121,14 @@ def get_bloq_examples() -> List[BloqExample]:
     bloqs_root = reporoot / 'qualtran/bloqs'
     paths = get_bloq_module_paths(bloqs_root)
 
+    # These examples are too large to run.
+    REJECTED_BEXAMPLES = set(["qubitization_qpe_hubbard_model_large","qubitization_qpe_hubbard_model_small"])
+
     bexamples: List[BloqExample] = []
     for path in paths:
         for modname, name, be in modpath_to_bloq_exs(path):
-            bexamples.append(be)
+            if be.name not in REJECTED_BEXAMPLES:
+                bexamples.append(be)
 
     return bexamples
 
