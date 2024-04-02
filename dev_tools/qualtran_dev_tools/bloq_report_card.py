@@ -82,7 +82,6 @@ def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
 
 
 def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
-    print(be.name)
     return {
         'bloq_cls': be.bloq_cls.__name__,
         'package': _get_package(be.bloq_cls),
@@ -103,7 +102,6 @@ def get_bloq_report_card(
     bexamples: Optional[Iterable[BloqExample]] = None,
     package_prefix: str = 'qualtran.bloqs.',
 ) -> pd.DataFrame:
-
     if bclasses is None:
         bclasses = get_bloq_classes()
     if bexamples is None:
@@ -112,7 +110,7 @@ def get_bloq_report_card(
     records = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
-    records.extend(record_for_bloq_example(be) for be in bexamples if be.name)
+    records.extend(record_for_bloq_example(be) for be in bexamples)
 
     df = pd.DataFrame(records)
     df['package'] = df['package'].str.removeprefix(package_prefix)
