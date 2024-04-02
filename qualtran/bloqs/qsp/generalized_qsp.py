@@ -254,7 +254,7 @@ class GeneralizedQSP(GateWithRegisters):
     this gate implements the unitary transform:
 
     $$
-        \begin{bmatrix} U^{-a} P'(U) & \cdot \\ U^{-a} Q(U) & \cdot \end{bmatrix}
+        \begin{bmatrix} U^{-a} P'(U) & \cdot \\ U^{-a} Q'(U) & \cdot \end{bmatrix}
     $$
 
 
