@@ -49,11 +49,12 @@ respectively.
 """
 
 import abc
-from typing import Any, Iterable, Union
+from typing import Any, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
 import sympy
+from fxpmath import Fxp
 from numpy.typing import NDArray
 
 
@@ -69,6 +70,14 @@ class QDType(metaclass=abc.ABCMeta):
     def get_classical_domain(self) -> Iterable[Any]:
         """Yields all possible classical (computational basis state) values representable
         by this type."""
+
+    @abc.abstractmethod
+    def to_bits(self, x) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+
+    @abc.abstractmethod
+    def from_bits(self, bits: Sequence[int]):
+        """Combine individual bits to form x"""
 
     @abc.abstractmethod
     def assert_valid_classical_val(self, val: Any, debug_str: str = 'val'):
@@ -110,6 +119,16 @@ class QBit(QDType):
         if not (val == 0 or val == 1):
             raise ValueError(f"Bad {self} value {val} in {debug_str}")
 
+    def to_bits(self, x) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x)
+        return [int(x)]
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        """Combine individual bits to form x"""
+        assert len(bits) == 1
+        return bits[0]
+
     def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
         if not np.all((val_array == 0) | (val_array == 1)):
             raise ValueError(f"Bad {self} value array in {debug_str}")
@@ -127,6 +146,14 @@ class QAny(QDType):
 
     def get_classical_domain(self) -> Iterable[Any]:
         raise TypeError(f"Ambiguous domain for {self}. Please use a more specific type.")
+
+    def to_bits(self, x) -> List[int]:
+        # TODO: Raise an error once usage of `QAny` is minimized across the library
+        return QUInt(self.bitsize).to_bits(x)
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        # TODO: Raise an error once usage of `QAny` is minimized across the library
+        return QUInt(self.bitsize).from_bits(bits)
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         pass
@@ -152,7 +179,20 @@ class QInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[int]:
-        return range(-(2 ** (self.bitsize - 1)), 2 ** (self.bitsize - 1))
+        max_val = 1 << (self.bitsize - 1)
+        return range(-max_val, max_val)
+
+    def to_bits(self, x: int) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x)
+        mask = (1 << self.bitsize) - 1
+        return QUInt(self.bitsize).to_bits(int(x) & mask)
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        """Combine individual bits to form x"""
+        sign = bits[0]
+        x = QUInt(self.bitsize - 1).from_bits([1 - x if sign else x for x in bits[1:]])
+        return ~x if sign else x
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -190,11 +230,28 @@ class QIntOnesComp(QDType):
     def num_qubits(self):
         return self.bitsize
 
-    def get_classical_domain(self) -> Iterable[Any]:
-        raise NotImplementedError()
+    def to_bits(self, x: int) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x)
+        return [int(x < 0)] + [y ^ int(x < 0) for y in QUInt(self.bitsize - 1).to_bits(abs(x))]
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        """Combine individual bits to form x"""
+        x = QUInt(self.bitsize).from_bits([b ^ bits[0] for b in bits[1:]])
+        return (-1) ** bits[0] * x
+
+    def get_classical_domain(self) -> Iterable[int]:
+        max_val = 1 << (self.bitsize - 1)
+        return range(-max_val + 1, max_val)
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
-        pass  # TODO: implement
+        if not isinstance(val, (int, np.integer)):
+            raise ValueError(f"{debug_str} should be an integer, not {val!r}")
+        max_val = 1 << (self.bitsize - 1)
+        if not -max_val <= val <= max_val:
+            raise ValueError(
+                f"Classical value {val} must be in range [-{max_val}, +{max_val}] in {debug_str}"
+            )
 
 
 @attrs.frozen
@@ -215,7 +272,16 @@ class QUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2 ** (self.bitsize))
+        return range(2**self.bitsize)
+
+    def to_bits(self, x: int) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x)
+        return [int(x) for x in f'{int(x):0{self.bitsize}b}']
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        """Combine individual bits to form x"""
+        return int("".join(str(x) for x in bits), 2)
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -309,6 +375,15 @@ class BoundedQUInt(QDType):
         if val >= self.iteration_length:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
+    def to_bits(self, x: int) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self.assert_valid_classical_val(x, debug_str='val')
+        return QUInt(self.bitsize).to_bits(x)
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        """Combine individual bits to form x"""
+        return QUInt(self.bitsize).from_bits(bits)
+
     def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
@@ -354,6 +429,22 @@ class QFxp(QDType):
     def fxp_dtype_str(self) -> str:
         return f'fxp-{"us"[self.signed]}{self.bitsize}/{self.num_frac}'
 
+    @property
+    def _fxp_dtype(self) -> Fxp:
+        return Fxp(None, dtype=self.fxp_dtype_str)
+
+    def to_bits(self, x: Union[float, Fxp]) -> List[int]:
+        """Yields individual bits corresponding to binary representation of x"""
+        self._assert_valid_classical_val(x)
+        fxp = x if isinstance(x, Fxp) else Fxp(x)
+        return [int(x) for x in fxp.like(self._fxp_dtype).bin()]
+
+    def from_bits(self, bits: Sequence[int]) -> Fxp:
+        """Combine individual bits to form x"""
+        bits_bin = "".join(str(x) for x in bits[:])
+        fxp_bin = "0b" + bits_bin[: -self.num_frac] + "." + bits_bin[-self.num_frac :]
+        return Fxp(fxp_bin, dtype=self.fxp_dtype_str)
+
     def __attrs_post_init__(self):
         if isinstance(self.num_qubits, int):
             if self.num_qubits == 1 and self.signed:
@@ -363,11 +454,22 @@ class QFxp(QDType):
             if self.bitsize < self.num_frac:
                 raise ValueError("bitsize must be >= num_frac.")
 
-    def get_classical_domain(self) -> Iterable[Any]:
-        raise NotImplementedError()
+    def get_classical_domain(self) -> Iterable[Fxp]:
+        qint = QIntOnesComp(self.bitsize) if self.signed else QUInt(self.bitsize)
+        for x in qint.get_classical_domain():
+            yield Fxp(x / 2**self.num_frac, dtype=self.fxp_dtype_str)
 
-    def assert_valid_classical_val(self, val, debug_str: str = 'val'):
-        pass  # TODO: implement
+    def _assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
+        fxp_val = val if isinstance(val, Fxp) else Fxp(val)
+        if fxp_val.get_val() != fxp_val.like(self._fxp_dtype).get_val():
+            raise ValueError(
+                f"{debug_str}={val} cannot be accurately represented using Fxp {fxp_val}"
+            )
+
+    def assert_valid_classical_val(self, val: Union[float, Fxp], debug_str: str = 'val'):
+        # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
+        # is currently not propagated correctly through Bloqs
+        pass
 
 
 @attrs.frozen
@@ -405,7 +507,13 @@ class QMontgomeryUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(2 ** (self.bitsize))
+        return range(2**self.bitsize)
+
+    def to_bits(self, x: int) -> List[int]:
+        raise NotImplementedError(f"to_bits not implemented for {self}")
+
+    def from_bits(self, bits: Sequence[int]) -> int:
+        raise NotImplementedError(f"from_bits not implemented for {self}")
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -420,3 +528,49 @@ class QMontgomeryUInt(QDType):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+
+QAnyInt = (QInt, QUInt, BoundedQUInt, QMontgomeryUInt)
+QAnyUInt = (QUInt, BoundedQUInt, QMontgomeryUInt)
+
+
+def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
+    """A uint is consistent with a whole or totally fractional unsigned QFxp."""
+    if b.signed:
+        return False
+    return a.num_qubits == b.num_qubits and (b.num_frac == 0 or b.num_int == 0)
+
+
+def check_dtypes_consistent(dtype_a: QDType, dtype_b: QDType, strict: bool = False) -> bool:
+    """Check if two types are consistent given our current definition on consistent types.
+
+    Args:
+        dtype_a: The dtype to check against the reference.
+        dtype_b: The reference dtype.
+        strict: Whether to compare types literally
+
+    Returns:
+        True if the types are consistent.
+    """
+    if dtype_a == dtype_b:
+        return True
+    if strict:
+        return False
+    same_n_qubits = dtype_a.num_qubits == dtype_b.num_qubits
+    if isinstance(dtype_a, QAny) or isinstance(dtype_b, QAny):
+        # QAny -> any dtype and any dtype -> QAny
+        return same_n_qubits
+    elif dtype_a.num_qubits == 1 and same_n_qubits:
+        # Single qubit types are ok.
+        return True
+    elif isinstance(dtype_a, QAnyInt) and isinstance(dtype_b, QAnyInt):
+        # A subset of the integers should be freely interchangeable.
+        return same_n_qubits
+    elif isinstance(dtype_a, QAnyUInt) and isinstance(dtype_b, QFxp):
+        # unsigned Fxp which is wholy an integer or < 1 part is a uint.
+        return _check_uint_fxp_consistent(dtype_a, dtype_b)
+    elif isinstance(dtype_b, QAnyUInt) and isinstance(dtype_a, QFxp):
+        # unsigned Fxp which is wholy an integer or < 1 part is a uint.
+        return _check_uint_fxp_consistent(dtype_b, dtype_a)
+    else:
+        return False

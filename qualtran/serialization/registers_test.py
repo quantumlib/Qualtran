@@ -60,4 +60,4 @@ def test_registers_to_proto(bitsize, shape, side):
     registers_proto = registers_to_proto(registers)
     assert list(registers_proto.registers) == [register_to_proto(r) for r in registers]
 
-    assert registers_from_proto(registers_proto) == registers
+    assert registers_from_proto(registers_proto) == tuple(registers)

@@ -41,8 +41,8 @@ class Reflection(Bloq):
         bitsizes: The bitsizes of each of the registers to reflect about.
         cvs: The control values for each register.
     """
-    bitsizes: Tuple[int]
-    cvs: Tuple[int]
+    bitsizes: Tuple[int, ...] = attrs.field(converter=tuple)
+    cvs: Tuple[int] = attrs.field(converter=tuple)
 
     def __attrs_post_init__(self):
         if len(self.bitsizes) != len(self.cvs):
@@ -69,9 +69,8 @@ class Reflection(Bloq):
         # the last qubit is used as the target for the Z
         mcp = MultiControlPauli(cvs=unpacked_cvs[:-1], target_gate=cirq.Z)
         split_regs = np.concatenate([bb.split(r) for r in regs.values()])
-        ctrls, target = bb.add(mcp, controls=bb.join(split_regs[:-1]), target=split_regs[-1])
-        splt_ctrls = bb.split(ctrls)
-        join_regs = np.concatenate([splt_ctrls, [target]])
+        ctrls, target = bb.add(mcp, controls=split_regs[:-1], target=split_regs[-1])
+        join_regs = np.concatenate([ctrls, [target]])
         out_regs = {}
         start = 0
         for i, b in enumerate(self.bitsizes):

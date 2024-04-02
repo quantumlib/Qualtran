@@ -24,6 +24,14 @@ SymbolicInt = Union[int, sympy.Expr]
 document(SymbolicFloat, """A floating point value or a sympy expression.""")
 
 
+def is_symbolic(*args) -> bool:
+    return any(isinstance(x, sympy.Basic) for x in args)
+
+
+def pi(*args) -> SymbolicFloat:
+    return sympy.pi if is_symbolic(*args) else np.pi
+
+
 def log2(x: SymbolicFloat) -> SymbolicFloat:
     from sympy.codegen.cfunctions import log2
 
@@ -38,7 +46,29 @@ def ceil(x: SymbolicFloat) -> SymbolicInt:
     return sympy.ceiling(x)
 
 
+def floor(x: SymbolicFloat) -> SymbolicInt:
+    if not isinstance(x, sympy.Basic):
+        return int(np.floor(x))
+    return sympy.floor(x)
+
+
+def bit_length(x: SymbolicFloat) -> SymbolicInt:
+    """Returns the number of bits required to represent the integer part of positive float `x`."""
+    if not is_symbolic(x) and 0 <= x < 1:
+        return 0
+    ret = ceil(log2(x))
+    if is_symbolic(ret):
+        return ret
+    return ret + 1 if ret == floor(log2(x)) else ret
+
+
 def smax(*args):
     if any(isinstance(arg, sympy.Basic) for arg in args):
         return sympy.Max(*args)
     return max(*args)
+
+
+def acos(x: SymbolicFloat) -> SymbolicFloat:
+    if not isinstance(x, sympy.Basic):
+        return np.arccos(x)
+    return sympy.acos(x)

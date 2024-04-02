@@ -44,7 +44,8 @@ class PrepareUniformSuperposition(GateWithRegisters):
             of the gate is constructed.
 
     References:
-        See Fig 12 of https://arxiv.org/abs/1805.03662 for more details.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Fig 12.
     """
 
     n: int
@@ -127,6 +128,6 @@ def _c_prep_uniform() -> PrepareUniformSuperposition:
 
 _PREP_UNIFORM_DOC = BloqDocSpec(
     bloq_cls=PrepareUniformSuperposition,
-    import_line='from qualtran.bloqs.prepare_uniform_superposition import PrepareUniformSuperposition',
+    import_line='from qualtran.bloqs.state_preparation import PrepareUniformSuperposition',
     examples=(_prep_uniform, _c_prep_uniform),
 )

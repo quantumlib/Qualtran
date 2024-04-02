@@ -75,9 +75,10 @@ class And(GateWithRegisters):
         target [right]: The output bit.
 
     References:
-     - [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
             Babbush et. al. 2018. Section III.A. and Fig. 4.
-     - [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
+
+        [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
     cv1: int = 1
@@ -271,14 +272,6 @@ class MultiAnd(Bloq):
             return self.adjoint()
         return NotImplemented  # pragma: no cover
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        controls = ["(0)", "@"]
-        target = "And"
-        wire_symbols = [controls[c] for c in self.cvs]
-        wire_symbols += ["Anc"] * (len(self.cvs) - 2)
-        wire_symbols += [target]
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
     def _decompose_via_tree(
         self,
         controls: NDArray[cirq.Qid],
@@ -319,6 +312,13 @@ class MultiAnd(Bloq):
         return TComplexity(
             t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
         )
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        if soq.reg.name == 'ctrl':
+            return Circle(filled=self.cvs[soq.idx[0]] == 1)
+        if soq.reg.name == 'target':
+            return directional_text_box('∧', side=soq.reg.side)
+        return directional_text_box(text=soq.pretty(), side=soq.reg.side)
 
     def short_name(self) -> str:
         return 'And'

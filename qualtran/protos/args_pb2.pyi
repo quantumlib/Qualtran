@@ -63,3 +63,21 @@ class NDArray(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["ndarray", b"ndarray"]) -> None: ...
 
 global___NDArray = NDArray
+
+@typing_extensions.final
+class Complex(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    REAL_FIELD_NUMBER: builtins.int
+    IMAG_FIELD_NUMBER: builtins.int
+    real: builtins.float
+    imag: builtins.float
+    def __init__(
+        self,
+        *,
+        real: builtins.float = ...,
+        imag: builtins.float = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["imag", b"imag", "real", b"real"]) -> None: ...
+
+global___Complex = Complex

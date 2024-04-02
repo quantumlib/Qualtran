@@ -49,9 +49,9 @@ _MAGIC_FACTORIES = dict(
 )
 _ROTATION_MODELS = dict(get_objects([rotation_cost_model], rotation_cost_model.RotationCostModel))
 
-_GIDNEY_FOLWER_MODEL = 'GidneyFolwer (arxiv:1812.01238)'
+_GIDNEY_FOWLER_MODEL = 'GidneyFowler (arxiv:1812.01238)'
 _BEVERLAND_MODEL = 'Beverland et al (arxiv:2211.07629)'
-_SUPPORTED_ESTIMATION_MODELS = [_GIDNEY_FOLWER_MODEL, _BEVERLAND_MODEL]
+_SUPPORTED_ESTIMATION_MODELS = [_GIDNEY_FOWLER_MODEL, _BEVERLAND_MODEL]
 
 _ALGORITHM_INPUTS = [Input({'type': 'algorithm', 'property': ALL}, 'value')]
 _QEC_INPUTS = [Input('QEC', 'value')]
@@ -268,7 +268,7 @@ def input_components():
         ),
         html.P("Select Estimation Cost Model:"),
         dcc.RadioItems(
-            id='estimation_model', options=_SUPPORTED_ESTIMATION_MODELS, value=_GIDNEY_FOLWER_MODEL
+            id='estimation_model', options=_SUPPORTED_ESTIMATION_MODELS, value=_GIDNEY_FOWLER_MODEL
         ),
         *algorithm_summary_components(),
         *qec_summary_components(),
@@ -317,6 +317,7 @@ def create_ouputs():
 
 
 app = Dash(__name__)
+app.title = 'Qualtran Resource Estimation'
 app.layout = html.Div(
     [
         html.H4('Interactive QEC overhead estimation'),
@@ -358,7 +359,7 @@ def create_qubit_pie_chart(
     needed_magic: MagicCount,
 ) -> go.Figure:
     """Create a pie chart of the physical qubit utilization."""
-    if estimation_model == _GIDNEY_FOLWER_MODEL:
+    if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, factory, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
             n_algo_qubits=algorithm.algorithm_qubits,
@@ -431,7 +432,7 @@ def create_runtime_plot(
 
     Currently displays the runtime plot for the Beverland model only.
     """
-    if estimation_model == _GIDNEY_FOLWER_MODEL:
+    if estimation_model == _GIDNEY_FOWLER_MODEL:
         return {'display': 'none'}, go.Figure()
     factory = MultiFactory(magic_factory, int(magic_count))
     c_min = minimum_time_steps(
@@ -553,7 +554,7 @@ def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[Tuple[
     """Compute the number of magic states needed for the algorithm and their type."""
     total_t = needed_magic.n_t + 4 * needed_magic.n_ccz
     total_ccz = total_t / 4
-    if estimation_model == _GIDNEY_FOLWER_MODEL:
+    if estimation_model == _GIDNEY_FOWLER_MODEL:
         return ['Total Number of Toffoli gates'], f'{total_ccz:g}'
     else:
         return ['Total Number of T gates'], f'{total_t:g}'
@@ -568,7 +569,7 @@ def min_num_factories(
     magic_factory: magic_state_factory.MagicStateFactory,
     needed_magic: MagicCount,
 ) -> Tuple[Dict[str, Any], int]:
-    if estimation_model == _GIDNEY_FOLWER_MODEL:
+    if estimation_model == _GIDNEY_FOWLER_MODEL:
         return {'display': 'none'}, 1
     c_min = minimum_time_steps(
         error_budget=error_budget, alg=algorithm, rotation_model=rotation_model
@@ -589,9 +590,9 @@ def compute_duration(
 ) -> Tuple[Dict[str, Any], str]:
     """Compute the duration of running the algorithm and whether to display the result or not.
 
-    Currently displays the result only for GidneyFolwer (arxiv:1812.01238).
+    Currently displays the result only for GidneyFowler (arxiv:1812.01238).
     """
-    if estimation_model == _GIDNEY_FOLWER_MODEL:
+    if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, _, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
             n_algo_qubits=algorithm.algorithm_qubits,

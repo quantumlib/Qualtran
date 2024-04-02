@@ -58,8 +58,8 @@ class ModExp(Bloq):
         x [right]: The output register containing the result of the exponentiation
 
     References:
-        [GE2019] How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits.
-        [arxiv:1905.09749](https://arxiv.org/abs/1905.09749). Gidney and Ekerå. 2019.
+        [How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits](https://arxiv.org/abs/1905.09749).
+        Gidney and Ekerå. 2019.
     """
 
     base: Union[int, sympy.Expr]

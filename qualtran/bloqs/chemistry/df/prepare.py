@@ -52,8 +52,8 @@ class InnerPrepareDoubleFactorization(Bloq):
         p: Register for inner state preparation.
 
     Refererences:
-        [Even More Efficient Quantum Computations of Chemistry Through Tensor
-            Hypercontraction](https://arxiv.org/abs/2011.03494).  Step 3. Page 52.
+        [Even More Efficient Quantum Computations of Chemistry Through Tensor Hypercontraction](https://arxiv.org/abs/2011.03494).
+        Step 3. Page 52.
     """
 
     num_aux: int

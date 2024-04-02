@@ -56,13 +56,13 @@ from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
-from qualtran.bloqs.apply_gate_to_lth_target import ApplyGateToLthQubit
 from qualtran.bloqs.arithmetic import AddConstantMod
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
+from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.bloqs.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
@@ -110,7 +110,8 @@ class SelectHubbard(SelectOracle):
         target: The system register to apply the select operation.
 
     References:
-        Section V. and Fig. 19 of https://arxiv.org/abs/1805.03662.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Section V. and Fig. 19.
     """
 
     x_dim: int
@@ -278,7 +279,8 @@ class PrepareHubbard(PrepareOracle):
         junk: Temporary Work space.
 
     References:
-        Section V. and Fig. 20 of https://arxiv.org/abs/1805.03662.
+        [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity](https://arxiv.org/abs/1805.03662).
+        Section V. and Fig. 20.
     """
 
     x_dim: int
