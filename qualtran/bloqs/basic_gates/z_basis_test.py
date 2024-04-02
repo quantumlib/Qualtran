@@ -65,12 +65,6 @@ def test_int_effect(bloq_autotester):
     bloq_autotester(_int_effect)
 
 
-def _make_zero_state():
-    from qualtran.bloqs.basic_gates import ZeroState
-
-    return ZeroState()
-
-
 def test_zero_state_manual():
     bloq = ZeroState()
     assert str(bloq) == 'ZeroState(n=1)'

@@ -19,13 +19,13 @@ from qualtran.serialization import args, data_types
 
 def ctrl_spec_from_proto(spec: ctrl_spec_pb2.CtrlSpec) -> CtrlSpec:
     return CtrlSpec(
-        qdtype=[data_types.data_type_from_proto(dtype) for dtype in spec.qdtype],
+        qdtypes=[data_types.data_type_from_proto(dtype) for dtype in spec.qdtypes],
         cvs=[args.ndarray_from_proto(cvs) for cvs in spec.cvs],
     )
 
 
 def ctrl_spec_to_proto(spec: CtrlSpec) -> ctrl_spec_pb2.CtrlSpec:
     return ctrl_spec_pb2.CtrlSpec(
-        qdtype=[data_types.data_type_to_proto(dtype) for dtype in spec.qdtype],
+        qdtypes=[data_types.data_type_to_proto(dtype) for dtype in spec.qdtypes],
         cvs=[args.ndarray_to_proto(cvs) for cvs in spec.cvs],
     )

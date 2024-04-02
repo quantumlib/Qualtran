@@ -19,6 +19,7 @@ from typing import Optional
 from attrs import frozen
 
 from qualtran.surface_code.magic_count import MagicCount
+from qualtran.surface_code.reference import Reference
 
 
 class RotationCostModel(abc.ABC):
@@ -46,15 +47,14 @@ class RotationLogarithmicModel(RotationCostModel):
         overhead: The overhead.
         gateset: A human-readable description of the gate set (e.g. 'Clifford+T').
         approximation_protocol: A description or reference to the approximation protocol
-            (e.g. `Diagonal: https://arxiv.org/abs/1403.2975`)
-        reference: A human-readable description of the source of the model
-            (e.g. 'https://arxiv.org/abs/1404.5320').
+        reference: A description of the source of the model.
     """
+
     slope: float
     overhead: float
     gateset: Optional[str] = None
-    approximation_protocol: Optional[str] = None
-    reference: Optional[str] = None
+    approximation_protocol: Optional[Reference] = None
+    reference: Optional[Reference] = None
 
     def rotation_cost(self, error_budget: float) -> MagicCount:
         return MagicCount(n_t=math.ceil(-self.slope * math.log2(error_budget) + self.overhead))
@@ -79,13 +79,12 @@ class ConstantWithOverheadRotationCost(RotationCostModel):
     Attributes:
         bitsize: Number of digits of accuracy for approximating a rotation.
         overhead_rotation_cost: The cost model of preparing the initial rotation.
-        reference: A human-readable description of the source of the model
-            (e.g. 'https://arxiv.org/abs/1404.5320').
+        reference: A description of the source of the model.
     """
 
     bitsize: int
     overhead_rotation_cost: RotationCostModel
-    reference: Optional[str] = None
+    reference: Optional[Reference] = None
 
     def rotation_cost(self, error_budget: float) -> MagicCount:
         return MagicCount(n_ccz=max(self.bitsize - 2, 0))
@@ -98,12 +97,16 @@ BeverlandEtAlRotationCost = RotationLogarithmicModel(
     slope=0.53,
     overhead=5.3,
     gateset='Clifford+T',
-    approximation_protocol='Mixed fallback:https://arxiv.org/abs/2203.10064',
-    reference='https://arxiv.org/abs/2211.07629:D2',
+    approximation_protocol=Reference(
+        url='https://arxiv.org/abs/2203.10064', comment='Mixed fallback'
+    ),
+    reference=Reference(url='https://arxiv.org/abs/2211.07629:D2'),
 )
 
 SevenDigitsOfPrecisionConstantCost = ConstantWithOverheadRotationCost(
     bitsize=7,
     overhead_rotation_cost=BeverlandEtAlRotationCost,
-    reference='https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.1.020312',
+    reference=Reference(
+        url='https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.1.020312'
+    ),
 )

@@ -51,6 +51,7 @@ class BloqArg(google.protobuf.message.Message):
     REGISTER_FIELD_NUMBER: builtins.int
     REGISTERS_FIELD_NUMBER: builtins.int
     CTRL_SPEC_FIELD_NUMBER: builtins.int
+    COMPLEX_VAL_FIELD_NUMBER: builtins.int
     name: builtins.str
     int_val: builtins.int
     float_val: builtins.float
@@ -76,6 +77,8 @@ class BloqArg(google.protobuf.message.Message):
     @property
     def ctrl_spec(self) -> qualtran.protos.ctrl_spec_pb2.CtrlSpec:
         """Ctrl Spec for controlled bloqs"""
+    @property
+    def complex_val(self) -> qualtran.protos.args_pb2.Complex: ...
     def __init__(
         self,
         *,
@@ -91,10 +94,11 @@ class BloqArg(google.protobuf.message.Message):
         register: qualtran.protos.registers_pb2.Register | None = ...,
         registers: qualtran.protos.registers_pb2.Registers | None = ...,
         ctrl_spec: qualtran.protos.ctrl_spec_pb2.CtrlSpec | None = ...,
+        complex_val: qualtran.protos.args_pb2.Complex | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type", "register", "registers", "ctrl_spec"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "complex_val", b"complex_val", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["cirq_json_gzip", b"cirq_json_gzip", "complex_val", b"complex_val", "ctrl_spec", b"ctrl_spec", "float_val", b"float_val", "int_val", b"int_val", "name", b"name", "ndarray", b"ndarray", "qdata_type", b"qdata_type", "register", b"register", "registers", b"registers", "string_val", b"string_val", "subbloq", b"subbloq", "sympy_expr", b"sympy_expr", "val", b"val"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["val", b"val"]) -> typing_extensions.Literal["int_val", "float_val", "string_val", "sympy_expr", "ndarray", "subbloq", "cirq_json_gzip", "qdata_type", "register", "registers", "ctrl_spec", "complex_val"] | None: ...
 
 global___BloqArg = BloqArg
 

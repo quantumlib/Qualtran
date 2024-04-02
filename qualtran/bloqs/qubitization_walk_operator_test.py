@@ -20,10 +20,14 @@ from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalkOperator
 from qualtran.bloqs.reflection_using_prepare_test import construct_gate_helper_and_qubit_order
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
+
+
+def test_qubitization_walk_operator_autotest(bloq_autotester):
+    bloq_autotester(_walk_op)
 
 
 def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
@@ -170,34 +174,36 @@ target3: ──────SelectPauliLCU─────────
     cirq.testing.assert_has_diagram(
         circuit,
         '''
-ancilla_0: ─────────────────────sigma_mu───────────────────────────────sigma_mu────────────────────────
-                                │                                      │
-ancilla_1: ─────────────────────alt────────────────────────────────────alt─────────────────────────────
-                                │                                      │
-ancilla_2: ─────────────────────alt────────────────────────────────────alt─────────────────────────────
-                                │                                      │
-ancilla_3: ─────────────────────alt────────────────────────────────────alt─────────────────────────────
-                                │                                      │
-ancilla_4: ─────────────────────keep───────────────────────────────────keep────────────────────────────
-                                │                                      │
-ancilla_5: ─────────────────────less_than_equal────────────────────────less_than_equal─────────────────
-                                │                                      │
-control: ──────@────────────────┼───────────────────────────────Z──────┼───────────────────────────────
-               │                │                               │      │
-selection0: ───In───────────────StatePreparationAliasSampling───@(0)───StatePreparationAliasSampling───
-               │                │                               │      │
-selection1: ───In───────────────selection───────────────────────@(0)───selection───────────────────────
-               │                │                               │      │
-selection2: ───In───────────────selection^-1────────────────────@(0)───selection───────────────────────
+                                                                       ┌──────────────────────────────┐
+ancilla_0: ─────────────────────sigma_mu─────────────────────────────────sigma_mu─────────────────────────
+                                │                                        │
+ancilla_1: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+                                │                                        │
+ancilla_2: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+                                │                                        │
+ancilla_3: ─────────────────────alt──────────────────────────────────────alt──────────────────────────────
+                                │                                        │
+ancilla_4: ─────────────────────keep─────────────────────────────────────keep─────────────────────────────
+                                │                                        │
+ancilla_5: ─────────────────────less_than_equal──────────────────────────less_than_equal──────────────────
+                                │                                        │
+control: ──────@────────────────┼───────────────────────────────Z───────Z┼────────────────────────────────
+               │                │                               │        │
+selection0: ───In───────────────StatePreparationAliasSampling───@(0)─────StatePreparationAliasSampling────
+               │                │                               │        │
+selection1: ───In───────────────selection───────────────────────@(0)─────selection────────────────────────
+               │                │                               │        │
+selection2: ───In───────────────selection^-1────────────────────@(0)─────selection────────────────────────
                │
-target0: ──────SelectPauliLCU──────────────────────────────────────────────────────────────────────────
+target0: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
                │
-target1: ──────SelectPauliLCU──────────────────────────────────────────────────────────────────────────
+target1: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
                │
-target2: ──────SelectPauliLCU──────────────────────────────────────────────────────────────────────────
+target2: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
                │
-target3: ──────SelectPauliLCU──────────────────────────────────────────────────────────────────────────
-    ''',
+target3: ──────SelectPauliLCU─────────────────────────────────────────────────────────────────────────────
+                                                                       └──────────────────────────────┘    
+''',
     )
     # pylint: enable=line-too-long
 

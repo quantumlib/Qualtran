@@ -32,3 +32,9 @@ You can also install the latest tagged release using `pip`:
 You can also install the latest state of the main branch:
 
     pip install git+https://github.com/quantumlib/Qualtran
+
+## Physical Resource Estimation GUI
+Qualtran provides a GUI for estimating the physical resources (qubits, magic states, runtime, ..etc) needed to run a quantum algorithm. The GUI can be run locally by running:
+    
+    cd $QUALTRAN_HOME
+    python -m qualtran.surface_code.ui

@@ -42,3 +42,11 @@ def ndarray_to_proto(arr: np.ndarray) -> args_pb2.NDArray:
 def ndarray_from_proto(arr: args_pb2.NDArray) -> np.ndarray:
     arr_bytes = BytesIO(arr.ndarray)
     return np.load(arr_bytes, allow_pickle=False)
+
+
+def complex_to_proto(val: complex) -> args_pb2.Complex:
+    return args_pb2.Complex(real=np.real(val), imag=np.imag(val))
+
+
+def complex_from_proto(val: args_pb2.IntOrSympy) -> complex:
+    return val.real + 1j * val.imag
