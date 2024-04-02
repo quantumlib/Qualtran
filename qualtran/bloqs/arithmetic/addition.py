@@ -245,13 +245,16 @@ def _add_large() -> Add:
     add_large = Add(QUInt(bitsize=64))
     return add_large
 
+
 @bloq_example
 def _add_diff_size_regs() -> Add:
     add_diff_size_regs = Add((QUInt(bitsize=4), QUInt(bitsize=16)))
     return add_diff_size_regs
 
 
-_ADD_DOC = BloqDocSpec(bloq_cls=Add, examples=[_add_symb, _add_small, _add_large, _add_diff_size_regs])
+_ADD_DOC = BloqDocSpec(
+    bloq_cls=Add, examples=[_add_symb, _add_small, _add_large, _add_diff_size_regs]
+)
 
 
 @frozen
