@@ -41,4 +41,4 @@ from .classical_sim_graph import ClassicalSimGraphDrawer
 
 from .bloq_counts_graph import GraphvizCounts, format_counts_sigma, format_counts_graph_markdown
 
-from ._show_funcs import show_bloq, show_bloqs, show_call_graph, show_counts_sigma
+from ._show_funcs import show_bloq, show_bloqs, show_call_graph, show_counts_sigma, show_flame_graph

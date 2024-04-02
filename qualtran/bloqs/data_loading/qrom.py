@@ -86,14 +86,6 @@ class QROM(UnaryIterationGate):
             num_controls=num_controls,
         )
 
-    def pretty_name(self) -> str:
-        ret = 'QROM'
-        for sel in self.selection_registers:
-            ret += f'[{sel.bitsize}]'
-        for trgt in self.target_registers:
-            ret += f'[{trgt.bitsize}]'
-        return ret
-
     def __attrs_post_init__(self):
         shapes = [d.shape for d in self.data]
         assert all([isinstance(s, int) for s in self.selection_bitsizes])

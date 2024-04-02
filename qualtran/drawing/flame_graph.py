@@ -19,11 +19,10 @@ import subprocess
 import tempfile
 from typing import List, Optional, Sequence, Union
 
-import IPython.display
 import networkx as nx
+import numpy as np
 
 from qualtran import Bloq
-from qualtran.bloqs.basic_gates import TGate
 from qualtran.resource_counting.bloq_counts import _compute_sigma
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
@@ -34,7 +33,13 @@ def _pretty_name(bloq: Bloq) -> str:
     ret = bloq.pretty_name()
     if bloq.pretty_name.__qualname__.startswith('Bloq.'):
         for field in _iter_fields(bloq):
-            ret += f'[{getattr(bloq, field.name)}]'
+            val = getattr(bloq, field.name)
+            if isinstance(val, (tuple, np.ndarray)):
+                ret += f'[{val.shape if isinstance(val, np.ndarray) else len(val)}]'
+            elif isinstance(val, Bloq):
+                ret += f'[{_pretty_name(val)}]'
+            else:
+                ret += f'[{val}]'
     return ret
 
 
@@ -55,6 +60,8 @@ def _keep_if_small(bloq: Bloq) -> bool:
 def _populate_flame_graph_data(
     bloq: Bloq, graph: nx.DiGraph, graph_t: nx.DiGraph, prefix: List[str]
 ) -> List[str]:
+    from qualtran.bloqs.basic_gates import TGate
+
     callees = [x for x in list(graph.successors(bloq)) if _t_counts_for_bloq(x, graph_t) > 0]
     total_t_counts = _t_counts_for_bloq(bloq, graph_t)
     prefix.append(_pretty_name(bloq) + f'(T:{total_t_counts})')
@@ -97,15 +104,16 @@ def get_flame_graph_svg_data(
 ) -> Optional[str]:
     data = get_flame_graph_data(*bloqs, **kwargs)
 
-    data_file = tempfile.TemporaryFile(mode='w')
-    data_file_path = tempfile.gettempdir() + f'/{data_file.name}'
+    data_file = tempfile.NamedTemporaryFile(mode='w')
     flame_graph_path = pathlib.Path(__file__).resolve().parent.parent / "third_party/flamegraph.pl"
 
     data_file.write('\n'.join(data))
+    data_file.flush()
     svg_data = subprocess.run(
-        [flame_graph_path, "--countname", "TCounts", f'{data_file_path}'],
+        [flame_graph_path, "--countname", "TCounts", f'{data_file.name}'],
         capture_output=True,
         text=True,
+        check=True,
     ).stdout
     data_file.close()
 
@@ -114,8 +122,3 @@ def get_flame_graph_svg_data(
             f.write(svg_data)
     else:
         return svg_data
-
-
-def show_flame_graph(*bloqs: Bloq, **kwargs) -> None:
-    svg_data = get_flame_graph_svg_data(*bloqs, **kwargs)
-    IPython.display.display(IPython.display.SVG(svg_data))

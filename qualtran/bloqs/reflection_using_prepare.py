@@ -66,9 +66,6 @@ class ReflectionUsingPrepare(GateWithRegisters):
     control_val: Optional[int] = None
     global_phase: complex = 1
 
-    def pretty_name(self) -> str:
-        return 'ReflectionUsingPrepare'
-
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
         return () if self.control_val is None else (Register('control', QBit()),)

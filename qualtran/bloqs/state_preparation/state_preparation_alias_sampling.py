@@ -97,9 +97,6 @@ class StatePreparationAliasSampling(PrepareOracle):
     keep: NDArray[np.int_]
     mu: int
 
-    def pretty_name(self) -> str:
-        return 'StatePreparationAliasSampling'
-
     @classmethod
     def from_lcu_probs(
         cls, lcu_probabilities: List[float], *, probability_epsilon: float = 1.0e-5

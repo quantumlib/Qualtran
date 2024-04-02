@@ -58,9 +58,6 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
     select_unitaries: Tuple[cirq.DensePauliString, ...] = attrs.field(converter=tuple)
     control_val: Optional[int] = None
 
-    def pretty_name(self) -> str:
-        return 'SelectPauliLCU'
-
     def __attrs_post_init__(self):
         if any(len(dps) != self.target_bitsize for dps in self.select_unitaries):
             raise ValueError(
