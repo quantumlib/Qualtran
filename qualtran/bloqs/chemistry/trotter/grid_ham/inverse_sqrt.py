@@ -240,7 +240,10 @@ class PolynmomialEvaluationInverseSquareRoot(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # This should probably be scale int by float rather than 3 real
         # multiplications as x in Eq. 49 of the reference is an integer.
-        return {(MultiplyTwoReals(self.poly_bitsize), 3), (Add(QInt(self.poly_bitsize), QInt(self.poly_bitsize)), 3)}
+        return {
+            (MultiplyTwoReals(self.poly_bitsize), 3),
+            (Add(QInt(self.poly_bitsize), QInt(self.poly_bitsize)), 3),
+        }
 
 
 @bloq_example

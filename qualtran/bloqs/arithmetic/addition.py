@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
+
 @frozen
 class Add(Bloq):
     r"""An n-bit addition gate.
@@ -107,8 +108,8 @@ class Add(Bloq):
 
         if isinstance(self.a_dtype, QInt) or isinstance(self.b_dtype, QInt):
             raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
-        N_a = 2 ** self.a_dtype.bitsize
-        N_b = 2 ** self.b_dtype.bitsize
+        N_a = 2**self.a_dtype.bitsize
+        N_b = 2**self.b_dtype.bitsize
         inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
         unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
         # TODO: Add a value-to-index method on dtype to make this easier.

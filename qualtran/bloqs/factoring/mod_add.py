@@ -214,7 +214,13 @@ class MontgomeryModAdd(Bloq):
         y = bb.join(np.concatenate([[sign], y_split]))
 
         # Perform in-place addition on quantum register y.
-        x, y = bb.add(Add(QMontgomeryUInt(bitsize=self.bitsize + 1), QMontgomeryUInt(bitsize=self.bitsize + 1)), a=x, b=y)
+        x, y = bb.add(
+            Add(
+                QMontgomeryUInt(bitsize=self.bitsize + 1), QMontgomeryUInt(bitsize=self.bitsize + 1)
+            ),
+            a=x,
+            b=y,
+        )
 
         # Temporary solution to equalize the bitlength of the x and y registers for Add().
         x_split = bb.split(x)
