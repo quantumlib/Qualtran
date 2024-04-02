@@ -22,8 +22,8 @@ from qualtran.bloqs.basic_gates import CNOT, PlusState, ZeroState
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
     _state_prep_via_rotation,
+    PRGAViaPhaseGradient,
     StatePreparationViaRotations,
-    PRGAViaPhaseGradient
 )
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
@@ -256,25 +256,26 @@ def test_notebook():
 def test_notebook_tutorial():
     execute_notebook("state_preparation_via_rotation_tutorial")
 
-@pytest.mark.parametrize("phase_bitsize, rom_vals", [[3, (6,0,5,2)]])
+
+@pytest.mark.parametrize("phase_bitsize, rom_vals", [[3, (6, 0, 5, 2)]])
 def test_PRGAViaPhaseGradient(phase_bitsize, rom_vals):
-    sel_bitsize = (len(rom_vals)-1).bit_length()
+    sel_bitsize = (len(rom_vals) - 1).bit_length()
     prga = PRGAViaPhaseGradient(sel_bitsize, phase_bitsize, rom_vals, 1)
     assert_valid_bloq_decomposition(prga)
     bb = BloqBuilder()
     control = bb.add(PlusState())
     sel = bb.join(np.array([bb.add(PlusState()) for _ in range(sel_bitsize)]))
     pg = bb.add(PhaseGradientState(phase_bitsize))
-    control, sel, pg, = bb.add(prga, control=control, selection=sel, phase_gradient=pg)
+    control, sel, pg = bb.add(prga, control=control, selection=sel, phase_gradient=pg)
     bb.add(PhaseGradientState(phase_bitsize).adjoint(), phase_grad=pg)
     circuit = bb.finalize(control=control, sel=sel)
     result = circuit.tensor_contract()
     # get the angles that correspond to each rom value loaded
-    angles = [2*np.pi*rv/2**phase_bitsize for rv in rom_vals]
+    angles = [2 * np.pi * rv / 2**phase_bitsize for rv in rom_vals]
     # make a vector corresponding to the state 1/sqrt(2)(|0> + |1>)|+...+>
     # with registers (|control, selection>)
-    correct_state = [np.power(2.0, -(sel_bitsize+1)/2)]*(2**(sel_bitsize+1))
+    correct_state = [np.power(2.0, -(sel_bitsize + 1) / 2)] * (2 ** (sel_bitsize + 1))
     # give the |1>|+...+> term the corresponding rotations
     for i, ang in enumerate(angles):
-        correct_state[i+2**sel_bitsize] *= np.power(np.e, 1j*ang)
+        correct_state[i + 2**sel_bitsize] *= np.power(np.e, 1j * ang)
     assert np.allclose(correct_state, result)
