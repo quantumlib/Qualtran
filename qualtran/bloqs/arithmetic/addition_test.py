@@ -67,6 +67,35 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
 
 
+@pytest.mark.parametrize('a', [1, 2])
+@pytest.mark.parametrize('b', [1, 2, 3])
+@pytest.mark.parametrize('num_bits_a', [2, 3])
+@pytest.mark.parametrize('num_bits_b', [4, 5])
+def test_add_diff_size_registers(a, b, num_bits_a, num_bits_b):
+    num_anc = num_bits_b - 1
+    gate = Add(dtype=(QUInt(num_bits_a), QUInt(num_bits_b)))
+    qubits = cirq.LineQubit.range(num_bits_a + num_bits_b)
+    op = gate.on_registers(a=qubits[:num_bits_a], b=qubits[num_bits_a:])
+    greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(op, context=context))
+    circuit0 = cirq.Circuit(op)
+    ancillas = sorted(circuit.all_qubits())[-num_anc:]
+    initial_state = [0] * (num_bits_a + num_bits_b + num_anc)
+    initial_state[:num_bits_a] = list(iter_bits(a, num_bits_a))
+    initial_state[num_bits_a : num_bits_a + num_bits_b] = list(iter_bits(b, num_bits_b))
+    final_state = [0] * (num_bits_a + num_bits_b + num_anc)
+    final_state[:num_bits_a] = list(iter_bits(a, num_bits_a))
+    final_state[num_bits_a : num_bits_a + num_bits_b] = list(iter_bits(a + b, num_bits_b))
+    assert_circuit_inp_out_cirqsim(circuit, qubits + ancillas, initial_state, final_state)
+    assert_circuit_inp_out_cirqsim(
+        circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
+    )
+    # Test diagrams
+    expected_wire_symbols = ("In(x)",) * num_bits_b + ("In(y)/Out(x+y)",) * num_bits_b
+    assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
+
+
 def test_add_truncated():
     num_bits = 3
     num_anc = num_bits - 1

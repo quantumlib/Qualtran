@@ -55,6 +55,12 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
+def to_tuple(dtype):
+    if not isinstance(dtype, Tuple):
+        dtype = dtype, dtype
+    return dtype
+
+
 @frozen
 class Add(Bloq):
     r"""An n-bit addition gate.
@@ -62,7 +68,7 @@ class Add(Bloq):
     Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $4n - 4 T$ gates.
 
     Args:
-        bitsize: Number of bits used to represent each integer. Must be large
+        dtype: Number of bits used to represent each integer. Must be large
             enough to hold the result in the output register of a + b, or else it simply
             drops the most significant bits.
 
@@ -74,18 +80,30 @@ class Add(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    dtype: Union[
+        QInt,
+        QUInt,
+        QMontgomeryUInt,
+        Tuple[Union[QInt, QUInt, QMontgomeryUInt], Union[QInt, QUInt, QMontgomeryUInt]],
+    ] = field(converter=to_tuple)
 
     @dtype.validator
     def _dtype_validate(self, field, val):
-        if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
+        a_dtype, b_dtype = val
+        if not isinstance(a_dtype, (QInt, QUInt, QMontgomeryUInt)) or not isinstance(
+            b_dtype, (QInt, QUInt, QMontgomeryUInt)
+        ):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
-        if isinstance(val.num_qubits, sympy.Expr):
+        if type(a_dtype) != type(b_dtype):
+            raise ValueError("a and b must be of the same type.")
+        if a_dtype.bitsize > b_dtype.bitsize:
+            raise ValueError("The size of a must be less than or equal to the size of b.")
+        if isinstance(a_dtype.num_qubits, sympy.Expr) or isinstance(b_dtype.num_qubits, sympy.Expr):
             return
 
     @property
     def signature(self):
-        return Signature([Register("a", self.dtype), Register("b", self.dtype)])
+        return Signature([Register("a", self.dtype[0]), Register("b", self.dtype[1])])
 
     def add_my_tensors(
         self,
@@ -99,12 +117,13 @@ class Add(Bloq):
 
         if isinstance(self.dtype, QInt):
             raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
-        N = 2**self.dtype.bitsize
+        N_a = 2 ** self.dtype[0].bitsize
+        N_b = 2 ** self.dtype[1].bitsize
         inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
-        unitary = np.zeros((N,) * len(inds), dtype=np.complex128)
+        unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
         # TODO: Add a value-to-index method on dtype to make this easier.
-        for a, b in itertools.product(range(N), range(N)):
-            unitary[a, b, a, int(math.fmod(a + b, N))] = 1
+        for a, b in itertools.product(range(N_a), range(N_b)):
+            unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
 
         tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
 
@@ -114,16 +133,17 @@ class Add(Bloq):
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        unsigned = isinstance(self.dtype, (QUInt, QMontgomeryUInt))
-        N = 2**self.dtype.bitsize if unsigned else 2 ** (self.dtype.bitsize - 1)
+        unsigned = isinstance(self.dtype[0], (QUInt, QMontgomeryUInt))
+        b_bitsize = self.dtype[1].bitsize
+        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.dtype.bitsize
-        wire_symbols += ["In(y)/Out(x+y)"] * self.dtype.bitsize
+        wire_symbols = ["In(x)"] * self.dtype[1].bitsize
+        wire_symbols += ["In(y)/Out(x+y)"] * self.dtype[1].bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
@@ -137,10 +157,18 @@ class Add(Bloq):
             raise ValueError()
 
     def _left_building_block(self, inp, out, anc, depth):
-        if depth == self.dtype.bitsize - 1:
+        if depth == self.dtype[1].bitsize - 1:
             return
         else:
-            yield CNOT().on(anc[depth - 1], inp[depth])
+            if inp[depth] is not None:
+                yield CNOT().on(anc[depth - 1], inp[depth])
+            else:
+                # If inp[depth] = None, we treat it as a |0>,
+                # and therefore applying CNOT().on(anc[depth - 1], inp[depth])
+                # essentially "copies" anc[depth - 1] into inp[depth]
+                # in the classical basis. So therefore, on future operations,
+                # we can use anc[depth - 1] in its place.
+                inp[depth] = anc[depth - 1]
             yield CNOT().on(anc[depth - 1], out[depth])
             yield And().on(inp[depth], out[depth], anc[depth])
             yield CNOT().on(anc[depth - 1], anc[depth])
@@ -152,8 +180,15 @@ class Add(Bloq):
         else:
             yield CNOT().on(anc[depth - 1], anc[depth])
             yield And().adjoint().on(inp[depth], out[depth], anc[depth])
-            yield CNOT().on(anc[depth - 1], inp[depth])
-            yield CNOT().on(inp[depth], out[depth])
+            # In the _left_building_block we sometimes use an
+            # ancilla in place of the input bit. We do this when the
+            # input bit is None, therefore no uncomputation is necessary.
+            if anc[depth - 1] != inp[depth]:
+                yield CNOT().on(anc[depth - 1], inp[depth])
+            else:
+                inp[depth] = None
+            if inp[depth] is not None:
+                yield CNOT().on(inp[depth], out[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
 
     def decompose_from_registers(
@@ -161,30 +196,33 @@ class Add(Bloq):
     ) -> cirq.OP_TREE:
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
+        # Make len(input_bits) = len(output_bits) by appending Nones
+        input_bits = np.append(input_bits, [None] * (self.dtype[1].bitsize - self.dtype[0].bitsize))
         output_bits = quregs['b'][::-1]
-        ancillas = context.qubit_manager.qalloc(self.dtype.bitsize - 1)[::-1]
+        ancillas = context.qubit_manager.qalloc(self.dtype[1].bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
         # Left part of Fig.2
         yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
         yield CNOT().on(ancillas[-1], output_bits[-1])
-        yield CNOT().on(input_bits[-1], output_bits[-1])
+        if input_bits[-1] is not None:
+            yield CNOT().on(input_bits[-1], output_bits[-1])
         # right part of Fig.2
         yield from self._right_building_block(
-            input_bits, output_bits, ancillas, self.dtype.bitsize - 2
+            input_bits, output_bits, ancillas, self.dtype[1].bitsize - 2
         )
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
 
     def _t_complexity_(self):
-        n = self.dtype.bitsize
+        n = self.dtype[1].bitsize
         num_clifford = (n - 2) * 19 + 16
         num_toffoli = n - 1
         return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        n = self.dtype.bitsize
+        n = self.dtype[1].bitsize
         n_cnot = (n - 2) * 6 + 3
         return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
@@ -207,8 +245,13 @@ def _add_large() -> Add:
     add_large = Add(QUInt(bitsize=64))
     return add_large
 
+@bloq_example
+def _add_diff_size_regs() -> Add:
+    add_diff_size_regs = Add((QUInt(bitsize=4), QUInt(bitsize=16)))
+    return add_diff_size_regs
 
-_ADD_DOC = BloqDocSpec(bloq_cls=Add, examples=[_add_symb, _add_small, _add_large])
+
+_ADD_DOC = BloqDocSpec(bloq_cls=Add, examples=[_add_symb, _add_small, _add_large, _add_diff_size_regs])
 
 
 @frozen
