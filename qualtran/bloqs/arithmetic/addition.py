@@ -97,10 +97,10 @@ class Add(Bloq):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
         if type(a_dtype) != type(b_dtype):
             raise ValueError("a and b must be of the same type.")
-        if a_dtype.bitsize > b_dtype.bitsize:
-            raise ValueError("The size of a must be less than or equal to the size of b.")
         if isinstance(a_dtype.num_qubits, sympy.Expr) or isinstance(b_dtype.num_qubits, sympy.Expr):
             return
+        if a_dtype.bitsize > b_dtype.bitsize:
+            raise ValueError("The size of a must be less than or equal to the size of b.")
 
     @property
     def signature(self):
