@@ -78,6 +78,7 @@ class BloqAsCirqGate(cirq.Gate):
     """
 
     def __init__(self, bloq: Bloq):
+        assert not isinstance(bloq, cirq.Gate)
         for _, regs in bloq.signature.groups():
             if len(regs) > 1:
                 raise ValueError(
@@ -145,13 +146,15 @@ class BloqAsCirqGate(cirq.Gate):
         return self._decompose_with_context_(qubits)
 
     def _unitary_(self):
-        if self._num_qubits_() > 3:
-            # Prefer decomposition for large bloqs
-            return NotImplemented
-        tensor = self.bloq.tensor_contract()
-        if tensor.ndim != 2:
-            return NotImplemented
-        return tensor
+        if (
+            all(reg.side == Side.THRU for reg in self.signature)
+            and not self.bloq.supports_decompose_bloq()
+        ):
+            tensor = self.bloq.tensor_contract()
+            if tensor.ndim != 2:
+                return NotImplemented
+            return tensor
+        return NotImplemented
 
     def on_registers(
         self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
@@ -170,8 +173,16 @@ class BloqAsCirqGate(cirq.Gate):
         if power == 1:
             return self
         if power == -1:
-            return BloqAsCirqGate(self.bloq.adjoint())
-        raise ValueError(f"Bad power: {power}")
+            return self.bloq.adjoint()
+
+        from qualtran.bloqs.util_bloqs import Power
+
+        bloq = self.bloq if power > 0 else self.bloq.adjoint()
+
+        try:
+            return BloqAsCirqGate(Power(bloq, abs(power)))
+        except ValueError as e:
+            raise ValueError(f"Bad power {power}") from e
 
     def __eq__(self, other):
         if not isinstance(other, BloqAsCirqGate):

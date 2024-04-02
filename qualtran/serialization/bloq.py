@@ -161,6 +161,8 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
         return bloq_pb2.BloqArg(name=name, ctrl_spec=ctrl_spec.ctrl_spec_to_proto(val))
     if isinstance(val, (np.ndarray, tuple, list)):
         return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(val))
+    if np.iscomplexobj(val):
+        return bloq_pb2.BloqArg(name=name, complex_val=args.complex_to_proto(val))
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
 
 
@@ -185,6 +187,8 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
         return {arg.name: ctrl_spec.ctrl_spec_from_proto(arg.ctrl_spec)}
     if arg.HasField("ndarray"):
         return {arg.name: args.ndarray_from_proto(arg.ndarray)}
+    if arg.HasField("complex_val"):
+        return {arg.name: args.complex_from_proto(arg.complex_val)}
     raise ValueError(f"Cannot deserialize {arg=}")
 
 

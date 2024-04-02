@@ -21,24 +21,6 @@ from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
 from qualtran.bloqs.basic_gates.rotation import _rx, _ry, _rz
 
 
-def _make_Rx():
-    from qualtran.bloqs.basic_gates import Rx
-
-    return Rx(angle=np.pi / 4.0)
-
-
-def _make_Ry():
-    from qualtran.bloqs.basic_gates import Ry
-
-    return Ry(angle=np.pi / 4.0)
-
-
-def _make_Rz():
-    from qualtran.bloqs.basic_gates import Rz
-
-    return Rz(angle=np.pi / 4.0)
-
-
 def test_rotation_gates():
     angle = np.pi / 4.0
     tcount = 52

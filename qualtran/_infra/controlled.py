@@ -12,10 +12,24 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Protocol, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
+import cirq
 import numpy as np
+import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -24,6 +38,7 @@ from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT
+    from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -171,6 +186,51 @@ class CtrlSpec:
     def __hash__(self):
         return hash((self.qdtypes, self.shapes, self._cvs_tuple))
 
+    def to_cirq_cv(self) -> cirq.SumOfProducts:
+        """Convert CtrlSpec to cirq.SumOfProducts representation of control values."""
+        cirq_cv = []
+        for qdtype, cv in zip(self.qdtypes, self.cvs):
+            for idx in Register('', qdtype, cv.shape).all_idxs():
+                cirq_cv += [*qdtype.to_bits(cv[idx])]
+        return cirq.SumOfProducts([tuple(cirq_cv)])
+
+    @classmethod
+    def from_cirq_cv(
+        cls,
+        cirq_cv: cirq.ops.AbstractControlValues,
+        *,
+        qdtypes: Optional[Sequence[QDType]] = None,
+        shapes: Optional[Sequence[Tuple[int, ...]]] = None,
+    ) -> 'CtrlSpec':
+        """Construct a CtrlSpec from cirq.SumOfProducts representation of control values."""
+        conjunctions = [*cirq_cv.expand()]
+        if len(conjunctions) > 1:
+            raise ValueError(
+                "CtrlSpec currently only supports converting SumOfProduct representation with a single AND clause."
+            )
+
+        cv = conjunctions[0]
+        # Use a single ctrl register with flat list of qubits if nothing specified.
+        qdtypes = qdtypes if qdtypes is not None else [QBit()]
+        shapes = shapes if shapes is not None else [(len(cv),) if len(cv) > 1 else ()]
+
+        # Verify that the given values for qdtypes and shapes are compatible with cv.
+        if sum(dt.num_qubits * np.prod(sh) for dt, sh in zip(qdtypes, shapes)) != len(cv):
+            raise ValueError(
+                f"Sum of qubits across {qdtypes=} and {shapes=} should match {len(cv)=}"
+            )
+
+        # Convert the AND clause to a CtrlSpec.
+        idx = 0
+        bloq_cvs = []
+
+        for qdtype, shape in zip(qdtypes, shapes):
+            full_shape = shape + (qdtype.num_qubits,)
+            curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
+            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)
+            bloq_cvs.append(curr_cvs)
+        return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
+
 
 class AddControlledT(Protocol):
     """The signature for the `add_controlled` callback part of `ctrl_system`.
@@ -269,13 +329,16 @@ class Controlled(Bloq):
         return _get_nice_ctrl_reg_names(reg_names, n)
 
     @cached_property
-    def signature(self) -> 'Signature':
-        # Prepend register(s) corresponding to `ctrl_spec`.
-        ctrl_regs = tuple(
+    def ctrl_regs(self) -> Tuple[Register, ...]:
+        return tuple(
             Register(name=self.ctrl_reg_names[i], dtype=qdtype, shape=shape, side=Side.THRU)
             for i, (qdtype, shape) in enumerate(self.ctrl_spec.activation_function_dtypes())
         )
-        return Signature(ctrl_regs + tuple(self.subbloq.signature))
+
+    @cached_property
+    def signature(self) -> 'Signature':
+        # Prepend register(s) corresponding to `ctrl_spec`.
+        return Signature(self.ctrl_regs + tuple(self.subbloq.signature))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         # Use subbloq's decomposition but wire up the additional ctrl_soqs.
@@ -318,6 +381,35 @@ class Controlled(Bloq):
 
         return vals
 
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        from qualtran._infra.composite_bloq import _flatten_soquet_collection
+        from qualtran.simulation.tensor._tensor_data_manipulation import (
+            active_space_for_ctrl_spec,
+            eye_tensor_for_signature,
+            tensor_shape_from_signature,
+        )
+
+        # Create an identity tensor corresponding to the signature of current Bloq
+        data = eye_tensor_for_signature(self.signature)
+        # Verify it has the right shape
+        in_ind = _flatten_soquet_collection(incoming[reg.name] for reg in self.signature.lefts())
+        out_ind = _flatten_soquet_collection(outgoing[reg.name] for reg in self.signature.rights())
+        assert data.shape == tuple(2**soq.reg.bitsize for ind in [out_ind, in_ind] for soq in ind)
+        # Figure out the ctrl indexes for which the ctrl is "active"
+        active_idx = active_space_for_ctrl_spec(self.signature, self.ctrl_spec)
+        # Put the subbloq tensor at indices where ctrl is active.
+        subbloq_shape = tensor_shape_from_signature(self.subbloq.signature)
+        data[active_idx] = self.subbloq.tensor_contract().reshape(subbloq_shape)
+        # Add the data to the tensor network.
+        tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.short_name(), tag]))
+
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
@@ -335,3 +427,14 @@ class Controlled(Bloq):
 
     def __str__(self) -> str:
         return f'C[{self.subbloq}]'
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
+        ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
+        sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)
+        return (
+            sub_op.controlled_by(*ctrl_qubits, control_values=self.ctrl_spec.to_cirq_cv()),
+            cirq_quregs | ctrl_regs,
+        )

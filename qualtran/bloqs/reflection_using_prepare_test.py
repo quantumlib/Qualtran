@@ -67,16 +67,17 @@ def construct_gate_helper_and_qubit_order(gate, decompose_once: bool = False):
     return g, qubit_order, circuit
 
 
-def get_3q_uniform_dirac_notation(signs):
+def get_3q_uniform_dirac_notation(signs, global_phase: complex = 1):
+    coeff = str(0.35 * global_phase * np.sign(global_phase))
     terms = [
-        '0.35|000⟩',
-        '0.35|001⟩',
-        '0.35|010⟩',
-        '0.35|011⟩',
-        '0.35|100⟩',
-        '0.35|101⟩',
-        '0.35|110⟩',
-        '0.35|111⟩',
+        f'{coeff}|000⟩',
+        f'{coeff}|001⟩',
+        f'{coeff}|010⟩',
+        f'{coeff}|011⟩',
+        f'{coeff}|100⟩',
+        f'{coeff}|101⟩',
+        f'{coeff}|110⟩',
+        f'{coeff}|111⟩',
     ]
     ret = terms[0] if signs[0] == '+' else f'-{terms[0]}'
     for c, term in zip(signs[1:], terms[1:]):
@@ -86,11 +87,12 @@ def get_3q_uniform_dirac_notation(signs):
 
 @pytest.mark.parametrize('num_ones', [*range(5, 9)])
 @pytest.mark.parametrize('eps', [0.01])
-def test_reflection_using_prepare(num_ones, eps):
+@pytest.mark.parametrize('global_phase', [+1, -1, 1j, -1j])
+def test_reflection_using_prepare(num_ones, eps, global_phase):
     data = [1] * num_ones
     prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
 
-    gate = ReflectionUsingPrepare(prepare_gate)
+    gate = ReflectionUsingPrepare(prepare_gate, global_phase=global_phase)
     assert_valid_bloq_decomposition(gate)
 
     g, qubit_order, decomposed_circuit = construct_gate_helper_and_qubit_order(gate)
@@ -103,8 +105,11 @@ def test_reflection_using_prepare(num_ones, eps):
     )
     selection = g.quregs['selection']
     prepared_state = result.final_state_vector.reshape(2 ** len(selection), -1).sum(axis=1)
-    signs = '-' * num_ones + '+' * (9 - num_ones)
-    assert cirq.dirac_notation(prepared_state) == get_3q_uniform_dirac_notation(signs)
+    if np.sign(global_phase) == 1:
+        signs = '-' * num_ones + '+' * (9 - num_ones)
+    elif np.sign(global_phase) == -1:
+        signs = '+' * num_ones + '-' * (9 - num_ones)
+    assert cirq.dirac_notation(prepared_state) == get_3q_uniform_dirac_notation(signs, global_phase)
 
 
 def test_reflection_using_prepare_diagram():

@@ -11,11 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
-
-from qualtran.testing import execute_notebook
+from qualtran.bloqs.chemistry.trotter.hubbard.interaction import _interaction
 
 
-@pytest.mark.notebook
-def test_notebook():
-    execute_notebook('basic_gates')
+def test_hopping_tile(bloq_autotester):
+    bloq_autotester(_interaction)
