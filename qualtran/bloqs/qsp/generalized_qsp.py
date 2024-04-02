@@ -32,7 +32,6 @@ from qualtran import (
     Signature,
 )
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.bloqs.for_testing.random_gate import RandomGate
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -219,20 +218,52 @@ def qsp_phase_factors(
 class GeneralizedQSP(GateWithRegisters):
     r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
 
-    Can optionally provide a negative power offset $k$ (defaults to 0),
-    to obtain $U^{-k} P(U)$. (Theorem 6)
-    This gate represents the following unitary:
+    Given a unitary $U$ and a QSP polynomial $P$ (and its complementary polynomial $Q$),
+    this gate implements the following unitary:
 
-        $$ \begin{bmatrix} U^{-k} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix} $$
+    $$
+        \begin{bmatrix} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix}
+    $$
 
-    The polynomial $P$ must satisfy:
-    $\abs{P(e^{i \theta})}^2 \le 1$ for every $\theta \in \mathbb{R}$.
+    The polynomials $P$ and $Q$ should satisfy:
 
-    The exact circuit is described in Figure 2.
+    $$
+        \left|P(e^{i \theta})\right|^2 + \left|Q(e^{i \theta})\right|^2 = 1 ~~\text{for every}~ \theta \in \mathbb{R}
+    $$
+
+    The polynomial $P$ is said to be a QSP Polynomial if it satisfies:
+
+    $$
+        \left|P(e^{i \theta})\right|^2 \le 1 ~~\text{for every}~ \theta \in \mathbb{R}
+    $$
+
+    If only the QSP polynomial $P$ is known, one can simply call
+    `GeneralizedQSP.from_qsp_polynomial(U, P)` which automatically computes $Q$.
+
+    ### Using Laurent Polynomials
+    To apply GQSP with the transformation given by $P'$
+
+    $$
+    P(z) = \sum_{n = -a}^b p_n z^n
+    $$
+
+    where $a, b \ge 0$, we can simply invoke GQSP with the standard polynomial $P'(z) = z^a P(z)$
+    which has degree $a + b$, and pass `negative_power=a`.
+
+    Given complementary QSP polynomials $P', Q'$ and `negative_power=a`,
+    this gate implements the unitary transform:
+
+    $$
+        \begin{bmatrix} U^{-a} P'(U) & \cdot \\ U^{-a} Q(U) & \cdot \end{bmatrix}
+    $$
+
+
+    The exact circuit implemented by this gate is described in Figure 2.
 
     Args:
         U: Unitary operation.
-        P: Co-efficients of a complex polynomial.
+        P: Co-efficients of a complex QSP polynomial.
+        Q: Co-efficients of a complex QSP polynomial.
         negative_power: value of $k$, which effectively applies $z^{-k} P(z)$. defaults to 0.
 
     References:
@@ -326,31 +357,34 @@ class GeneralizedQSP(GateWithRegisters):
 
 @bloq_example
 def _gqsp() -> GeneralizedQSP:
-    gqsp = GeneralizedQSP.from_qsp_polynomial(RandomGate.create(1, random_state=42), (0.5, 0.5))
+    from qualtran.bloqs.for_testing.atom import TestGWRAtom
+
+    gqsp = GeneralizedQSP.from_qsp_polynomial(TestGWRAtom(), (0.5, 0.5))
     return gqsp
 
 
 @bloq_example
 def _gqsp_with_negative_power() -> GeneralizedQSP:
+    from qualtran.bloqs.for_testing.atom import TestGWRAtom
+
     gqsp_with_negative_power = GeneralizedQSP.from_qsp_polynomial(
-        RandomGate.create(1, random_state=42), (0.5, 0, 0.5), negative_power=1
+        TestGWRAtom(), (0.5, 0, 0.5), negative_power=1
     )
     return gqsp_with_negative_power
 
 
 @bloq_example
 def _gqsp_with_large_negative_power() -> GeneralizedQSP:
+    from qualtran.bloqs.for_testing.atom import TestGWRAtom
+
     gqsp_with_large_negative_power = GeneralizedQSP.from_qsp_polynomial(
-        RandomGate.create(1, random_state=42), (0.5, 0, 0.5), negative_power=5
+        TestGWRAtom(), (0.5, 0, 0.5), negative_power=5
     )
     return gqsp_with_large_negative_power
 
 
 _Generalized_QSP_DOC = BloqDocSpec(
     bloq_cls=GeneralizedQSP,
-    import_line=(
-        'from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, _catch_su2_rotations\n'
-        'from qualtran.bloqs.for_testing.random_gate import RandomGate'
-    ),
+    import_line='from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP',
     examples=[_gqsp, _gqsp_with_negative_power, _gqsp_with_large_negative_power],
 )

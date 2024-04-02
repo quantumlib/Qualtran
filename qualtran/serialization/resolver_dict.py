@@ -255,6 +255,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg": qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg,
     "qualtran.bloqs.factoring.mod_sub.MontgomeryModSub": qualtran.bloqs.factoring.mod_sub.MontgomeryModSub,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
+    "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,
     "qualtran.bloqs.for_testing.atom.TestTwoBitOp": qualtran.bloqs.for_testing.atom.TestTwoBitOp,
     "qualtran.bloqs.for_testing.casting.TestCastToFrom": qualtran.bloqs.for_testing.casting.TestCastToFrom,
     "qualtran.bloqs.for_testing.interior_alloc.InteriorAlloc": qualtran.bloqs.for_testing.interior_alloc.InteriorAlloc,
