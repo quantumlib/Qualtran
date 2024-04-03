@@ -39,14 +39,16 @@ def degree_jacobi_anger_approximation(t: float, *, precision: float) -> int:
     """
 
     def term_too_small(n: int) -> bool:
-        return np.isclose(scipy.special.jv(n, t), 0, atol=precision / 2)
+        return np.isclose(scipy.special.jv(n, t), 0, atol=precision)
 
     d = 1
     while not term_too_small(d):
         d *= 2
 
     # find the smallest `n` such that J_n(z) is too small
-    return bisect.bisect(range(d), True, key=term_too_small)
+    d = bisect.bisect_left(range(d), True, key=term_too_small) - 1
+    assert not term_too_small(d) and term_too_small(d + 1)
+    return d
 
 
 def approx_exp_cos_by_jacobi_anger(t: float, *, degree: int):
