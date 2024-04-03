@@ -50,7 +50,7 @@ from typing import Iterable, List
 
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
-from qualtran_dev_tools.jupyter_autogen_v2 import NotebookSpecV2, render_notebook
+from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
 
 import qualtran.bloqs.arithmetic.addition
 import qualtran.bloqs.arithmetic.sorting
@@ -112,9 +112,9 @@ BASIC_GATES: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.basic_gates.hadamard._HADAMARD_DOC],
     ),
     NotebookSpecV2(
-        title='SU2 Rotation',
-        module=qualtran.bloqs.basic_gates.su2_rotation,
-        bloq_specs=[qualtran.bloqs.basic_gates.su2_rotation._SU2_ROTATION_GATE_DOC],
+        title='CNOT',
+        module=qualtran.bloqs.basic_gates.cnot,
+        bloq_specs=[qualtran.bloqs.basic_gates.cnot._CNOT_DOC],
     ),
     NotebookSpecV2(
         title='S Gate',
@@ -128,6 +128,24 @@ BASIC_GATES: List[NotebookSpecV2] = [
             qualtran.bloqs.mcmt.and_bloq._AND_DOC,
             qualtran.bloqs.mcmt.and_bloq._MULTI_AND_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='States and Effects',
+        module=qualtran.bloqs.basic_gates.z_basis,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.z_basis._ZERO_STATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._ZERO_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.z_basis._ONE_STATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._ONE_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.z_basis._INT_STATE_DOC,
+            qualtran.bloqs.basic_gates.z_basis._INT_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.x_basis._PLUS_STATE_DOC,
+            qualtran.bloqs.basic_gates.x_basis._PLUS_EFFECT_DOC,
+            qualtran.bloqs.basic_gates.x_basis._MINUS_STATE_DOC,
+            qualtran.bloqs.basic_gates.x_basis._MINUS_EFFECT_DOC,
+        ],
+        directory=f'{SOURCE_DIR}/bloqs/basic_gates',
+        path_stem='states_and_effects',
     ),
     NotebookSpecV2(
         title='Swap Network',
@@ -326,6 +344,20 @@ ROT_QFT_PE = [
     # --------------------------------------------------------------------------
     # -----   Rotations    -----------------------------------------------------
     # --------------------------------------------------------------------------
+    NotebookSpecV2(
+        title='Basic Rotation Gates',
+        module=qualtran.bloqs.basic_gates.rotation,
+        bloq_specs=[
+            qualtran.bloqs.basic_gates.rotation._X_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._Y_POW_DOC,
+            qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='SU2 Rotation',
+        module=qualtran.bloqs.basic_gates.su2_rotation,
+        bloq_specs=[qualtran.bloqs.basic_gates.su2_rotation._SU2_ROTATION_GATE_DOC],
+    ),
     NotebookSpecV2(
         title='Quantum Variable Rotation',
         module=qualtran.bloqs.rotations.quantum_variable_rotation,
