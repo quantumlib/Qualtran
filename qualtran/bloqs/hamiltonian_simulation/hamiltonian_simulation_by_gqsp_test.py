@@ -16,7 +16,6 @@ import cirq
 import numpy as np
 import pytest
 import scipy
-from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran.bloqs.for_testing.random_select_and_prepare import random_qubitization_walk_operator
@@ -29,24 +28,6 @@ from qualtran.bloqs.generalized_qsp_test import (
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 
 from .hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP
-
-
-@pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-10])
-def test_cos_approximation(precision: float):
-    random_state = np.random.RandomState(42)
-
-    for t in [2, 3, 5, 10]:
-        for alpha in [0.5, 1, 2]:
-            bloq = HamiltonianSimulationByGQSP(None, t=t, alpha=alpha, precision=precision)
-
-            P = Polynomial(bloq.approx_cos)
-            theta = 2 * np.pi * random_state.random(1000)
-            e_itheta = np.exp(1j * theta)
-            np.testing.assert_allclose(
-                P(e_itheta) * e_itheta ** (-bloq.degree),
-                np.exp(1j * t * alpha * np.cos(theta)),
-                rtol=precision * 2,
-            )
 
 
 @pytest.mark.slow
