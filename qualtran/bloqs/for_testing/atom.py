@@ -115,7 +115,7 @@ class TestTwoBitOp(Bloq):
 
 @frozen(repr=False)
 class TestGWRAtom(GateWithRegisters):
-    """An atomic gate that derives from `GateWithRegisters` which useful for testing.
+    """An atomic gate that derives from `GateWithRegisters` useful for testing.
 
     The single qubit gate has a unitary effect corresponding to a 2x2 identity matrix.
 
@@ -154,7 +154,7 @@ class TestGWRAtom(GateWithRegisters):
         )
 
     def _unitary_(self):
-        return np.array([[0, 1], [1, 0]])
+        return np.eye(2)
 
     def adjoint(self) -> 'Bloq':
         return self
