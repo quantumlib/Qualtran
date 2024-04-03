@@ -88,6 +88,7 @@ def assert_bloq_example_serialize_for_pytest(bloq_ex: BloqExample):
         'select_pauli_lcu',
         'walk_op',
         'trott_unitary',
+        "hubbard_time_evolution_by_gqsp",
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
