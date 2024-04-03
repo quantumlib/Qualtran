@@ -16,7 +16,7 @@ import abc
 import math
 from typing import Optional
 
-from attrs import frozen
+from attrs import field, frozen
 
 import qualtran.surface_code.quantum_error_correction_scheme_summary as qec
 from qualtran.surface_code.reference import Reference
@@ -34,7 +34,7 @@ class DataBlock(metaclass=abc.ABCMeta):
     def footprint(self, n_algo_qubits: int) -> int:
         """The number of physical qubits used by the data block.
 
-        Args:
+        Attributes:
             n_algo_qubits: The number of algorithm qubits whose data must be stored and
                 accessed.
         """
@@ -52,10 +52,12 @@ class DataBlock(metaclass=abc.ABCMeta):
 class SimpleDataBlock(DataBlock):
     """A simple data block that uses a fixed code distance and routing overhead.
 
-    Args:
+    Attributes:
         data_d: The code distance `d` for protecting the qubits in the data block.
-        routing_overhead: As an approximation, assume a number of routing or auxiliary
+        routing_overhead: As an approximation, assume some routing or auxiliary
             qubits proportional to the number of algorithm qubits.
+        qec_scheme: Underlying quantum error correction scheme.
+        reference: A description of the source of the model.
     """
 
     data_d: int
@@ -97,12 +99,17 @@ class CompactDataBlock(SimpleDataBlock):
     an ancilla region. This lowers the memory footprint of the block at the cost of an
     increased number of cycles to consume a magic state.
 
+    Attributes:
+        data_d: The code distance `d` for protecting the qubits in the data block.
+        qec_scheme: Underlying quantum error correction scheme.
+        reference: A description of the source of the model.
+
     References:
         [A Game of Surface Codes](https://arxiv.org/abs/1808.02892)
         page 7, figure 9
     """
 
-    routing_overhead: float = 0.5
+    routing_overhead: float = field(default=0.5, init=False)
     reference: Reference = Reference(url='https://arxiv.org/abs/1808.02892', page=7)
 
     def n_cycles_to_consume_a_magic_state(self) -> int:
@@ -116,12 +123,17 @@ class IntermediateDataBlock(SimpleDataBlock):
     The intermediate data block lays $n$ qubit batches in grid of shape (2, $2n+2$) where
     the data batches are lined in the first row with the second row being an ancilla region.
 
+    Attributes:
+        data_d: The code distance `d` for protecting the qubits in the data block.
+        qec_scheme: Underlying quantum error correction scheme.
+        reference: A description of the source of the model.
+
     References:
         [A Game of Surface Codes](https://arxiv.org/abs/1808.02892)
         page 9, figure 13a
     """
 
-    routing_overhead: float = 1.0
+    routing_overhead: float = field(default=1.0, init=False)
     reference: Reference = Reference(url='https://arxiv.org/abs/1808.02892', page=8)
 
     def n_cycles_to_consume_a_magic_state(self) -> int:
@@ -137,6 +149,10 @@ class FastDataBlock(DataBlock):
     into alternating data and ancilla columns.
     The increased footprint is to be able to consume magic states in a single timestep.
 
+    Attributes:
+        data_d: The code distance `d` for protecting the qubits in the data block.
+        qec_scheme: Underlying quantum error correction scheme.
+        reference: A description of the source of the model.
 
     References:
         [A Game of Surface Codes](https://arxiv.org/abs/1808.02892)
