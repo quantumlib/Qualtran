@@ -21,15 +21,15 @@ from .jacobi_anger_approximations import (
 )
 
 
+@pytest.mark.parametrize("t", [2, 3, 5, 10])
 @pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-10])
-def test_cos_approximation(precision: float):
-    random_state = np.random.RandomState(42)
+def test_cos_approximation(t: float, precision: float):
+    random_state = np.random.RandomState(42 + int(t))
 
-    for t in [2, 3, 5, 10]:
-        degree = degree_jacobi_anger_approximation(t, precision=precision)
-        P = np.polynomial.Polynomial(approx_exp_cos_by_jacobi_anger(t, degree=degree))
-        theta = 2 * np.pi * random_state.random(1000)
-        e_itheta = np.exp(1j * theta)
-        np.testing.assert_allclose(
-            P(e_itheta) * e_itheta ** (-degree), np.exp(1j * t * np.cos(theta)), rtol=precision * 2
-        )
+    degree = degree_jacobi_anger_approximation(t, precision=precision)
+    P = np.polynomial.Polynomial(approx_exp_cos_by_jacobi_anger(t, degree=degree))
+    theta = 2 * np.pi * random_state.random(1000)
+    e_itheta = np.exp(1j * theta)
+    np.testing.assert_allclose(
+        P(e_itheta) * e_itheta ** (-degree), np.exp(1j * t * np.cos(theta)), rtol=precision * 2
+    )
