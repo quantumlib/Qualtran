@@ -288,9 +288,14 @@ class GeneralizedQSP(GateWithRegisters):
 
     @classmethod
     def from_qsp_polynomial(
-        cls, U: GateWithRegisters, P: Sequence[complex], *, negative_power: int = 0
+        cls,
+        U: GateWithRegisters,
+        P: Sequence[complex],
+        *,
+        negative_power: int = 0,
+        verify: bool = False,
     ) -> 'GeneralizedQSP':
-        Q = qsp_complementary_polynomial(P)
+        Q = qsp_complementary_polynomial(P, verify=verify)
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
