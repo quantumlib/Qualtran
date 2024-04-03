@@ -138,7 +138,9 @@ def verify_generalized_qsp(
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
     if Q is None:
-        gqsp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
+        gqsp_U = GeneralizedQSP.from_qsp_polynomial(
+            U, P, negative_power=negative_power, verify=True
+        )
     else:
         gqsp_U = GeneralizedQSP(U, P, Q, negative_power=negative_power)
     result_unitary = cirq.unitary(gqsp_U)
