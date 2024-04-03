@@ -15,9 +15,17 @@ import bisect
 
 import numpy as np
 import scipy
+import sympy
+from numpy.typing import NDArray
+
+from qualtran.resource_counting.symbolic_counting_utils import (
+    is_symbolic,
+    SymbolicFloat,
+    SymbolicInt,
+)
 
 
-def degree_jacobi_anger_approximation(t: float, *, precision: float) -> int:
+def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicInt) -> SymbolicInt:
     r"""Degree of the Jacobi-Anger expansion of $e^{it\sin(\theta)}$ or $e^{it\cos(\theta)}$.
 
     The Jacobi-Anger expansions are given by:
@@ -30,6 +38,11 @@ def degree_jacobi_anger_approximation(t: float, *, precision: float) -> int:
 
     We truncate the above series to the range $n \in [-d, d]$ such that $|J_{d+1}(t)| \le \epsilon$.
 
+    If any parameter is symbolic, this returns an asymptotic result given by
+    $$
+        d = \mathcal{O}(t + \frac{\log\epsilon}{\log\log\epsilon})
+    $$
+
     Args:
         t: scale of the exponent in the function to approximate.
         precision: $\epsilon$ in the above polynomial approximation
@@ -37,6 +50,8 @@ def degree_jacobi_anger_approximation(t: float, *, precision: float) -> int:
     Returns:
         Truncation degree $d$ as defined above.
     """
+    if is_symbolic(t, precision):
+        return sympy.O(t + sympy.log(precision) / sympy.log(sympy.log(precision)))
 
     def term_too_small(n: int) -> bool:
         return np.isclose(scipy.special.jv(n, t), 0, atol=precision)
@@ -51,7 +66,7 @@ def degree_jacobi_anger_approximation(t: float, *, precision: float) -> int:
     return d
 
 
-def approx_exp_cos_by_jacobi_anger(t: float, *, degree: int):
+def approx_exp_cos_by_jacobi_anger(t: float, *, degree: int) -> NDArray[np.complex_]:
     r"""Laurent Polynomial approximation for $e^{i\theta} \mapsto e^{it\cos\theta}$.
 
     The approximation is given by
@@ -70,7 +85,7 @@ def approx_exp_cos_by_jacobi_anger(t: float, *, degree: int):
     return 1j**coeff_indices * scipy.special.jv(coeff_indices, t)
 
 
-def approx_exp_sin_by_jacobi_anger(t: float, *, degree: int):
+def approx_exp_sin_by_jacobi_anger(t: float, *, degree: int) -> NDArray[np.complex_]:
     r"""Laurent Polynomial approximation for $e^{i\theta} \mapsto e^{it\cos\theta}$.
 
     The approximation is given by
