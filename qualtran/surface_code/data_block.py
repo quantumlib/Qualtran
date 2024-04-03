@@ -110,7 +110,9 @@ class CompactDataBlock(SimpleDataBlock):
     """
 
     routing_overhead: float = field(default=0.5, init=False)
-    reference: Reference = Reference(url='https://arxiv.org/abs/1808.02892', page=7)
+    reference: Reference = field(
+        default=Reference(url='https://arxiv.org/abs/1808.02892', page=7), init=False
+    )
 
     def n_cycles_to_consume_a_magic_state(self) -> int:
         return 9 * self.data_d
@@ -134,7 +136,9 @@ class IntermediateDataBlock(SimpleDataBlock):
     """
 
     routing_overhead: float = field(default=1.0, init=False)
-    reference: Reference = Reference(url='https://arxiv.org/abs/1808.02892', page=8)
+    reference: Reference = field(
+        default=Reference(url='https://arxiv.org/abs/1808.02892', page=8), init=False
+    )
 
     def n_cycles_to_consume_a_magic_state(self) -> int:
         return 5 * self.data_d
@@ -161,7 +165,9 @@ class FastDataBlock(DataBlock):
 
     data_d: int
     qec_scheme: qec.QuantumErrorCorrectionSchemeSummary = qec.FowlerSuperconductingQubits
-    reference: Reference = Reference(url='https://arxiv.org/abs/1808.02892', page=9)
+    reference: Reference = field(
+        default=Reference(url='https://arxiv.org/abs/1808.02892', page=9), init=False
+    )
 
     @staticmethod
     def grid_size(n_algo_qubits: int) -> int:
