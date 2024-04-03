@@ -12,11 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
-import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -28,7 +26,11 @@ from qualtran.bloqs.qsp.polynomial_approximations import (
     degree_jacobi_anger_approximation,
 )
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, SymbolicInt
+from qualtran.resource_counting.symbolic_counting_utils import (
+    is_symbolic,
+    SymbolicFloat,
+    SymbolicInt,
+)
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -61,18 +63,12 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     precision: SymbolicFloat = field(kw_only=True)
 
     def _parameterized_(self):
-        return cirq.is_parameterized((self.t, self.alpha, self.precision))
+        return is_symbolic(self.t, self.alpha, self.precision)
 
     @cached_property
     def degree(self) -> SymbolicInt:
         r"""degree of the polynomial to approximate the function e^{it\cos(\theta)}"""
-        if self._parameterized_():
-            return sympy.O(
-                self.t * self.alpha
-                + sympy.log(self.precision) / sympy.log(sympy.log(self.precision))
-            )
-        else:
-            return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision)
+        return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision)
 
     @cached_property
     def approx_cos(self) -> NDArray[np.complex_]:
@@ -91,30 +87,36 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     def signature(self) -> 'Signature':
         return self.gqsp.signature
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def __add_prepare(
+        self,
+        bb: 'BloqBuilder',
+        gqsp_soqs: Dict[str, 'SoquetT'],
+        state_prep_ancilla_soqs: Dict[str, 'SoquetT'],
+        *,
+        adjoint: bool = False,
+    ) -> Tuple[Dict[str, 'SoquetT'], Dict[str, 'SoquetT']]:
         prepare = self.walk_operator.prepare
 
-        def add_prepare(gqsp_soqs, state_prep_ancilla_soqs, *, adjoint: bool = True):
-            selection_registers = {
-                reg.name: gqsp_soqs[reg.name] for reg in prepare.selection_registers
-            }
-            prepare_out_soqs = bb.add_d(
-                prepare.adjoint() if adjoint else prepare,
-                **selection_registers,
-                **state_prep_ancilla_soqs,
-            )
-            gqsp_soqs |= {
-                reg.name: prepare_out_soqs.pop(reg.name) for reg in prepare.selection_registers
-            }
-            return gqsp_soqs, prepare_out_soqs
+        selection_registers = {reg.name: gqsp_soqs[reg.name] for reg in prepare.selection_registers}
+        prepare_out_soqs = bb.add_d(
+            prepare.adjoint() if adjoint else prepare,
+            **selection_registers,
+            **state_prep_ancilla_soqs,
+        )
+        gqsp_soqs |= {
+            reg.name: prepare_out_soqs.pop(reg.name) for reg in prepare.selection_registers
+        }
+        return gqsp_soqs, prepare_out_soqs
 
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         # PREPARE, GQSP, PREPARE†
         state_prep_ancilla = {
-            reg.name: bb.allocate(reg.total_bits()) for reg in prepare.junk_registers
+            reg.name: bb.allocate(reg.total_bits())
+            for reg in self.walk_operator.prepare.junk_registers
         }
-        soqs, state_prep_ancilla = add_prepare(soqs, state_prep_ancilla)
+        soqs, state_prep_ancilla = self.__add_prepare(bb, soqs, state_prep_ancilla)
         soqs = bb.add_d(self.gqsp, **soqs)
-        soqs, state_prep_ancilla = add_prepare(soqs, state_prep_ancilla, adjoint=True)
+        soqs, state_prep_ancilla = self.__add_prepare(bb, soqs, state_prep_ancilla, adjoint=True)
 
         for soq in state_prep_ancilla.values():
             bb.free(soq)
