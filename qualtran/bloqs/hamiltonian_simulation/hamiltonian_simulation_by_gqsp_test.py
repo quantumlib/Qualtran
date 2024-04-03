@@ -27,7 +27,14 @@ from qualtran.bloqs.generalized_qsp_test import (
 )
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 
-from .hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP
+from .hamiltonian_simulation_by_gqsp import (
+    _hubbard_time_evolution_by_gqsp,
+    HamiltonianSimulationByGQSP,
+)
+
+
+def test_examples(bloq_autotester):
+    bloq_autotester(_hubbard_time_evolution_by_gqsp)
 
 
 @pytest.mark.slow

@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict, Set, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -20,7 +20,7 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import Controlled, CtrlSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, Controlled, CtrlSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import SU2RotationGate
 from qualtran.bloqs.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qsp.polynomial_approximations import (
@@ -29,6 +29,10 @@ from qualtran.bloqs.qsp.polynomial_approximations import (
 )
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, SymbolicInt
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -89,26 +93,28 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         prepare = self.walk_operator.prepare
+
+        def add_prepare(gqsp_soqs, state_prep_ancilla_soqs, *, adjoint: bool = True):
+            selection_registers = {
+                reg.name: gqsp_soqs[reg.name] for reg in prepare.selection_registers
+            }
+            prepare_out_soqs = bb.add_d(
+                prepare.adjoint() if adjoint else prepare,
+                **selection_registers,
+                **state_prep_ancilla_soqs,
+            )
+            gqsp_soqs |= {
+                reg.name: prepare_out_soqs.pop(reg.name) for reg in prepare.selection_registers
+            }
+            return gqsp_soqs, prepare_out_soqs
+
+        # PREPARE, GQSP, PREPARE†
         state_prep_ancilla = {
             reg.name: bb.allocate(reg.total_bits()) for reg in prepare.junk_registers
         }
-
-        # PREPARE
-        prepare_soqs = bb.add_d(
-            self.walk_operator.prepare, selection=soqs['selection'], **state_prep_ancilla
-        )
-        soqs['selection'] = prepare_soqs.pop('selection')
-        state_prep_ancilla = prepare_soqs
-
-        # GQSP
+        soqs, state_prep_ancilla = add_prepare(soqs, state_prep_ancilla)
         soqs = bb.add_d(self.gqsp, **soqs)
-
-        # PREPARE†
-        prepare_soqs = bb.add_d(
-            self.walk_operator.prepare.adjoint(), selection=soqs['selection'], **state_prep_ancilla
-        )
-        soqs['selection'] = prepare_soqs.pop('selection')
-        state_prep_ancilla = prepare_soqs
+        soqs, state_prep_ancilla = add_prepare(soqs, state_prep_ancilla, adjoint=True)
 
         for soq in state_prep_ancilla.values():
             bb.free(soq)
@@ -126,3 +132,14 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
                 (SU2RotationGate.arbitrary(ssa), 2 * d + 1),
             }
         return self.decompose_bloq().build_call_graph(ssa)
+
+
+@bloq_example
+def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
+    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+
+    walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
+    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(
+        walk_op, t=5, alpha=1, precision=1e-7
+    )
+    return hubbard_time_evolution_by_gqsp
