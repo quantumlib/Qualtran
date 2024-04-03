@@ -18,11 +18,11 @@ import pytest
 import scipy
 from numpy.typing import NDArray
 
+from qualtran.bloqs.for_testing.random_gate import RandomGate
 from qualtran.bloqs.for_testing.random_select_and_prepare import random_qubitization_walk_operator
-from qualtran.bloqs.generalized_qsp_test import (
+from qualtran.bloqs.qsp.generalized_qsp_test import (
     assert_matrices_almost_equal,
     check_polynomial_pair_on_random_points_on_unit_circle,
-    RandomGate,
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
