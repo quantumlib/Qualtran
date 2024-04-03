@@ -68,8 +68,8 @@ class Add(Bloq):
             to be used for both a and b or a 2-element tuple of Quantum datatypes for a and b.
 
     Registers:
-        a: A bitsize-sized input register (register a above).
-        b: A bitsize-sized input/output register (register b above).
+        a: A a_dtype.bitsize-sized input register (register a above).
+        b: A b_dtype.bitsize-sized input/output register (register b above).
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -77,6 +77,11 @@ class Add(Bloq):
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    controlled: Optional[int] = None
+
+    @b_dtype.default
+    def b_dtype_default(self):
+        return self.a_dtype
 
     @a_dtype.validator
     def _a_dtype_validate(self, field, val):
@@ -94,7 +99,13 @@ class Add(Bloq):
 
     @property
     def signature(self):
-        return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+        return (
+            Signature(
+                [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
+            )
+            if self.controlled is not None
+            else Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+        )
 
     def add_my_tensors(
         self,
@@ -122,24 +133,34 @@ class Add(Bloq):
         return decompose_from_cirq_style_method(self)
 
     def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
+        self, **kwargs
     ) -> Dict[str, 'ClassicalValT']:
+        a, b = kwargs['a'], kwargs['b']
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
+        if self.controlled is not None:
+            ctrl = kwargs['ctrl']
+            if ctrl != self.controlled:
+                return {'a': a, 'b': b}
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.a_dtype.bitsize
+        if self.controlled is not None:
+            wire_symbols = ["In(ctrl)"]
+        else:
+            wire_symbols = []
+        wire_symbols += ["In(x)"] * self.a_dtype.bitsize
         wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
-
+        if soq.reg.name == 'ctrl':
+            return directional_text_box('ctrl', side=soq.reg.side)
         if soq.reg.name == 'a':
             return directional_text_box('a', side=soq.reg.side)
         elif soq.reg.name == 'b':
@@ -178,6 +199,15 @@ class Add(Bloq):
             else:
                 yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
+
+    def _right_building_block_controlled(self, inp, out, anc, ctrl, depth):
+        if depth == 0:
+            return
+        yield CNOT().on(anc[depth - 1], anc[depth])
+        if depth < len(inp):
+            yield And().adjoint().on(inp[depth], out[depth], anc[depth])
+            yield And().adjoint().on(ctrl, inp[depth], anc[depth])
+
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]

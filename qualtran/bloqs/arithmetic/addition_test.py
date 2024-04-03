@@ -44,7 +44,7 @@ from qualtran.simulation.classical_sim import (
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add_decomposition(a: int, b: int, num_bits: int):
     num_anc = num_bits - 1
-    gate = Add(QUInt(num_bits), QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     op = gate.on_registers(a=qubits[:num_bits], b=qubits[num_bits:])
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -99,7 +99,7 @@ def test_add_diff_size_registers(a, b, num_bits_a, num_bits_b):
 def test_add_truncated():
     num_bits = 3
     num_anc = num_bits - 1
-    gate = Add(QUInt(num_bits), QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
     ancillas = sorted(circuit.all_qubits() - frozenset(qubits))
@@ -114,7 +114,7 @@ def test_add_truncated():
     # increasing number of bits yields correct value
     num_bits = 4
     num_anc = num_bits - 1
-    gate = Add(QUInt(num_bits), QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     context = cirq.DecompositionContext(greedy_mm)
@@ -129,7 +129,7 @@ def test_add_truncated():
 
     num_bits = 3
     num_anc = num_bits - 1
-    gate = Add(QUInt(num_bits), QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     context = cirq.DecompositionContext(greedy_mm)
@@ -147,7 +147,7 @@ def test_add_truncated():
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_subtract(a, b, num_bits):
     num_anc = num_bits - 1
-    gate = Add(QInt(num_bits), QUInt(num_bits))
+    gate = Add(QInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     context = cirq.DecompositionContext(greedy_mm)
@@ -165,7 +165,7 @@ def test_subtract(a, b, num_bits):
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_counts(n: int):
-    add = Add(QUInt(n), QUInt(n))
+    add = Add(QUInt(n))
     qlt_testing.assert_valid_bloq_decomposition(add)
     assert add.t_complexity() == add.decompose_bloq().t_complexity()
     assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
@@ -174,7 +174,7 @@ def test_addition_gate_counts(n: int):
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
 def test_add_no_decompose(a, b):
     num_bits = 5
-    bloq = Add(QUInt(num_bits), QUInt(num_bits))
+    bloq = Add(QUInt(num_bits))
 
     a_bin = format(a, f'0{num_bits}b')
     b_bin = format(b, f'0{num_bits}b')
@@ -190,13 +190,13 @@ def test_add_no_decompose(a, b):
 
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add_call_classically(a: int, b: int, num_bits: int):
-    bloq = Add(QUInt(num_bits), QUInt(num_bits))
+    bloq = Add(QUInt(num_bits))
     ret = bloq.call_classically(a=a, b=b)
     assert ret == (a, a + b)
 
 
 def test_add_truth_table():
-    bloq = Add(QUInt(2), QUInt(2))
+    bloq = Add(QUInt(2))
     classical_truth_table = format_classical_truth_table(*get_classical_truth_table(bloq))
     assert (
         classical_truth_table
@@ -227,13 +227,13 @@ def test_add():
     bitsize = 4
     q0 = bb.add_register('a', bitsize)
     q1 = bb.add_register('b', bitsize)
-    a, b = bb.add(Add(QUInt(bitsize), QUInt(bitsize)), a=q0, b=q1)
+    a, b = bb.add(Add(QUInt(bitsize)), a=q0, b=q1)
     cbloq = bb.finalize(a=a, b=b)
     cbloq.t_complexity()
 
 
 def test_add_classical():
-    bloq = Add(QInt(bitsize=32), QInt(bitsize=32))
+    bloq = Add(QInt(bitsize=32))
     ret1 = bloq.call_classically(a=10, b=3)
     ret2 = bloq.decompose_bloq().call_classically(a=10, b=3)
     assert ret1 == ret2
