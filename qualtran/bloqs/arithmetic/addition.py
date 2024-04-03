@@ -132,9 +132,7 @@ class Add(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    def on_classical_vals(
-        self, **kwargs
-    ) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
         a, b = kwargs['a'], kwargs['b']
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
@@ -159,6 +157,7 @@ class Add(Bloq):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
+
         if soq.reg.name == 'ctrl':
             return directional_text_box('ctrl', side=soq.reg.side)
         if soq.reg.name == 'a':
@@ -207,7 +206,6 @@ class Add(Bloq):
         if depth < len(inp):
             yield And().adjoint().on(inp[depth], out[depth], anc[depth])
             yield And().adjoint().on(ctrl, inp[depth], anc[depth])
-
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
