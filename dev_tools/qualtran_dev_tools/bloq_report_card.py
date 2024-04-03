@@ -102,6 +102,12 @@ def get_bloq_report_card(
     bexamples: Optional[Iterable[BloqExample]] = None,
     package_prefix: str = 'qualtran.bloqs.',
 ) -> pd.DataFrame:
+
+    # These examples are too large to run.
+    REJECTED_BEXAMPLES = set(
+        ["qubitization_qpe_hubbard_model_large", "qubitization_qpe_hubbard_model_small"]
+    )
+
     if bclasses is None:
         bclasses = get_bloq_classes()
     if bexamples is None:
@@ -110,7 +116,7 @@ def get_bloq_report_card(
     records = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
-    records.extend(record_for_bloq_example(be) for be in bexamples)
+    records.extend(record_for_bloq_example(be) for be in bexamples if be.name not in REJECTED_BEXAMPLES)
 
     df = pd.DataFrame(records)
     df['package'] = df['package'].str.removeprefix(package_prefix)
