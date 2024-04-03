@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-from .polynomial_approximations import (
+from .jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
 )
