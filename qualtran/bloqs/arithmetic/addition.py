@@ -82,6 +82,8 @@ class Add(Bloq):
     def _a_dtype_validate(self, field, val):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
+        if isinstance(val.num_qubits, sympy.Expr):
+            return
         if val.bitsize > self.b_dtype.bitsize:
             raise ValueError("a_dtype bitsize must be less than or equal to b_dtype bitsize")
 
