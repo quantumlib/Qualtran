@@ -211,6 +211,7 @@ def test_type_errors_matrix(qdtype_a, qdtype_b):
 
 
 def test_single_qubit_consistency():
+    assert str(QBit()) == 'QBit()'
     assert check_dtypes_consistent(QBit(), QBit())
     assert check_dtypes_consistent(QBit(), QInt(1))
     assert check_dtypes_consistent(QInt(1), QBit())

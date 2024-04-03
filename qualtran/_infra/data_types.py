@@ -136,6 +136,9 @@ class QBit(QDType):
         if not np.all((val_array == 0) | (val_array == 1)):
             raise ValueError(f"Bad {self} value array in {debug_str}")
 
+    def __str__(self):
+        return f'QBit()'
+
 
 @attrs.frozen
 class QAny(QDType):
