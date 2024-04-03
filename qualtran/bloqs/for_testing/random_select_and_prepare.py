@@ -21,7 +21,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
-from qualtran.bloqs.generalized_qsp_test import RandomGate
+from qualtran.bloqs.for_testing.random_gate import RandomGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 

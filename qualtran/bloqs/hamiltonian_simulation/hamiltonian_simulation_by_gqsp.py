@@ -20,7 +20,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, Controlled, CtrlSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import SU2RotationGate
-from qualtran.bloqs.generalized_qsp import GeneralizedQSP
+from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
