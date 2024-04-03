@@ -103,6 +103,9 @@ class QDType(metaclass=abc.ABCMeta):
         for val in val_array.reshape(-1):
             self.assert_valid_classical_val(val)
 
+    def __str__(self):
+        return f'{self.__class__.__name__}({self.num_qubits})'
+
 
 @attrs.frozen
 class QBit(QDType):
@@ -390,6 +393,9 @@ class BoundedQUInt(QDType):
         if np.any(val_array >= self.iteration_length):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
+    def __str__(self):
+        return f'{self.__class__.__name__}({self.bitsize}, {self.iteration_length})'
+
 
 @attrs.frozen
 class QFxp(QDType):
@@ -470,6 +476,12 @@ class QFxp(QDType):
         # TODO: Asserting a valid value here opens a can of worms because classical data, except integers,
         # is currently not propagated correctly through Bloqs
         pass
+
+    def __str__(self):
+        if self.signed:
+            return f'QFxp({self.bitsize}, {self.num_frac}, True)'
+        else:
+            return f'QFxp({self.bitsize}, {self.num_frac})'
 
 
 @attrs.frozen
