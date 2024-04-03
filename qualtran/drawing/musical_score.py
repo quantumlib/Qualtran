@@ -382,6 +382,7 @@ class TextBox(WireSymbol):
 @frozen
 class Text(WireSymbol):
     text: str
+    fontsize: int = 10
 
     def draw(self, ax, x, y):
         ax.text(
@@ -389,7 +390,7 @@ class Text(WireSymbol):
             -y,
             self.text,
             transform=ax.transData,
-            fontsize=10,
+            fontsize=self.fontsize,
             ha='center',
             va='center',
             bbox={'lw': 0, 'fc': 'white'},
@@ -476,7 +477,7 @@ def _soq_to_symb(soq: Soquet) -> WireSymbol:
 
     # Use text (with no box) for dangling register identifiers.
     if isinstance(soq.binst, DanglingT):
-        return Text(soq.pretty())
+        return Text(soq.pretty() + f'[{soq.reg.dtype!s}]', fontsize=8)
 
     # Otherwise, use `Bloq.wire_symbol`.
     return soq.binst.bloq.wire_symbol(soq)
@@ -637,7 +638,7 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
 def draw_musical_score(
     msd: MusicalScoreData,
     unit_to_inches: float = 0.8,
-    max_width: float = 8.0,
+    max_width: float = 10.0,
     max_height: float = 8.0,
 ):
     # First, set up data coordinate limits and figure size.
