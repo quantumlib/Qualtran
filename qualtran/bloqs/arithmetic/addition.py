@@ -82,15 +82,13 @@ class Add(Bloq):
     def _a_dtype_validate(self, field, val):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
-        if isinstance(val.num_qubits, sympy.Expr):
-            return
+        if val.bitsize > self.b_dtype.bitsize:
+            raise ValueError("a_dtype bitsize must be less than or equal to b_dtype bitsize")
 
     @b_dtype.validator
     def _b_dtype_validate(self, field, val):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
-        if isinstance(val.num_qubits, sympy.Expr):
-            return
 
     @property
     def signature(self):
@@ -133,7 +131,7 @@ class Add(Bloq):
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.b_dtype.bitsize
+        wire_symbols = ["In(x)"] * self.a_dtype.bitsize
         wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
@@ -151,17 +149,18 @@ class Add(Bloq):
         if depth == self.b_dtype.bitsize - 1:
             return
         else:
-            if inp[depth] is not None:
+            if depth < len(inp):
                 yield CNOT().on(anc[depth - 1], inp[depth])
+                control = inp[depth]
             else:
-                # If inp[depth] = None, we treat it as a |0>,
+                # If inp[depth] doesn't exist, we treat it as a |0>,
                 # and therefore applying CNOT().on(anc[depth - 1], inp[depth])
                 # essentially "copies" anc[depth - 1] into inp[depth]
                 # in the classical basis. So therefore, on future operations,
                 # we can use anc[depth - 1] in its place.
-                inp[depth] = anc[depth - 1]
+                control = anc[depth - 1]
             yield CNOT().on(anc[depth - 1], out[depth])
-            yield And().on(inp[depth], out[depth], anc[depth])
+            yield And().on(control, out[depth], anc[depth])
             yield CNOT().on(anc[depth - 1], anc[depth])
             yield from self._left_building_block(inp, out, anc, depth + 1)
 
@@ -170,16 +169,12 @@ class Add(Bloq):
             return
         else:
             yield CNOT().on(anc[depth - 1], anc[depth])
-            yield And().adjoint().on(inp[depth], out[depth], anc[depth])
-            # In the _left_building_block we sometimes use an
-            # ancilla in place of the input bit. We do this when the
-            # input bit is None, therefore no uncomputation is necessary.
-            if anc[depth - 1] != inp[depth]:
+            if depth < len(inp):
+                yield And().adjoint().on(inp[depth], out[depth], anc[depth])
                 yield CNOT().on(anc[depth - 1], inp[depth])
-            else:
-                inp[depth] = None
-            if inp[depth] is not None:
                 yield CNOT().on(inp[depth], out[depth])
+            else:
+                yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
 
     def decompose_from_registers(
@@ -187,8 +182,6 @@ class Add(Bloq):
     ) -> cirq.OP_TREE:
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
-        # Make len(input_bits) = len(output_bits) by appending Nones
-        input_bits = np.append(input_bits, [None] * (self.b_dtype.bitsize - self.a_dtype.bitsize))
         output_bits = quregs['b'][::-1]
         ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
         # Start off the addition by anding into the ancilla
@@ -196,7 +189,7 @@ class Add(Bloq):
         # Left part of Fig.2
         yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
         yield CNOT().on(ancillas[-1], output_bits[-1])
-        if input_bits[-1] is not None:
+        if len(input_bits) == len(output_bits):
             yield CNOT().on(input_bits[-1], output_bits[-1])
         # right part of Fig.2
         yield from self._right_building_block(

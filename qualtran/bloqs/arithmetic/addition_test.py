@@ -92,7 +92,7 @@ def test_add_diff_size_registers(a, b, num_bits_a, num_bits_b):
         circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
     )
     # Test diagrams
-    expected_wire_symbols = ("In(x)",) * num_bits_b + ("In(y)/Out(x+y)",) * num_bits_b
+    expected_wire_symbols = ("In(x)",) * num_bits_a + ("In(y)/Out(x+y)",) * num_bits_b
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
 
 
