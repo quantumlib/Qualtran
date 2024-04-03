@@ -25,7 +25,7 @@ from qualtran.resource_counting.symbolic_counting_utils import (
 )
 
 
-def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicInt) -> SymbolicInt:
+def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicFloat) -> SymbolicInt:
     r"""Degree of the Jacobi-Anger expansion of $e^{it\sin(\theta)}$ or $e^{it\cos(\theta)}$.
 
     The Jacobi-Anger expansions are given by:
