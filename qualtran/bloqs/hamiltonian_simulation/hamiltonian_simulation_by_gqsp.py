@@ -11,18 +11,54 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import bisect
 from functools import cached_property
 from typing import Dict, Set
 
+import cirq
 import numpy as np
 import scipy
 import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Signature
+from qualtran import Controlled, CtrlSpec, GateWithRegisters, Signature
+from qualtran.bloqs.basic_gates import SU2RotationGate
 from qualtran.bloqs.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, SymbolicInt
+
+
+def degree_jacobi_anger_approximation(t: float, precision: float) -> int:
+    r"""Degree of the Jacobi-Anger expansion of $e^{it\sin(\theta)}$ or $e^{it\cos(\theta)}$.
+
+    The Jacobi-Anger expansions are given by:
+
+    $$
+        e^{it\cos\theta} = \sum_{n = -\infty}^\infty i^n J_n(t) e^{in\theta}
+        e^{it\sin\theta} = \sum_{n = -\infty}^\infty J_n(t) e^{in\theta}
+    $$
+    where $J_n$ is the $n$-th Bessel function of the first kind.
+
+    We truncate the above series to the range $n \in [-d, d]$ such that $|J_{d+1}(t)| \le \epsilon$.
+
+    Args:
+        t: scale of the exponent in the function to approximate.
+        precision: $\epsilon$ in the above polynomial approximation
+
+    Returns:
+        Truncation degree $d$ as defined above.
+    """
+
+    def term_too_small(n: int) -> bool:
+        return np.isclose(scipy.special.jv(n, t), 0, atol=precision / 2)
+
+    d = 1
+    while not term_too_small(d):
+        d *= 2
+
+    # find the smallest `n` such that J_n(z) is too small
+    return bisect.bisect(range(d), True, key=term_too_small)
 
 
 @frozen
@@ -46,24 +82,29 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     """
 
     walk_operator: QubitizationWalkOperator
-    t: float = field(kw_only=True)
-    alpha: float = field(kw_only=True)
-    precision: float = field(kw_only=True)
+    t: SymbolicFloat = field(kw_only=True)
+    alpha: SymbolicFloat = field(kw_only=True)
+    precision: SymbolicFloat = field(kw_only=True)
+
+    def _parameterized_(self):
+        return cirq.is_parameterized((self.t, self.alpha, self.precision))
 
     @cached_property
-    def degree(self) -> int:
+    def degree(self) -> SymbolicInt:
         r"""degree of the polynomial to approximate the function e^{it\cos(\theta)}"""
-        d = 0
-        while True:
-            term = scipy.special.jv(d + 1, self.t * self.alpha)
-            if np.isclose(term, 0, atol=self.precision / 2):
-                break
-            d += 1
-        return d
+        if self._parameterized_():
+            return sympy.O(
+                self.t * self.alpha
+                + sympy.log(self.precision) / sympy.log(sympy.log(self.precision))
+            )
+        else:
+            return degree_jacobi_anger_approximation(self.t * self.alpha, self.precision)
 
     @cached_property
     def approx_cos(self) -> NDArray[np.complex_]:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
+        if self._parameterized_():
+            raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
         coeff_indices = np.arange(-self.degree, self.degree + 1)
         approx_cos = 1j**coeff_indices * scipy.special.jv(coeff_indices, self.t * self.alpha)
         return approx_cos
@@ -107,15 +148,13 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        t = ssa.new_symbol('t')
-        alpha = ssa.new_symbol('alpha')
-        inv_precision = ssa.new_symbol('1/precision')
-        d = sympy.O(
-            t * alpha + sympy.log(1 / inv_precision) / sympy.log(sympy.log(1 / inv_precision)),
-            (t, sympy.oo),
-            (alpha, sympy.oo),
-            (inv_precision, sympy.oo),
-        )
-
-        # TODO account for SU2 rotation gates
-        return {(self.walk_operator, d)}
+        if self._parameterized_():
+            d = self.degree
+            return {
+                (Controlled(self.walk_operator.adjoint(), CtrlSpec()), d),
+                (Controlled(self.walk_operator, CtrlSpec(cvs=0)), d),
+                (self.walk_operator.prepare, 1),
+                (self.walk_operator.prepare.adjoint(), 1),
+                (SU2RotationGate.arbitrary(ssa), 2 * d + 1),
+            }
+        return self.decompose_bloq().build_call_graph(ssa)
