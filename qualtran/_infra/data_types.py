@@ -137,7 +137,7 @@ class QBit(QDType):
             raise ValueError(f"Bad {self} value array in {debug_str}")
 
     def __str__(self):
-        return f'QBit()'
+        return 'QBit()'
 
 
 @attrs.frozen
