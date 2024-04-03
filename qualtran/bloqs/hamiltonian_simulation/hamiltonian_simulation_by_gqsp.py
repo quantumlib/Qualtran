@@ -21,11 +21,11 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, Controlled, CtrlSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import SU2RotationGate
 from qualtran.bloqs.generalized_qsp import GeneralizedQSP
-from qualtran.bloqs.qsp.polynomial_approximations import (
+from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.linalg.polynomial_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
 )
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.resource_counting.symbolic_counting_utils import (
     is_symbolic,
     SymbolicFloat,
