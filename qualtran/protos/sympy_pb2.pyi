@@ -55,6 +55,26 @@ MOD: Function.ValueType  # 4
 global___Function = Function
 
 @typing_extensions.final
+class Fraction(google.protobuf.message.Message):
+    """Represents a constant, rational number."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NUMERATOR_FIELD_NUMBER: builtins.int
+    DENOMINATOR_FIELD_NUMBER: builtins.int
+    numerator: builtins.int
+    denominator: builtins.int
+    def __init__(
+        self,
+        *,
+        numerator: builtins.int = ...,
+        denominator: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> None: ...
+
+global___Fraction = Fraction
+
+@typing_extensions.final
 class Parameter(google.protobuf.message.Message):
     """A single parameter of a sympy expression."""
 
@@ -63,20 +83,23 @@ class Parameter(google.protobuf.message.Message):
     CONST_INT_FIELD_NUMBER: builtins.int
     SYMBOL_FIELD_NUMBER: builtins.int
     CONST_IRRAT_FIELD_NUMBER: builtins.int
+    CONST_RAT_FIELD_NUMBER: builtins.int
     const_int: builtins.int
     symbol: builtins.str
     const_irrat: builtins.str
-    """A constant that cannot be expressed by an integer or a division operation will be irrational."""
+    @property
+    def const_rat(self) -> global___Fraction: ...
     def __init__(
         self,
         *,
         const_int: builtins.int = ...,
         symbol: builtins.str = ...,
         const_irrat: builtins.str = ...,
+        const_rat: global___Fraction | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["const_int", b"const_int", "const_irrat", b"const_irrat", "parameter", b"parameter", "symbol", b"symbol"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["const_int", b"const_int", "const_irrat", b"const_irrat", "parameter", b"parameter", "symbol", b"symbol"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["parameter", b"parameter"]) -> typing_extensions.Literal["const_int", "symbol", "const_irrat"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["const_int", b"const_int", "const_irrat", b"const_irrat", "const_rat", b"const_rat", "parameter", b"parameter", "symbol", b"symbol"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["const_int", b"const_int", "const_irrat", b"const_irrat", "const_rat", b"const_rat", "parameter", b"parameter", "symbol", b"symbol"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["parameter", b"parameter"]) -> typing_extensions.Literal["const_int", "symbol", "const_irrat", "const_rat"] | None: ...
 
 global___Parameter = Parameter
 

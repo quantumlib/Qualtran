@@ -27,13 +27,19 @@ enum Function {
 
 }
 
+// Represents a constant, rational number.
+message Fraction {
+    int32 numerator = 1;
+    int32 denominator = 2;
+}
+
 // A single parameter of a sympy expression.
 message Parameter {
     oneof parameter {
         int32 const_int = 1;
         string symbol = 2;
-        // A constant that cannot be expressed by an integer or a division operation will be irrational.
         string const_irrat = 3;
+        Fraction const_rat = 4;
     }
 }
 

@@ -20,7 +20,6 @@ import attrs
 import cirq
 import numpy as np
 import sympy
-from sympy.parsing.sympy_parser import parse_expr
 
 from qualtran import (
     Bloq,
@@ -69,24 +68,32 @@ def _get_sympy_from_enum(enum: int):
         sympy_pb2.Function.POWER: sympy.core.power.Pow,
         sympy_pb2.Function.MOD: sympy.core.Mod,
         sympy_pb2.Function.NONE: None,
-    }
 
-    # DO NOT SUBMIT: Remove this line
-    if enum == sympy_pb2.Function.MULTIPLICATION:
-        print("here")
+    }
 
     return enum_to_sympy[enum]
 
 
 def _get_sympy_operand(expr: sympy.Expr):
+
+    # Expression is a single variable.
     if isinstance(expr, sympy.core.symbol.Symbol):
         return sympy_pb2.Parameter(symbol=str(expr))
+
+    # Expression is an integer
     if issubclass(expr.__class__, sympy.core.numbers.Integer):
         result = expr.numerator
         if not isinstance(result, int):
             raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
         return sympy_pb2.Parameter(const_int=result)
+
+    # Expression cannot be broken down further, but is a constant.
     if issubclass(expr.__class__, sympy.core.numbers.Number):
+        if isinstance(expr, sympy.core.numbers.Rational):
+            fraction = sympy_pb2.Fraction(numerator=expr.numerator, denominator=expr.denominator)
+            return sympy_pb2.Parameter(const_rat=fraction)
+
+        # If it is not a rational number, then it must be an irrational constant.
         return sympy_pb2.Parameter(const_irrat=expr.name)
 
 
@@ -114,6 +121,9 @@ def _get_parameter(operand):
         parameter = operand.parameter.const_int
     elif parameter_type == "const_irrat":
         parameter = sympy.parse_expr(operand.parameter.const_irrat)
+    elif parameter_type == "const_rat":
+        fraction = operand.parameter.const_rat
+        parameter = sympy.Rational(fraction.numerator, fraction.denominator)
 
     return parameter
 

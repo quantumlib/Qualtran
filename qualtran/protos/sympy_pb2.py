@@ -14,19 +14,21 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bqualtran/protos/sympy.proto\x12\x08qualtran\"V\n\tParameter\x12\x13\n\tconst_int\x18\x01 \x01(\x05H\x00\x12\x10\n\x06symbol\x18\x02 \x01(\tH\x00\x12\x15\n\x0b\x63onst_irrat\x18\x03 \x01(\tH\x00\x42\x0b\n\tparameter\"^\n\x07Operand\x12\x1e\n\x04term\x18\x01 \x01(\x0b\x32\x0e.qualtran.TermH\x00\x12(\n\tparameter\x18\x02 \x01(\x0b\x32\x13.qualtran.ParameterH\x00\x42\t\n\x07operand\"Q\n\x04Term\x12$\n\x08\x66unction\x18\x01 \x01(\x0e\x32\x12.qualtran.Function\x12#\n\x08operands\x18\x02 \x03(\x0b\x32\x11.qualtran.Operand*J\n\x08\x46unction\x12\x08\n\x04NONE\x10\x00\x12\x0c\n\x08\x41\x44\x44ITION\x10\x01\x12\x12\n\x0eMULTIPLICATION\x10\x02\x12\t\n\x05POWER\x10\x03\x12\x07\n\x03MOD\x10\x04\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bqualtran/protos/sympy.proto\x12\x08qualtran\"2\n\x08\x46raction\x12\x11\n\tnumerator\x18\x01 \x01(\x05\x12\x13\n\x0b\x64\x65nominator\x18\x02 \x01(\x05\"\x7f\n\tParameter\x12\x13\n\tconst_int\x18\x01 \x01(\x05H\x00\x12\x10\n\x06symbol\x18\x02 \x01(\tH\x00\x12\x15\n\x0b\x63onst_irrat\x18\x03 \x01(\tH\x00\x12\'\n\tconst_rat\x18\x04 \x01(\x0b\x32\x12.qualtran.FractionH\x00\x42\x0b\n\tparameter\"^\n\x07Operand\x12\x1e\n\x04term\x18\x01 \x01(\x0b\x32\x0e.qualtran.TermH\x00\x12(\n\tparameter\x18\x02 \x01(\x0b\x32\x13.qualtran.ParameterH\x00\x42\t\n\x07operand\"Q\n\x04Term\x12$\n\x08\x66unction\x18\x01 \x01(\x0e\x32\x12.qualtran.Function\x12#\n\x08operands\x18\x02 \x03(\x0b\x32\x11.qualtran.Operand*J\n\x08\x46unction\x12\x08\n\x04NONE\x10\x00\x12\x0c\n\x08\x41\x44\x44ITION\x10\x01\x12\x12\n\x0eMULTIPLICATION\x10\x02\x12\t\n\x05POWER\x10\x03\x12\x07\n\x03MOD\x10\x04\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'qualtran.protos.sympy_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_FUNCTION']._serialized_start=308
-  _globals['_FUNCTION']._serialized_end=382
-  _globals['_PARAMETER']._serialized_start=41
-  _globals['_PARAMETER']._serialized_end=127
-  _globals['_OPERAND']._serialized_start=129
-  _globals['_OPERAND']._serialized_end=223
-  _globals['_TERM']._serialized_start=225
-  _globals['_TERM']._serialized_end=306
+  _globals['_FUNCTION']._serialized_start=401
+  _globals['_FUNCTION']._serialized_end=475
+  _globals['_FRACTION']._serialized_start=41
+  _globals['_FRACTION']._serialized_end=91
+  _globals['_PARAMETER']._serialized_start=93
+  _globals['_PARAMETER']._serialized_end=220
+  _globals['_OPERAND']._serialized_start=222
+  _globals['_OPERAND']._serialized_end=316
+  _globals['_TERM']._serialized_start=318
+  _globals['_TERM']._serialized_end=399
 # @@protoc_insertion_point(module_scope)
