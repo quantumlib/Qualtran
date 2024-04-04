@@ -62,10 +62,10 @@ class Add(Bloq):
     Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $4n - 4 T$ gates.
 
     Args:
-        dtype: Quantum datatype used to represent each integer. Must be large
+        a_dtype: Quantum datatype used to represent the integer a.
+        b_dtype: Quantum datatype used to represent the integer b. Must be large
             enough to hold the result in the output register of a + b, or else it simply
-            drops the most significant bits. One can either provide a single Quantum datatype
-            to be used for both a and b or a 2-element tuple of Quantum datatypes for a and b.
+            drops the most significant bits. If not specified, b_dtype is set to a_dtype.
 
     Registers:
         a: A a_dtype.bitsize-sized input register (register a above).
