@@ -477,7 +477,7 @@ def _soq_to_symb(soq: Soquet) -> WireSymbol:
 
     # Use text (with no box) for dangling register identifiers.
     if isinstance(soq.binst, DanglingT):
-        return Text(soq.pretty() + f'[{soq.reg.dtype!s}]', fontsize=8)
+        return Text(soq.pretty() + f'/{soq.reg.dtype}', fontsize=8)
 
     # Otherwise, use `Bloq.wire_symbol`.
     return soq.binst.bloq.wire_symbol(soq)
