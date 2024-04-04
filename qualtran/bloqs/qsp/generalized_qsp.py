@@ -103,7 +103,7 @@ def qsp_complementary_polynomial(
     for z in units:
         matched_z = None
         for w in unpaired_units:
-            if np.allclose(z, w):
+            if np.allclose(z, w, rtol=verify_precision):
                 matched_z = w
                 break
 
