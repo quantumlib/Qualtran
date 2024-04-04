@@ -116,7 +116,9 @@ def get_bloq_report_card(
     records = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
-    records.extend(record_for_bloq_example(be) for be in bexamples if be.name not in REJECTED_BEXAMPLES)
+    records.extend(
+        record_for_bloq_example(be) for be in bexamples if be.name not in REJECTED_BEXAMPLES
+    )
 
     df = pd.DataFrame(records)
     df['package'] = df['package'].str.removeprefix(package_prefix)
