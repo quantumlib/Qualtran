@@ -31,10 +31,10 @@ from .generalized_qsp import (
     _gqsp,
     _gqsp_with_large_negative_power,
     _gqsp_with_negative_power,
+    assert_is_qsp_polynomial,
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
-    assert_is_qsp_polynomial,
 )
 
 
@@ -299,6 +299,7 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
     d = degree_jacobi_anger_approximation(t, precision=precision)
 
     P = approx_exp_cos_by_jacobi_anger(t, degree=d)
+    # TODO compute optimal scaling factor
     scale_P = 3 * np.linalg.norm(P, ord=np.inf) / (1 - 2 * precision)
     P /= scale_P
 
