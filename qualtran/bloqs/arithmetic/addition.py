@@ -77,7 +77,6 @@ class Add(Bloq):
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    controlled: Optional[int] = None
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -126,34 +125,25 @@ class Add(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
-        a, b = kwargs['a'], kwargs['b']
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        if self.controlled is not None:
-            ctrl = kwargs['ctrl']
-            if ctrl != self.controlled:
-                return {'a': a, 'b': b}
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        if self.controlled is not None:
-            wire_symbols = ["In(ctrl)"]
-        else:
-            wire_symbols = []
-        wire_symbols += ["In(x)"] * self.a_dtype.bitsize
+        wire_symbols = ["In(x)"] * self.a_dtype.bitsize
         wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
-        if soq.reg.name == 'ctrl':
-            return directional_text_box('ctrl', side=soq.reg.side)
         if soq.reg.name == 'a':
             return directional_text_box('a', side=soq.reg.side)
         elif soq.reg.name == 'b':
