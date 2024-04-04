@@ -178,6 +178,14 @@ class Add(Bloq):
             else:
                 yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
+    
+    def _right_building_block_controlled(self, inp, out, anc, ctrl, depth):
+        if depth == 0:
+            return
+        yield CNOT().on(anc[depth - 1], anc[depth])
+        if depth < len(inp):
+            yield And().adjoint().on(inp[depth], out[depth], anc[depth])
+            yield And().adjoint().on(ctrl, inp[depth], anc[depth])
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
