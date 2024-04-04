@@ -121,8 +121,10 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         TODO figure out how to compute the optimal scaling factor,
              to prevent the need for oblivious AA.
         """
+        points = np.exp(2j * np.pi * np.linspace(0, 1, num=10**5))
         poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
-        return 4 * np.linalg.norm(poly, ord=np.inf) * (1 + 2 * self.precision)
+        P = np.polynomial.Polynomial(poly)
+        return np.max(np.abs(P(points))) / (1 - 2 * self.precision)
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:

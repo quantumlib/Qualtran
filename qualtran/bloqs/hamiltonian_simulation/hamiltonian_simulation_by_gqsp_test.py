@@ -73,7 +73,7 @@ def verify_hamiltonian_simulation_by_gqsp(
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
     actual_top_left = result_unitary[:N, :N] * W_e_iHt.scale_factor
-    assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=4 * precision)
+    assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=1e-4)
 
 
 @pytest.mark.slow
@@ -84,9 +84,6 @@ def verify_hamiltonian_simulation_by_gqsp(
 def test_hamiltonian_simulation_by_gqsp(
     select_bitsize: int, target_bitsize: int, t: float, precision: float
 ):
-    if t == 5 and precision == 1e-9:
-        pytest.xfail("Not enforcing simulations that require high-precision")
-
     random_state = np.random.RandomState(42)
 
     for _ in range(5):
