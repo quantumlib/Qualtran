@@ -73,6 +73,7 @@ import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
@@ -481,6 +482,13 @@ OTHER: List[NotebookSpecV2] = [
         title='Generalized Quantum Signal Processing',
         module=qualtran.bloqs.qsp.generalized_qsp,
         bloq_specs=[qualtran.bloqs.qsp.generalized_qsp._Generalized_QSP_DOC],
+    ),
+    NotebookSpecV2(
+        title='Hamiltonian Simulation by Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp,
+        bloq_specs=[
+            qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp._Hamiltonian_Simulation_by_GQSP_DOC
+        ],
     ),
 ]
 
