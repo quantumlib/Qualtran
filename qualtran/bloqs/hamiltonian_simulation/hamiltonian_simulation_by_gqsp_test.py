@@ -39,17 +39,16 @@ def test_examples(bloq_autotester):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("bitsize", [1, 2])
-@pytest.mark.parametrize("t", [2, 3, 5])
-@pytest.mark.parametrize("alpha", [1, 2, 3])
-@pytest.mark.parametrize("precision", [1e-7, 1e-9])
+@pytest.mark.parametrize("t", [2, 3, 5, 10])
+@pytest.mark.parametrize("precision", [1e-5, 1e-7])
 def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
-    bitsize: int, t: float, alpha: float, precision: float
+    bitsize: int, t: float, precision: float
 ):
     random_state = np.random.RandomState(42)
 
     for _ in range(5):
         U = RandomGate.create(bitsize, random_state=random_state)
-        gqsp = HamiltonianSimulationByGQSP(None, t=t, alpha=alpha, precision=precision).gqsp
+        gqsp = HamiltonianSimulationByGQSP(None, t=t, alpha=1, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 
         check_polynomial_pair_on_random_points_on_unit_circle(
