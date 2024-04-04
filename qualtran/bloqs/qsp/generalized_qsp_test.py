@@ -34,6 +34,7 @@ from .generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
+    assert_is_qsp_polynomial,
 )
 
 
@@ -123,9 +124,9 @@ def evaluate_polynomial_of_matrix(
     return result
 
 
-def assert_matrices_almost_equal(A: NDArray, B: NDArray):
+def assert_matrices_almost_equal(A: NDArray, B: NDArray, *, atol: float = 1e-5):
     assert A.shape == B.shape
-    assert np.linalg.norm(A - B) <= 1e-5
+    assert np.linalg.norm(A - B) <= atol
 
 
 def verify_generalized_qsp(
@@ -283,3 +284,28 @@ def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
     for _ in range(10):
         P = random_qsp_polynomial(degree, random_state=random_state)
         SymbolicGQSP(P).verify()
+
+
+@pytest.mark.parametrize("t", [2, 5, 7])
+@pytest.mark.parametrize("precision", [1e-4, 1e-7, 1e-9])
+def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, precision: float):
+    from qualtran.linalg.jacobi_anger_approximations import (
+        approx_exp_cos_by_jacobi_anger,
+        degree_jacobi_anger_approximation,
+    )
+
+    random_state = np.random.RandomState(42 + int(t))
+
+    d = degree_jacobi_anger_approximation(t, precision=precision)
+
+    P = approx_exp_cos_by_jacobi_anger(t, degree=d)
+    scale_P = 3 * np.linalg.norm(P, ord=np.inf) / (1 - 2 * precision)
+    P /= scale_P
+
+    assert_is_qsp_polynomial(P, rtol=precision)
+
+    Q = qsp_complementary_polynomial(P, verify=True, verify_precision=1e-4)
+    check_polynomial_pair_on_random_points_on_unit_circle(
+        P, Q, random_state=random_state, rtol=precision
+    )
+    verify_generalized_qsp(RandomGate.create(1, random_state=random_state), P, Q)

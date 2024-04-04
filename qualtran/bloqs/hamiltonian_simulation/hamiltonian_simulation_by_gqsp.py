@@ -18,7 +18,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, Controlled, CtrlSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, Controlled, CtrlSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import SU2RotationGate
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
@@ -41,20 +41,50 @@ if TYPE_CHECKING:
 class HamiltonianSimulationByGQSP(GateWithRegisters):
     r"""Hamiltonian simulation using Generalized QSP given a qubitized quantum walk operator.
 
-    Implements Hamiltonian simulation given a walk operator from SELECT and PREPARE oracles.
+    Given the Szegedy Quantum Walk Operator for a Hamiltonian $H$ constructed from SELECT and PREPARE oracles,
+    one can construct a block-encoding of $e^{-iHt}$ using GQSP (Corollary 8).
 
-    We can use the Jacobi-Anger expansion to obtain low-degree polynomial approximations for the $\cos$ function:
+    ### Recap: Qubitization Walk Operator
 
-        $$ e^{it\cos\theta} = \sum_{n = -\infty}^{\infty} i^n J_n(t) (e^{i\theta})^n $$
+    For a Hamiltonian $H = \sum_j \alpha_j U_j$ where $U_j$ are unitaries and $\alpha_j \ge 0$,
+    we are given the SELECT and PREPARE oracles:
+    $$ \text{SELECT} = \sum_j |j\rangle\langle j| \otimes U_j $$
+    $$ \text{PREPARE} |0\rangle = \sum_j \frac{\sqrt{\alpha_j}}{\|\alpha\|_1} |j\rangle $$
 
-    where $J_n$ is the $n$-th [Bessel function of the first kind](https://en.wikipedia.org/wiki/Bessel_function#Bessel_functions_of_the_first_kind), which is provided by `scipy.special.jv`.
-    We can cutoff at $d = O(t + \log(1/\epsilon) / \log\log(1/\epsilon))$ to get an $\epsilon$-approximation (Theorem 7):
+    We can then implement the [QubitizationWalkOperator](../qubitization_walk_operator.ipynb) that encodes the spectrum of $H$ in the eigenphases of the walk operator $W$.
 
-        $$ P[t](z) = \sum_{n = -d}^d i^n J_n(t) z^n $$
+    ### Approximating the function $e^{i\theta} \mapsto e^{it\cos\theta}$
+
+    We can use the [Jacobi-Anger expansion](https://en.wikipedia.org/wiki/Jacobi%E2%80%93Anger_expansion) to obtain low-degree polynomial approximations for the $\cos$ function:
+
+    $$
+        e^{it\cos\theta} = \sum_{n = -\infty}^{\infty} i^n J_n(t) (e^{i\theta})^n
+    $$
+    where $J_n$ is the $n$-th [Bessel function of the first kind](https://en.wikipedia.org/wiki/Bessel_function#Bessel_functions_of_the_first_kind).
+
+    If we cut-off the above to terms upto degree $d$, we get
+
+    $$
+        P[t](z) = \sum_{n = -d}^d i^n J_n(t) z^n
+    $$
+
+    Polynomial approximations of the above are provided in the [`qualtran.linalg.jacobi_anger_approximations`](../../linalg/jacobi_anger_approximations.py) module.
+
+    ### Simulation: Block-encoding $e^{-iHt}$
+
+    As the eigenphases of the walk operator above are $e^{-i\arccos(E_k / \|\alpha\|_1)}$,
+    we can use the GQSP polynomial with $P = P[-\|\alpha\|_1 t]$ to obtain $P(U) = e^{-iHt}$.
+    The obtained GQSP operator $G$ can then be used with two calls to the PREPARE oracle to simulate the hamiltonian:
+
+    $$
+        (I \otimes \text{PREPARE}^\dagger \otimes I) G (I \otimes \text{PREPARE} \otimes I) |0\rangle|0\rangle|\psi\rangle = |0\rangle|0\rangle e^{-iHt}|\psi\rangle
+    $$
+
+    This therefore block-encodes $e^{-iHt}$ in the block where the signal qubit and selection registers are all $|0\rangle$.
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-            Motlagh and Wiebe. (2023). Theorem 7.
+            Motlagh and Wiebe. (2023). Theorem 7, Corollary 8.
     """
 
     walk_operator: QubitizationWalkOperator
@@ -75,12 +105,22 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         if self._parameterized_():
             raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
-        return approx_exp_cos_by_jacobi_anger(self.t * self.alpha, degree=self.degree)
+        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
+        return poly / self.scale_factor
+
+    @cached_property
+    def scale_factor(self):
+        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
+        return 4 * np.linalg.norm(poly, ord=np.inf) * (1 + 2 * self.precision)
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:
         return GeneralizedQSP.from_qsp_polynomial(
-            self.walk_operator, self.approx_cos, negative_power=self.degree
+            self.walk_operator,
+            self.approx_cos,
+            negative_power=self.degree,
+            verify=True,
+            verify_precision=1e-4,
         )
 
     @cached_property
@@ -145,3 +185,10 @@ def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
         walk_op, t=5, alpha=1, precision=1e-7
     )
     return hubbard_time_evolution_by_gqsp
+
+
+_Hamiltonian_Simulation_by_GQSP_DOC = BloqDocSpec(
+    bloq_cls=HamiltonianSimulationByGQSP,
+    import_line='from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP',
+    examples=[_hubbard_time_evolution_by_gqsp],
+)

@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 def qsp_complementary_polynomial(
-    P: Sequence[complex], *, verify: bool = False
+    P: Sequence[complex], *, verify: bool = False, verify_precision: float = 1e-7
 ) -> Sequence[complex]:
     r"""Computes the Q polynomial given P
 
@@ -57,6 +57,7 @@ def qsp_complementary_polynomial(
     Args:
         P: Co-efficients of a complex polynomial.
         verify: sanity check the computed polynomial roots (defaults to False).
+        verify_precision: precision to compare values while verifying
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -86,7 +87,8 @@ def qsp_complementary_polynomial(
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
 
     for r in roots:
-        assert not (np.abs(r) <= 1e-5), "zero root!"
+        if verify:
+            assert not (np.abs(r) <= verify_precision), "zero root!"
         if np.allclose(np.abs(r), 1):
             units.append(r)
         elif np.abs(r) > 1:
@@ -111,23 +113,8 @@ def qsp_complementary_polynomial(
         else:
             unpaired_units.append(z)
 
-    unpaired_conj_units: list[complex] = []
-    for z in unpaired_units:
-        matched_z_conj = None
-        for w in unpaired_conj_units:
-            if np.allclose(z.conjugate(), w):
-                matched_z_conj = w
-                break
-
-        if matched_z_conj is not None:
-            smaller_roots.append(z)
-            larger_roots.append(matched_z_conj)
-            unpaired_conj_units.remove(matched_z_conj)
-        else:
-            unpaired_conj_units.append(z)
-
     if verify:
-        assert len(unpaired_conj_units) == 0
+        assert len(unpaired_units) == 0
 
         # verify that the non-unit roots indeed occur in conjugate pairs.
         def assert_is_permutation(A, B):
@@ -136,11 +123,12 @@ def qsp_complementary_polynomial(
             unmatched = []
             for z in B:
                 for w in A:
-                    if np.allclose(z, w, rtol=1e-5, atol=1e-5):
+                    if np.allclose(z, w, rtol=verify_precision, atol=verify_precision):
                         A.remove(w)
                         break
                 else:
                     unmatched.append(z)
+
             assert len(unmatched) == 0
 
         assert_is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
@@ -212,6 +200,19 @@ def qsp_phase_factors(
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
+
+
+def assert_is_qsp_polynomial(P, *, rtol: float, n_points: int = 100000):
+    r"""Check if the given polynomial is a valid QSP polynomial.
+
+    $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
+    """
+    points = np.exp(2j * np.pi * np.linspace(0, 1, num=n_points))
+    P = Polynomial(P)
+    values = np.abs(P(points))
+    assert np.all(
+        values <= 1
+    ), f"Not a QSP polynomial! maximum absolute value {np.max(values)} is greater than 1."
 
 
 @frozen
@@ -294,8 +295,11 @@ class GeneralizedQSP(GateWithRegisters):
         *,
         negative_power: int = 0,
         verify: bool = False,
+        verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
-        Q = qsp_complementary_polynomial(P, verify=verify)
+        if verify:
+            assert_is_qsp_polynomial(P, rtol=verify_precision)
+        Q = qsp_complementary_polynomial(P, verify=verify, verify_precision=verify_precision)
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
