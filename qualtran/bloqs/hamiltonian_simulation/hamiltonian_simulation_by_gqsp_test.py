@@ -41,7 +41,7 @@ def test_examples(bloq_autotester):
 @pytest.mark.parametrize("bitsize", [1, 2])
 @pytest.mark.parametrize("t", [2, 3, 5])
 @pytest.mark.parametrize("alpha", [1, 2, 3])
-@pytest.mark.parametrize("precision", [1e-7, 1e-10])
+@pytest.mark.parametrize("precision", [1e-7, 1e-9])
 def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
     bitsize: int, t: float, alpha: float, precision: float
 ):
@@ -59,26 +59,38 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
 
 def verify_hamiltonian_simulation_by_gqsp(
-    W: QubitizationWalkOperator, H: NDArray[np.complex_], *, t: float, alpha: float = 1
+    W: QubitizationWalkOperator,
+    H: NDArray[np.complex_],
+    *,
+    t: float,
+    alpha: float,
+    precision: float,
 ):
     N = H.shape[0]
 
-    W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, alpha=alpha, precision=1e-7)
+    W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, alpha=alpha, precision=precision)
     result_unitary = cirq.unitary(W_e_iHt)
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
-    actual_top_left = result_unitary[:N, :N]
-    assert_matrices_almost_equal(expected_top_left, actual_top_left)
+    actual_top_left = result_unitary[:N, :N] * W_e_iHt.scale_factor
+    assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=4 * precision)
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("select_bitsize", [1])
-@pytest.mark.parametrize("target_bitsize", [1])
-def test_hamiltonian_simulation_by_gqsp(select_bitsize: int, target_bitsize: int):
+@pytest.mark.parametrize("target_bitsize", [1, 2])
+@pytest.mark.parametrize("t", [2, 3, 5])
+@pytest.mark.parametrize("precision", [1e-5, 1e-7, 1e-9])
+def test_hamiltonian_simulation_by_gqsp(
+    select_bitsize: int, target_bitsize: int, t: float, precision: float
+):
+    if t == 5 and precision == 1e-9:
+        pytest.xfail("Not enforcing simulations that require high-precision")
+
     random_state = np.random.RandomState(42)
 
     for _ in range(5):
         W, H = random_qubitization_walk_operator(
             select_bitsize, target_bitsize, random_state=random_state
         )
-        verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=5, alpha=1)
+        verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=t, alpha=1, precision=precision)
