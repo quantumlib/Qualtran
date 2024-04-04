@@ -68,7 +68,6 @@ def _get_sympy_from_enum(enum: int):
         sympy_pb2.Function.POWER: sympy.core.power.Pow,
         sympy_pb2.Function.MOD: sympy.core.Mod,
         sympy_pb2.Function.NONE: None,
-
     }
 
     return enum_to_sympy[enum]

@@ -32,6 +32,7 @@ from qualtran.serialization import bloq as bloq_serialization
 from qualtran.serialization import resolver_dict
 from qualtran.serialization.bloq import arg_from_proto
 
+
 @pytest.mark.parametrize(
     'arg',
     [
