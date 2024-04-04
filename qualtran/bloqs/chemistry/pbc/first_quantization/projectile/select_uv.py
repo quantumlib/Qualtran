@@ -82,8 +82,8 @@ class SelectUVFirstQuantizationWithProj(Bloq):
         cost_tc_p = (SignedIntegerToTwosComplement(self.num_bits_p), 3)
         cost_tc_n = (SignedIntegerToTwosComplement(self.num_bits_n), 3)
         # Adding nu into p / q. Nu is one bit larger than p.
-        cost_add_p = (Add(QInt(self.num_bits_p + 1), QInt(self.num_bits_p + 1)), 3)
-        cost_add_n = (Add(QInt(self.num_bits_n + 1), QInt(self.num_bits_n + 1)), 3)
+        cost_add_p = (Add(QInt(self.num_bits_p + 1)), 3)
+        cost_add_n = (Add(QInt(self.num_bits_n + 1)), 3)
         cost_ctrl_add_p = (Toffoli(), 3 * (self.num_bits_p + 1))
         cost_ctrl_add_n = (Toffoli(), 3 * (self.num_bits_n + 1))
         # + 2 as these numbers are larger from addition of $\nu$

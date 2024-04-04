@@ -244,19 +244,19 @@ class Add(Bloq):
 @bloq_example
 def _add_symb() -> Add:
     n = sympy.Symbol('n')
-    add_symb = Add(QInt(bitsize=n), QInt(bitsize=n))
+    add_symb = Add(QInt(bitsize=n))
     return add_symb
 
 
 @bloq_example
 def _add_small() -> Add:
-    add_small = Add(QUInt(bitsize=4), QUInt(bitsize=4))
+    add_small = Add(QUInt(bitsize=4))
     return add_small
 
 
 @bloq_example
 def _add_large() -> Add:
-    add_large = Add(QUInt(bitsize=64), QUInt(bitsize=64))
+    add_large = Add(QUInt(bitsize=64))
     return add_large
 
 
