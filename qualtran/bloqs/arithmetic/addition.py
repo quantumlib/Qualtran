@@ -211,7 +211,9 @@ class Add(Bloq):
             yield And().adjoint().on(inp[depth], out[depth], anc[depth])
             yield MultiControlPauli((1, 1), cirq.X).on(control, inp[depth], out[depth])
             yield CNOT().on(anc[depth - 1], inp[depth])
-            yield CNOT().on(anc[depth - 1], out[depth])
+        else:
+            yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
+            yield MultiControlPauli((1, 1), cirq.X).on(control, anc[depth - 1], out[depth])
         yield CNOT().on(anc[depth - 1], out[depth])
         yield from self._right_building_block_controlled(inp, out, anc, control, depth - 1)
 
@@ -240,14 +242,15 @@ class Add(Bloq):
         yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
         yield CNOT().on(ancillas[-1], output_bits[-1])
         if len(input_bits) == len(output_bits):
-            yield CNOT().on(control, input_bits[-1])
-            yield CNOT().on(input_bits[-1], output_bits[-1])
+            yield MultiControlPauli((1, 1), cirq.X).on(control, input_bits[-1], output_bits[-1])
+            yield CNOT().on(ancillas[-1], output_bits[-1])
         # right part of Fig.4
         yield from self._right_building_block_controlled(
             input_bits, output_bits, ancillas, control, self.b_dtype.bitsize - 2
         )
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield MultiControlPauli((1, 1), cirq.X).on(control, input_bits[0], output_bits[0])
+        # yield CNOT().on(input_bits[0], output_bits[0])
         if self.controlled == 0:
             yield cirq.X(control)
         context.qubit_manager.qfree(ancillas)

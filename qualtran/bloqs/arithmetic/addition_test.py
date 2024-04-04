@@ -96,10 +96,10 @@ def test_add_diff_size_registers(a, b, num_bits_a, num_bits_b):
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
 
 
-@pytest.mark.parametrize('a', [1])
-@pytest.mark.parametrize('b', [1, 2])
-@pytest.mark.parametrize('num_bits_a', [4])
-@pytest.mark.parametrize('num_bits_b', [4])
+@pytest.mark.parametrize('a', [1, 2])
+@pytest.mark.parametrize('b', [1, 2, 3])
+@pytest.mark.parametrize('num_bits_a', [2, 3])
+@pytest.mark.parametrize('num_bits_b', [4, 5])
 @pytest.mark.parametrize('controlled_on', [0, 1])
 @pytest.mark.parametrize('control', [0, 1])
 def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, control):
