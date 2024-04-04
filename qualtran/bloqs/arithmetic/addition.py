@@ -94,7 +94,13 @@ class Add(Bloq):
 
     @property
     def signature(self):
-        return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+        return (
+            Signature(
+                [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
+            )
+            if self.controlled is not None
+            else Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+        )
 
     def add_my_tensors(
         self,
