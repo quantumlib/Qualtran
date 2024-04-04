@@ -41,7 +41,7 @@ from qualtran import (
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX, MultiControlPauli
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
@@ -77,6 +77,7 @@ class Add(Bloq):
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    controlled: Optional[int] = None
 
     @a_dtype.validator
     def _a_dtype_validate(self, field, val):
@@ -116,36 +117,53 @@ class Add(Bloq):
             raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
         N_a = 2**self.a_dtype.bitsize
         N_b = 2**self.b_dtype.bitsize
-        inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
-        unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
-        # TODO: Add a value-to-index method on dtype to make this easier.
-        for a, b in itertools.product(range(N_a), range(N_b)):
-            unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
+        if self.controlled is not None:
+            inds = (incoming['ctrl'], incoming['a'], incoming['b'], outgoing['ctrl'], outgoing['a'], outgoing['b'])
+            unitary = np.zeros((2, N_a, N_b, 2, N_a, N_b), dtype=np.complex128)
+            for c, a, b in itertools.product(range(2), range(N_a), range(N_b)):
+                if c == self.controlled:
+                    unitary[c, a, b, c, a, int(math.fmod(a + b, N_b))] = 1
+                else:
+                    unitary[c, a, b, c, a, b] = 1
+        else:
+            inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
+            unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
+            # TODO: Add a value-to-index method on dtype to make this easier.
+            for a, b in itertools.product(range(N_a), range(N_b)):
+                unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
 
         tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    def on_classical_vals(
-        self, a: 'ClassicalValT', b: 'ClassicalValT'
-    ) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
+        a, b = kwargs['a'], kwargs['b']
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
+        if self.controlled is not None:
+            ctrl = kwargs['ctrl']
+            if ctrl != self.controlled:
+                return {'a': a, 'b': b}
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.a_dtype.bitsize
+        if self.controlled is not None:
+            wire_symbols = ["In(ctrl)"]
+        else:
+            wire_symbols = []
+        wire_symbols += ["In(x)"] * self.a_dtype.bitsize
         wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
-
+        if soq.reg.name == 'ctrl':
+            return directional_text_box('a', side=soq.reg.side)
         if soq.reg.name == 'a':
             return directional_text_box('a', side=soq.reg.side)
         elif soq.reg.name == 'b':
@@ -185,21 +203,19 @@ class Add(Bloq):
                 yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
     
-    def _right_building_block_controlled(self, inp, out, anc, ctrl, depth):
+    def _right_building_block_controlled(self, inp, out, anc, control, depth):
         if depth == 0:
             return
         yield CNOT().on(anc[depth - 1], anc[depth])
         if depth < len(inp):
             yield And().adjoint().on(inp[depth], out[depth], anc[depth])
-            yield And().adjoint().on(ctrl, inp[depth], anc[depth])
+            yield MultiControlPauli((1, 1), cirq.X).on(control, inp[depth], out[depth])
+            yield CNOT().on(anc[depth - 1], inp[depth])
+            yield CNOT().on(anc[depth - 1], out[depth])
+        yield CNOT().on(anc[depth - 1], out[depth])
+        yield from self._right_building_block_controlled(inp, out, anc, control, depth - 1)
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
-        # reverse the order of qubits for big endian-ness.
-        input_bits = quregs['a'][::-1]
-        output_bits = quregs['b'][::-1]
-        ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
+    def _decompose_uncontrolled_addition(self, input_bits, output_bits, ancillas, context):
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
         # Left part of Fig.2
@@ -214,6 +230,39 @@ class Add(Bloq):
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
+
+    def _decompose_controlled_addition(self, input_bits, output_bits, ancillas, control, context):
+        if self.controlled == 0:
+            yield cirq.X(control)
+        # Start off the addition by anding into the ancilla
+        yield And().on(input_bits[0], output_bits[0], ancillas[0])
+        # Left part of Fig.4
+        yield from self._left_building_block(input_bits, output_bits, ancillas, 1)
+        yield CNOT().on(ancillas[-1], output_bits[-1])
+        if len(input_bits) == len(output_bits):
+            yield CNOT().on(control, input_bits[-1])
+            yield CNOT().on(input_bits[-1], output_bits[-1])
+        # right part of Fig.4
+        yield from self._right_building_block_controlled(
+            input_bits, output_bits, ancillas, control, self.b_dtype.bitsize - 2
+        )
+        yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
+        yield MultiControlPauli((1, 1), cirq.X).on(control, input_bits[0], output_bits[0])
+        if self.controlled == 0:
+            yield cirq.X(control)
+        context.qubit_manager.qfree(ancillas)
+    def decompose_from_registers(
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
+        # reverse the order of qubits for big endian-ness.
+        input_bits = quregs['a'][::-1]
+        output_bits = quregs['b'][::-1]
+        ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
+        if self.controlled is not None:
+            control = quregs['ctrl'][0]
+            return self._decompose_controlled_addition(input_bits, output_bits, ancillas, control, context)
+        else:
+            return self._decompose_uncontrolled_addition(input_bits, output_bits, ancillas, context)
 
     def _t_complexity_(self):
         n = self.b_dtype.bitsize
