@@ -85,6 +85,12 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
             Motlagh and Wiebe. (2023). Theorem 7, Corollary 8.
+
+    Args:
+        walk_operator: qubitization walk operator of $H$ constructed from SELECT and PREPARE oracles.
+        t: time to simulate the Hamiltonian, i.e. $e^{-iHt}$
+        alpha: the $1$-norm of the coefficients of the unitaries comprising the Hamiltonian $H$.
+        precision: the precision $\epsilon$ to approximate $e^{it\cos\theta}$ to a polynomial.
     """
 
     walk_operator: QubitizationWalkOperator
@@ -110,6 +116,11 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
     @cached_property
     def scale_factor(self):
+        """Factor to scale down the cos approximation by to ensure it is a QSP polynomial.
+
+        TODO figure out how to compute the optimal scaling factor,
+             to prevent the need for oblivious AA.
+        """
         poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
         return 4 * np.linalg.norm(poly, ord=np.inf) * (1 + 2 * self.precision)
 
@@ -149,11 +160,12 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return gqsp_soqs, prepare_out_soqs
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        # PREPARE, GQSP, PREPARE†
         state_prep_ancilla = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers
         }
+
+        # PREPARE, GQSP, PREPARE†
         soqs, state_prep_ancilla = self.__add_prepare(bb, soqs, state_prep_ancilla)
         soqs = bb.add_d(self.gqsp, **soqs)
         soqs, state_prep_ancilla = self.__add_prepare(bb, soqs, state_prep_ancilla, adjoint=True)
