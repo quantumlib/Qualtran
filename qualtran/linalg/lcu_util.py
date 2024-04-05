@@ -147,7 +147,7 @@ def _preprocess_for_efficient_roulette_selection(discretized_probabilities):
 
 
 def preprocess_lcu_coefficients_for_reversible_sampling(
-    lcu_coefficients: Sequence[float], epsilon: float
+    lcu_coefficients: Sequence[float], **precision: float
 ):
     """Prepares data used to perform efficient reversible roulette selection.
 
@@ -168,7 +168,9 @@ def preprocess_lcu_coefficients_for_reversible_sampling(
         lcu_coefficients: A list of non-negative floats, with the i'th float
             corresponding to the i'th coefficient of an LCU decomposition
             of the Hamiltonian (in an ordering determined by the caller).
-        epsilon: Absolute error tolerance.
+        epsilon/sub_bit_prec: keyword arguments, exactly one of them must be
+            provided. Epsilon is the absolute error tolerance, whereas
+            sub_bit_prec is the bits of precision.
 
     Returns:
         alternates (list[int]): A python list of ints indicating alternative
@@ -182,6 +184,10 @@ def preprocess_lcu_coefficients_for_reversible_sampling(
             denominator to divide the items in keep_numers by in order to get
             a probability. The actual denominator is 2**sub_bit_precision.
     """
+    eps_provided = "epsilon" in precision.keys()
+    bit_prec_provided = "sub_bit_prec" in precision.keys()
+    assert eps_provided ^ bit_prec_provided == 1, "epsilon or sub_bit_prec must be provided"
+    epsilon = precision["epsilon"] if eps_provided else 1/2**precision["sub_bit_prec"]
     numers, denom, sub_bit_precision = _discretize_probability_distribution(
         lcu_coefficients, epsilon
     )

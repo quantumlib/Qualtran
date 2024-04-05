@@ -127,7 +127,7 @@ class PreprocessForEfficientRouletteSelectionTest(unittest.TestCase):
 class PreprocessLCUCoefficientsForReversibleSamplingTest(unittest.TestCase):
     def assertPreprocess(self, lcu_coefs, epsilon):
         alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-            lcu_coefs, epsilon
+            lcu_coefs, epsilon=epsilon
         )
 
         n = len(lcu_coefs)
