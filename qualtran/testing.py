@@ -527,6 +527,15 @@ def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
         result: The `BloqCheckResult`.
         msg: A message providing details from the check.
     """
+
+    # These examples are too large to run.
+    REJECTED_BEXAMPLES = set(
+        ["qubitization_qpe_hubbard_model_large", "qubitization_qpe_hubbard_model_small"]
+    )
+    # DO NOT SUBMIT: Log line
+    print(bloq_ex.name)
+    if bloq_ex.name in REJECTED_BEXAMPLES:
+        return BloqCheckResult.MISSING, f'{bloq_ex.name}: is too large to serialize inside of test.'
     try:
         assert_bloq_example_serialize(bloq_ex)
     except BloqCheckException as bce:
