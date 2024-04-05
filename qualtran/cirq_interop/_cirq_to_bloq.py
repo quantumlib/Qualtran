@@ -19,6 +19,7 @@ from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
+from matplotlib.pylab import qr
 import numpy as np
 import quimb.tensor as qtn
 from attrs import field, frozen
@@ -225,13 +226,14 @@ class _QReg:
     qubits: Tuple[cirq.Qid, ...] = field(
         converter=lambda v: (v,) if isinstance(v, cirq.Qid) else tuple(v)
     )
+    dtype: QDType
+
 
 
 def _ensure_in_reg_exists(
     bb: BloqBuilder,
     in_reg: _QReg,
     qreg_to_qvar: Dict[_QReg, Soquet],
-    reg_dtype: Optional[QDType] = None,
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
     from qualtran.bloqs.util_bloqs import Split
@@ -239,54 +241,66 @@ def _ensure_in_reg_exists(
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
-        qreg_to_qvar[_QReg(qubits_to_allocate)] = bb.allocate(len(qubits_to_allocate))
+        qreg_to_qvar[_QReg(qubits_to_allocate, dtype=QAny(len(qubits_to_allocate)))] = bb.allocate(len(qubits_to_allocate))
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
+        print('in_reg found: ', in_reg, qreg_to_qvar[in_reg])
         return
 
     # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
     in_reg_qubits = set(in_reg.qubits)
 
+    print()
+    print('in_reg: -- ', in_reg.dtype)
+    print()
     new_qreg_to_qvar: Dict[_QReg, Soquet] = {}
     for qreg, soq in qreg_to_qvar.items():
+        print('this: ', qreg, soq.reg.dtype)
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
-            new_qreg_to_qvar |= {_QReg(q): s for q, s in zip(qreg.qubits, bb.split(soq=soq))}
+            new_qreg_to_qvar |= {_QReg(q, QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))}
         else:
             new_qreg_to_qvar[qreg] = soq
     qreg_to_qvar.clear()
+    print()
+    for k, v in new_qreg_to_qvar.items():
+        print(k, v)
 
     # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
     soqs_to_join: Dict[cirq.Qid, Soquet] = {}
     for qreg, soq in new_qreg_to_qvar.items():
+        print('a, b: ', qreg, soq, in_reg, len(qreg.qubits), qreg.qubits[0] in in_reg_qubits, qreg.dtype, in_reg_qubits)
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            soqs_to_join[qreg.qubits[0]] = soq
+            if not isinstance(qreg.dtype, QBit):
+                print()
+                print(' -- single bit split')
+                print(qreg.dtype)
+                print()
+                soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
+            else:
+                soqs_to_join[qreg.qubits[0]] = soq
+        elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
+            if not isinstance(qreg.dtype, QBit):
+                soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
+            else:
+                soqs_to_join[qreg.qubits[0]] = soq
+            #soqs_to_join[qreg.qubits[0]] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        # Not matching up with the right signature
-        if reg_dtype is None:
-            # Check for splits.
-            for _, s in soqs_to_join.items():
-                if isinstance(s.binst, DanglingT):
-                    continue
-                if isinstance(s.binst.bloq, Split):
-                    reg_dtype = s.binst.bloq.dtype
-        # Fall back to any
-        if reg_dtype is None:
-            reg_dtype = QAny(len(soqs_to_join))
         # A split is not necessarily matched with a join of the same size so we
         # need to strip the data type of the parent split before assigning the correct bitsize.
-        num_qubits_to_join = len(soqs_to_join)
-        if reg_dtype.num_qubits != num_qubits_to_join:
-            if isinstance(reg_dtype, QFxp):
-                # TODO: This should be handled more gracefully. The type conversion is ambiguous.
-                reg_dtype = QFxp(bitsize=num_qubits_to_join, num_frac=num_qubits_to_join)
-            else:
-                reg_dtype = type(reg_dtype)(num_qubits_to_join)
+        print()
+        print('-- to join')
+        print(in_reg)
+        print(
+            np.array([soqs_to_join[q] for q in in_reg.qubits]),
+            np.array([soqs_to_join[q] for q in in_reg.qubits]).shape
+        )
+        print()
         qreg_to_qvar[in_reg] = bb.join(
-            np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=reg_dtype
+            np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=in_reg.dtype
         )
 
 
@@ -300,10 +314,7 @@ def _gather_input_soqs(
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[Soquet] = []
         for qureg in quregs.flatten():
-            if reg_dtypes is not None:
-                _ensure_in_reg_exists(bb, qureg, qreg_to_qvar, reg_dtype=reg_dtypes[reg_name])
-            else:
-                _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
+            _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
             flat_soqs.append(qreg_to_qvar[qureg])
         qvars_in[reg_name] = np.array(flat_soqs).reshape(quregs.shape)
     return qvars_in
@@ -446,8 +457,8 @@ def cirq_optree_to_cbloq(
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
-    in_quregs = {k: np.apply_along_axis(_QReg, -1, v) for k, v in in_quregs.items()}
-    out_quregs = {k: np.apply_along_axis(_QReg, -1, v) for k, v in out_quregs.items()}
+    in_quregs = {k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype)) for k, v in in_quregs.items()}
+    out_quregs = {k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype)) for k, v in out_quregs.items()}
 
     bb, initial_soqs = BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
@@ -473,20 +484,29 @@ def cirq_optree_to_cbloq(
             bb.add(bloq)
             continue
 
+        reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
-            k: np.apply_along_axis(_QReg, -1, v)
-            for k, v in split_qubits(bloq.signature, op.qubits).items()
+            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))
+            for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
+        for k, v in all_op_quregs.items():
+            print(bloq, k, v)
+
         in_op_quregs: Dict[str, NDArray[_QReg]] = {
             reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
         }
         # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
         # input Cirq `in_quregs` and updating the `qreg_to_qvar` mapping.
         qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
+        print()
+        for k, v in qvars_in.items():
+            print(k, v)
 
         # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
         qvars_out = bb.add_d(bloq, **qvars_in)
+        # print(qvars_in)
+        # print(qvars_out)
 
         # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
         for reg in bloq.signature:
@@ -501,12 +521,12 @@ def cirq_optree_to_cbloq(
                 assert quregs.shape == np.array(qvars_out[reg.name]).shape
                 qreg_to_qvar |= zip(quregs.flatten(), np.array(qvars_out[reg.name]).flatten())
 
+    print('final')
     # 4. Combine Soquets to match the right signature.
     final_soqs_dict = _gather_input_soqs(
         bb,
         {reg.name: out_quregs[reg.name] for reg in signature.rights()},
         qreg_to_qvar,
-        reg_dtypes={reg.name: reg.dtype for reg in signature.rights()},
     )
     final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
     # 5. Free all dangling Soquets which are not part of the final soquets set.

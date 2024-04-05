@@ -470,6 +470,9 @@ class Cast(Bloq):
         # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
         return {'reg': reg}
 
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'reg': reg}
+
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
