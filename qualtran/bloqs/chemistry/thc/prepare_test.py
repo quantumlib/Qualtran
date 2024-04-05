@@ -54,7 +54,7 @@ def test_prepare_alt_keep_vals(num_mu, num_spat, mu):
     flat_data = np.abs(np.concatenate([zeta[triu_indices], t_l]))
     eps = 2**-mu / len(flat_data)
     alternates, keep_numers, mu = preprocess_lcu_coefficients_for_reversible_sampling(
-        flat_data, epsilon = eps
+        flat_data, epsilon=eps
     )
     keep_denom = 2**mu
     data_len = len(flat_data)

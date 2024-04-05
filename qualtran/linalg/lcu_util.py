@@ -187,7 +187,7 @@ def preprocess_lcu_coefficients_for_reversible_sampling(
     eps_provided = "epsilon" in precision.keys()
     bit_prec_provided = "sub_bit_prec" in precision.keys()
     assert eps_provided ^ bit_prec_provided == 1, "epsilon or sub_bit_prec must be provided"
-    epsilon = precision["epsilon"] if eps_provided else 1/2**precision["sub_bit_prec"]
+    epsilon = precision["epsilon"] if eps_provided else 1 / 2 ** precision["sub_bit_prec"]
     numers, denom, sub_bit_precision = _discretize_probability_distribution(
         lcu_coefficients, epsilon
     )
