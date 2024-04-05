@@ -245,38 +245,25 @@ def _ensure_in_reg_exists(
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
-        print('in_reg found: ', in_reg, qreg_to_qvar[in_reg])
         return
 
     # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
     in_reg_qubits = set(in_reg.qubits)
 
-    print()
-    print('in_reg: -- ', in_reg.dtype)
-    print()
     new_qreg_to_qvar: Dict[_QReg, Soquet] = {}
     for qreg, soq in qreg_to_qvar.items():
-        print('this: ', qreg, soq.reg.dtype)
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
             new_qreg_to_qvar |= {_QReg(q, QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))}
         else:
             new_qreg_to_qvar[qreg] = soq
     qreg_to_qvar.clear()
-    print()
-    for k, v in new_qreg_to_qvar.items():
-        print(k, v)
 
     # b. Join all 1-bit registers, corresponding to individual qubits, that make up `in_reg`.
     soqs_to_join: Dict[cirq.Qid, Soquet] = {}
     for qreg, soq in new_qreg_to_qvar.items():
-        print('a, b: ', qreg, soq, in_reg, len(qreg.qubits), qreg.qubits[0] in in_reg_qubits, qreg.dtype, in_reg_qubits)
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
             if not isinstance(qreg.dtype, QBit):
-                print()
-                print(' -- single bit split')
-                print(qreg.dtype)
-                print()
                 soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
             else:
                 soqs_to_join[qreg.qubits[0]] = soq
@@ -291,14 +278,6 @@ def _ensure_in_reg_exists(
     if soqs_to_join:
         # A split is not necessarily matched with a join of the same size so we
         # need to strip the data type of the parent split before assigning the correct bitsize.
-        print()
-        print('-- to join')
-        print(in_reg)
-        print(
-            np.array([soqs_to_join[q] for q in in_reg.qubits]),
-            np.array([soqs_to_join[q] for q in in_reg.qubits]).shape
-        )
-        print()
         qreg_to_qvar[in_reg] = bb.join(
             np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=in_reg.dtype
         )
@@ -308,7 +287,6 @@ def _gather_input_soqs(
     bb: BloqBuilder,
     op_quregs: Dict[str, NDArray[_QReg]],
     qreg_to_qvar: Dict[_QReg, Soquet],
-    reg_dtypes: Optional[Dict[str, QDType]] = None,
 ) -> Dict[str, NDArray[Soquet]]:
     qvars_in: Dict[str, NDArray[Soquet]] = {}
     for reg_name, quregs in op_quregs.items():
@@ -490,8 +468,6 @@ def cirq_optree_to_cbloq(
             k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))
             for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
-        for k, v in all_op_quregs.items():
-            print(bloq, k, v)
 
         in_op_quregs: Dict[str, NDArray[_QReg]] = {
             reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
@@ -499,14 +475,9 @@ def cirq_optree_to_cbloq(
         # 3.2 Find input Soquets, by potentially allocating new Bloq registers corresponding to
         # input Cirq `in_quregs` and updating the `qreg_to_qvar` mapping.
         qvars_in = _gather_input_soqs(bb, in_op_quregs, qreg_to_qvar)
-        print()
-        for k, v in qvars_in.items():
-            print(k, v)
 
         # 3.3 Add Bloq to the `CompositeBloq` compute graph and get corresponding output Soquets.
         qvars_out = bb.add_d(bloq, **qvars_in)
-        # print(qvars_in)
-        # print(qvars_out)
 
         # 3.4 Update `qreg_to_qvar` mapping using output soquets `qvars_out`.
         for reg in bloq.signature:
@@ -521,7 +492,6 @@ def cirq_optree_to_cbloq(
                 assert quregs.shape == np.array(qvars_out[reg.name]).shape
                 qreg_to_qvar |= zip(quregs.flatten(), np.array(qvars_out[reg.name]).flatten())
 
-    print('final')
     # 4. Combine Soquets to match the right signature.
     final_soqs_dict = _gather_input_soqs(
         bb,

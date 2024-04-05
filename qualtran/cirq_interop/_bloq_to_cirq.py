@@ -235,7 +235,7 @@ def _bloq_to_cirq_op(
         soq = cxn.left
         assert soq.reg.name in out_quregs, f"{soq=} should exist in {out_quregs=}."
         if soq.reg.side == Side.RIGHT:
-            qvar_to_qreg[soq] = _QReg(out_quregs[soq.reg.name][soq.idx])
+            qvar_to_qreg[soq] = _QReg(out_quregs[soq.reg.name][soq.idx], dtype=soq.reg.dtype)
     return op
 
 
@@ -257,7 +257,7 @@ def _cbloq_to_cirq_circuit(
         circuit: The cirq.FrozenCircuit version of this composite bloq.
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
-    cirq_quregs = {k: np.apply_along_axis(_QReg, -1, v) for k, v in cirq_quregs.items()}
+    cirq_quregs = {k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype)) for k, v in cirq_quregs.items()}
     qvar_to_qreg: Dict[Soquet, _QReg] = {
         Soquet(LeftDangle, idx=idx, reg=reg): cirq_quregs[reg.name][idx]
         for reg in signature.lefts()
