@@ -617,8 +617,5 @@ def check_dtypes_consistent(
     elif isinstance(dtype_b, QAnyUInt) and isinstance(dtype_a, QFxp):
         # unsigned Fxp which is wholy an integer or < 1 part is a uint.
         return _check_uint_fxp_consistent(dtype_b, dtype_a)
-    elif isinstance(dtype_a, QFxp) and isinstance(dtype_b, QFxp):
-        # Fxp consistency
-        return _check_fxp_consistent(dtype_b, dtype_a)
     else:
         return False
