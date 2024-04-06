@@ -71,7 +71,7 @@ def verify_hamiltonian_simulation_by_gqsp(
     result_unitary = cirq.unitary(W_e_iHt)
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
-    actual_top_left = result_unitary[:N, :N] * W_e_iHt.scale_factor
+    actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left, atol=1e-4)
 
 

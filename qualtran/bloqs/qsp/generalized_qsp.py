@@ -202,6 +202,31 @@ def qsp_phase_factors(
     return theta, phi, lambd
 
 
+def scale_down_to_qsp_polynomial(
+    P: Sequence[complex], *, n_points: int = 10**5
+) -> NDArray[np.complex_]:
+    r"""Scale down the polynomial to be a valid QSP Polynomial
+
+    $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
+
+    If the input polynomial is not a valid QSP polynomial, this function attempts to compute
+    the maximum absolute value on the unit circle, and scale it down by that factor.
+    Otherwise returns the input as-is.
+
+    Args:
+        P: input polynomial to scale if needed
+        n_points: number of points to sample on the unit circle to evaluate the polynomial
+    """
+    P = np.array(P)
+
+    points = np.exp(2j * np.pi * np.linspace(0, 1, num=n_points))
+    max_value = np.max(np.abs(Polynomial(P)(points)))
+    if max_value > 1:
+        P = P / max_value
+
+    return P
+
+
 def assert_is_qsp_polynomial(P, *, rtol: float, n_points: int = 100000):
     r"""Check if the given polynomial is a valid QSP polynomial.
 

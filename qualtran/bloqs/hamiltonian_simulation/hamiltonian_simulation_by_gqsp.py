@@ -20,7 +20,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, Controlled, CtrlSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import SU2RotationGate
-from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
+from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
@@ -112,19 +112,8 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         if self._parameterized_():
             raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
         poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
-        return poly / self.scale_factor
-
-    @cached_property
-    def scale_factor(self):
-        """Factor to scale down the cos approximation by to ensure it is a QSP polynomial.
-
-        TODO figure out how to compute the optimal scaling factor,
-             to prevent the need for oblivious AA.
-        """
-        points = np.exp(2j * np.pi * np.linspace(0, 1, num=10**5))
-        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
-        P = np.polynomial.Polynomial(poly)
-        return np.max(np.abs(P(points))) / (1 - 2 * self.precision)
+        poly = scale_down_to_qsp_polynomial(poly) * (1 - 2 * self.precision)
+        return poly
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:
