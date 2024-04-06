@@ -28,7 +28,6 @@ from qualtran import (
     LeftDangle,
     QBit,
     QDType,
-    QFxp,
     Register,
     RightDangle,
     Side,

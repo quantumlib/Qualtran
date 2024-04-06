@@ -569,6 +569,7 @@ def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
         return False
     return a.num_qubits == b.num_qubits and (b.num_frac == 0 or b.num_int == 0)
 
+
 def check_dtypes_consistent(
     dtype_a: QDType,
     dtype_b: QDType,

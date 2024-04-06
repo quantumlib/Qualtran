@@ -45,7 +45,6 @@ from qualtran._infra.gate_with_registers import (
     get_named_qubits,
     split_qubits,
 )
-from qualtran._infra.quantum_graph import DanglingT
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.simulation.tensor._tensor_data_manipulation import (
@@ -227,19 +226,16 @@ class _QReg:
     dtype: QDType
 
 
-
 def _ensure_in_reg_exists(
-    bb: BloqBuilder,
-    in_reg: _QReg,
-    qreg_to_qvar: Dict[_QReg, Soquet],
+    bb: BloqBuilder, in_reg: _QReg, qreg_to_qvar: Dict[_QReg, Soquet]
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
-    from qualtran.bloqs.util_bloqs import Split
-
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
-        qreg_to_qvar[_QReg(qubits_to_allocate, dtype=QAny(len(qubits_to_allocate)))] = bb.allocate(len(qubits_to_allocate))
+        qreg_to_qvar[_QReg(qubits_to_allocate, dtype=QAny(len(qubits_to_allocate)))] = bb.allocate(
+            len(qubits_to_allocate)
+        )
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
@@ -251,7 +247,9 @@ def _ensure_in_reg_exists(
     new_qreg_to_qvar: Dict[_QReg, Soquet] = {}
     for qreg, soq in qreg_to_qvar.items():
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
-            new_qreg_to_qvar |= {_QReg(q, QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))}
+            new_qreg_to_qvar |= {
+                _QReg(q, QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
+            }
         else:
             new_qreg_to_qvar[qreg] = soq
     qreg_to_qvar.clear()
@@ -281,9 +279,7 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder,
-    op_quregs: Dict[str, NDArray[_QReg]],
-    qreg_to_qvar: Dict[_QReg, Soquet],
+    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]
 ) -> Dict[str, NDArray[Soquet]]:
     qvars_in: Dict[str, NDArray[Soquet]] = {}
     for reg_name, quregs in op_quregs.items():
@@ -432,8 +428,14 @@ def cirq_optree_to_cbloq(
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
-    in_quregs = {k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype)) for k, v in in_quregs.items()}
-    out_quregs = {k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype)) for k, v in out_quregs.items()}
+    in_quregs = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))
+        for k, v in in_quregs.items()
+    }
+    out_quregs = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))
+        for k, v in out_quregs.items()
+    }
 
     bb, initial_soqs = BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
@@ -491,9 +493,7 @@ def cirq_optree_to_cbloq(
 
     # 4. Combine Soquets to match the right signature.
     final_soqs_dict = _gather_input_soqs(
-        bb,
-        {reg.name: out_quregs[reg.name] for reg in signature.rights()},
-        qreg_to_qvar,
+        bb, {reg.name: out_quregs[reg.name] for reg in signature.rights()}, qreg_to_qvar
     )
     final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
     # 5. Free all dangling Soquets which are not part of the final soquets set.
