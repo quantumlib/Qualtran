@@ -34,6 +34,7 @@ from qualtran import (
     QAny,
     QBit,
     QDType,
+    QFxp,
     Register,
     Side,
     Signature,
@@ -259,15 +260,15 @@ def _ensure_in_reg_exists(
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            if not isinstance(qreg.dtype, QBit):
+            if isinstance(qreg.dtype, QFxp):
                 soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
             else:
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
-            if not isinstance(qreg.dtype, QBit):
+            if isinstance(qreg.dtype, QFxp):
                 soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
             else:
-                soqs_to_join[qreg.qubits[0]] = soq
+                qreg_to_qvar[qreg] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
