@@ -19,7 +19,6 @@ from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import cirq
-from matplotlib.pylab import qr
 import numpy as np
 import quimb.tensor as qtn
 from attrs import field, frozen
@@ -35,7 +34,6 @@ from qualtran import (
     QAny,
     QBit,
     QDType,
-    QFxp,
     Register,
     Side,
     Signature,
@@ -272,7 +270,6 @@ def _ensure_in_reg_exists(
                 soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
             else:
                 soqs_to_join[qreg.qubits[0]] = soq
-            #soqs_to_join[qreg.qubits[0]] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
