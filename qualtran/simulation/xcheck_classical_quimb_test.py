@@ -42,7 +42,7 @@ def test_toffoli():
 
 
 def test_add():
-    add = Add(QUInt(bitsize=5), QUInt(bitsize=5))
+    add = Add(QUInt(bitsize=5))
     add_tt = flank_with_classical_vectors(add, {'a': 2, 'b': 3})
     assert add_tt.tensor_contract() == 1.0
 

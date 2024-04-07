@@ -62,14 +62,14 @@ class Add(Bloq):
     Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a+b\rangle$ using $4n - 4 T$ gates.
 
     Args:
-        dtype: Quantum datatype used to represent each integer. Must be large
+        a_dtype: Quantum datatype used to represent the integer a.
+        b_dtype: Quantum datatype used to represent the integer b. Must be large
             enough to hold the result in the output register of a + b, or else it simply
-            drops the most significant bits. One can either provide a single Quantum datatype
-            to be used for both a and b or a 2-element tuple of Quantum datatypes for a and b.
+            drops the most significant bits. If not specified, b_dtype is set to a_dtype.
 
     Registers:
-        a: A bitsize-sized input register (register a above).
-        b: A bitsize-sized input/output register (register b above).
+        a: A a_dtype.bitsize-sized input register (register a above).
+        b: A b_dtype.bitsize-sized input/output register (register b above).
 
     References:
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
@@ -78,6 +78,10 @@ class Add(Bloq):
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     controlled: Optional[int] = None
+
+    @b_dtype.default
+    def b_dtype_default(self):
+        return self.a_dtype
 
     @a_dtype.validator
     def _a_dtype_validate(self, field, val):
@@ -175,6 +179,8 @@ class Add(Bloq):
         if depth == self.b_dtype.bitsize - 1:
             return
         else:
+            if depth < 1:
+                raise ValueError(f"{depth=} is not a positive integer")
             if depth < len(inp):
                 yield CNOT().on(anc[depth - 1], inp[depth])
                 control = inp[depth]
@@ -282,19 +288,19 @@ class Add(Bloq):
 @bloq_example
 def _add_symb() -> Add:
     n = sympy.Symbol('n')
-    add_symb = Add(QInt(bitsize=n), QInt(bitsize=n))
+    add_symb = Add(QInt(bitsize=n))
     return add_symb
 
 
 @bloq_example
 def _add_small() -> Add:
-    add_small = Add(QUInt(bitsize=4), QUInt(bitsize=4))
+    add_small = Add(QUInt(bitsize=4))
     return add_small
 
 
 @bloq_example
 def _add_large() -> Add:
-    add_large = Add(QUInt(bitsize=64), QUInt(bitsize=64))
+    add_large = Add(QUInt(bitsize=64))
     return add_large
 
 

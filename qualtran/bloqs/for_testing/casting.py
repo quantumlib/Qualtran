@@ -33,6 +33,6 @@ class TestCastToFrom(Bloq):
     ) -> Dict[str, 'Soquet']:
         cast = Cast(b.reg.dtype, a.reg.dtype)
         b = bb.add(cast, reg=b)
-        a, b = bb.add(Add(a.reg.dtype, a.reg.dtype), a=a, b=b)
+        a, b = bb.add(Add(a.reg.dtype), a=a, b=b)
         b = bb.add(cast.adjoint(), reg=b)
         return {'a': a, 'b': b}
