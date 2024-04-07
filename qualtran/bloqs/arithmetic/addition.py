@@ -66,6 +66,9 @@ class Add(Bloq):
         b_dtype: Quantum datatype used to represent the integer b. Must be large
             enough to hold the result in the output register of a + b, or else it simply
             drops the most significant bits. If not specified, b_dtype is set to a_dtype.
+        controlled: Whether to control this bloq with a ctrl register. When controlled=None, this bloq
+            is not controlled. When controlled=0, this bloq is active when the ctrl register is 0. When
+            controlled=1, this bloq is active when the ctrl register is 1.
 
     Registers:
         a: A a_dtype.bitsize-sized input register (register a above).
@@ -149,7 +152,9 @@ class Add(Bloq):
         if self.controlled is not None:
             ctrl = kwargs['ctrl']
             if ctrl != self.controlled:
-                return {'a': a, 'b': b}
+                return {'ctrl': ctrl, 'a': a, 'b': b}
+            else:
+                return {'ctrl': ctrl, 'a': a, 'b': int(math.fmod(a + b, N))}
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
@@ -167,7 +172,7 @@ class Add(Bloq):
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
         if soq.reg.name == 'ctrl':
-            return directional_text_box('a', side=soq.reg.side)
+            return directional_text_box('ctrl', side=soq.reg.side)
         if soq.reg.name == 'a':
             return directional_text_box('a', side=soq.reg.side)
         elif soq.reg.name == 'b':
@@ -277,6 +282,8 @@ class Add(Bloq):
         n = self.b_dtype.bitsize
         num_clifford = (n - 2) * 19 + 16
         num_toffoli = n - 1
+        if self.controlled is not None:
+            return TComplexity(t=8 * num_toffoli, clifford=num_clifford)
         return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:

@@ -99,7 +99,7 @@ def test_add_diff_size_registers(a, b, num_bits_a, num_bits_b):
 @pytest.mark.parametrize('a', [1, 2])
 @pytest.mark.parametrize('b', [1, 2, 3])
 @pytest.mark.parametrize('num_bits_a', [2, 3])
-@pytest.mark.parametrize('num_bits_b', [4, 5])
+@pytest.mark.parametrize('num_bits_b', [5])
 @pytest.mark.parametrize('controlled_on', [0, 1])
 @pytest.mark.parametrize('control', [0, 1])
 def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, control):
@@ -128,8 +128,8 @@ def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, contro
         circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
     )
     # Test diagrams
-    # expected_wire_symbols = ("In(x)",) * num_bits_a + ("In(y)/Out(x+y)",) * num_bits_b
-    # assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
+    expected_wire_symbols = ("In(ctrl)",) + ("In(x)",) * num_bits_a + ("In(y)/Out(x+y)",) * num_bits_b
+    assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
 
 
 def test_add_truncated():

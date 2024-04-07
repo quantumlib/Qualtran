@@ -23,6 +23,7 @@ from attr import field
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
+from qualtran.bloqs.arithmetic import Add
 from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 from qualtran.bloqs.rotations import AddIntoPhaseGrad
 from qualtran.resource_counting.symbolic_counting_utils import (
@@ -127,9 +128,12 @@ class ApproximateQFT(GateWithRegisters):
             addition_start_index = i - addition_bitsize
             a, b = q[addition_start_index:i], phase_grad[: addition_bitsize + 1]
 
-            yield AddIntoPhaseGrad(
-                addition_bitsize, addition_bitsize + 1, right_shift=1, controlled=1
-            ).on_registers(ctrl=q[i], x=a[::-1], phase_grad=b)
+            # yield AddIntoPhaseGrad(
+            #     addition_bitsize, addition_bitsize + 1, right_shift=1, controlled=1
+            # ).on_registers(ctrl=q[i], x=a[::-1], phase_grad=b)
+            # yield Add(QUInt(addition_bitsize), QUInt(addition_bitsize + 1), controlled=1).on_registers(ctrl=q[i], a=a, b=b)
+            yield Add(QUInt(addition_bitsize), QUInt(addition_bitsize + 1)).on_registers(a=a, b=b)
+
             yield cirq.H(q[i])
 
         if self.with_reverse:
