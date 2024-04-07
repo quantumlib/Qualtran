@@ -155,9 +155,8 @@ class Add(Bloq):
         if depth == self.b_dtype.bitsize - 1:
             return
         else:
-            assert (
-                depth != 0
-            ), "depth shouldn't be zero because the depth=0 operations are different and are performed prior to calling this function."
+            if depth < 1:
+                raise ValueError(f"{depth=} is not a positive integer")
             if depth < len(inp):
                 yield CNOT().on(anc[depth - 1], inp[depth])
                 control = inp[depth]
