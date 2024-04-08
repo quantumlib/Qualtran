@@ -41,7 +41,7 @@ from qualtran import (
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX, MultiControlPauli
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
@@ -125,7 +125,14 @@ class Add(Bloq):
         N_a = 2**self.a_dtype.bitsize
         N_b = 2**self.b_dtype.bitsize
         if self.controlled is not None:
-            inds = (incoming['ctrl'], incoming['a'], incoming['b'], outgoing['ctrl'], outgoing['a'], outgoing['b'])
+            inds = (
+                incoming['ctrl'],
+                incoming['a'],
+                incoming['b'],
+                outgoing['ctrl'],
+                outgoing['a'],
+                outgoing['b'],
+            )
             unitary = np.zeros((2, N_a, N_b, 2, N_a, N_b), dtype=np.complex128)
             for c, a, b in itertools.product(range(2), range(N_a), range(N_b)):
                 if c == self.controlled:
@@ -171,6 +178,7 @@ class Add(Bloq):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
+
         if soq.reg.name == 'ctrl':
             return directional_text_box('ctrl', side=soq.reg.side)
         if soq.reg.name == 'a':
@@ -213,7 +221,7 @@ class Add(Bloq):
             else:
                 yield And().adjoint().on(anc[depth - 1], out[depth], anc[depth])
             yield from self._right_building_block(inp, out, anc, depth - 1)
-    
+
     def _right_building_block_controlled(self, inp, out, anc, control, depth):
         if depth == 0:
             return
@@ -265,6 +273,7 @@ class Add(Bloq):
         if self.controlled == 0:
             yield cirq.X(control)
         context.qubit_manager.qfree(ancillas)
+
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
@@ -274,7 +283,9 @@ class Add(Bloq):
         ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
         if self.controlled is not None:
             control = quregs['ctrl'][0]
-            return self._decompose_controlled_addition(input_bits, output_bits, ancillas, control, context)
+            return self._decompose_controlled_addition(
+                input_bits, output_bits, ancillas, control, context
+            )
         else:
             return self._decompose_uncontrolled_addition(input_bits, output_bits, ancillas, context)
 
