@@ -25,6 +25,7 @@ from qualtran import (
     Bloq,
     bloq_example,
     BloqBuilder,
+    BloqDocSpec,
     CompositeBloq,
     CtrlSpec,
     DecomposeTypeError,
@@ -145,3 +146,6 @@ class CNOT(Bloq):
 def _cnot() -> CNOT:
     cnot = CNOT()
     return cnot
+
+
+_CNOT_DOC = BloqDocSpec(bloq_cls=CNOT, examples=[_cnot])

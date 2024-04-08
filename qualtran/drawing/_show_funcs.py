@@ -20,6 +20,7 @@ import IPython.display
 import ipywidgets
 
 from .bloq_counts_graph import format_counts_sigma, GraphvizCounts
+from .flame_graph import get_flame_graph_svg_data
 from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
 from .musical_score import draw_musical_score, get_musical_score_data
 
@@ -77,3 +78,9 @@ def show_call_graph(g: 'nx.DiGraph') -> None:
 def show_counts_sigma(sigma: Dict['Bloq', Union[int, 'sympy.Expr']]):
     """Display nicely formatted bloq counts sums `sigma`."""
     IPython.display.display(IPython.display.Markdown(format_counts_sigma(sigma)))
+
+
+def show_flame_graph(*bloqs: 'Bloq', **kwargs):
+    """Display hiearchical decomposition and T-complexity costs as a Flame Graph."""
+    svg_data = get_flame_graph_svg_data(*bloqs, **kwargs)
+    IPython.display.display(IPython.display.SVG(svg_data))
