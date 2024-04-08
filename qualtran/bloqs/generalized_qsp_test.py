@@ -24,11 +24,11 @@ from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import Bloq, GateWithRegisters, Signature
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
-    SU2RotationGate,
 )
 from qualtran.resource_counting import SympySymbolAllocator
 
@@ -38,21 +38,6 @@ def assert_angles_almost_equal(
 ):
     """Helper to check if two angle sequences are equal (up to multiples of 2*pi)"""
     np.testing.assert_almost_equal(np.exp(np.array(actual) * 1j), np.exp(np.array(desired) * 1j))
-
-
-def test_cirq_decompose_SU2_to_single_qubit_pauli_gates():
-    random_state = np.random.default_rng(42)
-
-    for _ in range(20):
-        theta = random_state.random() * 2 * np.pi
-        phi = random_state.random() * 2 * np.pi
-        lambd = random_state.random() * 2 * np.pi
-
-        gate = SU2RotationGate(theta, phi, lambd)
-
-        expected = gate.rotation_matrix
-        actual = cirq.unitary(gate)
-        np.testing.assert_allclose(actual, expected)
 
 
 def check_polynomial_pair_on_random_points_on_unit_circle(

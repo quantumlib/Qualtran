@@ -19,7 +19,7 @@ import cirq
 import numpy as np
 from attrs import frozen
 
-from qualtran import bloq_example, CompositeBloq, DecomposeTypeError
+from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
@@ -86,6 +86,15 @@ class ZPowGate(CirqGateAsBloqBase):
     def __pow__(self, power):
         g = self.cirq_gate**power
         return ZPowGate(g.exponent, g.global_shift, self.eps)
+
+
+@bloq_example
+def _z_pow() -> ZPowGate:
+    z_pow = ZPowGate(exponent=0.123, eps=1e-8)
+    return z_pow
+
+
+_Z_POW_DOC = BloqDocSpec(bloq_cls=ZPowGate, examples=[_z_pow])
 
 
 @frozen
@@ -164,6 +173,15 @@ class XPowGate(CirqGateAsBloqBase):
         return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
 
+@bloq_example
+def _x_pow() -> XPowGate:
+    x_pow = XPowGate(exponent=0.123, eps=1e-8)
+    return x_pow
+
+
+_X_POW_DOC = BloqDocSpec(bloq_cls=XPowGate, examples=[_x_pow])
+
+
 @frozen
 class YPowGate(CirqGateAsBloqBase):
     r"""A gate that rotates around the Y axis of the Bloch sphere.
@@ -215,6 +233,15 @@ class YPowGate(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+
+@bloq_example
+def _y_pow() -> YPowGate:
+    y_pow = YPowGate(exponent=0.123, eps=1e-8)
+    return y_pow
+
+
+_Y_POW_DOC = BloqDocSpec(bloq_cls=YPowGate, examples=[_y_pow])
 
 
 @frozen
