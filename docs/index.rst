@@ -19,8 +19,8 @@ Subscribe to `qualtran-announce@googlegroups.com <https://groups.google.com/g/qu
 to receive the latest news and updates!
 
 
-:ref:`bloq_infra`
------------------------------
+:ref:`Fundamentals <bloq_infra>`
+--------------------------------
 
 ``qualtran`` and its submodules contain the abstractions and infrastructure for expressing
 and reasoning about quantum algorithms, programs, and subroutines.
@@ -35,8 +35,8 @@ types (``Register``), and algorithms (``CompositeBloq``). :ref:`Read more... <bl
 
 
 
-:ref:`bloqs_library`
-------------------------------
+:ref:`Bloqs Library <bloqs_library>`
+------------------------------------
 
 ``qualtran.bloqs`` contains implementations of primitive operations, quantum subroutines,
 and high-level quantum programs. :ref:`Read more... <bloqs_library>`
@@ -48,8 +48,8 @@ and high-level quantum programs. :ref:`Read more... <bloqs_library>`
    bloqs/index.rst
 
 
-:ref:`reference`
--------------------------------
+:ref:`API Reference <reference>`
+--------------------------------
 
 This section of the docs includes an API reference for all symbols in the library.
 :ref:`Go to Reference... <reference>`
