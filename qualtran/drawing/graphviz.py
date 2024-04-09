@@ -405,8 +405,7 @@ class PrettyGraphDrawer(GraphDrawer):
 class TypedGraphDrawer(PrettyGraphDrawer):
     @staticmethod
     def _fmt_dtype(dtype: QDType):
-        label = f'{dtype.__class__.__name__}({dtype.num_qubits})'
-        return label
+        return str(dtype)
 
     def cxn_label(self, cxn: Connection) -> str:
         """Overridable method to return labels for connections."""

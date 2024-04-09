@@ -117,11 +117,6 @@ BASIC_GATES: List[NotebookSpecV2] = [
         bloq_specs=[qualtran.bloqs.basic_gates.cnot._CNOT_DOC],
     ),
     NotebookSpecV2(
-        title='SU2 Rotation',
-        module=qualtran.bloqs.basic_gates.su2_rotation,
-        bloq_specs=[qualtran.bloqs.basic_gates.su2_rotation._SU2_ROTATION_GATE_DOC],
-    ),
-    NotebookSpecV2(
         title='S Gate',
         module=qualtran.bloqs.basic_gates.s_gate,
         bloq_specs=[qualtran.bloqs.basic_gates.s_gate._S_GATE_DOC],
@@ -357,6 +352,11 @@ ROT_QFT_PE = [
             qualtran.bloqs.basic_gates.rotation._Y_POW_DOC,
             qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='SU2 Rotation',
+        module=qualtran.bloqs.basic_gates.su2_rotation,
+        bloq_specs=[qualtran.bloqs.basic_gates.su2_rotation._SU2_ROTATION_GATE_DOC],
     ),
     NotebookSpecV2(
         title='Quantum Variable Rotation',
