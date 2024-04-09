@@ -269,7 +269,6 @@ class Add(Bloq):
         )
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield MultiControlPauli((1, 1), cirq.X).on(control, input_bits[0], output_bits[0])
-        # yield CNOT().on(input_bits[0], output_bits[0])
         if self.controlled == 0:
             yield cirq.X(control)
         context.qubit_manager.qfree(ancillas)
@@ -294,11 +293,21 @@ class Add(Bloq):
         num_clifford = (n - 2) * 19 + 16
         num_toffoli = n - 1
         if self.controlled is not None:
-            return TComplexity(t=8 * num_toffoli, clifford=num_clifford)
+            num_clifford = 33 * (n - 2) + 43
+        if self.controlled is not None:
+            return TComplexity(t=8 * num_toffoli + 4, clifford=num_clifford)
         return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.b_dtype.bitsize
+        if self.controlled is not None:
+            n_cnot = (n - 2) * 6 + 2
+            return {
+                (MultiControlPauli((1, 1), cirq.X), n),
+                (And(), n - 1),
+                (And().adjoint(), n - 1),
+                (CNOT(), n_cnot),
+            }
         n_cnot = (n - 2) * 6 + 3
         return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
