@@ -156,7 +156,9 @@ class MontgomeryModDbl(Bloq):
         # Convert x to an n + 2-bit integer by attaching two |0⟩ qubits as the least and most
         # significant bits.
         x_split = bb.split(x)
-        x = bb.join(np.concatenate([[sign], x_split, [lower_bit]]))
+        x = bb.join(
+            np.concatenate([[sign], x_split, [lower_bit]]), dtype=QMontgomeryUInt(self.bitsize + 2)
+        )
 
         # Add constant -p to the x register.
         x = bb.add(
@@ -167,7 +169,7 @@ class MontgomeryModDbl(Bloq):
         # addition circuit.
         x_split = bb.split(x)
         sign = x_split[0]
-        x = bb.join(x_split[1:])
+        x = bb.join(x_split[1:], dtype=QMontgomeryUInt(self.bitsize + 1))
 
         # Add constant p to the x register if the result of the last modular reduction is negative.
         sign_split = bb.split(sign)
@@ -187,7 +189,9 @@ class MontgomeryModDbl(Bloq):
         lower_bit = bb.add(XGate(), q=lower_bit)
 
         free_bit = x_split[0]
-        x = bb.join(np.concatenate([x_split[1:-1], [lower_bit]]))
+        x = bb.join(
+            np.concatenate([x_split[1:-1], [lower_bit]]), dtype=QMontgomeryUInt(self.bitsize)
+        )
 
         # Free the ancilla bits.
         bb.free(free_bit)

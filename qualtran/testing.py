@@ -32,7 +32,7 @@ from qualtran import (
     Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
-from qualtran._infra.data_types import check_dtypes_consistent
+from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -131,6 +131,20 @@ def assert_connections_compatible(cbloq: CompositeBloq):
             rr_side_should_be = Side.LEFT
         if not (rr.side & rr_side_should_be):
             raise BloqError(f"{cxn}'s right side is associated with a register with side {rr.side}")
+
+
+def assert_connections_preserve_types(
+    cbloq: CompositeBloq,
+    type_checking_severity: QDTypeCheckingSeverity = QDTypeCheckingSeverity.LOOSE,
+):
+    """Check that connections have consistent dtypes accounting for type_checking_severity."""
+    for cxn in cbloq.connections:
+        lr = cxn.left.reg
+        rr = cxn.right.reg
+        if not check_dtypes_consistent(
+            lr.dtype, rr.dtype, type_checking_severity=type_checking_severity
+        ):
+            raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
 
 
 def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
@@ -529,6 +543,63 @@ def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
     """
     try:
         assert_bloq_example_serialize(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''
+
+
+def assert_bloq_example_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check a bloq example preserves types throughout its decomposition.
+
+    Args:
+        bloq_ex: The bloq example to test.
+
+    Returns:
+        None
+
+    Raises:
+        BloqCheckException if any assertions are violated. Will raise a failure
+        if loose type checking fails, and unverified if the stricter type checks
+        fail.
+    """
+    bloq = bloq_ex.make()
+    # First check it's not atomic / doesn't decompose
+    try:
+        cbloq = bloq.decompose_bloq()
+    except (DecomposeTypeError, DecomposeNotImplementedError) as exc:
+        raise BloqCheckException.missing(
+            r"Atomic bloqs or non-decomposable bloqs don't require type checking."
+        )
+    try:
+        assert_connections_preserve_types(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.LOOSE
+        )
+    except Exception as e:
+        raise BloqCheckException.fail('Loose type checking failed.\n' + str(e)) from e
+    try:
+        assert_connections_preserve_types(cbloq, type_checking_severity=QDTypeCheckingSeverity.ANY)
+    except Exception as e:
+        raise BloqCheckException.unverified('QAny and QBit type checking failed.\n' + str(e)) from e
+    try:
+        assert_connections_preserve_types(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.STRICT
+        )
+    except Exception as e:
+        raise BloqCheckException.unverified('Strict type checking failed.\n' + str(e)) from e
+
+
+def check_connections_preserve_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample has consistent typing.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        assert_bloq_example_preserves_types(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
     except Exception as e:  # pylint: disable=broad-except
