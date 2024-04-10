@@ -13,8 +13,11 @@
 #  limitations under the License.
 import cirq
 import pytest
+from fxpmath import Fxp
 
-from qualtran import BloqBuilder, QUInt, Register
+import numpy as np
+from qualtran import BloqBuilder, QFxp, QUInt, Register
+from qualtran._infra.data_types import val_to_fxp
 from qualtran.bloqs.arithmetic.multiplication import (
     _multiply_two_reals,
     _plus_equal_product,
@@ -83,14 +86,17 @@ def test_square():
 
 
 def test_sum_of_squares():
-    bb = BloqBuilder()
     bitsize = 4
     k = 3
+    bb = BloqBuilder()
     inp = bb.add_register(Register("input", QUInt(bitsize=bitsize), shape=(k,)))
     inp, out = bb.add(SumOfSquares(bitsize, k), input=inp)
     cbloq = bb.finalize(input=inp, result=out)
     assert SumOfSquares(bitsize, k).signature[1].bitsize == 2 * bitsize + 2
-    cbloq.t_complexity()
+    assert cbloq.t_complexity().t == 172
+    cvals = cbloq.on_classical_vals(input=[2, 2, 2])
+    assert (cvals['input'] == [2, 2, 2]).all()
+    assert cvals['result'] == 12
 
 
 def test_product():
@@ -102,32 +108,73 @@ def test_product():
     q0, q1, q2 = bb.add(Product(bitsize, mbits), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     cbloq.t_complexity()
+    cvals = cbloq.on_classical_vals(a=2, b=3)
+    assert cvals['result'] == 6
+    bb = BloqBuilder()
+    q0 = bb.add(IntState(10, bitsize))
+    q1 = bb.add(IntState(4, mbits))
+    q0, q1, q2 = bb.add(Product(bitsize, mbits), a=q0, b=q1)
+    cbloq = bb.finalize(a=q0, b=q1, result=q2)
+    assert cbloq.on_classical_vals() == {'a': 10, 'b': 4, 'result': 40}
 
 
 def test_scale_int_by_real():
     bb = BloqBuilder()
-    q0 = bb.add_register('a', 15)
-    q1 = bb.add_register('b', 8)
+    q0 = bb.add_register_from_dtype('a', QFxp(15, 15))
+    q1 = bb.add_register_from_dtype('b', QUInt(8))
     q0, q1, q2 = bb.add(ScaleIntByReal(15, 8), real_in=q0, int_in=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     cbloq.t_complexity()
+    a_fxp = val_to_fxp(0.554, num_bits=15 + 8 - 1, num_frac=15)
+    cvals = cbloq.on_classical_vals(a=a_fxp, b=3)
+    assert cvals['result'] == Fxp(1.6484375, dtype='fxp-u15/7')
+    bb = BloqBuilder()
+    q0 = bb.add_register_from_dtype('a', QFxp(15, 15))
+    q1 = bb.add_register_from_dtype('b', QUInt(8))
+    q0, q1, q2 = bb.add(ScaleIntByReal(15, 8), real_in=q0, int_in=q1)
+    q0, q1 = bb.add(ScaleIntByReal(15, 8).adjoint(), real_in=q0, int_in=q1, result=q2)
+    cbloq = bb.finalize(a=q0, b=q1)
+    assert cbloq.on_classical_vals(a=a_fxp, b=3) == {'a': a_fxp, 'b': 3}
 
 
 def test_multiply_two_reals():
     bb = BloqBuilder()
-    q0 = bb.add_register('a', 15)
-    q1 = bb.add_register('b', 15)
-    q0, q1, q2 = bb.add(MultiplyTwoReals(15), a=q0, b=q1)
+    bitsize = 15
+    q0 = bb.add_register('a', bitsize)
+    q1 = bb.add_register('b', bitsize)
+    q0, q1, q2 = bb.add(MultiplyTwoReals(bitsize), a=q0, b=q1)
     cbloq = bb.finalize(a=q0, b=q1, result=q2)
     cbloq.t_complexity()
+    a = np.pi / 7
+    b = 0.332
+    a_fxp = val_to_fxp(a, num_bits=bitsize, num_frac=bitsize)
+    b_fxp = val_to_fxp(b, num_bits=bitsize, num_frac=bitsize)
+    cvals = cbloq.on_classical_vals(a=a_fxp, b=b_fxp)
+    assert cvals['result'] == Fxp(0.148834228515625, dtype=f'fxp-u{bitsize}/{bitsize}')
+    bb = BloqBuilder()
+    q0 = bb.add_register_from_dtype('a', QFxp(bitsize, bitsize))
+    q1 = bb.add_register_from_dtype('b', QFxp(bitsize, bitsize))
+    q0, q1, q2 = bb.add(MultiplyTwoReals(bitsize), a=q0, b=q1)
+    q0, q1 = bb.add(MultiplyTwoReals(bitsize).adjoint(), a=q0, b=q1, result=q2)
+    cbloq = bb.finalize(a=q0, b=q1)
+    assert cbloq.on_classical_vals(a=a_fxp, b=b_fxp) == {'a': a_fxp, 'b': b_fxp}
 
 
 def test_square_real_number():
     bb = BloqBuilder()
-    q0 = bb.add_register('a', 15)
-    q1 = bb.add_register('b', 15)
-    q0, q1, q2 = bb.add(SquareRealNumber(15), a=q0, b=q1)
-    cbloq = bb.finalize(a=q0, b=q1, result=q2)
+    bitsize = 15
+    q0 = bb.add_register('a', bitsize)
+    q0, q1 = bb.add(SquareRealNumber(bitsize), a=q0)
+    cbloq = bb.finalize(a=q0, result=q1)
+    a_fxp = val_to_fxp(0.554, num_bits=bitsize, num_frac=bitsize)
+    cvals = cbloq.on_classical_vals(a=a_fxp)
+    assert cvals['result'] == Fxp(0.3065185546875, dtype=f'fxp-u{bitsize}/{bitsize}')
+    bb = BloqBuilder()
+    q0 = bb.add_register_from_dtype('a', QFxp(bitsize, bitsize))
+    q0, q1 = bb.add(SquareRealNumber(bitsize), a=q0)
+    q0 = bb.add(SquareRealNumber(bitsize).adjoint(), a=q0, result=q1)
+    cbloq = bb.finalize(a=q0)
+    assert cbloq.on_classical_vals(a=a_fxp) == {'a': a_fxp}
 
 
 def test_plus_equal_product():
