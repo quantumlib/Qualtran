@@ -434,7 +434,7 @@ class Cast(Bloq):
     )
 
     def __attrs_post_init__(self):
-        if isinstance(self.inp_dtype.bitsize, int):
+        if isinstance(self.inp_dtype.num_qubits, int):
             if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
                 raise ValueError("Casting only permitted between same sized registers.")
 

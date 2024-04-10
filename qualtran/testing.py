@@ -552,7 +552,19 @@ def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
 
 
 def assert_bloq_example_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
-    """ """
+    """Check a bloq example preserves types throughout its decomposition.
+
+    Args:
+        bloq_ex: The bloq example to test.
+
+    Returns:
+        None
+
+    Raises:
+        BloqCheckException if any assertions are violated. Will raise a failure
+        if loose type checking fails, and unverified if the stricter type checks
+        fail.
+    """
     bloq = bloq_ex.make()
     # First check it's not atomic / doesn't decompose
     try:
@@ -581,9 +593,6 @@ def assert_bloq_example_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheck
 
 def check_connections_preserve_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
     """Check that the BloqExample has consistent typing.
-
-    This checks that the composite bloq's register dtypes are strictly the same, i.e.
-    no casting occurs.
 
     Returns:
         result: The `BloqCheckResult`.

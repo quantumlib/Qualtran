@@ -34,7 +34,6 @@ from qualtran import (
     QAny,
     QBit,
     QDType,
-    QFxp,
     Register,
     Side,
     Signature,
@@ -46,6 +45,7 @@ from qualtran._infra.gate_with_registers import (
     get_named_qubits,
     split_qubits,
 )
+from qualtran.bloqs.util_bloqs import Cast
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.simulation.tensor._tensor_data_manipulation import (
@@ -251,7 +251,7 @@ def _ensure_in_reg_exists(
         n_alloc = len(qubits_to_allocate)
         qreg_to_qvar[
             _QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))
-        ] = bb.allocate(len(qubits_to_allocate))
+        ] = bb.allocate(n_alloc)
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
@@ -275,17 +275,15 @@ def _ensure_in_reg_exists(
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            # Need to split single-qubit Fxp registers which are ambiguous,
-            # these will be appropriately joined later.
-            if isinstance(qreg.dtype, QFxp):
-                soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
+            # Cast single bit registers to QBit to preserve signature of later join.
+            if not isinstance(qreg.dtype, QBit):
+                soqs_to_join[qreg.qubits[0]] = bb.add(Cast(qreg.dtype, QBit()), reg=soq)
             else:
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
-            # Need to split single-qubit Fxp registers which are ambiguous,
-            # these will be appropriately joined later.
-            if isinstance(qreg.dtype, QFxp):
-                soqs_to_join[qreg.qubits[0]] = bb.split(soq=soq)[0]
+            # Cast single QBit registers to the appropriate single-bit register dtype.
+            if not isinstance(in_reg.dtype, QBit):
+                qreg_to_qvar[in_reg] = bb.add(Cast(QBit(), in_reg.dtype), reg=soq)
             else:
                 qreg_to_qvar[qreg] = soq
         else:
