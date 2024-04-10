@@ -220,7 +220,8 @@ def _polynomial_max_abs_value_on_unit_circle(P: Sequence[complex], *, n_points=2
     """
     from scipy.fft import fft
 
-    poly = np.zeros(n_points)
+    P = np.asarray(P)
+    poly = np.zeros(n_points, dtype=P.dtype)
     poly[: len(P)] = P
 
     values = fft(poly)
