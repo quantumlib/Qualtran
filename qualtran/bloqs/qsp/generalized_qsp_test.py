@@ -22,9 +22,10 @@ from attrs import define
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Controlled, CtrlSpec, GateWithRegisters
+from qualtran import Bloq, bloq_example, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.for_testing.random_gate import RandomGate
+from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
 from qualtran.resource_counting import SympySymbolAllocator
 
 from .generalized_qsp import (
@@ -192,10 +193,7 @@ def test_call_graph(negative_power: int):
     random_state = np.random.RandomState(42)
 
     ssa = SympySymbolAllocator()
-    theta = ssa.new_symbol("theta")
-    phi = ssa.new_symbol("phi")
-    lambd = ssa.new_symbol("lambda")
-    arbitrary_rotation = SU2RotationGate(theta, phi, lambd)
+    arbitrary_rotation = SU2RotationGate.arbitrary(ssa)
 
     def catch_rotations(bloq: Bloq) -> Bloq:
         if isinstance(bloq, SU2RotationGate):
@@ -210,13 +208,26 @@ def test_call_graph(negative_power: int):
 
     expected_counts = {arbitrary_rotation: 3}
     if negative_power < 2:
-        expected_counts[Controlled(U, CtrlSpec(cvs=0))] = 2 - negative_power
+        expected_counts[U.controlled(control_values=[0])] = 2 - negative_power
     if negative_power > 0:
-        expected_counts[Controlled(U.adjoint(), CtrlSpec())] = min(2, negative_power)
+        expected_counts[U.adjoint().controlled()] = min(2, negative_power)
     if negative_power > 2:
         expected_counts[U.adjoint()] = negative_power - 2
 
     assert sigma == expected_counts
+
+
+@bloq_example
+def _gqsp_1d_ising() -> GeneralizedQSP:
+    W = get_walk_operator_for_1d_ising_model(2, 1e-4)
+    gqsp_1d_ising = GeneralizedQSP.from_qsp_polynomial(W, (0.5, 0, 0.5), negative_power=1)
+    return gqsp_1d_ising
+
+
+def test_gqsp_1d_ising_example(bloq_autotester):
+    if bloq_autotester.check_name == 'serialization':
+        pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
+    bloq_autotester(_gqsp_1d_ising)
 
 
 @define(slots=False)

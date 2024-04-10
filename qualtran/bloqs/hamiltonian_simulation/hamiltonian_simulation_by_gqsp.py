@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -36,6 +36,7 @@ from qualtran.linalg.jacobi_anger_approximations import (
 )
 from qualtran.resource_counting.symbolic_counting_utils import (
     is_symbolic,
+    Shaped,
     SymbolicFloat,
     SymbolicInt,
 )
@@ -92,7 +93,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-            Motlagh and Wiebe. (2023). Theorem 7, Corollary 8.
+        Motlagh and Wiebe. (2023). Theorem 7, Corollary 8.
 
     Args:
         walk_operator: qubitization walk operator of $H$ constructed from SELECT and PREPARE oracles.
@@ -115,10 +116,11 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision)
 
     @cached_property
-    def approx_cos(self) -> NDArray[np.complex_]:
+    def approx_cos(self) -> Union[NDArray[np.complex_], Shaped]:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         if self._parameterized_():
-            raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
+            return Shaped((2 * self.degree + 1,))
+
         poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
         # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
         poly = scale_down_to_qsp_polynomial(poly) * (1 - 2 * self.precision)
@@ -180,18 +182,6 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
         return soqs
 
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self._parameterized_():
-            d = self.degree
-            return {
-                (Controlled(self.walk_operator.adjoint(), CtrlSpec()), d),
-                (Controlled(self.walk_operator, CtrlSpec(cvs=0)), d),
-                (self.walk_operator.prepare, 1),
-                (self.walk_operator.prepare.adjoint(), 1),
-                (SU2RotationGate.arbitrary(ssa), 2 * d + 1),
-            }
-        return self.decompose_bloq().build_call_graph(ssa)
-
 
 @bloq_example
 def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
@@ -204,8 +194,22 @@ def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
     return hubbard_time_evolution_by_gqsp
 
 
+@bloq_example
+def _symbolic_hamsim_by_gqsp() -> HamiltonianSimulationByGQSP:
+    import sympy
+
+    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
+
+    walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
+    t, alpha, inv_eps = sympy.symbols("t alpha N")
+    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(
+        walk_op, t=t, alpha=alpha, precision=1 / inv_eps
+    )
+    return symbolic_hamsim_by_gqsp
+
+
 _Hamiltonian_Simulation_by_GQSP_DOC = BloqDocSpec(
     bloq_cls=HamiltonianSimulationByGQSP,
     import_line='from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP',
-    examples=[_hubbard_time_evolution_by_gqsp],
+    examples=[_hubbard_time_evolution_by_gqsp, _symbolic_hamsim_by_gqsp],
 )

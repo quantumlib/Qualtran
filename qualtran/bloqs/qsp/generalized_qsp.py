@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Iterable, Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -22,6 +22,14 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.resource_counting.symbolic_counting_utils import (
+    is_symbolic,
+    Shaped,
+    slen,
+    smax,
+    smin,
+    SymbolicInt,
+)
 
 if TYPE_CHECKING:
     import cirq
@@ -255,6 +263,8 @@ def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
 
 def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
     """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
+    if isinstance(x, Shaped):
+        return x
     return tuple(x)
 
 
@@ -312,18 +322,19 @@ class GeneralizedQSP(GateWithRegisters):
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-            Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
+        Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
     """
 
     U: GateWithRegisters
-    P: Tuple[complex, ...] = field(converter=_to_tuple)
-    Q: Tuple[complex, ...] = field(converter=_to_tuple)
-    negative_power: int = field(default=0, kw_only=True)
+    P: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
+    Q: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
+    negative_power: SymbolicInt = field(default=0, kw_only=True)
 
     @P.validator
     @Q.validator
     def _check_polynomial(self, attribute, value):
-        if len(value) <= 1:
+        degree = slen(value) - 1
+        if not is_symbolic(degree) and degree <= 0:
             raise ValueError("GQSP Polynomial must have degree at least 1")
 
     @cached_property
@@ -334,12 +345,15 @@ class GeneralizedQSP(GateWithRegisters):
     def from_qsp_polynomial(
         cls,
         U: GateWithRegisters,
-        P: Sequence[complex],
+        P: Union[Sequence[complex], Shaped],
         *,
         negative_power: int = 0,
         verify: bool = False,
         verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
+        if is_symbolic(P):
+            return GeneralizedQSP(U, P, P, negative_power=negative_power)
+
         if verify:
             assert_is_qsp_polynomial(P)
         Q = qsp_complementary_polynomial(P, verify=verify, verify_precision=verify_precision)
@@ -391,7 +405,20 @@ class GeneralizedQSP(GateWithRegisters):
         for _ in range(num_inverse_applications):
             yield self.U.adjoint().on_registers(**quregs)
 
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.P, self.Q, self.negative_power)
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self.is_symbolic():
+            degree = slen(self.P) - 1
+
+            return {
+                (self.U.controlled(control_values=[0]), smax(0, degree - self.negative_power)),
+                (self.U.adjoint(), smax(0, self.negative_power - degree)),
+                (self.U.adjoint().controlled(), smin(degree, self.negative_power)),
+                (SU2RotationGate.arbitrary(ssa), degree + 1),
+            }
+
         degree = len(self.P) - 1
 
         counts = set(Counter(self.signal_rotations).items())
