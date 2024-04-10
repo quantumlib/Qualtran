@@ -18,15 +18,24 @@ import attrs
 import cirq
 import numpy as np
 import sympy
-from cirq._compat import cached_method
 from fxpmath import Fxp
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, QFxp, Register, Side, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    QBit,
+    QFxp,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.simulation.classical_sim import ClassicalValT
 
 if TYPE_CHECKING:
     from qualtran.resource_counting.bloq_counts import BloqCountT
@@ -186,6 +195,10 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     def phase_dtype(self) -> QFxp:
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
+    @cached_property
+    def x_dtype(self) -> QFxp:
+        return QFxp(self.x_bitsize, self.x_bitsize, signed=False)
+
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         if self.controlled is not None:
             return [2], [2] * self.x_bitsize, [2] * self.phase_bitsize
@@ -194,24 +207,41 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("not needed.")
 
-    @cached_method
-    def scaled_val(self, x: int) -> int:
-        """Computes `phase_grad + x` using fixed point arithmetic."""
-        x_width = self.x_bitsize + self.right_shift
-        x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
-        return int(x_fxp.astype(float) * 2**self.phase_bitsize)
-
     def apply(self, *args) -> Union[int, Iterable[int]]:
         if self.controlled is not None:
             ctrl, x, phase_grad = args
-            out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
-            return out['ctrl'], out['x'], out['phase_grad']
+            phase_fxp = _fxp(phase_grad / 2**self.phase_bitsize, self.phase_bitsize)
+            x_fxp = _fxp(x / 2**self.x_bitsize, self.x_bitsize)
+            out = self.on_classical_vals(ctrl=ctrl, x=x_fxp, phase_grad=phase_fxp)
+            return out['ctrl'], int(out['x'].bin(), 2), int(out['phase_grad'].bin(), 2)
 
         x, phase_grad = args
-        out = self.on_classical_vals(x=x, phase_grad=phase_grad)
-        return out['x'], out['phase_grad']
+        phase_fxp = _fxp(phase_grad / 2**self.phase_bitsize, self.phase_bitsize)
+        x_fxp = _fxp(x / 2**self.x_bitsize, self.x_bitsize)
+        out = self.on_classical_vals(x=x_fxp, phase_grad=phase_fxp)
+        return int(out['x'].bin(), 2), int(out['phase_grad'].bin(), 2)
 
     def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
+        x, phase_grad = kwargs['x'], kwargs['phase_grad']
+        x_width = self.x_bitsize + self.right_shift
+        x_scl = (
+            _fxp(int(x.bin(), 2) / 2**x_width, x_width)
+            .like(_fxp(0, self.phase_bitsize))
+            .astype(float)
+        )
+        if self.sign < 0:
+            phase_grad_out = phase_grad - x_scl  # .like(phase_grad)
+        else:
+            phase_grad_out = phase_grad + x_scl  # .like(phase_grad)
+        if self.controlled is not None:
+            ctrl = kwargs['ctrl']
+            if ctrl != self.controlled:
+                phase_grad_out = phase_grad
+            return {'ctrl': ctrl, 'x': x, 'phase_grad': phase_grad_out}
+
+        return {'x': x, 'phase_grad': phase_grad_out}
+
+    def on_classical_vals_old(self, **kwargs) -> Dict[str, 'ClassicalValT']:
         x, phase_grad = kwargs['x'], kwargs['phase_grad']
         if self.controlled is not None:
             ctrl = kwargs['ctrl']
@@ -364,19 +394,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     def gamma_fxp(self) -> Fxp:
         return Fxp(abs(self.gamma), dtype=self.gamma_dtype.fxp_dtype_str)
 
-    @cached_method
-    def scaled_val(self, x: int) -> int:
+    def scaled_val(self, x: Fxp) -> Fxp:
         """Computes `x*self.gamma` using fixed point arithmetic."""
-        sign = np.sign(self.gamma)
-        # `x` is an integer because we currently represent each bitstring as an integer during simulations.
-        # However, `x` should be interpreted as per the fixed point specification given in self.x_dtype.
-        # If `self.x_dtype` uses `n_frac` bits to represent the fractional part, `x` should be divided by
-        # 2**n_frac (in other words, right shifted by n_frac)
-        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
-        # Similarly, `self.gamma` should be represented as a fixed point number using appropriate number
-        # of bits for integer and fractional part. This is done in self.gamma_fxp
         # Compute the result = x_fxp * gamma_fxp
-        result = _mul_via_repeated_add(x_fxp, self.gamma_fxp, self.phase_dtype.bitsize)
+        result = _mul_via_repeated_add(x, self.gamma_fxp, self.phase_dtype.bitsize)
         # Since the phase gradient register is a fixed point register with `n_word=0`, we discard the integer
         # part of `result`. This is okay because the adding `x.y` to the phase gradient register will impart
         # a phase of `exp(i * 2 * np.pi * x.y)` which is same as `exp(i * 2 * np.pi * y)`
@@ -384,7 +405,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         # Convert the `self.phase_bitsize`-bit fraction into back to an integer and return the result.
         # Sign of `gamma` affects whether we add or subtract into the phase gradient register and thus
         # can be ignored during the fixed point arithmetic analysis.
-        return int(np.floor(result.astype(float) * 2**self.phase_dtype.bitsize) * sign)
+        return result
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -412,11 +433,18 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
                 ).on_registers(x=x_qubits[:x_bitsize], phase_grad=phase_grad)
 
     def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
-        out = self.on_classical_vals(x=x, phase_grad=phase_grad)
-        return out['x'], out['phase_grad']
+        phase_fxp = _fxp(phase_grad / 2**self.phase_bitsize, self.phase_bitsize)
+        x_fxp = Fxp(x / 2**self.x_dtype.num_frac, dtype=self.x_dtype.fxp_dtype_str)
+        out = self.on_classical_vals(x=x_fxp, phase_grad=phase_fxp)
+        return int(out['x'].bin(), 2), int(out['phase_grad'].bin(), 2)
 
-    def on_classical_vals(self, x: int, phase_grad: int) -> Dict[str, 'ClassicalValT']:
-        phase_grad_out = (phase_grad + self.scaled_val(x)) % 2**self.phase_bitsize
+    def on_classical_vals(
+        self, x: 'ClassicalValT', phase_grad: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        if self.gamma < 0:
+            phase_grad_out = (phase_grad - self.scaled_val(x)).like(phase_grad)
+        else:
+            phase_grad_out = (phase_grad + self.scaled_val(x)).like(phase_grad)
         return {'x': x, 'phase_grad': phase_grad_out}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -449,3 +477,12 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
         _add_my_tensors_from_gate(
             self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
+
+
+@bloq_example
+def _add_into_phase_grad() -> AddIntoPhaseGrad:
+    add_into_phase_grad = AddScaledValIntoPhaseReg.from_bitsize(4, 7, 0.123, 6)
+    return add_into_phase_grad
+
+
+_ADD_INTO_PHASE_GRAD_DOC = BloqDocSpec(bloq_cls=AddIntoPhaseGrad, examples=[_add_into_phase_grad])

@@ -14,9 +14,11 @@
 import cirq
 import numpy as np
 import pytest
+from fxpmath import Fxp
 
 from qualtran import BloqBuilder, QFxp
 from qualtran.bloqs.rotations.phase_gradient import (
+    _fxp,
     AddIntoPhaseGrad,
     AddScaledValIntoPhaseReg,
     PhaseGradientState,
@@ -74,8 +76,8 @@ def test_phase_gradient_gate(n: int, exponent, controlled):
     assert np.allclose(cirq.unitary(bloq), cirq.unitary(cirq_gate), atol=eps)
 
 
+@pytest.mark.slow
 def test_add_into_phase_grad():
-    from qualtran.bloqs.rotations.phase_gradient import _fxp
 
     x_bit, phase_bit = 4, 7
     bloq = AddIntoPhaseGrad(x_bit, phase_bit)
@@ -83,13 +85,14 @@ def test_add_into_phase_grad():
     for x in range(2**x_bit):
         for phase_grad in range(2**phase_bit):
             phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
-            x_fxp = _fxp(x / 2**x_bit, x_bit).like(phase_fxp)
-            phase_grad_out = int((phase_fxp + x_fxp).astype(float) * 2**phase_bit)
+            x_fxp_scl = _fxp(x / 2**x_bit, x_bit).like(phase_fxp)
+            x_fxp = _fxp(x / 2**x_bit, x_bit)
+            phase_grad_out = phase_fxp + x_fxp_scl
             # Test Bloq style classical simulation.
-            assert bloq.call_classically(x=x, phase_grad=phase_grad) == (x, phase_grad_out)
+            assert bloq.call_classically(x=x_fxp, phase_grad=phase_fxp) == (x_fxp, phase_grad_out)
             # Prepare basis states mapping for cirq-style simulation.
             input_state = int(f'{x:0{x_bit}b}' + f'{phase_grad:0{phase_bit}b}', 2)
-            output_state = int(f'{x:0{x_bit}b}' + f'{phase_grad_out:0{phase_bit}b}', 2)
+            output_state = int(f'{x:0{x_bit}b}' + f'{phase_grad_out.bin()}', 2)
             basis_map[input_state] = output_state
     # Test cirq style simulation.
     num_bits = x_bit + phase_bit
@@ -111,24 +114,22 @@ def test_add_into_phase_grad_controlled(controlled: int):
         for x in range(2**x_bit):
             for phase_grad in range(2**phase_bit):
                 phase_fxp = _fxp(phase_grad / 2**phase_bit, phase_bit)
-                x_fxp = _fxp(x / 2**x_bit, x_bit).like(phase_fxp)
+                x_fxp = _fxp(x / 2**x_bit, x_bit)
                 if control == controlled:
-                    phase_grad_out = int((phase_fxp + x_fxp).astype(float) * 2**phase_bit)
+                    phase_grad_out = phase_fxp + x_fxp.like(phase_fxp)
                 else:
-                    phase_grad_out = phase_grad
+                    phase_grad_out = phase_fxp
                 # Test Bloq style classical simulation.
-                assert bloq.call_classically(ctrl=control, x=x, phase_grad=phase_grad) == (
+                assert bloq.call_classically(ctrl=control, x=x_fxp, phase_grad=phase_fxp) == (
                     control,
-                    x,
+                    x_fxp,
                     phase_grad_out,
                 )
                 # Prepare basis states mapping for cirq-style simulation.
                 input_state = int(
                     f'{control}' + f'{x:0{x_bit}b}' + f'{phase_grad:0{phase_bit}b}', 2
                 )
-                output_state = int(
-                    f'{control}' + f'{x:0{x_bit}b}' + f'{phase_grad_out:0{phase_bit}b}', 2
-                )
+                output_state = int(f'{control}' + f'{x:0{x_bit}b}' + f'{phase_grad_out.bin()}', 2)
                 expected_unitary[output_state, input_state] = 1
     # Test cirq style simulation.
     assert len(basis_map) == len(set(basis_map.values()))
@@ -151,12 +152,15 @@ def test_add_scaled_val_into_phase_reg(bloq):
     cbloq = bloq.decompose_bloq()
     for x in range(2**bloq.x_dtype.bitsize):
         for phase_grad in range(2**bloq.phase_bitsize):
-            d = {'x': x, 'phase_grad': phase_grad}
+            d = {
+                'x': Fxp(x / 2**bloq.x_dtype.num_frac, dtype=bloq.x_dtype.fxp_dtype_str),
+                'phase_grad': _fxp(phase_grad / 2**bloq.phase_bitsize, bloq.phase_bitsize),
+            }
             c1 = bloq.on_classical_vals(**d)
             c2 = cbloq.on_classical_vals(**d)
             assert c1 == c2, f'{d=}, {c1=}, {c2=}'
-    bloq_unitary = cirq.unitary(bloq)
-    op = GateHelper(bloq).operation
-    circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
-    decomposed_unitary = circuit.unitary(qubit_order=op.qubits)
-    np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
+            bloq_unitary = cirq.unitary(bloq)
+            op = GateHelper(bloq).operation
+            circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
+            decomposed_unitary = circuit.unitary(qubit_order=op.qubits)
+            np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
