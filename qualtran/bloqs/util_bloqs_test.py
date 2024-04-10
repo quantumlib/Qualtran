@@ -18,6 +18,7 @@ import cirq
 import numpy as np
 import pytest
 from attrs import frozen
+from fxpmath import Fxp
 
 from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signature, Soquet, SoquetT
 from qualtran._infra.gate_with_registers import get_named_qubits
@@ -210,11 +211,12 @@ def test_cast_tensor_contraction():
 def test_cast_classical_sim():
     c = Cast(QInt(8), QFxp(8, 8))
     (y,) = c.call_classically(reg=7)
-    assert y == 7
+    assert y.bin() == f'{7:>08b}'
     bloq = TestCastToFrom()
-    (a, b) = bloq.call_classically(a=7, b=2)
+    uint_b = int(Fxp(0.5, n_word=4, n_frac=4, signed=False).bin(), 2)
+    (a, b) = bloq.call_classically(a=7, b=0.5)
     assert a == 7
-    assert b == 9
+    assert b == Fxp(bin(a + uint_b), n_word=4, n_frac=4, signed=False)
 
 
 def test_power():

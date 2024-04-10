@@ -77,7 +77,7 @@ class Split(Bloq):
         return TComplexity()
 
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
-        return {'reg': ints_to_bits(np.array([reg]), self.dtype.num_qubits)[0]}
+        return {'reg': self.dtype.to_bits(reg)}
 
     def add_my_tensors(
         self,
@@ -162,8 +162,8 @@ class Join(Bloq):
             )
         )
 
-    def on_classical_vals(self, reg: 'NDArray[np.uint8]') -> Dict[str, int]:
-        return {'reg': bits_to_ints(reg)[0]}
+    def on_classical_vals(self, reg: "ClassicalValT") -> Dict[str, int]:
+        return {'reg': self.dtype.from_bits(reg)}
 
     def get_ctrl_system(
         self, ctrl_spec: Optional['AbstractCtrlSpec'] = None
@@ -263,17 +263,17 @@ class Partition(Bloq):
 
     def _classical_partition(self, x: int) -> Dict[str, 'ClassicalValT']:
         out_vals = {}
-        xbits = ints_to_bits(x, self.n)[0]
+        xbits = QAny(self.n).to_bits(x)
         start = 0
         for reg in self.regs:
             size = np.prod(reg.shape + (reg.bitsize,))
             bits_reg = xbits[start : start + size]
             if reg.shape == ():
-                out_vals[reg.name] = bits_to_ints(bits_reg)[0]
+                out_vals[reg.name] = reg.dtype.from_bits(bits_reg)
             else:
-                ints_reg = bits_to_ints(
+                ints_reg = np.array(
                     [
-                        bits_reg[i * reg.bitsize : (i + 1) * reg.bitsize]
+                        reg.dtype.from_bits(bits_reg[i * reg.bitsize : (i + 1) * reg.bitsize])
                         for i in range(np.prod(reg.shape))
                     ]
                 )
@@ -285,11 +285,15 @@ class Partition(Bloq):
         out_vals = []
         for reg in self.regs:
             if isinstance(vals[reg.name], np.ndarray):
-                out_vals.append(ints_to_bits(vals[reg.name].ravel(), reg.bitsize).ravel())
+                # contiguous chunk of bits from ravelling the input array of values
+                out_vals.append(
+                    np.concatenate([reg.dtype.to_bits(v) for v in vals[reg.name].ravel()])
+                )
             else:
-                out_vals.append(ints_to_bits(vals[reg.name], reg.bitsize)[0])
+                out_vals.append(reg.dtype.to_bits(vals[reg.name]))
         big_int = np.concatenate(out_vals)
-        return {'x': bits_to_ints(big_int)[0]}
+        xbits = QAny(self.n).from_bits(big_int)
+        return {'x': xbits}
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         if self.partition:
@@ -466,9 +470,9 @@ class Cast(Bloq):
             )
         )
 
-    def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, reg: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
-        return {'reg': reg}
+        return {'reg': self.out_dtype.from_bits(self.inp_dtype.to_bits(reg))}
 
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
