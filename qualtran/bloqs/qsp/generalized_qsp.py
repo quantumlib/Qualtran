@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from collections import Counter
 from functools import cached_property
-from typing import Sequence, Set, Tuple
+from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -20,8 +21,20 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, Register, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    Controlled,
+    CtrlSpec,
+    GateWithRegisters,
+    QBit,
+    Register,
+    Signature,
+)
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 def qsp_complementary_polynomial(
@@ -73,28 +86,13 @@ def qsp_complementary_polynomial(
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
 
     for r in roots:
+        assert not (np.abs(r) <= 1e-5), "zero root!"
         if np.allclose(np.abs(r), 1):
             units.append(r)
         elif np.abs(r) > 1:
             larger_roots.append(r)
         else:
             smaller_roots.append(r)
-
-    if verify:
-        # verify that the non-unit roots indeed occur in conjugate pairs.
-        def is_permutation(A, B):
-            assert len(A) == len(B)
-            A = list(A)
-            for z in B:
-                for w in A:
-                    if np.allclose(z, w):
-                        A.remove(w)
-                        break
-                else:
-                    return False
-            return True
-
-        assert is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
     # pair up roots in `units`, claimed in Eq. 40 and the explanation preceding it.
     # all unit roots must have even multiplicity.
@@ -107,14 +105,45 @@ def qsp_complementary_polynomial(
                 matched_z = w
                 break
 
-        if matched_z:
+        if matched_z is not None:
             paired_units.append(z)
             unpaired_units.remove(matched_z)
         else:
             unpaired_units.append(z)
 
+    unpaired_conj_units: list[complex] = []
+    for z in unpaired_units:
+        matched_z_conj = None
+        for w in unpaired_conj_units:
+            if np.allclose(z.conjugate(), w):
+                matched_z_conj = w
+                break
+
+        if matched_z_conj is not None:
+            smaller_roots.append(z)
+            larger_roots.append(matched_z_conj)
+            unpaired_conj_units.remove(matched_z_conj)
+        else:
+            unpaired_conj_units.append(z)
+
     if verify:
-        assert len(unpaired_units) == 0
+        assert len(unpaired_conj_units) == 0
+
+        # verify that the non-unit roots indeed occur in conjugate pairs.
+        def assert_is_permutation(A, B):
+            assert len(A) == len(B)
+            A = list(A)
+            unmatched = []
+            for z in B:
+                for w in A:
+                    if np.allclose(z, w, rtol=1e-5, atol=1e-5):
+                        A.remove(w)
+                        break
+                else:
+                    unmatched.append(z)
+            assert len(unmatched) == 0
+
+        assert_is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
 
     # Q = G \hat{G}, where
     # - \hat{G}^2 is the monomials which are unit roots of R, which occur in pairs.
@@ -166,7 +195,7 @@ def qsp_phase_factors(
     lambd = 0
 
     def safe_angle(x):
-        return 0 if np.isclose(x, 0) else np.angle(x)
+        return 0 if np.isclose(x, 0, atol=1e-10) else np.angle(x)
 
     for d in reversed(range(n)):
         assert S.shape == (2, d + 1)
@@ -174,7 +203,7 @@ def qsp_phase_factors(
         a, b = S[:, d]
         theta[d] = np.arctan2(np.abs(b), np.abs(a))
         # \phi_d = arg(a / b)
-        phi[d] = 0 if np.isclose(np.abs(b), 0) else safe_angle(a * np.conj(b))
+        phi[d] = 0 if np.isclose(np.abs(b), 0, atol=1e-10) else safe_angle(a * np.conj(b))
 
         if d == 0:
             lambd = safe_angle(b)
@@ -189,20 +218,52 @@ def qsp_phase_factors(
 class GeneralizedQSP(GateWithRegisters):
     r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
 
-    Can optionally provide a negative power offset $k$ (defaults to 0),
-    to obtain $U^{-k} P(U)$. (Theorem 6)
-    This gate represents the following unitary:
+    Given a unitary $U$ and a QSP polynomial $P$ (and its complementary polynomial $Q$),
+    this gate implements the following unitary:
 
-        $$ \begin{bmatrix} U^{-k} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix} $$
+    $$
+        \begin{bmatrix} P(U) & \cdot \\ Q(U) & \cdot \end{bmatrix}
+    $$
 
-    The polynomial $P$ must satisfy:
-    $\abs{P(e^{i \theta})}^2 \le 1$ for every $\theta \in \mathbb{R}$.
+    The polynomials $P$ and $Q$ should satisfy:
 
-    The exact circuit is described in Figure 2.
+    $$
+        \left|P(e^{i \theta})\right|^2 + \left|Q(e^{i \theta})\right|^2 = 1 ~~\text{for every}~ \theta \in \mathbb{R}
+    $$
+
+    The polynomial $P$ is said to be a QSP Polynomial if it satisfies:
+
+    $$
+        \left|P(e^{i \theta})\right|^2 \le 1 ~~\text{for every}~ \theta \in \mathbb{R}
+    $$
+
+    If only the QSP polynomial $P$ is known, one can simply call
+    `GeneralizedQSP.from_qsp_polynomial(U, P)` which automatically computes $Q$.
+
+    ### Using Laurent Polynomials
+    To apply GQSP with the transformation given by $P'$
+
+    $$
+    P(z) = \sum_{n = -a}^b p_n z^n
+    $$
+
+    where $a, b \ge 0$, we can simply invoke GQSP with the standard polynomial $P'(z) = z^a P(z)$
+    which has degree $a + b$, and pass `negative_power=a`.
+
+    Given complementary QSP polynomials $P', Q'$ and `negative_power=a`,
+    this gate implements the unitary transform:
+
+    $$
+        \begin{bmatrix} U^{-a} P'(U) & \cdot \\ U^{-a} Q'(U) & \cdot \end{bmatrix}
+    $$
+
+
+    The exact circuit implemented by this gate is described in Figure 2.
 
     Args:
         U: Unitary operation.
-        P: Co-efficients of a complex polynomial.
+        P: Co-efficients of a complex QSP polynomial.
+        Q: Co-efficients of a complex QSP polynomial.
         negative_power: value of $k$, which effectively applies $z^{-k} P(z)$. defaults to 0.
 
     References:
@@ -215,15 +276,26 @@ class GeneralizedQSP(GateWithRegisters):
     Q: Tuple[complex, ...] = field(converter=tuple)
     negative_power: int = field(default=0, kw_only=True)
 
+    @P.validator
+    @Q.validator
+    def _check_polynomial(self, attribute, value):
+        if len(value) <= 1:
+            raise ValueError("GQSP Polynomial must have degree at least 1")
+
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register('signal', QBit()), *self.U.signature])
 
     @classmethod
     def from_qsp_polynomial(
-        cls, U: GateWithRegisters, P: Sequence[complex], *, negative_power: int = 0
+        cls,
+        U: GateWithRegisters,
+        P: Sequence[complex],
+        *,
+        negative_power: int = 0,
+        verify: bool = False,
     ) -> 'GeneralizedQSP':
-        Q = qsp_complementary_polynomial(P)
+        Q = qsp_complementary_polynomial(P, verify=verify)
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
@@ -254,8 +326,7 @@ class GeneralizedQSP(GateWithRegisters):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        assert len(signal) == 1
-        signal_qubit = signal[0]
+        (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power
 
@@ -274,16 +345,51 @@ class GeneralizedQSP(GateWithRegisters):
             yield self.U.adjoint().on_registers(**quregs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        degree = len(self.P)
+        degree = len(self.P) - 1
 
-        counts = {(rotation, 1) for rotation in self.signal_rotations}
+        counts = set(Counter(self.signal_rotations).items())
 
         if degree > self.negative_power:
-            counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
+            counts.add((Controlled(self.U, CtrlSpec(cvs=0)), degree - self.negative_power))
         elif self.negative_power > degree:
             counts.add((self.U.adjoint(), self.negative_power - degree))
 
         if self.negative_power > 0:
-            counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
+            counts.add((Controlled(self.U.adjoint(), CtrlSpec()), min(degree, self.negative_power)))
 
         return counts
+
+
+@bloq_example
+def _gqsp() -> GeneralizedQSP:
+    from qualtran.bloqs.basic_gates import XPowGate
+
+    gqsp = GeneralizedQSP.from_qsp_polynomial(XPowGate(), (0.5, 0.5))
+    return gqsp
+
+
+@bloq_example
+def _gqsp_with_negative_power() -> GeneralizedQSP:
+    from qualtran.bloqs.basic_gates import XPowGate
+
+    gqsp_with_negative_power = GeneralizedQSP.from_qsp_polynomial(
+        XPowGate(), (0.5, 0, 0.5), negative_power=1
+    )
+    return gqsp_with_negative_power
+
+
+@bloq_example
+def _gqsp_with_large_negative_power() -> GeneralizedQSP:
+    from qualtran.bloqs.basic_gates import XPowGate
+
+    gqsp_with_large_negative_power = GeneralizedQSP.from_qsp_polynomial(
+        XPowGate(), (0.5, 0, 0.5), negative_power=5
+    )
+    return gqsp_with_large_negative_power
+
+
+_Generalized_QSP_DOC = BloqDocSpec(
+    bloq_cls=GeneralizedQSP,
+    import_line='from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP',
+    examples=[_gqsp, _gqsp_with_negative_power, _gqsp_with_large_negative_power],
+)
