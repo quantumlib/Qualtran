@@ -282,10 +282,12 @@ def _ensure_in_reg_exists(
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             # Cast single QBit registers to the appropriate single-bit register dtype.
-            assert isinstance(
-                soq.reg.dtype, QBit
-            ), f"Found non-QBit type register which shouldn't happen: {soq.reg.name} {soq.reg.dtype}"
             if not isinstance(in_reg.dtype, QBit):
+                err_msg = (
+                    "Found non-QBit type register which shouldn't happen: "
+                    f"{soq.reg.name} {soq.reg.dtype}"
+                )
+                assert isinstance(soq.reg.dtype, QBit), err_msg
                 qreg_to_qvar[in_reg] = bb.add(Cast(QBit(), in_reg.dtype), reg=soq)
             else:
                 qreg_to_qvar[qreg] = soq
