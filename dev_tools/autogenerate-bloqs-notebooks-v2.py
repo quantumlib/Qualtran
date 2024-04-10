@@ -48,6 +48,7 @@ Usage as a script:
 
 from typing import Iterable, List
 
+import qualtran.bloqs.rotations.phase_gradient
 from qualtran_dev_tools.bloq_finder import get_bloqdocspecs
 from qualtran_dev_tools.git_tools import get_git_root
 from qualtran_dev_tools.jupyter_autogen import NotebookSpecV2, render_notebook
@@ -372,6 +373,12 @@ ROT_QFT_PE = [
         title='Phasing via Cost function',
         module=qualtran.bloqs.rotations.phasing_via_cost_function,
         bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
+        directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    NotebookSpecV2(
+        title='Phase Gradient',
+        module=qualtran.bloqs.rotations.phase_gradient,
+        bloq_specs=[qualtran.bloqs.rotations.phase_gradient._ADD_INTO_PHASE_GRAD_DOC],
         directory=f'{SOURCE_DIR}/bloqs/rotations/',
     ),
     # --------------------------------------------------------------------------

@@ -70,6 +70,7 @@ Bloqs Library
     basic_gates/su2_rotation.ipynb
     rotations/quantum_variable_rotation.ipynb
     rotations/phasing_via_cost_function.ipynb
+    rotations/phase_gradient.ipynb
     qft/two_bit_ffft.ipynb
     qft/approximate_qft.ipynb
     phase_estimation/lp_resource_state.ipynb
