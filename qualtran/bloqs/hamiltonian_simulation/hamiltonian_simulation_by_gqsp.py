@@ -112,7 +112,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         if self._parameterized_():
             raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
         poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
-        # TODO explain (1-2*eps)
+        # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
         poly = scale_down_to_qsp_polynomial(poly) * (1 - 2 * self.precision)
         return poly
 

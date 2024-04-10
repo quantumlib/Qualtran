@@ -15,7 +15,6 @@ from collections import Counter
 from functools import cached_property
 from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import field, frozen
 from numpy.polynomial import Polynomial
@@ -34,6 +33,8 @@ from qualtran import (
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
 if TYPE_CHECKING:
+    import cirq
+
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -202,8 +203,33 @@ def qsp_phase_factors(
     return theta, phi, lambd
 
 
+def _polynomial_max_abs_value_on_unit_circle(P: Sequence[complex], *, n_points=2**17):
+    r"""Find the maximum absolute value of $P$ on $N$ uniform points on the complex unit circle.
+
+    For a polynomial $P$, this function computes
+
+    $$
+        \max_{k = 0}^{N - 1} |P(e^{2 \pi i k/N})|
+    $$
+
+    TODO(#860) Figure out a more efficient and always correct way to do this.
+
+    Args:
+        P: complex polynomial
+        n_points: number of points $N$ to evaluate
+    """
+    from scipy.fft import fft
+
+    poly = np.zeros(n_points)
+    poly[: len(P)] = P
+
+    values = fft(poly)
+
+    return np.max(np.abs(values))
+
+
 def scale_down_to_qsp_polynomial(
-    P: Sequence[complex], *, n_points: int = 10**5
+    P: Sequence[complex], *, n_points: int = 2**17
 ) -> NDArray[np.complex_]:
     r"""Scale down the polynomial to be a valid QSP Polynomial
 
@@ -217,27 +243,22 @@ def scale_down_to_qsp_polynomial(
         P: input polynomial to scale if needed
         n_points: number of points to sample on the unit circle to evaluate the polynomial
     """
-    P = np.array(P)
-
-    points = np.exp(2j * np.pi * np.linspace(0, 1, num=n_points))
-    max_value = np.max(np.abs(Polynomial(P)(points)))
+    P = np.asarray(P)
+    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
     if max_value > 1:
         P = P / max_value
-
     return P
 
 
-def assert_is_qsp_polynomial(P: Sequence[complex], *, rtol: float, n_points: int = 100000):
+def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
     r"""Check if the given polynomial is a valid QSP polynomial.
 
     $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
     """
-    points = np.exp(2j * np.pi * np.linspace(0, 1, num=n_points))
-    P = Polynomial(P)
-    values = np.abs(P(points))
-    assert np.all(
-        values <= 1
-    ), f"Not a QSP polynomial! maximum absolute value {np.max(values)} is greater than 1."
+    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
+    assert (
+        max_value <= 1
+    ), f"Not a QSP polynomial! maximum absolute value {max_value} is greater than 1."
 
 
 @frozen
@@ -323,7 +344,7 @@ class GeneralizedQSP(GateWithRegisters):
         verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
         if verify:
-            assert_is_qsp_polynomial(P, rtol=verify_precision)
+            assert_is_qsp_polynomial(P)
         Q = qsp_complementary_polynomial(P, verify=verify, verify_precision=verify_precision)
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
@@ -353,8 +374,8 @@ class GeneralizedQSP(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']
+    ) -> 'cirq.OP_TREE':
         (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power

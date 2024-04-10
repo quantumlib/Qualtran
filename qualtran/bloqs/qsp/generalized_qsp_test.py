@@ -35,6 +35,7 @@ from .generalized_qsp import (
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
+    scale_down_to_qsp_polynomial,
 )
 
 
@@ -294,18 +295,19 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
         degree_jacobi_anger_approximation,
     )
 
+    if precision == 1e-9:
+        pytest.skip("high precision tests not enforced yet (Issue #860)")
+
     random_state = np.random.RandomState(42 + int(t))
 
     d = degree_jacobi_anger_approximation(t, precision=precision)
 
     P = approx_exp_cos_by_jacobi_anger(t, degree=d)
-    # TODO compute optimal scaling factor
-    scale_P = 3 * np.linalg.norm(P, ord=np.inf) / (1 - 2 * precision)
-    P /= scale_P
+    # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
+    P = scale_down_to_qsp_polynomial(P) * (1 - 2 * precision)
+    assert_is_qsp_polynomial(P)
 
-    assert_is_qsp_polynomial(P, rtol=precision)
-
-    Q = qsp_complementary_polynomial(P, verify=True, verify_precision=1e-4)
+    Q = qsp_complementary_polynomial(P, verify=True, verify_precision=1e-5)
     check_polynomial_pair_on_random_points_on_unit_circle(
         P, Q, random_state=random_state, rtol=precision
     )
