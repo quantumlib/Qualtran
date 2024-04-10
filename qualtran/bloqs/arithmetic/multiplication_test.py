@@ -12,10 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import cirq
+import numpy as np
 import pytest
 from fxpmath import Fxp
 
-import numpy as np
 from qualtran import BloqBuilder, QFxp, QUInt, Register
 from qualtran._infra.data_types import val_to_fxp
 from qualtran.bloqs.arithmetic.multiplication import (

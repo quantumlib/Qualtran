@@ -38,7 +38,6 @@ from qualtran import (
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
 from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
-from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

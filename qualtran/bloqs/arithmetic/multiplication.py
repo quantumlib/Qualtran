@@ -18,7 +18,6 @@ import cirq
 import numpy as np
 from attrs import frozen
 from fxpmath import Fxp
-from matplotlib.pylab import f
 
 from qualtran import (
     Bloq,
