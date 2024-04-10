@@ -29,8 +29,8 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     DecomposeTypeError,
-    QAny,
     QBit,
+    QUInt,
     Register,
     Side,
     Signature,
@@ -307,7 +307,7 @@ class _IntVector(Bloq):
         side = Side.RIGHT if self.state else Side.LEFT
         if self.bitsize == 1:
             return Signature([Register('val', QBit(), side=side)])
-        return Signature([Register('val', QAny(self.bitsize), side=side)])
+        return Signature([Register('val', QUInt(self.bitsize), side=side)])
 
     @staticmethod
     def _build_composite_state(bb: 'BloqBuilder', bits: NDArray[np.uint8]) -> Dict[str, 'SoquetT']:
@@ -318,7 +318,7 @@ class _IntVector(Bloq):
             xs.append(x)
         xs = np.array(xs)
 
-        return {'val': bb.join(xs)}
+        return {'val': bb.join(xs, dtype=QUInt(len(bits)))}
 
     @staticmethod
     def _build_composite_effect(
