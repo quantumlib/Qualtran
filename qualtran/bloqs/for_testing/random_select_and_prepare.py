@@ -28,26 +28,44 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 
 @frozen
 class RandomPrepareOracle(PrepareOracle):
+    r"""Gate that prepares a randomly chosen state with real amplitudes.
+
+    It is an $n$-qubit unitary $U$ such that
+
+    $$
+        U |0^n\rangle> = \sum_{x = 0}^{2^n-1} \sqrt{\alpha_x} |x\rangle
+    $$
+
+    where $\alpha_x \ge 0$ such that $\sum_x \alpha_x = 1$.
+
+    Args:
+        U: A `RandomGate` whose matrix is the unitary of the oracle.
+
+    Registers:
+        selection: $n$-qubit register
+    """
+
     U: RandomGate
+
+    def __attrs_post_init__(self):
+        # check that first column is all reals
+        column = np.array(self.U.matrix)[:, 0]
+        np.testing.assert_almost_equal(np.imag(column), 0)
 
     @property
     def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BoundedQUInt(bitsize=self.U.bitsize)),)
 
-    @staticmethod
-    def create(bitsize: int, *, random_state: np.random.RandomState):
+    @classmethod
+    def create(cls, bitsize: int, *, random_state: np.random.RandomState):
         matrix = RandomGate.create(bitsize, random_state=random_state).matrix
         matrix = np.array(matrix)
 
-        # make the first column (weights alpha_i) all reals
-        alpha = matrix[:, 0]
-        matrix = matrix * (alpha.conj() / np.abs(alpha))[:, None]
+        # make the first column (weights \sqrt{alpha_i}) all reals
+        column = matrix[:, 0]
+        matrix = matrix * (column.conj() / np.abs(column))[:, None]
 
-        # verify that it is still unitary
-        np.testing.assert_allclose(matrix @ matrix.conj().T, np.eye(2**bitsize), atol=1e-10)
-        np.testing.assert_allclose(matrix.conj().T @ matrix, np.eye(2**bitsize), atol=1e-10)
-
-        return RandomPrepareOracle(RandomGate(bitsize, matrix))
+        return cls(RandomGate(bitsize, matrix))
 
     def build_composite_bloq(self, bb: BloqBuilder, selection: SoquetT) -> dict[str, SoquetT]:
         selection = bb.add(self.U, q=selection)
@@ -60,27 +78,47 @@ class RandomPrepareOracle(PrepareOracle):
 
     @cached_property
     def alphas(self):
-        column = np.array(self.U.matrix)[:, 0]
-        np.testing.assert_almost_equal(np.imag(column), 0)
-        return column**2
+        return np.array(self.U.matrix)[:, 0] ** 2
 
 
 @frozen
 class PauliSelectOracle(SelectOracle):
+    r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
+
+    Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
+    this gate implements the following $m + n$-qubit unitary:
+
+    $$
+        \sum_{j = 0}^{2^n - 1} |j \rangle\langle j| \otimes U_j
+    $$
+
+
+    Args:
+        select_bitsize: $n$-qubit control register that selects the $i$-th Pauli
+        target_bitsize: $m$-qubit register on which the Paulis act
+        select_unitaries: A sequence of $2^n$ multi-qubit-Paulis, the $i$-th one acting when the selection register is $i$.
+        control_val: optional control bit.
+
+    Registers:
+        control: (optional) one qubit register if `control_val` is not None
+        selection: $n$-qubit integer register
+        target: $m$-qubit register
+    """
+
     select_bitsize: int
     target_bitsize: int
     select_unitaries: tuple[cirq.DensePauliString, ...]
     control_val: Optional[int] = None
 
-    @staticmethod
+    @classmethod
     def random(
-        select_bitsize: int, target_bitsize: int, *, random_state: np.random.RandomState
+        cls, select_bitsize: int, target_bitsize: int, *, random_state: np.random.RandomState
     ) -> 'PauliSelectOracle':
         dps = tuple(
             cirq.DensePauliString(random_state.randint(0, 4, size=target_bitsize))
             for _ in range(2**select_bitsize)
         )
-        return PauliSelectOracle(select_bitsize, target_bitsize, dps)
+        return cls(select_bitsize, target_bitsize, dps)
 
     @property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -142,6 +180,23 @@ class PauliSelectOracle(SelectOracle):
 def random_qubitization_walk_operator(
     select_bitsize: int, target_bitsize: int, *, random_state: np.random.RandomState
 ) -> tuple[QubitizationWalkOperator, cirq.PauliSum]:
+    r"""Szegedy Walk operator for a randomly generated Hamiltonian $H$ of $2^n$ $m$-qubit Paulis.
+
+    $$
+        H = \sum_{j = 0}^{2^n - 1} \alpha_j U_j
+    $$
+
+    where $U_j$ are randomly selected $m$-qubit Paulis
+    and $\alpha_j \ge 0$ such that $\sum_j \alpha_j = 1$ are randomly chosen weights.
+
+    Args:
+        select_bitsize: number of qubits $n$ of the selection register
+        target_bitsize: number of qubits $m$ that Hamiltonian $H$ acts on
+        random_state: optional random state
+
+    Returns:
+        WalkOperator for $H$, and the Hamiltonian $H$.
+    """
     prepare = RandomPrepareOracle.create(select_bitsize, random_state=random_state)
     select = PauliSelectOracle.random(select_bitsize, target_bitsize, random_state=random_state)
 

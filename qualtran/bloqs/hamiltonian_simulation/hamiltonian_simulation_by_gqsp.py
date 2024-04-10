@@ -112,6 +112,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         if self._parameterized_():
             raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
         poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
+        # TODO explain (1-2*eps)
         poly = scale_down_to_qsp_polynomial(poly) * (1 - 2 * self.precision)
         return poly
 
@@ -151,6 +152,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return gqsp_soqs, prepare_out_soqs
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        # TODO open issue: alloc/free does not work with cirq api
         state_prep_ancilla = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers

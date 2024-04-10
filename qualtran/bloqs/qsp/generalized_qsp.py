@@ -227,7 +227,7 @@ def scale_down_to_qsp_polynomial(
     return P
 
 
-def assert_is_qsp_polynomial(P, *, rtol: float, n_points: int = 100000):
+def assert_is_qsp_polynomial(P: Sequence[complex], *, rtol: float, n_points: int = 100000):
     r"""Check if the given polynomial is a valid QSP polynomial.
 
     $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
