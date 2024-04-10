@@ -19,6 +19,7 @@ from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 import networkx as nx
 import numpy as np
 import sympy
+from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -34,7 +35,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
-ClassicalValT = Union[int, NDArray[int]]
+ClassicalValT = Union[int, Fxp, NDArray[np.uint]]
 
 
 def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
