@@ -476,6 +476,9 @@ class Cast(Bloq):
     def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
         return None, {'reg': reg}
 
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'reg': reg}
+
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
