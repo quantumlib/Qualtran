@@ -12,25 +12,35 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 import cirq
 import numpy as np
 import pytest
 import sympy
-from attrs import define, field, frozen
-from cirq.testing import random_unitary
+from attrs import define
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, GateWithRegisters, Signature
+from qualtran import Bloq, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.bloqs.generalized_qsp import (
+from qualtran.bloqs.for_testing.random_gate import RandomGate
+from qualtran.resource_counting import SympySymbolAllocator
+
+from .generalized_qsp import (
+    _gqsp,
+    _gqsp_with_large_negative_power,
+    _gqsp_with_negative_power,
     GeneralizedQSP,
     qsp_complementary_polynomial,
     qsp_phase_factors,
 )
-from qualtran.resource_counting import SympySymbolAllocator
+
+
+def test_gqsp_example(bloq_autotester):
+    bloq_autotester(_gqsp)
+    bloq_autotester(_gqsp_with_negative_power)
+    bloq_autotester(_gqsp_with_large_negative_power)
 
 
 def assert_angles_almost_equal(
@@ -45,6 +55,7 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
     Q: Union[Sequence[complex], Polynomial],
     *,
     random_state: np.random.RandomState,
+    rtol: float = 1e-7,
     n_points: int = 1000,
 ):
     P = Polynomial(P)
@@ -52,7 +63,7 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
 
     for _ in range(n_points):
         z = np.exp(random_state.random() * np.pi * 2j)
-        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1)
+        np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)
 
 
 def random_qsp_polynomial(
@@ -97,34 +108,6 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int):
         assert np.isreal(Q).all()
 
 
-@frozen
-class RandomGate(GateWithRegisters):
-    bitsize: int
-    matrix: Tuple[Tuple[complex, ...], ...] = field(
-        converter=lambda mat: tuple(tuple(row) for row in mat)
-    )
-
-    @staticmethod
-    def create(bitsize: int, *, random_state=None) -> 'RandomGate':
-        matrix = random_unitary(2**bitsize, random_state=random_state)
-        return RandomGate(bitsize, matrix)
-
-    @property
-    def signature(self) -> Signature:
-        return Signature.build(q=self.bitsize)
-
-    def _unitary_(self):
-        return np.array(self.matrix)
-
-    def adjoint(self) -> 'RandomGate':
-        return RandomGate(self.bitsize, np.conj(self.matrix).T)
-
-    def __pow__(self, power):
-        if power == -1:
-            return self.adjoint()
-        return NotImplemented
-
-
 def evaluate_polynomial_of_matrix(
     P: Sequence[complex], U: NDArray, *, negative_power: int = 0
 ) -> NDArray:
@@ -155,7 +138,9 @@ def verify_generalized_qsp(
     input_unitary = cirq.unitary(U)
     N = input_unitary.shape[0]
     if Q is None:
-        gqsp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
+        gqsp_U = GeneralizedQSP.from_qsp_polynomial(
+            U, P, negative_power=negative_power, verify=True
+        )
     else:
         gqsp_U = GeneralizedQSP(U, P, Q, negative_power=negative_power)
     result_unitary = cirq.unitary(gqsp_U)
@@ -200,7 +185,7 @@ def test_generalized_qsp_with_complex_poly_on_random_unitaries(
         verify_generalized_qsp(U, P, negative_power=negative_power)
 
 
-@pytest.mark.parametrize("negative_power", [0, 1, 2])
+@pytest.mark.parametrize("negative_power", [0, 1, 2, 3, 4])
 def test_call_graph(negative_power: int):
     random_state = np.random.RandomState(42)
 
@@ -221,9 +206,13 @@ def test_call_graph(negative_power: int):
 
     g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    expected_counts = {U.controlled(control_values=[0]): 3 - negative_power, arbitrary_rotation: 3}
+    expected_counts = {arbitrary_rotation: 3}
+    if negative_power < 2:
+        expected_counts[Controlled(U, CtrlSpec(cvs=0))] = 2 - negative_power
     if negative_power > 0:
-        expected_counts[U.adjoint().controlled()] = negative_power
+        expected_counts[Controlled(U.adjoint(), CtrlSpec())] = min(2, negative_power)
+    if negative_power > 2:
+        expected_counts[U.adjoint()] = negative_power - 2
 
     assert sigma == expected_counts
 

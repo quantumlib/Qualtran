@@ -89,3 +89,4 @@ Bloqs Library
     multiplexers/select_pauli_lcu.ipynb
     state_preparation/state_preparation_alias_sampling.ipynb
     state_preparation/state_preparation_via_rotation.ipynb
+    qsp/generalized_qsp.ipynb

@@ -79,6 +79,7 @@ import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
+import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -475,6 +476,11 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
         ],
         directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
+    ),
+    NotebookSpecV2(
+        title='Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.qsp.generalized_qsp,
+        bloq_specs=[qualtran.bloqs.qsp.generalized_qsp._Generalized_QSP_DOC],
     ),
 ]
 
