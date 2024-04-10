@@ -35,7 +35,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
-ClassicalValT = Union[int, Fxp, NDArray[np.uint]]
+ClassicalValT = Union[int, Fxp, NDArray[int]]
 
 
 def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
