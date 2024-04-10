@@ -159,8 +159,8 @@ def test_add_scaled_val_into_phase_reg(bloq):
             c1 = bloq.on_classical_vals(**d)
             c2 = cbloq.on_classical_vals(**d)
             assert c1 == c2, f'{d=}, {c1=}, {c2=}'
-            bloq_unitary = cirq.unitary(bloq)
-            op = GateHelper(bloq).operation
-            circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
-            decomposed_unitary = circuit.unitary(qubit_order=op.qubits)
-            np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
+    bloq_unitary = cirq.unitary(bloq)
+    op = GateHelper(bloq).operation
+    circuit = cirq.Circuit(cirq.I.on_each(*op.qubits), cirq.decompose_once(op))
+    decomposed_unitary = circuit.unitary(qubit_order=op.qubits)
+    np.testing.assert_allclose(bloq_unitary, decomposed_unitary)
