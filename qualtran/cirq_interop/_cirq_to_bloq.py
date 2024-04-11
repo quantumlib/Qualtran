@@ -31,7 +31,9 @@ from qualtran import (
     DecomposeNotImplementedError,
     DecomposeTypeError,
     GateWithRegisters,
+    QAny,
     QBit,
+    QDType,
     Register,
     Side,
     Signature,
@@ -43,6 +45,7 @@ from qualtran._infra.gate_with_registers import (
     get_named_qubits,
     split_qubits,
 )
+from qualtran.bloqs.util_bloqs import Cast
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.simulation.tensor._tensor_data_manipulation import (
@@ -210,7 +213,7 @@ def _add_my_tensors_from_gate(
     tn.add(qtn.Tensor(data=unitary, inds=outgoing_list + incoming_list, tags=[short_name, tag]))
 
 
-@frozen
+@frozen(eq=False)
 class _QReg:
     """Used as a container for qubits that form a `Register` of a given bitsize.
 
@@ -221,6 +224,21 @@ class _QReg:
     qubits: Tuple[cirq.Qid, ...] = field(
         converter=lambda v: (v,) if isinstance(v, cirq.Qid) else tuple(v)
     )
+    dtype: QDType
+
+    # Overwrite hash / equality to ensure single-qubit registers map to each other correctly.
+    # E.g., when updating qreg_to_qvars we may have output qregs with dtype =
+    # QBit, but the input registers (which are used to track the qubits) may
+    # have QUInt(1) or similar, leading to the mappings not updating correctly.
+    # Single qubit QFxp cases are handled separately in _ensure_in_reg_exists
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, _QReg):
+            return False
+
+        return other.qubits == self.qubits
+
+    def __hash__(self):
+        return hash(self.qubits)
 
 
 def _ensure_in_reg_exists(
@@ -230,7 +248,10 @@ def _ensure_in_reg_exists(
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
-        qreg_to_qvar[_QReg(qubits_to_allocate)] = bb.allocate(len(qubits_to_allocate))
+        n_alloc = len(qubits_to_allocate)
+        qreg_to_qvar[
+            _QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))
+        ] = bb.allocate(n_alloc)
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
@@ -242,7 +263,9 @@ def _ensure_in_reg_exists(
     new_qreg_to_qvar: Dict[_QReg, Soquet] = {}
     for qreg, soq in qreg_to_qvar.items():
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
-            new_qreg_to_qvar |= {_QReg(q): s for q, s in zip(qreg.qubits, bb.split(soq=soq))}
+            new_qreg_to_qvar |= {
+                _QReg(q, QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
+            }
         else:
             new_qreg_to_qvar[qreg] = soq
     qreg_to_qvar.clear()
@@ -252,11 +275,30 @@ def _ensure_in_reg_exists(
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            soqs_to_join[qreg.qubits[0]] = soq
+            # Cast single bit registers to QBit to preserve signature of later join.
+            if not isinstance(qreg.dtype, QBit):
+                soqs_to_join[qreg.qubits[0]] = bb.add(Cast(qreg.dtype, QBit()), reg=soq)
+            else:
+                soqs_to_join[qreg.qubits[0]] = soq
+        elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
+            # Cast single QBit registers to the appropriate single-bit register dtype.
+            err_msg = (
+                "Found non-QBit type register which shouldn't happen: "
+                f"{soq.reg.name} {soq.reg.dtype}"
+            )
+            assert isinstance(soq.reg.dtype, QBit), err_msg
+            if not isinstance(in_reg.dtype, QBit):
+                qreg_to_qvar[in_reg] = bb.add(Cast(QBit(), in_reg.dtype), reg=soq)
+            else:
+                qreg_to_qvar[qreg] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        qreg_to_qvar[in_reg] = bb.join(np.array([soqs_to_join[q] for q in in_reg.qubits]))
+        # A split is not necessarily matched with a join of the same size so we
+        # need to strip the data type of the parent split before assigning the correct bitsize.
+        qreg_to_qvar[in_reg] = bb.join(
+            np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=in_reg.dtype
+        )
 
 
 def _gather_input_soqs(
@@ -409,8 +451,14 @@ def cirq_optree_to_cbloq(
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
-    in_quregs = {k: np.apply_along_axis(_QReg, -1, v) for k, v in in_quregs.items()}
-    out_quregs = {k: np.apply_along_axis(_QReg, -1, v) for k, v in out_quregs.items()}
+    in_quregs = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))
+        for k, v in in_quregs.items()
+    }
+    out_quregs = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))
+        for k, v in out_quregs.items()
+    }
 
     bb, initial_soqs = BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
@@ -436,11 +484,13 @@ def cirq_optree_to_cbloq(
             bb.add(bloq)
             continue
 
+        reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
-            k: np.apply_along_axis(_QReg, -1, v)
-            for k, v in split_qubits(bloq.signature, op.qubits).items()
+            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))
+            for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
+
         in_op_quregs: Dict[str, NDArray[_QReg]] = {
             reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
         }
