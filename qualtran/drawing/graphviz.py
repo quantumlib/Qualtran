@@ -26,6 +26,7 @@ from qualtran import (
     Connection,
     DanglingT,
     LeftDangle,
+    QBit,
     QDType,
     Register,
     RightDangle,
@@ -413,6 +414,8 @@ class TypedGraphDrawer(PrettyGraphDrawer):
         l, r = cxn.left.reg.dtype, cxn.right.reg.dtype
         if l == r:
             return self._fmt_dtype(l)
+        elif l.num_qubits == 1:
+            return self._fmt_dtype(l if isinstance(l, QBit) else r)
         else:
             return f'{self._fmt_dtype(l)}-{self._fmt_dtype(r)}'
 
