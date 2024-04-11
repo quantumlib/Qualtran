@@ -4,6 +4,10 @@ import openfermion as of
 from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
+from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotationByPhaseGradient, ComplexGivensRotationByPhaseGradient
+    from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+from qualtran.bloqs.basic_gates import XGate, CNOT, SGate, Hadamard
+
 def test_circuit_decomposition_givens():
     """
     confirm Figure 9 of [Quantum 4, 296 (2020)](https://quantum-journal.org/papers/q-2020-07-16-296/pdf/)
@@ -35,14 +39,39 @@ def test_circuit_decomposition_givens():
     for _ in range(10):
         theta = 2 * np.pi / np.random.randn()
         ryxxy = cirq.unitary(Ryxxy(theta))
-        print(theta, theta / np.pi)
-        print(ryxxy.real)
         i, j = 0, 1
         theta_fop = theta * (of.FermionOperator(((i, 1), (j, 0))) - of.FermionOperator(((j, 1), (i, 0))))
         fUtheta = expm(of.get_sparse_operator(of.jordan_wigner(theta_fop), n_qubits=2).todense())
-        print(fUtheta.real)
         assert np.allclose(fUtheta, ryxxy)
         circuit = circuit_construction(theta)
         test_unitary = cirq.unitary(circuit)
-        print((1j * test_unitary).real)
-        print(abs(np.trace(test_unitary.conj().T @ fUtheta)))
+        assert np.isclose(4, abs(np.trace(test_unitary.conj().T @ fUtheta)))
+
+def test_count_t_cliffords():
+    add_into_phasegrad_gate = AddIntoPhaseGrad(
+        x_bitsize=4,
+        phase_bitsize=4,
+        right_shift=0,
+        sign=1,
+        controlled=1
+    )
+    res = add_into_phasegrad_gate._t_complexity_()
+    assert res.t == 16
+
+    gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4) 
+    gate_counts = gate.bloq_counts()
+
+    assert gate_counts[CNOT()] == 5
+    assert gate_counts[Hadamard()] == 2
+    assert gate_counts[SGate(is_adjoint=False)] == 2
+    assert gate_counts[SGate(is_adjoint=True)] == 1
+    assert gate_counts[XGate()] == 2
+    assert gate_counts[add_into_phasegrad_gate] == 2
+    
+    costs = gate.t_complexity()
+    assert costs.t == 32
+    assert costs.clifford == 12
+
+if __name__ == "__main__":
+    test_circuit_decomposition_givens()
+    test_count_t_cliffords()

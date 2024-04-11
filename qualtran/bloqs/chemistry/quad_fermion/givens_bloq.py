@@ -31,6 +31,7 @@ $$
 V_{\overrightarrow{Q}_{q}} = V_{n-1,n-2}(0, \phi_{n-1}) V_{n-2, n-3}(\theta_{n-2}, \phi_{n-2})V_{n-3,n-4}(\theta_{n-2}, \phi_{n-2})...V_{2, 1}(\theta_{1}, \phi_{1})V_{1, 0}(\theta_{0}, \phi_{0})
 $$
 with each $V_{ij}(\theta, \phi) = \mathrm{RZ}_{j}(\pi)\mathrm{R}_{ij}(\theta)$. 
+and $1$ Rz rotation for real valued $\overrightarrow{Q}$.
 
 
 References:
@@ -49,7 +50,7 @@ from qualtran import (
     Signature,
     SoquetT,
     QBit,
-    QFxp
+    QFxp,
 )
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 from qualtran.bloqs.basic_gates import XGate, CNOT, SGate, Hadamard
@@ -149,6 +150,9 @@ class RealGivensRotationByPhaseGradient(Bloq):
                 'rom_data': rom_data, 
                 'phase_gradient': phase_gradient
                 }
+    
+    # def _t_complexit_(self)-> 'TComplexity':
+    #     return TComplexity(clifford=12)
 
 @frozen
 class ComplexGivensRotationByPhaseGradient(Bloq):
