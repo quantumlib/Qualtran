@@ -90,3 +90,4 @@ Bloqs Library
     state_preparation/state_preparation_alias_sampling.ipynb
     state_preparation/state_preparation_via_rotation.ipynb
     qsp/generalized_qsp.ipynb
+    hamiltonian_simulation/hamiltonian_simulation_by_gqsp.ipynb

@@ -15,7 +15,6 @@ from collections import Counter
 from functools import cached_property
 from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import field, frozen
 from numpy.polynomial import Polynomial
@@ -34,11 +33,13 @@ from qualtran import (
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
 if TYPE_CHECKING:
+    import cirq
+
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 def qsp_complementary_polynomial(
-    P: Sequence[complex], *, verify: bool = False
+    P: Sequence[complex], *, verify: bool = False, verify_precision: float = 1e-7
 ) -> Sequence[complex]:
     r"""Computes the Q polynomial given P
 
@@ -57,6 +58,7 @@ def qsp_complementary_polynomial(
     Args:
         P: Co-efficients of a complex polynomial.
         verify: sanity check the computed polynomial roots (defaults to False).
+        verify_precision: precision to compare values while verifying
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
@@ -86,7 +88,8 @@ def qsp_complementary_polynomial(
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
 
     for r in roots:
-        assert not (np.abs(r) <= 1e-5), "zero root!"
+        if verify:
+            assert not (np.abs(r) <= verify_precision), "zero root!"
         if np.allclose(np.abs(r), 1):
             units.append(r)
         elif np.abs(r) > 1:
@@ -101,7 +104,7 @@ def qsp_complementary_polynomial(
     for z in units:
         matched_z = None
         for w in unpaired_units:
-            if np.allclose(z, w):
+            if np.allclose(z, w, rtol=verify_precision):
                 matched_z = w
                 break
 
@@ -111,23 +114,8 @@ def qsp_complementary_polynomial(
         else:
             unpaired_units.append(z)
 
-    unpaired_conj_units: list[complex] = []
-    for z in unpaired_units:
-        matched_z_conj = None
-        for w in unpaired_conj_units:
-            if np.allclose(z.conjugate(), w):
-                matched_z_conj = w
-                break
-
-        if matched_z_conj is not None:
-            smaller_roots.append(z)
-            larger_roots.append(matched_z_conj)
-            unpaired_conj_units.remove(matched_z_conj)
-        else:
-            unpaired_conj_units.append(z)
-
     if verify:
-        assert len(unpaired_conj_units) == 0
+        assert len(unpaired_units) == 0
 
         # verify that the non-unit roots indeed occur in conjugate pairs.
         def assert_is_permutation(A, B):
@@ -136,11 +124,12 @@ def qsp_complementary_polynomial(
             unmatched = []
             for z in B:
                 for w in A:
-                    if np.allclose(z, w, rtol=1e-5, atol=1e-5):
+                    if np.allclose(z, w, rtol=verify_precision, atol=verify_precision):
                         A.remove(w)
                         break
                 else:
                     unmatched.append(z)
+
             assert len(unmatched) == 0
 
         assert_is_permutation(smaller_roots, 1 / np.array(larger_roots).conj())
@@ -212,6 +201,65 @@ def qsp_phase_factors(
             S = np.array([S[0][1 : d + 1], S[1][0:d]])
 
     return theta, phi, lambd
+
+
+def _polynomial_max_abs_value_on_unit_circle(P: Sequence[complex], *, n_points=2**17):
+    r"""Find the maximum absolute value of $P$ on $N$ uniform points on the complex unit circle.
+
+    For a polynomial $P$, this function computes
+
+    $$
+        \max_{k = 0}^{N - 1} |P(e^{2 \pi i k/N})|
+    $$
+
+    TODO(#860) Figure out a more efficient and always correct way to do this.
+
+    Args:
+        P: complex polynomial
+        n_points: number of points $N$ to evaluate
+    """
+    from scipy.fft import fft
+
+    P = np.asarray(P)
+    poly = np.zeros(n_points, dtype=P.dtype)
+    poly[: len(P)] = P
+
+    values = fft(poly)
+
+    return np.max(np.abs(values))
+
+
+def scale_down_to_qsp_polynomial(
+    P: Sequence[complex], *, n_points: int = 2**17
+) -> NDArray[np.complex_]:
+    r"""Scale down the polynomial to be a valid QSP Polynomial
+
+    $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
+
+    If the input polynomial is not a valid QSP polynomial, this function attempts to compute
+    the maximum absolute value on the unit circle, and scale it down by that factor.
+    Otherwise returns the input as-is.
+
+    Args:
+        P: input polynomial to scale if needed
+        n_points: number of points to sample on the unit circle to evaluate the polynomial
+    """
+    P = np.asarray(P)
+    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
+    if max_value > 1:
+        P = P / max_value
+    return P
+
+
+def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
+    r"""Check if the given polynomial is a valid QSP polynomial.
+
+    $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
+    """
+    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
+    assert (
+        max_value <= 1
+    ), f"Not a QSP polynomial! maximum absolute value {max_value} is greater than 1."
 
 
 @frozen
@@ -294,8 +342,11 @@ class GeneralizedQSP(GateWithRegisters):
         *,
         negative_power: int = 0,
         verify: bool = False,
+        verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
-        Q = qsp_complementary_polynomial(P, verify=verify)
+        if verify:
+            assert_is_qsp_polynomial(P)
+        Q = qsp_complementary_polynomial(P, verify=verify, verify_precision=verify_precision)
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
@@ -324,8 +375,8 @@ class GeneralizedQSP(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']
+    ) -> 'cirq.OP_TREE':
         (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power
