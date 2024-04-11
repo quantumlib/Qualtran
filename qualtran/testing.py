@@ -35,6 +35,7 @@ from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
 from qualtran.resource_counting import GeneralizerT
 
+
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
     """Check that the registers following decomposition match those of the original bloq.
 
