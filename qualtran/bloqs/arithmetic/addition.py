@@ -97,6 +97,15 @@ class Add(Bloq):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
 
     @property
+    def dtype(self):
+        if self.a_dtype != self.b_dtype:
+            raise ValueError(
+                "Add.dtype is only supported when both operands have the same dtype: "
+                f"{self.a_dtype=}, {self.b_dtype=}"
+            )
+        return self.a_dtype
+
+    @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 

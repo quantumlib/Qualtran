@@ -70,5 +70,4 @@ def test_t_complexity(n):
     qlt_testing.assert_equivalent_bloq_counts(
         bloq, [ignore_split_join, ignore_alloc_free, generalize_rotation_angle]
     )
-    # NOTE: for n = 1, _is_clifford_or_t will turn this into one rotation.
-    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6 + 3 * (n == 1)
+    assert bloq.t_complexity().t + bloq.t_complexity().rotations == 7 * n + 6

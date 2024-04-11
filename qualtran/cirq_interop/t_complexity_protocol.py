@@ -200,6 +200,9 @@ def _t_complexity_for_gate_or_op(
     gate_or_op: Union[cirq.Gate, cirq.Operation, Bloq]
 ) -> Optional[TComplexity]:
 
+    if isinstance(gate_or_op, cirq.Operation) and gate_or_op.gate is not None:
+        gate_or_op = gate_or_op.gate
+
     strategies = [
         _from_explicit_annotation,
         _from_bloq_build_call_graph,

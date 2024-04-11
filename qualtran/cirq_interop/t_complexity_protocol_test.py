@@ -197,33 +197,36 @@ def test_tagged_operations():
 
 
 def test_cache_clear():
-    class IsCachable(cirq.Operation):
+    class Cachable1(Bloq):
         def __init__(self) -> None:
-            super().__init__()
             self.num_calls = 0
-            self._gate = cirq.X
 
+        def signature(self) -> 'Signature':
+            return Signature([])
+
+        def _t_complexity_(self) -> TComplexity:
+            self.num_calls += 1
+            return TComplexity(clifford=1)
+
+        def __hash__(self):
+            # Manufacture a hash collision
+            return hash(2)
+
+    class Cachable2(Cachable1):
         def _t_complexity_(self) -> TComplexity:
             self.num_calls += 1
             return TComplexity()
 
-        @property
-        def qubits(self):
-            return [cirq.LineQubit(3)]  # pragma: no cover
+        def __hash__(self):
+            # Manufacture a hash collision
+            return hash(2)
 
-        def with_qubits(self, _):
-            ...
-
-        @property
-        def gate(self):
-            return self._gate
-
-    assert t_complexity(cirq.X) == TComplexity(clifford=1)
+    assert t_complexity(Cachable1()) == TComplexity(clifford=1)
     # Using a global cache will result in a failure of this test since `cirq.X` has
     # `T-complexity(clifford=1)` but we explicitly return `TComplexity()` for IsCachable
-    # operation; for which the hash would be equivalent to the hash of it's subgate i.e. `cirq.X`.
+    # operation; for which the hash would be equivalent to the hash of its subgate i.e. `cirq.X`.
     t_complexity.cache_clear()
-    op = IsCachable()
+    op = Cachable2()
     assert t_complexity([op, op]) == TComplexity()
     assert op.num_calls == 1
     t_complexity.cache_clear()
