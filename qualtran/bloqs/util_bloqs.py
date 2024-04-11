@@ -434,7 +434,7 @@ class Cast(Bloq):
     )
 
     def __attrs_post_init__(self):
-        if isinstance(self.inp_dtype.bitsize, int):
+        if isinstance(self.inp_dtype.num_qubits, int):
             if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
                 raise ValueError("Casting only permitted between same sized registers.")
 
@@ -469,6 +469,9 @@ class Cast(Bloq):
     def on_classical_vals(self, reg: int) -> Dict[str, 'ClassicalValT']:
         # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
         return {'reg': reg}
+
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'reg': reg}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()

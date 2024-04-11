@@ -577,6 +577,7 @@ class GreaterThan(Bloq):
         b: n-bit-sized input registers.
         target: A single bit output register to store the result of A > B.
     """
+
     a_bitsize: int
     b_bitsize: int
 
@@ -648,6 +649,7 @@ class LinearDepthGreaterThan(Bloq):
 
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
+
     bitsize: int
     signed: bool
 
@@ -693,11 +695,11 @@ class LinearDepthGreaterThan(Bloq):
         if not self.signed:
             a_sign = bb.allocate(n=1)
             a_split = bb.split(a)
-            a = bb.join(np.concatenate([[a_sign], a_split]))
+            a = bb.join(np.concatenate([[a_sign], a_split]), dtype=QUInt(self.bitsize + 1))
 
             b_sign = bb.allocate(n=1)
             b_split = bb.split(b)
-            b = bb.join(np.concatenate([[b_sign], b_split]))
+            b = bb.join(np.concatenate([[b_sign], b_split]), dtype=QUInt(self.bitsize + 1))
 
         # Create variable true_bitsize to account for sign bit in bloq construction.
         true_bitsize = self.bitsize if self.signed else (self.bitsize + 1)
@@ -767,19 +769,19 @@ class LinearDepthGreaterThan(Bloq):
         for i in range(true_bitsize):
             b_split[i] = bb.add(XGate(), q=b_split[i])
 
-        a = bb.join(a_split)
-        b = bb.join(b_split)
+        a = bb.join(a_split, dtype=QUInt(true_bitsize))
+        b = bb.join(b_split, dtype=QUInt(true_bitsize))
 
         # If the input registers were unsigned we free the ancilla sign bits.
         if not self.signed:
             a_split = bb.split(a)
             a_sign = a_split[0]
-            a = bb.join(a_split[1:])
+            a = bb.join(a_split[1:], dtype=QUInt(self.bitsize))
             bb.free(a_sign)
 
             b_split = bb.split(b)
             b_sign = b_split[0]
-            b = bb.join(b_split[1:])
+            b = bb.join(b_split[1:], dtype=QUInt(self.bitsize))
             bb.free(b_sign)
 
         # Return the output registers.

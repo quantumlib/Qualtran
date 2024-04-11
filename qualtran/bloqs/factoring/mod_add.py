@@ -198,8 +198,12 @@ class MontgomeryModAdd(Bloq):
         # constant subtraction circuit.
         x_split = bb.split(x)
         y_split = bb.split(y)
-        x = bb.join(np.concatenate([[junk_bit], x_split]))
-        y = bb.join(np.concatenate([[sign], y_split]))
+        x = bb.join(
+            np.concatenate([[junk_bit], x_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+        )
+        y = bb.join(
+            np.concatenate([[sign], y_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+        )
 
         # Perform in-place addition on quantum register y.
         x, y = bb.add(Add(QMontgomeryUInt(bitsize=self.bitsize + 1)), a=x, b=y)
@@ -207,7 +211,7 @@ class MontgomeryModAdd(Bloq):
         # Temporary solution to equalize the bitlength of the x and y registers for Add().
         x_split = bb.split(x)
         junk_bit = x_split[0]
-        x = bb.join(x_split[1:])
+        x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
         y = bb.add(
@@ -218,7 +222,7 @@ class MontgomeryModAdd(Bloq):
         # negative.
         y_split = bb.split(y)
         sign = y_split[0]
-        y = bb.join(y_split[1:])
+        y = bb.join(y_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
