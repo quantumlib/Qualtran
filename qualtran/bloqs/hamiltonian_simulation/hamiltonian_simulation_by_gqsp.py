@@ -201,8 +201,54 @@ def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
     return hubbard_time_evolution_by_gqsp
 
 
-_Hamiltonian_Simulation_by_GQSP_DOC = BloqDocSpec(
-    bloq_cls=HamiltonianSimulationByGQSP,
-    import_line='from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP',
-    examples=[_hubbard_time_evolution_by_gqsp],
-)
+# _Hamiltonian_Simulation_by_GQSP_DOC = BloqDocSpec(
+#     bloq_cls=HamiltonianSimulationByGQSP,
+#     import_line='from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP',
+#     examples=[_hubbard_time_evolution_by_gqsp],
+# )
+
+
+from numpy.fft import fft, ifft
+import matplotlib.pyplot as plt
+def freq_chart(t,x):
+    X = fft(x)
+    N = len(X)
+    n = np.arange(N)
+    T = N/len(x)
+    freq = n/T
+
+    plt.figure(figsize = (12, 6))
+    plt.subplot(121)
+
+    plt.stem(freq, np.abs(X), 'b', \
+             markerfmt=" ", basefmt="-b")
+    plt.xlabel('Freq (Hz)')
+    plt.ylabel('FFT Amplitude |X(freq)|')
+    plt.xlim(0, 100)
+
+    # plt.subplot(122)
+    # plt.plot(t.real, ifft(X), 'r')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Amplitude')
+    # plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
+    t = 2
+    alpha = 1
+    degree = 8
+    precision = 10**-5
+    points = np.exp(2j * np.pi * np.linspace(0, 1, num=10**3))
+
+    poly = approx_exp_cos_by_jacobi_anger(-t * alpha, degree=degree)
+    P = np.polynomial.Polynomial(poly)
+    y = P(points)
+
+    #
+    freq_chart(points, y)
+
+
+    # result = np.max(np.abs(P(points))) / (1 - 2 * precision)
+    print("max", np.max(np.abs(P(points))))
