@@ -201,6 +201,7 @@ def test_cache_clear():
         def __init__(self) -> None:
             self.num_calls = 0
 
+        @property
         def signature(self) -> 'Signature':
             return Signature([])
 
