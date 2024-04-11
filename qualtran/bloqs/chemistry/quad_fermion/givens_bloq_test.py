@@ -5,7 +5,7 @@ from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
 from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotationByPhaseGradient, ComplexGivensRotationByPhaseGradient
-    from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 from qualtran.bloqs.basic_gates import XGate, CNOT, SGate, Hadamard
 
 def test_circuit_decomposition_givens():
