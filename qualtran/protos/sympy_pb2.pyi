@@ -39,20 +39,57 @@ class _Function:
 class _FunctionEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Function.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     NONE: _Function.ValueType  # 0
-    ADDITION: _Function.ValueType  # 1
-    MULTIPLICATION: _Function.ValueType  # 2
-    POWER: _Function.ValueType  # 3
-    MOD: _Function.ValueType  # 4
+    Add: _Function.ValueType  # 1
+    Mul: _Function.ValueType  # 2
+    Pow: _Function.ValueType  # 3
+    Mod: _Function.ValueType  # 4
+    Log: _Function.ValueType  # 5
+    Floor: _Function.ValueType  # 6
+    Ceiling: _Function.ValueType  # 7
+    Max: _Function.ValueType  # 8
+    Min: _Function.ValueType  # 9
+    Sin: _Function.ValueType  # 10
+    Cos: _Function.ValueType  # 11
+    Tan: _Function.ValueType  # 12
 
 class Function(_Function, metaclass=_FunctionEnumTypeWrapper):
     """A function sympy expression."""
 
 NONE: Function.ValueType  # 0
-ADDITION: Function.ValueType  # 1
-MULTIPLICATION: Function.ValueType  # 2
-POWER: Function.ValueType  # 3
-MOD: Function.ValueType  # 4
+Add: Function.ValueType  # 1
+Mul: Function.ValueType  # 2
+Pow: Function.ValueType  # 3
+Mod: Function.ValueType  # 4
+Log: Function.ValueType  # 5
+Floor: Function.ValueType  # 6
+Ceiling: Function.ValueType  # 7
+Max: Function.ValueType  # 8
+Min: Function.ValueType  # 9
+Sin: Function.ValueType  # 10
+Cos: Function.ValueType  # 11
+Tan: Function.ValueType  # 12
 global___Function = Function
+
+class _ConstSymbol:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _ConstSymbolEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ConstSymbol.ValueType], builtins.type):
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Pi: _ConstSymbol.ValueType  # 0
+    E: _ConstSymbol.ValueType  # 1
+    EulerGamma: _ConstSymbol.ValueType  # 2
+    Infinity: _ConstSymbol.ValueType  # 3
+    ImaginaryUnit: _ConstSymbol.ValueType  # 4
+
+class ConstSymbol(_ConstSymbol, metaclass=_ConstSymbolEnumTypeWrapper): ...
+
+Pi: ConstSymbol.ValueType  # 0
+E: ConstSymbol.ValueType  # 1
+EulerGamma: ConstSymbol.ValueType  # 2
+Infinity: ConstSymbol.ValueType  # 3
+ImaginaryUnit: ConstSymbol.ValueType  # 4
+global___ConstSymbol = ConstSymbol
 
 @typing_extensions.final
 class Fraction(google.protobuf.message.Message):
@@ -62,14 +99,17 @@ class Fraction(google.protobuf.message.Message):
 
     NUMERATOR_FIELD_NUMBER: builtins.int
     DENOMINATOR_FIELD_NUMBER: builtins.int
-    numerator: builtins.int
-    denominator: builtins.int
+    @property
+    def numerator(self) -> global___Parameter: ...
+    @property
+    def denominator(self) -> global___Parameter: ...
     def __init__(
         self,
         *,
-        numerator: builtins.int = ...,
-        denominator: builtins.int = ...,
+        numerator: global___Parameter | None = ...,
+        denominator: global___Parameter | None = ...,
     ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> None: ...
 
 global___Fraction = Fraction
@@ -82,24 +122,28 @@ class Parameter(google.protobuf.message.Message):
 
     CONST_INT_FIELD_NUMBER: builtins.int
     SYMBOL_FIELD_NUMBER: builtins.int
-    CONST_IRRAT_FIELD_NUMBER: builtins.int
     CONST_RAT_FIELD_NUMBER: builtins.int
+    CONST_FLOAT_FIELD_NUMBER: builtins.int
+    CONST_SYMBOL_FIELD_NUMBER: builtins.int
     const_int: builtins.int
     symbol: builtins.str
-    const_irrat: builtins.str
     @property
-    def const_rat(self) -> global___Fraction: ...
+    def const_rat(self) -> global___Fraction:
+        """string const_irrat = 3; ConstSymbol replaces the need for const_irrat"""
+    const_float: builtins.float
+    const_symbol: global___ConstSymbol.ValueType
     def __init__(
         self,
         *,
         const_int: builtins.int = ...,
         symbol: builtins.str = ...,
-        const_irrat: builtins.str = ...,
         const_rat: global___Fraction | None = ...,
+        const_float: builtins.float = ...,
+        const_symbol: global___ConstSymbol.ValueType = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["const_int", b"const_int", "const_irrat", b"const_irrat", "const_rat", b"const_rat", "parameter", b"parameter", "symbol", b"symbol"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["const_int", b"const_int", "const_irrat", b"const_irrat", "const_rat", b"const_rat", "parameter", b"parameter", "symbol", b"symbol"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["parameter", b"parameter"]) -> typing_extensions.Literal["const_int", "symbol", "const_irrat", "const_rat"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["const_float", b"const_float", "const_int", b"const_int", "const_rat", b"const_rat", "const_symbol", b"const_symbol", "parameter", b"parameter", "symbol", b"symbol"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["parameter", b"parameter"]) -> typing_extensions.Literal["const_int", "symbol", "const_rat", "const_float", "const_symbol"] | None: ...
 
 global___Parameter = Parameter
 
