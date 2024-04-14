@@ -4,9 +4,13 @@ import openfermion as of
 from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
-from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotationByPhaseGradient, ComplexGivensRotationByPhaseGradient
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate
+from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import (
+    ComplexGivensRotationByPhaseGradient,
+    RealGivensRotationByPhaseGradient,
+)
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
-from qualtran.bloqs.basic_gates import XGate, CNOT, SGate, Hadamard
+
 
 def test_circuit_decomposition_givens():
     """
@@ -14,6 +18,7 @@ def test_circuit_decomposition_givens():
     corresponds to Givens rotation in OpenFermion
     """
     np.set_printoptions(linewidth=500)
+
     def circuit_construction(eta):
         qubits = cirq.LineQubit.range(2)
         circuit = cirq.Circuit()
@@ -40,25 +45,24 @@ def test_circuit_decomposition_givens():
         theta = 2 * np.pi / np.random.randn()
         ryxxy = cirq.unitary(Ryxxy(theta))
         i, j = 0, 1
-        theta_fop = theta * (of.FermionOperator(((i, 1), (j, 0))) - of.FermionOperator(((j, 1), (i, 0))))
+        theta_fop = theta * (
+            of.FermionOperator(((i, 1), (j, 0))) - of.FermionOperator(((j, 1), (i, 0)))
+        )
         fUtheta = expm(of.get_sparse_operator(of.jordan_wigner(theta_fop), n_qubits=2).todense())
         assert np.allclose(fUtheta, ryxxy)
         circuit = circuit_construction(theta)
         test_unitary = cirq.unitary(circuit)
         assert np.isclose(4, abs(np.trace(test_unitary.conj().T @ fUtheta)))
 
+
 def test_count_t_cliffords():
     add_into_phasegrad_gate = AddIntoPhaseGrad(
-        x_bitsize=4,
-        phase_bitsize=4,
-        right_shift=0,
-        sign=1,
-        controlled=1
+        x_bitsize=4, phase_bitsize=4, right_shift=0, sign=1, controlled=1
     )
     res = add_into_phasegrad_gate._t_complexity_()
     assert res.t == 16
 
-    gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4) 
+    gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4)
     gate_counts = gate.bloq_counts()
 
     assert gate_counts[CNOT()] == 5
@@ -67,11 +71,14 @@ def test_count_t_cliffords():
     assert gate_counts[SGate(is_adjoint=True)] == 1
     assert gate_counts[XGate()] == 2
     assert gate_counts[add_into_phasegrad_gate] == 2
-    
+
     costs = gate.t_complexity()
     assert costs.t == 32
     assert costs.clifford == 12
 
-if __name__ == "__main__":
-    test_circuit_decomposition_givens()
-    test_count_t_cliffords()
+
+def test_complex_givens_costs():
+    gate = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=4)
+    costs = gate.t_complexity()
+    assert costs.t == 48
+    assert costs.clifford == 12
