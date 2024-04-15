@@ -23,7 +23,6 @@ from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, So
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
@@ -61,10 +60,6 @@ class CtrlScaleModAdd(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
         return {(CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod), self.bitsize)}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        ((bloq, n),) = self.bloq_counts().items()
-        return n * bloq.t_complexity()
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -115,10 +110,6 @@ class CtrlModAddK(Bloq):
         k = ssa.new_symbol('k')
         return {(CtrlAddK(k=k, bitsize=self.bitsize), 5)}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        ((bloq, n),) = self.bloq_counts().items()
-        return n * bloq.t_complexity()
-
     def short_name(self) -> str:
         return f'x += {self.k} % {self.mod}'
 
@@ -148,9 +139,6 @@ class CtrlAddK(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 2 * self.bitsize)}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=2 * self.bitsize)
 
 
 @frozen
