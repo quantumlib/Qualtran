@@ -31,4 +31,5 @@ bloq = CtrlModMul(k=k, mod=N, bitsize=n_x)
 
 serialized = bloqs_to_proto(bloq)
 reconstructed = bloqs_from_proto(serialized)
+print("Done")
 #

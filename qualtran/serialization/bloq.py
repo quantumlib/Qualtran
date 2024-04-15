@@ -487,6 +487,8 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
         t_complexity = None
 
     name = bloq.__module__ + "." + bloq.__class__.__qualname__
+    if not name.startswith("qualtran."):
+        name = "qualtran."+name
     return bloq_pb2.Bloq(
         name=name,
         registers=registers.registers_to_proto(bloq.signature),
