@@ -14,7 +14,6 @@
 from functools import cached_property
 from typing import Any, Dict, TYPE_CHECKING
 
-import cirq
 import numpy as np
 import sympy
 from attrs import frozen
@@ -24,12 +23,14 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.drawing import WireSymbol
+    from qualtran.resource_counting import SympySymbolAllocator
 
 
 @frozen
@@ -57,11 +58,11 @@ class SU2RotationGate(GateWithRegisters):
         Motlagh and Wiebe. (2023). Equation 7.
     """
 
-    theta: float
-    phi: float
-    lambd: float  # cannot use `lambda` as it is a python keyword
-    global_shift: float = 0
-    eps: float = 1e-11
+    theta: SymbolicFloat
+    phi: SymbolicFloat
+    lambd: SymbolicFloat  # cannot use `lambda` as it is a python keyword
+    global_shift: SymbolicFloat = 0
+    eps: SymbolicFloat = 1e-11
 
     @cached_property
     def signature(self) -> Signature:
@@ -142,7 +143,17 @@ class SU2RotationGate(GateWithRegisters):
         return TComplexity(rotations=3)
 
     def _is_parameterized_(self) -> bool:
-        return cirq.is_parameterized((self.theta, self.phi, self.lambd, self.global_shift))
+        return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)
+
+    @classmethod
+    def arbitrary(cls, ssa: 'SympySymbolAllocator') -> 'SU2RotationGate':
+        """Return a parametrized arbitrary rotation for resource counting"""
+        theta = ssa.new_symbol("theta")
+        phi = ssa.new_symbol("phi")
+        lambd = ssa.new_symbol("lambda")
+        alpha = ssa.new_symbol("alpha")
+        eps = ssa.new_symbol("eps")
+        return cls(theta, phi, lambd, alpha, eps)
 
 
 @bloq_example

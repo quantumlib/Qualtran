@@ -76,7 +76,7 @@ def _manually_make_test_cbloq_cxns():
 def _manually_make_test_cbloq_typed_cxns(dtype_a: QDType, dtype_b: QDType):
     signature = Signature.build_from_dtypes(q1=dtype_a, q2=dtype_b)
     q1, q2 = signature
-    add = Add(dtype=QInt(4))
+    add = Add(QInt(4))
     a, b = add.signature
     binst1 = BloqInstance(add, 1)
     binst2 = BloqInstance(add, 2)

@@ -25,11 +25,12 @@ from qualtran.surface_code import ccz2t_cost_model, fifteen_to_one, magic_state_
 from qualtran.surface_code import quantum_error_correction_scheme_summary as qecs
 from qualtran.surface_code import rotation_cost_model
 from qualtran.surface_code.algorithm_summary import AlgorithmSummary
-from qualtran.surface_code.azure_cost_model import code_distance, logical_qubits, minimum_time_steps
+from qualtran.surface_code.azure_cost_model import code_distance, minimum_time_steps
 from qualtran.surface_code.ccz2t_cost_model import (
     get_ccz2t_costs_from_grid_search,
     iter_ccz2t_factories,
 )
+from qualtran.surface_code.data_block import FastDataBlock
 from qualtran.surface_code.magic_count import MagicCount
 from qualtran.surface_code.multi_factory import MultiFactory
 
@@ -325,24 +326,24 @@ app.layout = html.Div(
             [
                 html.Tr(
                     [
-                        html.Td(input_components(), style={'width': '30%'}),
-                        html.Td(create_ouputs(), style={'width': '20%'}),
+                        html.Td(input_components(), style={'width': '30vw'}),
+                        html.Td(create_ouputs(), style={'width': '20vw'}),
                         html.Td(
                             dcc.Loading(
                                 dcc.Graph(id="qubit-pie-chart"),
                                 type="cube",
-                                style={'max-width': '80%', 'float': 'right'},
+                                style={'max-width': '80vw', 'float': 'right'},
                             )
                         ),
                     ]
                 )
             ],
-            style={'width': '100%'},
+            style={'width': '100vw'},
         ),
         html.Div(
             id='runtime-container',
             children=[
-                dcc.Loading(dcc.Graph(id="runtime-plot"), type="cube", style={'max-width': '80%'})
+                dcc.Loading(dcc.Graph(id="runtime-plot"), type="cube", style={'max-width': '80vw'})
             ],
         ),
     ]
@@ -385,7 +386,10 @@ def create_qubit_pie_chart(
             'logical qubits + routing overhead',
             'Magic State Distillation',
         ]
-        memory_footprint['qubits'] = [logical_qubits(algorithm), factory.footprint()]
+        memory_footprint['qubits'] = [
+            FastDataBlock.grid_size(algorithm.algorithm_qubits),
+            factory.footprint(),
+        ]
         fig = px.pie(
             memory_footprint, values='qubits', names='source', title='Physical Qubit Utilization'
         )
@@ -461,7 +465,9 @@ def create_runtime_plot(
     duration = [qec.error_detection_circuit_time_us(d) * t for t, d in zip(time_steps, cds)]
     unit, duration = format_duration(duration)
     duration_name = f'Duration ({unit})'
-    num_qubits = logical_qubits(algorithm) + factory.footprint() * magic_counts
+    num_qubits = (
+        FastDataBlock.grid_size(algorithm.algorithm_qubits) + factory.footprint() * magic_counts
+    )
     df = pd.DataFrame(
         {
             'label': [
