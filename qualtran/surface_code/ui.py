@@ -403,21 +403,21 @@ def format_duration(duration: Sequence[float]) -> Tuple[str, Sequence[float]]:
     Finds the best unit to report `duration` and assumes that `duration` is initially in us.
     """
     unit = 'us'
-    if duration[0] > 1000:
+    if duration[0] > 86400_000_000:
+        duration = [d / 86400_000_000 for d in duration]
+        unit = 'days'
+    elif duration[0] > 3600_000_000:
+        duration = [d / 3600_000_000 for d in duration]
+        unit = 'hours'
+    elif duration[0] > 60_000_000:
+        duration = [d / 60_000_000 for d in duration]
+        unit = 'min'
+    elif duration[0] > 1000_000:
+        duration = [d / 1000_000 for d in duration]
+        unit = 's'
+    elif duration[0] > 1000:
         duration = [d / 1000 for d in duration]
         unit = 'ms'
-    if duration[0] > 1000:
-        duration = [d / 1000 for d in duration]
-        unit = 's'
-    if duration[0] > 60:
-        duration = [d / 60 for d in duration]
-        unit = 'min'
-    if duration[0] > 60:
-        duration = [d / 60 for d in duration]
-        unit = 'hours'
-    if duration[0] > 24:
-        duration = [d / 24 for d in duration]
-        unit = 'days'
     return unit, duration
 
 
