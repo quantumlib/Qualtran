@@ -255,6 +255,9 @@ def _ensure_in_reg_exists(
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
+        soq = qreg_to_qvar[in_reg]
+        if in_reg.dtype != soq.reg.dtype:
+            qreg_to_qvar[in_reg] = bb.add(Cast(soq.reg.dtype, in_reg.dtype), reg=soq)
         return
 
     # a. Split all registers containing at-least one qubit corresponding to `in_reg`.
@@ -276,8 +279,8 @@ def _ensure_in_reg_exists(
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
             # Cast single bit registers to QBit to preserve signature of later join.
-            if not isinstance(qreg.dtype, QBit):
-                soqs_to_join[qreg.qubits[0]] = bb.add(Cast(qreg.dtype, QBit()), reg=soq)
+            if not isinstance(soq.reg.dtype, QBit):
+                soqs_to_join[qreg.qubits[0]] = bb.add(Cast(soq.reg.dtype, QBit()), reg=soq)
             else:
                 soqs_to_join[qreg.qubits[0]] = soq
         elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:

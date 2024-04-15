@@ -52,6 +52,7 @@ from ._infra.data_types import (
     QUInt,
     BoundedQUInt,
     QMontgomeryUInt,
+    val_to_fxp,
 )
 
 # Internal imports: none

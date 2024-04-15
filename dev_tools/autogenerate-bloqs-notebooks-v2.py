@@ -83,6 +83,7 @@ import qualtran.bloqs.qft.two_bit_ffft
 import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
+import qualtran.bloqs.rotations.phase_gradient
 import qualtran.bloqs.rotations.phasing_via_cost_function
 import qualtran.bloqs.rotations.quantum_variable_rotation
 import qualtran.bloqs.state_preparation.prepare_uniform_superposition
@@ -373,6 +374,12 @@ ROT_QFT_PE = [
         title='Phasing via Cost function',
         module=qualtran.bloqs.rotations.phasing_via_cost_function,
         bloq_specs=[qualtran.bloqs.rotations.phasing_via_cost_function._PHASING_VIA_COST_FUNCTION],
+        directory=f'{SOURCE_DIR}/bloqs/rotations/',
+    ),
+    NotebookSpecV2(
+        title='Phase Gradient',
+        module=qualtran.bloqs.rotations.phase_gradient,
+        bloq_specs=[qualtran.bloqs.rotations.phase_gradient._ADD_INTO_PHASE_GRAD_DOC],
         directory=f'{SOURCE_DIR}/bloqs/rotations/',
     ),
     # --------------------------------------------------------------------------

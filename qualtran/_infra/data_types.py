@@ -401,6 +401,34 @@ class BoundedQUInt(QDType):
         return f'{self.__class__.__name__}({self.bitsize}, {self.iteration_length})'
 
 
+def val_to_fxp(
+    val: Union[int, float, Fxp],
+    num_bits: int,
+    num_frac: int,
+    op_sizing: str = 'same',
+    overflow: str = 'saturate',
+    const_op_sizing: str = 'same',
+    shifting='trunc',
+    signed=False,
+) -> Fxp:
+    """Create a fxp value from a python float or int. If passed Fxp is passed do nothing."""
+    if isinstance(val, (int, np.int64, float)):
+        _val = bin(abs(val)) if isinstance(val, int) else val
+        # Dtype Format: f'fxp-{signed/unsigned}{total_bitsize}/{frac_bitsize}'
+        fxp_dtype_str = f'fxp-u{num_bits}/{num_frac}'
+        return Fxp(
+            _val,
+            dtype=fxp_dtype_str,
+            op_sizing=op_sizing,
+            shifting=shifting,
+            const_op_sizing=const_op_sizing,
+            # op_input_size='best',
+            overflow=overflow,  # values are wrappen into the range of the qdtype
+            signed=signed,
+        )
+    return val
+
+
 @attrs.frozen
 class QFxp(QDType):
     r"""Fixed point type to represent real numbers.
@@ -463,6 +491,25 @@ class QFxp(QDType):
                 raise ValueError("num_frac must be less than bitsize if the QFxp is signed.")
             if self.bitsize < self.num_frac:
                 raise ValueError("bitsize must be >= num_frac.")
+
+    def to_fxp(
+        self,
+        val: Union[int, float, Fxp],
+        op_sizing: str = 'same',
+        overflow: str = 'saturate',
+        const_op_sizing: str = 'same',
+        shifting='trunc',
+    ) -> Fxp:
+        return val_to_fxp(
+            val,
+            num_bits=self.bitsize,
+            num_frac=self.num_frac,
+            op_sizing=op_sizing,
+            overflow=overflow,
+            const_op_sizing=const_op_sizing,
+            shifting=shifting,
+            signed=self.signed,
+        )
 
     def get_classical_domain(self) -> Iterable[Fxp]:
         qint = QIntOnesComp(self.bitsize) if self.signed else QUInt(self.bitsize)
