@@ -68,6 +68,12 @@ def smax(*args):
     return max(*args)
 
 
+def smin(*args):
+    if is_symbolic(*args):
+        return sympy.Min(*args)
+    return min(*args)
+
+
 def acos(x: SymbolicFloat) -> SymbolicFloat:
     if not isinstance(x, sympy.Basic):
         return np.arccos(x)
