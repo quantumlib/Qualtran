@@ -19,6 +19,8 @@ package qualtran;
 
 // A function sympy expression.
 enum Function {
+    // Each Term has an associated function. A "NONE" function means that the term
+    // is made up of a single parameter and can not be decomposed further.
     NONE = 0;
     Add = 1;
     Mul = 2;
@@ -35,7 +37,7 @@ enum Function {
 }
 
 // Represents a constant, rational number.
-message Fraction {
+message Rational {
     Parameter numerator = 1;
     Parameter denominator = 2;
 }
@@ -53,7 +55,7 @@ message Parameter {
     oneof parameter {
         int32 const_int = 1;
         string symbol = 2;
-        Fraction const_rat = 3;
+        Rational const_rat = 3;
         float const_float = 4;
         ConstSymbol const_symbol = 5;
 

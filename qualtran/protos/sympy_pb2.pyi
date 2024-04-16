@@ -39,6 +39,9 @@ class _Function:
 class _FunctionEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Function.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     NONE: _Function.ValueType  # 0
+    """Each Term has an associated function. A "NONE" function means that the term
+    is made up of a single parameter and can not be decomposed further.
+    """
     Add: _Function.ValueType  # 1
     Mul: _Function.ValueType  # 2
     Pow: _Function.ValueType  # 3
@@ -56,6 +59,9 @@ class Function(_Function, metaclass=_FunctionEnumTypeWrapper):
     """A function sympy expression."""
 
 NONE: Function.ValueType  # 0
+"""Each Term has an associated function. A "NONE" function means that the term
+is made up of a single parameter and can not be decomposed further.
+"""
 Add: Function.ValueType  # 1
 Mul: Function.ValueType  # 2
 Pow: Function.ValueType  # 3
@@ -92,7 +98,7 @@ ImaginaryUnit: ConstSymbol.ValueType  # 4
 global___ConstSymbol = ConstSymbol
 
 @typing_extensions.final
-class Fraction(google.protobuf.message.Message):
+class Rational(google.protobuf.message.Message):
     """Represents a constant, rational number."""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -112,7 +118,7 @@ class Fraction(google.protobuf.message.Message):
     def HasField(self, field_name: typing_extensions.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["denominator", b"denominator", "numerator", b"numerator"]) -> None: ...
 
-global___Fraction = Fraction
+global___Rational = Rational
 
 @typing_extensions.final
 class Parameter(google.protobuf.message.Message):
@@ -128,7 +134,7 @@ class Parameter(google.protobuf.message.Message):
     const_int: builtins.int
     symbol: builtins.str
     @property
-    def const_rat(self) -> global___Fraction: ...
+    def const_rat(self) -> global___Rational: ...
     const_float: builtins.float
     const_symbol: global___ConstSymbol.ValueType
     def __init__(
@@ -136,7 +142,7 @@ class Parameter(google.protobuf.message.Message):
         *,
         const_int: builtins.int = ...,
         symbol: builtins.str = ...,
-        const_rat: global___Fraction | None = ...,
+        const_rat: global___Rational | None = ...,
         const_float: builtins.float = ...,
         const_symbol: global___ConstSymbol.ValueType = ...,
     ) -> None: ...

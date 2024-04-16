@@ -319,7 +319,7 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
     except (DecomposeTypeError, DecomposeNotImplementedError, TypeError):
         t_complexity = None
 
-    name = bloq.namespace() + "." + bloq.__class__.__qualname__
+    name = bloq.__module__ + "." + bloq.__class__.__qualname__
     return bloq_pb2.Bloq(
         name=name,
         registers=registers.registers_to_proto(bloq.signature),

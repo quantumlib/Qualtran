@@ -57,8 +57,8 @@ def _get_sympy_function_from_enum(enum: int) -> Any:
     """
     Helper function for sympy function deserialization.
 
-    Sympy functions are represented as a sympy_pb2.Function enum.  This mehtod converts this int enum
-    back into the sympy function.
+    Sympy functions are represented as a sympy_pb2.Function enum. This method converts
+    this int enum.
     """
     enum_to_sympy = {
         sympy_pb2.Function.Mul: sympy.core.mul.Mul,
@@ -111,8 +111,7 @@ def _get_const_symbolic_operand(expr: sympy.Expr) -> sympy_pb2.Parameter:
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.Infinity)
     if isinstance(expr, sympy.core.numbers.ImaginaryUnit):
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.ImaginaryUnit)
-    else:
-        raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
+    raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
 
 
 def _get_sympy_operand(expr: Union[sympy.Expr, int, float]) -> sympy_pb2.Parameter:
@@ -140,13 +139,13 @@ def _get_sympy_operand(expr: Union[sympy.Expr, int, float]) -> sympy_pb2.Paramet
         if isinstance(expr, sympy.core.numbers.Rational):
             numerator = _get_sympy_operand(expr.numerator)
             denominator = _get_sympy_operand(expr.denominator)
-            fraction = sympy_pb2.Fraction(numerator=numerator, denominator=denominator)
+            fraction = sympy_pb2.Rational(numerator=numerator, denominator=denominator)
             return sympy_pb2.Parameter(const_rat=fraction)
         else:
             raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
-    if type(expr) == int:
+    if type(expr) is int:
         return sympy_pb2.Parameter(const_int=expr)
-    if type(expr) == float:
+    if type(expr) is float:
         return sympy_pb2.Parameter(const_float=expr)
     else:
         return _get_const_symbolic_operand(expr)
@@ -170,7 +169,9 @@ def sympy_expr_to_proto(expr: sympy.Expr) -> sympy_pb2.Term:
     return sympy_pb2.Term(function=function, operands=operands)
 
 
-def _get_parameter(serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter]) -> Any:
+def _get_parameter(
+    serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter]
+) -> Union[sympy.core.AtomicExpr, int, float]:
     """
     Deserializes a parameter.
 
@@ -184,27 +185,36 @@ def _get_parameter(serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Paramete
 
     parameter_type = serialized_parameter.WhichOneof("parameter")
     if parameter_type == "symbol":
-        deserialized_parameter = sympy.symbols(serialized_parameter.symbol)
-    elif parameter_type == "const_int":
-        deserialized_parameter = serialized_parameter.const_int
-    elif parameter_type == "const_rat":
+        return sympy.symbols(serialized_parameter.symbol)
+    if parameter_type == "const_int":
+        return serialized_parameter.const_int
+    if parameter_type == "const_rat":
         fraction = serialized_parameter.const_rat
         numerator = _get_parameter(fraction.numerator)
         denominator = _get_parameter(fraction.denominator)
-        deserialized_parameter = sympy.Rational(numerator, denominator)
-    elif parameter_type == "const_float":
-        deserialized_parameter = serialized_parameter.const_float
-    elif parameter_type == "const_symbol":
-        deserialized_parameter = _get_sympy_const_from_enum(serialized_parameter.const_symbol)
-    else:
-        raise TypeError(f"Type is not supported for {serialized_input}")
+        return sympy.Rational(numerator, denominator)
+    if parameter_type == "const_float":
+        return serialized_parameter.const_float
+    if parameter_type == "const_symbol":
+        return _get_sympy_const_from_enum(serialized_parameter.const_symbol)
 
-    return deserialized_parameter
+    raise TypeError(f"Type is not supported for {serialized_input}")
 
 
-def sympy_expr_from_proto(term: sympy_pb2.Term) -> Any:
-    """Deserialize a sympy expression."""
+def sympy_expr_from_proto(
+    term: sympy_pb2.Term,
+) -> Union[sympy.core.AtomicExpr, sympy_pb2.Term, int, float]:
+    """Deserialize a sympy expression.
 
+    This will take a sympy_pb2.Term which will contain a function and
+    one or more operands. These operands can also be Terms which will cause
+    this method to be called recursively.
+
+    An error will be raised if a Term contains a function that is not listed in
+    the sympy_pb2.Function enum in sympy.proto. Additionally, an error will be
+    raised if an operand cannot be converted into one of the following: a
+    sympy symbol, a sympy constant, a nested Term, or a native python numeric type.
+    """
     function = _get_sympy_function_from_enum(term.function)
     parameters = []
     for operand in term.operands:
@@ -216,7 +226,9 @@ def sympy_expr_from_proto(term: sympy_pb2.Term) -> Any:
 
     if function:
         return function(*parameters)
-    elif len(parameters) == 1:
+
+    # If a term has no function, then it must be a single parameter.
+    if len(parameters) == 1:
         return parameters[0]
-    else:
-        raise NotImplementedError(f"{term.function} has not been fully implimented.")
+
+    raise NotImplementedError(f"{term.function} has not been fully implimented.")

@@ -102,9 +102,6 @@ class Bloq(metaclass=abc.ABCMeta):
         about this bloq.
         """
 
-    def namespace(self) -> str:
-        return self.__module__
-
     def pretty_name(self) -> str:
         return self.__class__.__name__
 

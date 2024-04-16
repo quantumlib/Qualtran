@@ -17,20 +17,44 @@ import sympy
 
 from qualtran.serialization.bloq import arg_from_proto, arg_to_proto
 
+x = sympy.Symbol('x', positive=True)
+a, b, c = sympy.symbols("a b c")
 
-@pytest.mark.parametrize(
-    'expr',
-    [
-        (
-            sympy.parse_expr("5")
-            + sympy.symbols("x")
-            + sympy.parse_expr("1/2")
-            + sympy.pi
-            + sympy.parse_expr("2j")
-        ),
-        (sympy.parse_expr("(-b + sqrt(-4*a*c + b**2))/(2*a)")),
-    ],
-)
+# These should return a `sympy_pb2.Parameter` proto object?
+sympy_parameters_to_test = [
+    # Only symbols
+    sympy.Symbol('x'),
+    sympy.Symbol('N'),
+    sympy.Symbol('E'),
+    # Sympy constants
+    sympy.pi,
+    sympy.oo,  # infinity
+    sympy.E,
+    sympy.I,
+    sympy.EulerGamma,
+    # Integers, Floats, Rationals
+    sympy.Integer(5),
+    sympy.Float(0.1),
+    sympy.Rational("1/2"),
+    sympy.Rational('1/10'),
+]
+sympy_exprs_to_test = [
+    5 * x + sympy.sqrt(a),
+    # Complex Fractions
+    sympy.Rational("1/10") * sympy.I + 5,
+    # Basic operations
+    a / b + c - 5,
+    # Trig operations
+    sympy.sin(a) + sympy.cos(b) + sympy.tan(c),
+    # Integer operations
+    sympy.floor(5.43) + sympy.ceiling(a),
+    sympy.Max(a, b),
+    # Nested Operations
+    a ** (b * c**2),
+]
+
+
+@pytest.mark.parametrize('expr', sympy_parameters_to_test + sympy_exprs_to_test)
 def parameter_test(expr: sympy.Expr):
     """
     Test types of expressions including fraction, complex, and constant symbol (such as pi).
