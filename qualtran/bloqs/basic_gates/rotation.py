@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
 from typing import Protocol
 
+import attrs
 import cirq
 import numpy as np
 from attrs import frozen
@@ -87,6 +87,9 @@ class ZPowGate(CirqGateAsBloqBase):
         g = self.cirq_gate**power
         return ZPowGate(g.exponent, g.global_shift, self.eps)
 
+    def adjoint(self) -> 'ZPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
+
 
 @bloq_example
 def _z_pow() -> ZPowGate:
@@ -118,6 +121,9 @@ class CZPowGate(CirqGateAsBloqBase):
     def __pow__(self, power):
         g = self.cirq_gate**power
         return CZPowGate(g.exponent, g.global_shift, self.eps)
+
+    def adjoint(self) -> 'CZPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
 
 
 @frozen
@@ -171,6 +177,9 @@ class XPowGate(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def adjoint(self) -> 'XPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
 
 
 @bloq_example
@@ -234,6 +243,9 @@ class YPowGate(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
 
+    def adjoint(self) -> 'YPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
+
 
 @bloq_example
 def _y_pow() -> YPowGate:
@@ -273,6 +285,9 @@ class Rz(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
 
+    def adjoint(self) -> 'Rz':
+        return attrs.evolve(self, angle=-self.angle)
+
 
 @frozen
 class Rx(CirqGateAsBloqBase):
@@ -286,6 +301,9 @@ class Rx(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
 
+    def adjoint(self) -> 'Rx':
+        return attrs.evolve(self, angle=-self.angle)
+
 
 @frozen
 class Ry(CirqGateAsBloqBase):
@@ -298,6 +316,9 @@ class Ry(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
+
+    def adjoint(self) -> 'Ry':
+        return attrs.evolve(self, angle=-self.angle)
 
 
 @bloq_example
