@@ -34,7 +34,7 @@ from numpy.typing import NDArray
 
 from .bloq import Bloq
 from .data_types import QBit, QDType
-from .gate_with_registers import GateWithRegisters, merge_qubits
+from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
