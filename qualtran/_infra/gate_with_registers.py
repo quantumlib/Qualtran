@@ -21,7 +21,6 @@ from numpy.typing import NDArray
 
 from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import CompositeBloq
-from qualtran._infra.controlled import Controlled, CtrlSpec
 from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
 
@@ -311,23 +310,40 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
+    def __pow__(self, power: int) -> 'GateWithRegisters':
+        if power == -1:
+            return self.adjoint()
+        if power == 1:
+            return self
+        raise NotImplementedError("pow is not implemented.")
+
     # pylint: disable=arguments-renamed
     def controlled(
         self,
-        num_controls: Optional[int] = None,
+        num_controls: Union[Optional[int], 'CtrlSpec'] = None,
         control_values=None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'cirq.Gate':
-        from qualtran.cirq_interop import BloqAsCirqGate
+    ) -> 'GateWithRegisters':
+        from qualtran._infra.controlled import Controlled, CtrlSpec
 
-        controlled_gate = cirq.ControlledGate(
-            self,
-            num_controls=num_controls,
-            control_values=control_values,
-            control_qid_shape=control_qid_shape,
-        )
-        ctrl_spec = CtrlSpec.from_cirq_cv(controlled_gate.control_values)
-        return BloqAsCirqGate(Controlled(self, ctrl_spec))
+        if isinstance(num_controls, CtrlSpec):
+            if not (control_values is None and control_qid_shape is None):
+                raise ValueError(
+                    'GateWithRegisters.controlled() must be called with either cirq-style API'
+                    f'or Bloq style API. Found arguments: {num_controls=}, '
+                    f'{control_values=}, {control_qid_shape=}'
+                )
+            ctrl_spec = num_controls
+        else:
+            controlled_gate = cirq.ControlledGate(
+                self,
+                num_controls=num_controls,
+                control_values=control_values,
+                control_qid_shape=control_qid_shape,
+            )
+            ctrl_spec = CtrlSpec.from_cirq_cv(controlled_gate.control_values)
+
+        return Controlled(self, ctrl_spec)
 
     def _unitary_(self):
         return NotImplemented

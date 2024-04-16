@@ -28,6 +28,8 @@ from qualtran import (
     Bloq,
     BloqBuilder,
     CompositeBloq,
+    Controlled,
+    CtrlSpec,
     DecomposeNotImplementedError,
     DecomposeTypeError,
     GateWithRegisters,
@@ -349,6 +351,11 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     if isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
         # Inverse of a cirq gate, delegate to Adjoint
         return Adjoint(_cirq_gate_to_bloq(gate._original))
+
+    if isinstance(gate, cirq.ControlledGate):
+        return Controlled(
+            _cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
+        )
 
     # Check specific basic gates instances.
     CIRQ_GATE_TO_BLOQ_MAP = {

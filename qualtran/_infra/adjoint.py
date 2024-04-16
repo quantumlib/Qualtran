@@ -150,6 +150,13 @@ class Adjoint(GateWithRegisters):
             return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
         return super().decompose_from_registers(context=context, **quregs)
 
+    def _circuit_diagram_info_(self, args: 'cirq.CircuitDiagramInfoArgs'):
+        sub_info = cirq.circuit_diagram_info(self.subbloq, args, default=NotImplemented)
+        if sub_info is NotImplemented:
+            return NotImplemented
+        sub_info.exponent *= -1
+        return sub_info
+
     def supports_decompose_bloq(self) -> bool:
         """Delegate to `subbloq.supports_decompose_bloq()`"""
         return self.subbloq.supports_decompose_bloq()

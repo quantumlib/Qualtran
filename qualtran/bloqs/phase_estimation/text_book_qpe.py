@@ -12,14 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Set, Tuple
+from typing import Sequence, Set, Tuple
 
 import attrs
 import cirq
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
+from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
+from qualtran.bloqs.util_bloqs import Power
 from qualtran.resource_counting.symbolic_counting_utils import (
     ceil,
     is_symbolic,
@@ -220,13 +222,14 @@ class TextbookQPE(GateWithRegisters):
         self, context: cirq.DecompositionContext, **quregs
     ) -> cirq.OP_TREE:
         target_quregs = {reg.name: quregs[reg.name] for reg in self.target_registers}
-        unitary_op = self.unitary.on_registers(**target_quregs)
+        target_qubits = merge_qubits(self.target_registers, **target_quregs)
 
-        phase_qubits = quregs['qpe_reg']
+        phase_qubits: Sequence[cirq.Qid] = quregs['qpe_reg'].flatten()
 
         yield self.ctrl_state_prep.on(*phase_qubits)
         for i, qbit in enumerate(phase_qubits[::-1]):
-            yield cirq.pow(unitary_op.controlled_by(qbit), 2**i)
+            yield Power(self.unitary.controlled(), 2**i).on(qbit, *target_qubits)
+            # yield cirq.pow(unitary_op.controlled_by(qbit), 2**i)
         yield self.qft_inv.on(*phase_qubits)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
