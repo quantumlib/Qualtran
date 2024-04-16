@@ -171,7 +171,7 @@ class QvrZPow(QvrInterface):
 
     @cached_property
     def num_frac_rotations(self) -> SymbolicInt:
-        ignoring_small_angle_rots = ceil(log2((pi(self.eps) * 2 * self.gamma) / self.eps))
+        ignoring_small_angle_rots = ceil(log2((pi(self.eps) * 2 * abs(self.gamma)) / self.eps))
         return smin(self.cost_dtype.num_frac, ignoring_small_angle_rots)
 
     @cached_property
