@@ -53,10 +53,9 @@ message Parameter {
     oneof parameter {
         int32 const_int = 1;
         string symbol = 2;
-        // string const_irrat = 3; ConstSymbol replaces the need for const_irrat
-        Fraction const_rat = 4;
-        float const_float = 5;
-        ConstSymbol const_symbol = 6;
+        Fraction const_rat = 3;
+        float const_float = 4;
+        ConstSymbol const_symbol = 5;
 
     }
 }

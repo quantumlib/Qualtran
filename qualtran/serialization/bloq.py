@@ -12,11 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
-# Test Do not submit
 import dataclasses
 import inspect
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 import attrs
 import cirq
@@ -39,7 +37,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran.protos import bloq_pb2, sympy_pb2
+from qualtran.protos import bloq_pb2
 from qualtran.serialization import (
     annotations,
     args,
@@ -49,172 +47,7 @@ from qualtran.serialization import (
     resolver_dict,
 )
 
-
-def _get_sympy_function_type(expr: sympy.Expr) -> int:
-    if isinstance(expr, sympy.core.mul.Mul):
-        return sympy_pb2.Function.Mul
-    elif isinstance(expr, sympy.core.add.Add):
-        return sympy_pb2.Function.Add
-    elif isinstance(expr, sympy.core.power.Pow):
-        return sympy_pb2.Function.Pow
-    elif isinstance(expr, sympy.core.Mod):
-        return sympy_pb2.Function.Mod
-    elif isinstance(expr, sympy.functions.elementary.exponential.log):
-        return sympy_pb2.Function.Log
-    elif isinstance(expr, sympy.functions.elementary.integers.floor):
-        return sympy_pb2.Function.Floor
-    elif isinstance(expr, sympy.functions.elementary.integers.ceiling):
-        return sympy_pb2.Function.Ceiling
-    elif isinstance(expr, sympy.functions.elementary.miscellaneous.Max):
-        return sympy_pb2.Function.Max
-    elif isinstance(expr, sympy.functions.elementary.miscellaneous.Min):
-        return sympy_pb2.Function.Min
-    elif isinstance(expr, sympy.functions.elementary.trigonometric.sin):
-        return sympy_pb2.Function.Sin
-    elif isinstance(expr, sympy.functions.elementary.trigonometric.cos):
-        return sympy_pb2.Function.Cos
-    elif isinstance(expr, sympy.functions.elementary.trigonometric.tan):
-        return sympy_pb2.Function.Tan
-    else:
-        return sympy_pb2.Function.NONE
-
-
-def _get_sympy_from_enum(enum: int):
-    enum_to_sympy = {
-        sympy_pb2.Function.Mul: sympy.core.mul.Mul,
-        sympy_pb2.Function.Add: sympy.core.add.Add,
-        sympy_pb2.Function.Pow: sympy.core.power.Pow,
-        sympy_pb2.Function.Mod: sympy.core.Mod,
-        sympy_pb2.Function.Log: sympy.functions.elementary.exponential.log,
-        sympy_pb2.Function.Floor: sympy.functions.elementary.integers.floor,
-        sympy_pb2.Function.Ceiling: sympy.functions.elementary.integers.ceiling,
-        sympy_pb2.Function.Max: sympy.functions.elementary.miscellaneous.Max,
-        sympy_pb2.Function.Min: sympy.functions.elementary.miscellaneous.Min,
-        sympy_pb2.Function.Sin: sympy.functions.elementary.trigonometric.sin,
-        sympy_pb2.Function.Cos: sympy.functions.elementary.trigonometric.cos,
-        sympy_pb2.Function.Tan: sympy.functions.elementary.trigonometric.tan,
-        sympy_pb2.Function.NONE: None,
-    }
-
-    return enum_to_sympy[enum]
-
-def _get_sympy_const_from_enum(enum: int):
-    enum_to_sympy = {
-        sympy_pb2.ConstSymbol.Pi: sympy.pi,
-        sympy_pb2.ConstSymbol.E: sympy.E,
-        sympy_pb2.ConstSymbol.EulerGamma: sympy.EulerGamma,
-        sympy_pb2.ConstSymbol.Infinity: sympy.core.numbers.Infinity(),
-        sympy_pb2.ConstSymbol.ImaginaryUnit: sympy.core.numbers.ImaginaryUnit()
-    }
-    return enum_to_sympy[enum]
-
-def _get_const_symbolic_operand(expr: sympy.Expr):
-    if expr == sympy.pi:
-        return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.Pi)
-    if expr == sympy.E:
-        return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.E)
-    if expr == sympy.EulerGamma:
-        return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.EulerGamma)
-    if isinstance(expr,sympy.core.numbers.Infinity):
-        return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.Infinity)
-    if isinstance(expr, sympy.core.numbers.ImaginaryUnit):
-        return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.ImaginaryUnit)
-    else:
-        raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
-
-def _get_sympy_operand(expr: Union[sympy.Expr, int, float])->sympy_pb2.Parameter:
-
-    # Expression is a single, symbolic variable.
-    if isinstance(expr, sympy.core.symbol.Symbol):
-        return sympy_pb2.Parameter(symbol=str(expr))
-
-    # Expression is an integer
-    if issubclass(expr.__class__, sympy.core.numbers.Integer):
-        result = expr.numerator
-        if not isinstance(result, int):
-            raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
-        return sympy_pb2.Parameter(const_int=result)
-
-    # Expression cannot be broken down further, but is a constant.
-    if issubclass(expr.__class__, sympy.core.numbers.Number):
-        if isinstance(expr, sympy.core.numbers.Float):
-            return sympy_pb2.Parameter(const_float=float(expr))
-        if isinstance(expr, sympy.core.numbers.Rational):
-            numerator = _get_sympy_operand(expr.numerator)
-            denominator = _get_sympy_operand(expr.denominator)
-            fraction = sympy_pb2.Fraction(numerator=numerator, denominator=denominator)
-            return sympy_pb2.Parameter(const_rat=fraction)
-        else:
-            raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
-    if type(expr) == int:
-        return sympy_pb2.Parameter(const_int=expr)
-    if type(expr) == float:
-        return sympy_pb2.Parameter(const_float=expr)
-    else:
-        return _get_const_symbolic_operand(expr)
-
-def decompose_sympy(expr: sympy.Expr):
-    function = _get_sympy_function_type(expr)
-    operands = []
-    if function == sympy_pb2.Function.NONE:
-        parameter = _get_sympy_operand(expr)
-        operands.append(sympy_pb2.Operand(parameter=parameter))
-
-    else:
-        for term in expr.args:
-            inner_term = decompose_sympy(term)
-
-            operands.append(sympy_pb2.Operand(term=inner_term))
-
-    return sympy_pb2.Term(function=function, operands=operands)
-
-def _get_parameter(serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter]):
-    if isinstance(serialized_input, sympy_pb2.Operand):
-        serialized_parameter = serialized_input.parameter
-    else:
-        serialized_parameter = serialized_input
-
-    parameter_type = serialized_parameter.WhichOneof("parameter")
-    if parameter_type == "symbol":
-        deserialized_parameter = sympy.symbols(serialized_parameter.symbol)
-    elif parameter_type == "const_int":
-        deserialized_parameter = serialized_parameter.const_int
-    elif parameter_type == "const_rat":
-        fraction = serialized_parameter.const_rat
-        numerator = _get_parameter(fraction.numerator)
-        denominator = _get_parameter(fraction.denominator)
-        deserialized_parameter = sympy.Rational(numerator, denominator)
-    elif parameter_type == "const_float":
-        deserialized_parameter = serialized_parameter.const_float
-    elif parameter_type == "const_symbol":
-        deserialized_parameter = _get_sympy_const_from_enum(serialized_parameter.const_symbol)
-    else:
-        raise TypeError(f"Type is not supported for {serialized_input}")
-
-    return deserialized_parameter
-
-
-def _set_function(function, parameters):
-    return function(parameters)
-
-
-def compose_sympy(expr: sympy.Expr):
-    function = _get_sympy_from_enum(expr.function)
-    parameters = []
-    for operand in expr.operands:
-        if operand.HasField("term"):
-            parameters.append(compose_sympy(operand.term))
-        else:
-            parameter = _get_parameter(operand)
-            parameters.append(parameter)
-
-    if function:
-        return function(*parameters)
-    elif len(parameters) == 1:
-        return parameters[0]
-    else:
-        raise NotImplementedError(f"{expr.function} has not been fully implimented.")
-
+from qualtran.serialization.sympy import sympy_expr_from_proto, sympy_expr_to_proto
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, int):
@@ -224,7 +57,7 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, str):
         return bloq_pb2.BloqArg(name=name, string_val=val)
     if isinstance(val, sympy.Expr):
-        return bloq_pb2.BloqArg(name=name, sympy_expr=decompose_sympy(val))
+        return bloq_pb2.BloqArg(name=name, sympy_expr=sympy_expr_to_proto(val))
     if isinstance(val, Register):
         return bloq_pb2.BloqArg(name=name, register=registers.register_to_proto(val))
     if isinstance(val, tuple) and all(isinstance(x, Register) for x in val):
@@ -250,7 +83,7 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
     if arg.HasField("string_val"):
         return {arg.name: arg.string_val}
     if arg.HasField("sympy_expr"):
-        return {arg.name: compose_sympy(arg.sympy_expr)}
+        return {arg.name: sympy_expr_from_proto(arg.sympy_expr)}
     if arg.HasField("register"):
         return {arg.name: registers.register_from_proto(arg.register)}
     if arg.HasField("registers"):
@@ -486,9 +319,7 @@ def _bloq_to_proto(bloq: Bloq, *, bloq_to_idx: Dict[Bloq, int]) -> bloq_pb2.Bloq
     except (DecomposeTypeError, DecomposeNotImplementedError, TypeError):
         t_complexity = None
 
-    name = bloq.__module__ + "." + bloq.__class__.__qualname__
-    if not name.startswith("qualtran."):
-        name = "qualtran."+name
+    name = bloq.namespace() + "." + bloq.__class__.__qualname__
     return bloq_pb2.Bloq(
         name=name,
         registers=registers.registers_to_proto(bloq.signature),
