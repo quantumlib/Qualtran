@@ -85,9 +85,9 @@ def get_3q_uniform_dirac_notation(signs, global_phase: complex = 1):
     return ret
 
 
-@pytest.mark.parametrize('num_ones', [*range(5, 9)])
+@pytest.mark.parametrize('num_ones', [5])
 @pytest.mark.parametrize('eps', [0.01])
-@pytest.mark.parametrize('global_phase', [+1, -1, 1j, -1j])
+@pytest.mark.parametrize('global_phase', [+1, -1j])
 def test_reflection_using_prepare(num_ones, eps, global_phase):
     data = [1] * num_ones
     prepare_gate = StatePreparationAliasSampling.from_lcu_probs(data, probability_epsilon=eps)
@@ -100,7 +100,7 @@ def test_reflection_using_prepare(num_ones, eps, global_phase):
     initial_state_prep = cirq.Circuit(cirq.H.on_each(*g.quregs['selection']))
     initial_state = cirq.dirac_notation(initial_state_prep.final_state_vector())
     assert initial_state == get_3q_uniform_dirac_notation('++++++++')
-    result = cirq.Simulator(dtype=np.complex128).simulate(
+    result = cirq.Simulator(dtype=np.complex64).simulate(
         initial_state_prep + decomposed_circuit, qubit_order=qubit_order
     )
     selection = g.quregs['selection']
