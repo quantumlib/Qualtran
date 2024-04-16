@@ -78,7 +78,7 @@ class RealGivensRotationByPhaseGradient(Bloq):
 
     Args:
         phasegrad_bitsize int: size of phase gradient which is also the size of the register
-                               representing the binary fraction of the rotation angle
+            representing the binary fraction of the rotation angle
     Registers:
         target_i: 1st-qubit QBit type register
         target_j: 2nd-qubit Qbit type register
@@ -183,7 +183,7 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
 
     Args:
         phasegrad_bitsize int: size of phase gradient which is also the size of the register
-                               representing the binary fraction of the rotation angles
+            representing the binary fraction of the rotation angles
     Registers:
         target_i: 1st-qubit QBit type register
         target_j: 2nd-qubit Qbit type register
