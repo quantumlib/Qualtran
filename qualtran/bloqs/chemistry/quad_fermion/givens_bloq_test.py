@@ -14,6 +14,7 @@
 import cirq
 import numpy as np
 import openfermion as of
+import pytest
 from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
@@ -23,6 +24,7 @@ from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import (
     RealGivensRotationByPhaseGradient,
 )
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 
 def test_circuit_decomposition_givens():
@@ -68,16 +70,17 @@ def test_circuit_decomposition_givens():
         assert np.isclose(4, abs(np.trace(test_unitary.conj().T @ fUtheta)))
 
 
-def test_count_t_cliffords():
+@pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
+def test_count_t_cliffords(x_bitsize: int):
     add_into_phasegrad_gate = AddIntoPhaseGrad(
-        x_bitsize=4, phase_bitsize=4, right_shift=0, sign=1, controlled=1
+        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled=1
     )
-    res = add_into_phasegrad_gate._t_complexity_()
-    assert res.t == 16
+    _, sigma = add_into_phasegrad_gate.call_graph()
+    add_t_counts = t_counts_from_sigma(sigma)
+    assert add_t_counts == ((x_bitsize - 2) * 2) * 4
 
-    gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4)
+    gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
     gate_counts = gate.bloq_counts()
-
     assert gate_counts[CNOT()] == 5
     assert gate_counts[Hadamard()] == 2
     assert gate_counts[SGate(is_adjoint=False)] == 2
@@ -86,12 +89,14 @@ def test_count_t_cliffords():
     assert gate_counts[add_into_phasegrad_gate] == 2
 
     costs = gate.t_complexity()
-    assert costs.t == 32
+    assert costs.t == 2 * add_t_counts
     assert costs.clifford == 12
 
 
-def test_complex_givens_costs():
-    gate = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=4)
+@pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
+def test_complex_givens_costs(x_bitsize: int):
+    gate = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
+    add_into_phasegrad_t_cost = ((x_bitsize - 2) * 2) * 4
     costs = gate.t_complexity()
-    assert costs.t == 48
+    assert costs.t == add_into_phasegrad_t_cost * 3
     assert costs.clifford == 12
