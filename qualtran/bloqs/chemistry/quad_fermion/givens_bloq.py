@@ -50,17 +50,7 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import (
-    Bloq, 
-    BloqBuilder, 
-    bloq_example, 
-    BloqDocSpec,
-    QBit, 
-    QFxp, 
-    Signature, 
-    SoquetT, 
-)
-
+from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QBit, QFxp, Signature, SoquetT
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
@@ -98,7 +88,7 @@ class RealGivensRotationByPhaseGradient(Bloq):
     References:
         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
             https://arxiv.org/abs/2007.07391).
-        Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled 
+        Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled
         rotations
     """
     phasegrad_bitsize: int
@@ -160,6 +150,7 @@ class RealGivensRotationByPhaseGradient(Bloq):
             'phase_gradient': phase_gradient,
         }
 
+
 @bloq_example
 def _real_givens() -> RealGivensRotationByPhaseGradient:
     r_givens = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4)
@@ -171,6 +162,7 @@ _REAL_GIVENS_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotationByPhaseGradient',
     examples=(_real_givens,),
 )
+
 
 @frozen
 class ComplexGivensRotationByPhaseGradient(Bloq):
@@ -253,6 +245,7 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
             'phase_gradient': phase_gradient,
         }
 
+
 @bloq_example
 def _cplx_givens() -> ComplexGivensRotationByPhaseGradient:
     c_givens = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=4)
@@ -264,4 +257,3 @@ _CPLX_GIVENS_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import ComplexGivensRotationByPhaseGradient',
     examples=(_cplx_givens,),
 )
-
