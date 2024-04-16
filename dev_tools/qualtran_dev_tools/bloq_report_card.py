@@ -84,8 +84,6 @@ def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
 
 
 def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
-    # DO NOT SUBMIT: Remove print
-    print(be.name)
     return {
         'bloq_cls': be.bloq_cls.__name__,
         'package': _get_package(be.bloq_cls),
@@ -116,11 +114,7 @@ def get_bloq_report_card(
     records = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
-    records.extend(
-        record_for_bloq_example(be)
-        for be in bexamples
-        if be.name != "qubitization_qpe_hubbard_model_large"
-    )
+    records.extend(record_for_bloq_example(be) for be in bexamples)
 
     df = pd.DataFrame(records)
     df['package'] = df['package'].str.removeprefix(package_prefix)
