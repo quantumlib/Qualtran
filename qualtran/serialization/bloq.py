@@ -46,8 +46,8 @@ from qualtran.serialization import (
     registers,
     resolver_dict,
 )
-
 from qualtran.serialization.sympy import sympy_expr_from_proto, sympy_expr_to_proto
+
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, int):

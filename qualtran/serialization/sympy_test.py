@@ -12,15 +12,23 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import sympy
 import pytest
-from qualtran.serialization.bloq import arg_to_proto, arg_from_proto
+import sympy
+
+from qualtran.serialization.bloq import arg_from_proto, arg_to_proto
+
 
 @pytest.mark.parametrize(
     'expr',
     [
-        (sympy.parse_expr("5")+sympy.symbols("x")+sympy.parse_expr("1/2")+sympy.pi+sympy.parse_expr("2j")),
-        (sympy.parse_expr("(-b + sqrt(-4*a*c + b**2))/(2*a)"))
+        (
+            sympy.parse_expr("5")
+            + sympy.symbols("x")
+            + sympy.parse_expr("1/2")
+            + sympy.pi
+            + sympy.parse_expr("2j")
+        ),
+        (sympy.parse_expr("(-b + sqrt(-4*a*c + b**2))/(2*a)")),
     ],
 )
 def parameter_test(expr: sympy.Expr):
@@ -32,15 +40,15 @@ def parameter_test(expr: sympy.Expr):
     expr_clone = arg_from_proto(serialized)['test']
     assert expr == expr_clone
 
+
 def float_fraction_test():
     """
     Test that floats and fractions can be properly combined and serialzed.
     """
-    float = sympy.parse_expr("1.4")
+    float_const = sympy.parse_expr("1.4")
     fraction = sympy.parse_expr("1/2")
-    expr = float*fraction
+    expr = float_const * fraction
 
     serialized = arg_to_proto(name="test", val=expr)
     expr_clone = arg_from_proto(serialized)['test']
-    assert abs(expr - expr_clone) < .001
-
+    assert abs(expr - expr_clone) < 0.001

@@ -12,9 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import Any, Union
+
 import sympy
+
 from qualtran.protos import sympy_pb2
-from typing import Union, Any
+
+
 def _get_sympy_function_type(expr: sympy.Expr) -> int:
     """
     Helper function for serializing a sympy function.
@@ -48,7 +52,8 @@ def _get_sympy_function_type(expr: sympy.Expr) -> int:
     else:
         return sympy_pb2.Function.NONE
 
-def _get_sympy_function_from_enum(enum: int)->Any:
+
+def _get_sympy_function_from_enum(enum: int) -> Any:
     """
     Helper function for sympy function deserialization.
 
@@ -73,7 +78,8 @@ def _get_sympy_function_from_enum(enum: int)->Any:
 
     return enum_to_sympy[enum]
 
-def _get_sympy_const_from_enum(enum: int)->Any:
+
+def _get_sympy_const_from_enum(enum: int) -> Any:
     """Helper function for deserializing a sympy symbolic constant.
 
     Symbolic constants are serialzed as an enum of type sympy_pb2.ConstSymbol. This method converts the
@@ -84,11 +90,12 @@ def _get_sympy_const_from_enum(enum: int)->Any:
         sympy_pb2.ConstSymbol.E: sympy.E,
         sympy_pb2.ConstSymbol.EulerGamma: sympy.EulerGamma,
         sympy_pb2.ConstSymbol.Infinity: sympy.core.numbers.Infinity(),
-        sympy_pb2.ConstSymbol.ImaginaryUnit: sympy.core.numbers.ImaginaryUnit()
+        sympy_pb2.ConstSymbol.ImaginaryUnit: sympy.core.numbers.ImaginaryUnit(),
     }
     return enum_to_sympy[enum]
 
-def _get_const_symbolic_operand(expr: sympy.Expr)->sympy_pb2.Parameter:
+
+def _get_const_symbolic_operand(expr: sympy.Expr) -> sympy_pb2.Parameter:
     """
     Helper function for serializing a symbolic constant from a sympy expression.
 
@@ -100,14 +107,15 @@ def _get_const_symbolic_operand(expr: sympy.Expr)->sympy_pb2.Parameter:
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.E)
     if expr == sympy.EulerGamma:
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.EulerGamma)
-    if isinstance(expr,sympy.core.numbers.Infinity):
+    if isinstance(expr, sympy.core.numbers.Infinity):
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.Infinity)
     if isinstance(expr, sympy.core.numbers.ImaginaryUnit):
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.ImaginaryUnit)
     else:
         raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
 
-def _get_sympy_operand(expr: Union[sympy.Expr, int, float])->sympy_pb2.Parameter:
+
+def _get_sympy_operand(expr: Union[sympy.Expr, int, float]) -> sympy_pb2.Parameter:
     """
     Converts the input to a serializable sympy_pb2 Parameter.
 
@@ -143,7 +151,8 @@ def _get_sympy_operand(expr: Union[sympy.Expr, int, float])->sympy_pb2.Parameter
     else:
         return _get_const_symbolic_operand(expr)
 
-def sympy_expr_to_proto(expr: sympy.Expr)-> sympy_pb2.Term:
+
+def sympy_expr_to_proto(expr: sympy.Expr) -> sympy_pb2.Term:
     """Serializes a sympy expression."""
 
     function = _get_sympy_function_type(expr)
@@ -160,7 +169,8 @@ def sympy_expr_to_proto(expr: sympy.Expr)-> sympy_pb2.Term:
 
     return sympy_pb2.Term(function=function, operands=operands)
 
-def _get_parameter(serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter])->Any:
+
+def _get_parameter(serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Parameter]) -> Any:
     """
     Deserializes a parameter.
 
@@ -192,7 +202,7 @@ def _get_parameter(serialized_input: Union[sympy_pb2.Operand, sympy_pb2.Paramete
     return deserialized_parameter
 
 
-def sympy_expr_from_proto(term: sympy_pb2.Term)->Any:
+def sympy_expr_from_proto(term: sympy_pb2.Term) -> Any:
     """Deserialize a sympy expression."""
 
     function = _get_sympy_function_from_enum(term.function)

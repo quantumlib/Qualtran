@@ -70,8 +70,9 @@ class CtrlModMul(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(ctrl=1, x=self.bitsize)
 
-    def namespace(self) ->str:
-        return "qualtran."+self.__module__
+    def namespace(self) -> str:
+        return "qualtran." + self.__module__
+
     def _Add(self, k: Union[int, sympy.Expr]):
         """Helper method to forward attributes to `CtrlScaleModAdd`."""
         return CtrlScaleModAdd(k=k, bitsize=self.bitsize, mod=self.mod)

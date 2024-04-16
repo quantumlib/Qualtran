@@ -101,7 +101,8 @@ class Bloq(metaclass=abc.ABCMeta):
         `Bloq`. You can optionally implement additional methods to encode more information
         about this bloq.
         """
-    def namespace(self)->str:
+
+    def namespace(self) -> str:
         return self.__module__
 
     def pretty_name(self) -> str:

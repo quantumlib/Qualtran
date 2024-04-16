@@ -128,8 +128,7 @@ class Parameter(google.protobuf.message.Message):
     const_int: builtins.int
     symbol: builtins.str
     @property
-    def const_rat(self) -> global___Fraction:
-        """string const_irrat = 3; ConstSymbol replaces the need for const_irrat"""
+    def const_rat(self) -> global___Fraction: ...
     const_float: builtins.float
     const_symbol: global___ConstSymbol.ValueType
     def __init__(
