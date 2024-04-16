@@ -19,24 +19,30 @@ ladder operator can be similarity transformed by a basis rotation to produce a l
 combination of ladder operators
 $$
 U(Q)a_{q}U(Q)^{\dagger} = \sum_{p}Q_{pq}^{*}a_{p} = \overrightarrow{a}_{q}\\
-U(Q)a_{q}^{\dagger}U(Q)^{\dagger} = \sum_{p}Q_{pq}a_{p}^{\dagger} = \overrightarrow{a}_{q}^{\dagger}
+U(Q)a_{q}^{\dagger}U(Q)^{\dagger} = \sum_{p}Q_{pq}a_{p}^{\dagger} = 
+\overrightarrow{a}_{q}^{\dagger}
 $$
 Each vector of operators can be implemented by a $N$ (size of basis) Givens rotation unitaries as
 $$
-V_{\overrightarrow{Q}_{q}} a_{0} V_{\overrightarrow{Q}_{q}}^{\dagger} = \overrightarrow{a}_{q} \\
-V_{\overrightarrow{Q}_{q}} a_{0}^{\dagger} V_{\overrightarrow{Q}_{q}}^{\dagger} = \overrightarrow{a}_{q}^{\dagger}
+V_{\overrightarrow{Q}_{q}} a_{0} V_{\overrightarrow{Q}_{q}}^{\dagger} = 
+\overrightarrow{a}_{q} \\
+V_{\overrightarrow{Q}_{q}} a_{0}^{\dagger} V_{\overrightarrow{Q}_{q}}^{\dagger} = 
+\overrightarrow{a}_{q}^{\dagger}
 $$
 where 
 $$
-V_{\overrightarrow{Q}_{q}} = V_{n-1,n-2}(0, \phi_{n-1}) V_{n-2, n-3}(\theta_{n-2}, \phi_{n-2})V_{n-3,n-4}(\theta_{n-2}, \phi_{n-2})...V_{2, 1}(\theta_{1}, \phi_{1})V_{1, 0}(\theta_{0}, \phi_{0})
+V_{\overrightarrow{Q}_{q}} = V_{n-1,n-2}(0, \phi_{n-1}) V_{n-2, n-3}(\theta_{n-2}, \phi_{n-2})
+V_{n-3,n-4}(\theta_{n-2}, \phi_{n-2})...V_{2, 1}(\theta_{1}, \phi_{1})
+V_{1, 0}(\theta_{0}, \phi_{0})
 $$
 with each $V_{ij}(\theta, \phi) = \mathrm{RZ}_{j}(\pi)\mathrm{R}_{ij}(\theta)$. 
 and $1$ Rz rotation for real valued $\overrightarrow{Q}$.
 
 
 References:
-  1.  Vera von Burg, Guang Hao Low, Thomas H ̈aner, Damian S. Steiger, Markus Reiher, Martin Roetteler, 
-  and Matthias Troyer, “Quantum computing enhanced computational catalysis,” Phys. Rev. Res. 3, 033055 (2021).
+  1.  Vera von Burg, Guang Hao Low, Thomas H ̈aner, Damian S. Steiger, Markus Reiher, 
+      Martin Roetteler, and Matthias Troyer, “Quantum computing enhanced computational catalysis,” 
+      Phys. Rev. Res. 3, 033055 (2021).
 
 """
 from functools import cached_property
@@ -44,7 +50,17 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, QBit, QFxp, Signature, SoquetT
+from qualtran import (
+    Bloq, 
+    BloqBuilder, 
+    bloq_example, 
+    BloqDocSpec,
+    QBit, 
+    QFxp, 
+    Signature, 
+    SoquetT, 
+)
+
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
@@ -70,14 +86,20 @@ class RealGivensRotationByPhaseGradient(Bloq):
     the phase gradient state which which is $2(b_{\mathrm{grad}}-2)$ where $b_{\mathrm{grad}}$
     is the size of the phasegradient register.
 
-    References:
-        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](https://arxiv.org/abs/2007.07391).
-        Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled rotations
     Args:
         phasegrad_bitsize int: size of phase gradient which is also the size of the register
                                representing the binary fraction of the rotation angle
+    Registers:
+        target_i: 1st-qubit QBit type register
+        target_j: 2nd-qubit Qbit type register
+        rom_data: QFxp data representing fractional binary for real part of rotation
+        phase_gradient: QFxp data type representing the phase gradient register
 
-
+    References:
+        [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
+            https://arxiv.org/abs/2007.07391).
+        Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled 
+        rotations
     """
     phasegrad_bitsize: int
 
@@ -138,9 +160,17 @@ class RealGivensRotationByPhaseGradient(Bloq):
             'phase_gradient': phase_gradient,
         }
 
-    # def _t_complexit_(self)-> 'TComplexity':
-    #     return TComplexity(clifford=12)
+@bloq_example
+def _real_givens() -> RealGivensRotationByPhaseGradient:
+    r_givens = RealGivensRotationByPhaseGradient(phasegrad_bitsize=4)
+    return r_givens
 
+
+_REAL_GIVENS_DOC = BloqDocSpec(
+    bloq_cls=RealGivensRotationByPhaseGradient,
+    import_line='from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import RealGivensRotationByPhaseGradient',
+    examples=(_real_givens,),
+)
 
 @frozen
 class ComplexGivensRotationByPhaseGradient(Bloq):
@@ -162,6 +192,12 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
     Args:
         phasegrad_bitsize int: size of phase gradient which is also the size of the register
                                representing the binary fraction of the rotation angles
+    Registers:
+        target_i: 1st-qubit QBit type register
+        target_j: 2nd-qubit Qbit type register
+        real_rom_data: QFxp data representing fractional binary for real part of rotation
+        cplx_rom_data: QFxp data representing fractional binary for imag part of rotation
+        phase_gradient: QFxp data type representing the phase gradient register
     """
 
     phasegrad_bitsize: int
@@ -216,3 +252,16 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
             'cplx_rom_data': cplx_rom_data,
             'phase_gradient': phase_gradient,
         }
+
+@bloq_example
+def _cplx_givens() -> ComplexGivensRotationByPhaseGradient:
+    c_givens = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=4)
+    return c_givens
+
+
+_CPLX_GIVENS_DOC = BloqDocSpec(
+    bloq_cls=ComplexGivensRotationByPhaseGradient,
+    import_line='from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import ComplexGivensRotationByPhaseGradient',
+    examples=(_cplx_givens,),
+)
+
