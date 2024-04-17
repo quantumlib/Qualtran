@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ from qualtran.serialization.sympy import sympy_expr_to_proto, sympy_expr_from_pr
 x = sympy.Symbol('x', positive=True)
 a, b, c = sympy.symbols("a b c")
 
-# These should return a `sympy_pb2.Parameter` proto object?
+# These should return a `sympy_pb2.Parameter` proto object
 sympy_parameters_to_test = [
     # Only symbols
     sympy.Symbol('x'),

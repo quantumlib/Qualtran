@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -147,8 +147,7 @@ def _get_sympy_operand(expr: Union[sympy.Expr, int, float]) -> sympy_pb2.Paramet
         return sympy_pb2.Parameter(const_int=expr)
     if type(expr) is float:
         return sympy_pb2.Parameter(const_float=expr)
-    else:
-        return _get_const_symbolic_operand(expr)
+    return _get_const_symbolic_operand(expr)
 
 
 def sympy_expr_to_proto(expr: sympy.Expr) -> sympy_pb2.Term:
@@ -221,8 +220,7 @@ def sympy_expr_from_proto(
         if operand.HasField("term"):
             parameters.append(sympy_expr_from_proto(operand.term))
         else:
-            parameter = _get_parameter(operand)
-            parameters.append(parameter)
+            parameters.append(_get_parameter(operand))
 
     if function:
         return function(*parameters)
@@ -231,4 +229,4 @@ def sympy_expr_from_proto(
     if len(parameters) == 1:
         return parameters[0]
 
-    raise NotImplementedError(f"{term.function} has not been fully implimented.")
+    raise NotImplementedError(f"{term.function} has not been fully implemented.")
