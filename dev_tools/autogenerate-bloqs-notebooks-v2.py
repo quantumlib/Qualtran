@@ -64,6 +64,7 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
+import qualtran.bloqs.chemistry.sparse.walk_operator
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
@@ -177,6 +178,7 @@ CHEMISTRY: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.chemistry.sparse.prepare._SPARSE_PREPARE,
             qualtran.bloqs.chemistry.sparse.select_bloq._SPARSE_SELECT,
+            qualtran.bloqs.chemistry.sparse.walk_operator._SPARSE_QUBITIZATION_WALK_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),

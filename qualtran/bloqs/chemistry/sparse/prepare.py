@@ -161,6 +161,7 @@ class PrepareSparse(PrepareOracle):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Eq. A11.
     """
+
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
@@ -276,7 +277,7 @@ class PrepareSparse(PrepareOracle):
             tpq_prime, eris, drop_element_thresh=drop_element_thresh
         )
         num_non_zero = len(integrals)
-        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
+        alt, keep, _ = preprocess_lcu_coefficients_for_reversible_sampling(
             np.abs(integrals), epsilon=2**-num_bits_state_prep / num_non_zero
         )
         theta = (1 - np.sign(integrals)) // 2
@@ -471,16 +472,12 @@ class PrepareSparse(PrepareOracle):
 
 @bloq_example
 def _prep_sparse() -> PrepareSparse:
+    from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
+
     num_spin_orb = 4
-    tpq = np.random.random((num_spin_orb // 2, num_spin_orb // 2))
-    tpq = 0.5 * (tpq + tpq.T)
-    eris = np.random.random((num_spin_orb // 2,) * 4)
-    eris += np.transpose(eris, (0, 1, 3, 2))
-    eris += np.transpose(eris, (1, 0, 2, 3))
-    eris += np.transpose(eris, (2, 3, 0, 1))
+    tpq, eris = build_random_test_integrals(num_spin_orb // 2)
     prep_sparse = PrepareSparse.from_hamiltonian_coeffs(num_spin_orb, tpq, eris)
     return prep_sparse
-
 
 _SPARSE_PREPARE = BloqDocSpec(
     bloq_cls=PrepareSparse,

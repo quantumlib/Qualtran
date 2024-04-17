@@ -16,7 +16,11 @@ import numpy as np
 import pytest
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.sparse.prepare import _prep_sparse, get_sparse_inputs_from_integrals
+from qualtran.bloqs.chemistry.sparse.prepare import (
+    _prep_sparse,
+    get_sparse_inputs_from_integrals,
+    PrepareSparse,
+)
 
 
 def test_prep_inner(bloq_autotester):
@@ -61,15 +65,29 @@ def test_decompose_bloq_counts():
     assert cost_decomp != cost_call
 
 
-@pytest.mark.parametrize('sparsity', [0.0, 1e-2])
-@pytest.mark.parametrize('nb', [4, 5, 6, 7])
-def test_get_sparse_inputs_from_integrals(nb, sparsity):
+def build_random_test_integrals(nb: int):
+    """Build random one- and two-electron integrals of the correct symmetry.
+
+    Args:
+        nb: The number of spatial orbitals.
+
+    Returns:
+        tpq: The one-body matrix elements.
+        eris: Chemist ERIs (pq|rs).
+    """
     tpq = np.random.random((nb, nb))
     tpq = 0.5 * (tpq + tpq.T)
     eris = np.random.normal(scale=4, size=(nb,) * 4)
     eris += np.transpose(eris, (0, 1, 3, 2))
     eris += np.transpose(eris, (1, 0, 2, 3))
     eris += np.transpose(eris, (2, 3, 0, 1))
+    return tpq, eris
+
+
+@pytest.mark.parametrize('sparsity', [0.0, 1e-2])
+@pytest.mark.parametrize('nb', [4, 5, 6, 7])
+def test_get_sparse_inputs_from_integrals(nb, sparsity):
+    tpq, eris = build_random_test_integrals(nb)
     pqrs_indx, eris_eight = get_sparse_inputs_from_integrals(
         tpq, eris, drop_element_thresh=sparsity
     )
