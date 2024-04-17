@@ -413,6 +413,11 @@ ROT_QFT_PE = [
         module=qualtran.bloqs.qubitization_walk_operator,
         bloq_specs=[qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
     ),
+    NotebookSpecV2(
+        title='Qubitization Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.qubitization_qpe,
+        bloq_specs=[qualtran.bloqs.phase_estimation.qubitization_qpe._QUBITIZATION_QPE_DOC],
+    ),
 ]
 
 # --------------------------------------------------------------------------

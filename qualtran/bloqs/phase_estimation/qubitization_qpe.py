@@ -17,7 +17,7 @@ from typing import Set, Tuple
 import attrs
 import cirq
 
-from qualtran import Bloq, bloq_example, GateWithRegisters, QFxp, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
@@ -175,8 +175,10 @@ def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
     N = x_dim * y_dim * 2
     qlambda = 2 * N * t + (N * mu) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
-    return qubitization_qpe_hubbard_model
+    qubitization_qpe_hubbard_model_small = QubitizationQPE.from_standard_deviation_eps(
+        walk, qpe_eps
+    )
+    return qubitization_qpe_hubbard_model_small
 
 
 @bloq_example
@@ -194,5 +196,35 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     N = x_dim * y_dim * 2
     qlambda = 2 * N * t + (N * mu) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
-    return qubitization_qpe_hubbard_model
+    qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
+        walk, qpe_eps
+    )
+    return qubitization_qpe_hubbard_model_large
+
+
+@bloq_example
+def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
+    import numpy as np
+
+    from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
+    from qualtran.bloqs.chemistry.sparse.walk_operator import get_walk_operator_for_sparse_chem_ham
+    from qualtran.bloqs.phase_estimation import QubitizationQPE
+
+    num_spatial = 8
+    tpq, eris = build_random_test_integrals(num_spatial)
+    walk = get_walk_operator_for_sparse_chem_ham(
+        tpq, eris, num_bits_rot_aa=8, num_bits_state_prep=16
+    )
+
+    algo_eps = 0.0016
+    qlambda = np.sum(np.abs(tpq)) + 0.5 * np.sum(np.abs(eris))
+    qpe_eps = algo_eps / (qlambda * np.sqrt(2))
+    qubitization_qpe_sparse_chem = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    return qubitization_qpe_sparse_chem
+
+
+_QUBITIZATION_QPE_DOC = BloqDocSpec(
+    bloq_cls=QubitizationQPE,
+    import_line='from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE',
+    examples=(_qubitization_qpe_hubbard_model_small, _qubitization_qpe_sparse_chem),
+)
