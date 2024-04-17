@@ -178,7 +178,6 @@ CHEMISTRY: List[NotebookSpecV2] = [
         bloq_specs=[
             qualtran.bloqs.chemistry.sparse.prepare._SPARSE_PREPARE,
             qualtran.bloqs.chemistry.sparse.select_bloq._SPARSE_SELECT,
-            qualtran.bloqs.chemistry.sparse.walk_operator._SPARSE_QUBITIZATION_WALK_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/sparse',
     ),

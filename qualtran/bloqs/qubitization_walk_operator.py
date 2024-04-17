@@ -163,8 +163,23 @@ def _walk_op() -> QubitizationWalkOperator:
     return walk_op
 
 
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _walk_op_chem_sparse() -> QubitizationWalkOperator:
+    from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
+    from qualtran.bloqs.chemistry.sparse.walk_operator import get_walk_operator_for_sparse_chem_ham
+
+    num_spin_orb = 8
+    num_bits_rot_aa = 8
+    num_bits_state_prep = 12
+    tpq, eris = build_random_test_integrals(num_spin_orb // 2)
+    walk_op_chem_sparse = get_walk_operator_for_sparse_chem_ham(
+        tpq, eris, num_bits_rot_aa=num_bits_rot_aa, num_bits_state_prep=num_bits_state_prep
+    )
+    return walk_op_chem_sparse
+
+
 _QUBITIZATION_WALK_DOC = BloqDocSpec(
     bloq_cls=QubitizationWalkOperator,
     import_line='from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator',
-    examples=(_walk_op,),
+    examples=(_walk_op, _walk_op_chem_sparse),
 )
