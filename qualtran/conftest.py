@@ -87,6 +87,7 @@ def assert_bloq_example_serialize_for_pytest(bloq_ex: BloqExample):
         'lp_resource_state_symbolic',
         'select_pauli_lcu',
         'walk_op',
+        'walk_op_chem_sparse',
         'trott_unitary',
         "hubbard_time_evolution_by_gqsp",
     ]:
