@@ -15,7 +15,7 @@
 import pytest
 import sympy
 
-from qualtran.serialization.bloq import arg_from_proto, arg_to_proto
+from qualtran.serialization.sympy import sympy_expr_to_proto, sympy_expr_from_proto
 
 x = sympy.Symbol('x', positive=True)
 a, b, c = sympy.symbols("a b c")
@@ -60,8 +60,8 @@ def parameter_test(expr: sympy.Expr):
     Test types of expressions including fraction, complex, and constant symbol (such as pi).
     """
 
-    serialized = arg_to_proto(name="test", val=expr)
-    expr_clone = arg_from_proto(serialized)['test']
+    serialized = sympy_expr_to_proto(name="test", val=expr)
+    expr_clone = sympy_expr_from_proto(serialized)['test']
     assert expr == expr_clone
 
 
@@ -73,6 +73,6 @@ def float_fraction_test():
     fraction = sympy.parse_expr("1/2")
     expr = float_const * fraction
 
-    serialized = arg_to_proto(name="test", val=expr)
-    expr_clone = arg_from_proto(serialized)['test']
+    serialized = sympy_expr_to_proto(name="test", val=expr)
+    expr_clone = sympy_expr_from_proto(serialized)['test']
     assert abs(expr - expr_clone) < 0.001
