@@ -75,7 +75,7 @@ def build_random_test_integrals(nb: int):
         tpq: The one-body matrix elements.
         eris: Chemist ERIs (pq|rs).
     """
-    tpq = np.random.random((nb, nb))
+    tpq = np.random.normal(size=(nb, nb))
     tpq = 0.5 * (tpq + tpq.T)
     eris = np.random.normal(scale=4, size=(nb,) * 4)
     eris += np.transpose(eris, (0, 1, 3, 2))
