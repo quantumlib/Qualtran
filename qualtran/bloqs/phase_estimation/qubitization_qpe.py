@@ -211,7 +211,7 @@ def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     num_spatial = 8
-    tpq, eris = build_random_test_integrals(num_spatial)
+    tpq, eris = build_random_test_integrals(num_spatial // 2)
     walk = get_walk_operator_for_sparse_chem_ham(
         tpq, eris, num_bits_rot_aa=8, num_bits_state_prep=16
     )
