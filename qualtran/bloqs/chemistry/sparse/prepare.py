@@ -479,6 +479,7 @@ def _prep_sparse() -> PrepareSparse:
     prep_sparse = PrepareSparse.from_hamiltonian_coeffs(num_spin_orb, tpq, eris)
     return prep_sparse
 
+
 _SPARSE_PREPARE = BloqDocSpec(
     bloq_cls=PrepareSparse,
     import_line='from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse',
