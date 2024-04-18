@@ -356,7 +356,24 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         >>>         # Use ctrl_spec to construct a controlled version of `self`.
 
         Args:
-            num_controls:
+            num_controls: Cirq style API to specify control specification -
+                Total number of control qubits.
+            control_values: Cirq style API to specify control specification -
+                Which control computational basis state to apply the
+                sub gate.  A sequence of length `num_controls` where each
+                entry is an integer (or set of integers) corresponding to the
+                computational basis state (or set of possible values) where that
+                control is enabled.  When all controls are enabled, the sub gate is
+                applied.  If unspecified, control values default to 1.
+            control_qid_shape: Cirq style API to specify control specification -
+                The qid shape of the controls.  A tuple of the
+                expected dimension of each control qid.  Defaults to
+                `(2,) * num_controls`.  Specify this argument when using qudits.
+            ctrl_spec: Bloq style API to specify a control specification -
+                An optional keyword argument `CtrlSpec`, which specifies how to control
+                the bloq. The default spec means the bloq will be active when one control qubit is
+                in the |1> state. See the CtrlSpec documentation for more possibilities including
+                negative controls, integer-equality control, and ndarrays of control values.
         """
         from qualtran._infra.controlled import CtrlSpec
 
