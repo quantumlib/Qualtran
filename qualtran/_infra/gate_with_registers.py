@@ -13,7 +13,18 @@
 #  limitations under the License.
 
 import abc
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    overload,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import cirq
 import numpy as np
@@ -25,6 +36,7 @@ from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
 
 if TYPE_CHECKING:
+    from qualtran import CtrlSpec
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
 
@@ -311,30 +323,60 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
     def __pow__(self, power: int) -> 'GateWithRegisters':
-        if power == -1:
-            return self.adjoint()
-        if power == 1:
-            return self
-        raise NotImplementedError("pow is not implemented.")
+        bloq = self if power > 0 else self.adjoint()
+        if abs(power) == 1:
+            return bloq
+        if all(reg.side == Side.THRU for reg in self.signature):
+            from qualtran.bloqs.util_bloqs import Power
 
-    # pylint: disable=arguments-renamed
-    def controlled(
+            return Power(bloq, abs(power))
+        raise NotImplementedError(f"{self} does not implemented __pow__ for {power=}.")
+
+    def _get_ctrl_spec(
         self,
         num_controls: Union[Optional[int], 'CtrlSpec'] = None,
         control_values=None,
         control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'GateWithRegisters':
-        from qualtran._infra.controlled import Controlled, CtrlSpec
+        *,
+        ctrl_spec: Optional['CtrlSpec'] = None,
+    ) -> 'CtrlSpec':
+        """Helper method to support Cirq & Bloq style APIs for constructing controlled Bloqs.
+
+        This method can be used to construct a `CtrlSpec` from either the Bloq-style API that
+        already accepts a `CtrlSpec` and simply returns it OR a Cirq-style API which accepts
+        parameters expected by `cirq.Gate.controlled()` and converts them to a `CtrlSpec` object.
+
+        Users implementing custom `GateWithRegisters.controlled()` overrides can use this helper
+        to generate a CtrlSpec from the cirq-style API and thus easily support both Cirq & Bloq
+        APIs. For example
+
+        >>> class CustomGWR(GateWithRegisters):
+        >>>     def controlled(self, *args, **kwargs) -> 'Bloq':
+        >>>         ctrl_spec = self._get_ctrl_spec(*args, **kwargs)
+        >>>         # Use ctrl_spec to construct a controlled version of `self`.
+
+        Args:
+            num_controls:
+        """
+        from qualtran._infra.controlled import CtrlSpec
+
+        ok = True
+        if ctrl_spec is not None:
+            # Bloq API invoked via kwargs - bloq.controlled(ctrl_spec=ctrl_spec)
+            ok &= control_values is None and control_qid_shape is None and num_controls is None
+        elif isinstance(num_controls, CtrlSpec):
+            # Bloq API invoked via args - bloq.controlled(ctrl_spec)
+            ok &= control_values is None and control_qid_shape is None
+        if not ok:
+            raise ValueError(
+                'GateWithRegisters.controlled() must be called with either cirq-style API'
+                f'or Bloq style API. Found arguments: {num_controls=}, '
+                f'{control_values=}, {control_qid_shape=}, {ctrl_spec=}'
+            )
 
         if isinstance(num_controls, CtrlSpec):
-            if not (control_values is None and control_qid_shape is None):
-                raise ValueError(
-                    'GateWithRegisters.controlled() must be called with either cirq-style API'
-                    f'or Bloq style API. Found arguments: {num_controls=}, '
-                    f'{control_values=}, {control_qid_shape=}'
-                )
             ctrl_spec = num_controls
-        else:
+        elif ctrl_spec is None:
             controlled_gate = cirq.ControlledGate(
                 self,
                 num_controls=num_controls,
@@ -342,8 +384,81 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
                 control_qid_shape=control_qid_shape,
             )
             ctrl_spec = CtrlSpec.from_cirq_cv(controlled_gate.control_values)
+        return ctrl_spec
 
-        return Controlled(self, ctrl_spec)
+    # pylint: disable=arguments-renamed
+    @overload
+    def controlled(
+        self,
+        num_controls: Optional[int] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+    ) -> 'GateWithRegisters':
+        """Cirq-style API to construct a controlled gate. See `cirq.Gate.controlled()`"""
+
+    # pylint: disable=signature-differs
+    @overload
+    def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'GateWithRegisters':
+        """Bloq-style API to construct a controlled Bloq. See `Bloq.controlled()`."""
+
+    def controlled(
+        self,
+        num_controls: Union[Optional[int], 'CtrlSpec'] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+        *,
+        ctrl_spec: Optional['CtrlSpec'] = None,
+    ) -> 'Bloq':
+        """Return a controlled version of self. Controls can be specified via Cirq/Bloq-style APIs.
+
+        If no arguments are specified, defaults to a single qubit control.
+
+        Supports both Cirq-style API and Bloq-style API to construct controlled Bloqs. The cirq-style
+        API is supported by intercepting the Cirq-style way of specifying a control specification;
+        via arguments `num_controls`, `control_values` and `control_qid_shape`, and constructing a
+        `CtrlSpec` object from it before delegating to `self.get_ctrl_system`.
+
+        By default, the system will use the `qualtran.Controlled` meta-bloq to wrap this
+        bloq. Bloqs authors can declare their own, custom controlled versions by overriding
+        `Bloq.get_ctrl_system` in the bloq.
+
+        If overriding the `GWR.controlled()` method directly, Bloq authors can use the
+        `self._get_ctrl_spec` helper to construct a `CtrlSpec` object from the input parameters of
+        `GWR.controlled()` and use it to return a custom controlled version of this Bloq.
+
+
+        Args:
+            num_controls: Cirq style API to specify control specification -
+                Total number of control qubits.
+            control_values: Cirq style API to specify control specification -
+                Which control computational basis state to apply the
+                sub gate.  A sequence of length `num_controls` where each
+                entry is an integer (or set of integers) corresponding to the
+                computational basis state (or set of possible values) where that
+                control is enabled.  When all controls are enabled, the sub gate is
+                applied.  If unspecified, control values default to 1.
+            control_qid_shape: Cirq style API to specify control specification -
+                The qid shape of the controls.  A tuple of the
+                expected dimension of each control qid.  Defaults to
+                `(2,) * num_controls`.  Specify this argument when using qudits.
+            ctrl_spec: Bloq style API to specify a control specification -
+                An optional keyword argument `CtrlSpec`, which specifies how to control
+                the bloq. The default spec means the bloq will be active when one control qubit is
+                in the |1> state. See the CtrlSpec documentation for more possibilities including
+                negative controls, integer-equality control, and ndarrays of control values.
+
+        Returns:
+            A controlled version of the bloq.
+        """
+        ctrl_spec = self._get_ctrl_spec(
+            num_controls, control_values, control_qid_shape, ctrl_spec=ctrl_spec
+        )
+        controlled_bloq, _ = self.get_ctrl_system(ctrl_spec=ctrl_spec)
+        return controlled_bloq
 
     def _unitary_(self):
         return NotImplemented

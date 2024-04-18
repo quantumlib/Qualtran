@@ -21,7 +21,6 @@ from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
 if TYPE_CHECKING:
@@ -374,15 +373,14 @@ class GeneralizedQSP(GateWithRegisters):
         num_inverse_applications = self.negative_power
 
         yield self.signal_rotations[0].on(signal_qubit)
-        flat_qubits_for_u = merge_qubits(self.U.signature, **quregs)
         for signal_rotation in self.signal_rotations[1:]:
             if num_inverse_applications > 0:
                 # apply C-U^\dagger
-                yield self.U.adjoint().controlled().on(signal_qubit, *flat_qubits_for_u)
+                yield self.U.adjoint().on_registers(**quregs).controlled_by(signal_qubit)
                 num_inverse_applications -= 1
             else:
                 # apply C[0]-U
-                yield self.U.controlled(control_values=[0]).on(signal_qubit, *flat_qubits_for_u)
+                yield self.U.on_registers(**quregs).controlled_by(signal_qubit, control_values=[0])
             yield signal_rotation.on(signal_qubit)
 
         for _ in range(num_inverse_applications):

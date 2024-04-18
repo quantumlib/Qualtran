@@ -47,7 +47,6 @@ from qualtran._infra.gate_with_registers import (
     get_named_qubits,
     split_qubits,
 )
-from qualtran.bloqs.util_bloqs import Cast
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.simulation.tensor._tensor_data_manipulation import (
@@ -247,6 +246,8 @@ def _ensure_in_reg_exists(
     bb: BloqBuilder, in_reg: _QReg, qreg_to_qvar: Dict[_QReg, Soquet]
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
+    from qualtran.bloqs.util_bloqs import Cast
+
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:

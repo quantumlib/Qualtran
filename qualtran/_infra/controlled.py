@@ -418,7 +418,8 @@ class Controlled(GateWithRegisters):
                 cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
             )
         if all(reg.side == Side.THRU for reg in self.subbloq.signature):
-            # subbloq has only THRU registers, so the unitary is well defined.
+            # subbloq has only THRU registers, so the tensor contraction corresponds
+            # to a unitary matrix.
             return self.tensor_contract()
         # Unable to determine the unitary effect.
         return NotImplemented

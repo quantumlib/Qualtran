@@ -150,7 +150,9 @@ class Adjoint(GateWithRegisters):
             return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
         return super().decompose_from_registers(context=context, **quregs)
 
-    def _circuit_diagram_info_(self, args: 'cirq.CircuitDiagramInfoArgs'):
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> cirq.CircuitDiagramInfo:
         sub_info = cirq.circuit_diagram_info(self.subbloq, args, default=NotImplemented)
         if sub_info is NotImplemented:
             return NotImplemented
