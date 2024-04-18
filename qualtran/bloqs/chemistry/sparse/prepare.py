@@ -17,8 +17,8 @@ import itertools
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
+import attrs
 import numpy as np
-from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -32,7 +32,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
-from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.z_basis import ZGate
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
@@ -110,7 +110,7 @@ def get_sparse_inputs_from_integrals(
     return np.concatenate((tpq_indx, pqrs_indx)), np.concatenate((tpq_sparse, eris_eight))
 
 
-@frozen
+@attrs.frozen
 class PrepareSparse(PrepareOracle):
     r"""Prepare oracle for the sparse chemistry Hamiltonian
 
@@ -136,7 +136,7 @@ class PrepareSparse(PrepareOracle):
         num_bits_rot_aa: The number of bits of precision for the single-qubit
             rotation for amplitude amplification during the uniform state
             preparation. Default 8.
-        adjoint: Whether we are apply PREPARE or PREPARE^dag
+        is_adjoint: Whether we are apply PREPARE or PREPARE^dag
         qroam_block_size: qroam blocking factor.
 
     Registers:
@@ -165,15 +165,15 @@ class PrepareSparse(PrepareOracle):
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
-    alt_pqrs: Tuple[int, ...] = field(repr=False)
-    alt_theta: Tuple[int, ...] = field(repr=False)
-    alt_one_body: Tuple[int, ...] = field(repr=False)
-    ind_pqrs: Tuple[int, ...] = field(repr=False)
-    theta: Tuple[int, ...] = field(repr=False)
-    one_body: Tuple[int, ...] = field(repr=False)
-    keep: Tuple[int, ...] = field(repr=False)
+    alt_pqrs: Tuple[int, ...] = attrs.field(repr=False)
+    alt_theta: Tuple[int, ...] = attrs.field(repr=False)
+    alt_one_body: Tuple[int, ...] = attrs.field(repr=False)
+    ind_pqrs: Tuple[int, ...] = attrs.field(repr=False)
+    theta: Tuple[int, ...] = attrs.field(repr=False)
+    one_body: Tuple[int, ...] = attrs.field(repr=False)
+    keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
 
     @cached_property
@@ -236,6 +236,9 @@ class PrepareSparse(PrepareOracle):
             Register("less_than", QBit()),
             Register("alt_flag_1b", QBit()),
         )
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     @classmethod
     def from_hamiltonian_coeffs(
@@ -438,35 +441,36 @@ class PrepareSparse(PrepareOracle):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
+        n_n = (self.num_spin_orb // 2 - 1).bit_length()
+        target_bitsizes = (
+            (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
+        )
         if self.qroam_block_size is None:
-            target_bitsizes = (
-                (num_bits_spat,) * 4
-                + (1,) * 2
-                + (num_bits_spat,) * 4
-                + (1,) * 2
-                + (self.num_bits_state_prep,)
-            )
             block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
         else:
             block_size = self.qroam_block_size
-        if self.adjoint:
-            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + block_size  # A15
-        else:
-            output_size = self.num_bits_state_prep + 8 * num_bits_spat + 4
-            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + output_size * (
-                block_size - 1
-            )  # A14
-        qrom_cost = (Toffoli(), num_toff_qrom)
-        if self.adjoint:
-            return {(PrepareUniformSuperposition(self.num_non_zero), 1), qrom_cost}
-        swap_cost_state_prep = (CSwap(num_bits_spat), 4 + 4)  # 2. pg 39
-        ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
-
+        qrom = SelectSwapQROM(
+            self.ind_pqrs[0],
+            self.ind_pqrs[1],
+            self.ind_pqrs[2],
+            self.ind_pqrs[3],
+            self.theta,
+            self.one_body,
+            self.alt_pqrs[0],
+            self.alt_pqrs[1],
+            self.alt_pqrs[2],
+            self.alt_pqrs[3],
+            self.alt_theta,
+            self.alt_one_body,
+            self.keep,
+            target_bitsizes=target_bitsizes,
+            block_size=block_size,
+        )
         return {
             (PrepareUniformSuperposition(self.num_non_zero), 1),
-            qrom_cost,
-            swap_cost_state_prep,
-            ineq_cost_state_prep,
+            (qrom, 1),
+            (CSwap(num_bits_spat), 4 + 4),
+            (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1),
         }
 
 
