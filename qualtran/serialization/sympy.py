@@ -200,9 +200,7 @@ def _get_parameter(
     raise TypeError(f"Type is not supported for {serialized_input}")
 
 
-def sympy_expr_from_proto(
-    term: sympy_pb2.Term,
-) -> Union[sympy.core.AtomicExpr, sympy_pb2.Term, int, float]:
+def sympy_expr_from_proto(term: sympy_pb2.Term) -> Union[sympy.core.AtomicExpr, int, float]:
     """Deserialize a sympy expression.
 
     This will take a sympy_pb2.Term which will contain a function and
