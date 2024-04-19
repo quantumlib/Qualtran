@@ -26,6 +26,7 @@ from sympy import Expr
 from qualtran import (
     Bloq,
     BloqBuilder,
+    GateWithRegisters,
     QAny,
     QBit,
     QDType,
@@ -478,7 +479,7 @@ class Cast(Bloq):
 
 
 @frozen
-class Power(Bloq):
+class Power(GateWithRegisters):
     """Wrapper that repeats the given `bloq` `power` times.
 
     `Bloq` must have only THRU registers.

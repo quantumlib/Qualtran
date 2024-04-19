@@ -16,6 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
+from qualtran import Adjoint
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
@@ -161,8 +162,8 @@ target3: ──────SelectPauliLCU─────────
 
     def keep(op):
         ret = op in gateset_to_keep
-        if op.gate is not None and isinstance(op.gate, cirq.ops.raw_types._InverseCompositeGate):
-            ret |= op.gate._original in gateset_to_keep
+        if op.gate is not None and isinstance(op.gate, Adjoint):
+            ret |= op.gate.subbloq in gateset_to_keep
         return ret
 
     greedy_mm = cirq.GreedyQubitManager(prefix="ancilla", maximize_reuse=True)

@@ -20,16 +20,7 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import (
-    bloq_example,
-    BloqDocSpec,
-    Controlled,
-    CtrlSpec,
-    GateWithRegisters,
-    QBit,
-    Register,
-    Signature,
-)
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
 if TYPE_CHECKING:
@@ -401,12 +392,12 @@ class GeneralizedQSP(GateWithRegisters):
         counts = set(Counter(self.signal_rotations).items())
 
         if degree > self.negative_power:
-            counts.add((Controlled(self.U, CtrlSpec(cvs=0)), degree - self.negative_power))
+            counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
         elif self.negative_power > degree:
             counts.add((self.U.adjoint(), self.negative_power - degree))
 
         if self.negative_power > 0:
-            counts.add((Controlled(self.U.adjoint(), CtrlSpec()), min(degree, self.negative_power)))
+            counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
 
         return counts
 

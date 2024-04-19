@@ -322,7 +322,7 @@ def test_notebook():
 
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
     cbloq = Controlled(bloq, ctrl_spec)
-    cgate = gate.controlled(control_values=ctrl_spec.to_cirq_cv())
+    cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
     np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
 
 

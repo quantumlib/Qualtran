@@ -18,8 +18,19 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran import GateWithRegisters, QAny, QBit, Register, Side, Signature, SoquetT
+from qualtran import (
+    Controlled,
+    CtrlSpec,
+    GateWithRegisters,
+    QAny,
+    QBit,
+    Register,
+    Side,
+    Signature,
+    SoquetT,
+)
 from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
+from qualtran.bloqs.util_bloqs import Power
 from qualtran.testing import execute_notebook
 
 
@@ -50,6 +61,38 @@ def test_gate_with_registers():
     assert op1 == op2
 
     np.testing.assert_allclose(cirq.unitary(tg), tg.tensor_contract())
+
+    # Test GWR.controlled() works correctly with Bloq and Cirq style API
+    ctrl = cirq.q('ctrl')
+    cop1 = tg.controlled().on(ctrl, *qubits[:5], *qubits[6:], qubits[5])
+    cop2 = tg.controlled().on_registers(ctrl=ctrl, r1=qubits[:5], r2=qubits[6:], r3=qubits[5])
+    cop3 = op1.controlled_by(ctrl)
+    cop4 = op2.controlled_by(ctrl)
+    assert cop1 == cop2 == cop3 == cop4
+    assert cop1.gate == cop2.gate == cop3.gate == cop4.gate == Controlled(tg, CtrlSpec())
+
+    assert (
+        tg.controlled(num_controls=1, control_values=[0])
+        == tg.controlled(control_values=[0], control_qid_shape=(2,))
+        == tg.controlled(CtrlSpec(cvs=0))
+        == tg.controlled(ctrl_spec=CtrlSpec(cvs=0))
+    )
+
+    # Test GWR.controlled() raises with incorrect invocation.
+    with pytest.raises(ValueError):
+        tg.controlled(control_values=[0], ctrl_spec=CtrlSpec())
+
+    with pytest.raises(ValueError):
+        tg.controlled(CtrlSpec(), control_values=[0])
+
+    with pytest.raises(ValueError):
+        tg.controlled(CtrlSpec(), ctrl_spec=CtrlSpec())
+
+    # Test GWR**pow
+    assert tg**-1 == tg.adjoint()
+    assert tg**1 is tg
+    assert tg**-10 == Power(tg.adjoint(), 10)
+    assert tg**10 == Power(tg, 10)
 
 
 class _TestGateAtomic(GateWithRegisters):
