@@ -20,7 +20,6 @@ import attrs
 import cirq
 import numpy as np
 import sympy
-from sympy.parsing.sympy_parser import parse_expr
 
 from qualtran import (
     Bloq,
@@ -47,6 +46,7 @@ from qualtran.serialization import (
     registers,
     resolver_dict,
 )
+from qualtran.serialization.sympy import sympy_expr_from_proto, sympy_expr_to_proto
 
 
 def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
@@ -57,7 +57,7 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, str):
         return bloq_pb2.BloqArg(name=name, string_val=val)
     if isinstance(val, sympy.Expr):
-        return bloq_pb2.BloqArg(name=name, sympy_expr=str(val))
+        return bloq_pb2.BloqArg(name=name, sympy_expr=sympy_expr_to_proto(val))
     if isinstance(val, Register):
         return bloq_pb2.BloqArg(name=name, register=registers.register_to_proto(val))
     if isinstance(val, tuple) and all(isinstance(x, Register) for x in val):
@@ -83,7 +83,7 @@ def arg_from_proto(arg: bloq_pb2.BloqArg) -> Dict[str, Any]:
     if arg.HasField("string_val"):
         return {arg.name: arg.string_val}
     if arg.HasField("sympy_expr"):
-        return {arg.name: parse_expr(arg.sympy_expr)}
+        return {arg.name: sympy_expr_from_proto(arg.sympy_expr)}
     if arg.HasField("register"):
         return {arg.name: registers.register_from_proto(arg.register)}
     if arg.HasField("registers"):

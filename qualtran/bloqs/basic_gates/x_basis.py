@@ -89,8 +89,8 @@ class _XVector(Bloq):
         )
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -234,7 +234,7 @@ class XGate(Bloq):
         from qualtran.bloqs.basic_gates import CNOT, Toffoli
 
         if ctrl_spec is None or ctrl_spec == CtrlSpec():
-            bloq = CNOT()
+            bloq: 'Bloq' = CNOT()
         elif ctrl_spec == CtrlSpec(cvs=(1, 1)):
             bloq = Toffoli()
         else:
@@ -256,9 +256,11 @@ class XGate(Bloq):
         return {'q': (q + 1) % 2}
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
+
+        q = cirq_quregs.pop('q')
 
         (q,) = q
         return cirq.X(q), {'q': [q]}

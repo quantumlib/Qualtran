@@ -58,13 +58,13 @@ class LPRSInterimPrep(GateWithRegisters):
         return 'LPRS'
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         q, anc = quregs['m'].tolist()[::-1], quregs['anc']
         yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]
         for i in range(self.bitsize):
             rz_angle = -2 * np.pi * (2**i) / (2**self.bitsize + 1)
-            yield cirq.Rz(rads=rz_angle).controlled().on(q[i], *anc)
+            yield Rz(angle=rz_angle).controlled().on(q[i], *anc)
         yield Rz(angle=-2 * np.pi / (2**self.bitsize + 1)).on(*anc)
         yield Hadamard().on(*anc)
 
@@ -72,11 +72,9 @@ class LPRSInterimPrep(GateWithRegisters):
         rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
         ret = {(Rz(angle=rz_angle), 1), (Hadamard(), 2 + self.bitsize)}
         if is_symbolic(self.bitsize):
-            ret |= {(Rz(angle=rz_angle).controlled().bloq, self.bitsize)}
+            ret |= {(Rz(angle=rz_angle).controlled(), self.bitsize)}
         else:
-            ret |= {
-                (Rz(angle=rz_angle * (2**i)).controlled().bloq, 1) for i in range(self.bitsize)
-            }
+            ret |= {(Rz(angle=rz_angle * (2**i)).controlled(), 1) for i in range(self.bitsize)}
         return ret
 
     def _t_complexity_(self) -> 'TComplexity':

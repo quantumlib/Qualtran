@@ -13,10 +13,11 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Protocol
+from typing import Protocol, Union
 
 import cirq
 import numpy as np
+import sympy
 from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError
@@ -263,7 +264,7 @@ class Rz(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    angle: float
+    angle: Union[sympy.Expr, float]
     eps: float = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
@@ -276,7 +277,7 @@ class Rz(CirqGateAsBloqBase):
 
 @frozen
 class Rx(CirqGateAsBloqBase):
-    angle: float
+    angle: Union[sympy.Expr, float]
     eps: float = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
