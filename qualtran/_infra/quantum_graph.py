@@ -80,7 +80,7 @@ def _to_tuple(x: Union[int, Tuple[int, ...]]) -> Tuple[int, ...]:
 
 
 @frozen
-class Soquet(np.generic):
+class Soquet:
     """One half of a connection.
 
     Users should not construct these directly. They should be marshalled

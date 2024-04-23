@@ -15,7 +15,7 @@
 """Bloqs for virtual operations and register reshaping."""
 
 from functools import cached_property
-from typing import Any, Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -44,7 +44,7 @@ from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    from qualtran import AddControlledT
+    from qualtran import AddControlledT, CtrlSpec
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -165,7 +165,7 @@ class Join(Bloq):
     def on_classical_vals(self, reg: 'NDArray[np.uint8]') -> Dict[str, int]:
         return {'reg': bits_to_ints(reg)[0]}
 
-    def get_ctrl_system(self, ctrl_spec=None) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec: Optional['CtrlSpec']=None) -> Tuple['Bloq', 'AddControlledT']:
         def add_controlled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
