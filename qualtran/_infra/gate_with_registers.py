@@ -163,6 +163,39 @@ def _get_all_and_output_quregs_from_input(
     return all_quregs, out_quregs
 
 
+def _get_cirq_cv(
+    num_controls: Optional[int] = None,
+    control_values=None,
+    control_qid_shape: Optional[Tuple[int, ...]] = None,
+) -> cirq.ops.AbstractControlValues:
+    """Logic copied from `cirq.ControlledGate` to help convert cirq-style spec to `CtrlSpec`"""
+    if isinstance(control_values, cirq.SumOfProducts) and len(control_values._conjunctions) == 1:
+        control_values = control_values._conjunctions[0]
+    if num_controls is None:
+        if control_values is not None:
+            num_controls = (
+                control_values._num_qubits_()
+                if isinstance(control_values, cirq.ops.AbstractControlValues)
+                else len(control_values)
+            )
+        elif control_qid_shape is not None:
+            num_controls = len(control_qid_shape)
+        else:
+            num_controls = 1
+    if control_values is None:
+        control_values = ((1,),) * num_controls
+    if not isinstance(control_values, cirq.ops.AbstractControlValues):
+        control_values = cirq.ProductOfSums(control_values)
+    if num_controls != cirq.num_qubits(control_values):
+        raise ValueError('cirq.num_qubits(control_values) != num_controls')
+    if control_qid_shape is None:
+        control_qid_shape = (2,) * num_controls
+    if num_controls != len(control_qid_shape):
+        raise ValueError('len(control_qid_shape) != num_controls')
+    control_values.validate(control_qid_shape)
+    return control_values
+
+
 class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     """`cirq.Gate`s extension with support for composite gates acting on multiple qubit registers.
 
@@ -394,13 +427,12 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         if isinstance(num_controls, CtrlSpec):
             ctrl_spec = num_controls
         elif ctrl_spec is None:
-            controlled_gate = cirq.ControlledGate(
-                self,
+            control_values = _get_cirq_cv(
                 num_controls=num_controls,
                 control_values=control_values,
                 control_qid_shape=control_qid_shape,
             )
-            ctrl_spec = CtrlSpec.from_cirq_cv(controlled_gate.control_values)
+            ctrl_spec = CtrlSpec.from_cirq_cv(control_values)
         return ctrl_spec
 
     # pylint: disable=arguments-renamed
