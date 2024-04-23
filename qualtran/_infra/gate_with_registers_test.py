@@ -150,6 +150,11 @@ t: ───t───────────────────Y───
     )
 
 
+def test_non_unitary_controlled():
+    bloq = BloqWithDecompose()
+    assert bloq.controlled(control_values=[0]) == Controlled(bloq, CtrlSpec(cvs=0))
+
+
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('gate_with_registers')
