@@ -29,7 +29,12 @@ from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
+    from qualtran import Bloq, SoquetT
+    from qualtran.resource_counting import SympySymbolAllocator
     from qualtran.resource_counting.bloq_counts import BloqCountT
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @attrs.frozen
@@ -66,7 +71,7 @@ class PhaseGradientUnitary(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         ctrl = quregs.get('ctrl', ())
         gate = CZPowGate if self.controlled else ZPowGate

@@ -357,7 +357,7 @@ class GeneralizedQSP(GateWithRegisters):
         return self._qsp_phases[2]
 
     @cached_property
-    def signal_rotations(self) -> NDArray[SU2RotationGate]:
+    def signal_rotations(self) -> NDArray[SU2RotationGate]:  # type: ignore[type-var]
         return np.array(
             [
                 SU2RotationGate(theta, phi, self._lambda if i == 0 else 0)
@@ -366,7 +366,7 @@ class GeneralizedQSP(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']
+        self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
     ) -> 'cirq.OP_TREE':
         (signal_qubit,) = signal
 

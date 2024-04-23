@@ -56,8 +56,8 @@ from qualtran.simulation.tensor._tensor_data_manipulation import (
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
 
-CirqQuregT = NDArray[cirq.Qid]
-CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
+CirqQuregT = NDArray[cirq.Qid]  # type: ignore[type-var]
+CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]  # type: ignore[type-var]
 
 
 def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):

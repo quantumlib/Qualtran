@@ -58,7 +58,7 @@ class LPRSInterimPrep(GateWithRegisters):
         return 'LPRS'
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         q, anc = quregs['m'].tolist()[::-1], quregs['anc']
         yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]

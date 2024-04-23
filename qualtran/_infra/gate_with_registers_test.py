@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -32,6 +32,9 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
 from qualtran.bloqs.util_bloqs import Power
 from qualtran.testing import execute_notebook
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder
 
 
 class _TestGate(GateWithRegisters):
@@ -145,6 +148,11 @@ r: ───r───────────────────alloc─�
 t: ───t───────────────────Y──────────────
 """,
     )
+
+
+def test_non_unitary_controlled():
+    bloq = BloqWithDecompose()
+    assert bloq.controlled(control_values=[0]) == Controlled(bloq, CtrlSpec(cvs=0))
 
 
 @pytest.mark.notebook
