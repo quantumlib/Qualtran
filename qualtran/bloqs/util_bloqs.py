@@ -165,7 +165,9 @@ class Join(Bloq):
     def on_classical_vals(self, reg: 'NDArray[np.uint8]') -> Dict[str, int]:
         return {'reg': bits_to_ints(reg)[0]}
 
-    def get_ctrl_system(self, ctrl_spec: Optional['CtrlSpec']=None) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
         def add_controlled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:

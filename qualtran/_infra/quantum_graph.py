@@ -16,7 +16,6 @@
 
 from typing import Tuple, TYPE_CHECKING, Union
 
-import numpy as np
 from attrs import field, frozen
 
 if TYPE_CHECKING:

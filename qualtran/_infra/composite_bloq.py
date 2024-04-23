@@ -27,7 +27,6 @@ from typing import (
     Sequence,
     Set,
     Tuple,
-    Type,
     TYPE_CHECKING,
     Union,
 )

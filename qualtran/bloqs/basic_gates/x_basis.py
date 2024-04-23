@@ -260,6 +260,8 @@ class XGate(Bloq):
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
         import cirq
 
+        q = cirq_quregs.pop('q')
+
         (q,) = q
         return cirq.X(q), {'q': [q]}
 
