@@ -264,7 +264,7 @@ class Rz(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    angle: Union[sympy.expr, float]
+    angle: Union[sympy.Expr, float]
     eps: float = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
@@ -277,7 +277,7 @@ class Rz(CirqGateAsBloqBase):
 
 @frozen
 class Rx(CirqGateAsBloqBase):
-    angle: Union[sympy.expr, float]
+    angle: Union[sympy.Expr, float]
     eps: float = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
