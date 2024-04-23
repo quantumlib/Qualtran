@@ -22,7 +22,7 @@ import pytest
 from attrs import frozen
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import OneEffect, OneState, ZeroEffect, ZeroState
 from qualtran.bloqs.mcmt.and_bloq import _and_bloq, _multi_and, And, MultiAnd
 from qualtran.drawing import Circle, get_musical_score_data
@@ -186,6 +186,8 @@ class AndIdentity(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', q0: 'SoquetT', q1: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
+        assert isinstance(q0, Soquet)
+        assert isinstance(q1, Soquet)
         qs, trg = bb.add(And(), ctrl=[q0, q1])
         q0, q1 = bb.add(And(uncompute=True), ctrl=qs, target=trg)
         return {'q0': q0, 'q1': q1}

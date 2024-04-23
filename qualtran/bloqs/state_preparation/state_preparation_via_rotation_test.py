@@ -64,8 +64,9 @@ def test_state_prep_via_rotation(bloq_autotester):
     ],
 )
 def test_exact_state_prep_via_rotation_(phase_bitsize: int, state_coefs: Tuple[complex, ...]):
+    # https://github.com/python/mypy/issues/5313
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -102,11 +103,12 @@ def test_exact_state_prep_via_rotation_(phase_bitsize: int, state_coefs: Tuple[c
 def test_state_prep_via_rotation_adjoint(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ) -> None:
+    # https://github.com/python/mypy/issues/5313
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
     )
     qsp_adj = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), uncompute=True
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, uncompute=True  # type: ignore[arg-type]
     )
 
     bb = BloqBuilder()
@@ -145,7 +147,7 @@ def test_state_prep_via_rotation_adjoint(
 )
 def test_approximate_state_prep_via_rotation(phase_bitsize: int, state_coefs: Tuple[complex, ...]):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs)
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -176,7 +178,7 @@ def test_controlled_state_preparation_via_rotation_do_not_prepare(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=1
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=1  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -200,7 +202,7 @@ def test_state_preparation_via_rotation_superposition_ctrl(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=1
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=1  # type: ignore[arg-type]
     )
     assert_valid_bloq_decomposition(qsp)
     bb = BloqBuilder()
@@ -227,7 +229,7 @@ def test_state_preparation_via_rotation_multi_qubit_ctrl(
     phase_bitsize: int, state_coefs: Tuple[complex, ...]
 ):
     qsp = StatePreparationViaRotations(
-        phase_bitsize=phase_bitsize, state_coefficients=tuple(state_coefs), control_bitsize=2
+        phase_bitsize=phase_bitsize, state_coefficients=state_coefs, control_bitsize=2  # type: ignore[arg-type]
     )
     state_bitsize = (len(state_coefs) - 1).bit_length()
     assert_valid_bloq_decomposition(qsp)

@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Union
+from typing import Any, cast, Dict, Union
 
 import sympy
 
 from qualtran.protos import sympy_pb2
 
 
-def _get_sympy_function_type(expr: sympy.Expr) -> int:
+def _get_sympy_function_type(expr: sympy.Basic) -> int:
     """
     Helper function for serializing a sympy function.
 
@@ -60,7 +60,7 @@ def _get_sympy_function_from_enum(enum: int) -> Any:
     Sympy functions are represented as a sympy_pb2.Function enum. This method converts
     this int enum.
     """
-    enum_to_sympy = {
+    enum_to_sympy: Dict[int, Any] = {
         sympy_pb2.Function.Mul: sympy.core.mul.Mul,
         sympy_pb2.Function.Add: sympy.core.add.Add,
         sympy_pb2.Function.Pow: sympy.core.power.Pow,
@@ -85,7 +85,7 @@ def _get_sympy_const_from_enum(enum: int) -> Any:
     Symbolic constants are serialzed as an enum of type sympy_pb2.ConstSymbol. This method converts the
     enum representation back to its original sympy representation.
     """
-    enum_to_sympy = {
+    enum_to_sympy: Dict[int, Any] = {
         sympy_pb2.ConstSymbol.Pi: sympy.pi,
         sympy_pb2.ConstSymbol.E: sympy.E,
         sympy_pb2.ConstSymbol.EulerGamma: sympy.EulerGamma,
@@ -114,7 +114,7 @@ def _get_const_symbolic_operand(expr: sympy.Expr) -> sympy_pb2.Parameter:
     raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
 
 
-def _get_sympy_operand(expr: Union[sympy.Expr, int, float]) -> sympy_pb2.Parameter:
+def _get_sympy_operand(expr: Union[sympy.Basic, int, float]) -> sympy_pb2.Parameter:
     """
     Converts the input to a serializable sympy_pb2 Parameter.
 
@@ -126,7 +126,7 @@ def _get_sympy_operand(expr: Union[sympy.Expr, int, float]) -> sympy_pb2.Paramet
         return sympy_pb2.Parameter(symbol=str(expr))
 
     # Expression is an integer
-    if issubclass(expr.__class__, sympy.core.numbers.Integer):
+    if isinstance(expr, sympy.core.numbers.Integer):
         result = expr.numerator
         if not isinstance(result, int):
             raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
@@ -147,10 +147,10 @@ def _get_sympy_operand(expr: Union[sympy.Expr, int, float]) -> sympy_pb2.Paramet
         return sympy_pb2.Parameter(const_int=expr)
     if type(expr) is float:
         return sympy_pb2.Parameter(const_float=expr)
-    return _get_const_symbolic_operand(expr)
+    return _get_const_symbolic_operand(cast(sympy.Expr, expr))
 
 
-def sympy_expr_to_proto(expr: sympy.Expr) -> sympy_pb2.Term:
+def sympy_expr_to_proto(expr: sympy.Basic) -> sympy_pb2.Term:
     """Serializes a sympy expression."""
 
     function = _get_sympy_function_type(expr)
@@ -165,7 +165,7 @@ def sympy_expr_to_proto(expr: sympy.Expr) -> sympy_pb2.Term:
 
             operands.append(sympy_pb2.Operand(term=inner_term))
 
-    return sympy_pb2.Term(function=function, operands=operands)
+    return sympy_pb2.Term(function=cast(sympy_pb2.Function.ValueType, function), operands=operands)
 
 
 def _get_parameter(

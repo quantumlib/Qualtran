@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -32,6 +32,9 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import XGate, YGate, ZGate
 from qualtran.bloqs.util_bloqs import Power
 from qualtran.testing import execute_notebook
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder
 
 
 class _TestGate(GateWithRegisters):
