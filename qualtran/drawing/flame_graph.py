@@ -17,7 +17,7 @@ import functools
 import pathlib
 import subprocess
 import tempfile
-from typing import Any, Callable, List, Optional, Sequence, Union
+from typing import Any, Callable, List, Optional, Union
 
 import networkx as nx
 import numpy as np

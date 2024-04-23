@@ -13,10 +13,9 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, TYPE_CHECKING, Union
+from typing import Dict, TYPE_CHECKING
 
 from attrs import frozen
-from numpy.typing import NDArray
 
 from qualtran import Bloq, BloqBuilder, Signature, Soquet
 from qualtran.bloqs.for_testing.atom import TestAtom
