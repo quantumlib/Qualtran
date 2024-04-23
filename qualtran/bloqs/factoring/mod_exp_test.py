@@ -77,7 +77,7 @@ def test_mod_exp_consistent_counts():
             return attrs.evolve(b, k=my_k)
         if isinstance(b, (Split, Join)):
             # Ignore these
-            return
+            return None
         return b
 
     counts2 = bloq.decompose_bloq().bloq_counts(generalizer=generalize)

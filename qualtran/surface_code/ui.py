@@ -363,7 +363,7 @@ def create_qubit_pie_chart(
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, factory, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
-            n_algo_qubits=algorithm.algorithm_qubits,
+            n_algo_qubits=int(algorithm.algorithm_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,
             factory_iter=[MultiFactory(f, int(magic_count)) for f in iter_ccz2t_factories()],
@@ -380,15 +380,15 @@ def create_qubit_pie_chart(
         fig.update_traces(textinfo='value')
         return fig
     else:
-        factory = MultiFactory(magic_factory, int(magic_count))
+        multi_factory = MultiFactory(magic_factory, int(magic_count))
         memory_footprint = pd.DataFrame(columns=['source', 'qubits'])
         memory_footprint['source'] = [
             'logical qubits + routing overhead',
             'Magic State Distillation',
         ]
         memory_footprint['qubits'] = [
-            FastDataBlock.grid_size(algorithm.algorithm_qubits),
-            factory.footprint(),
+            FastDataBlock.grid_size(int(algorithm.algorithm_qubits)),
+            multi_factory.footprint(),
         ]
         fig = px.pie(
             memory_footprint, values='qubits', names='source', title='Physical Qubit Utilization'
@@ -466,7 +466,8 @@ def create_runtime_plot(
     unit, duration = format_duration(duration)
     duration_name = f'Duration ({unit})'
     num_qubits = (
-        FastDataBlock.grid_size(algorithm.algorithm_qubits) + factory.footprint() * magic_counts
+        FastDataBlock.grid_size(int(algorithm.algorithm_qubits))
+        + factory.footprint() * magic_counts
     )
     df = pd.DataFrame(
         {
@@ -561,9 +562,9 @@ def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[Tuple[
     total_t = needed_magic.n_t + 4 * needed_magic.n_ccz
     total_ccz = total_t / 4
     if estimation_model == _GIDNEY_FOWLER_MODEL:
-        return ['Total Number of Toffoli gates'], f'{total_ccz:g}'
+        return ('Total Number of Toffoli gates',), f'{total_ccz:g}'
     else:
-        return ['Total Number of T gates'], f'{total_t:g}'
+        return ('Total Number of T gates',), f'{total_t:g}'
 
 
 def min_num_factories(
@@ -601,7 +602,7 @@ def compute_duration(
     if estimation_model == _GIDNEY_FOWLER_MODEL:
         res, _, _ = get_ccz2t_costs_from_grid_search(
             n_magic=needed_magic,
-            n_algo_qubits=algorithm.algorithm_qubits,
+            n_algo_qubits=int(algorithm.algorithm_qubits),
             phys_err=physical_error_rate,
             error_budget=error_budget,
             factory_iter=[MultiFactory(f, magic_count) for f in iter_ccz2t_factories()],

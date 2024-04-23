@@ -17,10 +17,11 @@ import functools
 import pathlib
 import subprocess
 import tempfile
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, Callable, List, Optional, Sequence, Union
 
 import networkx as nx
 import numpy as np
+import sympy
 
 from qualtran import Bloq
 from qualtran.resource_counting.bloq_counts import _compute_sigma
@@ -56,7 +57,7 @@ def _pretty_name(bloq: Bloq) -> str:
 
 
 @functools.lru_cache(maxsize=1024)
-def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> int:
+def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> Union[int, sympy.Expr]:
     sigma = _compute_sigma(bloq, graph)
     return t_counts_from_sigma(sigma)
 
@@ -67,6 +68,7 @@ def _keep_if_small(bloq: Bloq) -> bool:
 
     if isinstance(bloq, (And, Toffoli, TwoBitCSwap)):
         return True
+    return False
 
 
 def _is_leaf_node(callees: List[Bloq]) -> bool:
@@ -124,7 +126,7 @@ def _populate_flame_graph_data(
 def get_flame_graph_data(
     *bloqs: Bloq,
     file_path: Union[None, pathlib.Path, str] = None,
-    keep: Optional[Sequence['Bloq']] = _keep_if_small,
+    keep: Optional[Callable[['Bloq'], bool]] = _keep_if_small,
     **kwargs,
 ) -> List[str]:
     """Get the flame graph data for visualizing T-costs distribution of a sequence of bloqs.

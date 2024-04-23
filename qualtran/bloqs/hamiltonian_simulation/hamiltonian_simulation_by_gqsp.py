@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen

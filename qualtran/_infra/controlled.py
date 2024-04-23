@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 
 def _cvs_convert(
     cvs: Union[int, Sequence[int], Sequence[Sequence[int]]]
-) -> Tuple[NDArray[int], ...]:
+) -> Tuple[NDArray[np.integer], ...]:
     if isinstance(cvs, (int, np.integer)):
         return (np.array(cvs),)
     if isinstance(cvs, np.ndarray):
@@ -103,7 +103,7 @@ class CtrlSpec:
     qdtypes: Tuple[QDType, ...] = attrs.field(
         default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
     )
-    cvs: Tuple[NDArray[int], ...] = attrs.field(default=1, converter=_cvs_convert)
+    cvs: Tuple[NDArray[np.integer], ...] = attrs.field(default=1, converter=_cvs_convert)
 
     def __attrs_post_init__(self):
         assert len(self.qdtypes) == len(self.cvs)

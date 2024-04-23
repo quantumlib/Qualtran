@@ -16,6 +16,7 @@
 
 from typing import Tuple, TYPE_CHECKING, Union
 
+import numpy as np
 from attrs import field, frozen
 
 if TYPE_CHECKING:
@@ -79,7 +80,7 @@ def _to_tuple(x: Union[int, Tuple[int, ...]]) -> Tuple[int, ...]:
 
 
 @frozen
-class Soquet:
+class Soquet(np.generic):
     """One half of a connection.
 
     Users should not construct these directly. They should be marshalled

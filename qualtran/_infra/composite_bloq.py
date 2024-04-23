@@ -27,6 +27,7 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -911,7 +912,7 @@ class BloqBuilder:
         binst = BloqInstance(bloq, i=self._new_binst_i())
         return dict(self._add_binst(binst, in_soqs=in_soqs))
 
-    def add(self, bloq: Bloq, **in_soqs: SoquetInT) -> Union[None, SoquetT, Tuple[SoquetT, ...]]:
+    def add(self, bloq: Bloq, **in_soqs: SoquetInT):
         """Add a new bloq instance to the compute graph.
 
         This is the primary method for building a composite bloq. Each call to `add` adds a

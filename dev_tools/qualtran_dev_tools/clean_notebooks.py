@@ -15,7 +15,7 @@ import os
 import subprocess
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import List
+from typing import Any, List
 
 import nbformat
 from nbconvert.preprocessors import ClearMetadataPreprocessor, ClearOutputPreprocessor
@@ -46,7 +46,7 @@ def clean_notebook(nb_path: Path, do_clean: bool = True):
 
     pp1 = ClearOutputPreprocessor()
     pp2 = ClearMetadataPreprocessor(preserve_cell_metadata_mask={'cq.autogen'})
-    resources = {}
+    resources: dict[str, Any] = {}
     nb, resources = pp1.preprocess(nb, resources=resources)
     nb, resources = pp2.preprocess(nb, resources=resources)
 

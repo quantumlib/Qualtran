@@ -16,7 +16,7 @@
 """Contains the main interface for defining `Bloq`s."""
 
 import abc
-from typing import Any, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Optional, Sequence, Set, Tuple, Type, TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     import cirq
@@ -297,7 +297,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def call_graph(
         self,
         generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-        keep: Optional[Sequence['Bloq']] = None,
+        keep: Callable[['Bloq'], bool] = None,
         max_depth: Optional[int] = None,
     ) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]:
         """Get the bloq call graph and call totals.
@@ -480,7 +480,7 @@ class Bloq(metaclass=abc.ABCMeta):
         return cirq.Gate.on(BloqAsCirqGate(bloq=self), *qubits)
 
     def on_registers(
-        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], 'NDArray[cirq.Qid]']
+        self, **qubit_regs: Union['cirq.Qid', Sequence['cirq.Qid'], 'NDArray[cirq.Qid]']  # type: ignore[type-var]
     ) -> 'cirq.Operation':
         """A `cirq.Operation` of this bloq operating on the given qubit registers.
 
