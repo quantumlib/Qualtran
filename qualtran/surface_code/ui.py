@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -557,14 +557,14 @@ def update(
     )
 
 
-def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[Tuple[str, ...], str]:
+def total_magic(estimation_model: str, needed_magic: MagicCount) -> Tuple[List[str], str]:
     """Compute the number of magic states needed for the algorithm and their type."""
     total_t = needed_magic.n_t + 4 * needed_magic.n_ccz
     total_ccz = total_t / 4
     if estimation_model == _GIDNEY_FOWLER_MODEL:
-        return ('Total Number of Toffoli gates',), f'{total_ccz:g}'
+        return ['Total Number of Toffoli gates'], f'{total_ccz:g}'
     else:
-        return ('Total Number of T gates',), f'{total_t:g}'
+        return ['Total Number of T gates'], f'{total_t:g}'
 
 
 def min_num_factories(
