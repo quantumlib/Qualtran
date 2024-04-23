@@ -40,6 +40,7 @@ from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
+    from qualtran import Soquet
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 

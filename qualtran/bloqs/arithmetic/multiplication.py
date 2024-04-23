@@ -34,6 +34,8 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.symbolic_counting_utils import smax
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT

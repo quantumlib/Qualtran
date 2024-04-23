@@ -16,7 +16,9 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple, Union
+
+import sympy
 
 from qualtran import (
     Bloq,
@@ -429,8 +431,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts = None
-    decomp_counts = None
+    manual_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    decomp_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths
