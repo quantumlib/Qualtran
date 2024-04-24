@@ -26,6 +26,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    CtrlSpec,
     QAny,
     QBit,
     Register,
@@ -304,31 +305,7 @@ class PrepareSparse(PrepareOracle):
             qroam_block_size=qroam_block_size,
         )
 
-    def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        d: 'SoquetT',
-        p: 'SoquetT',
-        q: 'SoquetT',
-        r: 'SoquetT',
-        s: 'SoquetT',
-        sigma: 'SoquetT',
-        alpha: 'SoquetT',
-        beta: 'SoquetT',
-        rot_aa: 'SoquetT',
-        swap_pq: 'SoquetT',
-        swap_rs: 'SoquetT',
-        swap_pqrs: 'SoquetT',
-        flag_1b: 'SoquetT',
-        alt_pqrs: 'SoquetT',
-        theta: 'SoquetT',
-        keep: 'SoquetT',
-        less_than: 'SoquetT',
-        alt_flag_1b: 'SoquetT',
-    ) -> Dict[str, 'SoquetT']:
-        # 1. Prepare \sum_d |d\rangle
-        d = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=d)
-        # 2. QROM the ind_d alt_d values
+    def build_qrom_bloq(self) -> 'Bloq':
         n_n = (self.num_spin_orb // 2 - 1).bit_length()
         target_bitsizes = (
             (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
@@ -354,6 +331,34 @@ class PrepareSparse(PrepareOracle):
             target_bitsizes=target_bitsizes,
             block_size=block_size,
         )
+        return qrom
+
+    def build_composite_bloq(
+        self,
+        bb: 'BloqBuilder',
+        d: 'SoquetT',
+        p: 'SoquetT',
+        q: 'SoquetT',
+        r: 'SoquetT',
+        s: 'SoquetT',
+        sigma: 'SoquetT',
+        alpha: 'SoquetT',
+        beta: 'SoquetT',
+        rot_aa: 'SoquetT',
+        swap_pq: 'SoquetT',
+        swap_rs: 'SoquetT',
+        swap_pqrs: 'SoquetT',
+        flag_1b: 'SoquetT',
+        alt_pqrs: 'SoquetT',
+        theta: 'SoquetT',
+        keep: 'SoquetT',
+        less_than: 'SoquetT',
+        alt_flag_1b: 'SoquetT',
+    ) -> Dict[str, 'SoquetT']:
+        # 1. Prepare \sum_d |d\rangle
+        d = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=d)
+        # 2. QROM the ind_d alt_d values
+        qrom = self.build_qrom_bloq()
         (
             d,
             p,
@@ -391,8 +396,8 @@ class PrepareSparse(PrepareOracle):
         sigma = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=sigma)
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
         less_than, theta[1] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[1])
-        # TODO: This should be off control
-        less_than, theta[0] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[0])
+        ctrl_spec = CtrlSpec(QBit(), 0b0)
+        less_than, theta[0] = bb.add(ZGate().controlled(ctrl_spec), ctrl=less_than, q=theta[0])
         # swap the ind and alt_pqrs values
         # TODO: These swaps are inverted at zero Toffoli cost in the reference.
         # The method is to copy all values being swapped before they are swapped. Then
@@ -401,12 +406,13 @@ class PrepareSparse(PrepareOracle):
         # controlled-phase operations, where the control is the control qubit
         # for the controlled swaps, and the targets are the copies of the
         # registers.
+        n_n = (self.num_spin_orb // 2 - 1).bit_length()
         less_than, alt_pqrs[0], p = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[0], y=p)
         less_than, alt_pqrs[1], q = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[1], y=q)
         less_than, alt_pqrs[2], r = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[2], y=r)
         less_than, alt_pqrs[3], s = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[3], y=s)
         # swap the 1b/2b alt values
-        # less_than, flag_1b, alt_flag_1b = bb.add(CSwap(1), ctrl=less_than, x=flag_1b, y=alt_flag_1b)
+        less_than, flag_1b, alt_flag_1b = bb.add(CSwap(1), ctrl=less_than, x=flag_1b, y=alt_flag_1b)
         # invert the comparator
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
         # prepare |+> states for symmetry swaps
@@ -440,37 +446,12 @@ class PrepareSparse(PrepareOracle):
         }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
-        n_n = (self.num_spin_orb // 2 - 1).bit_length()
-        target_bitsizes = (
-            (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
-        )
-        if self.qroam_block_size is None:
-            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
-        else:
-            block_size = self.qroam_block_size
-        qrom = SelectSwapQROM(
-            self.ind_pqrs[0],
-            self.ind_pqrs[1],
-            self.ind_pqrs[2],
-            self.ind_pqrs[3],
-            self.theta,
-            self.one_body,
-            self.alt_pqrs[0],
-            self.alt_pqrs[1],
-            self.alt_pqrs[2],
-            self.alt_pqrs[3],
-            self.alt_theta,
-            self.alt_one_body,
-            self.keep,
-            target_bitsizes=target_bitsizes,
-            block_size=block_size,
-        )
+        qrom = self.build_qrom_bloq()
         return {
             (PrepareUniformSuperposition(self.num_non_zero), 1),
             (qrom, 1),
-            (CSwap(num_bits_spat), 4 + 4),
-            (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1),
+            (CSwap((self.num_spin_orb // 2 - 1).bit_length()), 4 + 4),
+            (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 2),
         }
 
 

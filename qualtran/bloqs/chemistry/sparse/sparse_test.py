@@ -127,8 +127,8 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
     lte = LessThanEqual(prep_sparse.num_bits_state_prep, prep_sparse.num_bits_state_prep)
-    t_count_lte = 2 * lte.call_graph()[1][TGate()]
-    t_count_lte_paper = 4 * (prep_sparse.num_bits_state_prep + 1)  # inverted at zero cost
+    t_count_lte = 4 * lte.call_graph()[1][TGate()]
+    t_count_lte_paper = 2 * 4 * (prep_sparse.num_bits_state_prep + 1)  # inverted at zero cost
     delta_ineq = t_count_lte - t_count_lte_paper
     adjusted_cost_qualtran = (
         cost - cost1a_mod + cost_uni_prep + refl_cost - delta_swap - delta_qrom - delta_ineq
