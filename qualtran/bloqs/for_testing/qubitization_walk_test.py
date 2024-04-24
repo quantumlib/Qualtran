@@ -61,4 +61,6 @@ def get_uniform_pauli_qubitized_walk(target_bitsize: int):
     select = SelectPauliLCU(
         (len(ham_coeff) - 1).bit_length(), select_unitaries=ham_dps, target_bitsize=target_bitsize
     )
-    return ham, QubitizationWalkOperator(select=select, prepare=prepare)
+    return ham, QubitizationWalkOperator(
+        select=select, prepare=prepare, sum_of_lcu_coefficients=sum(ham_coeff)
+    )

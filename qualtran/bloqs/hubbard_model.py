@@ -352,4 +352,11 @@ def get_walk_operator_for_hubbard_model(
 ) -> 'QubitizationWalkOperator':
     select = SelectHubbard(x_dim, y_dim)
     prepare = PrepareHubbard(x_dim, y_dim, t, mu)
-    return QubitizationWalkOperator(select=select, prepare=prepare)
+
+    # https://arxiv.org/abs/1805.03662v2 equation 60
+    N = x_dim * y_dim
+    sum_of_ham_coeffs = 2 * N * t + N * mu / 2
+
+    return QubitizationWalkOperator(
+        select=select, prepare=prepare, sum_of_lcu_coefficients=sum_of_ham_coeffs
+    )

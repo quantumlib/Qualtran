@@ -205,4 +205,4 @@ def random_qubitization_walk_operator(
         ]
     )
 
-    return QubitizationWalkOperator(prepare=prepare, select=select), ham
+    return QubitizationWalkOperator(prepare=prepare, select=select, sum_of_lcu_coefficients=1), ham

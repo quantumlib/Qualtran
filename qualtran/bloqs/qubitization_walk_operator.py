@@ -35,6 +35,7 @@ from qualtran.resource_counting.generalizers import (
 class QubitizationWalkOperator(GateWithRegisters):
     r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
+    For a Hamiltonian $H = \sum_l w_l H_l$ (s.t. $w_l > 0$ and $H_l$ are unitaries),
     Constructs a Szegedy quantum walk operator $W = R_{L} . SELECT$, which is a product of
     two reflections $R_{L} = (2|L><L| - I)$ and $SELECT=\sum_{l}|l><l|H_{l}$.
 
@@ -42,7 +43,8 @@ class QubitizationWalkOperator(GateWithRegisters):
     vector spaces. For an arbitrary eigenstate $|k>$ of $H$ with eigenvalue $E_k$, $|\ell>|k>$ and
     an orthogonal state $\phi_{k}$ span the irreducible two-dimensional space that $|\ell>|k>$ is
     in under the action of $W$. In this space, $W$ implements a Pauli-Y rotation by an angle of
-    $-2arccos(E_{k} / \lambda)$ s.t. $W = e^{i arccos(E_k / \lambda) Y}$.
+    $-2arccos(E_{k} / \lambda)$ s.t. $W = e^{i arccos(E_k / \lambda) Y}$,
+    where $\lambda = \sum_l w_l$.
 
     Thus, the walk operator $W$ encodes the spectrum of $H$ as a function of eigenphases of $W$
     s.t. $spectrum(H) = \lambda cos(arg(spectrum(W)))$ where $arg(e^{i\phi}) = \phi$.
@@ -51,6 +53,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         select: The SELECT lcu gate implementing $SELECT=\sum_{l}|l><l|H_{l}$.
         prepare: Then PREPARE lcu gate implementing
             $PREPARE|00...00> = \sum_{l=0}^{L - 1}\sqrt{\frac{w_{l}}{\lambda}} |l> = |\ell>$
+        sum_of_lcu_coefficients: value of $\lambda$, i.e. sum of the coefficients $w_l$.
         control_val: If 0/1, a controlled version of the walk operator is constructed. Defaults to
             None, in which case the resulting walk operator is not controlled.
         power: Constructs $W^{power}$ by repeatedly decomposing into `power` copies of $W$.
@@ -64,6 +67,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     select: SelectOracle
     prepare: PrepareOracle
+    sum_of_lcu_coefficients: Optional[float] = None
     control_val: Optional[int] = None
     power: int = 1
 
@@ -132,17 +136,13 @@ class QubitizationWalkOperator(GateWithRegisters):
         ):
             c_select = self.select.controlled(control_values=control_values)
             assert isinstance(c_select, SelectOracle)
-            return QubitizationWalkOperator(
-                c_select, self.prepare, control_val=control_values[0], power=self.power
-            )
+            return attrs.evolve(self, select=c_select, control_val=control_values[0])
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
 
     def with_power(self, new_power: int) -> 'QubitizationWalkOperator':
-        return QubitizationWalkOperator(
-            self.select, self.prepare, control_val=self.control_val, power=new_power
-        )
+        return attrs.evolve(self, power=new_power)
 
     def __pow__(self, power: int):
         return self.with_power(self.power * power)

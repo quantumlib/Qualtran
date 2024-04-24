@@ -39,7 +39,9 @@ def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> Qubit
     select = SelectPauliLCU(
         total_bits(prepare.selection_registers), select_unitaries=ham_dps, target_bitsize=len(q)
     )
-    return QubitizationWalkOperator(select=select, prepare=prepare)
+    return QubitizationWalkOperator(
+        select=select, prepare=prepare, sum_of_lcu_coefficients=sum(ham_coeff)
+    )
 
 
 def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> QubitizationWalkOperator:
