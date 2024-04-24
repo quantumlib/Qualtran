@@ -22,11 +22,13 @@ from attrs import define
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, GateWithRegisters
+from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.for_testing.random_gate import RandomGate
 from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
 from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.resource_counting.symbolic_counting_utils import Shaped
 
 from .generalized_qsp import (
     _gqsp,
@@ -228,6 +230,31 @@ def test_gqsp_1d_ising_example(bloq_autotester):
     if bloq_autotester.check_name == 'serialization':
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
     bloq_autotester(_gqsp_1d_ising)
+
+
+@pytest.mark.parametrize("degree", [2, 4, 6])
+@pytest.mark.parametrize("negative_power", [0, 2, 3, 5])
+def test_symbolic_call_graph(degree: int, negative_power: int):
+    U = TestGWRAtom()
+    P = Shaped(shape=(degree + 1,))
+    gqsp = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
+
+    ssa = SympySymbolAllocator()
+    arbitrary_rotation = SU2RotationGate.arbitrary(ssa)
+
+    def catch_rotations(bloq: Bloq) -> Bloq:
+        if isinstance(bloq, SU2RotationGate):
+            return arbitrary_rotation
+        return bloq
+
+    _, sigma = gqsp.call_graph(max_depth=1, generalizer=catch_rotations)
+
+    assert sigma == {
+        arbitrary_rotation: degree + 1,
+        Controlled(U, CtrlSpec(cvs=0)): max(0, degree - negative_power),
+        Controlled(U.adjoint(), CtrlSpec()): min(degree, negative_power),
+        U.adjoint(): max(0, negative_power - degree),
+    }
 
 
 @define(slots=False)
