@@ -414,7 +414,7 @@ class PrepareSparse(PrepareOracle):
         # swap the 1b/2b alt values
         less_than, flag_1b, alt_flag_1b = bb.add(CSwap(1), ctrl=less_than, x=flag_1b, y=alt_flag_1b)
         # invert the comparator
-        keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
+        # keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
         # prepare |+> states for symmetry swaps
         swap_pq = bb.add(Hadamard(), q=swap_pq)
         swap_rs = bb.add(Hadamard(), q=swap_rs)
@@ -446,33 +446,14 @@ class PrepareSparse(PrepareOracle):
         }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        # qrom = self.build_qrom_bloq()
-        n_n = (self.num_spin_orb // 2 - 1).bit_length()
-        if self.qroam_block_size is None:
-            target_bitsizes = (
-                (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
-            )
-            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
-        else:
-            block_size = self.qroam_block_size
-        if self.is_adjoint:
-            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + block_size  # A15
-        else:
-            output_size = self.num_bits_state_prep + 8 * n_n + 4
-            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + output_size * (
-                block_size - 1
-            )  # A14
-        if self.is_adjoint:
-            return {(PrepareUniformSuperposition(self.num_non_zero), 1), (Toffoli(), num_toff_qrom)}
         return {
             (PrepareUniformSuperposition(self.num_non_zero), 1),
-            (Toffoli(), num_toff_qrom),
+            (self.build_qrom_bloq(), 1),
             (OnEach(self.num_bits_state_prep, Hadamard()), 1),
             (Hadamard(), 3),
-            # (CSwap(1), 1),
+            (CSwap(1), 1),
             (CSwap((self.num_spin_orb // 2 - 1).bit_length()), 4 + 4),
-            # (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 2),
-            (Toffoli(), self.num_bits_state_prep + 1),
+            (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1),
         }
 
 

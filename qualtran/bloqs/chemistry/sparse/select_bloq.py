@@ -14,7 +14,7 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Collection, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 from attrs import frozen
@@ -29,10 +29,9 @@ from qualtran import (
     Register,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import SGate, Toffoli
+from qualtran.bloqs.basic_gates import SGate
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.select_and_prepare import SelectOracle
-from qualtran.cirq_interop import CirqGateAsBloq
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -46,6 +45,7 @@ class SelectSparse(SelectOracle):
 
     Args:
         num_spin_orb: The number of spin orbitals. Typically called N.
+        control_val: The control value. If None, then the bloq is not controlled.
 
     Registers:
         flag_1b: a single qubit to flag whether the one-body Hamiltonian is to
@@ -110,18 +110,11 @@ class SelectSparse(SelectOracle):
     def target_registers(self) -> Tuple[Register, ...]:
         return (Register("sys", QAny(bitsize=self.num_spin_orb)),)
 
-    def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        p: 'SoquetT',
-        q: 'SoquetT',
-        r: 'SoquetT',
-        s: 'SoquetT',
-        alpha: 'SoquetT',
-        beta: 'SoquetT',
-        flag_1b: 'SoquetT',
-        sys: 'SoquetT',
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        p, q, r, s = soqs['p'], soqs['q'], soqs['r'], soqs['s']
+        alpha, beta = soqs['alpha'], soqs['beta']
+        flag_1b = soqs['flag_1b']
+        sys = soqs['sys']
         flag_1b = bb.add(SGate(), q=flag_1b)
         # note no extraction of sign from theta as this is done during state prep.
         sel_pa = (self.signature.get_left('p'), self.signature.get_left('alpha'))
@@ -144,7 +137,7 @@ class SelectSparse(SelectOracle):
             beta=beta,
             target=sys,
         )
-        return {
+        out_soqs = {
             'p': p,
             'q': q,
             'r': r,
@@ -154,6 +147,32 @@ class SelectSparse(SelectOracle):
             'flag_1b': flag_1b,
             'sys': sys,
         }
+        if self.control_val is not None:
+            out_soqs['control'] = soqs['control']
+        return out_soqs
+
+    def controlled(
+        self,
+        num_controls: Optional[int] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+    ) -> 'SelectSparse':
+        if num_controls is None:
+            num_controls = 1
+        if control_values is None:
+            control_values = [1] * num_controls
+        if (
+            isinstance(control_values, Sequence)
+            and isinstance(control_values[0], int)
+            and len(control_values) == 1
+            and self.control_val is None
+        ):
+            return SelectSparse(self.num_spin_orb, control_val=control_values[0])
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with control_values={control_values}.'
+        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
@@ -163,9 +182,11 @@ class SelectSparse(SelectOracle):
         # after prepare (but only once).
         # In practice we would apply the selected majoranas to (p, q, alpha) and then (r, s, beta).
         sel_pa = (self.signature.get_left('p'), self.signature.get_left('alpha'))
-        maj = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y, control_regs=())
-        c_maj = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
-        return {(SGate(), 1), (maj, 2), (c_maj, 2)}
+        maj_x = SelectedMajoranaFermion(sel_pa, target_gate=cirq.X, control_regs=())
+        maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y, control_regs=())
+        c_maj_x = SelectedMajoranaFermion(sel_pa, target_gate=cirq.X)
+        c_maj_y = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
+        return {(SGate(), 1), (maj_x, 1), (c_maj_x, 1), (maj_y, 1), (c_maj_y, 1)}
 
 
 @bloq_example
