@@ -112,6 +112,8 @@ def test_apply_gate_to_lth_qubit_make_on():
     )
     # Note: ApplyGateToLthQubit doesn't support value equality.
     assert op.qubits == op2.qubits
+    assert isinstance(op.gate, ApplyGateToLthQubit)
+    assert isinstance(op2.gate, ApplyGateToLthQubit)
     assert op.gate.selection_regs == op2.gate.selection_regs
     assert op.gate.control_regs == op2.gate.control_regs
 

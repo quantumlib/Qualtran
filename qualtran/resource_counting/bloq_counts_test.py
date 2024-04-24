@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Set, Tuple
 
 import attrs
 import networkx as nx
@@ -110,10 +110,14 @@ def test_notebook():
     qlt_testing.execute_notebook('bloq_counts')
 
 
+def _to_tuple(x: Iterable[BloqCountT]) -> Sequence[BloqCountT]:
+    return tuple(x)
+
+
 @frozen
 class OnlyCallGraphBloqShim(Bloq):
     name: str
-    callees: Sequence[BloqCountT] = field(converter=tuple, factory=tuple)
+    callees: Sequence[BloqCountT] = field(converter=_to_tuple, factory=tuple)
 
     @property
     def signature(self) -> 'Signature':

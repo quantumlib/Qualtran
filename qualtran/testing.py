@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import sympy
 
@@ -206,7 +206,7 @@ def assert_valid_cbloq(cbloq: CompositeBloq):
     assert_soquets_used_exactly_once(cbloq)
 
 
-def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
+def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     """Check the validity of a bloq decomposition.
 
     Importantly, this does not do any correctness checking -- for that you likely
@@ -214,6 +214,7 @@ def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
 
     This returns the decomposed, composite bloq on which you can do further testing.
     """
+    assert bloq is not None
     cbloq = assert_registers_match_parent(bloq)
     assert_valid_cbloq(cbloq)
     return cbloq

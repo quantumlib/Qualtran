@@ -87,6 +87,7 @@ def test_sum_of_squares():
     bitsize = 4
     k = 3
     inp = bb.add_register(Register("input", QUInt(bitsize=bitsize), shape=(k,)))
+    assert inp is not None
     inp, out = bb.add(SumOfSquares(bitsize, k), input=inp)
     cbloq = bb.finalize(input=inp, result=out)
     assert SumOfSquares(bitsize, k).signature[1].bitsize == 2 * bitsize + 2

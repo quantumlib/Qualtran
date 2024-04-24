@@ -24,7 +24,7 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple
 
 import attrs
 import cirq
@@ -229,6 +229,10 @@ _AND_DOC = BloqDocSpec(
 )
 
 
+def _to_tuple(x: Iterable[int]) -> Sequence[int]:
+    return tuple(x)
+
+
 @frozen
 class MultiAnd(Bloq):
     """A many-bit (multi-control) 'and' operation.
@@ -243,7 +247,7 @@ class MultiAnd(Bloq):
         target [right]: The output bit.
     """
 
-    cvs: Tuple[int, ...] = field(converter=tuple)
+    cvs: Tuple[int, ...] = field(converter=_to_tuple)
 
     @cvs.validator
     def _validate_cvs(self, field, val):

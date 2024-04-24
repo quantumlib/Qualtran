@@ -79,7 +79,7 @@ def test_less_than_gate():
         0b_111_1: 0b_111_1,
     }
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
-    circuit += op**-1
+    circuit += cirq.inverse(op)
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
     gate2 = LessThanConstant(4, 10)
     assert gate.with_registers(*gate2.registers()) == gate2
@@ -139,7 +139,7 @@ def test_multi_in_less_equal_than_gate():
             basis_map[input_int] = output_int
 
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
-    circuit += op**-1
+    circuit += cirq.inverse(op)
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(len(qubits)), circuit)
 
 

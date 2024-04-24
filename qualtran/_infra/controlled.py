@@ -46,7 +46,14 @@ if TYPE_CHECKING:
 
 
 def _cvs_convert(
-    cvs: Union[int, Sequence[int], Sequence[Sequence[int]]]
+    cvs: Union[
+        int,
+        np.integer,
+        NDArray[np.number],
+        Sequence[Union[int, np.integer]],
+        Sequence[Sequence[Union[int, np.integer]]],
+        Sequence[NDArray[np.number]],
+    ]
 ) -> Tuple[NDArray[np.integer], ...]:
     if isinstance(cvs, (int, np.integer)):
         return (np.array(cvs),)

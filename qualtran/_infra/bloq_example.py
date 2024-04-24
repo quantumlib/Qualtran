@@ -12,15 +12,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import typing
-from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 from attrs import field, frozen
 
 from .bloq import Bloq
 
+BloqType = TypeVar('BloqType', bound=Bloq)
+
 
 @frozen
-class BloqExample:
+class BloqExample(Generic[BloqType]):
     """An instantiation of a bloq and its metadata.
 
     In particular, this class wraps a callable that returns a bloq instantiation with
@@ -36,18 +38,18 @@ class BloqExample:
         generalizer: Passed to `get_bloq_counts_graph` calls for bloq-counts equivalence checking.
     """
 
-    _func: Callable[[], Bloq] = field(repr=False, hash=False)
+    _func: Callable[[], BloqType] = field(repr=False, hash=False)
     name: str
     bloq_cls: Type[Bloq]
-    generalizer: Callable[[Bloq], Optional[Bloq]] = field(
+    generalizer: Callable[[BloqType], Optional[BloqType]] = field(
         converter=lambda x: tuple(x) if isinstance(x, Sequence) else x, default=lambda x: x
     )
 
-    def make(self) -> Bloq:
+    def make(self) -> BloqType:
         """Make the bloq."""
         return self._func()
 
-    def __call__(self) -> Bloq:
+    def __call__(self) -> BloqType:
         """This class is callable: it will make the bloq.
 
         This makes the `bloq_example` decorator make sense: we wrap a function, so this
@@ -56,12 +58,12 @@ class BloqExample:
         return self.make()
 
 
-def _name_from_func_name(func: Callable[[], Bloq]) -> str:
+def _name_from_func_name(func: Callable[[], BloqType]) -> str:
     """Use the name of the function as the `BloqExample.name` when using the decorator."""
     return func.__name__.lstrip('_')
 
 
-def _bloq_cls_from_func_annotation(func: Callable[[], Bloq]) -> Type[Bloq]:
+def _bloq_cls_from_func_annotation(func: Callable[[], BloqType]) -> Type[BloqType]:
     """Use the function return type annotation as the `BloqExample.bloq_cls` with the decorator."""
     anno = func.__annotations__
     if 'return' not in anno:
@@ -73,20 +75,22 @@ def _bloq_cls_from_func_annotation(func: Callable[[], Bloq]) -> Type[Bloq]:
 
 
 @typing.overload
-def bloq_example(_func: Callable[[], Bloq], **kwargs: Any) -> BloqExample:
+def bloq_example(_func: Callable[[], BloqType], **kwargs: Any) -> BloqExample[BloqType]:
     ...
 
 
 @typing.overload
 def bloq_example(
-    _func: None, *, generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
-) -> Callable[[Callable[[], Bloq]], BloqExample]:
+    _func: None, *, generalizer: Callable[[BloqType], Optional[BloqType]] = lambda x: x
+) -> Callable[[Callable[[], BloqType]], BloqExample[BloqType]]:
     ...
 
 
 def bloq_example(
-    _func: Callable[[], Bloq] = None, *, generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
-):
+    _func: Callable[[], BloqType] = None,
+    *,
+    generalizer: Callable[[BloqType], Optional[BloqType]] = lambda x: x,
+) -> BloqExample[BloqType]:
     """Decorator to turn a function into a `BloqExample`.
 
     This will set `name` to the name of the function and `bloq_cls` according to the return-type
@@ -94,7 +98,7 @@ def bloq_example(
     through to the `BloqExample` constructor.
     """
 
-    def _inner(func: Callable[[], Bloq]) -> BloqExample:
+    def _inner(func: Callable[[], BloqType]) -> BloqExample:
         return BloqExample(
             func=func,
             name=_name_from_func_name(func),

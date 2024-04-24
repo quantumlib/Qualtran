@@ -20,8 +20,8 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import Signature
-from qualtran._infra.gate_with_registers import GateWithRegisters, get_named_qubits, merge_qubits
+from qualtran import Bloq, Signature
+from qualtran._infra.gate_with_registers import get_named_qubits, merge_qubits
 from qualtran.cirq_interop import t_complexity_protocol
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
 
@@ -37,7 +37,7 @@ class GateHelper:
         gate: The gate from which all other objects are derived.
     """
 
-    gate: GateWithRegisters
+    gate: Bloq
     context: cirq.DecompositionContext = cirq.DecompositionContext(cirq.ops.SimpleQubitManager())
 
     @cached_property

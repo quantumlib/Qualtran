@@ -16,7 +16,7 @@
 import abc
 import itertools
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
 import cirq
 import numpy as np
@@ -56,8 +56,13 @@ from qualtran.simulation.tensor._tensor_data_manipulation import (
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
 
-CirqQuregT = NDArray[cirq.Qid]  # type: ignore[type-var]
-CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]  # type: ignore[type-var]
+
+# numpy subtypes must be np.generic
+# However, this denotes a numpy array of type cirq.Qid
+QidType = TypeVar('QidType', bound=np.generic)
+
+CirqQuregT = NDArray[QidType]
+CirqQuregInT = Union[NDArray[QidType], Sequence[cirq.Qid]]
 
 
 def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
@@ -86,7 +91,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: CirqQuregT
     ) -> cirq.OP_TREE:
         op = (
             self.cirq_gate.on_registers(**quregs)
@@ -305,8 +310,8 @@ def _ensure_in_reg_exists(
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]
-) -> Dict[str, NDArray[Soquet]]:
+    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]  # type: ignore[type-var]
+) -> Dict[str, NDArray[Soquet]]:  # type: ignore[type-var]
     qvars_in: Dict[str, NDArray[Soquet]] = {}
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[Soquet] = []
