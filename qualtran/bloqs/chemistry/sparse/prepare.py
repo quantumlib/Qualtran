@@ -102,12 +102,12 @@ def get_sparse_inputs_from_integrals(
         _add(q, q, q, p)
     for p in range(num_spat):
         _add(p, p, p, p)
-    eris_eight_np = np.array(eris_eight)
+    eris_eightp = np.array(eris_eight)
     pqrs_indx_np = np.array(pqrs_indx)
-    keep_indx = np.where(np.abs(eris_eight_np) > drop_element_thresh)
-    eris_eight_np = eris_eight_np[keep_indx]
+    keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
+    eris_eightp = eris_eight[keep_indx]
     pqrs_indx_np = pqrs_indx_np[keep_indx[0]]
-    return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight_np))
+    return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight))
 
 
 @frozen
