@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -22,6 +22,10 @@ from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.factoring.mod_add import MontgomeryModAdd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen

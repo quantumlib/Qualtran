@@ -82,7 +82,7 @@ class SwapTest(Bloq):
         return Signature.build(x=self.n, y=self.n)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', *, x: Soquet, y: Soquet
+        self, bb: 'BloqBuilder', x: Soquet, y: Soquet, **kwargs
     ) -> Dict[str, SoquetT]:
         xs = bb.split(x)
         ys = bb.split(y)

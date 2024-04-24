@@ -50,7 +50,7 @@ respectively.
 
 import abc
 from enum import Enum
-from typing import Any, Iterable, List, Sequence, Union
+from typing import Any, cast, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
@@ -133,7 +133,9 @@ class QBit(QDType):
         assert len(bits) == 1
         return bits[0]
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if not np.all((val_array == 0) | (val_array == 1)):
             raise ValueError(f"Bad {self} value array in {debug_str}")
 
@@ -192,7 +194,7 @@ class QInt(QDType):
     def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
-        mask = (1 << self.bitsize) - 1
+        mask = (1 << cast(int, self.bitsize)) - 1
         return QUInt(self.bitsize).to_bits(int(x) & mask)
 
     def from_bits(self, bits: Sequence[int]) -> int:
@@ -209,7 +211,9 @@ class QInt(QDType):
         if val >= 2 ** (self.bitsize - 1):
             raise ValueError(f"Too-large classical {self}: {val} encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < -(2 ** (self.bitsize - 1))):
             raise ValueError(f"Too-small classical {self}s encountered in {debug_str}")
         if np.any(val_array >= 2 ** (self.bitsize - 1)):
@@ -298,7 +302,9 @@ class QUInt(QDType):
         if val >= 2**self.bitsize:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
@@ -391,7 +397,9 @@ class BoundedQUInt(QDType):
         """Combine individual bits to form x"""
         return QUInt(self.bitsize).from_bits(bits)
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= self.iteration_length):
@@ -539,7 +547,9 @@ class QMontgomeryUInt(QDType):
         if val >= 2**self.bitsize:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):

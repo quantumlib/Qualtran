@@ -17,7 +17,7 @@ import attrs
 import cachetools
 import cirq
 
-from qualtran import Bloq
+from qualtran import Bloq, Controlled
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
 from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
 
@@ -117,6 +117,18 @@ def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
 
     if stc in _ROTS_GATESET:
         return TComplexity(rotations=1)
+
+    if isinstance(stc, Controlled) and cirq.num_qubits(stc) <= 2:
+        # We need this hack temporarily because we assume access to decomposition
+        # of a C-U gate where $U$ is a single qubit rotation. Cirq has this decomposition
+        # but the right thing to do in Qualtran is to add explicit bloqs and annotate
+        # them with costs. See https://github.com/quantumlib/Qualtran/issues/878
+        from qualtran._infra.gate_with_registers import get_named_qubits
+
+        quregs = get_named_qubits(stc.signature)
+        qm = cirq.SimpleQubitManager()
+        op, _ = stc.as_cirq_op(qubit_manager=qm, **quregs)
+        return t_complexity(cirq.decompose_once(op))
 
     if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
         # Single qubit rotation operation.

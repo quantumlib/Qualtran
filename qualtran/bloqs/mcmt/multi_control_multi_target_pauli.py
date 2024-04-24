@@ -36,7 +36,10 @@ from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -64,7 +67,7 @@ class MultiTargetCNOT(GateWithRegisters):
         control: NDArray[cirq.Qid],
         targets: NDArray[cirq.Qid],
     ):
-        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:
+        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:  # type: ignore[type-var]
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)
 

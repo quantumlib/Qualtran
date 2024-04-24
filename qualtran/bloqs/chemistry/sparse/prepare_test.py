@@ -19,7 +19,6 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.chemistry.sparse.prepare import (
     _prep_sparse,
     get_sparse_inputs_from_integrals,
-    PrepareSparse,
 )
 
 

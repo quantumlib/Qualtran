@@ -43,7 +43,7 @@ class QFTTextBook(GateWithRegisters):
         return Signature.build_from_dtypes(q=QUInt(self.bitsize))
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, q: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         yield cirq.H(q[0])
         for i in range(1, len(q)):

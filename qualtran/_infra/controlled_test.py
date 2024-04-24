@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -48,6 +48,9 @@ from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
+
+if TYPE_CHECKING:
+    from qualtran import SoquetT
 
 
 def test_ctrl_spec():
@@ -322,7 +325,7 @@ def test_notebook():
 
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
     cbloq = Controlled(bloq, ctrl_spec)
-    cgate = gate.controlled(control_values=ctrl_spec.to_cirq_cv())
+    cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
     np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
 
 
@@ -374,7 +377,7 @@ class TestCtrlStatePrepAnd(Bloq):
         and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
 
         ctrl_soqs = bb.add_d(cbloq, **ctrl_soqs, ctrl=and_ctrl)
-        out_soqs = [*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')]
+        out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])
 
         for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
             for idx in reg.all_idxs():
