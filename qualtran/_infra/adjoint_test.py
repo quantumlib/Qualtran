@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
+from typing import Dict, TYPE_CHECKING
 
 import pytest
 import sympy
@@ -25,6 +26,9 @@ from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
 from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import LarrowTextBox, RarrowTextBox
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
 
 
 def test_serial_combo_adjoint():
@@ -179,7 +183,7 @@ class DecomposesIntoTAcceptsAdjoint(Bloq):
     def signature(self) -> Signature:
         return Signature.build(q=1)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT'):
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         soqs = bb.add_d(TAcceptsAdjoint(), **soqs)
         return soqs
 

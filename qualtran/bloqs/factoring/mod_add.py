@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -26,6 +26,9 @@ from qualtran.bloqs.basic_gates import TGate, XGate
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, Soquet
 
 
 @frozen
