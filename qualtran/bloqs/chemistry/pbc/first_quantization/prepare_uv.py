@@ -15,7 +15,7 @@ r"""PREPARE the potential energy terms of the first quantized chemistry Hamilton
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -64,7 +64,7 @@ class PrepareUVFirstQuantization(Bloq):
     m_param: int
     lambda_zeta: int
     num_bits_nuc_pos: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -85,11 +85,14 @@ class PrepareUVFirstQuantization(Bloq):
     def short_name(self) -> str:
         return r'PREP $UV$'
 
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
         mu, nu, m, flag_nu = bb.add(
-            PrepareNuState(self.num_bits_p, self.m_param, adjoint=self.adjoint),
+            PrepareNuState(self.num_bits_p, self.m_param, is_adjoint=self.is_adjoint),
             mu=mu,
             nu=nu,
             m=m,
@@ -97,7 +100,7 @@ class PrepareUVFirstQuantization(Bloq):
         )
         l = bb.add(
             PrepareZetaState(
-                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, adjoint=self.adjoint
+                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, is_adjoint=self.is_adjoint
             ),
             l=l,
         )
@@ -107,10 +110,10 @@ class PrepareUVFirstQuantization(Bloq):
         # 1. Prepare the nu state
         # 2. Prepare the zeta_l state
         return {
-            (PrepareNuState(self.num_bits_p, self.m_param, self.adjoint), 1),
+            (PrepareNuState(self.num_bits_p, self.m_param, self.is_adjoint), 1),
             (
                 PrepareZetaState(
-                    self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, self.adjoint
+                    self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, self.is_adjoint
                 ),
                 1,
             ),

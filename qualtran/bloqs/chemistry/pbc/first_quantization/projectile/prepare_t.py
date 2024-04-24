@@ -15,7 +15,7 @@ r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian with a qua
 from functools import cached_property
 from typing import Set, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import Bloq, bloq_example, Signature
 from qualtran.bloqs.basic_gates import Toffoli
@@ -55,18 +55,21 @@ class PreparePowerTwoStateWithProj(Bloq):
     """
     bitsize_n: int
     bitsize_p: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     def __attrs_post_init__(self):
         if self.bitsize_n < self.bitsize_p:
             raise ValueError(f"bitsize_n < bitsize_p : {self.bitsize_n} < {self.bitsize_p}.")
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(r=self.bitsize_n)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
+        if self.is_adjoint:
             return {(Toffoli(), (self.bitsize_n - 2))}
         else:
             # The doubly controlled hadamard can be converted to and And and a
@@ -96,7 +99,7 @@ class PrepareTFirstQuantizationWithProj(Bloq):
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
-        adjoint: whether to dagger the bloq or not.
+        is_adjoint: whether to dagger the bloq or not.
 
     Registers:
         w: a register to index one of three components of the momenta.
@@ -116,11 +119,14 @@ class PrepareTFirstQuantizationWithProj(Bloq):
     num_bits_n: int
     eta: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(w=2, w_mean=2, r=self.num_bits_n, s=self.num_bits_n)
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # there is a cost for the uniform state preparation for the $w$
@@ -131,12 +137,12 @@ class PrepareTFirstQuantizationWithProj(Bloq):
         # Factor of two for r and s registers.
         ctrl_mom = (
             PreparePowerTwoStateWithProj(
-                bitsize_n=self.num_bits_n, bitsize_p=self.num_bits_p, adjoint=self.adjoint
+                bitsize_n=self.num_bits_n, bitsize_p=self.num_bits_p, is_adjoint=self.is_adjoint
             ),
             2,
         )
         # Inequality test can be inverted at zero cost
-        if self.adjoint:
+        if self.is_adjoint:
             # pg 31 (Appendix A. Sec 2 c)
             k_k_proj = (Toffoli(), 0)
         else:

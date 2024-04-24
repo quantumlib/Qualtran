@@ -22,7 +22,7 @@ def test_prepare_nu():
     m_param = 2 ** (2 * num_bits_p + 3)
     prep = PrepareNuState(num_bits_p, m_param)
     assert_valid_bloq_decomposition(prep)
-    prep = PrepareNuState(num_bits_p, m_param, adjoint=True)
+    prep = PrepareNuState(num_bits_p, m_param, is_adjoint=True)
     assert_valid_bloq_decomposition(prep)
 
 
@@ -39,7 +39,7 @@ def test_prepare_nu_t_counts():
     prep = PrepareNuState(num_bits_p, m_param)
     _, counts = prep.call_graph()
     qual_cost = counts[TGate()]
-    prep = PrepareNuState(num_bits_p, m_param, adjoint=True)
+    prep = PrepareNuState(num_bits_p, m_param, is_adjoint=True)
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4

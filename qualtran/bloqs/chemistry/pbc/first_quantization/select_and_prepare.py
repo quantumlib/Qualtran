@@ -16,7 +16,7 @@ from functools import cached_property
 from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -53,7 +53,7 @@ class PrepareTUVSuperpositions(Bloq):
     Note in reality this involves some state preparation and inequality testing.
 
     Args:
-        adjoint: whether to dagger the bloq or not.
+        is_adjoint: whether to dagger the bloq or not.
 
     Registers:
         tuv: a single qubit rotated to appropriately weight T and U or V.
@@ -67,11 +67,14 @@ class PrepareTUVSuperpositions(Bloq):
     eta: int
     lambda_zeta: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(tuv=1, uv=1)
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def short_name(self) -> str:
         return 'PREP TUV'
@@ -91,7 +94,7 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
-        adjoint: whether to dagger the bloq or not.
+        is_adjoint: whether to dagger the bloq or not.
 
     Registers:
         i: a n_eta bit register for unary encoding of eta numbers.
@@ -103,7 +106,7 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
     """
     eta: int
     num_bits_rot_aa: int
-    adjoint: int = False
+    is_adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -206,7 +209,7 @@ class PrepareFirstQuantization(PrepareOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
+        is_adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
@@ -238,7 +241,7 @@ class PrepareFirstQuantization(PrepareOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -267,6 +270,9 @@ class PrepareFirstQuantization(PrepareOracle):
             Register("m", BoundedQUInt(bitsize=n_m)),
             Register("l", BoundedQUInt(bitsize=n_at, iteration_length=n_at)),
         )
+
+    def is_adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
@@ -300,14 +306,14 @@ class PrepareFirstQuantization(PrepareOracle):
                 self.eta,
                 self.lambda_zeta,
                 self.num_bits_rot_aa,
-                adjoint=self.adjoint,
+                is_adjoint=self.is_adjoint,
             ),
             tuv=tuv,
             uv=uv,
         )
         i, j = bb.add(
             UniformSuperpostionIJFirstQuantization(
-                self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
+                self.eta, self.num_bits_rot_aa, is_adjoint=self.is_adjoint
             ),
             i=i,
             j=j,
@@ -316,7 +322,7 @@ class PrepareFirstQuantization(PrepareOracle):
         # plus_t = bb.add(Hadamard(), q=plus_t)
         w, r, s = bb.add(
             PrepareTFirstQuantization(
-                self.num_bits_p, self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
+                self.num_bits_p, self.eta, self.num_bits_rot_aa, is_adjoint=self.is_adjoint
             ),
             w=w,
             r=r,
@@ -330,7 +336,7 @@ class PrepareFirstQuantization(PrepareOracle):
                 self.m_param,
                 self.lambda_zeta,
                 self.num_bits_nuc_pos,
-                adjoint=self.adjoint,
+                is_adjoint=self.is_adjoint,
             ),
             mu=mu,
             nu=[nu_x, nu_y, nu_z],
@@ -373,7 +379,7 @@ class SelectFirstQuantization(SelectOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
+        is_adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
@@ -409,7 +415,7 @@ class SelectFirstQuantization(SelectOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:

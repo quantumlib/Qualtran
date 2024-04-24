@@ -16,7 +16,7 @@ r"""PREPARE the potential energy terms of the first quantized chemistry Hamilton
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, QAny, QBit, Register, Signature, SoquetT
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState
@@ -60,7 +60,7 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
     m_param: int
     lambda_zeta: int
     num_bits_nuc_pos: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -79,12 +79,15 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
     def short_name(self) -> str:
         return r'PREP $UV$'
 
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
         mu, nu, m, flag_nu = bb.add(
             PrepareNuStateWithProj(
-                self.num_bits_p, self.num_bits_n, self.m_param, adjoint=self.adjoint
+                self.num_bits_p, self.num_bits_n, self.m_param, is_adjoint=self.is_adjoint
             ),
             mu=mu,
             nu=nu,
@@ -93,7 +96,7 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         )
         l = bb.add(
             PrepareZetaState(
-                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, adjoint=self.adjoint
+                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, is_adjoint=self.is_adjoint
             ),
             l=l,
         )
@@ -105,13 +108,13 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
         return {
             (
                 PrepareNuStateWithProj(
-                    self.num_bits_p, self.num_bits_n, self.m_param, self.adjoint
+                    self.num_bits_p, self.num_bits_n, self.m_param, self.is_adjoint
                 ),
                 1,
             ),
             (
                 PrepareZetaState(
-                    self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, self.adjoint
+                    self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, self.is_adjoint
                 ),
                 1,
             ),

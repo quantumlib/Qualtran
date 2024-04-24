@@ -17,7 +17,7 @@ from functools import cached_property
 from typing import Set, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import Bloq, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Toffoli
@@ -47,16 +47,20 @@ class PrepareZetaState(Bloq):
     num_atoms: int
     lambda_zeta: int
     num_bits_nuc_pos: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature([Register("l", QAny(bitsize=(self.num_atoms - 1).bit_length()))])
 
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
+        if self.is_adjoint:
             # Really Er(x), eq 91. In practice we will replace this with the
             # appropriate qrom call down the line.
             return {(Toffoli(), int(np.ceil(self.lambda_zeta**0.5)))}
         else:
+
             return {(Toffoli(), self.lambda_zeta)}

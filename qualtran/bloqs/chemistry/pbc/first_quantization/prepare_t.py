@@ -15,7 +15,7 @@ r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
@@ -97,7 +97,7 @@ class PrepareTFirstQuantization(Bloq):
     num_bits_p: int
     eta: int
     num_bits_rot_aa: int = 8
-    adjoint: int = False
+    is_adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -105,6 +105,9 @@ class PrepareTFirstQuantization(Bloq):
 
     def short_name(self) -> str:
         return r'PREP $T$'
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, w: SoquetT, r: SoquetT, s: SoquetT
