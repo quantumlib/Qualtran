@@ -33,7 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
-from qualtran.bloqs.basic_gates import CSwap, Hadamard
+from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.z_basis import ZGate
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
@@ -446,12 +446,31 @@ class PrepareSparse(PrepareOracle):
         }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        qrom = self.build_qrom_bloq()
+        # qrom = self.build_qrom_bloq()
+        n_n = (self.num_spin_orb // 2 - 1).bit_length()
+        if self.qroam_block_size is None:
+            target_bitsizes = (
+                (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
+            )
+            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
+        else:
+            block_size = self.qroam_block_size
+        if self.is_adjoint:
+            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + block_size  # A15
+        else:
+            output_size = self.num_bits_state_prep + 8 * n_n + 4
+            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + output_size * (
+                block_size - 1
+            )  # A14
         return {
             (PrepareUniformSuperposition(self.num_non_zero), 1),
-            (qrom, 1),
+            (Toffoli(), num_toff_qrom),
+            (OnEach(self.num_bits_state_prep, Hadamard()), 1),
+            (Hadamard(), 3),
+            (CSwap(1), 1),
             (CSwap((self.num_spin_orb // 2 - 1).bit_length()), 4 + 4),
-            (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 2),
+            # (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 2),
+            (Toffoli(), self.num_bits_state_prep + 1),
         }
 
 

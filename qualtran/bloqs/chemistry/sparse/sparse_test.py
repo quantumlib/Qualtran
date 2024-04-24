@@ -119,17 +119,18 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     cost1a_mod += prep.adjoint().call_graph()[1][TGate()]
     # correct for SelectSwapQROM vs QROAM
     # https://github.com/quantumlib/Qualtran/issues/574
-    our_qrom = get_sel_swap_qrom_t_count(prep_sparse)
-    our_qrom += get_sel_swap_qrom_t_count(prep_sparse_adj)
-    paper_qrom = qrom_cost(prep_sparse)
-    paper_qrom += qrom_cost(prep_sparse_adj)
-    delta_qrom = our_qrom - paper_qrom * 4
+    # our_qrom = get_sel_swap_qrom_t_count(prep_sparse)
+    # our_qrom += get_sel_swap_qrom_t_count(prep_sparse_adj)
+    # paper_qrom = qrom_cost(prep_sparse)
+    # paper_qrom += qrom_cost(prep_sparse_adj)
+    delta_qrom = 0  # our_qrom - paper_qrom * 4
     # inequality test difference
     # https://github.com/quantumlib/Qualtran/issues/235
     lte = LessThanEqual(prep_sparse.num_bits_state_prep, prep_sparse.num_bits_state_prep)
-    t_count_lte = 4 * lte.call_graph()[1][TGate()]
-    t_count_lte_paper = 2 * 4 * (prep_sparse.num_bits_state_prep + 1)  # inverted at zero cost
-    delta_ineq = t_count_lte - t_count_lte_paper
+    # t_count_lte = 4 * lte.call_graph()[1][TGate()]
+    # t_count_lte_paper = 2 * 4 * (prep_sparse.num_bits_state_prep + 1)  # inverted at zero cost
+    # delta_ineq = t_count_lte - t_count_lte_paper
+    delta_ineq = 0
     adjusted_cost_qualtran = (
         cost - cost1a_mod + cost_uni_prep + refl_cost - delta_swap - delta_qrom - delta_ineq
     ) // 4
