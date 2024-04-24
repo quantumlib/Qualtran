@@ -107,7 +107,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     alpha: SymbolicFloat = field(kw_only=True)
     precision: SymbolicFloat = field(kw_only=True)
 
-    def _parameterized_(self):
+    def is_symbolic(self):
         return is_symbolic(self.t, self.alpha, self.precision)
 
     @cached_property
@@ -118,7 +118,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     @cached_property
     def approx_cos(self) -> Union[NDArray[np.complex_], Shaped]:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
-        if self._parameterized_():
+        if self.is_symbolic():
             return Shaped((2 * self.degree + 1,))
 
         poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
