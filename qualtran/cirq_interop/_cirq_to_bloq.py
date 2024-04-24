@@ -312,7 +312,7 @@ def _ensure_in_reg_exists(
 def _gather_input_soqs(
     bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]  # type: ignore[type-var]
 ) -> Dict[str, NDArray[Soquet]]:  # type: ignore[type-var]
-    qvars_in: Dict[str, NDArray[Soquet]] = {}
+    qvars_in: Dict[str, NDArray[Soquet]] = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[Soquet] = []
         for qureg in quregs.flatten():
@@ -399,7 +399,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
             exponent=gate.exponent, global_shift=gate.global_shift
         )
 
-    if isinstance(gate, cirq.GlobalPhaseGate):
+    if isinstance(gate, cirq.GlobalPhaseGate) and isinstance(gate.coefficient, (float, complex)):
         return GlobalPhase(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
@@ -464,12 +464,12 @@ def cirq_optree_to_cbloq(
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
-    in_quregs = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))
+    in_quregs: Dict[str, NDArray] = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
         for k, v in in_quregs.items()
     }
-    out_quregs = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))
+    out_quregs: Dict[str, NDArray] = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore[arg-type]
         for k, v in out_quregs.items()
     }
 
@@ -500,7 +500,7 @@ def cirq_optree_to_cbloq(
         reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
-            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))
+            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore[arg-type]
             for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
 

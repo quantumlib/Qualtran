@@ -254,7 +254,7 @@ def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
 
 
 def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
-    """Needed so mypy can correctly infer types."""
+    """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
     return tuple(x)
 
 

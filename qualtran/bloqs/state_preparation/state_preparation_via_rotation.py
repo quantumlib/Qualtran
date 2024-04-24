@@ -95,7 +95,7 @@ from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
 
 def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
-    """Needed so mypy can correctly infer types."""
+    """mypy compatible converter for StatePreparationViaRotations.state_coefficients"""
     return tuple(x)
 
 

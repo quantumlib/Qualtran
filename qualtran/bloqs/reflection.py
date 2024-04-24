@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 def _to_tuple(x: Iterable[int]) -> Sequence[int]:
-    """Needed so mypy can correctly infer types."""
+    """mypy compatible attrs converter for Reflection.cvs and bitsizes"""
     return tuple(x)
 
 

@@ -162,6 +162,9 @@ def test_wire_symbol():
     (reg,) = zero.signature
     adj = Adjoint(zero)  # specifically use the Adjoint wrapper for testing
 
+    # TODO: Remove binst variable.  These BloqInstances are for typing only
+    # and are not really used by the function.
+    # See https://github.com/quantumlib/Qualtran/issues/608
     ws = zero.wire_symbol(Soquet(BloqInstance(CNOT(), 1), reg))
     adj_ws = adj.wire_symbol(Soquet(BloqInstance(CNOT(), 2), reg.adjoint()))
     assert isinstance(ws, LarrowTextBox)

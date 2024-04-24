@@ -30,6 +30,7 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, OneState

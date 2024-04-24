@@ -51,12 +51,12 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 # NDArrays must be bound to np.generic
-SoquetType = TypeVar('SoquetType', bound=np.generic)
+_SoquetType = TypeVar('_SoquetType', bound=np.generic)
 
-SoquetT = Union[Soquet, NDArray[SoquetType]]
+SoquetT = Union[Soquet, NDArray[_SoquetType]]
 """A `Soquet` or array of soquets."""
 
-SoquetInT = Union[Soquet, NDArray[SoquetType], Sequence[Soquet]]
+SoquetInT = Union[Soquet, NDArray[_SoquetType], Sequence[Soquet]]
 """A soquet or array-like of soquets.
 
 This type alias is used for input argument to parts of the library that are more
@@ -66,12 +66,12 @@ canonicalize and return `SoquetT`.
 
 
 def _to_tuple(x: Iterable[Connection]) -> Sequence[Connection]:
-    """Needed so mypy can correctly infer types."""
+    """mypy-compatible attrs converter for CompositeBloq.connections"""
     return tuple(x)
 
 
 def _to_set(x: Iterable[BloqInstance]) -> FrozenSet[BloqInstance]:
-    """Needed so mypy can correctly infer types."""
+    """mypy-compatible attrs converter for CompositeBloq.bloq_instances"""
     return frozenset(x)
 
 

@@ -33,7 +33,7 @@ from qualtran.resource_counting.generalizers import (
 
 
 def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliString]:
-    """Needed so mypy can correctly infer types."""
+    """mypy-compatible attrs converter for SelectPauliLCU.select_unitaries"""
     return tuple(x)
 
 

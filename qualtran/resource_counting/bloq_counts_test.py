@@ -111,6 +111,7 @@ def test_notebook():
 
 
 def _to_tuple(x: Iterable[BloqCountT]) -> Sequence[BloqCountT]:
+    """mypy compatible converter for OnlyCallGraphBloqShim.callees."""
     return tuple(x)
 
 
