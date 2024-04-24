@@ -40,7 +40,8 @@ def test_hamming_weight_compute(bitsize: int):
     sim = cirq.Simulator()
     op = GateHelper(gate).operation
     circuit = cirq.Circuit(cirq.decompose_once(op))
-    circuit_with_inv = circuit + cirq.Circuit(cirq.decompose_once(cirq.inverse(op)))
+    # Missing cirq stubs
+    circuit_with_inv = circuit + cirq.Circuit(cirq.decompose_once(op**-1))  # type: ignore[operator]
     qubit_order = sorted(circuit_with_inv.all_qubits())
     for inp in range(2**bitsize):
         input_state = [0] * (junk_bitsize + out_bitsize) + list(iter_bits(inp, bitsize))

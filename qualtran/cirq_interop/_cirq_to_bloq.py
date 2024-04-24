@@ -59,10 +59,10 @@ if TYPE_CHECKING:
 
 # numpy subtypes must be np.generic
 # However, this denotes a numpy array of type cirq.Qid
-QidType = TypeVar('QidType', bound=np.generic)
+_QidType = TypeVar('_QidType', bound=np.generic)
 
-CirqQuregT = NDArray[QidType]
-CirqQuregInT = Union[NDArray[QidType], Sequence[cirq.Qid]]
+CirqQuregT = NDArray[_QidType]
+CirqQuregInT = Union[NDArray[_QidType], Sequence[cirq.Qid]]
 
 
 def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
