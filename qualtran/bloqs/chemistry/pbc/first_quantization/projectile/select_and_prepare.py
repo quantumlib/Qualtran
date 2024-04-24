@@ -62,7 +62,13 @@ class PrepareTUVSuperpositions(Bloq):
     r"""Prepare the superposition over registers selecting between T U and V.
 
     Args:
-        is_adjoint: whether to dagger the bloq or not.
+        num_bits_t: The number of bits of precision for the state preparation
+            over the register selecting between the different components of the
+            Hamiltonian.
+        eta: The number of electrons.
+        lambda_zeta: sum of nuclear charges.
+        num_bits_rot_aa: The number of bits of precision for the rotation for
+            amplitude amplification.
 
     Registers:
         tuv: Register to prepare to select between T or UV.
@@ -197,7 +203,6 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        is_adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Register for preparing superposition for selecting between kinetic
