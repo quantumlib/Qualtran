@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from collections import defaultdict
-from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Sequence, TYPE_CHECKING, Union
 
 import sympy
 
@@ -47,7 +47,7 @@ def _get_basic_bloq_classification() -> Dict[str, str]:
     return bloq_classifier
 
 
-def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[str]]) -> str:
+def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, str]) -> str:
     """Classify a bloq given a bloq_classification.
 
     Args:
@@ -69,7 +69,7 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[str]]) -> str
 
 def classify_t_count_by_bloq_type(
     bloq: Bloq,
-    bloq_classification: Optional[Dict[str, Tuple[Bloq]]] = None,
+    bloq_classification: Optional[Dict[str, str]] = None,
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
 ) -> Dict[str, Union[int, sympy.Expr]]:
     """Classify (bin) the T count of a bloq's call graph by type of operation.
