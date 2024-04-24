@@ -29,7 +29,7 @@ from qualtran import (
     Register,
     SoquetT,
 )
-from qualtran.bloqs.basic_gates import Toffoli
+from qualtran.bloqs.basic_gates import SGate, Toffoli
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.cirq_interop import CirqGateAsBloq
@@ -62,6 +62,7 @@ class SelectSparse(SelectOracle):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Fig 13.
     """
+
     num_spin_orb: int
     control_val: Optional[int] = None
 
@@ -121,7 +122,7 @@ class SelectSparse(SelectOracle):
         flag_1b: 'SoquetT',
         sys: 'SoquetT',
     ) -> Dict[str, 'SoquetT']:
-        flag_1b = bb.add(CirqGateAsBloq(cirq.S), q=flag_1b)
+        flag_1b = bb.add(SGate(), q=flag_1b)
         # note no extraction of sign from theta as this is done during state prep.
         sel_pa = (self.signature.get_left('p'), self.signature.get_left('alpha'))
         bloq = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
@@ -161,7 +162,10 @@ class SelectSparse(SelectOracle):
         # value in the sign. In reality the Z to pick up the sign could be done
         # after prepare (but only once).
         # In practice we would apply the selected majoranas to (p, q, alpha) and then (r, s, beta).
-        return {(Toffoli(), (4 * self.num_spin_orb - 6))}
+        sel_pa = (self.signature.get_left('p'), self.signature.get_left('alpha'))
+        maj = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y, control_regs=())
+        c_maj = SelectedMajoranaFermion(sel_pa, target_gate=cirq.Y)
+        return {(SGate(), 1), (maj, 2), (c_maj, 2)}
 
 
 @bloq_example

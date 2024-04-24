@@ -84,6 +84,7 @@ from qualtran.resource_counting.symbolic_counting_utils import (
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):

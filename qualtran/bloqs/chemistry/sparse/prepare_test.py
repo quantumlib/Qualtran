@@ -58,7 +58,7 @@ def test_decompose_bloq_counts():
     prep = _prep_sparse()
     cost_decomp = prep.decompose_bloq().call_graph()[1][TGate()]
     cost_call = prep.call_graph()[1][TGate()]
-    assert cost_decomp != cost_call
+    assert cost_decomp == cost_call
 
 
 def build_random_test_integrals(nb: int):
