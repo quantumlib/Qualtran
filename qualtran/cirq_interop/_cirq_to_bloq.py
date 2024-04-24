@@ -132,7 +132,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return cirq.unitary(self.cirq_gate, default=None)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        return cirq.circuit_diagram_info(self.cirq_gate)
+        return cirq.circuit_diagram_info(self.cirq_gate, default=None)
 
     def __str__(self):
         return str(self.cirq_gate)
