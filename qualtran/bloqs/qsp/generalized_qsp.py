@@ -20,16 +20,7 @@ from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import (
-    bloq_example,
-    BloqDocSpec,
-    Controlled,
-    CtrlSpec,
-    GateWithRegisters,
-    QBit,
-    Register,
-    Signature,
-)
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
 if TYPE_CHECKING:
@@ -366,7 +357,7 @@ class GeneralizedQSP(GateWithRegisters):
         return self._qsp_phases[2]
 
     @cached_property
-    def signal_rotations(self) -> NDArray[SU2RotationGate]:
+    def signal_rotations(self) -> NDArray[SU2RotationGate]:  # type: ignore[type-var]
         return np.array(
             [
                 SU2RotationGate(theta, phi, self._lambda if i == 0 else 0)
@@ -375,7 +366,7 @@ class GeneralizedQSP(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']
+        self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
     ) -> 'cirq.OP_TREE':
         (signal_qubit,) = signal
 
@@ -401,12 +392,12 @@ class GeneralizedQSP(GateWithRegisters):
         counts = set(Counter(self.signal_rotations).items())
 
         if degree > self.negative_power:
-            counts.add((Controlled(self.U, CtrlSpec(cvs=0)), degree - self.negative_power))
+            counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
         elif self.negative_power > degree:
             counts.add((self.U.adjoint(), self.negative_power - degree))
 
         if self.negative_power > 0:
-            counts.add((Controlled(self.U.adjoint(), CtrlSpec()), min(degree, self.negative_power)))
+            counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
 
         return counts
 

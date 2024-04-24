@@ -99,8 +99,8 @@ class BloqAsCirqGate(cirq.Gate):
 
     @classmethod
     def bloq_on(
-        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
         This is used as a default implementation for `Bloq.as_cirq_op` if a native
@@ -157,7 +157,7 @@ class BloqAsCirqGate(cirq.Gate):
         return NotImplemented
 
     def on_registers(
-        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
+        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 

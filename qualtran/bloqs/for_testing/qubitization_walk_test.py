@@ -42,7 +42,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
         return Signature.build()
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         yield PrepareUniformSuperposition(self.n, self.cvs).on_registers(target=quregs['selection'])
 

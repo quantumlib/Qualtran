@@ -105,6 +105,7 @@ def get_bloq_report_card(
     bexamples: Optional[Iterable[BloqExample]] = None,
     package_prefix: str = 'qualtran.bloqs.',
 ) -> pd.DataFrame:
+
     if bclasses is None:
         bclasses = get_bloq_classes()
     if bexamples is None:

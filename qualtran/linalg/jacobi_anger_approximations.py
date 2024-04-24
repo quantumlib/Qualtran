@@ -54,7 +54,7 @@ def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicFl
         return sympy.O(t + sympy.log(precision) / sympy.log(sympy.log(precision)))
 
     def term_too_small(n: int) -> bool:
-        return np.isclose(scipy.special.jv(n, t), 0, atol=precision)
+        return bool(np.isclose(scipy.special.jv(n, t), 0, atol=float(precision)))
 
     d = 1
     while not term_too_small(d):

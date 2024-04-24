@@ -30,6 +30,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.protos import registers_pb2
 from qualtran.serialization import bloq as bloq_serialization
 from qualtran.serialization import resolver_dict
+from qualtran.serialization.bloq import arg_from_proto
 
 
 @pytest.mark.parametrize(
@@ -88,7 +89,7 @@ def test_cbloq_to_proto_two_cnot():
 
 @attrs.frozen
 class TestCSwap(Bloq):
-    bitsize: Union[int, sympy.Expr]
+    bitsize: int
 
     @property
     def signature(self) -> 'Signature':
@@ -123,7 +124,7 @@ def test_cbloq_to_proto_test_two_cswap():
     assert cswap_proto.name.split('.')[-1] == "TestCSwap"
     assert len(cswap_proto.args) == 1
     assert cswap_proto.args[0].name == "bitsize"
-    assert sympy.parse_expr(cswap_proto.args[0].sympy_expr) == bitsize
+    assert arg_from_proto(cswap_proto.args[0])['bitsize'] == bitsize
     assert len(cswap_proto.registers.registers) == 3
 
     assert TestCSwap(bitsize) in bloq_serialization.bloqs_from_proto(cswap_proto_lib)

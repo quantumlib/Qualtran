@@ -116,8 +116,8 @@ def _set_ctrl_swap(ctrl_bit, bloq: CSwap):
 
     bb = BloqBuilder()
     q0 = bb.add(states[ctrl_bit])
-    q1 = bb.add_register('q1', bloq.bitsize)
-    q2 = bb.add_register('q2', bloq.bitsize)
+    q1 = bb.add_register('q1', int(bloq.bitsize))
+    q2 = bb.add_register('q2', int(bloq.bitsize))
     q0, q1, q2 = bb.add(bloq, ctrl=q0, x=q1, y=q2)
     bb.add(effs[ctrl_bit], q=q0)
     return bb.finalize(q1=q1, q2=q2)
