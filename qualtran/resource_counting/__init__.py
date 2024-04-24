@@ -31,4 +31,6 @@ from ._call_graph import (
 
 from ._costing import GeneralizerT, get_cost_value, get_cost_cache, query_costs, CostKey, CostValT
 
+from ._bloq_counts import BloqCount, QECGatesCost
+
 from . import generalizers
