@@ -123,8 +123,8 @@ class CNOT(Bloq):
         return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (ctrl,) = ctrl

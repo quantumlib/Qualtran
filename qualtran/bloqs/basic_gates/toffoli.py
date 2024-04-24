@@ -105,8 +105,8 @@ class Toffoli(Bloq):
         return {'ctrl': ctrl, 'target': target}
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (trg,) = target

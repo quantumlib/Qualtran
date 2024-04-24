@@ -22,6 +22,7 @@ from qualtran.testing import (
     check_bloq_example_decompose,
     check_bloq_example_make,
     check_bloq_example_serialize,
+    check_connections_preserve_preserves_types,
     check_equivalent_bloq_example_counts,
 )
 
@@ -66,7 +67,7 @@ def bloq_classes_with_no_examples(
 
 
 IDCOLS = ['package', 'bloq_cls', 'name']
-CHECKCOLS = ['make', 'decomp', 'counts', 'serialize']
+CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'typing']
 
 
 def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
@@ -78,6 +79,7 @@ def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
         'decomp': BloqCheckResult.MISSING,
         'counts': BloqCheckResult.MISSING,
         'serialize': BloqCheckResult.MISSING,
+        'typing': BloqCheckResult.MISSING,
     }
 
 
@@ -90,6 +92,7 @@ def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
         'decomp': check_bloq_example_decompose(be)[0],
         'counts': check_equivalent_bloq_example_counts(be)[0],
         'serialize': check_bloq_example_serialize(be)[0],
+        'typing': check_connections_preserve_preserves_types(be)[0],
     }
 
 
@@ -102,6 +105,7 @@ def get_bloq_report_card(
     bexamples: Optional[Iterable[BloqExample]] = None,
     package_prefix: str = 'qualtran.bloqs.',
 ) -> pd.DataFrame:
+
     if bclasses is None:
         bclasses = get_bloq_classes()
     if bexamples is None:

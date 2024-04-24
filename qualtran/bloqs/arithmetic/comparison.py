@@ -45,6 +45,7 @@ from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
 
 if TYPE_CHECKING:
+    from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -87,7 +88,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
         return NotImplemented  # pragma: no cover
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
@@ -577,6 +578,7 @@ class GreaterThan(Bloq):
         b: n-bit-sized input registers.
         target: A single bit output register to store the result of A > B.
     """
+
     a_bitsize: int
     b_bitsize: int
 
@@ -590,6 +592,9 @@ class GreaterThan(Bloq):
         return "a>b"
 
     def _t_complexity_(self) -> 'TComplexity':
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def wire_symbol(self, soq: Soquet) -> WireSymbol:
@@ -604,8 +609,8 @@ class GreaterThan(Bloq):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        t_complexity = self.t_complexity()
-        return {(TGate(), t_complexity.t)}
+        tc = t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
+        return {(TGate(), tc.t)}
 
 
 @bloq_example
@@ -645,6 +650,7 @@ class LinearDepthGreaterThan(Bloq):
 
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
+
     bitsize: int
     signed: bool
 
@@ -690,11 +696,11 @@ class LinearDepthGreaterThan(Bloq):
         if not self.signed:
             a_sign = bb.allocate(n=1)
             a_split = bb.split(a)
-            a = bb.join(np.concatenate([[a_sign], a_split]))
+            a = bb.join(np.concatenate([[a_sign], a_split]), dtype=QUInt(self.bitsize + 1))
 
             b_sign = bb.allocate(n=1)
             b_split = bb.split(b)
-            b = bb.join(np.concatenate([[b_sign], b_split]))
+            b = bb.join(np.concatenate([[b_sign], b_split]), dtype=QUInt(self.bitsize + 1))
 
         # Create variable true_bitsize to account for sign bit in bloq construction.
         true_bitsize = self.bitsize if self.signed else (self.bitsize + 1)
@@ -764,19 +770,19 @@ class LinearDepthGreaterThan(Bloq):
         for i in range(true_bitsize):
             b_split[i] = bb.add(XGate(), q=b_split[i])
 
-        a = bb.join(a_split)
-        b = bb.join(b_split)
+        a = bb.join(a_split, dtype=QUInt(true_bitsize))
+        b = bb.join(b_split, dtype=QUInt(true_bitsize))
 
         # If the input registers were unsigned we free the ancilla sign bits.
         if not self.signed:
             a_split = bb.split(a)
             a_sign = a_split[0]
-            a = bb.join(a_split[1:])
+            a = bb.join(a_split[1:], dtype=QUInt(self.bitsize))
             bb.free(a_sign)
 
             b_split = bb.split(b)
             b_sign = b_split[0]
-            b = bb.join(b_split[1:])
+            b = bb.join(b_split[1:], dtype=QUInt(self.bitsize))
             bb.free(b_sign)
 
         # Return the output registers.
@@ -814,6 +820,9 @@ class GreaterThanConstant(Bloq):
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def _t_complexity_(self) -> TComplexity:
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
     def short_name(self) -> str:
@@ -829,8 +838,8 @@ class GreaterThanConstant(Bloq):
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        t_complexity = self.t_complexity()
-        return {(TGate(), t_complexity.t)}
+        tc = t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
+        return {(TGate(), tc.t)}
 
 
 @bloq_example

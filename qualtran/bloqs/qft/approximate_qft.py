@@ -113,7 +113,7 @@ class ApproximateQFT(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         if self.bitsize == 1:
             yield cirq.H(*quregs['q'])
@@ -140,12 +140,14 @@ class ApproximateQFT(GateWithRegisters):
         phase_dict = defaultdict(int)
         if is_symbolic(self.bitsize, self.phase_bitsize):
             phase_dict[
-                AddIntoPhaseGrad(self.phase_bitsize, self.phase_bitsize, controlled=True)
+                AddIntoPhaseGrad(
+                    self.phase_bitsize, self.phase_bitsize, right_shift=1, controlled=1
+                )
             ] = self.bitsize
         else:
             for i in range(1, self.bitsize):
                 b = min(i, self.phase_bitsize - 1)
-                phase_dict[AddIntoPhaseGrad(b, b + 1, controlled=True)] += 1
+                phase_dict[AddIntoPhaseGrad(b, b + 1, right_shift=1, controlled=1)] += 1
         ret = {(Hadamard(), self.bitsize), *phase_dict.items()}
         if self.with_reverse:
             ret |= {(TwoBitSwap(), self.bitsize // 2)}

@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, CompositeBloq, DecomposeTypeError, Signature, SoquetT
+from qualtran import Bloq, CompositeBloq, DecomposeTypeError, GateWithRegisters, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -111,3 +111,65 @@ class TestTwoBitOp(Bloq):
 
     def short_name(self) -> str:
         return 'op'
+
+
+@frozen(repr=False)
+class TestGWRAtom(GateWithRegisters):
+    """An atomic gate that derives from `GateWithRegisters` useful for testing.
+
+    The single qubit gate has a unitary effect corresponding to a 2x2 identity matrix.
+
+    Args:
+        tag: An optional string for differentiating `TestGWRAtom`s.
+
+    Registers:
+        q: One bit
+    """
+
+    tag: Optional[str] = None
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(q=1)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        raise DecomposeTypeError(f"{self} is atomic")
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
+
+        tn.add(
+            qtn.Tensor(
+                data=self._unitary_(),
+                inds=(outgoing['q'], incoming['q']),
+                tags=[self.short_name(), tag],
+            )
+        )
+
+    def _unitary_(self):
+        return np.eye(2)
+
+    def adjoint(self) -> 'Bloq':
+        return self
+
+    def _t_complexity_(self) -> 'TComplexity':
+        return TComplexity(100)
+
+    def __repr__(self):
+        if self.tag:
+            return f'TestGWRAtom({self.tag!r})'
+        else:
+            return 'TestGWRAtom()'
+
+    def short_name(self) -> str:
+        if self.tag:
+            return self.tag
+        else:
+            return 'GWRAtom'

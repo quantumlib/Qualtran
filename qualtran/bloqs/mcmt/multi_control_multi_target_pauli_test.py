@@ -16,13 +16,12 @@ import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
     MultiControlPauli,
     MultiControlX,
     MultiTargetCNOT,
 )
-from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
-from qualtran.testing import assert_valid_bloq_decomposition
 
 
 @pytest.mark.parametrize("num_targets", [3, 4, 6, 8, 10])
@@ -35,16 +34,16 @@ def test_multi_target_cnot(num_targets):
     )
     optimal_circuit = cirq.Circuit(cirq.decompose_once(op))
     assert len(optimal_circuit) == 2 * np.ceil(np.log2(num_targets)) + 1
-    assert_valid_bloq_decomposition(op.gate)
+    qlt_testing.assert_valid_bloq_decomposition(op.gate)
 
 
-@pytest.mark.parametrize("num_controls", [0, 1, *range(7, 17)])
+@pytest.mark.parametrize("num_controls", [0, 1, 2, *range(7, 17)])
 @pytest.mark.parametrize("pauli", [cirq.X, cirq.Y, cirq.Z])
 @pytest.mark.parametrize('cv', [0, 1])
 def test_t_complexity_mcp(num_controls: int, pauli: cirq.Pauli, cv: int):
     gate = MultiControlPauli([cv] * num_controls, target_gate=pauli)
-    assert_valid_bloq_decomposition(gate)
-    assert_decompose_is_consistent_with_t_complexity(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_equivalent_bloq_counts(gate)
 
 
 @pytest.mark.parametrize("num_controls", [*range(10)])
@@ -60,7 +59,7 @@ def test_mcp_unitary(num_controls: int, pauli: cirq.Pauli, cv: int):
 @pytest.mark.parametrize("cvs", [(0,), (1, 0), (1, 1, 1), (1, 0, 1, 0)])
 def test_multi_control_x(cvs):
     bloq = MultiControlX(cvs=cvs)
-    assert_valid_bloq_decomposition(bloq=bloq)
+    qlt_testing.assert_valid_bloq_decomposition(bloq=bloq)
 
 
 @pytest.mark.parametrize(

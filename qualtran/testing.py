@@ -16,7 +16,9 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple, Union
+
+import sympy
 
 from qualtran import (
     Bloq,
@@ -32,7 +34,8 @@ from qualtran import (
     Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
-from qualtran._infra.data_types import check_dtypes_consistent
+from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
+from qualtran.resource_counting import GeneralizerT
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -131,6 +134,20 @@ def assert_connections_compatible(cbloq: CompositeBloq):
             rr_side_should_be = Side.LEFT
         if not (rr.side & rr_side_should_be):
             raise BloqError(f"{cxn}'s right side is associated with a register with side {rr.side}")
+
+
+def assert_connections_preserve_types(
+    cbloq: CompositeBloq,
+    type_checking_severity: QDTypeCheckingSeverity = QDTypeCheckingSeverity.LOOSE,
+):
+    """Check that connections have consistent dtypes accounting for type_checking_severity."""
+    for cxn in cbloq.connections:
+        lr = cxn.left.reg
+        rr = cxn.right.reg
+        if not check_dtypes_consistent(
+            lr.dtype, rr.dtype, type_checking_severity=type_checking_severity
+        ):
+            raise BloqError(f"{cxn}'s QDTypes are incompatible: {lr.dtype} -> {rr.dtype}")
 
 
 def assert_soquets_belong_to_registers(cbloq: CompositeBloq):
@@ -414,8 +431,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts = None
-    decomp_counts = None
+    manual_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    decomp_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths
@@ -463,6 +480,21 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from build_call_graph')
     if has_decomp_counts:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from decomposition.')
+
+
+def assert_equivalent_bloq_counts(bloq: Bloq, generalizer: GeneralizerT = lambda x: x) -> None:
+    """Assert that the BloqExample has consistent bloq counts.
+
+    See the documentation for `assert_equivalent_bloq_example_counts` for details on this function.
+    """
+    assert_equivalent_bloq_example_counts(
+        BloqExample(
+            lambda: bloq,
+            name=bloq.__class__.__name__,
+            bloq_cls=bloq.__class__,
+            generalizer=generalizer,
+        )
+    )
 
 
 def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
@@ -529,6 +561,63 @@ def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult,
     """
     try:
         assert_bloq_example_serialize(bloq_ex)
+    except BloqCheckException as bce:
+        return bce.check_result, bce.msg
+    except Exception as e:  # pylint: disable=broad-except
+        return BloqCheckResult.ERROR, f'{bloq_ex.name}: {e}'
+
+    return BloqCheckResult.PASS, ''
+
+
+def assert_bloq_example_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check a bloq example preserves types throughout its decomposition.
+
+    Args:
+        bloq_ex: The bloq example to test.
+
+    Returns:
+        None
+
+    Raises:
+        BloqCheckException if any assertions are violated. Will raise a failure
+        if loose type checking fails, and unverified if the stricter type checks
+        fail.
+    """
+    bloq = bloq_ex.make()
+    # First check it's not atomic / doesn't decompose
+    try:
+        cbloq = bloq.decompose_bloq()
+    except (DecomposeTypeError, DecomposeNotImplementedError) as exc:
+        raise BloqCheckException.missing(
+            r"Atomic bloqs or non-decomposable bloqs don't require type checking."
+        )
+    try:
+        assert_connections_preserve_types(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.LOOSE
+        )
+    except Exception as e:
+        raise BloqCheckException.fail('Loose type checking failed.\n' + str(e)) from e
+    try:
+        assert_connections_preserve_types(cbloq, type_checking_severity=QDTypeCheckingSeverity.ANY)
+    except Exception as e:
+        raise BloqCheckException.unverified('QAny and QBit type checking failed.\n' + str(e)) from e
+    try:
+        assert_connections_preserve_types(
+            cbloq, type_checking_severity=QDTypeCheckingSeverity.STRICT
+        )
+    except Exception as e:
+        raise BloqCheckException.unverified('Strict type checking failed.\n' + str(e)) from e
+
+
+def check_connections_preserve_preserves_types(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:
+    """Check that the BloqExample has consistent typing.
+
+    Returns:
+        result: The `BloqCheckResult`.
+        msg: A message providing details from the check.
+    """
+    try:
+        assert_bloq_example_preserves_types(bloq_ex)
     except BloqCheckException as bce:
         return bce.check_result, bce.msg
     except Exception as e:  # pylint: disable=broad-except

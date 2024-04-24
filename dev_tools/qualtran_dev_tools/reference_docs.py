@@ -94,11 +94,11 @@ def mixin_custom_template(template_name: str) -> Type:
     return _CustomTemplateMixin
 
 
-class MyModulePageBuilder(mixin_custom_template('module'), ModulePageBuilder):
+class MyModulePageBuilder(mixin_custom_template('module'), ModulePageBuilder):  # type: ignore[misc]
     """Use a custom template for module pages."""
 
 
-class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):
+class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):  # type: ignore[misc]
     """Use a custom template for class pages.
 
     Additionally, this will re-sort the class members (i.e. methods) to match
@@ -120,11 +120,11 @@ class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):
         )
 
 
-class MyFunctionPageBuilder(mixin_custom_template('function'), FunctionPageBuilder):
+class MyFunctionPageBuilder(mixin_custom_template('function'), FunctionPageBuilder):  # type: ignore[misc]
     """Use a custom template for function pages."""
 
 
-class MyTypeAliasPageBuilder(mixin_custom_template('type_alias'), TypeAliasPageBuilder):
+class MyTypeAliasPageBuilder(mixin_custom_template('type_alias'), TypeAliasPageBuilder):  # type: ignore[misc]
     """Use a custom template for type alias pages."""
 
 

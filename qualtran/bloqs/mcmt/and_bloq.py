@@ -167,7 +167,7 @@ class And(GateWithRegisters):
         return Circle(filled)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 

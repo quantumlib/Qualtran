@@ -95,6 +95,7 @@ class SwapWithZero(GateWithRegisters):
         # 0; we swap all values in the right subtree with all values in the left subtree. This
         # takes (N / (2 ** (j + 1)) swaps at level `j`.
         # Therefore, in total, we need $\sum_{j=0}^{logN-1} \frac{N}{2 ^ {j + 1}}$ controlled swaps.
+        selection_dtype = selection.reg.dtype
         selection = bb.split(selection)
         for j in range(self.selection_bitsize):
             for i in range(0, self.n_target_registers - 2**j, 2 ** (j + 1)):
@@ -104,7 +105,7 @@ class SwapWithZero(GateWithRegisters):
                     cswap_n, ctrl=selection[sel_i], x=targets[i], y=targets[i + 2**j]
                 )
 
-        return {'selection': bb.join(selection), 'targets': targets}
+        return {'selection': bb.join(selection, dtype=selection_dtype), 'targets': targets}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_swaps = np.floor(
