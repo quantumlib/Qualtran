@@ -15,6 +15,7 @@ from typing import Set, TYPE_CHECKING
 
 import cirq
 import pytest
+from attrs import frozen
 
 from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
@@ -36,6 +37,7 @@ class DoesNotSupportTComplexity:
     ...
 
 
+@frozen
 class SupportsTComplexityGateWithRegisters(GateWithRegisters):
     @property
     def signature(self) -> Signature:
@@ -64,6 +66,7 @@ class DoesNotSupportTComplexityBloq(Bloq):
         return Signature.build(q=1)
 
 
+@frozen
 class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
     @property
     def signature(self) -> 'Signature':
@@ -75,6 +78,8 @@ class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
 
 def test_t_complexity_for_bloq_via_build_call_graph():
     bloq = SupportsTComplexityBloqViaBuildCallGraph()
+    _, sigma = bloq.call_graph(max_depth=1)
+    assert sigma != {}
     assert t_complexity(bloq) == TComplexity(t=5, clifford=10)
 
 
