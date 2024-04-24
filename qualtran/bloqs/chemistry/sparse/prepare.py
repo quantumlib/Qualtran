@@ -413,8 +413,6 @@ class PrepareSparse(PrepareOracle):
         less_than, alt_pqrs[3], s = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[3], y=s)
         # swap the 1b/2b alt values
         less_than, flag_1b, alt_flag_1b = bb.add(CSwap(1), ctrl=less_than, x=flag_1b, y=alt_flag_1b)
-        # invert the comparator
-        # keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
         # prepare |+> states for symmetry swaps
         swap_pq = bb.add(Hadamard(), q=swap_pq)
         swap_rs = bb.add(Hadamard(), q=swap_rs)
