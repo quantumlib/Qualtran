@@ -86,14 +86,17 @@ def test_sparse_costs_against_openfermion(num_spin_orb, num_bits_rot_aa):
     bloq = SelectSparse(num_spin_orb)
     _, sigma = bloq.call_graph()
     cost += sigma[TGate()]
+    print("sel: ", cost)
     prep_sparse, num_non_zero = make_prep_sparse(num_spin_orb, num_bits_state_prep, num_bits_rot_aa)
     _, sigma = prep_sparse.call_graph()
     cost += sigma[TGate()]
+    print("prep: ", prep_sparse.call_graph()[1][TGate()])
     prep_sparse_adj = attrs.evolve(
         prep_sparse, is_adjoint=True, qroam_block_size=2 ** QI(num_non_zero)[0]
     )
     _, sigma = prep_sparse_adj.call_graph()
     cost += sigma[TGate()]
+    print("prep^: ", prep_sparse_adj.call_graph()[1][TGate()])
     unused_lambda = 10
     unused_de = 1e-3
     unused_stps = 10

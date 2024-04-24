@@ -462,12 +462,14 @@ class PrepareSparse(PrepareOracle):
             num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + output_size * (
                 block_size - 1
             )  # A14
+        if self.is_adjoint:
+            return {(PrepareUniformSuperposition(self.num_non_zero), 1), (Toffoli(), num_toff_qrom)}
         return {
             (PrepareUniformSuperposition(self.num_non_zero), 1),
             (Toffoli(), num_toff_qrom),
             (OnEach(self.num_bits_state_prep, Hadamard()), 1),
             (Hadamard(), 3),
-            (CSwap(1), 1),
+            # (CSwap(1), 1),
             (CSwap((self.num_spin_orb // 2 - 1).bit_length()), 4 + 4),
             # (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 2),
             (Toffoli(), self.num_bits_state_prep + 1),
