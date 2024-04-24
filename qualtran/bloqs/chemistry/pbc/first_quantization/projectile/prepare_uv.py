@@ -60,7 +60,6 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
     m_param: int
     lambda_zeta: int
     num_bits_nuc_pos: int
-    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -79,45 +78,25 @@ class PrepareUVFirstQuantizationWithProj(Bloq):
     def short_name(self) -> str:
         return r'PREP $UV$'
 
-    def adjoint(self) -> 'Bloq':
-        return evolve(self, is_adjoint=not self.is_adjoint)
-
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
         mu, nu, m, flag_nu = bb.add(
-            PrepareNuStateWithProj(
-                self.num_bits_p, self.num_bits_n, self.m_param, is_adjoint=self.is_adjoint
-            ),
+            PrepareNuStateWithProj(self.num_bits_p, self.num_bits_n, self.m_param),
             mu=mu,
             nu=nu,
             m=m,
             flag_nu=flag_nu,
         )
-        l = bb.add(
-            PrepareZetaState(
-                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, is_adjoint=self.is_adjoint
-            ),
-            l=l,
-        )
+        l = bb.add(PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), l=l)
         return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'flag_nu': flag_nu}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1. Prepare the nu state
         # 2. Prepare the zeta_l state
         return {
-            (
-                PrepareNuStateWithProj(
-                    self.num_bits_p, self.num_bits_n, self.m_param, self.is_adjoint
-                ),
-                1,
-            ),
-            (
-                PrepareZetaState(
-                    self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, self.is_adjoint
-                ),
-                1,
-            ),
+            (PrepareNuStateWithProj(self.num_bits_p, self.num_bits_n, self.m_param), 1),
+            (PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), 1),
         }
 
 
