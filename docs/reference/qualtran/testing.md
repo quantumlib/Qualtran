@@ -17,9 +17,15 @@
 
 [`assert_bloq_example_make(...)`](../qualtran/testing/assert_bloq_example_make.md): Assert that the BloqExample returns the desired bloq.
 
+[`assert_bloq_example_preserves_types(...)`](../qualtran/testing/assert_bloq_example_preserves_types.md): Check a bloq example preserves types throughout its decomposition.
+
 [`assert_bloq_example_serialize(...)`](../qualtran/testing/assert_bloq_example_serialize.md)
 
 [`assert_connections_compatible(...)`](../qualtran/testing/assert_connections_compatible.md): Check that all connections are between compatible registers.
+
+[`assert_connections_preserve_types(...)`](../qualtran/testing/assert_connections_preserve_types.md): Check that connections have consistent dtypes accounting for type_checking_severity.
+
+[`assert_equivalent_bloq_counts(...)`](../qualtran/testing/assert_equivalent_bloq_counts.md): Assert that the BloqExample has consistent bloq counts.
 
 [`assert_equivalent_bloq_example_counts(...)`](../qualtran/testing/assert_equivalent_bloq_example_counts.md): Assert that the BloqExample has consistent bloq counts.
 
@@ -43,9 +49,15 @@
 
 [`check_bloq_example_serialize(...)`](../qualtran/testing/check_bloq_example_serialize.md): Check that the BloqExample has consistent serialization.
 
+[`check_connections_preserve_preserves_types(...)`](../qualtran/testing/check_connections_preserve_preserves_types.md): Check that the BloqExample has consistent typing.
+
 [`check_equivalent_bloq_example_counts(...)`](../qualtran/testing/check_equivalent_bloq_example_counts.md): Check that the BloqExample has consistent bloq counts.
 
 [`execute_notebook(...)`](../qualtran/testing/execute_notebook.md): Execute a jupyter notebook in the caller's directory.
+
+## Type Aliases
+
+[`GeneralizerT`](../qualtran/resource_counting/GeneralizerT.md)
 
 
 

@@ -1,10 +1,10 @@
 # SimpleDataBlock
-`qualtran.surface_code.data_block.SimpleDataBlock`
+`qualtran.surface_code.SimpleDataBlock`
 
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L45-L78">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L51-L90">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -15,13 +15,22 @@
 
 A simple data block that uses a fixed code distance and routing overhead.
 
-Inherits From: [`DataBlock`](../../../qualtran/surface_code/data_block/DataBlock.md)
+Inherits From: [`DataBlock`](../../qualtran/surface_code/data_block/DataBlock.md)
+
+<section class="expandable">
+  <h4 class="showalways">View aliases</h4>
+  <p>
+<b>Main aliases</b>
+<p>`qualtran.surface_code.data_block.SimpleDataBlock`</p>
+</p>
+</section>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>qualtran.surface_code.data_block.SimpleDataBlock(
+<code>qualtran.surface_code.SimpleDataBlock(
     data_d,
     routing_overhead=attr_dict[&#x27;routing_overhead&#x27;].default,
-    qec_scheme=<a href="../../../qualtran/surface_code.html#FowlerSuperconductingQubits"><code>qualtran.surface_code.FowlerSuperconductingQubits</code></a>
+    qec_scheme=<a href="../../qualtran/surface_code.html#FowlerSuperconductingQubits"><code>qualtran.surface_code.FowlerSuperconductingQubits</code></a>,
+    reference=attr_dict[&#x27;reference&#x27;].default
 )
 </code></pre>
 
@@ -30,30 +39,22 @@ Inherits From: [`DataBlock`](../../../qualtran/surface_code/data_block/DataBlock
 <!-- Placeholder for "Used in" -->
 
 
-<h2 class="add-link">Args</h2>
-
-`data_d`<a id="data_d"></a>
-: The code distance `d` for protecting the qubits in the data block.
-
-`routing_overhead`<a id="routing_overhead"></a>
-: As an approximation, assume a number of routing or auxiliary
-  qubits proportional to the number of algorithm qubits.
-
-
-
-
 
 
 <h2 class="add-link">Attributes</h2>
 
 `data_d`<a id="data_d"></a>
-: &nbsp;
-
-`qec_scheme`<a id="qec_scheme"></a>
-: &nbsp;
+: The code distance `d` for protecting the qubits in the data block.
 
 `routing_overhead`<a id="routing_overhead"></a>
-: &nbsp;
+: As an approximation, assume some routing or auxiliary
+  qubits proportional to the number of algorithm qubits.
+
+`qec_scheme`<a id="qec_scheme"></a>
+: Underlying quantum error correction scheme.
+
+`reference`<a id="reference"></a>
+: A description of the source of the model.
 
 
 
@@ -62,7 +63,7 @@ Inherits From: [`DataBlock`](../../../qualtran/surface_code/data_block/DataBlock
 
 <h3 id="n_logical_qubits"><code>n_logical_qubits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L59-L66">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L68-L75">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>n_logical_qubits(
@@ -78,7 +79,7 @@ for others.
 
 <h3 id="footprint"><code>footprint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L68-L71">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L77-L80">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>footprint(
@@ -91,7 +92,7 @@ The number of physical qubits used by the data block.
 
 <h3 id="data_error"><code>data_error</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L73-L78">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L82-L87">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>data_error(
@@ -100,6 +101,17 @@ The number of physical qubits used by the data block.
 </code></pre>
 
 The error associated with storing data on `n_algo_qubits` for `n_cycles`.
+
+
+<h3 id="n_cycles_to_consume_a_magic_state"><code>n_cycles_to_consume_a_magic_state</code></h3>
+
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L89-L90">View source</a>
+
+<pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
+<code>n_cycles_to_consume_a_magic_state() -> int
+</code></pre>
+
+The worst case number of cycles needed to consume a magic state.
 
 
 <h3 id="__eq__"><code>__eq__</code></h3>

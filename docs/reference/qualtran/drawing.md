@@ -13,6 +13,8 @@ isort:skip_file
 
 [`classical_sim_graph`](../qualtran/drawing/classical_sim_graph.md): Classes for drawing classical data flows with Graphviz.
 
+[`flame_graph`](../qualtran/drawing/flame_graph.md): Classes for drawing bloqs with FlameGraph.
+
 [`graphviz`](../qualtran/drawing/graphviz.md): Classes for drawing bloqs with Graphviz.
 
 [`musical_score`](../qualtran/drawing/musical_score.md): Tools for laying out composite bloq graphs onto a "musical score".
@@ -72,4 +74,6 @@ isort:skip_file
 [`show_call_graph(...)`](../qualtran/drawing/show_call_graph.md): Display a graph representation of the counts graph `g`.
 
 [`show_counts_sigma(...)`](../qualtran/drawing/show_counts_sigma.md): Display nicely formatted bloq counts sums `sigma`.
+
+[`show_flame_graph(...)`](../qualtran/drawing/show_flame_graph.md): Display hiearchical decomposition and T-complexity costs as a Flame Graph.
 

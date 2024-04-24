@@ -9,7 +9,13 @@
 
 [`class DataBlock`](../../qualtran/surface_code/data_block/DataBlock.md): A cost model for the data block of a surface code compilation.
 
-[`class SimpleDataBlock`](../../qualtran/surface_code/data_block/SimpleDataBlock.md): A simple data block that uses a fixed code distance and routing overhead.
+[`class SimpleDataBlock`](../../qualtran/surface_code/SimpleDataBlock.md): A simple data block that uses a fixed code distance and routing overhead.
+
+[`class CompactDataBlock`](../../qualtran/surface_code/CompactDataBlock.md): The compact data block uses a fixed code distance and routing overhead.
+
+[`class IntermediateDataBlock`](../../qualtran/surface_code/IntermediateDataBlock.md): The intermediate data block uses a fixed code distance and routing overhead.
+
+[`class FastDataBlock`](../../qualtran/surface_code/FastDataBlock.md): The fast data block uses a fixed code distance and a square layout.
 
 ## Functions
 

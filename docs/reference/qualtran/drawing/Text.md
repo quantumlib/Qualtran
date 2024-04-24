@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L382-L396">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L382-L397">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -27,7 +27,7 @@ Inherits From: [`WireSymbol`](../../qualtran/drawing/WireSymbol.md)
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.drawing.Text(
-    text
+    text, fontsize=attr_dict[&#x27;fontsize&#x27;].default
 )
 </code></pre>
 
@@ -41,6 +41,9 @@ A symbol is a particular visual representation of a bloq's register.
 
 <h2 class="add-link">Attributes</h2>
 
+`fontsize`<a id="fontsize"></a>
+: &nbsp;
+
 `text`<a id="text"></a>
 : &nbsp;
 
@@ -51,7 +54,7 @@ A symbol is a particular visual representation of a bloq's register.
 
 <h3 id="draw"><code>draw</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L386-L396">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L387-L397">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>draw(

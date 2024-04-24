@@ -52,8 +52,11 @@
    qualtran/testing/BloqCheckResult.md
    qualtran/testing/assert_bloq_example_decompose.md
    qualtran/testing/assert_bloq_example_make.md
+   qualtran/testing/assert_bloq_example_preserves_types.md
    qualtran/testing/assert_bloq_example_serialize.md
    qualtran/testing/assert_connections_compatible.md
+   qualtran/testing/assert_connections_preserve_types.md
+   qualtran/testing/assert_equivalent_bloq_counts.md
    qualtran/testing/assert_equivalent_bloq_example_counts.md
    qualtran/testing/assert_registers_match_dangling.md
    qualtran/testing/assert_registers_match_parent.md
@@ -65,6 +68,7 @@
    qualtran/testing/check_bloq_example_decompose.md
    qualtran/testing/check_bloq_example_make.md
    qualtran/testing/check_bloq_example_serialize.md
+   qualtran/testing/check_connections_preserve_preserves_types.md
    qualtran/testing/check_equivalent_bloq_example_counts.md
    qualtran/testing/execute_notebook.md
 
@@ -93,6 +97,7 @@
    qualtran/drawing/directional_text_box.md
    qualtran/drawing/draw_musical_score.md
    qualtran/drawing/dump_musical_score.md
+   qualtran/drawing/flame_graph.md
    qualtran/drawing/format_counts_graph_markdown.md
    qualtran/drawing/format_counts_sigma.md
    qualtran/drawing/get_musical_score_data.md
@@ -102,6 +107,7 @@
    qualtran/drawing/show_bloqs.md
    qualtran/drawing/show_call_graph.md
    qualtran/drawing/show_counts_sigma.md
+   qualtran/drawing/show_flame_graph.md
 
 .. toctree::
    :hidden:
@@ -117,6 +123,7 @@
    qualtran/resource_counting/get_bloq_call_graph.md
    qualtran/resource_counting/print_counts_graph.md
    qualtran/resource_counting/symbolic_counting_utils.md
+   qualtran/resource_counting/t_counts_from_sigma.md
 
 .. toctree::
    :hidden:
@@ -144,7 +151,10 @@
 
    qualtran/surface_code/AlgorithmSummary.md
    qualtran/surface_code/CCZ2TFactory.md
+   qualtran/surface_code/CompactDataBlock.md
    qualtran/surface_code/ConstantWithOverheadRotationCost.md
+   qualtran/surface_code/FastDataBlock.md
+   qualtran/surface_code/IntermediateDataBlock.md
    qualtran/surface_code/MagicCount.md
    qualtran/surface_code/MagicStateFactory.md
    qualtran/surface_code/MultiFactory.md
@@ -154,6 +164,7 @@
    qualtran/surface_code/Reference.md
    qualtran/surface_code/RotationCostModel.md
    qualtran/surface_code/RotationLogarithmicModel.md
+   qualtran/surface_code/SimpleDataBlock.md
    qualtran/surface_code/algorithm_summary.md
    qualtran/surface_code/ccz2t_cost_model.md
    qualtran/surface_code/data_block.md
@@ -186,6 +197,13 @@
 
 .. toctree::
    :hidden:
+   :caption: flame_graph
+
+   qualtran/drawing/flame_graph/get_flame_graph_data.md
+   qualtran/drawing/flame_graph/get_flame_graph_svg_data.md
+
+.. toctree::
+   :hidden:
    :caption: generalizers
 
    qualtran/resource_counting/generalizers/cirq_to_bloqs.md
@@ -201,11 +219,19 @@
 
    qualtran/resource_counting/symbolic_counting_utils/SymbolicInt.md
    qualtran/resource_counting/symbolic_counting_utils/acos.md
+   qualtran/resource_counting/symbolic_counting_utils/bit_length.md
    qualtran/resource_counting/symbolic_counting_utils/ceil.md
+   qualtran/resource_counting/symbolic_counting_utils/floor.md
    qualtran/resource_counting/symbolic_counting_utils/is_symbolic.md
    qualtran/resource_counting/symbolic_counting_utils/log2.md
    qualtran/resource_counting/symbolic_counting_utils/pi.md
    qualtran/resource_counting/symbolic_counting_utils/smax.md
+
+.. toctree::
+   :hidden:
+   :caption: t_counts_from_sigma
+
+   qualtran/resource_counting/t_counts_from_sigma/t_counts_from_sigma.md
 
 .. toctree::
    :hidden:
@@ -254,7 +280,6 @@
    :caption: data_block
 
    qualtran/surface_code/data_block/DataBlock.md
-   qualtran/surface_code/data_block/SimpleDataBlock.md
 
 .. toctree::
    :hidden:

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L369-L402">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L370-L403">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -56,7 +56,7 @@ To display a graph in a jupyter notebook consider using the SVG utilities:
 
 <h3 id="get_binst_table_attributes"><code>get_binst_table_attributes</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L370-L371">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L371-L372">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_binst_table_attributes() -> str
@@ -67,7 +67,7 @@ Overridable method to configure the desired table attributes for the bloq.
 
 <h3 id="get_binst_header_text"><code>get_binst_header_text</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L373-L378">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L374-L379">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_binst_header_text(
@@ -80,7 +80,7 @@ Overridable method returning the text used for the header cell of a bloq.
 
 <h3 id="soq_label"><code>soq_label</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L380-L385">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L381-L386">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>soq_label(
@@ -93,7 +93,7 @@ Overridable method for getting label text for a Soquet.
 
 <h3 id="get_default_text"><code>get_default_text</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L387-L391">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L388-L392">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_default_text(
@@ -106,7 +106,7 @@ Overridable method for getting label text for a Soquet.
 
 <h3 id="cxn_edge"><code>cxn_edge</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L393-L402">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/graphviz.py#L394-L403">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>cxn_edge(

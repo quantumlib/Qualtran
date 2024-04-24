@@ -9,7 +9,11 @@
 
 [`acos(...)`](../../qualtran/resource_counting/symbolic_counting_utils/acos.md)
 
+[`bit_length(...)`](../../qualtran/resource_counting/symbolic_counting_utils/bit_length.md): Returns the number of bits required to represent the integer part of positive float `x`.
+
 [`ceil(...)`](../../qualtran/resource_counting/symbolic_counting_utils/ceil.md)
+
+[`floor(...)`](../../qualtran/resource_counting/symbolic_counting_utils/floor.md)
 
 [`is_symbolic(...)`](../../qualtran/resource_counting/symbolic_counting_utils/is_symbolic.md)
 

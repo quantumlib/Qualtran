@@ -341,7 +341,7 @@ the provided `SympySymbolAllocator`.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>call_graph(
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-    keep: Optional[Sequence['Bloq']] = None,
+    keep: Callable[['Bloq'], bool] = None,
     max_depth: Optional[int] = None
 ) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]
 </code></pre>

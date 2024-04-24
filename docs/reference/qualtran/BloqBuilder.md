@@ -247,7 +247,7 @@ Returns
 <code>add(
     bloq: <a href="../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>,
     **in_soqs
-) -> Union[None, SoquetT, Tuple[SoquetT, ...]]
+)
 </code></pre>
 
 Add a new bloq instance to the compute graph.

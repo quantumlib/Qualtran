@@ -35,6 +35,14 @@
 
 [`class CCZ2TFactory`](../qualtran/surface_code/CCZ2TFactory.md): Magic state factory costs using the model from catalyzed CCZ to 2T paper.
 
+[`class CompactDataBlock`](../qualtran/surface_code/CompactDataBlock.md): The compact data block uses a fixed code distance and routing overhead.
+
+[`class FastDataBlock`](../qualtran/surface_code/FastDataBlock.md): The fast data block uses a fixed code distance and a square layout.
+
+[`class IntermediateDataBlock`](../qualtran/surface_code/IntermediateDataBlock.md): The intermediate data block uses a fixed code distance and routing overhead.
+
+[`class SimpleDataBlock`](../qualtran/surface_code/SimpleDataBlock.md): A simple data block that uses a fixed code distance and routing overhead.
+
 [`class MagicCount`](../qualtran/surface_code/MagicCount.md): A count of magic states.
 
 [`class MagicStateFactory`](../qualtran/surface_code/MagicStateFactory.md): A cost model for the magic state distillation factory of a surface code compilation.
