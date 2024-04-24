@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.drawing import WireSymbol
-    from qualtran.resource_counting import BloqCountT, GeneralizerT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, CostKey, GeneralizerT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -293,6 +293,20 @@ class Bloq(metaclass=abc.ABCMeta):
         the provided `SympySymbolAllocator`.
         """
         return self.decompose_bloq().build_call_graph(ssa)
+
+    def my_static_costs(self, cost_key: 'CostKey') -> Union[Any, NotImplemented]:
+        """Override this method to provide static costs.
+
+        The system will query a particular cost by asking for a `cost_key`. This method
+        can optionally provide a value, which will be preferred over a computed cost.
+
+        Static costs can be provided if the particular cost cannot be easily computed or
+        as a performance optimization.
+
+        This method must return `NotImplemented` if a value cannot be provided for the specified
+        CostKey.
+        """
+        return NotImplemented
 
     def call_graph(
         self,

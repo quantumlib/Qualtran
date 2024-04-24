@@ -240,8 +240,11 @@ def get_bloq_call_graph(
     return g, sigma
 
 
-def print_counts_graph(g: nx.DiGraph):
+def format_call_graph_debug_text(g: nx.DiGraph) -> str:
     """Print the graph returned from `get_bloq_counts_graph`."""
-    for b in nx.topological_sort(g):
-        for succ in g.succ[b]:
-            print(b, '--', g.edges[b, succ]['n'], '->', succ)
+    lines = []
+    for gen in nx.topological_generations(g):
+        for b in sorted(gen, key=str):
+            for succ in sorted(g.succ[b], key=str):
+                lines.append(f"{b} -- {g.edges[b, succ]['n']} -> {succ}")
+    return '\n'.join(lines)
