@@ -16,10 +16,7 @@ import numpy as np
 import pytest
 
 from qualtran.bloqs.basic_gates import TGate
-from qualtran.bloqs.chemistry.sparse.prepare import (
-    _prep_sparse,
-    get_sparse_inputs_from_integrals,
-)
+from qualtran.bloqs.chemistry.sparse.prepare import _prep_sparse, get_sparse_inputs_from_integrals
 
 
 def test_prep_inner(bloq_autotester):
