@@ -50,16 +50,12 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         page 21, Eq 77.
     """
     num_bits_p: int
-    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [Register("mu", QAny(self.num_bits_p)), Register("flag", QBit(), side=Side.RIGHT)]
         )
-
-    def adjoint(self) -> 'Bloq':
-        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def short_name(self) -> str:
         return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
@@ -138,7 +134,9 @@ class FlagZeroAsFailure(Bloq):
         return Signature(
             [
                 Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
-                Register("flag_minus_zero", QBit(), side=Side.RIGHT),
+                Register(
+                    "flag_minus_zero", QBit(), side=Side.RIGHT if not self.is_adjoint else Side.LEFT
+                ),
             ]
         )
 
@@ -182,7 +180,9 @@ class TestNuLessThanMu(Bloq):
             [
                 Register("mu", QAny(self.num_bits_p)),
                 Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
-                Register("flag_nu_lt_mu", QBit(), side=Side.RIGHT),
+                Register(
+                    "flag_nu_lt_mu", QBit(), side=Side.RIGHT if not self.is_adjoint else Side.LEFT
+                ),
             ]
         )
 
@@ -244,9 +244,15 @@ class TestNuInequality(Bloq):
                 Register("mu", QAny(self.num_bits_p)),
                 Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
                 Register("m", QAny(self.num_bits_m)),
-                Register("flag_minus_zero", QBit(), side=Side.LEFT),
-                Register("flag_mu_prep", QBit(), side=Side.LEFT),
-                Register("flag_ineq", QBit(), side=Side.LEFT),
+                Register(
+                    "flag_minus_zero", QBit(), side=Side.LEFT if not self.is_adjoint else Side.RIGHT
+                ),
+                Register(
+                    "flag_mu_prep", QBit(), side=Side.LEFT if not self.is_adjoint else Side.RIGHT
+                ),
+                Register(
+                    "flag_ineq", QBit(), side=Side.LEFT if not self.is_adjoint else Side.RIGHT
+                ),
                 Register("succ", QBit()),
             ]
         )
@@ -320,7 +326,6 @@ class PrepareNuState(Bloq):
     """
     num_bits_p: int
     m_param: int
-    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -334,32 +339,21 @@ class PrepareNuState(Bloq):
             ]
         )
 
-    def adjoint(self) -> 'Bloq':
-        return evolve(self, is_adjoint=not self.is_adjoint)
-
     def short_name(self) -> str:
         return r"PREP $\frac{1}{\lVert \nu \rVert} |\nu\rangle $"
 
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
-        mu, flag_mu = bb.add(
-            PrepareMuUnaryEncodedOneHot(self.num_bits_p, is_adjoint=self.is_adjoint), mu=mu
-        )
-        mu, nu = bb.add(
-            PrepareNuSuperPositionState(self.num_bits_p, is_adjoint=self.is_adjoint), mu=mu, nu=nu
-        )
-        nu, flag_zero = bb.add(
-            FlagZeroAsFailure(self.num_bits_p, is_adjoint=self.is_adjoint), nu=nu
-        )
-        mu, nu, flag_nu_lt_mu = bb.add(
-            TestNuLessThanMu(self.num_bits_p, is_adjoint=self.is_adjoint), mu=mu, nu=nu
-        )
+        mu, flag_mu = bb.add(PrepareMuUnaryEncodedOneHot(self.num_bits_p), mu=mu)
+        mu, nu = bb.add(PrepareNuSuperPositionState(self.num_bits_p), mu=mu, nu=nu)
+        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p), nu=nu)
+        mu, nu, flag_nu_lt_mu = bb.add(TestNuLessThanMu(self.num_bits_p), mu=mu, nu=nu)
         n_m = (self.m_param - 1).bit_length()
         m = bb.add(PrepareUniformSuperposition(self.m_param), target=m)
 
         mu, nu, m, flag_nu = bb.add(
-            TestNuInequality(self.num_bits_p, n_m, is_adjoint=self.is_adjoint),
+            TestNuInequality(self.num_bits_p, n_m),
             mu=mu,
             nu=nu,
             m=m,
@@ -377,10 +371,10 @@ class PrepareNuState(Bloq):
         # 2. Prepare mu-nu superposition (Eq 78)
         cost_2 = (PrepareNuSuperPositionState(self.num_bits_p), 1)
         # 3. Remove minus zero
-        cost_3 = (FlagZeroAsFailure(self.num_bits_p, is_adjoint=self.is_adjoint), 1)
+        cost_3 = (FlagZeroAsFailure(self.num_bits_p), 1)
         # 4. Test $\nu < 2^{\mu-2}$
-        cost_4 = (TestNuLessThanMu(self.num_bits_p, is_adjoint=self.is_adjoint), 1)
+        cost_4 = (TestNuLessThanMu(self.num_bits_p), 1)
         # 5. Prepare superposition over $m$ which is a power of two so only clifford.
         # 6. Test that $(2^{\mu-2})^2\mathcal{M} > m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
-        cost_6 = (TestNuInequality(self.num_bits_p, n_m, is_adjoint=self.is_adjoint), 1)
+        cost_6 = (TestNuInequality(self.num_bits_p, n_m), 1)
         return {cost_1, cost_2, cost_3, cost_4, cost_6}
