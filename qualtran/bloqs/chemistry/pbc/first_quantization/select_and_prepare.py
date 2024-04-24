@@ -271,7 +271,7 @@ class PrepareFirstQuantization(PrepareOracle):
             Register("l", BoundedQUInt(bitsize=n_at, iteration_length=n_at)),
         )
 
-    def is_adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
     @cached_property
