@@ -15,7 +15,7 @@ r"""Bloqs for PREPARE T for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import evolve, frozen
+from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, Signature, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli

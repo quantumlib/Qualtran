@@ -156,12 +156,7 @@ class PrepareNuStateWithProj(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1. Prepare unary encoded superposition state (Eq 77)
-        cost_1 = (
-            PrepareMuUnaryEncodedOneHotWithProj(
-                self.num_bits_n, self.num_bits_p
-            ),
-            1,
-        )
+        cost_1 = (PrepareMuUnaryEncodedOneHotWithProj(self.num_bits_n, self.num_bits_p), 1)
         n_m = (self.m_param - 1).bit_length()
         # 2. Prepare mu-nu superposition (Eq 78)
         cost_2 = (PrepareNuSuperPositionState(self.num_bits_n), 1)

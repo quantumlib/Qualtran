@@ -16,7 +16,7 @@ from functools import cached_property
 from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import evolve, frozen
+from attrs import frozen
 
 from qualtran import (
     Bloq,

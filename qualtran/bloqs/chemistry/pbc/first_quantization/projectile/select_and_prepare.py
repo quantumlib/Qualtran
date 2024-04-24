@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
@@ -27,7 +27,6 @@ from qualtran import (
     QAny,
     QBit,
     Register,
-    Side,
     Signature,
     Soquet,
     SoquetT,

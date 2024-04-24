@@ -16,7 +16,7 @@ r"""PREPARE the potential energy terms of the first quantized chemistry Hamilton
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import evolve, frozen
+from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, QAny, QBit, Register, Signature, SoquetT
 from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import PrepareZetaState

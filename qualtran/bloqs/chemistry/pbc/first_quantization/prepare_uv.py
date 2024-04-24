@@ -15,7 +15,7 @@ r"""PREPARE the potential energy terms of the first quantized chemistry Hamilton
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import evolve, frozen
+from attrs import frozen
 
 from qualtran import (
     Bloq,
