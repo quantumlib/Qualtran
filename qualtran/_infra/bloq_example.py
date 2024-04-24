@@ -44,7 +44,7 @@ class BloqExample(Generic[_BloqType]):
     _func: Callable[[], _BloqType] = field(repr=False, hash=False)
     name: str
     bloq_cls: Type[Bloq]
-    generalizer: Callable[[_GeneralizerType], Optional[_GeneralizerType]] = field(
+    generalizer: _GeneralizerType = field(
         converter=lambda x: tuple(x) if isinstance(x, Sequence) else x, default=lambda x: x
     )
 
@@ -86,7 +86,7 @@ def bloq_example(_func: Callable[[], _BloqType], **kwargs: Any) -> BloqExample[_
 def bloq_example(
     _func: None,
     *,
-    generalizer: Callable[[_GeneralizerType], Optional[_GeneralizerType]] = lambda x: x,
+    generalizer: _GeneralizerType = lambda x: x,
 ) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]]:
     ...
 
@@ -94,7 +94,7 @@ def bloq_example(
 def bloq_example(
     _func: Callable[[], _BloqType] = None,
     *,
-    generalizer: Callable[[_GeneralizerType], Optional[_GeneralizerType]] = lambda x: x,
+    generalizer: _GeneralizerType = lambda x: x,
 ) -> BloqExample[_BloqType]:
     """Decorator to turn a function into a `BloqExample`.
 
