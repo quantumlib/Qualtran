@@ -33,7 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
-from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.z_basis import ZGate
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
