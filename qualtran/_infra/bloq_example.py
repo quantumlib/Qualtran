@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import typing
-from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Type, TypeVar, Union
 
 from attrs import field, frozen
 
@@ -20,7 +20,7 @@ from qualtran.resource_counting import GeneralizerT
 
 from .bloq import Bloq
 
-_BloqType = TypeVar('BloqType', bound=Bloq)
+_BloqType = TypeVar('_BloqType', bound=Bloq)
 _GeneralizerType = Union[GeneralizerT, Sequence[GeneralizerT]]
 
 
@@ -84,17 +84,13 @@ def bloq_example(_func: Callable[[], _BloqType], **kwargs: Any) -> BloqExample[_
 
 @typing.overload
 def bloq_example(
-    _func: None,
-    *,
-    generalizer: _GeneralizerType = lambda x: x,
+    _func: None, *, generalizer: _GeneralizerType = lambda x: x
 ) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]]:
     ...
 
 
 def bloq_example(
-    _func: Callable[[], _BloqType] = None,
-    *,
-    generalizer: _GeneralizerType = lambda x: x,
+    _func: Optional[Callable[[], _BloqType]] = None, *, generalizer: _GeneralizerType = lambda x: x
 ) -> BloqExample[_BloqType]:
     """Decorator to turn a function into a `BloqExample`.
 
@@ -118,11 +114,9 @@ def bloq_example(
     return _inner(_func)
 
 
-def _to_tuple(T: Type):
-    def _t(x: Iterable[T]) -> Tuple[T, ...]:
-        return tuple(x)
-
-    return _t
+def _to_tuple(x: Iterable[BloqExample]) -> Sequence[BloqExample]:
+    """mypy compatible converter for BloqDocSpec.examples"""
+    return tuple(x)
 
 
 @frozen(kw_only=True)
@@ -150,7 +144,7 @@ class BloqDocSpec:
     """
 
     bloq_cls: Type[Bloq]
-    examples: Sequence[BloqExample] = field(converter=_to_tuple(BloqExample), factory=tuple)
+    examples: Sequence[BloqExample] = field(converter=_to_tuple, factory=tuple)
     import_line: str = field()
     call_graph_example: Union[BloqExample, None] = field()
 
