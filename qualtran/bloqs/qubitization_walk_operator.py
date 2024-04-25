@@ -67,7 +67,6 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     select: SelectOracle
     prepare: PrepareOracle
-    sum_of_lcu_coefficients: Optional[float] = None
     control_val: Optional[int] = None
     power: int = 1
 
@@ -95,6 +94,10 @@ class QubitizationWalkOperator(GateWithRegisters):
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
         return ReflectionUsingPrepare(self.prepare, control_val=self.control_val, global_phase=-1)
+
+    @cached_property
+    def sum_of_lcu_coefficients(self) -> Optional[float]:
+        return self.prepare.l1_norm_of_coeffs
 
     def decompose_from_registers(
         self,

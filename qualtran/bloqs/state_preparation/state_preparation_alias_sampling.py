@@ -21,7 +21,7 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
 from functools import cached_property
-from typing import List, Tuple
+from typing import List, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -43,6 +43,9 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 @cirq.value_equality()
@@ -96,6 +99,7 @@ class StatePreparationAliasSampling(PrepareOracle):
     alt: NDArray[np.int_]
     keep: NDArray[np.int_]
     mu: int
+    sum_of_lcu_coeffs: float
 
     @classmethod
     def from_lcu_probs(
@@ -119,7 +123,12 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
+            sum_of_lcu_coeffs=sum(lcu_probabilities),
         )
+
+    @cached_property
+    def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
+        return self.sum_of_lcu_coeffs
 
     @cached_property
     def sigma_mu_bitsize(self) -> int:

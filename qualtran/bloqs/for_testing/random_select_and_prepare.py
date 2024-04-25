@@ -56,6 +56,10 @@ class TestPrepareOracle(PrepareOracle):
     def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BoundedQUInt(bitsize=self.U.bitsize)),)
 
+    @property
+    def l1_norm_of_coeffs(self) -> float:
+        return 1.0
+
     @classmethod
     def random(cls, bitsize: int, *, random_state: np.random.RandomState):
         """Generate a random unitary s.t. the first column has all real amplitudes"""
@@ -205,4 +209,4 @@ def random_qubitization_walk_operator(
         ]
     )
 
-    return QubitizationWalkOperator(prepare=prepare, select=select, sum_of_lcu_coefficients=1), ham
+    return QubitizationWalkOperator(prepare=prepare, select=select), ham

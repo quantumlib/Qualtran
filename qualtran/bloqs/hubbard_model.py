@@ -47,7 +47,7 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
 from functools import cached_property
-from typing import Collection, Optional, Sequence, Tuple, Union
+from typing import Collection, Optional, Sequence, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -66,6 +66,9 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 @attrs.frozen
@@ -310,6 +313,13 @@ class PrepareHubbard(PrepareOracle):
         return (Register('temp', QAny(2)),)
 
     @cached_property
+    def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
+        # https://arxiv.org/abs/1805.03662v2 equation 60
+        N = self.x_dim * self.y_dim * 2
+        qlambda = 2 * N * self.t + (N * self.mu) // 2
+        return qlambda
+
+    @cached_property
     def signature(self) -> Signature:
         return Signature([*self.selection_registers, *self.junk_registers])
 
@@ -321,8 +331,7 @@ class PrepareHubbard(PrepareOracle):
         temp = quregs['temp']
 
         N = self.x_dim * self.y_dim * 2
-        qlambda = 2 * N * self.t + (N * self.mu) // 2
-        yield cirq.Ry(rads=2 * np.arccos(np.sqrt(self.t * N / qlambda))).on(*V)
+        yield cirq.Ry(rads=2 * np.arccos(np.sqrt(self.t * N / self.l1_norm_of_coeffs))).on(*V)
         yield cirq.Ry(rads=2 * np.arccos(np.sqrt(1 / 5))).on(*U).controlled_by(*V)
         yield PrepareUniformSuperposition(self.x_dim).on_registers(controls=[], target=p_x)
         yield PrepareUniformSuperposition(self.y_dim).on_registers(controls=[], target=p_y)
@@ -353,10 +362,4 @@ def get_walk_operator_for_hubbard_model(
     select = SelectHubbard(x_dim, y_dim)
     prepare = PrepareHubbard(x_dim, y_dim, t, mu)
 
-    # https://arxiv.org/abs/1805.03662v2 equation 60
-    N = x_dim * y_dim
-    sum_of_ham_coeffs = 2 * N * t + N * mu / 2
-
-    return QubitizationWalkOperator(
-        select=select, prepare=prepare, sum_of_lcu_coefficients=sum_of_ham_coeffs
-    )
+    return QubitizationWalkOperator(select=select, prepare=prepare)
