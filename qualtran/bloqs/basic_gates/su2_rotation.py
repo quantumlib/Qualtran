@@ -131,6 +131,15 @@ class SU2RotationGate(GateWithRegisters):
         q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
         return {'q': q}
 
+    def adjoint(self) -> 'SU2RotationGate':
+        return SU2RotationGate(
+            theta=self.theta,
+            phi=-self.lambd,
+            lambd=-self.phi,
+            global_shift=-self.global_shift,
+            eps=self.eps,
+        )
+
     def pretty_name(self) -> str:
         return 'SU_2'
 
