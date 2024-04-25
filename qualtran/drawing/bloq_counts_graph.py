@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 """Classes for drawing bloq counts graphs with Graphviz."""
-
+import abc
 import html
 from typing import Any, Dict, Iterable, Tuple, Union
 
@@ -26,23 +26,17 @@ import sympy
 from qualtran import Bloq, CompositeBloq
 
 
-class GraphvizCounts:
-    """This class turns a bloqs count graph into Graphviz objects and drawings.
-
-    Args:
-        g: The counts graph.
-    """
-
+class _CallGraphDrawerBase(metaclass=abc.ABCMeta):
     def __init__(self, g: nx.DiGraph):
         self.g = g
         self._ids: Dict[Bloq, str] = {}
         self._i = 0
 
-        self.max_detail_fields = 5
-        self.max_field_val_len = 12
-        self.max_detail_len = 200
-
     def get_id(self, b: Bloq) -> str:
+        """Return a unique string id for each bloq encountered in `self.g`.
+
+        String ids are required for graphviz.
+        """
         if b in self._ids:
             return self._ids[b]
         new_id = f'b{self._i}'
@@ -55,53 +49,23 @@ class GraphvizCounts:
 
         Override this method for complete control over the titles of nodes.
         """
-        return b.pretty_name()
-
-    @staticmethod
-    def abbreviate_field_list(
-        name_vals: Iterable[Tuple[str, Any]], max_field_val_len: int = 12, max_detail_fields=5
-    ):
-        """Helper function for abbreviating a list of key=value representations.
-
-        This is used by the default `get_node_details`.
-        """
-
-        def abbrev(x: str):
-            if len(x) > max_field_val_len:
-                return x[: max_field_val_len - 4] + ' ...'
-            return x
-
-        details = [f'{name}={abbrev(repr(val))}' for name, val in name_vals]
-        if len(details) > max_detail_fields:
-            n = len(details) - max_detail_fields + 1
-            details = details[: max_detail_fields - 1] + [f'[{n} addtl fields].']
-
-        return ', '.join(details)
+        raise NotImplementedError()
 
     def get_node_details(self, b: Bloq):
         """Return text to use as details for a node.
 
         Override this method for complete control over the details attached to nodes.
         """
-        if isinstance(b, CompositeBloq):
-            return f'{len(b.bloq_instances)} bloqs...'[: self.max_detail_len]
-
-        if not attrs.has(b.__class__):
-            return repr(b)[: self.max_detail_len]
-
-        return self.abbreviate_field_list(
-            ((field.name, getattr(b, field.name)) for field in attrs.fields(b.__class__)),
-            max_field_val_len=self.max_field_val_len,
-            max_detail_fields=self.max_detail_fields,
-        )[: self.max_detail_len]
+        raise NotImplementedError()
 
     def get_node_properties(self, b: Bloq):
-        """Get graphviz properties for a bloq node representing `b`."""
-        title = self.get_node_title(b)
-        details = self.get_node_details(b)
+        """Get graphviz properties for a bloq node representing `b`.
 
-        title = html.escape(title)
-        details = html.escape(details)
+        By default, this will craft a label from `get_node_title` and `get_node_details`,
+        and a rectangular node shape. Override this method to provide further customization.
+        """
+        title = html.escape(self.get_node_title(b))
+        details = html.escape(self.get_node_details(b))
 
         label = ['<', title]
         if details:
@@ -136,6 +100,116 @@ class GraphvizCounts:
     def get_svg(self) -> IPython.display.SVG:
         """Get an IPython SVG object displaying the graph."""
         return IPython.display.SVG(self.get_svg_bytes())
+
+
+class GraphvizCounts(_CallGraphDrawerBase):
+    """Draw a bloq call graphs using Graphviz.
+
+    Each node is a bloq with a `bloq.pretty_name()` label and an automatically-determined
+    "details" string based on the bloqs attributes. For non-attrs classes, classes with
+    a large number of fields, or classes where the fields' string representations are long;
+    the details string will be abbreviated.
+
+    Each edge is labeled with the number of times the "caller" (predecessor) bloq calls the
+    "callee" (successor) bloq.
+
+    Args:
+        g: The call graph, from e.g. `Bloq.call_graph()`.
+
+    See Also:
+        `qualtran.drawing.show_call_graph`, which uses this class under-the-hood.
+    """
+
+    def __init__(self, g: nx.DiGraph):
+        super().__init__(g=g)
+
+        self.max_detail_fields = 5
+        self.max_field_val_len = 12
+        self.max_detail_len = 200
+
+    def get_node_title(self, b: Bloq):
+        return b.pretty_name()
+
+    @staticmethod
+    def abbreviate_field_list(
+        name_vals: Iterable[Tuple[str, Any]], max_field_val_len: int = 12, max_detail_fields=5
+    ):
+        """Helper function for abbreviating a list of key=value representations.
+
+        This is used by the default `get_node_details`.
+        """
+
+        def abbrev(x: str):
+            # Each field value gets cut off if it's too long.
+            if len(x) > max_field_val_len:
+                return x[: max_field_val_len - 4] + ' ...'
+            return x
+
+        details = [f'{name}={abbrev(repr(val))}' for name, val in name_vals]
+        if len(details) > max_detail_fields:
+            # Too many fields gets cut off.
+            n = len(details) - max_detail_fields + 1
+            details = details[: max_detail_fields - 1] + [f'[{n} addtl fields].']
+
+        return ', '.join(details)
+
+    def get_node_details(self, b: Bloq):
+        # Special case for composite bloqs.
+        if isinstance(b, CompositeBloq):
+            return f'{len(b.bloq_instances)} bloqs...'[: self.max_detail_len]
+
+        # Clumsy truncation if it's not an attrs class, since we can't easily inspect the fields.
+        if not attrs.has(b.__class__):
+            return repr(b)[: self.max_detail_len]
+
+        # Otherwise, use the abbreviation function.
+        return self.abbreviate_field_list(
+            ((field.name, getattr(b, field.name)) for field in attrs.fields(b.__class__)),
+            max_field_val_len=self.max_field_val_len,
+            max_detail_fields=self.max_detail_fields,
+        )[: self.max_detail_len]
+
+
+class GraphvizCallGraph(_CallGraphDrawerBase):
+    """Draw a bloq call graph using Graphviz with additional data.
+
+    Each edge is labeled with the number of times the "caller" (predecessor) bloq calls the
+    "callee" (successor) bloq.
+
+    This class follows the behavior described in https://github.com/quantumlib/Qualtran/issues/791
+    and will replace `GraphvizCounts` when all bloqs have been migrated to use `__str__()`.
+
+    Args:
+        g: The call graph, from e.g. `Bloq.call_graph()`.
+        bloq_data: A mapping from a bloq to a set of key, value pairs to include in a table
+            in each node. The keys and values must support `str()`.
+    """
+
+    def __init__(self, g: nx.DiGraph, bloq_data: Dict['Bloq', Dict[Any, Any]] = None):
+        super().__init__(g)
+
+        if bloq_data is None:
+            bloq_data = {}
+
+        self.bloq_data = bloq_data
+
+    def get_node_title(self, b: Bloq):
+        return str(b)
+
+    def get_node_properties(self, b: 'Bloq'):
+        title = html.escape(self.get_node_title(b))
+
+        label = ['<']
+        label += ['<font point-size="10">']
+        label += ['<table border="0" cellborder="1" cellspacing="0" cellpadding="5">\n']
+        label += [f'<tr><td colspan="2"><font point-size="10">{title}</font></td></tr>\n']
+
+        for k, v in self.bloq_data.get(b, {}).items():
+            label += [f'<tr><td>{k}</td><td>{v}</td></tr>']
+
+        label += ['</table></font>']
+        label += ['>']
+        return {'label': ''.join(label), 'shape': 'plaintext'}
 
 
 def _format_bloq_expr_markdown(bloq: Bloq, expr: Union[int, sympy.Expr]) -> str:
