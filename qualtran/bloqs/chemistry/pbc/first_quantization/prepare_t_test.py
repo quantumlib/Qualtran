@@ -35,13 +35,13 @@ def test_prepare_kinetic_t_counts():
     uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r)
     _, counts = uni.call_graph()
     qual_cost = counts[TGate()]
-    uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r, adjoint=True)
+    uni = UniformSuperpostionIJFirstQuantization(eta, num_bits_rot_aa=b_r).adjoint()
     _, counts = uni.call_graph()
     qual_cost += counts[TGate()]
     prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r)
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
-    prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r, adjoint=True)
+    prep = PrepareTFirstQuantization(num_bits_p, eta, num_bits_rot_aa=b_r).adjoint()
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4

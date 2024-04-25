@@ -42,8 +42,8 @@ def test_prepare_kinetic_t_proj_counts():
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     prep = PrepareTFirstQuantizationWithProj(
-        num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r, adjoint=True
-    )
+        num_bits_p, num_bits_n, eta, num_bits_rot_aa=b_r
+    ).adjoint()
     _, counts = prep.call_graph()
     qual_cost += counts[TGate()]
     qual_cost //= 4
