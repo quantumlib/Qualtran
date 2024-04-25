@@ -25,6 +25,7 @@ from qualtran import QAny, QBit, Register
 from qualtran._infra.data_types import BoundedQUInt
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
+from qualtran.resource_counting import CostKey
 
 
 @attrs.frozen
@@ -134,3 +135,10 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         yield cirq.CNOT(control, *accumulator)
         yield self.target_gate(target[target_idx]).controlled_by(control)
         yield cirq.CZ(*accumulator, target[target_idx])
+
+    def my_static_costs(self, cost_key: 'CostKey') -> Union[Any, NotImplemented]:
+        from qualtran.resource_counting import QubitCount
+
+        if isinstance(cost_key, QubitCount):
+            return self.signature.n_qubits()
+        return super().my_static_costs(cost_key)

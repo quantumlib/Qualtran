@@ -125,6 +125,9 @@ class Toffoli(Bloq):
             return ModPlus()
         raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
+    def __str__(self):
+        return 'Toffoli'
+
 
 @bloq_example
 def _toffoli() -> Toffoli:

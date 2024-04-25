@@ -235,6 +235,13 @@ class And(GateWithRegisters):
         else:
             return TComplexity(t=4 * 1, clifford=9 + 2 * pre_post_cliffords)
 
+    def __str__(self):
+        dag = '†' if self.uncompute else ''
+
+        if self.cv1 == 0 or self.cv2 == 0:
+            return f'And{dag}_{self.cv1}{self.cv2}'
+        return f'And{dag}'
+
 
 @bloq_example(
     generalizer=[cirq_to_bloqs, ignore_cliffords, ignore_alloc_free, generalize_rotation_angle]

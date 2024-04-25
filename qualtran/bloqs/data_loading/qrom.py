@@ -327,6 +327,11 @@ class QROM(UnaryIterationGate):
         targets = {k: v ^ vals[k] for k, v in targets.items()}
         return controls | selections | targets
 
+    def my_static_costs(self, cost_key: 'CostKey') -> Union[Any, NotImplemented]:
+        if cost_key == QubitCount():
+            return self.num_controls + 2 * sum(self.selection_bitsizes) + sum(self.target_bitsizes)
+        return super().my_static_costs(cost_key)
+
     def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
@@ -373,6 +378,9 @@ class QROM(UnaryIterationGate):
         n_and = prod(*self.data_shape) - 2 + self.num_controls
         n_cnot = prod(*self.target_bitsizes, *self.data_shape)
         return {(And(), n_and), (And().adjoint(), n_and), (CNOT(), n_cnot)}
+
+    def __str__(self):
+        return 'QROM'
 
 
 @bloq_example

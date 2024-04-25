@@ -42,8 +42,7 @@ def test_classical_simulation():
     h_on_each = OnEach(10, Hadamard())
     with pytest.raises(
         NotImplementedError,
-        match=r'.*does not support classical simulation: '
-        r'Hadamard\(\) is not classically simulable\.',
+        match=r'.*does not support classical simulation: ' r'H is not classically simulable\.',
     ):
         h_on_each.call_classically(q=0)
 

@@ -205,3 +205,12 @@ def test_is_symbolic():
     assert is_symbolic(r)
     r = Register("my_reg", QAny(2), shape=sympy.symbols("x y"))
     assert is_symbolic(r)
+
+
+def test_symbolic_reg():
+    n = sympy.Symbol('n', positive=True, integer=True)
+    sig = Signature(
+        [Register('x', QAny(n), side=Side.LEFT), Register('y', QAny(2 * n), side=Side.RIGHT)]
+    )
+
+    assert sig.n_qubits() == 2 * n

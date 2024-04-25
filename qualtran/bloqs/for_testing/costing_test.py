@@ -24,9 +24,9 @@ def test_costing_bloqs():
         == """\
 Algo -- 1 -> Func1
 Algo -- 1 -> Func2
-Func1 -- 10 -> Hadamard()
-Func1 -- 10 -> TGate()
-Func1 -- 10 -> TGate(is_adjoint=True)
-Func2 -- 100 -> Toffoli()
-Toffoli() -- 4 -> TGate()"""
+Func1 -- 10 -> H
+Func1 -- 10 -> T
+Func1 -- 10 -> T†
+Func2 -- 100 -> Toffoli
+Toffoli -- 4 -> T"""
     )
