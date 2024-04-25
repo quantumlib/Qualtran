@@ -16,9 +16,6 @@
 import pytest
 
 from qualtran.surface_code import FastDataBlock
-from qualtran.surface_code.quantum_error_correction_scheme_summary import (
-    FowlerSuperconductingQubits,
-)
 
 
 @pytest.mark.parametrize(
