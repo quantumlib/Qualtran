@@ -171,6 +171,7 @@ def test_select_application_to_eigenstates():
     # right now we only handle positive interaction term values
     ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
+    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
     # built select with unary iteration gate
     op = SelectPauliLCU(
         selection_bitsize=selection_bitsize,
@@ -185,11 +186,10 @@ def test_select_application_to_eigenstates():
     all_qubits = select_circuit.all_qubits()
 
     coeffs = get_1d_ising_lcu_coeffs(num_sites, 1, 1)
-    prep_circuit = _fake_prepare(np.sqrt(coeffs), selection)
+    prep_circuit = _fake_prepare(np.sqrt(coeffs / qubitization_lambda), selection)
     turn_on_control = cirq.Circuit(cirq.X.on(control))
 
     ising_eigs, ising_wfns = np.linalg.eigh(ham.matrix())
-    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
     for iw_idx, ie in enumerate(ising_eigs):
         eigenstate_prep = cirq.Circuit()
         eigenstate_prep.append(
