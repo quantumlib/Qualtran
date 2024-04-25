@@ -82,7 +82,6 @@ class PrepareTFirstQuantization(Bloq):
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
-        adjoint: whether to dagger the bloq or not.
 
     Registers:
         w: a register to index one of three components of the momenta.
@@ -97,7 +96,6 @@ class PrepareTFirstQuantization(Bloq):
     num_bits_p: int
     eta: int
     num_bits_rot_aa: int = 8
-    adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:
