@@ -50,12 +50,16 @@ class TensorAdderTester(Bloq):
     ):
         assert sorted(incoming.keys()) == ['qubits', 'x']
         in_qubits = incoming['qubits']
+        assert isinstance(in_qubits, np.ndarray)
         assert in_qubits.shape == (2,)
+        assert isinstance(incoming['x'], Soquet)
         assert incoming['x'].reg.bitsize == 2
 
         assert sorted(outgoing.keys()) == ['qubits', 'y']
         out_qubits = outgoing['qubits']
+        assert isinstance(out_qubits, np.ndarray)
         assert out_qubits.shape == (2,)
+        assert isinstance(outgoing['y'], Soquet)
         assert outgoing['y'].reg.bitsize == 1
 
         data = np.zeros((2**2, 2, 2, 2, 2, 2))

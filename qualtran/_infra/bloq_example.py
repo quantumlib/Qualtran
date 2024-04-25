@@ -12,15 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import typing
-from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Type, TypeVar, Union
 
 from attrs import field, frozen
 
+from qualtran.resource_counting import GeneralizerT
+
 from .bloq import Bloq
+
+_BloqType = TypeVar('_BloqType', bound=Bloq)
+_GeneralizerType = Union[GeneralizerT, Sequence[GeneralizerT]]
 
 
 @frozen
-class BloqExample:
+class BloqExample(Generic[_BloqType]):
     """An instantiation of a bloq and its metadata.
 
     In particular, this class wraps a callable that returns a bloq instantiation with
@@ -36,18 +41,18 @@ class BloqExample:
         generalizer: Passed to `get_bloq_counts_graph` calls for bloq-counts equivalence checking.
     """
 
-    _func: Callable[[], Bloq] = field(repr=False, hash=False)
+    _func: Callable[[], _BloqType] = field(repr=False, hash=False)
     name: str
     bloq_cls: Type[Bloq]
-    generalizer: Callable[[Bloq], Optional[Bloq]] = field(
+    generalizer: _GeneralizerType = field(
         converter=lambda x: tuple(x) if isinstance(x, Sequence) else x, default=lambda x: x
     )
 
-    def make(self) -> Bloq:
+    def make(self) -> _BloqType:
         """Make the bloq."""
         return self._func()
 
-    def __call__(self) -> Bloq:
+    def __call__(self) -> _BloqType:
         """This class is callable: it will make the bloq.
 
         This makes the `bloq_example` decorator make sense: we wrap a function, so this
@@ -56,12 +61,12 @@ class BloqExample:
         return self.make()
 
 
-def _name_from_func_name(func: Callable[[], Bloq]) -> str:
+def _name_from_func_name(func: Callable[[], _BloqType]) -> str:
     """Use the name of the function as the `BloqExample.name` when using the decorator."""
     return func.__name__.lstrip('_')
 
 
-def _bloq_cls_from_func_annotation(func: Callable[[], Bloq]) -> Type[Bloq]:
+def _bloq_cls_from_func_annotation(func: Callable[[], _BloqType]) -> Type[_BloqType]:
     """Use the function return type annotation as the `BloqExample.bloq_cls` with the decorator."""
     anno = func.__annotations__
     if 'return' not in anno:
@@ -73,20 +78,20 @@ def _bloq_cls_from_func_annotation(func: Callable[[], Bloq]) -> Type[Bloq]:
 
 
 @typing.overload
-def bloq_example(_func: Callable[[], Bloq], **kwargs: Any) -> BloqExample:
+def bloq_example(_func: Callable[[], _BloqType], **kwargs: Any) -> BloqExample[_BloqType]:
     ...
 
 
 @typing.overload
 def bloq_example(
-    _func: None, *, generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
-) -> Callable[[Callable[[], Bloq]], BloqExample]:
+    _func: None, *, generalizer: _GeneralizerType = lambda x: x
+) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]]:
     ...
 
 
 def bloq_example(
-    _func: Callable[[], Bloq] = None, *, generalizer: Callable[[Bloq], Optional[Bloq]] = lambda x: x
-):
+    _func: Optional[Callable[[], _BloqType]] = None, *, generalizer: _GeneralizerType = lambda x: x
+) -> BloqExample[_BloqType]:
     """Decorator to turn a function into a `BloqExample`.
 
     This will set `name` to the name of the function and `bloq_cls` according to the return-type
@@ -94,7 +99,7 @@ def bloq_example(
     through to the `BloqExample` constructor.
     """
 
-    def _inner(func: Callable[[], Bloq]) -> BloqExample:
+    def _inner(func: Callable[[], _BloqType]) -> BloqExample:
         return BloqExample(
             func=func,
             name=_name_from_func_name(func),
@@ -109,11 +114,9 @@ def bloq_example(
     return _inner(_func)
 
 
-def _to_tuple(T: Type):
-    def _t(x: Iterable[T]) -> Tuple[T, ...]:
-        return tuple(x)
-
-    return _t
+def _to_tuple(x: Iterable[BloqExample]) -> Sequence[BloqExample]:
+    """mypy compatible converter for BloqDocSpec.examples"""
+    return tuple(x)
 
 
 @frozen(kw_only=True)
@@ -141,7 +144,7 @@ class BloqDocSpec:
     """
 
     bloq_cls: Type[Bloq]
-    examples: Sequence[BloqExample] = field(converter=_to_tuple(BloqExample), factory=tuple)
+    examples: Sequence[BloqExample] = field(converter=_to_tuple, factory=tuple)
     import_line: str = field()
     call_graph_example: Union[BloqExample, None] = field()
 

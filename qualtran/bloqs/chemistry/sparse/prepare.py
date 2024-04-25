@@ -18,7 +18,7 @@ from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import field, frozen
+from attrs import evolve, field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -103,11 +103,11 @@ def get_sparse_inputs_from_integrals(
     for p in range(num_spat):
         _add(p, p, p, p)
     eris_eight = np.array(eris_eight)
-    pqrs_indx = np.array(pqrs_indx)
+    pqrs_indx_np = np.array(pqrs_indx)
     keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
     eris_eight = eris_eight[keep_indx]
-    pqrs_indx = pqrs_indx[keep_indx[0]]
-    return np.concatenate((tpq_indx, pqrs_indx)), np.concatenate((tpq_sparse, eris_eight))
+    pqrs_indx_np = pqrs_indx_np[keep_indx[0]]
+    return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight))
 
 
 @frozen
@@ -136,7 +136,7 @@ class PrepareSparse(PrepareOracle):
         num_bits_rot_aa: The number of bits of precision for the single-qubit
             rotation for amplitude amplification during the uniform state
             preparation. Default 8.
-        adjoint: Whether we are apply PREPARE or PREPARE^dag
+        is_adjoint: Whether we are apply PREPARE or PREPARE^dag
         qroam_block_size: qroam blocking factor.
 
     Registers:
@@ -164,15 +164,15 @@ class PrepareSparse(PrepareOracle):
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
-    alt_pqrs: Tuple[int, ...] = field(repr=False)
+    alt_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
     alt_theta: Tuple[int, ...] = field(repr=False)
     alt_one_body: Tuple[int, ...] = field(repr=False)
-    ind_pqrs: Tuple[int, ...] = field(repr=False)
+    ind_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
     theta: Tuple[int, ...] = field(repr=False)
     one_body: Tuple[int, ...] = field(repr=False)
     keep: Tuple[int, ...] = field(repr=False)
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
 
     @cached_property
@@ -223,6 +223,9 @@ class PrepareSparse(PrepareOracle):
             Register("swap_pqrs", BoundedQUInt(1)),
             Register("flag_1b", BoundedQUInt(1)),
         )
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
@@ -448,7 +451,7 @@ class PrepareSparse(PrepareOracle):
             block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
         else:
             block_size = self.qroam_block_size
-        if self.adjoint:
+        if self.is_adjoint:
             num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + block_size  # A15
         else:
             output_size = self.num_bits_state_prep + 8 * num_bits_spat + 4
@@ -456,7 +459,7 @@ class PrepareSparse(PrepareOracle):
                 block_size - 1
             )  # A14
         qrom_cost = (Toffoli(), num_toff_qrom)
-        if self.adjoint:
+        if self.is_adjoint:
             return {(PrepareUniformSuperposition(self.num_non_zero), 1), qrom_cost}
         swap_cost_state_prep = (CSwap(num_bits_spat), 4 + 4)  # 2. pg 39
         ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39

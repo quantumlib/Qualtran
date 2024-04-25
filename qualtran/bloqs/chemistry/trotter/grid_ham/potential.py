@@ -27,6 +27,7 @@ from qualtran import (
     QAny,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
@@ -90,6 +91,8 @@ class PairPotential(Bloq):
     def build_composite_bloq(
         self, bb: BloqBuilder, *, system_i: SoquetT, system_j: SoquetT
     ) -> Dict[str, SoquetT]:
+        if isinstance(system_i, Soquet) or isinstance(system_j, Soquet):
+            raise ValueError("system_i and system_j must be numpy arrays of Soquet")
         # compute r_i - r_j
         # r_i + (-r_j), in practice we need to flip the sign bit, but this is just 3 cliffords.
         diff_ij = [0, 0, 0]
@@ -99,7 +102,9 @@ class PairPotential(Bloq):
             )
         # Compute r_{ij}^2 = (x_i-x_j)^2 + ...
         bitsize_rij_sq = 2 * (self.bitsize + 1) + 2
-        diff_ij, sos = bb.add(SumOfSquares(bitsize=self.bitsize + 1, k=3), input=diff_ij)
+        diff_ij, sos = bb.add(
+            SumOfSquares(bitsize=self.bitsize + 1, k=3), input=np.asarray(diff_ij)
+        )
         for xyz in range(3):
             system_i[xyz], system_j[xyz] = bb.add(
                 OutOfPlaceAdder(self.bitsize, adjoint=True),
@@ -219,6 +224,8 @@ class PotentialEnergy(Bloq):
         return f'U_{self.label}(dt)'
 
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
+        if isinstance(system, Soquet):
+            raise ValueError("system must be a numpy array of Soquet")
         bitsize = (self.num_grid - 1).bit_length() + 1
         ij_pairs = np.triu_indices(self.num_elec, k=1)
         poly_coeffs = get_inverse_square_root_poly_coeffs()

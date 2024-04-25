@@ -146,8 +146,8 @@ class Add(Bloq):
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.a_dtype.bitsize
-        wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
+        wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
+        wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
