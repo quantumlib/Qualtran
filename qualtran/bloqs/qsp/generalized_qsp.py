@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Iterable, Sequence, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -253,6 +253,11 @@ def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
     ), f"Not a QSP polynomial! maximum absolute value {max_value} is greater than 1."
 
 
+def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
+    """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
+    return tuple(x)
+
+
 @frozen
 class GeneralizedQSP(GateWithRegisters):
     r"""Applies a QSP polynomial $P$ to a unitary $U$ to obtain a block-encoding of $P(U)$.
@@ -311,8 +316,8 @@ class GeneralizedQSP(GateWithRegisters):
     """
 
     U: GateWithRegisters
-    P: Tuple[complex, ...] = field(converter=tuple)
-    Q: Tuple[complex, ...] = field(converter=tuple)
+    P: Tuple[complex, ...] = field(converter=_to_tuple)
+    Q: Tuple[complex, ...] = field(converter=_to_tuple)
     negative_power: int = field(default=0, kw_only=True)
 
     @P.validator

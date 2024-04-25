@@ -78,7 +78,7 @@ def code_distance(
         qec: Quantum Error Correction Scheme.
         physical_error_rate: The physical error rate of the device.
     """
-    q = FastDataBlock.grid_size(n_algo_qubits=alg.algorithm_qubits)
+    q = FastDataBlock.grid_size(n_algo_qubits=int(alg.algorithm_qubits))
     return qec.code_distance_from_budget(physical_error_rate, error_budget / (3 * q * time_steps))
 
 

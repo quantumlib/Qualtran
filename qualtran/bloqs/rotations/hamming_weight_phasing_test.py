@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -31,6 +31,9 @@ from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
     ignore_split_join,
 )
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
 
 
 @pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7, 8])

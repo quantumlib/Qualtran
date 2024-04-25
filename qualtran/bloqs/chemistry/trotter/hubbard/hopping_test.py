@@ -28,7 +28,7 @@ def test_hopping_plaquette(bloq_autotester):
 
 def catch_rotations(bloq) -> Bloq:
     if isinstance(bloq, Rz):
-        if abs(bloq.angle) < 1e-12:
+        if abs(float(bloq.angle)) < 1e-12:
             return ArbitraryClifford(1)
         else:
             return Rz(angle=PHI)

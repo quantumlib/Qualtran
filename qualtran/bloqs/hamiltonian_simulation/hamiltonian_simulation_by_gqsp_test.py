@@ -25,7 +25,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     check_polynomial_pair_on_random_points_on_unit_circle,
     verify_generalized_qsp,
 )
-from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
+from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalkOperator
 
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
@@ -48,7 +48,7 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
     for _ in range(5):
         U = RandomGate.create(bitsize, random_state=random_state)
-        gqsp = HamiltonianSimulationByGQSP(None, t=t, alpha=1, precision=precision).gqsp
+        gqsp = HamiltonianSimulationByGQSP(_walk_op, t=t, alpha=1, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 
         check_polynomial_pair_on_random_points_on_unit_circle(

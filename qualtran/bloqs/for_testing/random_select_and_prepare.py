@@ -163,9 +163,9 @@ class PauliSelectOracle(SelectOracle):
         self,
         *,
         context: cirq.DecompositionContext,
-        selection: NDArray[cirq.Qid],
-        target: NDArray[cirq.Qid],
-        **quregs: NDArray[cirq.Qid],
+        selection: NDArray[cirq.Qid],  # type: ignore[type-var]
+        target: NDArray[cirq.Qid],  # type: ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         if self.control_val is not None:
             selection = np.concatenate([selection, quregs['control']])

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List
+from typing import Sequence
 
 import cirq
 import numpy as np
@@ -131,7 +131,7 @@ def test_ising_one_bitflip_select():
 
 
 def _fake_prepare(
-    positive_coefficients: np.ndarray, selection_register: List[cirq.Qid]
+    positive_coefficients: np.ndarray, selection_register: Sequence[cirq.Qid]
 ) -> cirq.OP_TREE:
     pos_coeffs = positive_coefficients.flatten()
     size_hilbert_of_reg = 2 ** len(selection_register)

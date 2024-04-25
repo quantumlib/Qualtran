@@ -28,6 +28,7 @@ from typing import (
     Set,
     Tuple,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 
@@ -49,17 +50,29 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
+# NDArrays must be bound to np.generic
+_SoquetType = TypeVar('_SoquetType', bound=np.generic)
 
-SoquetT = Union[Soquet, NDArray[Soquet]]
+SoquetT = Union[Soquet, NDArray[_SoquetType]]
 """A `Soquet` or array of soquets."""
 
-SoquetInT = Union[Soquet, NDArray[Soquet], Sequence[Soquet]]
+SoquetInT = Union[Soquet, NDArray[_SoquetType], Sequence[Soquet]]
 """A soquet or array-like of soquets.
 
 This type alias is used for input argument to parts of the library that are more
 permissive about the types they accept. Under-the-hood, such functions will
 canonicalize and return `SoquetT`.
 """
+
+
+def _to_tuple(x: Iterable[Connection]) -> Sequence[Connection]:
+    """mypy-compatible attrs converter for CompositeBloq.connections"""
+    return tuple(x)
+
+
+def _to_set(x: Iterable[BloqInstance]) -> FrozenSet[BloqInstance]:
+    """mypy-compatible attrs converter for CompositeBloq.bloq_instances"""
+    return frozenset(x)
 
 
 @attrs.frozen
@@ -83,9 +96,9 @@ class CompositeBloq(Bloq):
             should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    connections: Tuple[Connection, ...] = attrs.field(converter=tuple)
+    connections: Tuple[Connection, ...] = attrs.field(converter=_to_tuple)
     signature: Signature
-    bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=frozenset)
+    bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=_to_set)
 
     @bloq_instances.default
     def _default_bloq_instances(self):
@@ -1081,7 +1094,7 @@ class BloqBuilder:
 
         self.add(Free(dtype=soq.reg.dtype), reg=soq)
 
-    def split(self, soq: Soquet) -> NDArray[Soquet]:
+    def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""
         from qualtran.bloqs.util_bloqs import Split
 
@@ -1090,7 +1103,7 @@ class BloqBuilder:
 
         return self.add(Split(dtype=soq.reg.dtype), reg=soq)
 
-    def join(self, soqs: NDArray[Soquet], dtype: Optional[QDType] = None) -> Soquet:
+    def join(self, soqs: NDArray[Soquet], dtype: Optional[QDType] = None) -> Soquet:  # type: ignore[type-var]
         from qualtran.bloqs.util_bloqs import Join
 
         try:

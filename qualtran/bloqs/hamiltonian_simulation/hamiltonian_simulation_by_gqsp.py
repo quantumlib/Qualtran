@@ -18,7 +18,15 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, Controlled, CtrlSpec, GateWithRegisters, Signature
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    Controlled,
+    CtrlSpec,
+    GateWithRegisters,
+    Signature,
+    Soquet,
+)
 from qualtran.bloqs.basic_gates import SU2RotationGate
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
@@ -33,7 +41,7 @@ from qualtran.resource_counting.symbolic_counting_utils import (
 )
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, SoquetT
+    from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -121,7 +129,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return GeneralizedQSP.from_qsp_polynomial(
             self.walk_operator,
             self.approx_cos,
-            negative_power=self.degree,
+            negative_power=int(self.degree),
             verify=True,
             verify_precision=1e-4,
         )
@@ -153,7 +161,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         # TODO open issue: alloc/free does not work with cirq api
-        state_prep_ancilla = {
+        state_prep_ancilla: Dict[str, 'SoquetT'] = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers
         }
@@ -164,7 +172,11 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         soqs, state_prep_ancilla = self.__add_prepare(bb, soqs, state_prep_ancilla, adjoint=True)
 
         for soq in state_prep_ancilla.values():
-            bb.free(soq)
+            if isinstance(soq, Soquet):
+                bb.free(soq)
+            else:
+                for soq_element in soq:
+                    bb.free(soq)
 
         return soqs
 

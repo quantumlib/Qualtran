@@ -316,7 +316,7 @@ def get_ccz2t_costs_from_grid_search(
     factory_iter: Iterable[MagicStateFactory] = tuple(iter_ccz2t_factories()),
     data_block_iter: Iterable[DataBlock] = tuple(iter_simple_data_blocks()),
     cost_function: Callable[[PhysicalCost], float] = (lambda pc: pc.qubit_hours),
-) -> Tuple[PhysicalCost, CCZ2TFactory, SimpleDataBlock]:
+) -> Tuple[PhysicalCost, MagicStateFactory, SimpleDataBlock]:
     """Grid search over parameters to minimize space time volume.
 
     Args:

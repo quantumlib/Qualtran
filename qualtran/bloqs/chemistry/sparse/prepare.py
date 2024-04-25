@@ -103,11 +103,11 @@ def get_sparse_inputs_from_integrals(
     for p in range(num_spat):
         _add(p, p, p, p)
     eris_eight = np.array(eris_eight)
-    pqrs_indx = np.array(pqrs_indx)
+    pqrs_indx_np = np.array(pqrs_indx)
     keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
     eris_eight = eris_eight[keep_indx]
-    pqrs_indx = pqrs_indx[keep_indx[0]]
-    return np.concatenate((tpq_indx, pqrs_indx)), np.concatenate((tpq_sparse, eris_eight))
+    pqrs_indx_np = pqrs_indx_np[keep_indx[0]]
+    return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight))
 
 
 @frozen
@@ -164,10 +164,10 @@ class PrepareSparse(PrepareOracle):
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
-    alt_pqrs: Tuple[int, ...] = field(repr=False)
+    alt_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
     alt_theta: Tuple[int, ...] = field(repr=False)
     alt_one_body: Tuple[int, ...] = field(repr=False)
-    ind_pqrs: Tuple[int, ...] = field(repr=False)
+    ind_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
     theta: Tuple[int, ...] = field(repr=False)
     one_body: Tuple[int, ...] = field(repr=False)
     keep: Tuple[int, ...] = field(repr=False)
