@@ -25,7 +25,7 @@ from numpy.typing import NDArray
 from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
-from qualtran.bloqs.for_testing.random_gate import RandomGate
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
 from qualtran.resource_counting import SympySymbolAllocator
 from qualtran.resource_counting.symbolic_counting_utils import Shaped
@@ -170,7 +170,7 @@ def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
-        U = RandomGate.create(bitsize, random_state=random_state)
+        U = MatrixGate.random(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
         verify_generalized_qsp(U, P)
 
@@ -185,7 +185,7 @@ def test_generalized_qsp_with_complex_poly_on_random_unitaries(
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
-        U = RandomGate.create(bitsize, random_state=random_state)
+        U = MatrixGate.random(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state)
         verify_generalized_qsp(U, P, negative_power=negative_power)
 
@@ -202,7 +202,7 @@ def test_call_graph(negative_power: int):
             return arbitrary_rotation
         return bloq
 
-    U = RandomGate.create(1, random_state=random_state)
+    U = MatrixGate.random(1, random_state=random_state)
     P = (0.5, 0, 0.5)
     gsqp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
 
@@ -349,4 +349,4 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
     check_polynomial_pair_on_random_points_on_unit_circle(
         P, Q, random_state=random_state, rtol=precision
     )
-    verify_generalized_qsp(RandomGate.create(1, random_state=random_state), P, Q)
+    verify_generalized_qsp(MatrixGate.random(1, random_state=random_state), P, Q)
