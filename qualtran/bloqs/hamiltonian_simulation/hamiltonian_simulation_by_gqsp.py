@@ -18,16 +18,7 @@ import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    bloq_example,
-    BloqDocSpec,
-    Controlled,
-    CtrlSpec,
-    GateWithRegisters,
-    Signature,
-    Soquet,
-)
-from qualtran.bloqs.basic_gates import SU2RotationGate
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature, Soquet
 from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.jacobi_anger_approximations import (
@@ -42,8 +33,7 @@ from qualtran.resource_counting.symbolic_counting_utils import (
 )
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, Soquet, SoquetT
-    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran import BloqBuilder, SoquetT
 
 
 @frozen
@@ -131,7 +121,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return GeneralizedQSP.from_qsp_polynomial(
             self.walk_operator,
             self.approx_cos,
-            negative_power=int(self.degree),
+            negative_power=self.degree,
             verify=True,
             verify_precision=1e-4,
         )
