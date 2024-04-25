@@ -95,7 +95,7 @@ def classify_t_count_by_bloq_type(
         else:
             basic_generalizer.append(generalizer)
     _, sigma = bloq.call_graph(generalizer=basic_generalizer, keep=keeper)
-    classified_bloqs = defaultdict(int)
+    classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
         classified_bloqs[classification] += v * t_counts_from_sigma(k.call_graph()[1])

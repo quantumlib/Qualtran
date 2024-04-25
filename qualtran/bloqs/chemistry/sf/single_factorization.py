@@ -27,6 +27,7 @@ from typing import Dict, Iterable, Set, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -37,6 +38,7 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
@@ -329,10 +331,10 @@ class SingleFactorizationBlockEncoding(Bloq):
         self,
         bb: 'BloqBuilder',
         *,
-        ctrl: SoquetT,
+        ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
-        pq: SoquetT,
-        rot_aa: SoquetT,
+        pq: Soquet,
+        rot_aa: NDArray[Soquet],  # type: ignore[type-var]
         swap_pq: SoquetT,
         spin: SoquetT,
         sys: SoquetT,

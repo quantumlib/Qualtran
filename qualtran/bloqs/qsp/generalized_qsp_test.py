@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 import cirq
 import numpy as np
@@ -74,7 +74,7 @@ def random_qsp_polynomial(
     poly = random_state.random(size=degree) / degree
     if not only_real_coeffs:
         poly = poly * np.exp(random_state.random(size=degree) * np.pi * 2j)
-    return poly
+    return list(poly)
 
 
 @pytest.mark.parametrize("degree", [4, 5])
@@ -208,7 +208,7 @@ def test_call_graph(negative_power: int):
 
     g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    expected_counts = {arbitrary_rotation: 3}
+    expected_counts: Dict[Bloq, int] = {arbitrary_rotation: 3}
     if negative_power < 2:
         expected_counts[Controlled(U, CtrlSpec(cvs=0))] = 2 - negative_power
     if negative_power > 0:
@@ -301,14 +301,14 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
     random_state = np.random.RandomState(42 + int(t))
 
     d = degree_jacobi_anger_approximation(t, precision=precision)
-
+    assert isinstance(d, int)
     P = approx_exp_cos_by_jacobi_anger(t, degree=d)
     # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
-    P = scale_down_to_qsp_polynomial(P) * (1 - 2 * precision)
-    assert_is_qsp_polynomial(P)
+    P = scale_down_to_qsp_polynomial(list(P)) * (1 - 2 * precision)
+    assert_is_qsp_polynomial(list(P))
 
-    Q = qsp_complementary_polynomial(P, verify=True, verify_precision=1e-5)
+    Q = qsp_complementary_polynomial(list(P), verify=True, verify_precision=1e-5)
     check_polynomial_pair_on_random_points_on_unit_circle(
-        P, Q, random_state=random_state, rtol=precision
+        list(P), Q, random_state=random_state, rtol=precision
     )
-    verify_generalized_qsp(RandomGate.create(1, random_state=random_state), P, Q)
+    verify_generalized_qsp(RandomGate.create(1, random_state=random_state), list(P), Q)

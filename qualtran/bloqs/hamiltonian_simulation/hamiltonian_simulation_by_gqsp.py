@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import cast, Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
@@ -119,16 +119,16 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
         if self._parameterized_():
             raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
-        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
+        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=cast(int, self.degree))
         # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
-        poly = scale_down_to_qsp_polynomial(poly) * (1 - 2 * self.precision)
+        poly = scale_down_to_qsp_polynomial(list(poly)) * (1 - 2 * self.precision)
         return poly
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:
         return GeneralizedQSP.from_qsp_polynomial(
             self.walk_operator,
-            self.approx_cos,
+            list(self.approx_cos),
             negative_power=int(self.degree),
             verify=True,
             verify_precision=1e-4,
@@ -176,7 +176,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
                 bb.free(soq)
             else:
                 for soq_element in soq:
-                    bb.free(soq)
+                    bb.free(cast(Soquet, soq))
 
         return soqs
 
