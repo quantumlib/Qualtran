@@ -53,7 +53,6 @@ class QubitizationWalkOperator(GateWithRegisters):
         select: The SELECT lcu gate implementing $SELECT=\sum_{l}|l><l|H_{l}$.
         prepare: Then PREPARE lcu gate implementing
             $PREPARE|00...00> = \sum_{l=0}^{L - 1}\sqrt{\frac{w_{l}}{\lambda}} |l> = |\ell>$
-        sum_of_lcu_coefficients: value of $\lambda$, i.e. sum of the coefficients $w_l$.
         control_val: If 0/1, a controlled version of the walk operator is constructed. Defaults to
             None, in which case the resulting walk operator is not controlled.
         power: Constructs $W^{power}$ by repeatedly decomposing into `power` copies of $W$.
@@ -97,6 +96,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     @cached_property
     def sum_of_lcu_coefficients(self) -> Optional[float]:
+        r"""value of $\lambda$, i.e. sum of the coefficients $w_l$."""
         return self.prepare.l1_norm_of_coeffs
 
     def decompose_from_registers(
