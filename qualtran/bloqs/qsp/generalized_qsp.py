@@ -261,7 +261,7 @@ def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
     ), f"Not a QSP polynomial! maximum absolute value {max_value} is greater than 1."
 
 
-def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
+def _to_tuple(x: Iterable[complex]) -> Union[Tuple[complex, ...], Shaped]:
     """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
     if isinstance(x, Shaped):
         return x
