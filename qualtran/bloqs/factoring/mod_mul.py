@@ -78,10 +78,15 @@ class CtrlModMul(Bloq):
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         k = self.k
-        neg_k_inv = -pow(k, -1, mod=self.mod)
+        if isinstance(self.mod, sympy.Expr) or isinstance(k, sympy.Expr):
+            neg_k_inv = sympy.Mod(sympy.Pow(k, -1), self.mod)
+        else:
+            neg_k_inv = -pow(k, -1, mod=self.mod)
 
         # We store the result of the CtrlScaleModAdd into this new register
         # and then clear the original `x` register by multiplying in the inverse.
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'bitsize: {self.bitsize} must be an int not an expression')
         y = bb.allocate(self.bitsize)
 
         # y += x*k
@@ -148,7 +153,7 @@ class MontgomeryModDbl(Bloq):
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         return {'x': (2 * x) % self.p}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for sign and double.
         lower_bit = bb.allocate(n=1)
@@ -215,13 +220,13 @@ def _generalize_k(b: Bloq) -> Optional[Bloq]:
     return b
 
 
-@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
+@bloq_example(None, generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul() -> CtrlModMul:
     modmul = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
     return modmul
 
 
-@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
+@bloq_example(None, generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul_symb() -> CtrlModMul:
     import sympy
 
