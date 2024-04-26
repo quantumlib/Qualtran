@@ -117,13 +117,13 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def _unitary_(self):
-        if self._is_parameterized_():
+        if self.is_symbolic():
             return None
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        pi = sympy.pi if self._is_parameterized_() else np.pi
-        exp = sympy.exp if self._is_parameterized_() else np.exp
+        pi = sympy.pi if self.is_symbolic() else np.pi
+        exp = sympy.exp if self.is_symbolic() else np.exp
 
         bb.add(GlobalPhase(coefficient=-exp(1j * self.global_shift), eps=self.eps / 4))
         q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
@@ -151,7 +151,7 @@ class SU2RotationGate(GateWithRegisters):
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=3)
 
-    def _is_parameterized_(self) -> bool:
+    def is_symbolic(self) -> bool:
         return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)
 
     @classmethod

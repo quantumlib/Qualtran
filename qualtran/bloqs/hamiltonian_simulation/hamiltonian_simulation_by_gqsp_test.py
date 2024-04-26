@@ -29,12 +29,19 @@ from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalk
 
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
+    _symbolic_hamsim_by_gqsp,
     HamiltonianSimulationByGQSP,
 )
 
 
 def test_examples(bloq_autotester):
     bloq_autotester(_hubbard_time_evolution_by_gqsp)
+
+
+def test_symbolic_examples(bloq_autotester):
+    if bloq_autotester.check_name == 'serialization':
+        pytest.xfail(f"serialization for {_symbolic_hamsim_by_gqsp.name} not yet supported")
+    bloq_autotester(_symbolic_hamsim_by_gqsp)
 
 
 @pytest.mark.slow
