@@ -18,7 +18,7 @@ import pytest
 import scipy
 from numpy.typing import NDArray
 
-from qualtran.bloqs.for_testing.random_gate import RandomGate
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.for_testing.random_select_and_prepare import random_qubitization_walk_operator
 from qualtran.bloqs.qsp.generalized_qsp_test import (
     assert_matrices_almost_equal,
@@ -54,7 +54,7 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
     random_state = np.random.RandomState(42)
 
     for _ in range(5):
-        U = RandomGate.create(bitsize, random_state=random_state)
+        U = MatrixGate.random(bitsize, random_state=random_state)
         gqsp = HamiltonianSimulationByGQSP(_walk_op, t=t, alpha=1, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 

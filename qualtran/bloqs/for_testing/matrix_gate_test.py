@@ -15,13 +15,13 @@ import cirq
 import numpy as np
 import pytest
 
-from .random_gate import RandomGate
+from .matrix_gate import MatrixGate
 
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])
 def test_create_and_unitary(bitsize: int):
     random_state = np.random.RandomState(42)
     for _ in range(5):
-        gate = RandomGate.create(bitsize, random_state=random_state)
+        gate = MatrixGate.random(bitsize, random_state=random_state)
         np.testing.assert_allclose(cirq.unitary(gate), gate.matrix)
         np.testing.assert_allclose(cirq.unitary(gate**-1), np.conj(gate.matrix).T)
