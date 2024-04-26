@@ -18,10 +18,12 @@ import pytest
 from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate
+from qualtran._infra.adjoint_test import test_t_complexity
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate, Toffoli
 from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import (
     ComplexGivensRotationByPhaseGradient,
     RealGivensRotationByPhaseGradient,
+    RzAddIntoPhaseGradient,
 )
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
@@ -72,12 +74,12 @@ def test_circuit_decomposition_givens():
 
 @pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
 def test_count_t_cliffords(x_bitsize: int):
-    add_into_phasegrad_gate = AddIntoPhaseGrad(
+    add_into_phasegrad_gate = RzAddIntoPhaseGradient(
         x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled=1
     )
-    _, sigma = add_into_phasegrad_gate.call_graph()
-    add_t_counts = t_counts_from_sigma(sigma)
-    assert add_t_counts == ((x_bitsize - 2) * 2) * 4
+    bloq_counts = add_into_phasegrad_gate.bloq_counts()
+    # produces Toffoli costs given in chemistry papers
+    assert bloq_counts[Toffoli()] == (x_bitsize - 2)
 
     gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
     gate_counts = gate.bloq_counts()
@@ -88,15 +90,14 @@ def test_count_t_cliffords(x_bitsize: int):
     assert gate_counts[XGate()] == 2
     assert gate_counts[add_into_phasegrad_gate] == 2
 
-    costs = gate.t_complexity()
-    assert costs.t == 2 * add_t_counts
-    assert costs.clifford == 12
-
 
 @pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
 def test_complex_givens_costs(x_bitsize: int):
+    add_into_phasegrad_gate = RzAddIntoPhaseGradient(
+        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled=1
+    )
+    real_givens_gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
     gate = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
-    add_into_phasegrad_t_cost = ((x_bitsize - 2) * 2) * 4
-    costs = gate.t_complexity()
-    assert costs.t == add_into_phasegrad_t_cost * 3
-    assert costs.clifford == 12
+    gate_counts = gate.bloq_counts()
+    assert gate_counts[add_into_phasegrad_gate] == 1
+    assert gate_counts[real_givens_gate] == 1

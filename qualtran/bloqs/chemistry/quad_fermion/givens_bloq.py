@@ -51,9 +51,21 @@ from typing import Dict
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QBit, QFxp, Signature, SoquetT
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate, Toffoli
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
+class RzAddIntoPhaseGradient(AddIntoPhaseGrad):
+    r"""Temporary controlled adder to give the right complexity for Rz rotations by 
+    phase gradient state addition.
+
+    References:
+         [Compilation of Fault-Tolerant Quantum Heuristics for Combinatorial Optimization](
+            https://arxiv.org/abs/2007.07391).
+        Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled
+        rotations
+    """
+    def bloq_counts(self,):
+        return {Toffoli(): self.x_bitsize - 2}
 
 @frozen
 class RealGivensRotationByPhaseGradient(Bloq):
@@ -111,7 +123,7 @@ class RealGivensRotationByPhaseGradient(Bloq):
         phase_gradient: SoquetT,
     ) -> Dict[str, SoquetT]:
         # set up rz-rotation via phase-gradient state
-        add_into_phasegrad_gate = AddIntoPhaseGrad(
+        add_into_phasegrad_gate = RzAddIntoPhaseGradient(
             x_bitsize=self.phasegrad_bitsize,
             phase_bitsize=self.phasegrad_bitsize,
             right_shift=0,
@@ -227,7 +239,7 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
         )
 
         # set up rz-rotation on j-bit by phase-gradient state
-        add_into_phasegrad_gate = AddIntoPhaseGrad(
+        add_into_phasegrad_gate = RzAddIntoPhaseGradient(
             x_bitsize=self.phasegrad_bitsize,
             phase_bitsize=self.phasegrad_bitsize,
             right_shift=0,
