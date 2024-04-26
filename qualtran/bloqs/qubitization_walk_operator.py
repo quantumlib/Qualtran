@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Collection, Optional, Sequence, Tuple, Union
+from typing import Iterable, Optional, Sequence, Tuple
 
 import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
+from qualtran import bloq_example, BloqDocSpec, CtrlSpec, GateWithRegisters, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
@@ -107,35 +107,36 @@ class QubitizationWalkOperator(GateWithRegisters):
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
         yield self.reflect.on_registers(**reflect_reg)
 
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
+
+        if self.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
+            c_select = self.select.controlled(ctrl_spec)
+            assert isinstance(c_select, SelectOracle)
+            cbloq = attrs.evolve(self, select=c_select, control_val=(int(ctrl_spec.cvs[0].item())))
+            (ctrl_reg,) = cbloq.control_registers
+
+            def adder(
+                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
+                soqs = bb.add_d(cbloq, **soqs)
+                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
+                return ctrl_soqs, soqs.values()
+
+            return cbloq, adder
+
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with {ctrl_spec=}.'
+        )
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['W'] * (total_bits(self.signature) - total_bits(self.control_registers))
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'QubitizationWalkOperator':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            c_select = self.select.controlled(control_values=control_values)
-            assert isinstance(c_select, SelectOracle)
-            return attrs.evolve(self, select=c_select, control_val=control_values[0])
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

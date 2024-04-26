@@ -47,7 +47,7 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
 from functools import cached_property
-from typing import Collection, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -219,28 +219,12 @@ class SelectHubbard(SelectOracle):
             q_x=q_x, q_y=q_y, control=[*V, *control], target=target_qubits_for_apply_to_lth_gate
         )
 
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'SelectHubbard':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return SelectHubbard(self.x_dim, self.y_dim, control_val=control_values[0])
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
+
+        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         info = super(SelectHubbard, self)._circuit_diagram_info_(args)

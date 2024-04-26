@@ -12,9 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Tuple
 
-import attrs
 import cirq
 import numpy as np
 from attrs import frozen
@@ -132,33 +131,6 @@ class TestPauliSelectOracle(SelectOracle):
     def target_registers(self) -> Tuple[Register, ...]:
         return (Register('target', BoundedQUInt(bitsize=self.target_bitsize)),)
 
-    def adjoint(self):
-        return self
-
-    def __pow__(self, power):
-        if abs(power) == 1:
-            return self
-        return NotImplemented
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values=None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'cirq.Gate':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return attrs.evolve(self, control_val=control_values[0])
-        raise NotImplementedError()
-
     def decompose_from_registers(
         self,
         *,
@@ -167,14 +139,19 @@ class TestPauliSelectOracle(SelectOracle):
         target: NDArray[cirq.Qid],  # type: ignore[type-var]
         **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
-        if self.control_val is not None:
-            selection = np.concatenate([selection, quregs['control']])
-
         for cv, U in enumerate(self.select_unitaries):
             bits = tuple(map(int, bin(cv)[2:].zfill(self.select_bitsize)))[::-1]
+            op = U.on(*target).controlled_by(*selection, control_values=bits)
             if self.control_val is not None:
-                bits = (*bits, self.control_val)
-            yield U.on(*target).controlled_by(*selection, control_values=bits)
+                op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
+            yield op
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
+
+        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
 
 def random_qubitization_walk_operator(

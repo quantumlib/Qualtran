@@ -13,13 +13,22 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Collection, Optional, Sequence, Tuple, Union
+from typing import Iterable, Optional, Sequence, Tuple
 
 import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, Register, Signature
+from qualtran import (
+    AddControlledT,
+    Bloq,
+    BloqBuilder,
+    CtrlSpec,
+    GateWithRegisters,
+    Register,
+    Signature,
+    SoquetT,
+)
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
@@ -82,22 +91,12 @@ class MeanEstimationOperator(GateWithRegisters):
     """
 
     code: CodeForRandomVariable
-    cv: Tuple[int, ...] = attrs.field(
-        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
-    )
+    cv: Optional[int] = None
     arctan_bitsize: int = 32
-
-    @cv.validator
-    def _validate_cv(self, attribute, value):
-        assert value in [(), (0,), (1,)]
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
-        return ReflectionUsingPrepare(
-            self.code.synthesizer,
-            control_val=None if self.cv == () else self.cv[0],
-            global_phase=-1,
-        )
+        return ReflectionUsingPrepare(self.code.synthesizer, global_phase=-1, control_val=self.cv)
 
     @cached_property
     def select(self) -> ComplexPhaseOracle:
@@ -126,36 +125,36 @@ class MeanEstimationOperator(GateWithRegisters):
         yield self.select.on_registers(**select_reg)
         yield self.reflect.on_registers(**reflect_reg)
 
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
+
+        if self.cv is None and ctrl_spec.shapes in [((),), ((1,),)]:
+            c_encoder = self.code.encoder.controlled(ctrl_spec)
+            assert isinstance(c_encoder, SelectOracle)
+            c_code = attrs.evolve(self.code, encoder=c_encoder)
+            cbloq = attrs.evolve(self, code=c_code, cv=(int(ctrl_spec.cvs[0].item())))
+            (ctrl_reg,) = cbloq.control_registers
+
+            def adder(
+                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
+                soqs = bb.add_d(cbloq, **soqs)
+                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
+                return ctrl_soqs, soqs.values()
+
+            return cbloq, adder
+
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with {ctrl_spec=}.'
+        )
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = [] if self.cv == () else [["(0)", "@"][self.cv[0]]]
+        wire_symbols = []
+        if self.cv is not None:
+            wire_symbols.append("@" if self.cv == 1 else "(0)")
         wire_symbols += ['U_ko'] * (total_bits(self.signature) - total_bits(self.control_registers))
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'MeanEstimationOperator':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and len(control_values) == 1
-            and isinstance(control_values[0], int)
-            and not self.cv
-        ):
-            c_select = self.code.encoder.controlled(control_values=control_values)
-            assert isinstance(c_select, SelectOracle)
-            return MeanEstimationOperator(
-                CodeForRandomVariable(encoder=c_select, synthesizer=self.code.synthesizer),
-                cv=self.cv + (control_values[0],),
-                arctan_bitsize=self.arctan_bitsize,
-            )
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )

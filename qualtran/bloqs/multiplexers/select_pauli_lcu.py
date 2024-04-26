@@ -15,7 +15,7 @@
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
 from functools import cached_property
-from typing import Collection, Iterable, Optional, Sequence, Tuple, Union
+from typing import Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -30,6 +30,9 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+
+if TYPE_CHECKING:
+    from qualtran import AddControlledT, Bloq, BloqBuilder, CtrlSpec, SoquetT
 
 
 def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliString]:
@@ -117,33 +120,12 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
 
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'SelectPauliLCU':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return SelectPauliLCU(
-                self.selection_bitsize,
-                self.target_bitsize,
-                self.select_unitaries,
-                control_val=control_values[0],
-            )
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
+
+        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

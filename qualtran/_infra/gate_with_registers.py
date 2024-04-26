@@ -27,6 +27,7 @@ from typing import (
     Union,
 )
 
+import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
@@ -477,10 +478,6 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         bloq. Bloqs authors can declare their own, custom controlled versions by overriding
         `Bloq.get_ctrl_system` in the bloq.
 
-        If overriding the `GWR.controlled()` method directly, Bloq authors can use the
-        `self._get_ctrl_spec` helper to construct a `CtrlSpec` object from the input parameters of
-        `GWR.controlled()` and use it to return a custom controlled version of this Bloq.
-
 
         Args:
             num_controls: Cirq style API to specify control specification -
@@ -548,3 +545,51 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
         wire_symbols[0] = self.__class__.__name__
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+
+def get_ctrl_system_for_single_qubit_controlled(
+    bloq: GateWithRegisters, ctrl_spec: Optional['CtrlSpec'] = None
+) -> Tuple['Bloq', 'AddControlledT']:
+    """Wrapper to correctly wire a custom implementation of a single-qubit controlled version of a gate.
+
+    For any gate that supports a single-qubit controlled version
+    with an API that has `control_val` and `control_registers`.
+    Add the `get_ctrl_system` implementation as shown below:
+
+    .. code:: python
+
+        class MyGate(GateWithRegisters):
+            control_val: Optional[int]
+
+            @property
+            def control_registers() -> Tuple[Register, ...]:
+                ...
+
+            def get_ctrl_system(
+                self, ctrl_spec: Optional['CtrlSpec'] = None
+            ) -> Tuple['Bloq', 'AddControlledT']:
+                from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
+
+                return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
+    """
+    if ctrl_spec is None:
+        ctrl_spec = CtrlSpec()
+
+    assert hasattr(bloq, 'control_val')
+    assert hasattr(bloq, 'control_registers')
+
+    if bloq.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
+        cbloq = attrs.evolve(bloq, control_val=int(ctrl_spec.cvs[0].item()))
+        (ctrl_reg,) = cbloq.control_registers
+
+        def adder(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
+            soqs = bb.add_d(cbloq, **soqs)
+            ctrl_soqs = [soqs.pop(ctrl_reg.name)]
+            return ctrl_soqs, soqs.values()
+
+        return cbloq, adder
+
+    raise NotImplementedError(f'Cannot create a controlled version of {bloq} with {ctrl_spec=}.')
