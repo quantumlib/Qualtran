@@ -111,6 +111,7 @@ def get_bloq_report_card(
     if bexamples is None:
         bexamples = get_bloq_examples()
         # Default exclusions: pass explicit bexamples to override.
+        # qubitization_qpi_hubbard_model_xxx -- too slow
         skips = ['qubitization_qpe_hubbard_model_small', 'qubitization_qpe_hubbard_model_large']
         bexamples = [bex for bex in bexamples if bex.name not in skips]
 
