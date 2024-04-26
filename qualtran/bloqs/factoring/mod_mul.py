@@ -85,8 +85,6 @@ class CtrlModMul(Bloq):
 
         # We store the result of the CtrlScaleModAdd into this new register
         # and then clear the original `x` register by multiplying in the inverse.
-        if isinstance(self.bitsize, sympy.Expr):
-            raise ValueError(f'bitsize: {self.bitsize} must be an int not an expression')
         y = bb.allocate(self.bitsize)
 
         # y += x*k

@@ -333,7 +333,7 @@ class SingleFactorizationBlockEncoding(Bloq):
         *,
         ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
-        pq: Soquet,
+        pq: NDArray[Soquet],  # type: ignore[type-var]
         rot_aa: NDArray[Soquet],  # type: ignore[type-var]
         swap_pq: SoquetT,
         spin: SoquetT,
