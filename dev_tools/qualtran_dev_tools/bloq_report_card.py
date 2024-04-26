@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Dict, Iterable, Optional, Set, Type
+from typing import Any, Dict, Iterable, List, Optional, Set, Type
 
 import pandas as pd
 import pandas.io.formats.style
@@ -105,12 +105,13 @@ def get_bloq_report_card(
     bexamples: Optional[Iterable[BloqExample]] = None,
     package_prefix: str = 'qualtran.bloqs.',
 ) -> pd.DataFrame:
+
     if bclasses is None:
         bclasses = get_bloq_classes()
     if bexamples is None:
         bexamples = get_bloq_examples()
 
-    records = []
+    records: List[Dict[str, Any]] = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
     records.extend(record_for_bloq_example(be) for be in bexamples)

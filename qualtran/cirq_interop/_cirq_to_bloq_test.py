@@ -30,9 +30,10 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, OneState
+from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
@@ -224,3 +225,7 @@ def test_cirq_gate_as_bloq_decompose_raises():
     bloq = CirqGateAsBloq(cirq.X)
     with pytest.raises(DecomposeNotImplementedError, match="does not declare a decomposition"):
         _ = bloq.decompose_bloq()
+
+
+def test_cirq_gate_as_bloq_diagram_info():
+    assert cirq.circuit_diagram_info(GlobalPhase(1j)) is None

@@ -14,7 +14,6 @@
 from functools import cached_property
 from typing import Any, Dict, TYPE_CHECKING
 
-import cirq
 import numpy as np
 import sympy
 from attrs import frozen
@@ -24,12 +23,14 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran import BloqBuilder, Soquet, SoquetT
     from qualtran.drawing import WireSymbol
+    from qualtran.resource_counting import SympySymbolAllocator
 
 
 @frozen
@@ -57,11 +58,11 @@ class SU2RotationGate(GateWithRegisters):
         Motlagh and Wiebe. (2023). Equation 7.
     """
 
-    theta: float
-    phi: float
-    lambd: float  # cannot use `lambda` as it is a python keyword
-    global_shift: float = 0
-    eps: float = 1e-11
+    theta: SymbolicFloat
+    phi: SymbolicFloat
+    lambd: SymbolicFloat  # cannot use `lambda` as it is a python keyword
+    global_shift: SymbolicFloat = 0
+    eps: SymbolicFloat = 1e-11
 
     @cached_property
     def signature(self) -> Signature:
@@ -116,19 +117,28 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def _unitary_(self):
-        if self._is_parameterized_():
+        if self.is_symbolic():
             return None
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        pi = sympy.pi if self._is_parameterized_() else np.pi
-        exp = sympy.exp if self._is_parameterized_() else np.exp
+        pi = sympy.pi if self.is_symbolic() else np.pi
+        exp = sympy.exp if self.is_symbolic() else np.exp
 
         bb.add(GlobalPhase(coefficient=-exp(1j * self.global_shift), eps=self.eps / 4))
         q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
         q = bb.add(Ry(angle=2 * self.theta, eps=self.eps / 4), q=q)
         q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
         return {'q': q}
+
+    def adjoint(self) -> 'SU2RotationGate':
+        return SU2RotationGate(
+            theta=self.theta,
+            phi=-self.lambd,
+            lambd=-self.phi,
+            global_shift=-self.global_shift,
+            eps=self.eps,
+        )
 
     def pretty_name(self) -> str:
         return 'SU_2'
@@ -141,8 +151,18 @@ class SU2RotationGate(GateWithRegisters):
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=3)
 
-    def _is_parameterized_(self) -> bool:
-        return cirq.is_parameterized((self.theta, self.phi, self.lambd, self.global_shift))
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)
+
+    @classmethod
+    def arbitrary(cls, ssa: 'SympySymbolAllocator') -> 'SU2RotationGate':
+        """Return a parametrized arbitrary rotation for resource counting"""
+        theta = ssa.new_symbol("theta")
+        phi = ssa.new_symbol("phi")
+        lambd = ssa.new_symbol("lambda")
+        alpha = ssa.new_symbol("alpha")
+        eps = ssa.new_symbol("eps")
+        return cls(theta, phi, lambd, alpha, eps)
 
 
 @bloq_example

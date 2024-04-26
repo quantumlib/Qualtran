@@ -62,7 +62,8 @@ def test_qrom_1d_full(data, num_controls):
     greedy_mm = cirq.GreedyQubitManager('a', maximize_reuse=True)
     g = GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
     decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=g.context))
-    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))
+    # missing cirq stubs
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))  # type: ignore[operator]
 
     assert (
         len(inverse.all_qubits())
@@ -208,10 +209,8 @@ def test_notebook():
 )
 def test_t_complexity(data):
     qrom = QROM.build(*data)
-    g = GateHelper(qrom)
     n = np.prod(qrom.data[0].shape)
-    assert t_complexity(g.gate) == t_complexity(g.operation)
-    assert t_complexity(g.gate).t == max(0, 4 * n - 8), n
+    assert t_complexity(qrom).t == max(0, 4 * n - 8), n
 
 
 def _assert_qrom_has_diagram(qrom: QROM, expected_diagram: str):
@@ -337,7 +336,8 @@ def test_qrom_multi_dim_full(data, num_controls):
     greedy_mm = cirq.GreedyQubitManager('a', maximize_reuse=True)
     g = GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
     decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=g.context))
-    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))
+    # Missing cirq stubs
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))  # type: ignore[operator]
 
     assert (
         len(inverse.all_qubits())
@@ -379,10 +379,8 @@ def test_ndim_t_complexity(data, num_controls):
     selection_bitsizes = tuple((s - 1).bit_length() for s in data[0].shape)
     target_bitsizes = tuple(int(np.max(d)).bit_length() for d in data)
     qrom = QROM(data, selection_bitsizes, target_bitsizes, num_controls=num_controls)
-    g = GateHelper(qrom)
     n = data[0].size
-    assert t_complexity(g.gate) == t_complexity(g.operation) == qrom.t_complexity()
-    assert t_complexity(g.gate).t == max(0, 4 * n - 8 + 4 * num_controls)
+    assert t_complexity(qrom).t == max(0, 4 * n - 8 + 4 * num_controls)
 
 
 @pytest.mark.parametrize("num_controls", [0, 1, 2])

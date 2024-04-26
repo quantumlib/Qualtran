@@ -31,6 +31,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 if TYPE_CHECKING:
     from qualtran import Bloq
+    from qualtran.resource_counting import BloqCountT
 
 
 class ApplyXToLthQubit(UnaryIterationGate):

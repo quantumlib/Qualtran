@@ -16,7 +16,9 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
+
+import sympy
 
 from qualtran import (
     Bloq,
@@ -33,6 +35,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
+from qualtran.resource_counting import GeneralizerT
 
 
 def assert_registers_match_parent(bloq: Bloq) -> CompositeBloq:
@@ -203,7 +206,7 @@ def assert_valid_cbloq(cbloq: CompositeBloq):
     assert_soquets_used_exactly_once(cbloq)
 
 
-def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
+def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     """Check the validity of a bloq decomposition.
 
     Importantly, this does not do any correctness checking -- for that you likely
@@ -211,6 +214,7 @@ def assert_valid_bloq_decomposition(bloq: Bloq) -> CompositeBloq:
 
     This returns the decomposed, composite bloq on which you can do further testing.
     """
+    assert bloq is not None
     cbloq = assert_registers_match_parent(bloq)
     assert_valid_cbloq(cbloq)
     return cbloq
@@ -428,8 +432,8 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
 
     has_manual_counts: bool
     has_decomp_counts: bool
-    manual_counts = None
-    decomp_counts = None
+    manual_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
+    decomp_counts: Dict['Bloq', Union[int, 'sympy.Expr']] = {}
 
     # Notable implementation detail: since `bloq.build_call_graph` has a default fallback
     # that uses the decomposition, we could accidentally be comparing two identical code paths
@@ -477,6 +481,21 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from build_call_graph')
     if has_decomp_counts:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from decomposition.')
+
+
+def assert_equivalent_bloq_counts(bloq: Bloq, generalizer: GeneralizerT = lambda x: x) -> None:
+    """Assert that the BloqExample has consistent bloq counts.
+
+    See the documentation for `assert_equivalent_bloq_example_counts` for details on this function.
+    """
+    assert_equivalent_bloq_example_counts(
+        BloqExample(
+            lambda: bloq,
+            name=bloq.__class__.__name__,
+            bloq_cls=bloq.__class__,
+            generalizer=generalizer,
+        )
+    )
 
 
 def check_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:

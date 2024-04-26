@@ -41,6 +41,9 @@ class YGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,

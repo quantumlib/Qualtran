@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Set
+from typing import Set, TYPE_CHECKING
 
 import cirq
 import pytest
@@ -22,6 +22,9 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import execute_notebook
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 class SupportTComplexity:
@@ -78,19 +81,15 @@ def test_t_complexity_for_bloq_via_build_call_graph():
 def test_t_complexity_for_bloq_does_not_support():
     with pytest.raises(TypeError):
         _ = t_complexity(DoesNotSupportTComplexityBloq())
-    assert t_complexity(DoesNotSupportTComplexityBloq(), True) == None
 
 
 def test_t_complexity():
     with pytest.raises(TypeError):
         _ = t_complexity(DoesNotSupportTComplexity())
-
+    with pytest.raises(TypeError):
+        t_complexity([DoesNotSupportTComplexity()])
     with pytest.raises(TypeError):
         _ = t_complexity(DoesNotSupportTComplexityGate())
-
-    assert t_complexity(DoesNotSupportTComplexity(), fail_quietly=True) is None
-    assert t_complexity([DoesNotSupportTComplexity()], fail_quietly=True) is None
-    assert t_complexity(DoesNotSupportTComplexityGate(), fail_quietly=True) is None
 
     assert t_complexity(SupportTComplexity()) == TComplexity(t=1)
     assert t_complexity(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)
@@ -201,33 +200,37 @@ def test_tagged_operations():
 
 
 def test_cache_clear():
-    class IsCachable(cirq.Operation):
+    class Cachable1(Bloq):
         def __init__(self) -> None:
-            super().__init__()
             self.num_calls = 0
-            self._gate = cirq.X
 
+        @property
+        def signature(self) -> 'Signature':
+            return Signature([])
+
+        def _t_complexity_(self) -> TComplexity:
+            self.num_calls += 1
+            return TComplexity(clifford=1)
+
+        def __hash__(self):
+            # Manufacture a hash collision
+            return hash(2)
+
+    class Cachable2(Cachable1):
         def _t_complexity_(self) -> TComplexity:
             self.num_calls += 1
             return TComplexity()
 
-        @property
-        def qubits(self):
-            return [cirq.LineQubit(3)]  # pragma: no cover
+        def __hash__(self):
+            # Manufacture a hash collision
+            return hash(2)
 
-        def with_qubits(self, _):
-            ...
-
-        @property
-        def gate(self):
-            return self._gate
-
-    assert t_complexity(cirq.X) == TComplexity(clifford=1)
+    assert t_complexity(Cachable1()) == TComplexity(clifford=1)
     # Using a global cache will result in a failure of this test since `cirq.X` has
     # `T-complexity(clifford=1)` but we explicitly return `TComplexity()` for IsCachable
-    # operation; for which the hash would be equivalent to the hash of it's subgate i.e. `cirq.X`.
+    # operation; for which the hash would be equivalent to the hash of its subgate i.e. `cirq.X`.
     t_complexity.cache_clear()
-    op = IsCachable()
+    op = Cachable2()
     assert t_complexity([op, op]) == TComplexity()
     assert op.num_calls == 1
     t_complexity.cache_clear()

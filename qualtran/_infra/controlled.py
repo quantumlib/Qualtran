@@ -34,6 +34,7 @@ from numpy.typing import NDArray
 
 from .bloq import Bloq
 from .data_types import QBit, QDType
+from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
@@ -45,8 +46,15 @@ if TYPE_CHECKING:
 
 
 def _cvs_convert(
-    cvs: Union[int, Sequence[int], Sequence[Sequence[int]]]
-) -> Tuple[NDArray[int], ...]:
+    cvs: Union[
+        int,
+        np.integer,
+        NDArray[np.number],
+        Sequence[Union[int, np.integer]],
+        Sequence[Sequence[Union[int, np.integer]]],
+        Sequence[NDArray[np.number]],
+    ]
+) -> Tuple[NDArray[np.integer], ...]:
     if isinstance(cvs, (int, np.integer)):
         return (np.array(cvs),)
     if isinstance(cvs, np.ndarray):
@@ -102,7 +110,7 @@ class CtrlSpec:
     qdtypes: Tuple[QDType, ...] = attrs.field(
         default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
     )
-    cvs: Tuple[NDArray[int], ...] = attrs.field(default=1, converter=_cvs_convert)
+    cvs: Tuple[NDArray[np.integer], ...] = attrs.field(default=1, converter=_cvs_convert)
 
     def __attrs_post_init__(self):
         assert len(self.qdtypes) == len(self.cvs)
@@ -278,7 +286,7 @@ def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
 
 
 @attrs.frozen
-class Controlled(Bloq):
+class Controlled(GateWithRegisters):
     """A controlled version of `subbloq`.
 
     This meta-bloq is part of the 'controlled' protocol. As a default fallback,
@@ -410,6 +418,19 @@ class Controlled(Bloq):
         # Add the data to the tensor network.
         tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.short_name(), tag]))
 
+    def _unitary_(self):
+        if isinstance(self.subbloq, GateWithRegisters):
+            # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
+            return cirq.unitary(
+                cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
+            )
+        if all(reg.side == Side.THRU for reg in self.subbloq.signature):
+            # subbloq has only THRU registers, so the tensor contraction corresponds
+            # to a unitary matrix.
+            return self.tensor_contract()
+        # Unable to determine the unitary effect.
+        return NotImplemented
+
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
@@ -418,6 +439,9 @@ class Controlled(Bloq):
         # Otherwise, it's part of the control register.
         i = self.ctrl_reg_names.index(soq.reg.name)
         return self.ctrl_spec.wire_symbol(i, soq)
+
+    def adjoint(self) -> 'Bloq':
+        return self.subbloq.adjoint().controlled(self.ctrl_spec)
 
     def pretty_name(self) -> str:
         return f'C[{self.subbloq.pretty_name()}]'

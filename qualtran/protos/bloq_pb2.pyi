@@ -26,6 +26,7 @@ import qualtran.protos.args_pb2
 import qualtran.protos.ctrl_spec_pb2
 import qualtran.protos.data_types_pb2
 import qualtran.protos.registers_pb2
+import qualtran.protos.sympy_pb2
 import sys
 
 if sys.version_info >= (3, 8):
@@ -56,8 +57,9 @@ class BloqArg(google.protobuf.message.Message):
     int_val: builtins.int
     float_val: builtins.float
     string_val: builtins.str
-    sympy_expr: builtins.str
-    """Sympy expression generated using str(expr)."""
+    @property
+    def sympy_expr(self) -> qualtran.protos.sympy_pb2.Term:
+        """Sympy expression generated using str(expr)."""
     @property
     def ndarray(self) -> qualtran.protos.args_pb2.NDArray:
         """N-dimensional numpy array stored as bytes."""
@@ -86,7 +88,7 @@ class BloqArg(google.protobuf.message.Message):
         int_val: builtins.int = ...,
         float_val: builtins.float = ...,
         string_val: builtins.str = ...,
-        sympy_expr: builtins.str = ...,
+        sympy_expr: qualtran.protos.sympy_pb2.Term | None = ...,
         ndarray: qualtran.protos.args_pb2.NDArray | None = ...,
         subbloq: builtins.int = ...,
         cirq_json_gzip: builtins.bytes = ...,

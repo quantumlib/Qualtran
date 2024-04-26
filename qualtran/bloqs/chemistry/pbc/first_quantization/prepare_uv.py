@@ -64,7 +64,6 @@ class PrepareUVFirstQuantization(Bloq):
     m_param: int
     lambda_zeta: int
     num_bits_nuc_pos: int
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -89,31 +88,17 @@ class PrepareUVFirstQuantization(Bloq):
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, l: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
         mu, nu, m, flag_nu = bb.add(
-            PrepareNuState(self.num_bits_p, self.m_param, adjoint=self.adjoint),
-            mu=mu,
-            nu=nu,
-            m=m,
-            flag_nu=flag_nu,
+            PrepareNuState(self.num_bits_p, self.m_param), mu=mu, nu=nu, m=m, flag_nu=flag_nu
         )
-        l = bb.add(
-            PrepareZetaState(
-                self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, adjoint=self.adjoint
-            ),
-            l=l,
-        )
+        l = bb.add(PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), l=l)
         return {'mu': mu, 'nu': nu, 'm': m, 'l': l, 'flag_nu': flag_nu}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # 1. Prepare the nu state
         # 2. Prepare the zeta_l state
         return {
-            (PrepareNuState(self.num_bits_p, self.m_param, self.adjoint), 1),
-            (
-                PrepareZetaState(
-                    self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos, self.adjoint
-                ),
-                1,
-            ),
+            (PrepareNuState(self.num_bits_p, self.m_param), 1),
+            (PrepareZetaState(self.num_atoms, self.lambda_zeta, self.num_bits_nuc_pos), 1),
         }
 
 

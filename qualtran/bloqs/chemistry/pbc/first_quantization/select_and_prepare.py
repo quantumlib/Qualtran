@@ -40,6 +40,7 @@ from qualtran.bloqs.swap_network import MultiplexedCSwap
 from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
+    from qualtran import Soquet
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -50,9 +51,6 @@ class PrepareTUVSuperpositions(Bloq):
     This will produce 3 qubits for flagging which term to apply. xx0 -> T, x0x -> U or V, 0xx -> V.
 
     Note in reality this involves some state preparation and inequality testing.
-
-    Args:
-        adjoint: whether to dagger the bloq or not.
 
     Registers:
         tuv: a single qubit rotated to appropriately weight T and U or V.
@@ -66,7 +64,6 @@ class PrepareTUVSuperpositions(Bloq):
     eta: int
     lambda_zeta: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -90,7 +87,6 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
         eta: The number of electrons.
         num_bits_rot_aa: The number of bits of precision for the single qubit
             rotation for amplitude amplification. Called $b_r$ in the reference.
-        adjoint: whether to dagger the bloq or not.
 
     Registers:
         i: a n_eta bit register for unary encoding of eta numbers.
@@ -102,7 +98,6 @@ class UniformSuperpostionIJFirstQuantization(Bloq):
     """
     eta: int
     num_bits_rot_aa: int
-    adjoint: int = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -205,7 +200,6 @@ class PrepareFirstQuantization(PrepareOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
@@ -237,7 +231,6 @@ class PrepareFirstQuantization(PrepareOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -295,28 +288,18 @@ class PrepareFirstQuantization(PrepareOracle):
     ) -> Dict[str, 'SoquetT']:
         tuv, uv = bb.add(
             PrepareTUVSuperpositions(
-                self.num_bits_t,
-                self.eta,
-                self.lambda_zeta,
-                self.num_bits_rot_aa,
-                adjoint=self.adjoint,
+                self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa
             ),
             tuv=tuv,
             uv=uv,
         )
         i, j = bb.add(
-            UniformSuperpostionIJFirstQuantization(
-                self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
-            ),
-            i=i,
-            j=j,
+            UniformSuperpostionIJFirstQuantization(self.eta, self.num_bits_rot_aa), i=i, j=j
         )
         # # |+>
         # plus_t = bb.add(Hadamard(), q=plus_t)
         w, r, s = bb.add(
-            PrepareTFirstQuantization(
-                self.num_bits_p, self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
-            ),
+            PrepareTFirstQuantization(self.num_bits_p, self.eta, self.num_bits_rot_aa),
             w=w,
             r=r,
             s=s,
@@ -329,7 +312,6 @@ class PrepareFirstQuantization(PrepareOracle):
                 self.m_param,
                 self.lambda_zeta,
                 self.num_bits_nuc_pos,
-                adjoint=self.adjoint,
             ),
             mu=mu,
             nu=[nu_x, nu_y, nu_z],
@@ -372,7 +354,6 @@ class SelectFirstQuantization(SelectOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Flag register for selecting between kinetic and potential terms in the Hamiltonian.
@@ -408,7 +389,6 @@ class SelectFirstQuantization(SelectOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:

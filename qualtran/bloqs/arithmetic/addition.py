@@ -97,6 +97,15 @@ class Add(Bloq):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
 
     @property
+    def dtype(self):
+        if self.a_dtype != self.b_dtype:
+            raise ValueError(
+                "Add.dtype is only supported when both operands have the same dtype: "
+                f"{self.a_dtype=}, {self.b_dtype=}"
+            )
+        return self.a_dtype
+
+    @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 
@@ -137,8 +146,8 @@ class Add(Bloq):
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(x)"] * self.a_dtype.bitsize
-        wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
+        wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
+        wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
@@ -186,7 +195,7 @@ class Add(Bloq):
             yield from self._right_building_block(inp, out, anc, depth - 1)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
@@ -206,12 +215,6 @@ class Add(Bloq):
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield CNOT().on(input_bits[0], output_bits[0])
         context.qubit_manager.qfree(ancillas)
-
-    def _t_complexity_(self):
-        n = self.b_dtype.bitsize
-        num_clifford = (n - 2) * 19 + 16
-        num_toffoli = n - 1
-        return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.b_dtype.bitsize
@@ -572,10 +575,6 @@ class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
 
     def __pow__(self, power: int) -> 'AddConstantMod':
         return AddConstantMod(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
-
-    def _t_complexity_(self) -> TComplexity:
-        # Rough cost as given in https://arxiv.org/abs/1905.09749
-        return 5 * Add(QUInt(self.bitsize), QUInt(self.bitsize)).t_complexity()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Add(QUInt(self.bitsize), QUInt(self.bitsize)), 5)}
