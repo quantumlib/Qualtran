@@ -614,10 +614,10 @@ def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, 
     # First check for the presence of a decomposition
     try:
         cbloq = bloq.decompose_bloq()
-    except (DecomposeTypeError, DecomposeNotImplementedError):
+    except (DecomposeTypeError, DecomposeNotImplementedError) as e:
         raise BloqCheckException.na(
             r"QDType checking is only applicable for bloqs with decompositions"
-        )
+        ) from e
 
     try:
         assert_connections_consistent_qdtypes(
