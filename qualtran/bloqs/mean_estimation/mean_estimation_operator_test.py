@@ -27,6 +27,7 @@ from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     MeanEstimationOperator,
 )
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
+from qualtran.bloqs.util_bloqs import Power
 from qualtran.cirq_interop import bit_tools
 from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -281,10 +282,6 @@ def test_mean_estimation_operator_consistent_protocols():
     with pytest.raises(NotImplementedError, match="Cannot create a controlled version"):
         _ = mean_gate.controlled(num_controls=2)
 
-    # Test with_power
-    assert mean_gate.with_power(5) ** 2 == MeanEstimationOperator(
-        code, arctan_bitsize=arctan_bitsize, power=10
-    )
     # Test diagrams
     expected_symbols = ['U_ko'] * cirq.num_qubits(mean_gate)
     assert cirq.circuit_diagram_info(mean_gate).wire_symbols == tuple(expected_symbols)
@@ -298,5 +295,5 @@ def test_mean_estimation_operator_consistent_protocols():
     ).wire_symbols == tuple(control_symbols + expected_symbols)
     expected_symbols[-1] = 'U_ko^2'
     assert cirq.circuit_diagram_info(
-        mean_gate.with_power(2).controlled(control_values=(0,))
+        (mean_gate**2).controlled(control_values=(0,))
     ).wire_symbols == tuple(control_symbols + expected_symbols)

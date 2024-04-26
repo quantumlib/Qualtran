@@ -514,3 +514,7 @@ class Power(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(self.bloq, self.power)}
+
+    def __pow__(self, power) -> 'Power':
+        bloq = self.bloq.adjoint() if power < 0 else self.bloq
+        return Power(bloq, self.power * abs(power))

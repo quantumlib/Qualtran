@@ -112,9 +112,16 @@ target2: ──────SelectPauliLCU─────────
 target3: ──────SelectPauliLCU─────────
 ''',
     )
+
     # 2. Diagram for $W^{2} = SELECT.R_{L}.SELCT.R_{L}$
-    walk_squared_op = walk.with_power(2).on_registers(**g.quregs)
-    circuit = cirq.Circuit(cirq.decompose_once(walk_squared_op))
+    def decompose_twice(op):
+        ops = []
+        for sub_op in cirq.decompose_once(op):
+            ops += cirq.decompose_once(sub_op)
+        return ops
+
+    walk_squared_op = (walk**2).on_registers(**g.quregs)
+    circuit = cirq.Circuit(decompose_twice(walk_squared_op))
     cirq.testing.assert_has_diagram(
         circuit,
         '''
