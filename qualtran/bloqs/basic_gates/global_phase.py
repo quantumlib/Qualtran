@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import attrs
 import cirq
-import sympy
 from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, DecomposeTypeError
@@ -25,6 +24,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicComplex
 
 
 @frozen
@@ -36,7 +36,7 @@ class GlobalPhase(CirqGateAsBloqBase):
         eps: precision
     """
 
-    coefficient: Union[complex, sympy.Expr]
+    coefficient: 'SymbolicComplex'
     eps: float = 1e-11
 
     @property
@@ -47,14 +47,9 @@ class GlobalPhase(CirqGateAsBloqBase):
         raise DecomposeTypeError(f"{self} is atomic")
 
     def adjoint(self) -> 'GlobalPhase':
-        from qualtran.resource_counting.symbolic_counting_utils import is_symbolic
+        from qualtran.resource_counting.symbolic_counting_utils import sconj
 
-        coefficient = (
-            sympy.conjugate(self.coefficient)
-            if is_symbolic(self.coefficient)
-            else complex(self.coefficient).conjugate()
-        )
-        return attrs.evolve(self, coefficient=coefficient)
+        return attrs.evolve(self, coefficient=sconj(self.coefficient))
 
     def pretty_name(self) -> str:
         return 'GPhase'
