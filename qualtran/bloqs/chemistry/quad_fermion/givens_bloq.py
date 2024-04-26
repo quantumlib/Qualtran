@@ -51,11 +51,12 @@ from typing import Dict
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QBit, QFxp, Signature, SoquetT
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate, Toffoli
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, Toffoli, XGate
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
+
 class RzAddIntoPhaseGradient(AddIntoPhaseGrad):
-    r"""Temporary controlled adder to give the right complexity for Rz rotations by 
+    r"""Temporary controlled adder to give the right complexity for Rz rotations by
     phase gradient state addition.
 
     References:
@@ -64,8 +65,10 @@ class RzAddIntoPhaseGradient(AddIntoPhaseGrad):
         Section II-C: Oracles for phasing by cost function. Appendix A: Addition for controlled
         rotations
     """
-    def bloq_counts(self,):
+
+    def bloq_counts(self):
         return {Toffoli(): self.x_bitsize - 2}
+
 
 @frozen
 class RealGivensRotationByPhaseGradient(Bloq):

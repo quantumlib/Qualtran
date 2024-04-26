@@ -18,15 +18,12 @@ import pytest
 from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
-from qualtran._infra.adjoint_test import test_t_complexity
-from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, XGate, Toffoli
+from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, Toffoli, XGate
 from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import (
     ComplexGivensRotationByPhaseGradient,
     RealGivensRotationByPhaseGradient,
     RzAddIntoPhaseGradient,
 )
-from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
-from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 
 def test_circuit_decomposition_givens():
