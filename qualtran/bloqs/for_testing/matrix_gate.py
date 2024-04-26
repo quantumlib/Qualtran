@@ -15,14 +15,13 @@ from typing import Tuple
 
 import numpy as np
 from attrs import field, frozen
-from cirq.testing import random_unitary
 
 from qualtran import GateWithRegisters, Signature
 
 
 @frozen
-class RandomGate(GateWithRegisters):
-    """Gate with a uniformly random unitary action
+class MatrixGate(GateWithRegisters):
+    """A unitary n-qubit defined entirely by its numpy matrix.
 
     Args:
         bitsize: number of qubits $n$
@@ -48,18 +47,15 @@ class RandomGate(GateWithRegisters):
         return Signature.build(q=self.bitsize)
 
     @classmethod
-    def create(cls, bitsize: int, *, random_state=None) -> 'RandomGate':
+    def random(cls, bitsize: int, *, random_state=None) -> 'MatrixGate':
         """generate a uniformly random unitary on `bitsize` qubits"""
+        from cirq.testing import random_unitary
+
         matrix = random_unitary(2**bitsize, random_state=random_state)
         return cls(bitsize, matrix)
 
     def _unitary_(self):
         return np.array(self.matrix)
 
-    def adjoint(self) -> 'RandomGate':
-        return RandomGate(self.bitsize, np.conj(self.matrix).T)
-
-    def __pow__(self, power):
-        if power == -1:
-            return self.adjoint()
-        return NotImplemented
+    def adjoint(self) -> 'MatrixGate':
+        return MatrixGate(self.bitsize, np.conj(self.matrix).T)

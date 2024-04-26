@@ -102,6 +102,9 @@ class TwoBitSwap(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': y, 'y': x}
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
 
 @frozen
 class TwoBitCSwap(Bloq):
