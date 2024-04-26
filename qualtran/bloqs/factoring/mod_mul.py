@@ -218,13 +218,13 @@ def _generalize_k(b: Bloq) -> Optional[Bloq]:
     return b
 
 
-@bloq_example(None, generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul() -> CtrlModMul:
     modmul = CtrlModMul(k=123, mod=13 * 17, bitsize=8)
     return modmul
 
 
-@bloq_example(None, generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
+@bloq_example(generalizer=(ignore_split_join, ignore_alloc_free, _generalize_k))
 def _modmul_symb() -> CtrlModMul:
     import sympy
 
