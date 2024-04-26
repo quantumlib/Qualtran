@@ -197,10 +197,9 @@ def _symbolic_hamsim_by_gqsp() -> HamiltonianSimulationByGQSP:
     from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
 
     walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-    t, alpha, inv_eps = sympy.symbols("t alpha N")
-    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(
-        walk_op, t=t, alpha=alpha, precision=1 / inv_eps
-    )
+
+    t, inv_eps = sympy.symbols("t N")
+    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=t, precision=1 / inv_eps)
     return symbolic_hamsim_by_gqsp
 
 
