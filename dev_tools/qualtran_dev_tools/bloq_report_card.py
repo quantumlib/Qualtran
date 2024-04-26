@@ -19,6 +19,7 @@ import pandas.io.formats.style
 from qualtran import Bloq, BloqExample
 from qualtran.testing import (
     BloqCheckResult,
+    check_bloq_example_classical_action,
     check_bloq_example_decompose,
     check_bloq_example_make,
     check_bloq_example_serialize,
@@ -67,19 +68,12 @@ def bloq_classes_with_no_examples(
 
 
 IDCOLS = ['package', 'bloq_cls', 'name']
-CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'typing']
+CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'typing', 'classical']
 
 
 def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
-    return {
-        'bloq_cls': k.__name__,
-        'package': _get_package(k),
-        'name': '-',
-        'make': BloqCheckResult.MISSING,
-        'decomp': BloqCheckResult.MISSING,
-        'counts': BloqCheckResult.MISSING,
-        'serialize': BloqCheckResult.MISSING,
-        'typing': BloqCheckResult.MISSING,
+    return {'bloq_cls': k.__name__, 'package': _get_package(k), 'name': '-'} | {
+        checkcol: BloqCheckResult.MISSING for checkcol in CHECKCOLS
     }
 
 
@@ -93,6 +87,7 @@ def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
         'counts': check_equivalent_bloq_example_counts(be)[0],
         'serialize': check_bloq_example_serialize(be)[0],
         'typing': check_connections_preserve_preserves_types(be)[0],
+        'classical': check_bloq_example_classical_action(be)[0],
     }
 
 

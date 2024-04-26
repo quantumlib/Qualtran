@@ -14,10 +14,10 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Union
 
-import attrs
+import attrs.validators
 import numpy as np
 import sympy
-from attrs import frozen
+from attrs import field, frozen
 
 from qualtran import (
     Bloq,
@@ -32,6 +32,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import IntState
+from qualtran.bloqs.factoring._big_int_helpers import int_or_expr, python_int_field
 from qualtran.bloqs.factoring.mod_mul import CtrlModMul
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_split_join
@@ -62,10 +63,10 @@ class ModExp(Bloq):
         Gidney and Ekerå. 2019.
     """
 
-    base: Union[int, sympy.Expr]
-    mod: Union[int, sympy.Expr]
-    exp_bitsize: Union[int, sympy.Expr]
-    x_bitsize: Union[int, sympy.Expr]
+    base: Union[int, sympy.Expr] = python_int_field()
+    mod: Union[int, sympy.Expr] = python_int_field()
+    exp_bitsize: Union[int, sympy.Expr] = field()
+    x_bitsize: Union[int, sympy.Expr] = field()
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -119,6 +120,7 @@ class ModExp(Bloq):
         }
 
     def on_classical_vals(self, exponent: int):
+        exponent = int_or_expr(exponent)
         return {'exponent': exponent, 'x': (self.base**exponent) % self.mod}
 
     def short_name(self) -> str:
