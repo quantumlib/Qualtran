@@ -42,6 +42,7 @@ from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
 if TYPE_CHECKING:
+    import cirq
     from numpy.typing import NDArray
 
     from qualtran import AddControlledT, CtrlSpec
@@ -518,3 +519,18 @@ class Power(GateWithRegisters):
     def __pow__(self, power) -> 'Power':
         bloq = self.bloq.adjoint() if power < 0 else self.bloq
         return Power(bloq, self.power * abs(power))
+
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
+        info = cirq.circuit_diagram_info(self.bloq, default=None)
+
+        if info is None:
+            info = super()._circuit_diagram_info_(args)
+
+        wire_symbols = list(info.wire_symbols)
+        wire_symbols[-1] += f'^{self.power}'
+
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

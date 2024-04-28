@@ -20,7 +20,7 @@ import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signature, Soquet, SoquetT
-from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran._infra.gate_with_registers import GateWithRegisters, get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.for_testing import TestAtom, TestCastToFrom, TestMultiRegister
 from qualtran.bloqs.for_testing.atom import TestGWRAtom
@@ -246,6 +246,45 @@ def test_power_of_power():
     assert gate**-3 == gate.adjoint() ** 3
     assert gate**6 == (gate**2) ** 3
     assert gate**6 == (gate**-2) ** -3
+
+
+def test_power_circuit_diagram():
+    def to_cirq_circuit(bloq: GateWithRegisters) -> cirq.Circuit:
+        op = bloq.on(*cirq.LineQubit.range(bloq.num_qubits()))
+        return cirq.Circuit(op)
+
+    power_atom = Power(TestGWRAtom(), 4)
+
+    cirq.testing.assert_has_diagram(to_cirq_circuit(power_atom), '0: ───TestGWRAtom^4───')
+
+    power_multi_reg = Power(TestMultiRegister(), 4)
+    cirq.testing.assert_has_diagram(
+        to_cirq_circuit(power_multi_reg),
+        '''
+0: ────Power───
+       │
+1: ────yy──────
+       │
+2: ────yy──────
+       │
+3: ────yy──────
+       │
+4: ────yy──────
+       │
+5: ────yy──────
+       │
+6: ────yy──────
+       │
+7: ────yy──────
+       │
+8: ────yy──────
+       │
+9: ────zz──────
+       │
+10: ───zz──────
+       │
+11: ───zz^4────''',
+    )
 
 
 @pytest.mark.notebook
