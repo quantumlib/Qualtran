@@ -14,6 +14,7 @@
 
 from typing import TYPE_CHECKING
 
+import attrs
 import cirq
 from attrs import frozen
 
@@ -43,6 +44,9 @@ class GlobalPhase(CirqGateAsBloqBase):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
+
+    def adjoint(self) -> 'GlobalPhase':
+        return attrs.evolve(self, coefficient=complex(self.coefficient).conjugate())
 
     def pretty_name(self) -> str:
         return 'GPhase'

@@ -18,7 +18,7 @@ import pytest
 import scipy
 from numpy.typing import NDArray
 
-from qualtran.bloqs.for_testing.random_gate import RandomGate
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.for_testing.random_select_and_prepare import random_qubitization_walk_operator
 from qualtran.bloqs.qsp.generalized_qsp_test import (
     assert_matrices_almost_equal,
@@ -29,12 +29,19 @@ from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalk
 
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
+    _symbolic_hamsim_by_gqsp,
     HamiltonianSimulationByGQSP,
 )
 
 
 def test_examples(bloq_autotester):
     bloq_autotester(_hubbard_time_evolution_by_gqsp)
+
+
+def test_symbolic_examples(bloq_autotester):
+    if bloq_autotester.check_name == 'serialization':
+        pytest.xfail(f"serialization for {_symbolic_hamsim_by_gqsp.name} not yet supported")
+    bloq_autotester(_symbolic_hamsim_by_gqsp)
 
 
 @pytest.mark.slow
@@ -47,7 +54,7 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
     random_state = np.random.RandomState(42)
 
     for _ in range(5):
-        U = RandomGate.create(bitsize, random_state=random_state)
+        U = MatrixGate.random(bitsize, random_state=random_state)
         gqsp = HamiltonianSimulationByGQSP(_walk_op, t=t, alpha=1, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 
