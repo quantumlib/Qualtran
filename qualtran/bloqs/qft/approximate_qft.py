@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import defaultdict
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -137,7 +137,7 @@ class ApproximateQFT(GateWithRegisters):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        phase_dict = defaultdict(int)
+        phase_dict: Dict[AddIntoPhaseGrad,int] = defaultdict(int)
         if is_symbolic(self.bitsize, self.phase_bitsize):
             phase_dict[
                 AddIntoPhaseGrad(
@@ -145,7 +145,7 @@ class ApproximateQFT(GateWithRegisters):
                 )
             ] = self.bitsize
         else:
-            for i in range(1, self.bitsize):
+            for i in range(1, int(self.bitsize)):
                 b = min(i, self.phase_bitsize - 1)
                 phase_dict[AddIntoPhaseGrad(b, b + 1, right_shift=1, controlled=1)] += 1
         ret = {(Hadamard(), self.bitsize), *phase_dict.items()}

@@ -13,12 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple
+from typing import Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
+import sympy
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.arithmetic import LessThanConstant
@@ -48,7 +49,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         Fig 12.
     """
 
-    n: int
+    n: Union[int, sympy.Expr]
     cvs: Tuple[int, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )
@@ -91,7 +92,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
         yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla)
         yield cirq.Rz(rads=theta)(*ancilla)
-        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1
+        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1 # type: ignore[operator]
         context.qubit_manager.qfree(ancilla)
 
         yield cirq.H.on_each(*logL_qubits)
@@ -102,7 +103,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         ctrl = np.asarray([*logL_qubits, *controls])[:, np.newaxis]
         junk = np.asarray(and_ancilla)[:, np.newaxis]
         if len(and_cv) <= 2:
-            and_op = And(*and_cv).on_registers(ctrl=ctrl, target=and_target)
+            and_op = And(and_cv[0], and_cv[1]).on_registers(ctrl=ctrl, target=and_target)
         else:
             and_op = MultiAnd(cvs=and_cv).on_registers(ctrl=ctrl, junk=junk, target=and_target)
 

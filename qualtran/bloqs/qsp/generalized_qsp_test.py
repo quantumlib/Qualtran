@@ -56,8 +56,8 @@ def assert_angles_almost_equal(
 
 
 def check_polynomial_pair_on_random_points_on_unit_circle(
-    P: Union[Sequence[complex], Polynomial],
-    Q: Union[Sequence[complex], Polynomial],
+    P: Union[Sequence[complex], Polynomial, Shaped],
+    Q: Union[Sequence[complex], Polynomial, Shaped],
     *,
     random_state: np.random.RandomState,
     rtol: float = 1e-7,
@@ -156,6 +156,7 @@ def verify_generalized_qsp(
     actual_top_left = result_unitary[:N, :N]
     assert_matrices_almost_equal(expected_top_left, actual_top_left)
 
+    assert not isinstance(gqsp_U.Q, Shaped)
     expected_bottom_left = evaluate_polynomial_of_matrix(
         gqsp_U.Q, input_unitary, negative_power=negative_power
     )

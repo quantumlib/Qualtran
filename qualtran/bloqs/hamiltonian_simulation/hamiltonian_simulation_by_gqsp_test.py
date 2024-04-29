@@ -26,6 +26,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalkOperator
+from qualtran.resource_counting.symbolic_counting_utils import Shaped
 
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
@@ -55,12 +56,15 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
     for _ in range(5):
         U = MatrixGate.random(bitsize, random_state=random_state)
-        gqsp = HamiltonianSimulationByGQSP(_walk_op, t=t, alpha=1, precision=precision).gqsp
+        gqsp = HamiltonianSimulationByGQSP(_walk_op(), t=t, alpha=1, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 
         check_polynomial_pair_on_random_points_on_unit_circle(
             P, Q, random_state=random_state, rtol=2 * precision
         )
+        assert not isinstance(U, Shaped)
+        assert not isinstance(P, Shaped)
+        assert not isinstance(Q, Shaped)
         verify_generalized_qsp(U, P, Q, negative_power=len(P) // 2)
 
 

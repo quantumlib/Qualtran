@@ -545,6 +545,7 @@ def assert_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult
         raise BloqCheckException.fail(
             f'Roundtrip equality failed.\n{bloq=}\n{bloq_roundtrip=}\n'
         ) from e
+    return BloqCheckResult.PASS, ''
 
 
 def check_bloq_example_serialize(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:

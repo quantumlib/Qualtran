@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import List, Optional, Sequence, Tuple
+from typing import Generator, List, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -178,7 +178,7 @@ class SelectSwapQROM(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Generator[cirq.Operation, None, None]:
         # Divide each data sequence and corresponding target registers into
         # `self.num_blocks` batches of size `self.block_size`.
         selection, targets = quregs.pop('selection'), quregs
@@ -199,7 +199,6 @@ class SelectSwapQROM(GateWithRegisters):
         # Construct QROM, SwapWithZero and CX operations using the batched data and qubits.
         k = (self.block_size - 1).bit_length()
         q, r = selection[: self.selection_q], selection[self.selection_q :]
-        qrom_op, swap_with_zero_op = [], []
         qrom_gate = QROM(
             qrom_data,
             selection_bitsizes=(self.selection_q,),
@@ -221,11 +220,12 @@ class SelectSwapQROM(GateWithRegisters):
         # Yield the operations in correct order.
         yield qrom_op
         yield swap_with_zero_op
-        yield cnot_op
+        yield from cnot_op
         yield cirq.inverse(swap_with_zero_op)
         yield cirq.inverse(qrom_op)
-        yield swap_with_zero_op
-        yield cnot_op
+        if self.block_size > 1:
+            yield swap_with_zero_op
+        yield from cnot_op
         yield cirq.inverse(swap_with_zero_op)
 
         context.qubit_manager.qfree(ordered_target_qubits)
@@ -248,6 +248,7 @@ class SelectSwapQROM(GateWithRegisters):
             return TextBox(f'data_{subscript}')
         elif name == 'control':
             return Circle()
+        raise ValueError(f'Unknown register name {name}')
 
     def short_name(self) -> str:
         return 'QROAM'

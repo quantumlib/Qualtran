@@ -19,7 +19,7 @@ import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, SoquetT
+from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
@@ -189,7 +189,7 @@ class MontgomeryModAdd(Bloq):
         return {'x': x, 'y': y}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
+        self, bb: 'BloqBuilder', x: Soquet, y: Soquet
     ) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for use in addition.

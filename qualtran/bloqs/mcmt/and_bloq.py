@@ -45,7 +45,6 @@ from qualtran import (
     Side,
     Signature,
     Soquet,
-    SoquetT,
 )
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -99,7 +98,7 @@ class And(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
-            pre_post_cliffords = big_O(1)
+            pre_post_cliffords: Union[sympy.Order, int] = big_O(1)
         else:
             pre_post_cliffords = 2 - self.cv1 - self.cv2
         if self.uncompute:
@@ -116,7 +115,7 @@ class And(GateWithRegisters):
     ) -> Dict[str, NDArray[np.uint8]]:
         out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
         if not self.uncompute:
-            return {'ctrl': ctrl, 'target': out}
+            return {'ctrl': ctrl, 'target': np.asarray([out])}
 
         # Uncompute
         assert target == out
@@ -127,8 +126,8 @@ class And(GateWithRegisters):
         tn: qtn.TensorNetwork,
         tag: Any,
         *,
-        incoming: Dict[str, SoquetT],
-        outgoing: Dict[str, SoquetT],
+        incoming: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
+        outgoing: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
     ):
         # Fill in our tensor using "and" logic.
         data = np.zeros((2, 2, 2, 2, 2), dtype=np.complex128)
@@ -202,7 +201,10 @@ class And(GateWithRegisters):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         controls = ["(0)", "@"]
         target = "And†" if self.uncompute else "And"
-        wire_symbols = [controls[self.cv1], controls[self.cv2], target]
+        if isinstance(self.cv1, sympy.Expr) or isinstance(self.cv2, sympy.Expr):
+            wire_symbols = [str(self.cv1), str(self.cv2), target]
+        else:
+            wire_symbols = [controls[self.cv1], controls[self.cv2], target]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def _has_unitary_(self) -> bool:
@@ -269,7 +271,7 @@ class MultiAnd(Bloq):
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 
-    def __pow__(self, power: int) -> "MultiAnd":
+    def __pow__(self, power: int) -> "Bloq":
         if power == 1:
             return self
         if power == -1:
@@ -279,18 +281,18 @@ class MultiAnd(Bloq):
     def _decompose_via_tree(
         self,
         controls: NDArray[cirq.Qid],
-        control_values: Tuple[int, ...],
+        control_values: Tuple[Union[int, sympy.Expr], ...],
         ancillas: NDArray[cirq.Qid],
         target: cirq.Qid,
     ) -> cirq.ops.op_tree.OpTree:
         """Decomposes multi-controlled `And` in-terms of an `And` ladder of size #controls- 2."""
 
         if len(controls) == 2:
-            yield And(*control_values).on(*controls, target)
+            yield And(control_values[0], control_values[1]).on(*controls, target)
             return
         new_controls = np.concatenate([ancillas[0:1], controls[2:]])
         new_control_values = (1, *control_values[2:])
-        and_op = And(*control_values[:2]).on(*controls[:2], ancillas[0])
+        and_op = And(control_values[0], control_values[1]).on(*controls[:2], ancillas[0])
 
         yield and_op
         yield from self._decompose_via_tree(new_controls, new_control_values, ancillas[1:], target)
