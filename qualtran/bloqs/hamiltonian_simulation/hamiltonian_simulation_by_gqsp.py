@@ -121,8 +121,8 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     def gqsp(self) -> GeneralizedQSP:
         return GeneralizedQSP.from_qsp_polynomial(
             self.walk_operator,
-            list(self.approx_cos),
-            negative_power=int(self.degree),
+            self.approx_cos,
+            negative_power=self.degree,
             verify=True,
             verify_precision=1e-4,
         )
