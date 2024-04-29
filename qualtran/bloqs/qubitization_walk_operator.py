@@ -96,7 +96,7 @@ class QubitizationWalkOperator(GateWithRegisters):
 
     @cached_property
     def sum_of_lcu_coefficients(self) -> Optional[float]:
-        r"""value of $\lambda$, i.e. sum of the coefficients $w_l$."""
+        r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
         return self.prepare.l1_norm_of_coeffs
 
     def decompose_from_registers(

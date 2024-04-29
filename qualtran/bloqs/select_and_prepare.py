@@ -67,7 +67,7 @@ class PrepareOracle(GateWithRegisters):
 
     Given a set of coefficients $\{c_0, c_1, ..., c_{N - 1}\}, the PREPARE oracle is used to encode
     the coefficients as amplitudes of a state $|\Psi\rangle = \sum_{i=0}^{N-1} \sqrt{\frac{c_{i}}{\lambda}} |i\rangle$
-    where $\lambda = \sum_i c_i$, using a selection register $|i\rangle$. In order to prepare such
+    where $\lambda = \sum_i |c_i|$, using a selection register $|i\rangle$. In order to prepare such
     a state, the PREPARE circuit is also allowed to use a junk register that is entangled with
     selection register.
 
@@ -93,7 +93,7 @@ class PrepareOracle(GateWithRegisters):
 
     @property
     def l1_norm_of_coeffs(self) -> Optional['SymbolicFloat']:
-        r"""Sum of the coefficients $c_i$.
+        r"""Sum of the absolute values of coefficients $c_i$.
 
         For LCU Hamiltonians, this is usually referred to as $\lambda$ in texts.
         """
