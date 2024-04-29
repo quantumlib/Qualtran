@@ -116,6 +116,7 @@ class CtrlModMul(Bloq):
             return Circle(filled=True)
         if soq.reg.name == 'x':
             return directional_text_box(f'*={self.k}', side=soq.reg.side)
+        raise ValueError(f"Unknown register name: {soq.reg.name}")
 
 
 @frozen

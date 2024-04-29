@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -26,6 +26,9 @@ from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen

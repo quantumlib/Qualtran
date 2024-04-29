@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Set, Tuple, TYPE_CHECKING
 
 import attrs
 import pytest
@@ -41,14 +41,14 @@ if TYPE_CHECKING:
 class TestBundleOfBloqs(Bloq):
     """A fake bloq which just defines a call graph"""
 
-    bloqs: BloqCountT
+    bloqs: Tuple[BloqCountT, ...]
 
     @cached_property
     def signature(self) -> 'Signature':
         return Signature.build()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return self.bloqs
+        return set(self.bloqs)
 
 
 @pytest.mark.parametrize(

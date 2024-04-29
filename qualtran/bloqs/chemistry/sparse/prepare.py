@@ -17,8 +17,8 @@ import itertools
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
-import attrs
 import numpy as np
+from attrs import evolve, field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -104,14 +104,14 @@ def get_sparse_inputs_from_integrals(
     for p in range(num_spat):
         _add(p, p, p, p)
     eris_eight = np.array(eris_eight)
-    pqrs_indx = np.array(pqrs_indx)
+    pqrs_indx_np = np.array(pqrs_indx)
     keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
     eris_eight = eris_eight[keep_indx]
-    pqrs_indx = pqrs_indx[keep_indx[0]]
-    return np.concatenate((tpq_indx, pqrs_indx)), np.concatenate((tpq_sparse, eris_eight))
+    pqrs_indx_np = pqrs_indx_np[keep_indx[0]]
+    return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight))
 
 
-@attrs.frozen
+@frozen
 class PrepareSparse(PrepareOracle):
     r"""Prepare oracle for the sparse chemistry Hamiltonian
 
@@ -166,13 +166,13 @@ class PrepareSparse(PrepareOracle):
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
-    alt_pqrs: Tuple[int, ...] = attrs.field(repr=False)
-    alt_theta: Tuple[int, ...] = attrs.field(repr=False)
-    alt_one_body: Tuple[int, ...] = attrs.field(repr=False)
-    ind_pqrs: Tuple[int, ...] = attrs.field(repr=False)
-    theta: Tuple[int, ...] = attrs.field(repr=False)
-    one_body: Tuple[int, ...] = attrs.field(repr=False)
-    keep: Tuple[int, ...] = attrs.field(repr=False)
+    alt_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
+    alt_theta: Tuple[int, ...] = field(repr=False)
+    alt_one_body: Tuple[int, ...] = field(repr=False)
+    ind_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
+    theta: Tuple[int, ...] = field(repr=False)
+    one_body: Tuple[int, ...] = field(repr=False)
+    keep: Tuple[int, ...] = field(repr=False)
     num_bits_rot_aa: int = 8
     is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
@@ -225,6 +225,9 @@ class PrepareSparse(PrepareOracle):
             Register("swap_pqrs", BoundedQUInt(1)),
             Register("flag_1b", BoundedQUInt(1)),
         )
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:

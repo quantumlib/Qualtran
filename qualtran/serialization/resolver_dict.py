@@ -75,7 +75,7 @@ import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
 import qualtran.bloqs.for_testing.interior_alloc
 import qualtran.bloqs.for_testing.many_registers
-import qualtran.bloqs.for_testing.random_gate
+import qualtran.bloqs.for_testing.matrix_gate
 import qualtran.bloqs.for_testing.with_call_graph
 import qualtran.bloqs.for_testing.with_decomposition
 import qualtran.bloqs.hubbard_model
@@ -263,7 +263,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.for_testing.many_registers.TestMultiRegister": qualtran.bloqs.for_testing.many_registers.TestMultiRegister,
     "qualtran.bloqs.for_testing.many_registers.TestMultiTypedRegister": qualtran.bloqs.for_testing.many_registers.TestMultiTypedRegister,
     "qualtran.bloqs.for_testing.many_registers.TestQFxp": qualtran.bloqs.for_testing.many_registers.TestQFxp,
-    "qualtran.bloqs.for_testing.random_gate.RandomGate": qualtran.bloqs.for_testing.random_gate.RandomGate,
+    "qualtran.bloqs.for_testing.matrix_gate.MatrixGate": qualtran.bloqs.for_testing.matrix_gate.MatrixGate,
     "qualtran.bloqs.for_testing.with_call_graph.TestBloqWithCallGraph": qualtran.bloqs.for_testing.with_call_graph.TestBloqWithCallGraph,
     "qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo,
