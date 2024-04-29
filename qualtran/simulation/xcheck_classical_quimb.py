@@ -11,15 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, Iterable, Optional, TYPE_CHECKING
+from typing import cast, Dict, Iterable, Optional, TYPE_CHECKING
 
 import numpy as np
 
-from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, SoquetT
+from qualtran import Bloq, BloqBuilder, CompositeBloq, Register, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import IntEffect, IntState
 
 if TYPE_CHECKING:
-    from qualtran.simulation import ClassicalValT
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 def _add_classical_kets(
@@ -34,7 +34,7 @@ def _add_classical_kets(
             for idx in reg.all_idxs():
                 soq[idx] = bb.add(IntState(val=reg_vals[idx], bitsize=reg.bitsize))
         else:
-            soq = bb.add(IntState(val=vals[reg.name], bitsize=reg.bitsize))
+            soq = bb.add(IntState(val=cast(int, vals[reg.name]), bitsize=reg.bitsize))
 
         soqs[reg.name] = soq
     return soqs
@@ -49,11 +49,16 @@ def _add_classical_bras(
     """Use `bb` to add `IntEffect` on `soqs` for all the `vals`."""
     for reg in registers:
         if reg.shape:
-            reg_vals = vals[reg.name]
+            reg_vals = np.asarray(vals[reg.name])
+            reg_name = soqs[reg.name]
+            if isinstance(reg_name, Soquet):
+                raise ValueError(f'soqs {reg.name} must be a numpy array: {soqs[reg.name]}')
             for idx in reg.all_idxs():
-                bb.add(IntEffect(val=reg_vals[idx], bitsize=reg.bitsize), val=soqs[reg.name][idx])
+                bb.add(IntEffect(val=reg_vals[idx], bitsize=reg.bitsize), val=reg_name[idx])
         else:
-            bb.add(IntEffect(val=vals[reg.name], bitsize=reg.bitsize), val=soqs[reg.name])
+            bb.add(
+                IntEffect(val=cast(int, vals[reg.name]), bitsize=reg.bitsize), val=soqs[reg.name]
+            )
 
 
 def flank_with_classical_vectors(

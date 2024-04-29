@@ -49,14 +49,15 @@ def test_ising_zero_bitflip_select(control_val):
     ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
-    op = SelectPauliLCU(
+    bloq = SelectPauliLCU(
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
         control_val=control_val,
-    ).on(control, *selection, *target)
+    )
+    op = bloq.on(control, *selection, *target)
 
-    assert_valid_bloq_decomposition(op.gate)
+    assert_valid_bloq_decomposition(bloq)
 
     circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = circuit.all_qubits()
@@ -77,7 +78,7 @@ def test_ising_zero_bitflip_select(control_val):
                 qubit_vals[target[i]] = 1
         final_state = [qubit_vals[x] for x in all_qubits]
 
-        assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+        assert_circuit_inp_out_cirqsim(circuit, list(all_qubits), initial_state, final_state)
 
 
 def test_ising_one_bitflip_select():
@@ -99,14 +100,14 @@ def test_ising_one_bitflip_select():
     ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
-    op = SelectPauliLCU(
+    bloq = SelectPauliLCU(
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
         control_val=1,
-    ).on(control, *selection, *target)
-
-    assert_valid_bloq_decomposition(op.gate)
+    )
+    op = bloq.on(control, *selection, *target)
+    assert_valid_bloq_decomposition(bloq)
 
     circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = sorted(circuit.all_qubits())
@@ -172,14 +173,15 @@ def test_select_application_to_eigenstates():
     ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
-    op = SelectPauliLCU(
+    bloq = SelectPauliLCU(
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
         control_val=1,
-    ).on(control, *selection, *target)
+    )
+    op = bloq.on(control, *selection, *target)
 
-    assert_valid_bloq_decomposition(op.gate)
+    assert_valid_bloq_decomposition(bloq)
 
     select_circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = select_circuit.all_qubits()

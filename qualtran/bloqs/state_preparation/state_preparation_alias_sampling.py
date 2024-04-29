@@ -21,7 +21,7 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
 from functools import cached_property
-from typing import List, Tuple
+from typing import Sequence, Tuple
 
 import attrs
 import cirq
@@ -99,7 +99,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
     @classmethod
     def from_lcu_probs(
-        cls, lcu_probabilities: List[float], *, probability_epsilon: float = 1.0e-5
+        cls, lcu_probabilities: Sequence[float], *, probability_epsilon: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
         """Factory to construct the state preparation gate for a given set of LCU coefficients.
 
