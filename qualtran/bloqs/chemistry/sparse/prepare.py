@@ -17,8 +17,8 @@ import itertools
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
+import attrs
 import numpy as np
-from attrs import evolve, field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -111,7 +111,7 @@ def get_sparse_inputs_from_integrals(
     return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight))
 
 
-@frozen
+@attrs.frozen
 class PrepareSparse(PrepareOracle):
     r"""Prepare oracle for the sparse chemistry Hamiltonian
 
@@ -166,13 +166,13 @@ class PrepareSparse(PrepareOracle):
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
-    alt_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
-    alt_theta: Tuple[int, ...] = field(repr=False)
-    alt_one_body: Tuple[int, ...] = field(repr=False)
-    ind_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
-    theta: Tuple[int, ...] = field(repr=False)
-    one_body: Tuple[int, ...] = field(repr=False)
-    keep: Tuple[int, ...] = field(repr=False)
+    alt_pqrs: Tuple[Tuple[int, ...], ...] = attrs.field(repr=False)
+    alt_theta: Tuple[int, ...] = attrs.field(repr=False)
+    alt_one_body: Tuple[int, ...] = attrs.field(repr=False)
+    ind_pqrs: Tuple[Tuple[int, ...], ...] = attrs.field(repr=False)
+    theta: Tuple[int, ...] = attrs.field(repr=False)
+    one_body: Tuple[int, ...] = attrs.field(repr=False)
+    keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
     is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
