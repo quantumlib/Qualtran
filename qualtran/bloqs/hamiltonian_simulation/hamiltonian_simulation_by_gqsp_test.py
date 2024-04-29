@@ -25,7 +25,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     check_polynomial_pair_on_random_points_on_unit_circle,
     verify_generalized_qsp,
 )
-from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalkOperator
+from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
@@ -52,10 +52,11 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
     bitsize: int, t: float, precision: float
 ):
     random_state = np.random.RandomState(42)
+    W, _ = random_qubitization_walk_operator(1, 1, random_state=random_state)
 
     for _ in range(5):
         U = MatrixGate.random(bitsize, random_state=random_state)
-        gqsp = HamiltonianSimulationByGQSP(_walk_op, t=t, alpha=1, precision=precision).gqsp
+        gqsp = HamiltonianSimulationByGQSP(W, t=t, precision=precision).gqsp
         P, Q = gqsp.P, gqsp.Q
 
         check_polynomial_pair_on_random_points_on_unit_circle(
@@ -65,16 +66,11 @@ def test_generalized_qsp_with_exp_cos_approx_on_random_unitaries(
 
 
 def verify_hamiltonian_simulation_by_gqsp(
-    W: QubitizationWalkOperator,
-    H: NDArray[np.complex_],
-    *,
-    t: float,
-    alpha: float,
-    precision: float,
+    W: QubitizationWalkOperator, H: NDArray[np.complex_], *, t: float, precision: float
 ):
     N = H.shape[0]
 
-    W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, alpha=alpha, precision=precision)
+    W_e_iHt = HamiltonianSimulationByGQSP(W, t=t, precision=precision)
     result_unitary = cirq.unitary(W_e_iHt)
 
     expected_top_left = scipy.linalg.expm(-1j * H * t)
@@ -96,4 +92,4 @@ def test_hamiltonian_simulation_by_gqsp(
         W, H = random_qubitization_walk_operator(
             select_bitsize, target_bitsize, random_state=random_state
         )
-        verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=t, alpha=1, precision=precision)
+        verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=t, precision=precision)
