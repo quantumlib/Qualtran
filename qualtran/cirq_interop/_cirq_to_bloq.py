@@ -399,7 +399,7 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
             exponent=gate.exponent, global_shift=gate.global_shift
         )
 
-    if isinstance(gate, cirq.GlobalPhaseGate) and isinstance(gate.coefficient, (float, complex)):
+    if isinstance(gate, cirq.GlobalPhaseGate):
         return GlobalPhase(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.
