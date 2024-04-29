@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import sympy
 
@@ -489,7 +489,9 @@ def assert_equivalent_bloq_example_counts(bloq_ex: BloqExample) -> None:
         raise BloqCheckException.unverified(f'{bloq_ex.name} only has counts from decomposition.')
 
 
-def assert_equivalent_bloq_counts(bloq: Bloq, generalizer: GeneralizerT = lambda x: x) -> None:
+def assert_equivalent_bloq_counts(
+    bloq: Bloq, generalizer: Union[GeneralizerT, Sequence[GeneralizerT]] = lambda x: x
+) -> None:
     """Assert that the BloqExample has consistent bloq counts.
 
     See the documentation for `assert_equivalent_bloq_example_counts` for details on this function.
