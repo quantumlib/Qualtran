@@ -226,9 +226,6 @@ class PrepareSparse(PrepareOracle):
             Register("flag_1b", BoundedQUInt(1)),
         )
 
-    def adjoint(self) -> 'Bloq':
-        return evolve(self, is_adjoint=not self.is_adjoint)
-
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         return (
