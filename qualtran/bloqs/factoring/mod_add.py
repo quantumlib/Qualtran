@@ -243,8 +243,8 @@ class MontgomeryModAdd(Bloq):
         sign = bb.add(XGate(), q=sign)
 
         # Free the ancilla qubits.
-        junk_bit = bb.free(junk_bit)
-        sign = bb.free(sign)
+        bb.free(junk_bit)
+        bb.free(sign)
 
         # Return the output registers.
         return {'x': x, 'y': y}
