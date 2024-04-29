@@ -652,7 +652,7 @@ class LinearDepthGreaterThan(Bloq):
     """
 
     bitsize: int
-    signed: bool
+    signed: bool = False
 
     @property
     def signature(self):

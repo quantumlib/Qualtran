@@ -64,6 +64,12 @@ Bloqs Library
 
 .. toctree::
     :maxdepth: 2
+    :caption: Modular Arithmetic:
+
+    mod_arithmetic/mod_addition.ipynb
+
+.. toctree::
+    :maxdepth: 2
     :caption: Rotations:
 
     basic_gates/rotation.ipynb

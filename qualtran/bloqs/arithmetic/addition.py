@@ -14,7 +14,7 @@
 import itertools
 import math
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -362,14 +362,14 @@ _ADD_OOP_DOC = BloqDocSpec(
 
 
 @frozen
-class SimpleAddConstant(Bloq):
+class AddK(Bloq):
     r"""Takes |x> to |x + k> for a classical integer `k`.
 
-    Applies addition to input register `|x>` given classical integer 'k'.
-
-    This is the simple version of constant addition because it involves simply converting the
-    classical integer into a quantum parameter and using quantum-quantum addition as opposed to
-    designing a bespoke circuit for constant addition based on the classical parameter.
+    This construction simply XORs the classical constant into a quantum register and
+    applies quantum-quantum addition. This is the lowest T-count algorithm at the expense
+    of $n$ auxiliary qubits. This construction also permits an inexpensive controlled version:
+    you only need to control the loading of the classical constant which can be done with
+    only clifford operations.
 
     Args:
         bitsize: Number of bits used to represent each integer.
@@ -383,7 +383,8 @@ class SimpleAddConstant(Bloq):
         x: A bitsize-sized input register (register x above).
 
     References:
-        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580) Fig 2a
+        [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580).
+        Haner et. al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
     """
 
     bitsize: int
@@ -474,131 +475,38 @@ class SimpleAddConstant(Bloq):
         else:
             return {'x': x}
 
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if len(self.cvs) == 0:
+            loading_cost = (XGate(), self.bitsize)  # upper bound; depends on the data.
+        elif len(self.cvs) == 1:
+            loading_cost = (CNOT(), self.bitsize)  # upper bound; depends on the data.
+        else:
+            # Otherwise, use the decomposition
+            return super().build_call_graph(ssa=ssa)
+
+        return {loading_cost, (Add(QUInt(self.bitsize)), 1)}
+
     def short_name(self) -> str:
         return f'x += {self.k}'
 
 
 @bloq_example
-def _simple_add_k_small() -> SimpleAddConstant:
-    simple_add_k_small = SimpleAddConstant(bitsize=4, k=2, signed=False)
-    return simple_add_k_small
+def _add_k() -> AddK:
+    n, k = sympy.symbols('n k')
+    add_k = AddK(bitsize=n, k=k)
+    return add_k
 
 
 @bloq_example
-def _simple_add_k_large() -> SimpleAddConstant:
-    simple_add_k_large = SimpleAddConstant(bitsize=64, k=-23, signed=True)
-    return simple_add_k_large
-
-
-_SIMPLE_ADD_K_DOC = BloqDocSpec(
-    bloq_cls=SimpleAddConstant, examples=[_simple_add_k_small, _simple_add_k_large]
-)
-
-
-@frozen(auto_attribs=True)
-class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
-    """Applies U(add, M)|x> = |(x + add) % M> if x < M else |x>.
-
-    Applies modular addition to input register `|x>` given parameters `mod` and `add_val` s.t.
-     1. If integer `x` < `mod`: output is `|(x + add) % M>`
-     2. If integer `x` >= `mod`: output is `|x>`.
-
-    This condition is needed to ensure that the mapping of all input basis states (i.e. input
-    states |0>, |1>, ..., |2 ** bitsize - 1) to corresponding output states is bijective and thus
-    the gate is reversible.
-
-    Also supports controlled version of the gate by specifying a per qubit control value as a tuple
-    of integers passed as `cvs`.
-    """
-
-    bitsize: int
-    mod: int = field()
-    add_val: int = 1
-    cvs: Tuple[int, ...] = field(
-        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
-    )
-
-    @mod.validator
-    def _validate_mod(self, attribute, value):
-        if isinstance(value, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
-            return
-        if not 1 <= value <= 2**self.bitsize:
-            raise ValueError(f"mod: {value} must be between [1, {2 ** self.bitsize}].")
-
-    @cached_property
-    def signature(self) -> Signature:
-        if self.cvs:
-            return Signature(
-                [Register('ctrl', QUInt(len(self.cvs))), Register('x', QUInt(self.bitsize))]
-            )
-        return Signature([Register('x', QUInt(self.bitsize))])
-
-    def registers(self) -> Sequence[Union[int, Sequence[int]]]:
-        add_reg = (2,) * self.bitsize
-        control_reg = (2,) * len(self.cvs)
-        return (control_reg, add_reg) if control_reg else (add_reg,)
-
-    def with_registers(self, *new_registers: Union[int, Sequence[int]]) -> "AddConstantMod":
-        raise NotImplementedError()
-
-    def _classical_unctrled(self, target_val: int):
-        if target_val < self.mod:
-            return (target_val + self.add_val) % self.mod
-        return target_val
-
-    def apply(self, *args) -> Union[int, Iterable[int]]:
-        target_val = args[-1]
-        new_target_val = self._classical_unctrled(target_val)
-        if self.cvs and args[0] != int(''.join(str(x) for x in self.cvs), 2):
-            new_target_val = target_val
-        ret = (args[0], new_target_val) if self.cvs else (new_target_val,)
-        return ret
-
-    def on_classical_vals(
-        self, *, x: int, ctrl: Optional[int] = None
-    ) -> Dict[str, 'ClassicalValT']:
-        out = self._classical_unctrled(x)
-        if self.cvs:
-            assert ctrl is not None
-            if ctrl == int(''.join(str(x) for x in self.cvs), 2):
-                return {'ctrl': ctrl, 'x': out}
-            else:
-                return {'ctrl': ctrl, 'x': x}
-
-        assert ctrl is None
-        return {'x': out}
-
-    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ['@' if b else '@(0)' for b in self.cvs]
-        wire_symbols += [f"Add_{self.add_val}_Mod_{self.mod}"] * self.bitsize
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def __pow__(self, power: int) -> 'AddConstantMod':
-        return AddConstantMod(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
-
-    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(Add(QUInt(self.bitsize), QUInt(self.bitsize)), 5)}
-
-
-@bloq_example
-def _add_k_symb() -> AddConstantMod:
-    n, m, k = sympy.symbols('n m k')
-    add_k_symb = AddConstantMod(bitsize=n, mod=m, add_val=k)
-    return add_k_symb
-
-
-@bloq_example
-def _add_k_small() -> AddConstantMod:
-    add_k_small = AddConstantMod(bitsize=4, mod=7, add_val=1)
+def _add_k_small() -> AddK:
+    add_k_small = AddK(bitsize=4, k=2, signed=False)
     return add_k_small
 
 
 @bloq_example
-def _add_k_large() -> AddConstantMod:
-    add_k_large = AddConstantMod(bitsize=64, mod=500, add_val=23)
+def _add_k_large() -> AddK:
+    add_k_large = AddK(bitsize=64, k=-23, signed=True)
     return add_k_large
 
 
-_ADD_K_DOC = BloqDocSpec(
-    bloq_cls=AddConstantMod, examples=[_add_k_symb, _add_k_small, _add_k_large]
-)
+_ADD_K_DOC = BloqDocSpec(bloq_cls=AddK, examples=[_add_k, _add_k_small, _add_k_large])

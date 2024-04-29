@@ -67,7 +67,6 @@ import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
-import qualtran.bloqs.factoring.mod_add
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.factoring.mod_mul
 import qualtran.bloqs.factoring.mod_sub
@@ -84,6 +83,7 @@ import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
 import qualtran.bloqs.mean_estimation.arctan
 import qualtran.bloqs.mean_estimation.complex_phase_oracle
 import qualtran.bloqs.mean_estimation.mean_estimation_operator
+import qualtran.bloqs.mod_arithmetic
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.multiplexers.selected_majorana_fermion
@@ -122,9 +122,9 @@ RESOLVER_DICT = {
     "qualtran._infra.composite_bloq.CompositeBloq": CompositeBloq,
     "qualtran.cirq_interop._cirq_to_bloq.CirqGateAsBloq": CirqGateAsBloq,
     "qualtran.bloqs.arithmetic.addition.Add": qualtran.bloqs.arithmetic.addition.Add,
-    "qualtran.bloqs.arithmetic.addition.AddConstantMod": qualtran.bloqs.arithmetic.addition.AddConstantMod,
+    "qualtran.bloqs.arithmetic.mod_addition.ModAddK": qualtran.bloqs.mod_arithmetic.ModAddK,
     "qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder": qualtran.bloqs.arithmetic.addition.OutOfPlaceAdder,
-    "qualtran.bloqs.arithmetic.addition.SimpleAddConstant": qualtran.bloqs.arithmetic.addition.SimpleAddConstant,
+    "qualtran.bloqs.arithmetic.addition.AddK": qualtran.bloqs.arithmetic.AddK,
     "qualtran.bloqs.arithmetic.comparison.BiQubitsMixer": qualtran.bloqs.arithmetic.comparison.BiQubitsMixer,
     "qualtran.bloqs.arithmetic.comparison.EqualsAConstant": qualtran.bloqs.arithmetic.comparison.EqualsAConstant,
     "qualtran.bloqs.arithmetic.comparison.GreaterThan": qualtran.bloqs.arithmetic.comparison.GreaterThan,
@@ -245,10 +245,9 @@ RESOLVER_DICT = {
     "qualtran.bloqs.chemistry.trotter.trotterized_unitary": qualtran.bloqs.chemistry.trotter.trotterized_unitary,
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
-    "qualtran.bloqs.factoring.mod_add.CtrlAddK": qualtran.bloqs.factoring.mod_add.CtrlAddK,
-    "qualtran.bloqs.factoring.mod_add.CtrlModAddK": qualtran.bloqs.factoring.mod_add.CtrlModAddK,
-    "qualtran.bloqs.factoring.mod_add.CtrlScaleModAdd": qualtran.bloqs.factoring.mod_add.CtrlScaleModAdd,
-    "qualtran.bloqs.factoring.mod_add.MontgomeryModAdd": qualtran.bloqs.factoring.mod_add.MontgomeryModAdd,
+    "qualtran.bloqs.mod_arithmetic.CModAddK": qualtran.bloqs.mod_arithmetic.CModAddK,
+    "qualtran.bloqs.mod_arithmetic.mod_addition.CtrlScaleModAdd": qualtran.bloqs.mod_arithmetic.CtrlScaleModAdd,
+    "qualtran.bloqs.mod_arithmetic.ModAdd": qualtran.bloqs.mod_arithmetic.ModAdd,
     "qualtran.bloqs.factoring.mod_exp.ModExp": qualtran.bloqs.factoring.mod_exp.ModExp,
     "qualtran.bloqs.factoring.mod_mul.CtrlModMul": qualtran.bloqs.factoring.mod_mul.CtrlModMul,
     "qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl": qualtran.bloqs.factoring.mod_mul.MontgomeryModDbl,

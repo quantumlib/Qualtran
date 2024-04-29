@@ -12,5 +12,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .mod_exp import ModExp
-from .mod_mul import CtrlModMul
+from .mod_addition import CModAddK, CtrlScaleModAdd, ModAdd, ModAddK
