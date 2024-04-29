@@ -27,7 +27,6 @@ from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     MeanEstimationOperator,
 )
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.bloqs.util_bloqs import Power
 from qualtran.cirq_interop import bit_tools
 from qualtran.testing import assert_valid_bloq_decomposition
 
