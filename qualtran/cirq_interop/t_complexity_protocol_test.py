@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Set
+from typing import Set, TYPE_CHECKING
 
 import cirq
 import pytest
@@ -22,6 +22,9 @@ from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.testing import execute_notebook
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 class SupportTComplexity:
@@ -92,7 +95,7 @@ def test_t_complexity():
     assert t_complexity(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)
 
     g = GateHelper(SupportsTComplexityGateWithRegisters())
-    assert g.gate._decompose_with_context_(g.operation.qubits) is NotImplemented
+    assert g.gate._decompose_with_context_(g.operation.qubits) is NotImplemented  # type: ignore[attr-defined]
     assert t_complexity(g.gate) == TComplexity(t=1, clifford=2)
     assert t_complexity(g.operation) == TComplexity(t=1, clifford=2)
 
@@ -226,11 +229,12 @@ def test_cache_clear():
     # Using a global cache will result in a failure of this test since `cirq.X` has
     # `T-complexity(clifford=1)` but we explicitly return `TComplexity()` for IsCachable
     # operation; for which the hash would be equivalent to the hash of its subgate i.e. `cirq.X`.
-    t_complexity.cache_clear()
+    # TODO: t_complexity protocol will be refactored (#735)
+    t_complexity.cache_clear()  # type: ignore[attr-defined]
     op = Cachable2()
     assert t_complexity([op, op]) == TComplexity()
     assert op.num_calls == 1
-    t_complexity.cache_clear()
+    t_complexity.cache_clear()  # type: ignore[attr-defined]
 
 
 @pytest.mark.notebook

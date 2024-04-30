@@ -62,7 +62,8 @@ def test_qrom_1d_full(data, num_controls):
     greedy_mm = cirq.GreedyQubitManager('a', maximize_reuse=True)
     g = GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
     decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=g.context))
-    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))
+    # missing cirq stubs
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))  # type: ignore[operator]
 
     assert (
         len(inverse.all_qubits())
@@ -335,7 +336,8 @@ def test_qrom_multi_dim_full(data, num_controls):
     greedy_mm = cirq.GreedyQubitManager('a', maximize_reuse=True)
     g = GateHelper(qrom, context=cirq.DecompositionContext(greedy_mm))
     decomposed_circuit = cirq.Circuit(cirq.decompose(g.operation, context=g.context))
-    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))
+    # Missing cirq stubs
+    inverse = cirq.Circuit(cirq.decompose(g.operation**-1, context=g.context))  # type: ignore[operator]
 
     assert (
         len(inverse.all_qubits())

@@ -89,7 +89,7 @@ def test_cbloq_to_proto_two_cnot():
 
 @attrs.frozen
 class TestCSwap(Bloq):
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
 
     @property
     def signature(self) -> 'Signature':

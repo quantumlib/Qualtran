@@ -112,11 +112,11 @@ class MyClassPageBuilder(mixin_custom_template('class'), ClassPageBuilder):  # t
         # you pass in, so we can't do this sorting where it would make the most sense in
         # MyClassPageInfo.collect_docs()
         methods = _filter_and_sort_members(
-            self.page_info.py_object, self.methods.info_dict.values()
+            self.page_info.py_object, self.methods.info_dict.values()  # type: ignore[has-type]
         )
         self.methods = Methods(
             info_dict={meth.short_name: meth for meth in methods},
-            constructor=self.methods.constructor,
+            constructor=self.methods.constructor,  # type: ignore[has-type]
         )
 
 
@@ -135,7 +135,7 @@ class MyModulePageInfo(ModulePageInfo):
 
     def collect_docs(self):
         ret = super().collect_docs()  # pylint: disable=assignment-from-no-return
-        self._classes = _filter_and_sort_members(self.py_object, self._classes)
+        self._classes = _filter_and_sort_members(self.py_object, self._classes)  # type: ignore[has-type]
         return ret
 
 
@@ -149,7 +149,7 @@ class MyClassPageInfo(ClassPageInfo):
         # Note: currently the following sort is un-done by the class page builder.
         # If the upstream page builder changes to respect the member order (like for the other
         # page types), we should sort them here.
-        self._methods = _filter_and_sort_members(self.py_object, self._methods)
+        self._methods = _filter_and_sort_members(self.py_object, self._methods)  # type: ignore[has-type]
         return ret
 
 

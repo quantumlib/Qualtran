@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List
+from typing import Sequence
 
 import cirq
 import numpy as np
@@ -49,14 +49,15 @@ def test_ising_zero_bitflip_select(control_val):
     ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
-    op = SelectPauliLCU(
+    bloq = SelectPauliLCU(
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
         control_val=control_val,
-    ).on(control, *selection, *target)
+    )
+    op = bloq.on(control, *selection, *target)
 
-    assert_valid_bloq_decomposition(op.gate)
+    assert_valid_bloq_decomposition(bloq)
 
     circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = circuit.all_qubits()
@@ -77,7 +78,7 @@ def test_ising_zero_bitflip_select(control_val):
                 qubit_vals[target[i]] = 1
         final_state = [qubit_vals[x] for x in all_qubits]
 
-        assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
+        assert_circuit_inp_out_cirqsim(circuit, list(all_qubits), initial_state, final_state)
 
 
 def test_ising_one_bitflip_select():
@@ -99,14 +100,14 @@ def test_ising_one_bitflip_select():
     ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
     # built select with unary iteration gate
-    op = SelectPauliLCU(
+    bloq = SelectPauliLCU(
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
         control_val=1,
-    ).on(control, *selection, *target)
-
-    assert_valid_bloq_decomposition(op.gate)
+    )
+    op = bloq.on(control, *selection, *target)
+    assert_valid_bloq_decomposition(bloq)
 
     circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = sorted(circuit.all_qubits())
@@ -131,7 +132,7 @@ def test_ising_one_bitflip_select():
 
 
 def _fake_prepare(
-    positive_coefficients: np.ndarray, selection_register: List[cirq.Qid]
+    positive_coefficients: np.ndarray, selection_register: Sequence[cirq.Qid]
 ) -> cirq.OP_TREE:
     pos_coeffs = positive_coefficients.flatten()
     size_hilbert_of_reg = 2 ** len(selection_register)
@@ -171,25 +172,26 @@ def test_select_application_to_eigenstates():
     # right now we only handle positive interaction term values
     ham = get_1d_ising_hamiltonian(target, 1, 1)
     dense_pauli_string_hamiltonian = [tt.dense(target) for tt in ham]
+    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
     # built select with unary iteration gate
-    op = SelectPauliLCU(
+    bloq = SelectPauliLCU(
         selection_bitsize=selection_bitsize,
         target_bitsize=target_bitsize,
         select_unitaries=dense_pauli_string_hamiltonian,
         control_val=1,
-    ).on(control, *selection, *target)
+    )
+    op = bloq.on(control, *selection, *target)
 
-    assert_valid_bloq_decomposition(op.gate)
+    assert_valid_bloq_decomposition(bloq)
 
     select_circuit = cirq.Circuit(cirq.decompose(op))
     all_qubits = select_circuit.all_qubits()
 
     coeffs = get_1d_ising_lcu_coeffs(num_sites, 1, 1)
-    prep_circuit = _fake_prepare(np.sqrt(coeffs), selection)
+    prep_circuit = _fake_prepare(np.sqrt(coeffs / qubitization_lambda), selection)
     turn_on_control = cirq.Circuit(cirq.X.on(control))
 
     ising_eigs, ising_wfns = np.linalg.eigh(ham.matrix())
-    qubitization_lambda = sum(xx.coefficient.real for xx in dense_pauli_string_hamiltonian)
     for iw_idx, ie in enumerate(ising_eigs):
         eigenstate_prep = cirq.Circuit()
         eigenstate_prep.append(

@@ -378,7 +378,9 @@ class BoundedQUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(0, self.iteration_length)
+        if isinstance(self.iteration_length, int):
+            return range(0, self.iteration_length)
+        raise ValueError(f'Classical Domain not defined for expression: {self.iteration_length}')
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -573,7 +575,7 @@ class QDTypeCheckingSeverity(Enum):
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
-def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
+def _check_uint_fxp_consistent(a: Union[QUInt, BoundedQUInt, QMontgomeryUInt], b: QFxp) -> bool:
     """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False

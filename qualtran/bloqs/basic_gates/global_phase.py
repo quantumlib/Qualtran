@@ -14,6 +14,7 @@
 
 from typing import TYPE_CHECKING
 
+import attrs
 import cirq
 from attrs import frozen
 
@@ -23,6 +24,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicComplex
 
 
 @frozen
@@ -34,7 +36,7 @@ class GlobalPhase(CirqGateAsBloqBase):
         eps: precision
     """
 
-    coefficient: complex
+    coefficient: 'SymbolicComplex'
     eps: float = 1e-11
 
     @property
@@ -43,6 +45,11 @@ class GlobalPhase(CirqGateAsBloqBase):
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
+
+    def adjoint(self) -> 'GlobalPhase':
+        from qualtran.resource_counting.symbolic_counting_utils import sconj
+
+        return attrs.evolve(self, coefficient=sconj(self.coefficient))
 
     def pretty_name(self) -> str:
         return 'GPhase'

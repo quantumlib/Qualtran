@@ -34,12 +34,12 @@ sympy_parameters_to_test = [
     sympy.EulerGamma,
     # Integers, Floats, Rationals
     sympy.Integer(5),
-    sympy.Float(0.1),
+    sympy.Float(0.25),
     sympy.Rational("1/2"),
     sympy.Rational('1/10'),
 ]
 sympy_exprs_to_test = [
-    5 * x + sympy.sqrt(a),
+    5 * a + sympy.sqrt(a),
     # Complex Fractions
     sympy.Rational("1/10") * sympy.I + 5,
     # Basic operations
@@ -55,17 +55,16 @@ sympy_exprs_to_test = [
 
 
 @pytest.mark.parametrize('expr', sympy_parameters_to_test + sympy_exprs_to_test)
-def parameter_test(expr: sympy.Expr):
+def test_parameter(expr: sympy.Expr):
     """
     Test types of expressions including fraction, complex, and constant symbol (such as pi).
     """
-
     serialized = sympy_expr_to_proto(expr)
-    expr_clone = sympy_expr_from_proto(serialized)['test']
+    expr_clone = sympy_expr_from_proto(serialized)
     assert expr == expr_clone
 
 
-def float_fraction_test():
+def test_float_fraction():
     """
     Test that floats and fractions can be properly combined and serialzed.
     """
@@ -74,5 +73,5 @@ def float_fraction_test():
     expr = float_const * fraction
 
     serialized = sympy_expr_to_proto(expr)
-    expr_clone = sympy_expr_from_proto(serialized)['test']
+    expr_clone = sympy_expr_from_proto(serialized)
     assert abs(expr - expr_clone) < 0.001
