@@ -179,6 +179,7 @@ def test_classical_sim():
 def test_classical_sim_dtypes():
     s = Split(QAny(8))
     (xx,) = s.call_classically(reg=255)
+    assert isinstance(xx, np.ndarray)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     # TODO: Re-enable when Split/Join have real data types
@@ -188,10 +189,12 @@ def test_classical_sim_dtypes():
 
     # with numpy types
     (xx,) = s.call_classically(reg=np.uint8(255))
+    assert isinstance(xx, np.ndarray)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     # Warning: numpy will wrap too-large values
     (xx,) = s.call_classically(reg=np.uint8(256))
+    assert isinstance(xx, np.ndarray)
     assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
 
     # TODO: Re-enable when Split/Join have real data types

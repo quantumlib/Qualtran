@@ -13,7 +13,7 @@
 #  limitations under the License.
 import inspect
 import sys
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Mapping, Optional, Tuple, TYPE_CHECKING, Union
 
 import cirq
 
@@ -40,7 +40,7 @@ def _get_all_rotation_types() -> Tuple['_HasEps', ...]:
 
 
 def t_counts_from_sigma(
-    sigma: Dict['Bloq', Union[int, 'sympy.Expr']],
+    sigma: Mapping['Bloq', Union[int, 'sympy.Expr']],
     rotation_types: Optional[Tuple['_HasEps', ...]] = None,
 ) -> SymbolicInt:
     """Aggregates T-counts from a sigma dictionary by summing T-costs for all rotation bloqs."""

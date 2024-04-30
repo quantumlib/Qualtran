@@ -24,7 +24,7 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, Union
 
 import attrs
 import cirq
@@ -81,8 +81,8 @@ class And(GateWithRegisters):
         [Verifying Measurement Based Uncomputation](https://algassert.com/post/1903). Gidney, C. 2019.
     """
 
-    cv1: int = 1
-    cv2: int = 1
+    cv1: Union[int, sympy.Expr] = 1
+    cv2: Union[int, sympy.Expr] = 1
     uncompute: bool = False
 
     @cached_property
@@ -229,7 +229,7 @@ _AND_DOC = BloqDocSpec(
 )
 
 
-def _to_tuple(x: Iterable[int]) -> Sequence[int]:
+def _to_tuple(x: Iterable[Union[int, sympy.Expr]]) -> Sequence[Union[int, sympy.Expr]]:
     return tuple(x)
 
 
@@ -247,7 +247,7 @@ class MultiAnd(Bloq):
         target [right]: The output bit.
     """
 
-    cvs: Tuple[int, ...] = field(converter=_to_tuple)
+    cvs: Tuple[Union[int, sympy.Expr], ...] = field(converter=_to_tuple)
 
     @cvs.validator
     def _validate_cvs(self, field, val):

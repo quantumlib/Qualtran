@@ -17,6 +17,7 @@ from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -107,7 +108,7 @@ class PrepareTUVSuperpositions(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if self.is_adjoint:
             # inverting inequality tests at zero Toffoli.
-            return {}
+            return set()
         else:
             return {(Toffoli(), 6 * self.num_bits_t + 2)}
 
@@ -147,6 +148,7 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
             (c_idx,) = soq.idx
             filled = bool(self.cvs[c_idx])
             return Circle(filled)
+        raise ValueError(f'Unknown name: {soq.reg.name}')
 
     def build_composite_bloq(
         self, bb: BloqBuilder, ctrl: SoquetT, sel: SoquetT, targets: SoquetT, junk: SoquetT
@@ -294,9 +296,9 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
-        nu_x: SoquetT,
-        nu_y: SoquetT,
-        nu_z: SoquetT,
+        nu_x: Soquet,
+        nu_y: Soquet,
+        nu_z: Soquet,
         m: SoquetT,
         succ_nu: SoquetT,
         l: SoquetT,
@@ -462,7 +464,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     def build_composite_bloq(
         self,
         bb: BloqBuilder,
-        ham_ctrl: SoquetT,
+        ham_ctrl: NDArray[Soquet],  # type: ignore[type-var]
         i_ne_j: SoquetT,
         plus_t: SoquetT,
         i: SoquetT,
@@ -478,7 +480,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         m: SoquetT,
         l: SoquetT,
         sys: SoquetT,
-        proj: SoquetT,
+        proj: NDArray[Soquet],  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         # ancilla for swaps from electronic and projectile system registers.
         # we assume these are left in a clean state after SELECT operations
@@ -543,8 +545,10 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
-        _ = [bb.free(pi) for pi in p]
-        _ = [bb.free(qi) for qi in q]
+        for pi in p:
+            bb.free(pi)
+        for qi in q:
+            bb.free(qi)
         ham_ctrl[:] = flag_t, flag_t_mean, flag_uv, flag_proj
         bb.free(rl)
         return {
