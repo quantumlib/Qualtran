@@ -59,6 +59,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
 )
+from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -112,10 +113,10 @@ class And(GateWithRegisters):
 
     def on_classical_vals(
         self, *, ctrl: NDArray[np.uint8], target: Optional[int] = None
-    ) -> Dict[str, NDArray[np.uint8]]:
+    ) -> Dict[str, ClassicalValT]:
         out = 1 if tuple(ctrl) == (self.cv1, self.cv2) else 0
         if not self.uncompute:
-            return {'ctrl': ctrl, 'target': np.asarray([out])}
+            return {'ctrl': ctrl, 'target': out}
 
         # Uncompute
         assert target == out
