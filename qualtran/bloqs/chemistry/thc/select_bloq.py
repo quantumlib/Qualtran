@@ -335,6 +335,7 @@ class SelectTHC(SelectOracle):
                 num_spin_orb=self.num_spin_orb,
                 num_bits_theta=self.num_bits_theta,
                 keep_bitsize=self.keep_bitsize,
+                control_val=control_values[0],
             )
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
