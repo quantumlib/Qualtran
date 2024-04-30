@@ -14,6 +14,7 @@
 
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
+import os
 from typing import Dict, Sequence, TYPE_CHECKING, Union
 
 import IPython.display
@@ -23,6 +24,7 @@ from .bloq_counts_graph import format_counts_sigma, GraphvizCounts
 from .flame_graph import get_flame_graph_svg_data
 from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
 from .musical_score import draw_musical_score, get_musical_score_data
+from .qpic_diagram import qpic_diagram_for_bloq
 
 if TYPE_CHECKING:
     import networkx as nx
@@ -84,3 +86,12 @@ def show_flame_graph(*bloqs: 'Bloq', **kwargs):
     """Display hiearchical decomposition and T-complexity costs as a Flame Graph."""
     svg_data = get_flame_graph_svg_data(*bloqs, **kwargs)
     IPython.display.display(IPython.display.SVG(svg_data))
+
+
+def show_bloq_via_qpic(bloq: 'Bloq', width: int = 1000, height: int = 400):
+    output_file_path = qpic_diagram_for_bloq(bloq, output_type='png')
+
+    from IPython.display import Image
+
+    IPython.display.display(Image(output_file_path, width=width, height=height))
+    os.remove(output_file_path)

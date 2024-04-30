@@ -113,7 +113,7 @@ class Split(Bloq):
         if soq.reg.shape:
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+        return directional_text_box('S', side=soq.reg.side)
 
 
 @frozen
@@ -181,7 +181,7 @@ class Join(Bloq):
         if soq.reg.shape:
             text = f'[{", ".join(str(i) for i in soq.idx)}]'
             return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+        return directional_text_box('J', side=soq.reg.side)
 
 
 @frozen
