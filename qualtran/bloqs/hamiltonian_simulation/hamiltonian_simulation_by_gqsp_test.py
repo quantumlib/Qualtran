@@ -39,8 +39,6 @@ def test_examples(bloq_autotester):
 
 
 def test_symbolic_examples(bloq_autotester):
-    if bloq_autotester.check_name == 'serialization':
-        pytest.xfail(f"serialization for {_symbolic_hamsim_by_gqsp.name} not yet supported")
     bloq_autotester(_symbolic_hamsim_by_gqsp)
 
 

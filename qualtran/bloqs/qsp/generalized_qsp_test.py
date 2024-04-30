@@ -227,8 +227,6 @@ def _gqsp_1d_ising() -> GeneralizedQSP:
 
 
 def test_gqsp_1d_ising_example(bloq_autotester):
-    if bloq_autotester.check_name == 'serialization':
-        pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
     bloq_autotester(_gqsp_1d_ising)
 
 
