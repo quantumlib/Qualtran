@@ -30,8 +30,6 @@ def get_walk_operator_for_thc_ham(
     """Build a QubitizationWalkOperator for the THC hamiltonian.
 
     Args:
-        num_mu: THC auxiliary index dimension $M$
-        num_spin_orb: number of spin orbitals $N$
         tpq: Modified one-body hamiltonian.
         zeta: THC central tensor.
         num_bits_state_prep: The number of bits for the state prepared during alias sampling.
