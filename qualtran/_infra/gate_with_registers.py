@@ -543,6 +543,9 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
         Descendants can override this method with more meaningful circuit diagram information.
         """
-        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
+        wire_symbols = []
+        for reg in self.signature:
+            wire_symbols += [reg.name] * reg.total_bits()
 
-        return _wire_symbol_to_cirq_diagram_info(self, args)
+        wire_symbols[0] = self.__class__.__name__
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

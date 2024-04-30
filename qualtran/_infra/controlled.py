@@ -462,3 +462,8 @@ class Controlled(GateWithRegisters):
             sub_op.controlled_by(*ctrl_qubits, control_values=self.ctrl_spec.to_cirq_cv()),
             cirq_quregs | ctrl_regs,
         )
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
+
+        return _wire_symbol_to_cirq_diagram_info(self, args)
