@@ -85,6 +85,12 @@ def test_mod_exp_consistent_counts():
     assert counts1 == counts2
 
 
+def test_mod_exp_t_complexity():
+    bloq = ModExp(base=8, exp_bitsize=3, x_bitsize=10, mod=50)
+    tcomp = bloq.t_complexity()
+    assert tcomp.t > 0
+
+
 def test_modexp(bloq_autotester):
     bloq_autotester(_modexp)
 

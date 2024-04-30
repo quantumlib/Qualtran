@@ -17,9 +17,10 @@ import itertools
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder, QInt, QUInt
+from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
 from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -265,6 +266,13 @@ def test_out_of_place_adder():
     assert_decompose_is_consistent_with_t_complexity(gate**-1)
     qlt_testing.assert_valid_bloq_decomposition(gate)
     qlt_testing.assert_valid_bloq_decomposition(gate**-1)
+
+
+def test_controlled_add_k():
+    n, k = sympy.symbols('n k')
+    addk = AddK(n, k)
+    assert addk.controlled() == AddK(n, k, cvs=(1,))
+    assert addk.controlled(CtrlSpec(cvs=0)) == AddK(n, k, cvs=(0,))
 
 
 @pytest.mark.parametrize('bitsize', [5])

@@ -128,7 +128,7 @@ def _from_directly_countable(stc: Any) -> Optional[TComplexity]:
         quregs = get_named_qubits(stc.signature)
         qm = cirq.SimpleQubitManager()
         op, _ = stc.as_cirq_op(qubit_manager=qm, **quregs)
-        return t_complexity(cirq.decompose_once(op))
+        return t_complexity(op)
 
     if cirq.num_qubits(stc) == 1 and cirq.has_unitary(stc):
         # Single qubit rotation operation.

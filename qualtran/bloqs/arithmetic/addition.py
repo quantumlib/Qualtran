@@ -14,8 +14,9 @@
 import itertools
 import math
 from functools import cached_property
-from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
+import attrs
 import cirq
 import numpy as np
 import sympy
@@ -23,11 +24,13 @@ from attrs import field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
+    AddControlledT,
     Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     CompositeBloq,
+    CtrlSpec,
     GateWithRegisters,
     QBit,
     QInt,
@@ -361,6 +364,12 @@ _ADD_OOP_DOC = BloqDocSpec(
 )
 
 
+def _cvs_converter(vv):
+    if isinstance(vv, (int, np.integer)):
+        return (int(vv),)
+    return tuple(int(v) for v in vv)
+
+
 @frozen
 class AddK(Bloq):
     r"""Takes |x> to |x + k> for a classical integer `k`.
@@ -389,9 +398,7 @@ class AddK(Bloq):
 
     bitsize: int
     k: int
-    cvs: Tuple[int, ...] = field(
-        converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
-    )
+    cvs: Tuple[int, ...] = field(converter=_cvs_converter, default=())
     signed: bool = False
 
     @cached_property
@@ -485,6 +492,36 @@ class AddK(Bloq):
             return super().build_call_graph(ssa=ssa)
 
         return {loading_cost, (Add(QUInt(self.bitsize)), 1)}
+
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
+
+        if self.cvs:
+            # We're already controlled, use default fallback
+            return super().get_ctrl_system(ctrl_spec)
+
+        if ctrl_spec.num_ctrl_reg != 1:
+            # Multiple control registers, use default fallback
+            return super().get_ctrl_system(ctrl_spec)
+
+        ((qdtype, cv_shape),) = ctrl_spec.activation_function_dtypes()
+        if qdtype != QBit():
+            # Control values aren't bits, use default fallback
+            return super().get_ctrl_system(ctrl_spec)
+
+        # Supported via this class's custom `cvs` attribute.
+        bloq = attrs.evolve(self, cvs=ctrl_spec.cvs)
+
+        def _add_ctrled(
+            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
+        ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+            ctrl, x = bb.add_t(bloq, ctrls=ctrl_soqs[0], **in_soqs)
+            return (ctrl,), (x,)
+
+        return bloq, _add_ctrled
 
     def short_name(self) -> str:
         return f'x += {self.k}'
