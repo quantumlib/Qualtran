@@ -231,7 +231,7 @@ def query_costs(
 
     Args:
         bloq: The bloq to seed the cost computation.
-        cost_key: A sequence of CostKey that specifies which costs to compute.
+        cost_keys: A sequence of CostKey that specifies which costs to compute.
         generalizer: If provided, run this function on each bloq in the call graph to dynamically
             modify attributes. If the function returns `None`, the bloq is ignored in the
             cost computation. If a sequence of generalizers is provided, each generalizer
