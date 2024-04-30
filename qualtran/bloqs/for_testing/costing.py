@@ -35,8 +35,8 @@ class CostingBloq(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return set(self.callees)
 
-    def my_static_costs(self, k: 'CostKey') -> Union[Any, NotImplemented]:
-        return dict(self.static_costs).get(k, NotImplemented)
+    def my_static_costs(self, cost_key: 'CostKey') -> Union[Any, NotImplemented]:
+        return dict(self.static_costs).get(cost_key, NotImplemented)
 
     def pretty_name(self):
         return self.name

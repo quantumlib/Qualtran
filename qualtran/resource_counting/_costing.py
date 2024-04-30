@@ -23,7 +23,6 @@ from typing import (
     Iterable,
     Optional,
     Sequence,
-    Tuple,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -103,7 +102,7 @@ def _get_cost_value(
     costs_cache: Dict['Bloq', CostValT],
     generalizer: 'GeneralizerT',
 ) -> CostValT:
-    """Helper function for `query_costs`.
+    """Helper function for getting costs.
 
     This function tries the following strategies
      1. Use the value found in `costs_cache`, if it exists.
@@ -155,6 +154,22 @@ def get_cost_value(
     costs_cache: Optional[Dict['Bloq', CostValT]] = None,
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
 ) -> CostValT:
+    """Compute the specified cost of the provided bloq.
+
+    Args:
+        bloq: The bloq to compute the cost of.
+        cost_key: A CostKey that specifies which cost to compute.
+        costs_cache: If provided, use this dictionary of cached cost values. Values in this
+            dictionary will be preferred over computed values (even if they disagree). This
+            dictionary will be mutated by the function.
+        generalizer: If provided, run this function on each bloq in the call graph to dynamically
+            modify attributes. If the function returns `None`, the bloq is ignored in the
+            cost computation. If a sequence of generalizers is provided, each generalizer
+            will be run in order.
+
+    Returns:
+        The cost value. Its type depends on the provided `cost_key`.
+    """
     if costs_cache is None:
         costs_cache = {}
     if generalizer is None:
@@ -172,6 +187,26 @@ def get_cost_cache(
     costs_cache: Optional[Dict['Bloq', CostValT]] = None,
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
 ) -> Dict['Bloq', CostValT]:
+    """Build a cache of cost values for the bloq and its callees.
+
+    This can be useful to inspect how callees' costs flow upwards in a given cost computation.
+
+    Args:
+        bloq: The bloq to seed the cost computation.
+        cost_key: A CostKey that specifies which cost to compute.
+        costs_cache: If provided, use this dictionary for initial cached cost values. Values in this
+            dictionary will be preferred over computed values (even if they disagree). This
+            dictionary will be mutated by the function. This dictionary will be returned by the
+            function.
+        generalizer: If provided, run this function on each bloq in the call graph to dynamically
+            modify attributes. If the function returns `None`, the bloq is ignored in the
+            cost computation. If a sequence of generalizers is provided, each generalizer
+            will be run in order.
+
+    Returns:
+        A dictionary mapping bloqs to cost values. The value type depends on the `cost_key`.
+        The bloqs in the mapping depend on the recursive nature of the cost key.
+    """
     if costs_cache is None:
         costs_cache = {}
     if generalizer is None:
@@ -188,7 +223,24 @@ def query_costs(
     cost_keys: Iterable[CostKey],
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
 ) -> Dict['Bloq', Dict[CostKey, CostValT]]:
+    """Compute a selection of costs for a bloq and its callees.
 
+    This function can be used to annotate a call graph diagram with multiple costs
+    for each bloq. Specifically, the return value of this function can be used as the
+    `bloq_data` argument to `GraphvizCallGraph`.
+
+    Args:
+        bloq: The bloq to seed the cost computation.
+        cost_key: A sequence of CostKey that specifies which costs to compute.
+        generalizer: If provided, run this function on each bloq in the call graph to dynamically
+            modify attributes. If the function returns `None`, the bloq is ignored in the
+            cost computation. If a sequence of generalizers is provided, each generalizer
+            will be run in order.
+
+    Returns:
+        A dictionary of dictionaries forming a table of multiple costs for multiple bloqs.
+        This is indexed by bloq, then cost key.
+    """
     costs = defaultdict(dict)
     for cost_key in cost_keys:
         cost_for_bloqs = get_cost_cache(bloq, cost_key, generalizer=generalizer)
