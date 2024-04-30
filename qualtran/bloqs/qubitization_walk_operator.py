@@ -173,7 +173,6 @@ def _thc_walk_op() -> QubitizationWalkOperator:
 
     # Li et al parameters from openfermion.resource_estimates.thc.compute_cost_thc_test
     num_spinorb = 152
-    # lambda_tot = 1201.5
     num_bits_state_prep = 10
     num_bits_rot = 20
     thc_dim = 450
@@ -183,7 +182,7 @@ def _thc_walk_op() -> QubitizationWalkOperator:
     zeta = np.random.normal(size=(thc_dim, thc_dim))
     zeta = 0.5 * (zeta + zeta) / 2
     qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
-    _thc_walk_op = get_walk_operator_for_thc_ham(
+    thc_walk_op = get_walk_operator_for_thc_ham(
         tpq,
         zeta,
         num_bits_state_prep=num_bits_state_prep,
@@ -191,7 +190,7 @@ def _thc_walk_op() -> QubitizationWalkOperator:
         kr1=qroam_blocking_factor,
         kr2=qroam_blocking_factor,
     )
-    return _thc_walk_op
+    return thc_walk_op
 
 
 _QUBITIZATION_WALK_DOC = BloqDocSpec(
