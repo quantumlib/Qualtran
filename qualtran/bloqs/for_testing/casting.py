@@ -17,7 +17,17 @@ from typing import Dict
 
 from attrs import frozen
 
-from qualtran import Bloq, BloqBuilder, QFxp, QMontgomeryUInt, QInt, QUInt, Register, Signature, Soquet
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    QFxp,
+    QInt,
+    QMontgomeryUInt,
+    QUInt,
+    Register,
+    Signature,
+    Soquet,
+)
 from qualtran.bloqs.arithmetic.addition import Add
 from qualtran.bloqs.util_bloqs import Cast
 
@@ -34,6 +44,6 @@ class TestCastToFrom(Bloq):
         cast = Cast(b.reg.dtype, a.reg.dtype)
         b = bb.add(cast, reg=b)
         assert isinstance(a.reg.dtype, (QInt, QUInt, QMontgomeryUInt))
-        a, b = bb.add(Add(a.reg.dtype), a=a, b=b) 
+        a, b = bb.add(Add(a.reg.dtype), a=a, b=b)
         b = bb.add(cast.adjoint(), reg=b)
         return {'a': a, 'b': b}

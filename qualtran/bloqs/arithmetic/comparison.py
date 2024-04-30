@@ -13,18 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import (
-    Dict,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Self,
-    Sequence,
-    Set,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import Dict, Iterable, Iterator, List, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -234,7 +223,7 @@ class BiQubitsMixer(GateWithRegisters):
 
         def _cswap(
             control: cirq.Qid, a: cirq.Qid, b: cirq.Qid, aux: cirq.Qid
-        ) -> Generator[cirq.Operation, None, None]:
+        ) -> Iterator[cirq.Operation]:
             """A CSWAP with 4T complexity and whose adjoint has 0T complexity.
 
                 A controlled SWAP that swaps `a` and `b` based on `control`.
@@ -246,7 +235,7 @@ class BiQubitsMixer(GateWithRegisters):
             yield cirq.CNOT(aux, a)
             yield cirq.CNOT(a, b)
 
-        def _decomposition() -> Generator[cirq.Operation, None, None]:
+        def _decomposition() -> Iterator[cirq.Operation]:
             # computes the difference of x - y where
             #   x = 2*x_msb + x_lsb
             #   y = 2*y_msb + y_lsb
@@ -266,10 +255,10 @@ class BiQubitsMixer(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> Self:
+    def adjoint(self) -> 'BiQubitsMixer':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> Self:
+    def __pow__(self, power: int) -> 'BiQubitsMixer':
         if power == 1:
             return self
         if power == -1:
@@ -339,10 +328,10 @@ class SingleQubitCompare(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> Self:
+    def adjoint(self) -> 'SingleQubitCompare':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> Union[Self, cirq.Gate]:
+    def __pow__(self, power: int) -> Union['SingleQubitCompare', cirq.Gate]:
         if not isinstance(power, int):
             raise ValueError('SingleQubitCompare is only defined for integer powers.')
         if power % 2 == 0:

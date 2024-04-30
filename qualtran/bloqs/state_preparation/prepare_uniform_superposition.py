@@ -18,8 +18,8 @@ from typing import Tuple, Union
 import attrs
 import cirq
 import numpy as np
-from numpy.typing import NDArray
 import sympy
+from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
 from qualtran.bloqs.arithmetic import LessThanConstant
@@ -92,7 +92,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         theta = np.arccos(1 - (2 ** np.floor(np.log2(l))) / l)
         yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla)
         yield cirq.Rz(rads=theta)(*ancilla)
-        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1 # type: ignore[operator]
+        yield LessThanConstant(logL, l).on_registers(x=logL_qubits, target=ancilla) ** -1  # type: ignore[operator]
         context.qubit_manager.qfree(ancilla)
 
         yield cirq.H.on_each(*logL_qubits)

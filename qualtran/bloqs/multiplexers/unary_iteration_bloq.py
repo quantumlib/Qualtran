@@ -478,7 +478,9 @@ class UnaryIterationGate(GateWithRegisters):
         """
         raise NotImplementedError("Selection register must not be empty.")
 
-    def _break_early(self, selection_index_prefix: Tuple[int, ...], l: 'SymbolicInt', r: 'SymbolicInt') -> bool:
+    def _break_early(
+        self, selection_index_prefix: Tuple[int, ...], l: 'SymbolicInt', r: 'SymbolicInt'
+    ) -> bool:
         """Derived classes should override this method to specify an early termination condition.
 
         For each internal node of the unary iteration segment tree, `break_early(l, r)` is called

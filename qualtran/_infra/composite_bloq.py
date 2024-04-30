@@ -831,8 +831,8 @@ class BloqBuilder:
         for reg in signature:
             if reg.side & Side.LEFT:
                 register = bb.add_register_from_dtype(reg)
-                if register is not None:
-                    initial_soqs[reg.name] = register
+                assert register is not None
+                initial_soqs[reg.name] = register
             else:
                 bb.add_register_from_dtype(reg)
 

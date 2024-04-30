@@ -19,8 +19,8 @@ from typing import Set, Tuple, TYPE_CHECKING
 import attrs
 import cirq
 import numpy as np
-from numpy._typing import NDArray
 import sympy
+from numpy._typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -89,7 +89,9 @@ class LPRSInterimPrep(GateWithRegisters):
         if is_symbolic(self.bitsize):
             ret |= {(Rz(angle=rz_angle).controlled(), self.bitsize)}
         else:
-            ret |= {(Rz(angle=rz_angle * (2**i)).controlled(), 1) for i in range(int(self.bitsize))}
+            ret |= {
+                (Rz(angle=rz_angle * (2**i)).controlled(), 1) for i in range(int(self.bitsize))
+            }
         return ret
 
     def _t_complexity_(self) -> 'TComplexity':

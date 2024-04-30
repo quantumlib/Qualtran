@@ -66,9 +66,7 @@ class MontgomeryModSub(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': (y - x) % self.p}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, y: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
 
         # Bit flip all qubits in register x.
         x_split = bb.split(x)
@@ -138,7 +136,7 @@ class MontgomeryModNeg(Bloq):
 
         # Perform a multi-controlled bitflip on the ancilla bit if the state of x is the bitstring
         # representing 0.
-        cvs = tuple([0]*self.bitsize)
+        cvs = tuple([0] * self.bitsize)
         x_split = bb.split(x)
         x_split, ctrl = bb.add(MultiControlX(cvs=cvs), ctrls=x_split, x=ctrl)
         x = bb.join(x_split)

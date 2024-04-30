@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Generator, List, Optional, Sequence, Tuple
+from typing import Iterator, List, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -178,7 +178,7 @@ class SelectSwapQROM(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> Generator[cirq.Operation, None, None]:
+    ) -> Iterator[cirq.Operation]:
         # Divide each data sequence and corresponding target registers into
         # `self.num_blocks` batches of size `self.block_size`.
         selection, targets = quregs.pop('selection'), quregs

@@ -71,7 +71,7 @@ from qualtran import (
     QFxp,
     Register,
     Signature,
-    Soquet
+    Soquet,
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg

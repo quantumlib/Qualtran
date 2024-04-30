@@ -81,7 +81,7 @@ class SwapWithZero(GateWithRegisters):
         return Signature([*self.selection_registers, *self.target_registers])
 
     def build_composite_bloq(
-            self, bb: 'BloqBuilder', selection: Soquet, targets: NDArray[Soquet] # type: ignore[type-var]
+        self, bb: 'BloqBuilder', selection: Soquet, targets: NDArray[Soquet]  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         cswap_n = CSwapApprox(self.target_bitsize)
         # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target

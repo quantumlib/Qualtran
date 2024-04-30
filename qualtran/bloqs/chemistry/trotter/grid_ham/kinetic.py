@@ -14,9 +14,9 @@
 
 from functools import cached_property
 from typing import Dict
-from numpy.typing import NDArray
 
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,

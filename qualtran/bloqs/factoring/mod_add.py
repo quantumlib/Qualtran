@@ -188,9 +188,7 @@ class MontgomeryModAdd(Bloq):
 
         return {'x': x, 'y': y}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: Soquet, y: Soquet
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)

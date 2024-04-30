@@ -355,7 +355,7 @@ class PrepareTHC(PrepareOracle):
         nu_eq_mp1: SoquetT,
         theta: SoquetT,
         s: SoquetT,
-        alt_mn: NDArray[Soquet], # type: ignore[type-var]
+        alt_mn: NDArray[Soquet],  # type: ignore[type-var]
         alt_theta: SoquetT,
         keep: SoquetT,
         less_than: SoquetT,
