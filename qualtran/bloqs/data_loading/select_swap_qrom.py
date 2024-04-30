@@ -218,15 +218,20 @@ class SelectSwapQROM(GateWithRegisters):
         clean_targets = merge_qubits(self.target_registers, **targets)
         cnot_op = cirq.Moment(cirq.CNOT(s, t) for s, t in zip(ordered_target_qubits, clean_targets))
         # Yield the operations in correct order.
-        yield qrom_op
-        yield swap_with_zero_op
-        yield from cnot_op
-        yield cirq.inverse(swap_with_zero_op)
-        yield cirq.inverse(qrom_op)
         if self.block_size > 1:
+            yield qrom_op
             yield swap_with_zero_op
-        yield from cnot_op
-        yield cirq.inverse(swap_with_zero_op)
+            yield from cnot_op
+            yield cirq.inverse(swap_with_zero_op)
+            yield cirq.inverse(qrom_op)
+            yield swap_with_zero_op
+            yield from cnot_op
+            yield cirq.inverse(swap_with_zero_op)
+        else:
+            yield qrom_op
+            yield from cnot_op
+            yield cirq.inverse(qrom_op)
+            yield from cnot_op
 
         context.qubit_manager.qfree(ordered_target_qubits)
 

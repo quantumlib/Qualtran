@@ -35,6 +35,7 @@ from typing import (
 import attrs
 import networkx as nx
 import numpy as np
+import sympy
 from numpy.typing import NDArray
 
 from .bloq import Bloq, DecomposeTypeError
@@ -1084,7 +1085,7 @@ class BloqBuilder:
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
-    def allocate(self, n: int = 1, dtype: Optional[QDType] = None) -> Soquet:
+    def allocate(self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
 
         if dtype is not None:
