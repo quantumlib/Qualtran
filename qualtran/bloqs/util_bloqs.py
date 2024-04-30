@@ -38,7 +38,7 @@ from qualtran import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicInt
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
 if TYPE_CHECKING:
@@ -498,7 +498,10 @@ class Power(GateWithRegisters):
     def __attrs_post_init__(self):
         if any(reg.side != Side.THRU for reg in self.bloq.signature):
             raise ValueError('Bloq to repeat must have only THRU registers')
-        if self.power < 1:
+
+        if not is_symbolic(self.power) and (
+            not isinstance(self.power, (int, np.integer)) or self.power < 1
+        ):
             raise ValueError(f'{self.power=} must be a positive integer.')
 
     def adjoint(self) -> 'Bloq':
