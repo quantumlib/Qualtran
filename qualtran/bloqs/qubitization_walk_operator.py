@@ -17,6 +17,7 @@ from typing import Collection, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
+import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
@@ -164,8 +165,37 @@ def _walk_op() -> QubitizationWalkOperator:
     return walk_op
 
 
+@bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
+def _thc_walk_op() -> QubitizationWalkOperator:
+    from openfermion.resource_estimates.utils import QI
+
+    from qualtran.bloqs.chemistry.thc.walk_operator import get_walk_operator_for_thc_ham
+
+    # Li et al parameters from openfermion.resource_estimates.thc.compute_cost_thc_test
+    num_spinorb = 152
+    # lambda_tot = 1201.5
+    num_bits_state_prep = 10
+    num_bits_rot = 20
+    thc_dim = 450
+    num_spat = num_spinorb // 2
+    tpq = np.random.normal(size=(num_spat, num_spat))
+    tpq = 0.5 * (tpq + tpq) / 2
+    zeta = np.random.normal(size=(thc_dim, thc_dim))
+    zeta = 0.5 * (zeta + zeta) / 2
+    qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
+    _thc_walk_op = get_walk_operator_for_thc_ham(
+        tpq,
+        zeta,
+        num_bits_state_prep=num_bits_state_prep,
+        num_bits_theta=num_bits_rot,
+        kr1=qroam_blocking_factor,
+        kr2=qroam_blocking_factor,
+    )
+    return _thc_walk_op
+
+
 _QUBITIZATION_WALK_DOC = BloqDocSpec(
     bloq_cls=QubitizationWalkOperator,
     import_line='from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator',
-    examples=(_walk_op,),
+    examples=(_walk_op, _thc_walk_op),
 )
