@@ -16,6 +16,7 @@ from typing import Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
+import numpy as np
 
 from qualtran import Bloq, bloq_example, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
@@ -199,3 +200,36 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
     return qubitization_qpe_hubbard_model
+
+
+@bloq_example
+def _qubitization_qpe_chem_thc() -> QubitizationQPE:
+    from openfermion.resource_estimates.utils import QI
+
+    from qualtran.bloqs.chemistry.thc.walk_operator import get_walk_operator_for_thc_ham
+
+    # Li et al parameters from openfermion.resource_estimates.thc.compute_cost_thc_test
+    num_spinorb = 152
+    num_bits_state_prep = 10
+    num_bits_rot = 20
+    thc_dim = 450
+    num_spat = num_spinorb // 2
+    tpq = np.random.normal(size=(num_spat, num_spat))
+    tpq = 0.5 * (tpq + tpq) / 2
+    zeta = np.random.normal(size=(thc_dim, thc_dim))
+    zeta = 0.5 * (zeta + zeta) / 2
+    qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
+    walk = get_walk_operator_for_thc_ham(
+        tpq,
+        zeta,
+        num_bits_state_prep=num_bits_state_prep,
+        num_bits_theta=num_bits_rot,
+        kr1=qroam_blocking_factor,
+        kr2=qroam_blocking_factor,
+    )
+
+    algo_eps = 0.0016
+    qlambda = 1201.5
+    qpe_eps = algo_eps / (qlambda * np.sqrt(2))
+    qubitization_qpe_chem_thc = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    return qubitization_qpe_chem_thc

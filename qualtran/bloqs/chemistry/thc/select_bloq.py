@@ -13,8 +13,9 @@
 #  limitations under the License.
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Collection, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
+import cirq
 import numpy as np
 from attrs import evolve, frozen
 
@@ -190,23 +191,19 @@ class SelectTHC(SelectOracle):
             Register("sys_b", QAny(bitsize=self.num_spin_orb // 2)),
         )
 
-    def build_composite_bloq(
-        self,
-        bb: 'BloqBuilder',
-        succ: SoquetT,
-        nu_eq_mp1: SoquetT,
-        mu: SoquetT,
-        nu: SoquetT,
-        plus_mn: SoquetT,
-        plus_a: SoquetT,
-        plus_b: SoquetT,
-        sigma: SoquetT,
-        rot: SoquetT,
-        sys_a: SoquetT,
-        sys_b: SoquetT,
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        succ = soqs['succ']
+        nu_eq_mp1 = soqs['nu_eq_mp1']
+        mu = soqs['mu']
+        nu = soqs['nu']
+        plus_mn = soqs['plus_mn']
+        plus_a = soqs['plus_a']
+        plus_b = soqs['plus_b']
+        sigma = soqs['sigma']
+        rot = soqs['rot']
+        sys_a = soqs['sys_a']
+        sys_b = soqs['sys_b']
         plus_b, sys_a, sys_b = bb.add(CSwap(self.num_spin_orb // 2), ctrl=plus_b, x=sys_a, y=sys_b)
-
         # Rotations
         data = bb.allocate(self.num_bits_theta)
         nu_eq_mp1, data, mu, sys_a = bb.add(
@@ -297,7 +294,7 @@ class SelectTHC(SelectOracle):
 
         # Undo the mu-nu swaps
         bb.free(data)
-        return {
+        out_soqs = {
             'succ': succ,
             'nu_eq_mp1': nu_eq_mp1,
             'mu': mu,
@@ -310,6 +307,38 @@ class SelectTHC(SelectOracle):
             'sys_a': sys_a,
             'sys_b': sys_b,
         }
+        if self.control_val is not None:
+            out_soqs['control'] = soqs['control']
+
+        return out_soqs
+
+    def controlled(
+        self,
+        num_controls: Optional[int] = None,
+        control_values: Optional[
+            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
+        ] = None,
+        control_qid_shape: Optional[Tuple[int, ...]] = None,
+    ) -> 'SelectTHC':
+        if num_controls is None:
+            num_controls = 1
+        if control_values is None:
+            control_values = [1] * num_controls
+        if (
+            isinstance(control_values, Sequence)
+            and isinstance(control_values[0], int)
+            and len(control_values) == 1
+            and self.control_val is None
+        ):
+            return SelectTHC(
+                num_mu=self.num_mu,
+                num_spin_orb=self.num_spin_orb,
+                num_bits_theta=self.num_bits_theta,
+                keep_bitsize=self.keep_bitsize,
+            )
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with control_values={control_values}.'
+        )
 
 
 @bloq_example
