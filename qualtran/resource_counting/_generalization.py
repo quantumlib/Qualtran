@@ -11,22 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Callable, Optional, TYPE_CHECKING
 
-"""Counting resource usage (bloqs, qubits)
+if TYPE_CHECKING:
+    from qualtran import Bloq
 
-isort:skip_file
-"""
+GeneralizerT = Callable[['Bloq'], Optional['Bloq']]
 
-from ._generalization import GeneralizerT
 
-from ._call_graph import (
-    BloqCountT,
-    big_O,
-    SympySymbolAllocator,
-    get_bloq_callee_counts,
-    get_bloq_call_graph,
-    print_counts_graph,
-    build_cbloq_call_graph,
-)
+def _make_composite_generalizer(*funcs: 'GeneralizerT') -> 'GeneralizerT':
+    """Return a generalizer that calls each `*funcs` generalizers in order."""
 
-from . import generalizers
+    def _composite_generalize(b: 'Bloq') -> Optional['Bloq']:
+        for func in funcs:
+            b = func(b)
+            if b is None:
+                return
+        return b
+
+    return _composite_generalize

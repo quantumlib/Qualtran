@@ -324,7 +324,7 @@ class Bloq(metaclass=abc.ABCMeta):
                 according to `keep` and `max_depth` (if provided) or if a bloq cannot be
                 decomposed.
         """
-        from qualtran.resource_counting.bloq_counts import get_bloq_call_graph
+        from qualtran.resource_counting import get_bloq_call_graph
 
         return get_bloq_call_graph(self, generalizer=generalizer, keep=keep, max_depth=max_depth)
 
