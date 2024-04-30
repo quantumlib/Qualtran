@@ -16,7 +16,7 @@ from typing import Any, Dict, Iterable, Sequence, Set, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import (
     Bloq,
@@ -48,10 +48,10 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # ignore: type[
     a_bitsize: int
     b_bitsize: int
     result_bitsize: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     def short_name(self) -> str:
-        return "result -= a*b" if self.adjoint else "result += a*b"
+        return "result -= a*b" if self.is_adjoint else "result += a*b"
 
     @property
     def signature(self) -> 'Signature':
@@ -64,14 +64,17 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # ignore: type[
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.a_bitsize, [2] * self.b_bitsize, [2] * self.result_bitsize
 
+    def adjoint(self) -> 'PlusEqualProduct':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def apply(self, a: int, b: int, result: int) -> Union[int, Iterable[int]]:
-        return a, b, (result + a * b * ((-1) ** self.adjoint)) % (2**self.result_bitsize)
+        return a, b, (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("Not needed.")
 
     def on_classical_vals(self, a: int, b: int, result: int) -> Dict[str, 'ClassicalValT']:
-        result_out = (result + a * b * ((-1) ** self.adjoint)) % (2**self.result_bitsize)
+        result_out = (result + a * b * ((-1) ** self.is_adjoint)) % (2**self.result_bitsize)
         return {'a': a, 'b': b, 'result': result_out}
 
     def _t_complexity_(self) -> 'TComplexity':
@@ -80,7 +83,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # ignore: type[
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['a'] * self.a_bitsize + ['b'] * self.b_bitsize
-        wire_symbols += ['c-=a*b' if self.adjoint else 'c+=a*b'] * self.result_bitsize
+        wire_symbols += ['c-=a*b' if self.is_adjoint else 'c+=a*b'] * self.result_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def __pow__(self, power):
@@ -88,7 +91,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # ignore: type[
             return self
         if power == -1:
             return PlusEqualProduct(
-                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.adjoint
+                self.a_bitsize, self.b_bitsize, self.result_bitsize, not self.is_adjoint
             )
         raise NotImplementedError("PlusEqualProduct.__pow__ defined only for powers +1/-1.")
 

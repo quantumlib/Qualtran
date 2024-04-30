@@ -88,17 +88,25 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     Args:
         walk_operator: qubitization walk operator of $H$ constructed from SELECT and PREPARE oracles.
         t: time to simulate the Hamiltonian, i.e. $e^{-iHt}$
-        alpha: the $1$-norm of the coefficients of the unitaries comprising the Hamiltonian $H$.
         precision: the precision $\epsilon$ to approximate $e^{it\cos\theta}$ to a polynomial.
     """
 
     walk_operator: QubitizationWalkOperator
     t: SymbolicFloat = field(kw_only=True)
-    alpha: SymbolicFloat = field(kw_only=True)
     precision: SymbolicFloat = field(kw_only=True)
+
+    def __attrs_post_init__(self):
+        if self.walk_operator.sum_of_lcu_coefficients is None:
+            raise ValueError(
+                f"Missing attribute `sum_of_ham_coeffs` for {self.walk_operator}, cannot implement Hamiltonian Simulation"
+            )
 
     def is_symbolic(self):
         return is_symbolic(self.t, self.alpha, self.precision)
+
+    @property
+    def alpha(self):
+        return self.walk_operator.sum_of_lcu_coefficients
 
     @cached_property
     def degree(self) -> SymbolicInt:
@@ -179,9 +187,7 @@ def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
     from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
 
     walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(
-        walk_op, t=5, alpha=1, precision=1e-7
-    )
+    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=5, precision=1e-7)
     return hubbard_time_evolution_by_gqsp
 
 
@@ -192,10 +198,9 @@ def _symbolic_hamsim_by_gqsp() -> HamiltonianSimulationByGQSP:
     from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
 
     walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-    t, alpha, inv_eps = sympy.symbols("t alpha N")
-    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(
-        walk_op, t=t, alpha=alpha, precision=1 / inv_eps
-    )
+
+    t, inv_eps = sympy.symbols("t N")
+    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=t, precision=1 / inv_eps)
     return symbolic_hamsim_by_gqsp
 
 
