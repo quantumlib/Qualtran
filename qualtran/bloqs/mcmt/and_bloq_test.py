@@ -103,6 +103,8 @@ def test_inverse():
     bb = BloqBuilder()
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
+    assert isinstance(q0, Soquet)
+    assert isinstance(q1, Soquet)
     qs, trg = bb.add(And(), ctrl=[q0, q1])
     qs = bb.add(And(uncompute=True), ctrl=qs, target=trg)
     cbloq = bb.finalize(q0=qs[0], q1=qs[1])
@@ -221,6 +223,9 @@ def test_multiand_adjoint():
     q0 = bb.add_register('q0', 1)
     q1 = bb.add_register('q1', 1)
     q2 = bb.add_register('q2', 1)
+    assert isinstance(q0, Soquet)
+    assert isinstance(q1, Soquet)
+    assert isinstance(q2, Soquet)
 
     qs, junk, trg = bb.add(MultiAnd((1, 1, 1)), ctrl=[q0, q1, q2])
     qs = bb.add(MultiAnd((1, 1, 1)).adjoint(), ctrl=qs, target=trg, junk=junk)

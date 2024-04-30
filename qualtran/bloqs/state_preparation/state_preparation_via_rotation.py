@@ -73,7 +73,7 @@ References:
 
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, Iterable, List, Sequence, Tuple
 
 import attrs
 import numpy as np
@@ -92,6 +92,11 @@ from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+
+
+def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
+    """mypy compatible converter for StatePreparationViaRotations.state_coefficients"""
+    return tuple(x)
 
 
 @attrs.frozen
@@ -119,7 +124,7 @@ class StatePreparationViaRotations(GateWithRegisters):
     """
 
     phase_bitsize: int
-    state_coefficients: Tuple[complex, ...] = attrs.field(converter=tuple)
+    state_coefficients: Tuple[complex, ...] = attrs.field(converter=_to_tuple)
     control_bitsize: int = 0
     uncompute: bool = False
 

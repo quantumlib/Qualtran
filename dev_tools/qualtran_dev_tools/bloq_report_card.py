@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Dict, Iterable, Optional, Set, Type
+import time
+import warnings
+from typing import Any, Dict, Iterable, List, Optional, Set, Type
 
 import pandas as pd
 import pandas.io.formats.style
@@ -21,8 +23,8 @@ from qualtran.testing import (
     BloqCheckResult,
     check_bloq_example_decompose,
     check_bloq_example_make,
-    check_bloq_example_serialize,
-    check_connections_preserve_preserves_types,
+    check_bloq_example_qtyping,
+    check_bloq_example_serializes,
     check_equivalent_bloq_example_counts,
 )
 
@@ -67,33 +69,31 @@ def bloq_classes_with_no_examples(
 
 
 IDCOLS = ['package', 'bloq_cls', 'name']
-CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'typing']
+CHECKCOLS = ['make', 'decomp', 'counts', 'serialize', 'qtyping']
 
 
 def record_for_class_with_no_examples(k: Type[Bloq]) -> Dict[str, Any]:
-    return {
-        'bloq_cls': k.__name__,
-        'package': _get_package(k),
-        'name': '-',
-        'make': BloqCheckResult.MISSING,
-        'decomp': BloqCheckResult.MISSING,
-        'counts': BloqCheckResult.MISSING,
-        'serialize': BloqCheckResult.MISSING,
-        'typing': BloqCheckResult.MISSING,
+    return {'bloq_cls': k.__name__, 'package': _get_package(k), 'name': '-'} | {
+        check_name: BloqCheckResult.MISSING for check_name in CHECKCOLS
     }
 
 
 def record_for_bloq_example(be: BloqExample) -> Dict[str, Any]:
-    return {
+    start = time.perf_counter()
+    record = {
         'bloq_cls': be.bloq_cls.__name__,
         'package': _get_package(be.bloq_cls),
         'name': be.name,
         'make': check_bloq_example_make(be)[0],
         'decomp': check_bloq_example_decompose(be)[0],
         'counts': check_equivalent_bloq_example_counts(be)[0],
-        'serialize': check_bloq_example_serialize(be)[0],
-        'typing': check_connections_preserve_preserves_types(be)[0],
+        'serialize': check_bloq_example_serializes(be)[0],
+        'qtyping': check_bloq_example_qtyping(be)[0],
     }
+    dur = time.perf_counter() - start
+    if dur > 1.0:
+        warnings.warn(f"{be.name} took {dur} to check.")
+    return record
 
 
 def show_bloq_report_card(df: pd.DataFrame) -> pandas.io.formats.style.Styler:
@@ -110,8 +110,12 @@ def get_bloq_report_card(
         bclasses = get_bloq_classes()
     if bexamples is None:
         bexamples = get_bloq_examples()
+        # Default exclusions: pass explicit bexamples to override.
+        # qubitization_qpi_hubbard_model_xxx -- too slow
+        skips = ['qubitization_qpe_hubbard_model_small', 'qubitization_qpe_hubbard_model_large']
+        bexamples = [bex for bex in bexamples if bex.name not in skips]
 
-    records = []
+    records: List[Dict[str, Any]] = []
     missing_bclasses = bloq_classes_with_no_examples(bclasses, bexamples)
     records.extend(record_for_class_with_no_examples(k) for k in missing_bclasses)
     records.extend(record_for_bloq_example(be) for be in bexamples)

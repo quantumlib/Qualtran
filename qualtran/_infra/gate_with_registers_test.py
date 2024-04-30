@@ -57,7 +57,9 @@ def test_gate_with_registers():
     assert tg._num_qubits_() == 8
     qubits = cirq.LineQubit.range(8)
     circ = cirq.Circuit(tg._decompose_(qubits))
-    assert circ.operation_at(cirq.LineQubit(3), 0).gate == cirq.H
+    op = circ.operation_at(cirq.LineQubit(3), 0)
+    assert op is not None
+    assert op.gate == cirq.H
 
     op1 = tg.on_registers(r1=qubits[:5], r2=qubits[6:], r3=qubits[5])
     op2 = tg.on(*qubits[:5], *qubits[6:], qubits[5])
@@ -83,13 +85,13 @@ def test_gate_with_registers():
 
     # Test GWR.controlled() raises with incorrect invocation.
     with pytest.raises(ValueError):
-        tg.controlled(control_values=[0], ctrl_spec=CtrlSpec())
+        tg.controlled(control_values=[0], ctrl_spec=CtrlSpec())  # type: ignore[call-overload]
 
     with pytest.raises(ValueError):
-        tg.controlled(CtrlSpec(), control_values=[0])
+        tg.controlled(CtrlSpec(), control_values=[0])  # type: ignore[call-overload]
 
     with pytest.raises(ValueError):
-        tg.controlled(CtrlSpec(), ctrl_spec=CtrlSpec())
+        tg.controlled(CtrlSpec(), ctrl_spec=CtrlSpec())  # type: ignore[call-overload]
 
     # Test GWR**pow
     assert tg**-1 == tg.adjoint()

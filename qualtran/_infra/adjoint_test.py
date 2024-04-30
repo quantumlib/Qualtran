@@ -18,7 +18,7 @@ import pytest
 import sympy
 
 import qualtran.testing as qlt_testing
-from qualtran import Adjoint, Bloq, CompositeBloq, Side, Signature, Soquet
+from qualtran import Adjoint, Bloq, BloqInstance, CompositeBloq, Side, Signature, Soquet
 from qualtran._infra.adjoint import _adjoint_cbloq
 from qualtran.bloqs.basic_gates import CNOT, CSwap, ZeroState
 from qualtran.bloqs.for_testing.atom import TestAtom
@@ -162,8 +162,11 @@ def test_wire_symbol():
     (reg,) = zero.signature
     adj = Adjoint(zero)  # specifically use the Adjoint wrapper for testing
 
-    ws = zero.wire_symbol(Soquet(None, reg))
-    adj_ws = adj.wire_symbol(Soquet(None, reg.adjoint()))
+    # TODO: Remove binst variable.  These BloqInstances are for typing only
+    # and are not really used by the function.
+    # See https://github.com/quantumlib/Qualtran/issues/608
+    ws = zero.wire_symbol(Soquet(BloqInstance(CNOT(), 1), reg))
+    adj_ws = adj.wire_symbol(Soquet(BloqInstance(CNOT(), 2), reg.adjoint()))
     assert isinstance(ws, LarrowTextBox)
     assert isinstance(adj_ws, RarrowTextBox)
 

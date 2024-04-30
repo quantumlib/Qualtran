@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 import cirq
 import numpy as np
@@ -22,10 +22,13 @@ from attrs import define
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import Bloq, Controlled, CtrlSpec, GateWithRegisters
+from qualtran import Bloq, bloq_example, Controlled, CtrlSpec, GateWithRegisters
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.bloqs.for_testing.random_gate import RandomGate
+from qualtran.bloqs.for_testing.atom import TestGWRAtom
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+from qualtran.bloqs.qubitization_walk_operator_test import get_walk_operator_for_1d_ising_model
 from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.resource_counting.symbolic_counting_utils import Shaped
 
 from .generalized_qsp import (
     _gqsp,
@@ -74,7 +77,7 @@ def random_qsp_polynomial(
     poly = random_state.random(size=degree) / degree
     if not only_real_coeffs:
         poly = poly * np.exp(random_state.random(size=degree) * np.pi * 2j)
-    return poly
+    return list(poly)
 
 
 @pytest.mark.parametrize("degree", [4, 5])
@@ -167,7 +170,7 @@ def test_generalized_qsp_with_real_poly_on_random_unitaries(bitsize: int, degree
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
-        U = RandomGate.create(bitsize, random_state=random_state)
+        U = MatrixGate.random(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
         verify_generalized_qsp(U, P)
 
@@ -182,7 +185,7 @@ def test_generalized_qsp_with_complex_poly_on_random_unitaries(
     random_state = np.random.RandomState(42)
 
     for _ in range(10):
-        U = RandomGate.create(bitsize, random_state=random_state)
+        U = MatrixGate.random(bitsize, random_state=random_state)
         P = random_qsp_polynomial(degree, random_state=random_state)
         verify_generalized_qsp(U, P, negative_power=negative_power)
 
@@ -192,31 +195,64 @@ def test_call_graph(negative_power: int):
     random_state = np.random.RandomState(42)
 
     ssa = SympySymbolAllocator()
-    theta = ssa.new_symbol("theta")
-    phi = ssa.new_symbol("phi")
-    lambd = ssa.new_symbol("lambda")
-    arbitrary_rotation = SU2RotationGate(theta, phi, lambd)
+    arbitrary_rotation = SU2RotationGate.arbitrary(ssa)
 
     def catch_rotations(bloq: Bloq) -> Bloq:
         if isinstance(bloq, SU2RotationGate):
             return arbitrary_rotation
         return bloq
 
-    U = RandomGate.create(1, random_state=random_state)
+    U = MatrixGate.random(1, random_state=random_state)
     P = (0.5, 0, 0.5)
     gsqp_U = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
 
     g, sigma = gsqp_U.call_graph(max_depth=1, generalizer=catch_rotations)
 
-    expected_counts = {arbitrary_rotation: 3}
+    expected_counts: Dict[Bloq, int] = {arbitrary_rotation: 3}
     if negative_power < 2:
-        expected_counts[Controlled(U, CtrlSpec(cvs=0))] = 2 - negative_power
+        expected_counts[U.controlled(control_values=[0])] = 2 - negative_power
     if negative_power > 0:
-        expected_counts[Controlled(U.adjoint(), CtrlSpec())] = min(2, negative_power)
+        expected_counts[U.adjoint().controlled()] = min(2, negative_power)
     if negative_power > 2:
         expected_counts[U.adjoint()] = negative_power - 2
 
     assert sigma == expected_counts
+
+
+@bloq_example
+def _gqsp_1d_ising() -> GeneralizedQSP:
+    W = get_walk_operator_for_1d_ising_model(2, 1e-4)
+    gqsp_1d_ising = GeneralizedQSP.from_qsp_polynomial(W, (0.5, 0, 0.5), negative_power=1)
+    return gqsp_1d_ising
+
+
+def test_gqsp_1d_ising_example(bloq_autotester):
+    bloq_autotester(_gqsp_1d_ising)
+
+
+@pytest.mark.parametrize("degree", [2, 4, 6])
+@pytest.mark.parametrize("negative_power", [0, 2, 3, 5])
+def test_symbolic_call_graph(degree: int, negative_power: int):
+    U = TestGWRAtom()
+    P = Shaped(shape=(degree + 1,))
+    gqsp = GeneralizedQSP.from_qsp_polynomial(U, P, negative_power=negative_power)
+
+    ssa = SympySymbolAllocator()
+    arbitrary_rotation = SU2RotationGate.arbitrary(ssa)
+
+    def catch_rotations(bloq: Bloq) -> Bloq:
+        if isinstance(bloq, SU2RotationGate):
+            return arbitrary_rotation
+        return bloq
+
+    _, sigma = gqsp.call_graph(max_depth=1, generalizer=catch_rotations)
+
+    assert sigma == {
+        arbitrary_rotation: degree + 1,
+        Controlled(U, CtrlSpec(cvs=0)): max(0, degree - negative_power),
+        Controlled(U.adjoint(), CtrlSpec()): min(degree, negative_power),
+        U.adjoint(): max(0, negative_power - degree),
+    }
 
 
 @define(slots=False)
@@ -301,14 +337,14 @@ def test_complementary_polynomials_for_jacobi_anger_approximations(t: float, pre
     random_state = np.random.RandomState(42 + int(t))
 
     d = degree_jacobi_anger_approximation(t, precision=precision)
-
+    assert isinstance(d, int)
     P = approx_exp_cos_by_jacobi_anger(t, degree=d)
     # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
-    P = scale_down_to_qsp_polynomial(P) * (1 - 2 * precision)
-    assert_is_qsp_polynomial(P)
+    P = scale_down_to_qsp_polynomial(list(P)) * (1 - 2 * precision)
+    assert_is_qsp_polynomial(list(P))
 
-    Q = qsp_complementary_polynomial(P, verify=True, verify_precision=1e-5)
+    Q = qsp_complementary_polynomial(list(P), verify=True, verify_precision=1e-5)
     check_polynomial_pair_on_random_points_on_unit_circle(
-        P, Q, random_state=random_state, rtol=precision
+        list(P), Q, random_state=random_state, rtol=precision
     )
-    verify_generalized_qsp(RandomGate.create(1, random_state=random_state), P, Q)
+    verify_generalized_qsp(MatrixGate.random(1, random_state=random_state), list(P), Q)

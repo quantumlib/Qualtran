@@ -78,7 +78,10 @@ class CtrlModMul(Bloq):
         self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT'
     ) -> Dict[str, 'SoquetT']:
         k = self.k
-        neg_k_inv = -pow(k, -1, mod=self.mod)
+        if isinstance(self.mod, sympy.Expr) or isinstance(k, sympy.Expr):
+            neg_k_inv = sympy.Mod(sympy.Pow(k, -1), self.mod)
+        else:
+            neg_k_inv = -pow(k, -1, mod=self.mod)
 
         # We store the result of the CtrlScaleModAdd into this new register
         # and then clear the original `x` register by multiplying in the inverse.
@@ -116,6 +119,7 @@ class CtrlModMul(Bloq):
             return Circle(filled=True)
         if soq.reg.name == 'x':
             return directional_text_box(f'*={self.k}', side=soq.reg.side)
+        raise ValueError(f"Unknown register name: {soq.reg.name}")
 
 
 @frozen
@@ -147,7 +151,7 @@ class MontgomeryModDbl(Bloq):
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         return {'x': (2 * x) % self.p}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for sign and double.
         lower_bit = bb.allocate(n=1)
