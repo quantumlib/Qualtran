@@ -107,7 +107,7 @@ class PairPotential(Bloq):
         )
         for xyz in range(3):
             system_i[xyz], system_j[xyz] = bb.add(
-                OutOfPlaceAdder(self.bitsize, adjoint=True),
+                OutOfPlaceAdder(self.bitsize, is_adjoint=True),
                 a=system_i[xyz],
                 b=system_j[xyz],
                 c=diff_ij[xyz],

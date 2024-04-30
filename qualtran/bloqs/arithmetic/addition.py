@@ -19,7 +19,7 @@ from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHE
 import cirq
 import numpy as np
 import sympy
-from attrs import field, frozen
+from attrs import evolve, field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -273,11 +273,11 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
     """
 
     bitsize: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @property
     def signature(self):
-        side = Side.LEFT if self.adjoint else Side.RIGHT
+        side = Side.LEFT if self.is_adjoint else Side.RIGHT
         return Signature(
             [
                 Register('a', QUInt(self.bitsize)),
@@ -291,6 +291,9 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
 
     def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
         return a, b, c + a + b
+
+    def adjoint(self) -> 'OutOfPlaceAdder':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def on_classical_vals(
         self, *, a: 'ClassicalValT', b: 'ClassicalValT'
@@ -315,17 +318,17 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
             ]
             for i in range(self.bitsize)
         ]
-        return cirq.inverse(optree) if self.adjoint else optree
+        return cirq.inverse(optree) if self.is_adjoint else optree
 
     def _t_complexity_(self) -> TComplexity:
-        and_t = And(uncompute=self.adjoint).t_complexity()
+        and_t = And(uncompute=self.is_adjoint).t_complexity()
         num_clifford = self.bitsize * (5 + and_t.clifford)
         num_t = self.bitsize * and_t.t
         return TComplexity(t=num_t, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
-            (And(uncompute=self.adjoint), self.bitsize),
+            (And(uncompute=self.is_adjoint), self.bitsize),
             (ArbitraryClifford(n=2), 5 * self.bitsize),
         }
 
@@ -333,7 +336,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         if power == 1:
             return self
         if power == -1:
-            return OutOfPlaceAdder(self.bitsize, adjoint=not self.adjoint)
+            return OutOfPlaceAdder(self.bitsize, is_adjoint=not self.is_adjoint)
         raise NotImplementedError("OutOfPlaceAdder.__pow__ defined only for +1/-1.")
 
 
