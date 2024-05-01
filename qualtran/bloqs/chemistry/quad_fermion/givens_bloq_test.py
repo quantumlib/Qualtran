@@ -72,7 +72,7 @@ def test_circuit_decomposition_givens():
 @pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
 def test_count_t_cliffords(x_bitsize: int):
     add_into_phasegrad_gate = RzAddIntoPhaseGradient(
-        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled=1
+        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled_by=1
     )
     bloq_counts = add_into_phasegrad_gate.bloq_counts()
     # produces Toffoli costs given in chemistry papers
@@ -91,7 +91,7 @@ def test_count_t_cliffords(x_bitsize: int):
 @pytest.mark.parametrize("x_bitsize", [4, 5, 6, 7])
 def test_complex_givens_costs(x_bitsize: int):
     add_into_phasegrad_gate = RzAddIntoPhaseGradient(
-        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled=1
+        x_bitsize=x_bitsize, phase_bitsize=x_bitsize, right_shift=0, sign=1, controlled_by=1
     )
     real_givens_gate = RealGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
     gate = ComplexGivensRotationByPhaseGradient(phasegrad_bitsize=x_bitsize)
