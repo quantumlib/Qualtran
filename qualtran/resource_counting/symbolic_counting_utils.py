@@ -47,7 +47,7 @@ class Shaped:
         return True
 
 
-def is_symbolic(*args):
+def is_symbolic(*args) -> bool:
     """Returns whether the inputs contain any symbolic object.
 
     Returns:
