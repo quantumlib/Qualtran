@@ -282,17 +282,18 @@ def test_mean_estimation_operator_consistent_protocols():
         _ = mean_gate.controlled(num_controls=2)
 
     # Test diagrams
-    expected_symbols = ['U_ko'] * cirq.num_qubits(mean_gate)
-    assert cirq.circuit_diagram_info(mean_gate).wire_symbols == tuple(expected_symbols)
-    control_symbols = ['@']
+    n_qubits = cirq.num_qubits(mean_gate)
+
+    assert cirq.circuit_diagram_info(mean_gate).wire_symbols == tuple(['U_ko'] * n_qubits)
+
     assert cirq.circuit_diagram_info(mean_gate.controlled()).wire_symbols == tuple(
-        control_symbols + expected_symbols
+        ['@'] + ['U_ko'] * n_qubits
     )
-    control_symbols = ['(0)']
+
     assert cirq.circuit_diagram_info(
         mean_gate.controlled(control_values=(0,))
-    ).wire_symbols == tuple(control_symbols + expected_symbols)
-    expected_symbols[-1] = 'U_ko^2'
+    ).wire_symbols == tuple(['(0)'] + ['U_ko'] * n_qubits)
+
     assert cirq.circuit_diagram_info(
         (mean_gate**2).controlled(control_values=(0,))
-    ).wire_symbols == tuple(control_symbols + expected_symbols)
+    ).wire_symbols == tuple(['(0)'] + ['U_ko^2'] * n_qubits)

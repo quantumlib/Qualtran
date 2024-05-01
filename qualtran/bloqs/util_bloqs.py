@@ -533,7 +533,6 @@ class Power(GateWithRegisters):
         if info is None:
             info = super()._circuit_diagram_info_(args)
 
-        wire_symbols = list(info.wire_symbols)
-        wire_symbols[-1] += f'^{self.power}'
+        wire_symbols = [f'{symbol}^{self.power}' for symbol in info.wire_symbols]
 
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
