@@ -14,6 +14,7 @@
 
 import abc
 from typing import (
+    Any,
     Collection,
     Dict,
     Iterable,
@@ -36,7 +37,9 @@ from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
 
 if TYPE_CHECKING:
-    from qualtran import CtrlSpec
+    import quimb.tensor as qtn
+
+    from qualtran import CtrlSpec, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
 
@@ -355,7 +358,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def __pow__(self, power: int) -> 'GateWithRegisters':
+    def __pow__(self, power: int) -> 'Bloq':
         bloq = self if power > 0 else self.adjoint()
         if abs(power) == 1:
             return bloq

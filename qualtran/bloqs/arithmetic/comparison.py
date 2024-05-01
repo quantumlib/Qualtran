@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
+class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
 
     bitsize: int
@@ -221,7 +221,9 @@ class BiQubitsMixer(GateWithRegisters):
         x_msb, x_lsb = x
         y_msb, y_lsb = y
 
-        def _cswap(control: cirq.Qid, a: cirq.Qid, b: cirq.Qid, aux: cirq.Qid) -> cirq.OP_TREE:
+        def _cswap(
+            control: cirq.Qid, a: cirq.Qid, b: cirq.Qid, aux: cirq.Qid
+        ) -> Iterator[cirq.Operation]:
             """A CSWAP with 4T complexity and whose adjoint has 0T complexity.
 
                 A controlled SWAP that swaps `a` and `b` based on `control`.
@@ -233,7 +235,7 @@ class BiQubitsMixer(GateWithRegisters):
             yield cirq.CNOT(aux, a)
             yield cirq.CNOT(a, b)
 
-        def _decomposition():
+        def _decomposition() -> Iterator[cirq.Operation]:
             # computes the difference of x - y where
             #   x = 2*x_msb + x_lsb
             #   y = 2*y_msb + y_lsb
@@ -253,10 +255,10 @@ class BiQubitsMixer(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'BiQubitsMixer':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> cirq.Gate:
+    def __pow__(self, power: int) -> 'BiQubitsMixer':
         if power == 1:
             return self
         if power == -1:
@@ -326,10 +328,10 @@ class SingleQubitCompare(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'SingleQubitCompare':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> cirq.Gate:
+    def __pow__(self, power: int) -> Union['SingleQubitCompare', cirq.Gate]:
         if not isinstance(power, int):
             raise ValueError('SingleQubitCompare is only defined for integer powers.')
         if power % 2 == 0:
@@ -370,7 +372,7 @@ def _equality_with_zero(
 
 
 @frozen
-class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
+class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>
 
     Decomposes the gate in a T-complexity optimal way.
@@ -457,7 +459,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        lhs, rhs, (target,) = quregs['x'], quregs['y'], quregs['target']
+        lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
 
         n = min(len(lhs), len(rhs))
 
@@ -604,6 +606,7 @@ class GreaterThan(Bloq):
             return TextBox("In(b)")
         elif soq.reg.name == 'target':
             return TextBox("⨁(a > b)")
+        raise ValueError(f'Unknown register name {soq.reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -672,7 +675,7 @@ class LinearDepthGreaterThan(Bloq):
         return {'a': a, 'b': b, 'target': target}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: SoquetT, b: SoquetT, target: SoquetT
+        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
 
         # Base Case: Comparing two qubits.
@@ -680,7 +683,7 @@ class LinearDepthGreaterThan(Bloq):
         if self.bitsize == 1:
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
-            ctrls = [a, b]
+            ctrls = np.asarray([a, b])
             ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
             a, b = ctrls
             # Return the output registers.
@@ -833,6 +836,7 @@ class GreaterThanConstant(Bloq):
             return TextBox("In(x)")
         elif soq.reg.name == 'target':
             return TextBox(f"⨁(x > {self.val})")
+        raise ValueError(f'Unknown register symbol {soq.reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -885,6 +889,7 @@ class EqualsAConstant(Bloq):
             return TextBox("In(x)")
         elif soq.reg.name == 'target':
             return TextBox(f"⨁(x = {self.val})")
+        raise ValueError(f'Unknown register symbol {soq.reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # See: https://github.com/quantumlib/Qualtran/issues/219

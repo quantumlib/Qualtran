@@ -19,6 +19,7 @@ from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QUInt, Signature
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 @attrs.frozen
@@ -35,7 +36,7 @@ class QFTTextBook(GateWithRegisters):
             performing later operations on different qubits.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
     with_reverse: bool = True
 
     @cached_property

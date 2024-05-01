@@ -76,9 +76,7 @@ class ModAdd(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': (x + y) % self.mod}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
