@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import math
-from typing import Callable, Iterable, Iterator, Optional, Tuple
+from typing import Callable, cast, Iterable, Iterator, Optional, Tuple
 
 from attrs import frozen
 
@@ -340,7 +340,7 @@ def get_ccz2t_costs_from_grid_search(
         version of the spreadsheet from https://arxiv.org/abs/1812.01238
     """
     best_cost: Optional[PhysicalCost] = None
-    best_params: Optional[Tuple[MagicStateFactory, DataBlock]] = None
+    best_params: Optional[Tuple[MagicStateFactory, SimpleDataBlock]] = None
     for factory in factory_iter:
         for data_block in data_block_iter:
             cost = get_ccz2t_costs(
@@ -356,9 +356,9 @@ def get_ccz2t_costs_from_grid_search(
                 continue
             if best_cost is None or cost_function(cost) < cost_function(best_cost):
                 best_cost = cost
-                best_params = (factory, data_block)
+                best_params = (factory, cast(SimpleDataBlock, data_block))
 
-    if best_params is None:
+    if best_params is None or best_cost is None:
         raise ValueError("No valid factories found!")
 
     best_factory, best_data_block = best_params

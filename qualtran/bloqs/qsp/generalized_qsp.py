@@ -345,9 +345,9 @@ class GeneralizedQSP(GateWithRegisters):
     def from_qsp_polynomial(
         cls,
         U: GateWithRegisters,
-        P: Union[Sequence[complex], Shaped],
+        P: Union[NDArray[np.number], Sequence[complex], Shaped],
         *,
-        negative_power: int = 0,
+        negative_power: SymbolicInt = 0,
         verify: bool = False,
         verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
