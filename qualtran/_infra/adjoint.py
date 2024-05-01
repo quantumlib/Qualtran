@@ -200,7 +200,7 @@ class Adjoint(GateWithRegisters):
             return NotImplemented
 
         try:
-            return self.subbloq._t_complexity_(adjoint=True)
+            return self.subbloq._t_complexity_(adjoint=True)  # type: ignore[call-arg]
         except TypeError as e:
             if 'adjoint' in str(e):
                 return self.subbloq._t_complexity_()

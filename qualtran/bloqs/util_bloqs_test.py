@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Type
+from typing import Dict, Type, Union
 
 import cirq
 import numpy as np
@@ -31,7 +31,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 @pytest.mark.parametrize('n', [5, 123])
 @pytest.mark.parametrize('bloq_cls', [Split, Join])
-def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
+def test_register_sizes_add_up(bloq_cls: Union[Type[Split], Type[Join]], n):
     bloq = bloq_cls(QAny(n))
     for name, group_regs in bloq.signature.groups():
         if any(reg.side is Side.THRU for reg in group_regs):

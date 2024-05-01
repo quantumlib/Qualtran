@@ -14,7 +14,7 @@
 """Bloq for building a Trotterized unitary"""
 
 from functools import cached_property
-from typing import Dict, Iterable, Union
+from typing import Dict, Sequence, Union
 
 import attrs
 import sympy
@@ -81,9 +81,9 @@ class TrotterizedUnitary(Bloq):
             https://arxiv.org/abs/2306.10603) see github repo for software to produce splittings.
     """
 
-    bloqs: Iterable[Bloq]
-    indices: Iterable[int]
-    coeffs: Iterable[Union[float, sympy.Expr]]
+    bloqs: Sequence[Bloq]
+    indices: Sequence[int]
+    coeffs: Sequence[Union[float, sympy.Expr]]
     timestep: Union[float, sympy.Expr]
 
     def __attrs_post_init__(self):

@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import cast, Dict, List, Optional, Sequence, Tuple, Union
 
 import sympy
 
@@ -35,6 +35,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
+from qualtran.drawing.musical_score import TextBox
 from qualtran.resource_counting import GeneralizerT
 
 
@@ -238,7 +239,7 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
     for i, r in enumerate(regs):
         # note this will only work if shape = ().
         # See: https://github.com/quantumlib/Qualtran/issues/608
-        ws.append(bloq.wire_symbol(Soquet(i, r)).text)
+        ws.append(cast(TextBox, bloq.wire_symbol(Soquet(LeftDangle, r))).text)
 
     assert ws == expected_ws
 
@@ -642,6 +643,7 @@ def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, 
         )
     except Exception as e:
         raise BloqCheckException.unverified('Strict type checking failed.\n' + str(e)) from e
+    return BloqCheckResult.PASS, ''
 
 
 def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:

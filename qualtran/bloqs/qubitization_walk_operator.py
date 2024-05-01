@@ -29,6 +29,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
@@ -95,7 +96,7 @@ class QubitizationWalkOperator(GateWithRegisters):
         return ReflectionUsingPrepare(self.prepare, control_val=self.control_val, global_phase=-1)
 
     @cached_property
-    def sum_of_lcu_coefficients(self) -> Optional[float]:
+    def sum_of_lcu_coefficients(self) -> Optional[SymbolicFloat]:
         r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
         return self.prepare.l1_norm_of_coeffs
 

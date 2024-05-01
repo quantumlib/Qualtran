@@ -212,7 +212,7 @@ def _bloq_to_cirq_op(
     succ_cxns: Iterable[Connection],
     qvar_to_qreg: Dict[Soquet, _QReg],
     qubit_manager: cirq.QubitManager,
-) -> cirq.Operation:
+) -> Optional[cirq.Operation]:
     _track_soq_name_changes(pred_cxns, qvar_to_qreg)
     in_quregs: Dict[str, CirqQuregT] = {
         reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
@@ -257,12 +257,12 @@ def _cbloq_to_cirq_circuit(
         circuit: The cirq.FrozenCircuit version of this composite bloq.
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
-    cirq_quregs = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))
+    cirq_quregs: Dict[str, 'CirqQuregInT'] = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
         for k, v in cirq_quregs.items()
     }
     qvar_to_qreg: Dict[Soquet, _QReg] = {
-        Soquet(LeftDangle, idx=idx, reg=reg): cirq_quregs[reg.name][idx]
+        Soquet(LeftDangle, idx=idx, reg=reg): np.asarray(cirq_quregs[reg.name])[idx]
         for reg in signature.lefts()
         for idx in reg.all_idxs()
     }
@@ -305,7 +305,7 @@ def _wire_symbol_to_cirq_diagram_info(
         # Note: all of our soqs lack a `binst`. The `bloq.wire_symbol` methods
         # should never use the binst field, but this isn't really enforced anywhere.
         # https://github.com/quantumlib/Qualtran/issues/608
-        soqs = _reg_to_soq(None, reg)
+        soqs = _reg_to_soq(LeftDangle, reg)
         if isinstance(soqs, Soquet):
             assert soqs.idx == ()
             soqs = np.array([soqs] * reg.bitsize)
@@ -327,5 +327,5 @@ def _wire_symbol_to_cirq_diagram_info(
             return 'X'
         raise NotImplementedError(f"Unknown cirq version of {ws}")
 
-    wire_symbols = [_qualtran_wire_symbols_to_cirq_text(ws) for ws in wire_symbols]
-    return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+    text_symbols = [_qualtran_wire_symbols_to_cirq_text(ws) for ws in wire_symbols]
+    return cirq.CircuitDiagramInfo(wire_symbols=text_symbols)

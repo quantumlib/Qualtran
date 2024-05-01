@@ -15,6 +15,7 @@
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 import abc
 import itertools
+import numbers
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
@@ -400,6 +401,8 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         )
 
     if isinstance(gate, cirq.GlobalPhaseGate):
+        if isinstance(gate.coefficient, numbers.Complex):
+            return GlobalPhase(coefficient=complex(gate.coefficient))
         return GlobalPhase(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.

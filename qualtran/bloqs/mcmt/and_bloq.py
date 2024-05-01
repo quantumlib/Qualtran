@@ -268,7 +268,9 @@ class MultiAnd(Bloq):
         )
 
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
+        accumulate_and = np.bitwise_and.accumulate(
+            np.equal(ctrl, np.asarray(self.cvs)).astype(np.uint8)
+        )
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 

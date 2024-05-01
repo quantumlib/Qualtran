@@ -81,7 +81,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         total_iteration_size = np.prod(
-            tuple(reg.dtype.iteration_length for reg in self.selection_registers)
+            tuple(reg.dtype.iteration_length_or_zero() for reg in self.selection_registers)
         )
         return (Register('target', QAny(int(total_iteration_size))),)
 
@@ -114,7 +114,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         accumulator: Sequence[cirq.Qid],
         **selection_indices: int,
     ) -> cirq.OP_TREE:
-        selection_shape = tuple(reg.dtype.iteration_length for reg in self.selection_regs)
+        selection_shape = tuple(reg.dtype.iteration_length_or_zero() for reg in self.selection_regs)
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = int(np.ravel_multi_index(selection_idx, selection_shape))
         yield cirq.CNOT(control, *accumulator)

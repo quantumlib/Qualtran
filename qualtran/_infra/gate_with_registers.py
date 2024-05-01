@@ -452,7 +452,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
     # pylint: disable=signature-differs
     @overload
-    def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'GateWithRegisters':
+    def controlled(self, *, ctrl_spec: Optional['CtrlSpec'] = None) -> 'GateWithRegisters':
         """Bloq-style API to construct a controlled Bloq. See `Bloq.controlled()`."""
 
     def controlled(

@@ -52,6 +52,7 @@ if TYPE_CHECKING:
 
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -272,7 +273,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     is_adjoint: bool = False
 
     @property
@@ -287,6 +288,8 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if not isinstance(self.bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         return [2] * self.bitsize, [2] * self.bitsize, [2] * (self.bitsize + 1)
 
     def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
@@ -309,6 +312,8 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
+        if not isinstance(self.bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         a, b, c = quregs['a'][::-1], quregs['b'][::-1], quregs['c'][::-1]
         optree: List[List[cirq.Operation]] = [
             [

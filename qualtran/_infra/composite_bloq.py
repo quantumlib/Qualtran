@@ -16,12 +16,14 @@
 from functools import cached_property
 from typing import (
     Callable,
+    cast,
     Dict,
     FrozenSet,
     Hashable,
     Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
     overload,
     Sequence,
@@ -176,7 +178,9 @@ class CompositeBloq(Bloq):
 
         return cirq_optree_to_cbloq(circuit)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(
+        self, **vals: Union[sympy.Symbol, 'ClassicalValT']
+    ) -> Dict[str, 'ClassicalValT']:
         """Support classical data by recursing into the composite bloq."""
         from qualtran.simulation.classical_sim import call_cbloq_classically
 
@@ -606,7 +610,7 @@ def _reg_to_soq(
 
 def _process_soquets(
     registers: Iterable[Register],
-    in_soqs: Dict[str, SoquetT],
+    in_soqs: Mapping[str, SoquetInT],
     debug_str: str,
     func: Callable[[Soquet, Register, Tuple[int, ...]], None],
 ) -> None:
@@ -631,6 +635,7 @@ def _process_soquets(
             the incoming, indexed soquet as well as the register and (left-)index it
             has been mapped to.
     """
+    unchecked_names: Set[str] = set(in_soqs.keys())
     for reg in registers:
         try:
             # if we want fancy indexing (which we do), we need numpy
@@ -639,7 +644,7 @@ def _process_soquets(
         except KeyError:
             raise BloqError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
 
-        del in_soqs[reg.name]  # so we can check for surplus arguments.
+        unchecked_names.remove(reg.name)  # so we can check for surplus arguments.
 
         for li in reg.all_idxs():
             idxed_soq = in_soq[li]
@@ -652,9 +657,8 @@ def _process_soquets(
                 raise BloqError(
                     f"{debug_str} register dtypes are not consistent {extra_str}."
                 ) from None
-
-    if in_soqs:
-        raise BloqError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
+    if unchecked_names:
+        raise BloqError(f"{debug_str} does not accept Soquets: {unchecked_names}.") from None
 
 
 def _map_soqs(
@@ -965,7 +969,7 @@ class BloqBuilder:
         return outs
 
     def _add_binst(
-        self, binst: BloqInstance, in_soqs: Dict[str, SoquetInT]
+        self, binst: BloqInstance, in_soqs: Mapping[str, SoquetInT]
     ) -> Iterator[Tuple[str, SoquetT]]:
         """Add a bloq instance.
 
@@ -1009,8 +1013,10 @@ class BloqBuilder:
                 in_soqs[k] = np.asarray(v)
 
         # Initial mapping of LeftDangle according to user-provided in_soqs.
+        # TODO: add checking if this can be a sequence
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
-            (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.signature.lefts()
+            (_reg_to_soq(LeftDangle, reg), cast(SoquetT, in_soqs[reg.name]))
+            for reg in cbloq.signature.lefts()
         ]
 
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():

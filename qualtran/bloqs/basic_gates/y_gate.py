@@ -64,7 +64,7 @@ class YGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.Y(q), {'q': [q]}
+        return cirq.Y(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

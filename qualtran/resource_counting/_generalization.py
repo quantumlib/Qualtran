@@ -24,9 +24,9 @@ def _make_composite_generalizer(*funcs: 'GeneralizerT') -> 'GeneralizerT':
 
     def _composite_generalize(b: 'Bloq') -> Optional['Bloq']:
         for func in funcs:
-            b = func(b)
-            if b is None:
-                return
-        return b
+            func_b = func(b)
+            if func_b is None:
+                return None
+        return func_b
 
     return _composite_generalize

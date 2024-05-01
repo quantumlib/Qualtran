@@ -179,7 +179,9 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return Adjoint(self)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(
+        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
