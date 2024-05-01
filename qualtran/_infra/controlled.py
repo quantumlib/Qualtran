@@ -466,4 +466,14 @@ class Controlled(GateWithRegisters):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
+        if isinstance(self.subbloq, cirq.Gate):
+            sub_info = cirq.circuit_diagram_info(self.subbloq, args, None)
+            if sub_info is not None:
+                cv_info = cirq.circuit_diagram_info(self.ctrl_spec.to_cirq_cv())
+
+                return cirq.CircuitDiagramInfo(
+                    wire_symbols=(*cv_info.wire_symbols, *sub_info.wire_symbols),
+                    exponent=sub_info.exponent,
+                )
+
         return _wire_symbol_to_cirq_diagram_info(self, args)
