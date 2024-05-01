@@ -144,7 +144,7 @@ class Adjoint(GateWithRegisters):
         return self.subbloq.decompose_bloq().adjoint()
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         if isinstance(self.subbloq, GateWithRegisters):
             return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))

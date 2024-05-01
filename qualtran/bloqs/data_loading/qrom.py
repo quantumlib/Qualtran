@@ -226,6 +226,7 @@ class QROM(UnaryIterationGate):
             return TextBox(f'data_{subscript}')
         elif name == 'control':
             return Circle()
+        raise ValueError(f'Unrecognized register name {name}')
 
     def __pow__(self, power: int):
         if power in [1, -1]:

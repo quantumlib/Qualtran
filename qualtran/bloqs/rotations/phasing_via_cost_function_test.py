@@ -75,11 +75,11 @@ class TestHammingWeightPhasing(GateWithRegisters):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         if self.use_phase_gradient:
-            soqs['phase_grad'] = bb.add(PhaseGradientState(self.phase_gradient_oracle.b_grad))
+            soqs['phase_grad'] = bb.add(PhaseGradientState(int(self.phase_gradient_oracle.b_grad)))
         soqs = bb.add_d(PhasingViaCostFunction(self.cost_eval_oracle, self.phase_oracle), **soqs)
         if self.use_phase_gradient:
             bb.add(
-                PhaseGradientState(self.phase_gradient_oracle.b_grad).adjoint(),
+                PhaseGradientState(int(self.phase_gradient_oracle.b_grad)).adjoint(),
                 phase_grad=soqs.pop('phase_grad'),
             )
         return soqs
@@ -152,11 +152,11 @@ class TestSquarePhasing(GateWithRegisters):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         if self.use_phase_gradient:
-            soqs['phase_grad'] = bb.add(PhaseGradientState(self.phase_gradient_oracle.b_grad))
+            soqs['phase_grad'] = bb.add(PhaseGradientState(int(self.phase_gradient_oracle.b_grad)))
         soqs = bb.add_d(PhasingViaCostFunction(self.cost_eval_oracle, self.phase_oracle), **soqs)
         if self.use_phase_gradient:
             bb.add(
-                PhaseGradientState(self.phase_gradient_oracle.b_grad).adjoint(),
+                PhaseGradientState(int(self.phase_gradient_oracle.b_grad)).adjoint(),
                 phase_grad=soqs.pop('phase_grad'),
             )
         return soqs

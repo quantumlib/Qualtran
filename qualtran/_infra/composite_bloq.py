@@ -35,6 +35,7 @@ from typing import (
 import attrs
 import networkx as nx
 import numpy as np
+import sympy
 from numpy.typing import NDArray
 
 from .bloq import Bloq, DecomposeTypeError
@@ -45,7 +46,7 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
-    from qualtran.cirq_interop import CirqQuregInT, CirqQuregT
+    from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -447,7 +448,7 @@ def _create_binst_graph(
 
 
 def _binst_to_cxns(
-    binst: BloqInstance, binst_graph: nx.DiGraph
+    binst: Union[BloqInstance, DanglingT], binst_graph: nx.DiGraph
 ) -> Tuple[List[Connection], List[Connection]]:
     """Helper method to extract all predecessor and successor Connections for a binst."""
     pred_cxns: List[Connection] = []
@@ -494,7 +495,7 @@ def _cxn_to_soq_dict(
         assign = get_assign(cxn)
 
         if me.reg.shape:
-            soqdict[me.reg.name][me.idx] = assign
+            soqdict[me.reg.name][me.idx] = assign  # type: ignore[index]
         else:
             soqdict[me.reg.name] = assign
 
@@ -598,9 +599,9 @@ def _reg_to_soq(
     # Annoyingly, this must be a special case.
     # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
     # 'object'. This wouldn't happen--for example--with an integer array.
-    soqs = Soquet(binst, reg)
-    available.add(soqs)
-    return soqs
+    soq = Soquet(binst, reg)
+    available.add(soq)
+    return soq
 
 
 def _process_soquets(
@@ -630,7 +631,6 @@ def _process_soquets(
             the incoming, indexed soquet as well as the register and (left-)index it
             has been mapped to.
     """
-
     for reg in registers:
         try:
             # if we want fancy indexing (which we do), we need numpy
@@ -831,7 +831,9 @@ class BloqBuilder:
         initial_soqs: Dict[str, SoquetT] = {}
         for reg in signature:
             if reg.side & Side.LEFT:
-                initial_soqs[reg.name] = bb.add_register_from_dtype(reg)
+                register = bb.add_register_from_dtype(reg)
+                assert register is not None
+                initial_soqs[reg.name] = register
             else:
                 bb.add_register_from_dtype(reg)
 
@@ -866,7 +868,11 @@ class BloqBuilder:
         return i
 
     def _add_cxn(
-        self, binst: BloqInstance, idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]
+        self,
+        binst: Union[BloqInstance, DanglingT],
+        idxed_soq: Soquet,
+        reg: Register,
+        idx: Tuple[int, ...],
     ) -> None:
         """Helper function to be used as the base for the `func` argument of `_process_soquets`.
 
@@ -1079,7 +1085,7 @@ class BloqBuilder:
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
-    def allocate(self, n: int = 1, dtype: Optional[QDType] = None) -> Soquet:
+    def allocate(self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
 
         if dtype is not None:

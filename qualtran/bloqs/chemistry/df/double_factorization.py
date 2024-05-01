@@ -460,7 +460,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
             num_bits_rot_aa=self.num_bits_rot_aa_outer,
         ).adjoint()
         l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
-        ctrl = succ_l, l_ne_zero, theta, succ_p
+        ctrl = np.asarray([succ_l, l_ne_zero, theta, succ_p])
         return {
             'ctrl': ctrl,
             'l': l,

@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from qualtran import Bloq, SoquetT
     from qualtran.resource_counting import SympySymbolAllocator
     from qualtran.resource_counting.bloq_counts import BloqCountT
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -162,8 +163,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         Appendix A: Addition for controlled rotations
     """
 
-    x_bitsize: int
-    phase_bitsize: int
+    x_bitsize: 'SymbolicInt'
+    phase_bitsize: 'SymbolicInt'
     right_shift: int = 0
     sign: int = +1
     controlled: Optional[int] = None
@@ -192,6 +193,8 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         return QFxp(self.phase_bitsize, self.phase_bitsize, signed=False)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if isinstance(self.phase_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic phase {self.phase_bitsize} not supported')
         if self.controlled is not None:
             return [2], [2] * self.x_bitsize, [2] * self.phase_bitsize
         return [2] * self.x_bitsize, [2] * self.phase_bitsize
@@ -309,7 +312,7 @@ def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
 
 
 @attrs.frozen
-class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
+class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # ignore: type[misc]
     r"""Optimized quantum-quantum addition into a phase gradient register scaled by a constant $\gamma$.
 
     $$
@@ -336,8 +339,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):
     """
 
     x_dtype: QFxp
-    phase_bitsize: int
-    gamma: float
+    phase_bitsize: 'SymbolicInt'
+    gamma: 'SymbolicFloat'
     gamma_dtype: QFxp
 
     @classmethod

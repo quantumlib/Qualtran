@@ -106,7 +106,7 @@ def test_swap_with_zero_classically():
     swz = SwapWithZero(selection_bitsize=2, target_bitsize=8, n_target_registers=4)
 
     for sel in range(2**2):
-        sel, out_data = swz.call_classically(selection=sel, targets=data)
+        sel, out_data = swz.call_classically(selection=sel, targets=data)  # type: ignore[assignment]
         print(sel, out_data)
 
 
