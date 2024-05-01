@@ -19,7 +19,7 @@ from typing import Set, TYPE_CHECKING
 import attrs
 import cirq
 import numpy as np
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Register, Side, Signature
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate

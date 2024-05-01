@@ -294,7 +294,7 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         return self.decompose_bloq().build_call_graph(ssa)
 
-    def my_static_costs(self, cost_key: 'CostKey') -> Union[Any, NotImplemented]:
+    def my_static_costs(self, cost_key: 'CostKey'):
         """Override this method to provide static costs.
 
         The system will query a particular cost by asking for a `cost_key`. This method

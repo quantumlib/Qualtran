@@ -16,7 +16,7 @@ import cirq
 import numpy as np
 import pytest
 from fxpmath import Fxp
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
