@@ -127,7 +127,7 @@ class MeanEstimationOperator(GateWithRegisters):
         yield self.reflect.on_registers(**reflect_reg)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = [] if self.cv == () else [["@(0)", "@"][self.cv[0]]]
+        wire_symbols = [] if self.cv == () else [["(0)", "@"][self.cv[0]]]
         wire_symbols += ['U_ko'] * (total_bits(self.signature) - total_bits(self.control_registers))
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 

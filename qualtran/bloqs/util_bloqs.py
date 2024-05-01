@@ -528,7 +528,7 @@ class Power(GateWithRegisters):
     ) -> 'cirq.CircuitDiagramInfo':
         import cirq
 
-        info = cirq.circuit_diagram_info(self.bloq, default=None)
+        info = cirq.circuit_diagram_info(self.bloq, args, default=None)
 
         if info is None:
             info = super()._circuit_diagram_info_(args)

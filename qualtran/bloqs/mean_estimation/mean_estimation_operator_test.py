@@ -288,7 +288,7 @@ def test_mean_estimation_operator_consistent_protocols():
     assert cirq.circuit_diagram_info(mean_gate.controlled()).wire_symbols == tuple(
         control_symbols + expected_symbols
     )
-    control_symbols = ['@(0)']
+    control_symbols = ['(0)']
     assert cirq.circuit_diagram_info(
         mean_gate.controlled(control_values=(0,))
     ).wire_symbols == tuple(control_symbols + expected_symbols)
