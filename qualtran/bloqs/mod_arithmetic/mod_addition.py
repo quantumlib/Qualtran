@@ -29,6 +29,7 @@ from qualtran import (
     QUInt,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.addition import Add, AddK
@@ -39,7 +40,7 @@ from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
 if TYPE_CHECKING:
-    from qualtran import BloqBuilder, Soquet
+    from qualtran import BloqBuilder
 
 
 @frozen
@@ -77,7 +78,6 @@ class ModAdd(Bloq):
         return {'x': x, 'y': (x + y) % self.mod}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
-
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)

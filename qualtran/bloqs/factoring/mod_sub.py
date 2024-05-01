@@ -67,7 +67,6 @@ class MontgomeryModSub(Bloq):
         return {'x': x, 'y': (y - x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
-
         # Bit flip all qubits in register x.
         x_split = bb.split(x)
         for i in range(self.bitsize):
@@ -126,7 +125,6 @@ class MontgomeryModNeg(Bloq):
         return {'x': (-1 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
-
         # Initialize an ancilla qubit to |1>.
         ctrl = bb.allocate(n=1)
         ctrl = bb.add(XGate(), q=ctrl)

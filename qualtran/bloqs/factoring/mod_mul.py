@@ -152,7 +152,6 @@ class MontgomeryModDbl(Bloq):
         return {'x': (2 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
-
         # Allocate ancilla bits for sign and double.
         lower_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
