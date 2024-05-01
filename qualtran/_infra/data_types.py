@@ -89,6 +89,13 @@ class QDType(metaclass=abc.ABCMeta):
             debug_str: Optional debugging information to use in exception messages.
         """
 
+    def iteration_length_or_zero(self) -> Union[int, sympy.Expr]:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return getattr(self, 'iteration_length', 0)
+
     def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
         """Raises an exception if `val_array` is not a valid array of classical values
         for this type.

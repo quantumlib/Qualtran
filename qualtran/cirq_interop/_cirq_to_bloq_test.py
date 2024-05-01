@@ -107,7 +107,7 @@ def test_bloq_decompose():
     assert tb.pretty_name() == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
-    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
+    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs, qubit_manager=None)
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == TComplexity(clifford=1)
 
@@ -137,7 +137,7 @@ def test_cbloq_to_cirq_circuit():
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
     # CirqGate has registers of bitsize=1 and shape=(n,); hence the list transpose below.
     circuit2, _ = cbloq.to_cirq_circuit(
-        **{'qubits': [[q] for q in qubits]}, qubit_manager=cirq.ops.SimpleQubitManager()
+        qubits=np.asarray([[q] for q in qubits]), qubit_manager=cirq.ops.SimpleQubitManager()
     )
 
     assert circuit == circuit2

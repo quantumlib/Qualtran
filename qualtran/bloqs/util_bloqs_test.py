@@ -124,6 +124,7 @@ def test_partition_as_cirq_op():
     bloq = TestPartition(test_bloq=CNOT())
     quregs = get_named_qubits(bloq.signature.lefts())
     op, quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
+    assert op is not None
     unitary = cirq.unitary(cirq.Circuit(op))
     assert np.allclose(unitary, bloq_to_dense(CNOT()))
 
