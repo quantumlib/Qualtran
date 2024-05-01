@@ -120,7 +120,9 @@ class LineManager:
                 kept.append((ys, until))
         self._reserved = kept
 
-    def maybe_reserve(self, binst: BloqInstance, reg: Register, idx: Tuple[int, ...]):
+    def maybe_reserve(
+        self, binst: Union[DanglingT, BloqInstance], reg: Register, idx: Tuple[int, ...]
+    ):
         """Override this method to provide custom control over line allocation.
 
         After a new y position is allocated and after a y position is freed, this method
@@ -164,7 +166,10 @@ class LineManager:
         self.hlines.add(attrs.evolve(partial_h_line, seq_x_end=seq_x_end))
 
     def free(
-        self, binst: BloqInstance, reg: Register, arr: Union[RegPosition, NDArray[RegPosition]]
+        self,
+        binst: Union[DanglingT, BloqInstance],
+        reg: Register,
+        arr: Union[RegPosition, NDArray[RegPosition]],
     ):
         """De-allocate a position or positions for `reg`.
 

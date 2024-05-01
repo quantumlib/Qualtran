@@ -166,7 +166,7 @@ class Join(Bloq):
             )
         )
 
-    def on_classical_vals(self, reg: 'NDArray[np.uint8]') -> Dict[str, int]:
+    def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
         return {'reg': bits_to_ints(reg)[0]}
 
     def get_ctrl_system(
