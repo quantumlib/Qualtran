@@ -27,7 +27,16 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 from qualtran import DanglingT, LeftDangle, QBit, Side, Soquet
-from qualtran.drawing.musical_score import _soq_to_symb, Circle, ModPlus, WireSymbol
+from qualtran.drawing.musical_score import (
+    _soq_to_symb,
+    Circle,
+    LarrowTextBox,
+    ModPlus,
+    RarrowTextBox,
+    Text,
+    TextBox,
+    WireSymbol,
+)
 
 if TYPE_CHECKING:
     from qualtran import Bloq, Connection, Signature
@@ -37,29 +46,42 @@ def _wire_name_prefix_for_soq(soq: Soquet) -> str:
     return soq.pretty()
 
 
-def _format_label_text(label: str, scale: Optional[float] = None) -> str:
-    replacements = {'&': r'\&', '_': r'\_', '<': r'$<$', '>': r'$>$', '⨁': r'$\oplus$'}
+def _format_label_text(label: str, scale: float = 0.8) -> str:
+    replacements = {
+        '&': r'\&',
+        '_': r'\_',
+        '<': r'$<$',
+        '>': r'$>$',
+        '⨁': r'$\oplus$',
+        '∧': r'$\land$',
+    }
     for key, val in replacements.items():
         label = label.replace(key, val)
-    scale_prefix = r'\scalebox{' + str(scale) + r'}{' if scale else ''
-    scale_suffix = r'}' if scale else ''
-    return r'\textrm{' + scale_prefix + str(label) + scale_suffix + r'}'
+    scale_prefix = r'\scalebox{' + str(scale) + r'}{'
+    scale_suffix = r'}'
+    return r'\textrm{' + scale_prefix + label + scale_suffix + r'}'
+
+
+def _get_wire_symbol_text(symbol: WireSymbol) -> str:
+    """Wire symbol must be a type that has a text field."""
+    assert isinstance(symbol, (LarrowTextBox, RarrowTextBox, Text, TextBox))
+    symbol_text = symbol.text.strip()
+    return symbol_text
 
 
 def _soq_symbol_to_text(symbol: WireSymbol) -> str:
-    assert hasattr(symbol, 'text')
-    symbol_text = symbol.text.strip()
-    if not symbol_text:
-        symbol_text = 'SJ'
+    symbol_text = _get_wire_symbol_text(symbol)
     return _format_label_text(symbol_text)
 
 
+def _gate_width_for_text(text: str) -> int:
+    """Scale the width of the gate with number of characters in its label."""
+    return 5 + 4 * len(text)
+
+
 def _soq_symbol_width(symbol: WireSymbol) -> int:
-    assert hasattr(symbol, 'text')
-    symbol_text = symbol.text.strip()
-    if not symbol_text:
-        symbol_text = 'SJ'
-    return 5 + 5 * len(symbol_text)
+    symbol_text = _get_wire_symbol_text(symbol)
+    return _gate_width_for_text(symbol_text)
 
 
 class QpicWireManager:
@@ -107,22 +129,34 @@ class QpicWireManager:
 class QpicCircuit:
     """Builds data corresponding to the input specification of a QPIC diagram"""
 
-    def __init__(self, signature: 'Signature'):
+    def __init__(self):
+        # Init empty data structures.
         self.soq_map = {}
-        self._wire_manager = QpicWireManager()
+        self.wire_manager = QpicWireManager()
         self.allocated_wires = set()
-        # Macros useful for styling diagrams
-        self.wires = ['DEFINE off color=white', 'DEFINE on color=black']
         self.gates = []
+        # Macros useful for styling diagrams.
+        self.wires = ['DEFINE off color=white', 'DEFINE on color=black']
+        # An empty wire is a transparent wire which can be used to place bloqs that
+        # don't have any incoming or outgoing edges.
+        self.empty_wire = None
+
+    def add_wires_for_signature(self, signature: 'Signature') -> None:
         for reg in signature:
             for idx in reg.all_idxs():
                 self._alloc_wire_for_soq(Soquet(LeftDangle, reg, idx))
+        # Add horizontal blank space since left dangling wires would have annotations
+        # corresponding to their QDType, which takes up horizontal space.
         self.wires += ['LABEL length=10']
+
+    @property
+    def data(self) -> List[str]:
+        return self.wires + self.gates
 
     def _add_soq(self, soq: Soquet) -> Tuple[str, Optional[str]]:
         symbol = _soq_to_symb(soq)
         suffix = ''
-        wire = self._wire_manager.soq_to_wirename(self.soq_map[soq])
+        wire = self.wire_manager.soq_to_wirename(self.soq_map[soq])
         if soq.reg.side == Side.LEFT:
             suffix = ':off'
             self._dealloc_wire_for_soq(soq)
@@ -135,15 +169,28 @@ class QpicCircuit:
             return f'+{wire}', None
         symbol_text = _soq_symbol_to_text(symbol)
         width = _soq_symbol_width(symbol)
-        return f'{wire} ', f'G:width={width} {symbol_text}'
+        shape = 'box'
+        if isinstance(symbol, LarrowTextBox) and not symbol.text.strip():
+            shape = '<'
+        if isinstance(symbol, RarrowTextBox) and not symbol.text.strip():
+            shape = '>'
+        return f'{wire} ', f'G:width={width}:shape={shape} {symbol_text}'
 
     def _dealloc_wire_for_soq(self, soq: Soquet) -> None:
-        self._wire_manager.dealloc_wire_for_soq(self.soq_map[soq])
+        self.wire_manager.dealloc_wire_for_soq(self.soq_map[soq])
         self.soq_map.pop(soq)
+
+    @classmethod
+    def _dtype_label_for_wire(cls, wire_name: str, dtype: 'QDType') -> List[str]:
+        if dtype != QBit():
+            dtype_str = _format_label_text(str(dtype), scale=0.5)
+            return [f'{wire_name} / {dtype_str}']
+        else:
+            return []
 
     def _alloc_wire_for_soq(self, soq: Soquet) -> None:
         self.soq_map[soq] = soq
-        wire_name = self._wire_manager.alloc_wire_for_soq(soq)
+        wire_name = self.wire_manager.alloc_wire_for_soq(soq)
         if wire_name in self.allocated_wires:
             return
         self.allocated_wires.add(wire_name)
@@ -152,11 +199,9 @@ class QpicCircuit:
         if isinstance(soq.binst, DanglingT):
             # A RIGHT wire on a LeftDangle bloq should start at the beginning.
             assert soq.binst == LeftDangle
-            wire_label = self._wire_manager.soq_to_wirelabel(soq)
+            wire_label = self.wire_manager.soq_to_wirelabel(soq)
             self.wires += [f'{wire_name} W {wire_label}']
-            if soq.reg.dtype != QBit():
-                dtype_str = _format_label_text(str(soq.reg.dtype), scale=0.5)
-                self.wires += [f'{wire_name} / {dtype_str}']
+            self.wires += self._dtype_label_for_wire(wire_name, soq.reg.dtype)
 
         else:
             # A RIGHT wire on an intermediate Bloq should start as off and be turned on
@@ -168,8 +213,21 @@ class QpicCircuit:
             self._alloc_wire_for_soq(cxn.left)
         self.soq_map[cxn.right] = self.soq_map[cxn.left]
 
+    def _add_bloq_with_no_wire(self, bloq: 'Bloq'):
+        """Add bloq, like GlobalPhase, which doesn't have any incoming & outgoing wires."""
+        if not self.empty_wire:
+            self.empty_wire = '_empty_wire'
+            self.wires.insert(2, f'{self.empty_wire} W off')
+        gate_text = str(bloq)
+        width = _gate_width_for_text(gate_text)
+        self.gates += [f'{self.empty_wire} G:width={width}:shape=8 {gate_text}']
+
     def add_bloq(self, bloq: 'Bloq', pred: List['Connection'], succ: List['Connection']) -> None:
-        controls, targets = [], []
+        controls, targets, wire_dtype_labels = [], [], []
+
+        if not (pred or succ):
+            self._add_bloq_with_no_wire(bloq)
+            return
 
         def add_soq(soq: Soquet):
             wire, gate = self._add_soq(soq)
@@ -177,6 +235,9 @@ class QpicCircuit:
                 controls.append(wire)
             else:
                 targets.append(wire + gate)
+            if soq.reg.side == Side.RIGHT:
+                wire = self.wire_manager.soq_to_wirename(self.soq_map[soq])
+                wire_dtype_labels.extend(self._dtype_label_for_wire(wire, soq.reg.dtype))
 
         for cxn in pred:
             self.add_connection(cxn)
@@ -187,6 +248,7 @@ class QpicCircuit:
             if cxn.left.reg.side == Side.RIGHT:
                 add_soq(cxn.left)
         self.gates += [' '.join(targets + controls)]
+        self.gates += wire_dtype_labels
 
 
 def get_qpic_data(bloq: 'Bloq', file_path: Union[None, pathlib.Path, str] = None) -> List[str]:
@@ -194,22 +256,22 @@ def get_qpic_data(bloq: 'Bloq', file_path: Union[None, pathlib.Path, str] = None
 
     Args:
         bloq: Bloqs to draw the latex diagram for
-        file_path: If specified, the output is stored at the file.
+        file_path: If specified, the output is stored at the file. Otherwise, the data is returned.
 
     Returns:
         A list of strings representing the input to `qpic` utility to draw a latex diagram
         for bloq. If specified, the output is written to `file_path`.
     """
     cbloq = bloq.as_composite_bloq()
-    qpic_circuit = QpicCircuit(cbloq.signature)
+    qpic_circuit = QpicCircuit()
+    qpic_circuit.add_wires_for_signature(cbloq.signature)
     for binst, pred, succ in cbloq.iter_bloqnections():
         qpic_circuit.add_bloq(binst.bloq, pred, succ)
-    data = qpic_circuit.wires + qpic_circuit.gates
     if file_path:
         with open(file_path, 'w') as f:
-            f.write('\n'.join(data))
+            f.write('\n'.join(qpic_circuit.data))
     else:
-        return data
+        return qpic_circuit.data
 
 
 def _to_snake_case(name):
@@ -228,11 +290,11 @@ def qpic_input_to_diagram(
     r"""Invoke `qpic` script to generate output diagram of type qpic/tex/pdf/png.
 
     Outputs one of the following files, based on `output_type`:
-     - base_file_path + '.qpic' - Copies the input qpic_file to output_file.
-     - base_file_path + '.tex' - Obtained via `qpic -f base_file_path.qpic`
-     - base_file_path + '.pdf' - Uses `pdflatex` tool to convert tex to pdf. See
+     - qpic_file.with_suffix('.qpic') - Copies the input qpic_file to output_file.
+     - qpic_file.with_suffix('.tex') - Obtained via `qpic -f base_file_path.qpic`
+     - qpic_file.with_suffix('.pdf') - Uses `pdflatex` tool to convert tex to pdf. See
         https://tug.org/applications/pdftex/ for more details on how to install `pdflatex`.
-     - base_file_path + '.png' - Uses `convert` tool to convert pdf to png. See
+     - qpic_file.with_suffix('.png') - Uses `convert` tool to convert pdf to png. See
         https://imagemagick.org/ for more details on how to install `convert`.
 
     Args:

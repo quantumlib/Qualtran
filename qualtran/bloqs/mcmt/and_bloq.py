@@ -160,7 +160,7 @@ class And(GateWithRegisters):
 
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         if soq.reg.name == 'target':
-            return directional_text_box('&', side=soq.reg.side)
+            return directional_text_box('∧', side=soq.reg.side)
 
         (c_idx,) = soq.idx
         filled = bool(self.cv1 if c_idx == 0 else self.cv2)
@@ -321,7 +321,7 @@ class MultiAnd(Bloq):
         if soq.reg.name == 'ctrl':
             return Circle(filled=self.cvs[soq.idx[0]] == 1)
         if soq.reg.name == 'target':
-            return directional_text_box('&', side=soq.reg.side)
+            return directional_text_box('∧', side=soq.reg.side)
         return directional_text_box(text=soq.pretty(), side=soq.reg.side)
 
     def short_name(self) -> str:

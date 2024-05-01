@@ -13,7 +13,8 @@
 #  limitations under the License.
 
 from qualtran import Bloq
-from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
+from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
+from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.drawing.qpic_diagram import get_qpic_data
 
 
@@ -23,47 +24,62 @@ def _assert_bloq_has_qpic_diagram(bloq: Bloq, expected_qpic_data: str):
     assert qpic_data_str.strip() == expected_qpic_data.strip()
 
 
-def test_qpic_data_for_uniform_superposition():
+def test_qpic_data_for_reflect_using_prepare():
+    coeff = [0.1, 0.2, 0.3, 0.4]
+    prepare = StatePreparationAliasSampling.from_lcu_probs(coeff, probability_epsilon=0.1)
+    bloq = ReflectionUsingPrepare(prepare, global_phase=-1j)
     _assert_bloq_has_qpic_diagram(
-        PrepareUniformSuperposition(3),
+        bloq,
         r"""
 DEFINE off color=white
 DEFINE on color=black
-target W \textrm{target}
-target / \textrm{\scalebox{0.5}{QAny(2)}}
+selection W \textrm{\scalebox{0.8}{selection}}
+selection / \textrm{\scalebox{0.5}{BoundedQUInt(2, 4)}}
 LABEL length=10
-target G:width=55 \textrm{UNIFORM(3)}
+selection G:width=17:shape=box \textrm{\scalebox{0.8}{R\_L}}
 """,
     )
 
     _assert_bloq_has_qpic_diagram(
-        PrepareUniformSuperposition(3).decompose_bloq(),
+        bloq.decompose_bloq(),
         r"""
 DEFINE off color=white
 DEFINE on color=black
-target W \textrm{target}
-target / \textrm{\scalebox{0.5}{QAny(2)}}
+_empty_wire W off
+selection W \textrm{\scalebox{0.8}{selection}}
+selection / \textrm{\scalebox{0.5}{BoundedQUInt(2, 4)}}
 LABEL length=10
 reg W off
+reg_1 W off
+reg_2 W off
+reg_3 W off
+reg_4 W off
 reg[0] W off
 reg[1] W off
-reg_1 W off
-reg:on G:width=30 \textrm{alloc}
-target:off G:width=10 \textrm{S} reg[0]:on G:width=20 \textrm{[0]} reg[1]:on G:width=20 \textrm{[1]}
-reg[0] G:width=10 \textrm{H}
-reg[1] G:width=10 \textrm{H}
-reg[0]:off G:width=20 \textrm{[0]} reg[1]:off G:width=20 \textrm{[1]} reg_1:on G:width=10 \textrm{J}
-reg_1 G:width=30 \textrm{In(x)} reg G:width=45 \textrm{$\oplus$(x $<$ 3)}
-reg G:width=55 \textrm{Rz(0.392π)}
-reg_1 G:width=30 \textrm{In(x)} reg G:width=45 \textrm{$\oplus$(x $<$ 3)}
-reg_1:off G:width=10 \textrm{S} reg[0]:on G:width=20 \textrm{[0]} reg[1]:on G:width=20 \textrm{[1]}
-reg:off G:width=25 \textrm{free}
-reg[0] G:width=10 \textrm{H}
-reg[1] G:width=10 \textrm{H}
-target:on G:width=10 \textrm{\&} -reg[0] -reg[1]
-target G:width=55 \textrm{Rz(0.392π)}
-target:off G:width=10 \textrm{\&} -reg[0] -reg[1]
-reg[0] G:width=10 \textrm{H}
-reg[1] G:width=10 \textrm{H}
-reg[0]:off G:width=20 \textrm{[0]} reg[1]:off G:width=20 \textrm{[1]} reg:on G:width=10 \textrm{J}""".strip(),
+reg_5 W off
+reg:on G:width=25:shape=box \textrm{\scalebox{0.8}{alloc}}
+reg / \textrm{\scalebox{0.5}{QAny(2)}}
+reg_1:on G:width=25:shape=box \textrm{\scalebox{0.8}{alloc}}
+reg_1 / \textrm{\scalebox{0.5}{QAny(2)}}
+reg_2:on G:width=25:shape=box \textrm{\scalebox{0.8}{alloc}}
+reg_2 / \textrm{\scalebox{0.5}{QAny(2)}}
+reg_3:on G:width=25:shape=box \textrm{\scalebox{0.8}{alloc}}
+reg_3 / \textrm{\scalebox{0.5}{QAny(1)}}
+reg_4:on G:width=25:shape=box \textrm{\scalebox{0.8}{alloc}}
+reg_4 / \textrm{\scalebox{0.5}{QAny(1)}}
+_empty_wire G:width=33:shape=8 (-0-1j)
+selection G:width=121:shape=box \textrm{\scalebox{0.8}{StatePreparationAliasSampling}} reg G:width=37:shape=box \textrm{\scalebox{0.8}{sigma\_mu}} reg_1 G:width=17:shape=box \textrm{\scalebox{0.8}{alt}} reg_2 G:width=21:shape=box \textrm{\scalebox{0.8}{keep}} reg_3 G:width=65:shape=box \textrm{\scalebox{0.8}{less\_than\_equal}}
++reg_4
+selection:off G:width=5:shape=> \textrm{\scalebox{0.8}{}} reg[0]:on G:width=17:shape=box \textrm{\scalebox{0.8}{[0]}} reg[1]:on G:width=17:shape=box \textrm{\scalebox{0.8}{[1]}}
+reg[0] G:width=21:shape=box \textrm{\scalebox{0.8}{@(0)}} reg[1] G:width=21:shape=box \textrm{\scalebox{0.8}{@(0)}} reg_4 G:width=9:shape=box \textrm{\scalebox{0.8}{Z}}
++reg_4
+reg[0]:off G:width=17:shape=box \textrm{\scalebox{0.8}{[0]}} reg[1]:off G:width=17:shape=box \textrm{\scalebox{0.8}{[1]}} reg_5:on G:width=5:shape=< \textrm{\scalebox{0.8}{}}
+reg_5 / \textrm{\scalebox{0.5}{BoundedQUInt(2, 4)}}
+reg_4:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
+reg_5 G:width=121:shape=box \textrm{\scalebox{0.8}{StatePreparationAliasSampling}} reg G:width=37:shape=box \textrm{\scalebox{0.8}{sigma\_mu}} reg_1 G:width=17:shape=box \textrm{\scalebox{0.8}{alt}} reg_2 G:width=21:shape=box \textrm{\scalebox{0.8}{keep}} reg_3 G:width=65:shape=box \textrm{\scalebox{0.8}{less\_than\_equal}}
+reg:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
+reg_1:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
+reg_2:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
+reg_3:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
+""".strip(),
     )
