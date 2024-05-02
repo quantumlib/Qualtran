@@ -1,14 +1,8 @@
 import numpy as np
 from scipy.optimize import minimize
-
-# DTYPE = np.complex256
-# TOL = 1e-11
-class ReflectionConvolver:
-    def __init__(self, poly, granularity=None):
-        if granularity is None:
-            granularity = poly.shape[0]
-        P = np.pad(poly, (0, granularity - poly.shape[0]))
-
+class FastQSP:
+    def __init__(self, poly, granularity=8):
+        P = np.pad(poly, (0, 2**granularity - poly.shape[0]))
         ft = np.fft.fft(P)
 
         # Normalize P
@@ -17,7 +11,7 @@ class ReflectionConvolver:
 
         self.conv_p_negative = self.complex_conv_by_flip_conj(nomralized_poly.real, nomralized_poly.imag) * -1
         self.conv_p_negative[nomralized_poly.shape[0] - 1] = 1 - np.linalg.norm(nomralized_poly) ** 2
-        self.P = nomralized_poly
+        self.normalized_poly = nomralized_poly
 
     def loss_function(self, x):
         real_part = x[:len(x) // 2]
@@ -27,6 +21,11 @@ class ReflectionConvolver:
         # Compute loss using squared distance function
         loss = np.linalg.norm(self.conv_p_negative - conv_result) ** 2
         return loss
+    @staticmethod
+    def array_to_complex(x):
+        real_part = x[:len(x) // 2]
+        imag_part = x[len(x) // 2:]
+        return real_part + 1.j * imag_part
 
     def complex_conv_by_flip_conj(self, real_part, imag_part):
         real_flip = np.flip(real_part, axis=[0])
@@ -45,39 +44,28 @@ class ReflectionConvolver:
         # Combine to form the complex result
         return real_conv + 1j * imag_conv
 
-def make_q(poly, dtype, tol):
-
-    q_initial = np.random.randn(poly.shape[0]*2).astype(dtype=dtype)
+def fast_complementary_polynomial(poly, verify=True, granularity=8):
+    DTYPE = np.complex128
+    TOLERANCE = 1e-12
+    poly = poly.astype(DTYPE)
+    np.random.seed(42)
+    q_initial = np.random.randn(poly.shape[0]*2).astype(dtype=DTYPE)
     q_initial_normalized = q_initial / np.linalg.norm(q_initial)
 
-    rf = ReflectionConvolver(poly)
+    qsp = FastQSP(poly)
 
-    minimizer = minimize(rf.loss_function,q_initial_normalized, method="L-BFGS-B", tol=tol)
-    return rf.P, array_to_complex(minimizer.x)
+    minimizer = minimize(qsp.loss_function,q_initial_normalized, method="L-BFGS-B", tol=TOLERANCE)
 
-def array_to_complex(x):
-    real_part = x[:len(x) // 2]
-    imag_part = x[len(x) // 2:]
-    return real_part+ 1.j*imag_part
+    if verify:
+        P = qsp.normalized_poly
+        Q = qsp.array_to_complex(minimizer.x)
+        check = abs(1 - np.sum(np.abs(Q) ** 2 + np.abs(P) ** 2))
+        print(check)
+        # assert check < 1e-5
+
+    return qsp.array_to_complex(minimizer.x)
+
+# poly = np.array([1,2,3,4,5])
+# Q = fast_complementary_polynomial(poly)
 
 
-def run(DTYPE, TOL):
-    poly = np.array([1,2,3,4,5], dtype=DTYPE)
-    P,Q = make_q(poly, dtype, TOL)
-    # print(np.abs(P))
-    # print(np.abs(Q))
-    # print(Q)
-    return -np.log10(abs(1-np.sum(np.abs(Q)**2+np.abs(P)**2)))
-
-dtypes = [np.complex64, np.complex128, np.complex256]
-precisions = [1e-4, 1e-6, 1e-8, 1e-10, 1e-12, 1e-15]
-trials = 5
-
-for dtype in dtypes:
-    for precision in precisions:
-        sum = 0
-        for i in range(trials):
-            sum += run(dtype, precision)
-        print(dtype, precision, sum/trials)
-
-# use complex 128 and tol e-12
