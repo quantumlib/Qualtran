@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
@@ -37,7 +38,7 @@ def test_cnot():
 
 def test_toffoli():
     tof = Toffoli()
-    tof_tt = flank_with_classical_vectors(tof, {'ctrl': [1, 1], 'target': 0})
+    tof_tt = flank_with_classical_vectors(tof, {'ctrl': np.asarray([1, 1]), 'target': 0})
     assert tof_tt.tensor_contract() == 1.0
 
 

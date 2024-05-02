@@ -129,7 +129,7 @@ def _singleton_error(self, x):
     raise ValueError("Do not instantiate a new DanglingT. Use `LeftDangle` or `RightDangle`.")
 
 
-DanglingT.__init__ = _singleton_error
+DanglingT.__init__ = _singleton_error  # type: ignore[method-assign]
 
 
 @frozen
