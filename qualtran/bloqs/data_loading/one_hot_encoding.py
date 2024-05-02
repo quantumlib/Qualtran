@@ -28,6 +28,10 @@ class OneHotEncoding(GateWithRegisters):
     Registers:
         a: an unsigned integer
         b: the target to one-hot encode.
+
+    References:
+        [Windowed quantum arithmetic](https://arxiv.org/pdf/1905.07682.pdf)
+        Figure 4]
     """
 
     binary_reg_size: int = field()
