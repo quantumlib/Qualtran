@@ -105,7 +105,7 @@ def test_add_into_phase_grad_controlled(controlled: int):
     from qualtran.bloqs.rotations.phase_gradient import _fxp
 
     x_bit, phase_bit = 4, 7
-    bloq = AddIntoPhaseGrad(x_bit, phase_bit, controlled=controlled)
+    bloq = AddIntoPhaseGrad(x_bit, phase_bit, controlled_by=controlled)
     basis_map: Dict[int, int] = {}
     num_bits = 1 + x_bit + phase_bit
     expected_unitary = np.zeros((2**num_bits, 2**num_bits))

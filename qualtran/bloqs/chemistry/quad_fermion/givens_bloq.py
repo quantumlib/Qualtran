@@ -131,7 +131,7 @@ class RealGivensRotationByPhaseGradient(Bloq):
             phase_bitsize=self.phasegrad_bitsize,
             right_shift=0,
             sign=1,
-            controlled=1,
+            controlled_by=1,
         )
 
         # clifford block
@@ -247,7 +247,7 @@ class ComplexGivensRotationByPhaseGradient(Bloq):
             phase_bitsize=self.phasegrad_bitsize,
             right_shift=0,
             sign=1,
-            controlled=1,
+            controlled_by=1,
         )
         target_j, cplx_rom_data, phase_gradient = bb.add(
             add_into_phasegrad_gate, x=cplx_rom_data, phase_grad=phase_gradient, ctrl=target_j
