@@ -164,7 +164,7 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
 
-    from qualtran.drawing import directional_text_box, ModPlus, Circle
+    from qualtran.drawing import Circle, directional_text_box, ModPlus
 
     if symbol == "@":
         return Circle(filled=True)

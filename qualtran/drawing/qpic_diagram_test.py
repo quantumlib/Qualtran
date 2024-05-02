@@ -71,7 +71,7 @@ _empty_wire G:width=33:shape=8 (-0-1j)
 selection G:width=121:shape=box \textrm{\scalebox{0.8}{StatePreparationAliasSampling}} reg G:width=37:shape=box \textrm{\scalebox{0.8}{sigma\_mu}} reg_1 G:width=17:shape=box \textrm{\scalebox{0.8}{alt}} reg_2 G:width=21:shape=box \textrm{\scalebox{0.8}{keep}} reg_3 G:width=65:shape=box \textrm{\scalebox{0.8}{less\_than\_equal}}
 +reg_4
 selection:off G:width=5:shape=> \textrm{\scalebox{0.8}{}} reg[0]:on G:width=17:shape=box \textrm{\scalebox{0.8}{[0]}} reg[1]:on G:width=17:shape=box \textrm{\scalebox{0.8}{[1]}}
-reg[0] G:width=21:shape=box \textrm{\scalebox{0.8}{@(0)}} reg[1] G:width=21:shape=box \textrm{\scalebox{0.8}{@(0)}} reg_4 G:width=9:shape=box \textrm{\scalebox{0.8}{Z}}
+reg_4 G:width=9:shape=box \textrm{\scalebox{0.8}{Z}} -reg[0] -reg[1]
 +reg_4
 reg[0]:off G:width=17:shape=box \textrm{\scalebox{0.8}{[0]}} reg[1]:off G:width=17:shape=box \textrm{\scalebox{0.8}{[1]}} reg_5:on G:width=5:shape=< \textrm{\scalebox{0.8}{}}
 reg_5 / \textrm{\scalebox{0.5}{BoundedQUInt(2, 4)}}
@@ -80,6 +80,5 @@ reg_5 G:width=121:shape=box \textrm{\scalebox{0.8}{StatePreparationAliasSampling
 reg:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
 reg_1:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
 reg_2:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
-reg_3:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}
-""".strip(),
+reg_3:off G:width=21:shape=box \textrm{\scalebox{0.8}{free}}""",
     )
