@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -28,7 +28,6 @@ from qualtran import (
     Side,
     Signature,
 )
-from qualtran._infra.quantum_graph import Soquet
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
@@ -89,10 +88,10 @@ class ToContiguousIndex(Bloq):
         num_toffoli = self.bitsize**2 + self.bitsize - 1
         return TComplexity(t=4 * num_toffoli)
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'mu':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg.name == 'mu':
             return TextBox(r'$\mu$')
-        elif soq.reg.name == 'nu':
+        elif reg.name == 'nu':
             return TextBox(r'$\mu$')
         else:
             text = r'$\oplus\nu(\nu-1)/2+\mu$'

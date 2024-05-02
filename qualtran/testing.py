@@ -31,7 +31,6 @@ from qualtran import (
     LeftDangle,
     RightDangle,
     Side,
-    Soquet,
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
@@ -236,9 +235,7 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
     ws = []
     regs = bloq.signature
     for i, r in enumerate(regs):
-        # note this will only work if shape = ().
-        # See: https://github.com/quantumlib/Qualtran/issues/608
-        ws.append(bloq.wire_symbol(Soquet(i, r)).text)
+        ws.append(bloq.wire_symbol(r, (i,)).text)
 
     assert ws == expected_ws
 

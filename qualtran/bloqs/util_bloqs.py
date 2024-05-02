@@ -33,7 +33,6 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -109,11 +108,11 @@ class Split(Bloq):
 
         return self, add_controlled
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.shape:
-            text = f'[{", ".join(str(i) for i in soq.idx)}]'
-            return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.shape:
+            text = f'[{", ".join(str(i) for i in idx)}]'
+            return directional_text_box(text, side=reg.side)
+        return directional_text_box(' ', side=reg.side)
 
 
 @frozen
@@ -177,11 +176,11 @@ class Join(Bloq):
 
         return self, add_controlled
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.shape:
-            text = f'[{", ".join(str(i) for i in soq.idx)}]'
-            return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.shape:
+            text = f'[{", ".join(str(i) for i in idx)}]'
+            return directional_text_box(text, side=reg.side)
+        return directional_text_box(' ', side=reg.side)
 
 
 @frozen
@@ -297,11 +296,11 @@ class Partition(Bloq):
         else:
             return self._classical_unpartition(**vals)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.shape:
-            text = f'[{",".join(str(i) for i in soq.idx)}]'
-            return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.shape:
+            text = f'[{",".join(str(i) for i in idx)}]'
+            return directional_text_box(text, side=reg.side)
+        return directional_text_box(' ', side=reg.side)
 
 
 @frozen
@@ -339,8 +338,8 @@ class Allocate(Bloq):
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        assert soq.reg.name == 'reg'
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
 
 
@@ -385,8 +384,8 @@ class Free(Bloq):
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        assert soq.reg.name == 'reg'
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
 
 

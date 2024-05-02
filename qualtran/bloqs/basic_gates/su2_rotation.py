@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox
@@ -143,7 +143,7 @@ class SU2RotationGate(GateWithRegisters):
     def pretty_name(self) -> str:
         return 'SU_2'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox(
             f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
         )

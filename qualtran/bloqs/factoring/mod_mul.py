@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 import attrs
 import numpy as np
@@ -114,12 +114,12 @@ class CtrlModMul(Bloq):
     def short_name(self) -> str:
         return f'x *= {self.k} % {self.mod}'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        if soq.reg.name == 'x':
-            return directional_text_box(f'*={self.k}', side=soq.reg.side)
-        raise ValueError(f"Unknown register name: {soq.reg.name}")
+        if reg.name == 'x':
+            return directional_text_box(f'*={self.k}', side=reg.side)
+        raise ValueError(f"Unknown register name: {reg.name}")
 
 
 @frozen

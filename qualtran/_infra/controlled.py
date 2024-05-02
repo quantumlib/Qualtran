@@ -166,15 +166,15 @@ class CtrlSpec:
                 return False
         return True
 
-    def wire_symbol(self, i: int, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, i: int, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         # Return a circle for bits; a box otherwise.
         from qualtran.drawing import Circle, TextBox
 
-        if soq.reg.bitsize == 1:
-            cv = self.cvs[i][soq.idx]
+        if reg.bitsize == 1:
+            cv = self.cvs[i][idx]
             return Circle(filled=(cv == 1))
 
-        cv = self.cvs[i][soq.idx]
+        cv = self.cvs[i][idx]
         return TextBox(f'{cv}')
 
     @cached_property
@@ -431,14 +431,14 @@ class Controlled(GateWithRegisters):
         # Unable to determine the unitary effect.
         return NotImplemented
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name not in self.ctrl_reg_names:
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
-            return self.subbloq.wire_symbol(soq)
+            return self.subbloq.wire_symbol(reg, idx)
 
         # Otherwise, it's part of the control register.
-        i = self.ctrl_reg_names.index(soq.reg.name)
-        return self.ctrl_spec.wire_symbol(i, soq)
+        i = self.ctrl_reg_names.index(reg.name)
+        return self.ctrl_spec.wire_symbol(i, reg, idx)
 
     def adjoint(self) -> 'Bloq':
         return self.subbloq.adjoint().controlled(self.ctrl_spec)
