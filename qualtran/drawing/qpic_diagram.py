@@ -333,7 +333,7 @@ def qpic_input_to_diagram(
     tex_file = str(qpic_file) + '_tex'
     command = f'qpic {qpic_file} -f tex -o {tex_file}'
     subprocess.run(command.split(), check=True, capture_output=True)
-    tex_file_path = pathlib.Path(tex_file + '.tex')
+    tex_file_path = pathlib.Path(tex_file)
 
     if output_type == 'tex':
         return move_to_output(tex_file_path)
@@ -351,7 +351,7 @@ def qpic_input_to_diagram(
     # 4. Convert PDF to PNG
     if output_type == 'png':
         png_file_path = tex_file_path.with_suffix('.png')
-        command = f'convert -density 800 -quality 100 {pdf_file_path} {png_file_path}'
+        command = f'convert -density 1200 -quality 100 {pdf_file_path} {png_file_path}'
         subprocess.run(command.split(), check=True, capture_output=True)
         os.remove(pdf_file_path)
         return move_to_output(png_file_path)

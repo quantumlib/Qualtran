@@ -38,10 +38,11 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
 
     Args:
         bloq: The bloq to show
-        type: Either 'graph', 'dtype', or 'musical_score'. By default, display a directed acyclic
-            graph of the bloq connectivity. If dtype then the connections are
-            labelled with their dtypes rather than bitsizes. Otherwise, draw a
-            musical score diagram.
+        type: Either 'graph', 'dtype', 'musical_score' or 'latex'. By default, display
+            a directed acyclic graph of the bloq connectivity. If dtype then the
+            connections are labelled with their dtypes rather than bitsizes. If 'latex',
+            then latex diagrams are drawn using `qpic`, which should be installed already
+            and is invoked via a subprocess.run() call. Otherwise, draw a musical score diagram.
     """
     if type.lower() == 'graph':
         IPython.display.display(PrettyGraphDrawer(bloq).get_svg())
@@ -49,6 +50,8 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
         IPython.display.display(TypedGraphDrawer(bloq).get_svg())
     elif type.lower() == 'musical_score':
         draw_musical_score(get_musical_score_data(bloq))
+    elif type.lower() == 'latex':
+        show_bloq_via_qpic(bloq)
     else:
         raise ValueError(f"Unknown `show_bloq` type: {type}.")
 
@@ -89,6 +92,7 @@ def show_flame_graph(*bloqs: 'Bloq', **kwargs):
 
 
 def show_bloq_via_qpic(bloq: 'Bloq', width: int = 1000, height: int = 400):
+    """Display latex diagram for bloq by invoking `qpic`. Assumes qpic is already installed."""
     output_file_path = qpic_diagram_for_bloq(bloq, output_type='png')
 
     from IPython.display import Image
