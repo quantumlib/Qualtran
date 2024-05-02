@@ -59,14 +59,14 @@ class PhaseGradientUnitary(GateWithRegisters):
 
     bitsize: 'SymbolicInt'
     exponent: float = 1
-    controlled: bool = False
+    is_controlled: bool = False
     eps: float = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
         return (
             Signature.build_from_dtypes(ctrl=QBit(), phase_grad=QFxp(self.bitsize, self.bitsize))
-            if self.controlled
+            if self.is_controlled
             else Signature.build_from_dtypes(phase_grad=QFxp(self.bitsize, self.bitsize))
         )
 
@@ -74,14 +74,14 @@ class PhaseGradientUnitary(GateWithRegisters):
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         ctrl = quregs.get('ctrl', ())
-        gate = CZPowGate if self.controlled else ZPowGate
+        gate = CZPowGate if self.is_controlled else ZPowGate
         for i, q in enumerate(quregs['phase_grad']):
             yield gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize).on(*ctrl, q)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
-        wire_symbols = ['@'] * self.controlled + [
+        wire_symbols = ['@'] * self.is_controlled + [
             f'Z^{self.exponent}/{2**(i+1)}' for i in range(self.bitsize)
         ]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
@@ -89,7 +89,9 @@ class PhaseGradientUnitary(GateWithRegisters):
     def __pow__(self, power):
         if power == 1:
             return self
-        return PhaseGradientUnitary(self.bitsize, self.exponent * power, self.controlled, self.eps)
+        return PhaseGradientUnitary(
+            self.bitsize, self.exponent * power, self.is_controlled, self.eps
+        )
 
 
 @attrs.frozen
@@ -138,7 +140,7 @@ class PhaseGradientState(GateWithRegisters):
 
 
 @attrs.frozen
-class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
+class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Quantum-quantum addition into a phase gradient register using $b_{phase} - 2$ Toffolis
 
     $$
@@ -152,9 +154,9 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
             shifted before adding to the phase gradient register.
         sign: Whether the input register x should be  added or subtracted from the phase gradient
             register.
-        controlled: Whether to control this bloq with a ctrl register. When controlled=None, this bloq
-            is not controlled. When controlled=0, this bloq is active when the ctrl register is 0. When
-            controlled=1, this bloq is active when the ctrl register is 1.
+        controlled_by: Whether to control this bloq with a ctrl register. When controlled_by=None, this bloq
+            is not controlled. When controlled_by=0, this bloq is active when the ctrl register is 0. When
+            controlled_by=1, this bloq is active when the ctrl register is 1.
 
     Registers:
         - ctrl: Control THRU register
@@ -170,7 +172,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
     phase_bitsize: 'SymbolicInt'
     right_shift: int = 0
     sign: int = +1
-    controlled: Optional[int] = None
+    controlled_by: Optional[int] = None
 
     def pretty_name(self) -> str:
         sign = '+' if self.sign > 0 else '-'
@@ -184,7 +186,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
                 x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
                 phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
             )
-            if self.controlled is not None
+            if self.controlled_by is not None
             else Signature.build_from_dtypes(
                 x=QFxp(self.x_bitsize, self.x_bitsize, signed=False),
                 phase_grad=QFxp(self.phase_bitsize, self.phase_bitsize, signed=False),
@@ -200,7 +202,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
             raise ValueError(f'Symbolic phase {self.phase_bitsize} not supported')
         if isinstance(self.x_bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.x_bitsize} not supported')
-        if self.controlled is not None:
+        if self.controlled_by is not None:
             return [2], [2] * self.x_bitsize, [2] * self.phase_bitsize
         return [2] * self.x_bitsize, [2] * self.phase_bitsize
 
@@ -215,7 +217,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
     def apply(self, *args) -> Tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
-        if self.controlled is not None:
+        if self.controlled_by is not None:
             ctrl, x, phase_grad = args
             out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
             return out['ctrl'], out['x'], out['phase_grad']
@@ -226,9 +228,9 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
 
     def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
         x, phase_grad = kwargs['x'], kwargs['phase_grad']
-        if self.controlled is not None:
+        if self.controlled_by is not None:
             ctrl = kwargs['ctrl']
-            if ctrl == self.controlled:
+            if ctrl == self.controlled_by:
                 phase_grad_out = (phase_grad + self.sign * self.scaled_val(x)) % (
                     2**self.phase_bitsize
                 )
@@ -241,7 +243,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_toffoli = self.phase_bitsize - 2
-        if self.controlled is not None:
+        if self.controlled_by is not None:
             return {(Toffoli(), 2 * num_toffoli)}
 
         return {(Toffoli(), num_toffoli)}
@@ -256,7 +258,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):
             self.phase_bitsize,
             self.right_shift,
             sign=-1 * self.sign,
-            controlled=self.controlled,
+            controlled_by=self.controlled_by,
         )
 
     def __pow__(self, power):
