@@ -57,7 +57,7 @@ def test_ctrl_spec():
     cspec1 = CtrlSpec()
     assert cspec1 == CtrlSpec(QBit(), cvs=1)
 
-    cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
+    cspec2 = CtrlSpec(cvs=np.ones(27, dtype=np.intc).reshape((3, 3, 3)))
     assert cspec2.shapes == ((3, 3, 3),)
     assert cspec2 != cspec1
 

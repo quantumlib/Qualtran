@@ -96,7 +96,7 @@ class TestPartition(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', test_regs: 'SoquetT') -> Dict[str, 'Soquet']:
         bloq_regs = self.test_bloq.signature
-        partition = Partition(self.bitsize, bloq_regs)
+        partition = Partition(self.bitsize, bloq_regs)  # type: ignore[arg-type]
         out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
         test_regs = bb.add(
