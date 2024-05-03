@@ -21,17 +21,7 @@ import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import (
-    Bloq,
-    CompositeBloq,
-    QBit,
-    QInt,
-    QUInt,
-    Register,
-    Signature,
-    Soquet,
-    SoquetT,
-)
+from qualtran import Bloq, CompositeBloq, QBit, QInt, QUInt, Register, Signature, Soquet, SoquetT
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And

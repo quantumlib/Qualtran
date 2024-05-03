@@ -180,14 +180,6 @@ def test_addition_gate_counts(n: int):
     qlt_testing.assert_equivalent_bloq_counts(add, ignore_split_join)
 
 
-@pytest.mark.parametrize("n", [*range(3, 10)])
-def test_addition_gate_counts_controlled(n: int):
-    add = Add(QUInt(n), controlled=1)
-    qlt_testing.assert_valid_bloq_decomposition(add)
-    assert add.t_complexity() == add.decompose_bloq().t_complexity()
-    assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
-
-
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
 def test_add_no_decompose(a, b):
     num_bits = 5
