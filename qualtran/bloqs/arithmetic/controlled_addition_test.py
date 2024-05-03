@@ -1,12 +1,13 @@
 import cirq
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import QUInt
 from qualtran.bloqs.arithmetic.controlled_addition import ControlledAdd
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
-import qualtran.testing as qlt_testing
 from qualtran.resource_counting.generalizers import ignore_split_join
+
 
 @pytest.mark.parametrize('a', [1, 2])
 @pytest.mark.parametrize('b', [1, 2, 3])
@@ -46,6 +47,7 @@ def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, contro
         ("In(ctrl)",) + ("In(x)",) * num_bits_a + ("In(y)/Out(x+y)",) * num_bits_b
     )
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
+
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_counts_controlled(n: int):

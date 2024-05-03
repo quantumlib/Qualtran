@@ -13,8 +13,7 @@
 #  limitations under the License.
 import itertools
 import math
-from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -24,16 +23,11 @@ from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
-    bloq_example,
-    BloqBuilder,
-    BloqDocSpec,
     CompositeBloq,
-    GateWithRegisters,
     QBit,
     QInt,
     QUInt,
     Register,
-    Side,
     Signature,
     Soquet,
     SoquetT,
@@ -42,9 +36,7 @@ from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
-from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
@@ -64,8 +56,7 @@ class ControlledAdd(Bloq):
         b_dtype: Quantum datatype used to represent the integer b. Must be large
             enough to hold the result in the output register of a + b, or else it simply
             drops the most significant bits. If not specified, b_dtype is set to a_dtype.
-        controlled: Whether to control this bloq with a ctrl register. When controlled=None, this bloq
-            is not controlled. When controlled=0, this bloq is active when the ctrl register is 0. When
+        controlled: When controlled=0, this bloq is active when the ctrl register is 0. When
             controlled=1, this bloq is active when the ctrl register is 1.
 
     Registers:
@@ -80,6 +71,7 @@ class ControlledAdd(Bloq):
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     controlled: int = field(default=1)
+
     @b_dtype.default
     def b_dtype_default(self):
         return self.a_dtype
@@ -98,11 +90,16 @@ class ControlledAdd(Bloq):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
 
+    @controlled.validator
+    def _controlled_validate(self, field, val):
+        if val not in (0, 1):
+            raise ValueError("controlled must be either 0 or 1")
+
     @property
     def signature(self):
         return Signature(
-                [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
-            )
+            [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
+        )
 
     def add_my_tensors(
         self,
