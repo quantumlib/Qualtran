@@ -129,7 +129,9 @@ class HoppingTile(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
-        return {(HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps), self.length**2 // 2)}
+        return {
+            (HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps), self.length**2 // 2)
+        }
 
 
 @bloq_example
