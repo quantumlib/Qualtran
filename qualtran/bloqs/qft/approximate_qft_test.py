@@ -63,7 +63,7 @@ def test_approximate_qft_from_epsilon_auto(bloq_autotester):
     bloq_autotester(_approximate_qft_from_epsilon)
 
 
-@pytest.mark.parametrize('n', [3, 4, 5])
+@pytest.mark.parametrize('n', [2, 3, 4, 5])
 @pytest.mark.parametrize('without_reverse', [True, False])
 def test_approximate_qft_exact(n: int, without_reverse: bool):
     qft_bloq = TestApproximateQFT(n, n, not without_reverse)
