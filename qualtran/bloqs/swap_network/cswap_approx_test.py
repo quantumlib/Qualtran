@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 import random
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import pytest
+import sympy
 
 import qualtran.cirq_interop.testing as cq_testing
 from qualtran import Bloq
@@ -45,7 +46,9 @@ def test_approx_cswap_t_count(n):
     assert cswap.t_complexity() == cswap_d.t_complexity()
 
 
-def get_t_count_and_clifford(bc: Dict[Bloq, int]) -> Tuple[int, int]:
+def get_t_count_and_clifford(
+    bc: Dict[Bloq, Union[int, sympy.Expr]]
+) -> Tuple[Union[int, sympy.Expr], Union[int, sympy.Expr]]:
     """Get the t count and clifford cost from bloq count."""
     cliff_cost = sum([v for k, v in bc.items() if isinstance(k, ArbitraryClifford)])
     t_cost = sum([v for k, v in bc.items() if isinstance(k, TGate)])

@@ -150,16 +150,16 @@ def _from_iterable(it: Any) -> Optional[TComplexity]:
 
 def _from_bloq_build_call_graph(stc: Any) -> Optional[TComplexity]:
     # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
+    from qualtran.resource_counting import get_bloq_callee_counts
     from qualtran.resource_counting.generalizers import cirq_to_bloqs
 
     if not isinstance(stc, Bloq):
         return None
-    _, sigma = stc.call_graph(max_depth=1, generalizer=cirq_to_bloqs)
-    if sigma == {stc: 1}:
-        # No decomposition found.
+    callee_counts = get_bloq_callee_counts(bloq=stc, generalizer=cirq_to_bloqs)
+    if len(callee_counts) == 0:
         return None
     ret = TComplexity()
-    for bloq, n in sigma.items():
+    for bloq, n in callee_counts:
         r = t_complexity(bloq)
         if r is None:
             return None

@@ -79,7 +79,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
         total_iteration_size = np.prod(
-            tuple(reg.dtype.iteration_length for reg in self.selection_registers)
+            tuple(reg.dtype.iteration_length_or_zero() for reg in self.selection_registers)
         )
         return (Register('target', QAny(int(total_iteration_size))),)
 
@@ -87,7 +87,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         wire_symbols = ["@"] * total_bits(self.control_registers)
         wire_symbols += ["In"] * total_bits(self.selection_registers)
         for it in itertools.product(
-            *[range(reg.dtype.iteration_length) for reg in self.selection_regs]
+            *[range(reg.dtype.iteration_length_or_zero()) for reg in self.selection_regs]
         ):
             wire_symbols += [str(self.nth_gate(*it))]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
@@ -99,7 +99,7 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         target: Sequence[cirq.Qid],
         **selection_indices: int,
     ) -> cirq.OP_TREE:
-        selection_shape = tuple(reg.dtype.iteration_length for reg in self.selection_regs)
+        selection_shape = tuple(reg.dtype.iteration_length_or_zero() for reg in self.selection_regs)
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = int(np.ravel_multi_index(selection_idx, selection_shape))
         return self.nth_gate(*selection_idx).on(target[target_idx]).controlled_by(control)

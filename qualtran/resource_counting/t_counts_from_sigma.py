@@ -13,11 +13,10 @@
 #  limitations under the License.
 import inspect
 import sys
-from typing import Dict, Optional, Tuple, TYPE_CHECKING, Union
+from typing import Mapping, Optional, Tuple, TYPE_CHECKING, Union
 
 import cirq
 
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 if TYPE_CHECKING:
@@ -41,11 +40,12 @@ def _get_all_rotation_types() -> Tuple['_HasEps', ...]:
 
 
 def t_counts_from_sigma(
-    sigma: Dict['Bloq', Union[int, 'sympy.Expr']],
+    sigma: Mapping['Bloq', Union[int, 'sympy.Expr']],
     rotation_types: Optional[Tuple['_HasEps', ...]] = None,
 ) -> SymbolicInt:
     """Aggregates T-counts from a sigma dictionary by summing T-costs for all rotation bloqs."""
     from qualtran.bloqs.basic_gates import TGate
+    from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
     if rotation_types is None:
         rotation_types = _get_all_rotation_types()

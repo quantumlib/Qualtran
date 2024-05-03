@@ -23,6 +23,7 @@ from attrs import frozen
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 class _HasEps(Protocol):
@@ -73,7 +74,7 @@ class ZPowGate(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    exponent: float = 1.0
+    exponent: SymbolicFloat = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
 
@@ -308,7 +309,7 @@ class Rx(CirqGateAsBloqBase):
 
 @frozen
 class Ry(CirqGateAsBloqBase):
-    angle: float
+    angle: Union[sympy.Expr, float]
     eps: float = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':

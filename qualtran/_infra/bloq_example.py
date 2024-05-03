@@ -84,7 +84,7 @@ def bloq_example(_func: Callable[[], _BloqType], **kwargs: Any) -> BloqExample[_
 
 @typing.overload
 def bloq_example(
-    _func: None, *, generalizer: _GeneralizerType = lambda x: x
+    _func: None = None, *, generalizer: _GeneralizerType = lambda x: x
 ) -> Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]]:
     ...
 

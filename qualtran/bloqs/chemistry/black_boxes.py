@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 def get_qroam_cost(
     data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: Optional[int] = None
-) -> Tuple[int, int]:
+) -> int:
     """This gives the optimal k and minimum cost for a QROM over L values of size M.
 
     Adapted from openfermion and accounts for quoted inverse cost.
@@ -196,7 +196,7 @@ class ApplyControlledZs(Bloq):
         filled = bool(self.cvs[c_idx])
         return Circle(filled)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', ctrls: SoquetT, system: SoquetT):
+    def build_composite_bloq(self, bb: 'BloqBuilder', ctrls: SoquetT, system: Soquet):
         split_sys = bb.split(system)
         ctrls, split_sys[0] = bb.add(
             MultiControlPauli(self.cvs, cirq.Z), controls=ctrls, target=split_sys[0]

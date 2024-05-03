@@ -35,6 +35,7 @@ from qualtran.resource_counting.generalizers import (
 class QubitizationWalkOperator(GateWithRegisters):
     r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
+    For a Hamiltonian $H = \sum_l w_l H_l$ (s.t. $w_l > 0$ and $H_l$ are unitaries),
     Constructs a Szegedy quantum walk operator $W = R_{L} . SELECT$, which is a product of
     two reflections $R_{L} = (2|L><L| - I)$ and $SELECT=\sum_{l}|l><l|H_{l}$.
 
@@ -42,7 +43,8 @@ class QubitizationWalkOperator(GateWithRegisters):
     vector spaces. For an arbitrary eigenstate $|k>$ of $H$ with eigenvalue $E_k$, $|\ell>|k>$ and
     an orthogonal state $\phi_{k}$ span the irreducible two-dimensional space that $|\ell>|k>$ is
     in under the action of $W$. In this space, $W$ implements a Pauli-Y rotation by an angle of
-    $-2arccos(E_{k} / \lambda)$ s.t. $W = e^{i arccos(E_k / \lambda) Y}$.
+    $-2arccos(E_{k} / \lambda)$ s.t. $W = e^{i arccos(E_k / \lambda) Y}$,
+    where $\lambda = \sum_l w_l$.
 
     Thus, the walk operator $W$ encodes the spectrum of $H$ as a function of eigenphases of $W$
     s.t. $spectrum(H) = \lambda cos(arg(spectrum(W)))$ where $arg(e^{i\phi}) = \phi$.
@@ -92,6 +94,11 @@ class QubitizationWalkOperator(GateWithRegisters):
     def reflect(self) -> ReflectionUsingPrepare:
         return ReflectionUsingPrepare(self.prepare, control_val=self.control_val, global_phase=-1)
 
+    @cached_property
+    def sum_of_lcu_coefficients(self) -> Optional[float]:
+        r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
+        return self.prepare.l1_norm_of_coeffs
+
     def decompose_from_registers(
         self,
         context: cirq.DecompositionContext,
@@ -132,17 +139,13 @@ class QubitizationWalkOperator(GateWithRegisters):
         ):
             c_select = self.select.controlled(control_values=control_values)
             assert isinstance(c_select, SelectOracle)
-            return QubitizationWalkOperator(
-                c_select, self.prepare, control_val=control_values[0], power=self.power
-            )
+            return attrs.evolve(self, select=c_select, control_val=control_values[0])
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
 
     def with_power(self, new_power: int) -> 'QubitizationWalkOperator':
-        return QubitizationWalkOperator(
-            self.select, self.prepare, control_val=self.control_val, power=new_power
-        )
+        return attrs.evolve(self, power=new_power)
 
     def __pow__(self, power: int):
         return self.with_power(self.power * power)
