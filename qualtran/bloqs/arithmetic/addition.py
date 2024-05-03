@@ -41,7 +41,7 @@ from qualtran import (
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
-from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli, MultiControlX
+from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
@@ -66,9 +66,6 @@ class Add(Bloq):
         b_dtype: Quantum datatype used to represent the integer b. Must be large
             enough to hold the result in the output register of a + b, or else it simply
             drops the most significant bits. If not specified, b_dtype is set to a_dtype.
-        controlled: Whether to control this bloq with a ctrl register. When controlled=None, this bloq
-            is not controlled. When controlled=0, this bloq is active when the ctrl register is 0. When
-            controlled=1, this bloq is active when the ctrl register is 1.
 
     Registers:
         a: A a_dtype.bitsize-sized input register (register a above).
@@ -80,7 +77,6 @@ class Add(Bloq):
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    controlled: Optional[int] = None
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -111,13 +107,7 @@ class Add(Bloq):
 
     @property
     def signature(self):
-        return (
-            Signature(
-                [Register("ctrl", QBit()), Register("a", self.a_dtype), Register("b", self.b_dtype)]
-            )
-            if self.controlled is not None
-            else Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
-        )
+        return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
 
     def add_my_tensors(
         self,
@@ -133,44 +123,23 @@ class Add(Bloq):
             raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
         N_a = 2**self.a_dtype.bitsize
         N_b = 2**self.b_dtype.bitsize
-        if self.controlled is not None:
-            inds = (
-                incoming['ctrl'],
-                incoming['a'],
-                incoming['b'],
-                outgoing['ctrl'],
-                outgoing['a'],
-                outgoing['b'],
-            )
-            unitary = np.zeros((2, N_a, N_b, 2, N_a, N_b), dtype=np.complex128)
-            for c, a, b in itertools.product(range(2), range(N_a), range(N_b)):
-                if c == self.controlled:
-                    unitary[c, a, b, c, a, int(math.fmod(a + b, N_b))] = 1
-                else:
-                    unitary[c, a, b, c, a, b] = 1
-        else:
-            inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
-            unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
-            # TODO: Add a value-to-index method on dtype to make this easier.
-            for a, b in itertools.product(range(N_a), range(N_b)):
-                unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
+        inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
+        unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
+        # TODO: Add a value-to-index method on dtype to make this easier.
+        for a, b in itertools.product(range(N_a), range(N_b)):
+            unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
 
         tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
 
-    def on_classical_vals(self, **kwargs) -> Dict[str, 'ClassicalValT']:
-        a, b = kwargs['a'], kwargs['b']
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
         unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
-        if self.controlled is not None:
-            ctrl = kwargs['ctrl']
-            if ctrl != self.controlled:
-                return {'ctrl': ctrl, 'a': a, 'b': b}
-            else:
-                return {'ctrl': ctrl, 'a': a, 'b': int(math.fmod(a + b, N))}
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
     def short_name(self) -> str:
@@ -184,8 +153,6 @@ class Add(Bloq):
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
-        if soq.reg.name == 'ctrl':
-            return directional_text_box('ctrl', side=soq.reg.side)
         if soq.reg.name == 'a':
             return directional_text_box('a', side=soq.reg.side)
         elif soq.reg.name == 'b':
@@ -251,14 +218,6 @@ class Add(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.b_dtype.bitsize
-        if self.controlled is not None:
-            n_cnot = (n - 2) * 6 + 2
-            return {
-                (MultiControlPauli((1, 1), cirq.X), n),
-                (And(), n - 1),
-                (And().adjoint(), n - 1),
-                (CNOT(), n_cnot),
-            }
         n_cnot = (n - 2) * 6 + 3
         return {(And(), n - 1), (And().adjoint(), n - 1), (CNOT(), n_cnot)}
 
