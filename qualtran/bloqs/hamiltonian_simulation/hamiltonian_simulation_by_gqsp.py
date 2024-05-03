@@ -12,14 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import cast, Dict, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import field, frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature, Soquet
-from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP, scale_down_to_qsp_polynomial
+from qualtran import bloq_example, BloqDocSpec, Controlled, CtrlSpec, GateWithRegisters, Signature
+from qualtran.bloqs.basic_gates import SU2RotationGate
+from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
@@ -27,13 +28,13 @@ from qualtran.linalg.jacobi_anger_approximations import (
 )
 from qualtran.resource_counting.symbolic_counting_utils import (
     is_symbolic,
-    Shaped,
     SymbolicFloat,
     SymbolicInt,
 )
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
 @frozen
@@ -83,30 +84,22 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-        Motlagh and Wiebe. (2023). Theorem 7, Corollary 8.
+            Motlagh and Wiebe. (2023). Theorem 7, Corollary 8.
 
     Args:
         walk_operator: qubitization walk operator of $H$ constructed from SELECT and PREPARE oracles.
         t: time to simulate the Hamiltonian, i.e. $e^{-iHt}$
+        alpha: the $1$-norm of the coefficients of the unitaries comprising the Hamiltonian $H$.
         precision: the precision $\epsilon$ to approximate $e^{it\cos\theta}$ to a polynomial.
     """
 
     walk_operator: QubitizationWalkOperator
     t: SymbolicFloat = field(kw_only=True)
+    alpha: SymbolicFloat = field(kw_only=True)
     precision: SymbolicFloat = field(kw_only=True)
 
-    def __attrs_post_init__(self):
-        if self.walk_operator.sum_of_lcu_coefficients is None:
-            raise ValueError(
-                f"Missing attribute `sum_of_ham_coeffs` for {self.walk_operator}, cannot implement Hamiltonian Simulation"
-            )
-
-    def is_symbolic(self):
+    def _parameterized_(self):
         return is_symbolic(self.t, self.alpha, self.precision)
-
-    @property
-    def alpha(self):
-        return self.walk_operator.sum_of_lcu_coefficients
 
     @cached_property
     def degree(self) -> SymbolicInt:
@@ -114,16 +107,24 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return degree_jacobi_anger_approximation(self.t * self.alpha, precision=self.precision)
 
     @cached_property
-    def approx_cos(self) -> Union[NDArray[np.complex_], Shaped]:
+    def approx_cos(self) -> NDArray[np.complex_]:
         r"""polynomial approximation for $$e^{i\theta} \mapsto e^{it\cos(\theta)}$$"""
-        if self.is_symbolic():
-            return Shaped((2 * self.degree + 1,))
+        if self._parameterized_():
+            raise ValueError(f"cannot compute `cos` approximation for parameterized Bloq {self}")
+        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
+        return poly / self.scale_factor
 
-        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=cast(int, self.degree))
+    @cached_property
+    def scale_factor(self):
+        """Factor to scale down the cos approximation by to ensure it is a QSP polynomial.
 
-        # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
-        poly = scale_down_to_qsp_polynomial(list(poly)) * (1 - 2 * self.precision)
-        return poly
+        TODO figure out how to compute the optimal scaling factor,
+             to prevent the need for oblivious AA.
+        """
+        points = np.exp(2j * np.pi * np.linspace(0, 1, num=10**5))
+        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
+        P = np.polynomial.Polynomial(poly)
+        return np.max(np.abs(P(points))) / (1 - 2 * self.precision)
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:
@@ -161,8 +162,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         return gqsp_soqs, prepare_out_soqs
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        # TODO open issue: alloc/free does not work with cirq api
-        state_prep_ancilla: Dict[str, 'SoquetT'] = {
+        state_prep_ancilla = {
             reg.name: bb.allocate(reg.total_bits())
             for reg in self.walk_operator.prepare.junk_registers
         }
@@ -173,13 +173,21 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         soqs, state_prep_ancilla = self.__add_prepare(bb, soqs, state_prep_ancilla, adjoint=True)
 
         for soq in state_prep_ancilla.values():
-            if isinstance(soq, Soquet):
-                bb.free(soq)
-            else:
-                for soq_element in soq:
-                    bb.free(cast(Soquet, soq))
+            bb.free(soq)
 
         return soqs
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        if self._parameterized_():
+            d = self.degree
+            return {
+                (Controlled(self.walk_operator.adjoint(), CtrlSpec()), d),
+                (Controlled(self.walk_operator, CtrlSpec(cvs=0)), d),
+                (self.walk_operator.prepare, 1),
+                (self.walk_operator.prepare.adjoint(), 1),
+                (SU2RotationGate.arbitrary(ssa), 2 * d + 1),
+            }
+        return self.decompose_bloq().build_call_graph(ssa)
 
 
 @bloq_example
@@ -187,25 +195,60 @@ def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
     from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
 
     walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=5, precision=1e-7)
+    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(
+        walk_op, t=5, alpha=1, precision=1e-7
+    )
     return hubbard_time_evolution_by_gqsp
 
 
-@bloq_example
-def _symbolic_hamsim_by_gqsp() -> HamiltonianSimulationByGQSP:
-    import sympy
-
-    from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
-
-    walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-
-    t, inv_eps = sympy.symbols("t N")
-    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=t, precision=1 / inv_eps)
-    return symbolic_hamsim_by_gqsp
+# _Hamiltonian_Simulation_by_GQSP_DOC = BloqDocSpec(
+#     bloq_cls=HamiltonianSimulationByGQSP,
+#     import_line='from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP',
+#     examples=[_hubbard_time_evolution_by_gqsp],
+# )
 
 
-_Hamiltonian_Simulation_by_GQSP_DOC = BloqDocSpec(
-    bloq_cls=HamiltonianSimulationByGQSP,
-    import_line='from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import HamiltonianSimulationByGQSP',
-    examples=[_hubbard_time_evolution_by_gqsp, _symbolic_hamsim_by_gqsp],
-)
+from numpy.fft import fft, ifft
+import matplotlib.pyplot as plt
+def freq_chart(t,x):
+    X = fft(x)
+    N = len(X)
+    n = np.arange(N)
+    T = N/len(x)
+    freq = n/T
+
+    plt.figure(figsize = (12, 6))
+    plt.subplot(121)
+
+    plt.stem(freq, np.abs(X), 'b', \
+             markerfmt=" ", basefmt="-b")
+    plt.xlabel('Freq (Hz)')
+    plt.ylabel('FFT Amplitude |X(freq)|')
+    plt.xlim(0, 100)
+
+    # plt.subplot(122)
+    # plt.plot(t.real, ifft(X), 'r')
+    # plt.xlabel('Time (s)')
+    # plt.ylabel('Amplitude')
+    # plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
+    t = 2
+    alpha = 1
+    degree = 8
+    precision = 10**-5
+    points = np.exp(2j * np.pi * np.linspace(0, 1, num=10**3))
+
+    poly = approx_exp_cos_by_jacobi_anger(-t * alpha, degree=degree)
+    P = np.polynomial.Polynomial(poly)
+    y = P(points)
+
+    #
+    freq_chart(points, y)
+
+
+    # result = np.max(np.abs(P(points))) / (1 - 2 * precision)
+    print("max", np.max(np.abs(P(points))))

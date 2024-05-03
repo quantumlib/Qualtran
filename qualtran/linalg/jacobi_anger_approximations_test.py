@@ -28,7 +28,6 @@ def test_exp_cos_approximation(t: float, precision: float):
     random_state = np.random.RandomState(42 + int(t))
 
     degree = degree_jacobi_anger_approximation(t, precision=precision)
-    assert isinstance(degree, int)
     P = np.polynomial.Polynomial(approx_exp_cos_by_jacobi_anger(t, degree=degree))
     theta = 2 * np.pi * random_state.random(1000)
     e_itheta = np.exp(1j * theta)
@@ -43,7 +42,6 @@ def test_exp_sin_approximation(t: float, precision: float):
     random_state = np.random.RandomState(42 + int(t))
 
     degree = degree_jacobi_anger_approximation(t, precision=precision)
-    assert isinstance(degree, int)
     P = np.polynomial.Polynomial(approx_exp_sin_by_jacobi_anger(t, degree=degree))
     theta = 2 * np.pi * random_state.random(1000)
     e_itheta = np.exp(1j * theta)

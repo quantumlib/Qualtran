@@ -13,27 +13,27 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Sequence, Set, Tuple, TYPE_CHECKING
 
+import cirq
 import numpy as np
 from attrs import field, frozen
 from numpy.polynomial import Polynomial
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
-from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.resource_counting.symbolic_counting_utils import (
-    is_symbolic,
-    Shaped,
-    slen,
-    smax,
-    smin,
-    SymbolicInt,
+from qualtran import (
+    bloq_example,
+    BloqDocSpec,
+    Controlled,
+    CtrlSpec,
+    GateWithRegisters,
+    QBit,
+    Register,
+    Signature,
 )
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
 if TYPE_CHECKING:
-    import cirq
-
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -82,7 +82,7 @@ def qsp_complementary_polynomial(
     roots = R.roots()
 
     # R is self-inversive, so larger_roots and smaller_roots occur in conjugate pairs.
-    units: list[complex] = []  # roots r s.t. \abs{r} = 1
+    units: list[float] = []  # roots r s.t. \abs{r} = 1
     larger_roots: list[complex] = []  # roots r s.t. \abs{r} > 1
     smaller_roots: list[complex] = []  # roots r s.t. \abs{r} < 1
 
@@ -202,70 +202,17 @@ def qsp_phase_factors(
     return theta, phi, lambd
 
 
-def _polynomial_max_abs_value_on_unit_circle(P: Sequence[complex], *, n_points=2**17):
-    r"""Find the maximum absolute value of $P$ on $N$ uniform points on the complex unit circle.
-
-    For a polynomial $P$, this function computes
-
-    $$
-        \max_{k = 0}^{N - 1} |P(e^{2 \pi i k/N})|
-    $$
-
-    TODO(#860) Figure out a more efficient and always correct way to do this.
-
-    Args:
-        P: complex polynomial
-        n_points: number of points $N$ to evaluate
-    """
-    from scipy.fft import fft
-
-    P = np.asarray(P)
-    poly = np.zeros(n_points, dtype=P.dtype)
-    poly[: len(P)] = P
-
-    values = fft(poly)
-
-    return np.max(np.abs(values))
-
-
-def scale_down_to_qsp_polynomial(
-    P: Sequence[complex], *, n_points: int = 2**17
-) -> NDArray[np.complex_]:
-    r"""Scale down the polynomial to be a valid QSP Polynomial
-
-    $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
-
-    If the input polynomial is not a valid QSP polynomial, this function attempts to compute
-    the maximum absolute value on the unit circle, and scale it down by that factor.
-    Otherwise returns the input as-is.
-
-    Args:
-        P: input polynomial to scale if needed
-        n_points: number of points to sample on the unit circle to evaluate the polynomial
-    """
-    P = np.asarray(P)
-    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
-    if max_value > 1:
-        P = P / max_value
-    return P
-
-
-def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
+def assert_is_qsp_polynomial(P, *, rtol: float, n_points: int = 100000):
     r"""Check if the given polynomial is a valid QSP polynomial.
 
     $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
     """
-    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
-    assert (
-        max_value <= 1
-    ), f"Not a QSP polynomial! maximum absolute value {max_value} is greater than 1."
-
-
-def _to_tuple(x: Iterable[complex]) -> Union[Tuple[complex, ...], Shaped]:
-    """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
-    if isinstance(x, Shaped):
-        return x
-    return tuple(x)
+    points = np.exp(2j * np.pi * np.linspace(0, 1, num=n_points))
+    P = Polynomial(P)
+    values = np.abs(P(points))
+    assert np.all(
+        values <= 1
+    ), f"Not a QSP polynomial! maximum absolute value {np.max(values)} is greater than 1."
 
 
 @frozen
@@ -322,19 +269,18 @@ class GeneralizedQSP(GateWithRegisters):
 
     References:
         [Generalized Quantum Signal Processing](https://arxiv.org/abs/2308.01501)
-        Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
+            Motlagh and Wiebe. (2023). Theorem 3; Figure 2; Theorem 6.
     """
 
     U: GateWithRegisters
-    P: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
-    Q: Union[Tuple[complex, ...], Shaped] = field(converter=_to_tuple)
-    negative_power: SymbolicInt = field(default=0, kw_only=True)
+    P: Tuple[complex, ...] = field(converter=tuple)
+    Q: Tuple[complex, ...] = field(converter=tuple)
+    negative_power: int = field(default=0, kw_only=True)
 
     @P.validator
     @Q.validator
     def _check_polynomial(self, attribute, value):
-        degree = slen(value) - 1
-        if not is_symbolic(degree) and degree <= 0:
+        if len(value) <= 1:
             raise ValueError("GQSP Polynomial must have degree at least 1")
 
     @cached_property
@@ -345,17 +291,14 @@ class GeneralizedQSP(GateWithRegisters):
     def from_qsp_polynomial(
         cls,
         U: GateWithRegisters,
-        P: Union[NDArray[np.number], Sequence[complex], Shaped],
+        P: Sequence[complex],
         *,
-        negative_power: SymbolicInt = 0,
+        negative_power: int = 0,
         verify: bool = False,
         verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
-        if is_symbolic(P):
-            return GeneralizedQSP(U, P, P, negative_power=negative_power)
-
         if verify:
-            assert_is_qsp_polynomial(P)
+            assert_is_qsp_polynomial(P, rtol=verify_precision)
         Q = qsp_complementary_polynomial(P, verify=verify, verify_precision=verify_precision)
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
@@ -376,7 +319,7 @@ class GeneralizedQSP(GateWithRegisters):
         return self._qsp_phases[2]
 
     @cached_property
-    def signal_rotations(self) -> NDArray[SU2RotationGate]:  # type: ignore[type-var]
+    def signal_rotations(self) -> NDArray[SU2RotationGate]:
         return np.array(
             [
                 SU2RotationGate(theta, phi, self._lambda if i == 0 else 0)
@@ -385,8 +328,8 @@ class GeneralizedQSP(GateWithRegisters):
         )
 
     def decompose_from_registers(
-        self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
-    ) -> 'cirq.OP_TREE':
+        self, *, context: cirq.DecompositionContext, signal, **quregs: NDArray[cirq.Qid]
+    ) -> cirq.OP_TREE:
         (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power
@@ -405,31 +348,18 @@ class GeneralizedQSP(GateWithRegisters):
         for _ in range(num_inverse_applications):
             yield self.U.adjoint().on_registers(**quregs)
 
-    def is_symbolic(self) -> bool:
-        return is_symbolic(self.P, self.Q, self.negative_power)
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.is_symbolic():
-            degree = slen(self.P) - 1
-
-            return {
-                (self.U.controlled(control_values=[0]), smax(0, degree - self.negative_power)),
-                (self.U.adjoint(), smax(0, self.negative_power - degree)),
-                (self.U.adjoint().controlled(), smin(degree, self.negative_power)),
-                (SU2RotationGate.arbitrary(ssa), degree + 1),
-            }
-
         degree = len(self.P) - 1
 
         counts = set(Counter(self.signal_rotations).items())
 
         if degree > self.negative_power:
-            counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
+            counts.add((Controlled(self.U, CtrlSpec(cvs=0)), degree - self.negative_power))
         elif self.negative_power > degree:
             counts.add((self.U.adjoint(), self.negative_power - degree))
 
         if self.negative_power > 0:
-            counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
+            counts.add((Controlled(self.U.adjoint(), CtrlSpec()), min(degree, self.negative_power)))
 
         return counts
 
