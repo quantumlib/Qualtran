@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -48,6 +48,9 @@ from qualtran.bloqs.mcmt import And
 from qualtran.cirq_interop.testing import GateHelper
 from qualtran.drawing import get_musical_score_data
 from qualtran.drawing.musical_score import Circle, SoqData, TextBox
+
+if TYPE_CHECKING:
+    from qualtran import SoquetT
 
 
 def test_ctrl_spec():
@@ -96,7 +99,7 @@ def test_ctrl_bloq_as_cirq_op():
 
     def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
         left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(**left_quregs)
+        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(None, **left_quregs)
         circuit2 = cirq.Circuit(
             gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
         )
@@ -120,7 +123,7 @@ def test_ctrl_bloq_as_cirq_op():
     bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
     quregs = get_named_qubits(bloq.signature)
     ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
-    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(**quregs)
+    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(None, **quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
     )
@@ -135,15 +138,15 @@ def test_ctrl_spec_activation_1():
 
 
 def test_ctrl_spec_activation_2():
-    cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
-    arr = np.ones(27).reshape((3, 3, 3))
+    cspec2 = CtrlSpec(cvs=np.ones((3, 3, 3), dtype=np.intc))
+    arr = np.ones((3, 3, 3), dtype=np.intc)
     assert cspec2.is_active(arr)
     arr[1, 1, 1] = 0
     assert not cspec2.is_active(arr)
     with pytest.raises(ValueError):
         cspec2.is_active(0)
     with pytest.raises(ValueError):
-        cspec2.is_active(np.ones(27))
+        cspec2.is_active(np.ones(27, dtype=np.intc))
 
 
 def test_ctrl_spec_activation_3():
@@ -268,14 +271,14 @@ def test_classical_sim_simple():
 
 
 def test_classical_sim_array():
-    ctrl_spec = CtrlSpec(cvs=np.zeros(9).reshape((3, 3)))
+    ctrl_spec = CtrlSpec(cvs=np.zeros((3, 3), dtype=np.intc))
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
-    ones = np.ones(9).reshape((3, 3))
+    ones = np.ones((3, 3), dtype=np.intc)
     ctrl, q = bloq.call_classically(ctrl=ones, q=0)
     np.testing.assert_array_equal(ctrl, ones)
     assert q == 0
 
-    zeros = np.zeros(9).reshape((3, 3))
+    zeros = np.zeros((3, 3), dtype=np.intc)
     ctrl, q = bloq.call_classically(ctrl=zeros, q=0)
     np.testing.assert_array_equal(ctrl, zeros)
     assert q == 1
@@ -295,11 +298,11 @@ def test_classical_sim_int_arr():
     ctrl_spec = CtrlSpec(QInt(64), cvs=[1234, 234234])
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
 
-    vals = bloq.call_classically(ctrl=[1234, 234234], q=0)
+    vals = bloq.call_classically(ctrl=np.asarray([1234, 234234]), q=0)
     np.testing.assert_array_equal(vals[0], (1234, 234234))
     assert vals[1] == 1
 
-    vals = bloq.call_classically(ctrl=[123, 234234], q=0)
+    vals = bloq.call_classically(ctrl=np.asarray([123, 234234]), q=0)
     np.testing.assert_array_equal(vals[0], (123, 234234))
     assert vals[1] == 0
 
@@ -322,7 +325,7 @@ def test_notebook():
 
 def _verify_ctrl_tensor_for_unitary(ctrl_spec: CtrlSpec, bloq: Bloq, gate: cirq.Gate):
     cbloq = Controlled(bloq, ctrl_spec)
-    cgate = gate.controlled(control_values=ctrl_spec.to_cirq_cv())
+    cgate = cirq.ControlledGate(gate, control_values=ctrl_spec.to_cirq_cv())
     np.testing.assert_array_equal(cbloq.tensor_contract(), cirq.unitary(cgate))
 
 
@@ -374,7 +377,7 @@ class TestCtrlStatePrepAnd(Bloq):
         and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
 
         ctrl_soqs = bb.add_d(cbloq, **ctrl_soqs, ctrl=and_ctrl)
-        out_soqs = [*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')]
+        out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])  # type: ignore[misc]
 
         for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
             for idx in reg.all_idxs():

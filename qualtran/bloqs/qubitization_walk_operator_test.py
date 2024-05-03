@@ -16,6 +16,7 @@ import cirq
 import numpy as np
 import pytest
 
+from qualtran import Adjoint
 from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
@@ -50,15 +51,16 @@ def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> Qubitiza
 def test_qubitization_walk_operator(num_sites: int, eps: float):
     ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-    qubitization_lambda = np.sum(ham_coeff)
 
     walk = walk_operator_for_pauli_hamiltonian(ham, eps)
     assert_valid_bloq_decomposition(walk)
 
+    qubitization_lambda = walk.sum_of_lcu_coefficients
+
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk)
 
     L_state = np.zeros(2 ** len(g.quregs['selection']))
-    L_state[: len(ham_coeff)] = np.sqrt(ham_coeff / qubitization_lambda)
+    L_state[: len(ham_coeff)] = np.sqrt(np.array(ham_coeff) / qubitization_lambda)
 
     assert len(walk_circuit.all_qubits()) < 23
 
@@ -161,8 +163,8 @@ target3: ──────SelectPauliLCU─────────
 
     def keep(op):
         ret = op in gateset_to_keep
-        if op.gate is not None and isinstance(op.gate, cirq.ops.raw_types._InverseCompositeGate):
-            ret |= op.gate._original in gateset_to_keep
+        if op.gate is not None and isinstance(op.gate, Adjoint):
+            ret |= op.gate.subbloq in gateset_to_keep
         return ret
 
     greedy_mm = cirq.GreedyQubitManager(prefix="ancilla", maximize_reuse=True)

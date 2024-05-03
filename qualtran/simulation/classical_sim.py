@@ -14,7 +14,7 @@
 
 """Functionality for the `Bloq.call_classically(...)` protocol."""
 import itertools
-from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple, Union
 
 import networkx as nx
 import numpy as np
@@ -34,7 +34,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _binst_to_cxns
 
-ClassicalValT = Union[int, NDArray[int]]
+ClassicalValT = Union[int, np.integer, NDArray[np.integer]]
 
 
 def bits_to_ints(bitstrings: Union[Sequence[int], NDArray[np.uint]]) -> NDArray[np.uint]:
@@ -172,7 +172,7 @@ def _binst_on_classical_vals(
 
 
 def call_cbloq_classically(
-    signature: Signature, vals: Dict[str, ClassicalValT], binst_graph: nx.DiGraph
+    signature: Signature, vals: Mapping[str, ClassicalValT], binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]:
     """Propagate `on_classical_vals` calls through a composite bloq's contents.
 

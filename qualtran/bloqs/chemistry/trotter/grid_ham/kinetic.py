@@ -16,6 +16,7 @@ from functools import cached_property
 from typing import Dict
 
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -25,6 +26,7 @@ from qualtran import (
     QAny,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.arithmetic import SumOfSquares
@@ -66,7 +68,7 @@ class KineticEnergy(Bloq):
     def short_name(self) -> str:
         return 'U_T(dt)'
 
-    def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
+    def build_composite_bloq(self, bb: BloqBuilder, *, system: NDArray[Soquet]) -> Dict[str, SoquetT]:  # type: ignore[type-var]
         bitsize = (self.num_grid - 1).bit_length() + 1
         for i in range(self.num_elec):
             system[i], sos = bb.add(SumOfSquares(bitsize=bitsize, k=3), input=system[i])

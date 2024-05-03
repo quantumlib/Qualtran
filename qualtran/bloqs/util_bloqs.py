@@ -26,6 +26,7 @@ from sympy import Expr
 from qualtran import (
     Bloq,
     BloqBuilder,
+    GateWithRegisters,
     QAny,
     QBit,
     QDType,
@@ -43,8 +44,9 @@ from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    from qualtran import AbstractCtrlSpec, AddControlledT
+    from qualtran import AddControlledT, CtrlSpec
     from qualtran.cirq_interop import CirqQuregT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -97,9 +99,7 @@ class Split(Bloq):
             )
         )
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['AbstractCtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
+    def get_ctrl_system(self, ctrl_spec=None) -> Tuple['Bloq', 'AddControlledT']:
         def add_controlled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
         ) -> Tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
@@ -166,7 +166,7 @@ class Join(Bloq):
         return {'reg': bits_to_ints(reg)[0]}
 
     def get_ctrl_system(
-        self, ctrl_spec: Optional['AbstractCtrlSpec'] = None
+        self, ctrl_spec: Optional['CtrlSpec'] = None
     ) -> Tuple['Bloq', 'AddControlledT']:
         def add_controlled(
             bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: Dict[str, 'SoquetT']
@@ -434,7 +434,7 @@ class Cast(Bloq):
     )
 
     def __attrs_post_init__(self):
-        if isinstance(self.inp_dtype.bitsize, int):
+        if isinstance(self.inp_dtype.num_qubits, int):
             if self.inp_dtype.num_qubits != self.out_dtype.num_qubits:
                 raise ValueError("Casting only permitted between same sized registers.")
 
@@ -470,12 +470,15 @@ class Cast(Bloq):
         # TODO: Actually cast the values https://github.com/quantumlib/Qualtran/issues/734
         return {'reg': reg}
 
+    def as_cirq_op(self, qubit_manager, reg: 'CirqQuregT') -> Tuple[None, Dict[str, 'CirqQuregT']]:
+        return None, {'reg': reg}
+
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity()
 
 
 @frozen
-class Power(Bloq):
+class Power(GateWithRegisters):
     """Wrapper that repeats the given `bloq` `power` times.
 
     `Bloq` must have only THRU registers.

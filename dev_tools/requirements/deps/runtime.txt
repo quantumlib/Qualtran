@@ -4,7 +4,7 @@ cachetools>=5.3
 networkx
 numpy
 sympy
-cirq-core==1.4.0.dev20240216204049
+cirq-core==1.4.0.dev20240430031656
 fxpmath
 
 # qualtran/testing.py

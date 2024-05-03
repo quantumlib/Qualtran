@@ -45,12 +45,13 @@ from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
 
 if TYPE_CHECKING:
+    from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
-class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
+class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
 
     bitsize: int
@@ -87,7 +88,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
         return NotImplemented  # pragma: no cover
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
@@ -220,7 +221,9 @@ class BiQubitsMixer(GateWithRegisters):
         x_msb, x_lsb = x
         y_msb, y_lsb = y
 
-        def _cswap(control: cirq.Qid, a: cirq.Qid, b: cirq.Qid, aux: cirq.Qid) -> cirq.OP_TREE:
+        def _cswap(
+            control: cirq.Qid, a: cirq.Qid, b: cirq.Qid, aux: cirq.Qid
+        ) -> Iterator[cirq.Operation]:
             """A CSWAP with 4T complexity and whose adjoint has 0T complexity.
 
                 A controlled SWAP that swaps `a` and `b` based on `control`.
@@ -232,7 +235,7 @@ class BiQubitsMixer(GateWithRegisters):
             yield cirq.CNOT(aux, a)
             yield cirq.CNOT(a, b)
 
-        def _decomposition():
+        def _decomposition() -> Iterator[cirq.Operation]:
             # computes the difference of x - y where
             #   x = 2*x_msb + x_lsb
             #   y = 2*y_msb + y_lsb
@@ -252,10 +255,10 @@ class BiQubitsMixer(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'BiQubitsMixer':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> cirq.Gate:
+    def __pow__(self, power: int) -> 'BiQubitsMixer':
         if power == 1:
             return self
         if power == -1:
@@ -325,10 +328,10 @@ class SingleQubitCompare(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'SingleQubitCompare':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> cirq.Gate:
+    def __pow__(self, power: int) -> Union['SingleQubitCompare', cirq.Gate]:
         if not isinstance(power, int):
             raise ValueError('SingleQubitCompare is only defined for integer powers.')
         if power % 2 == 0:
@@ -369,7 +372,7 @@ def _equality_with_zero(
 
 
 @frozen
-class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
+class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>
 
     Decomposes the gate in a T-complexity optimal way.
@@ -456,7 +459,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        lhs, rhs, (target,) = quregs['x'], quregs['y'], quregs['target']
+        lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
 
         n = min(len(lhs), len(rhs))
 
@@ -577,6 +580,7 @@ class GreaterThan(Bloq):
         b: n-bit-sized input registers.
         target: A single bit output register to store the result of A > B.
     """
+
     a_bitsize: int
     b_bitsize: int
 
@@ -590,6 +594,9 @@ class GreaterThan(Bloq):
         return "a>b"
 
     def _t_complexity_(self) -> 'TComplexity':
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
     def wire_symbol(self, soq: Soquet) -> WireSymbol:
@@ -599,13 +606,14 @@ class GreaterThan(Bloq):
             return TextBox("In(b)")
         elif soq.reg.name == 'target':
             return TextBox("⨁(a > b)")
+        raise ValueError(f'Unknown register name {soq.reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        t_complexity = self.t_complexity()
-        return {(TGate(), t_complexity.t)}
+        tc = t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
+        return {(TGate(), tc.t)}
 
 
 @bloq_example
@@ -645,6 +653,7 @@ class LinearDepthGreaterThan(Bloq):
 
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2306.08585).
     """
+
     bitsize: int
     signed: bool
 
@@ -666,7 +675,7 @@ class LinearDepthGreaterThan(Bloq):
         return {'a': a, 'b': b, 'target': target}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: SoquetT, b: SoquetT, target: SoquetT
+        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
 
         # Base Case: Comparing two qubits.
@@ -674,7 +683,7 @@ class LinearDepthGreaterThan(Bloq):
         if self.bitsize == 1:
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
-            ctrls = [a, b]
+            ctrls = np.asarray([a, b])
             ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
             a, b = ctrls
             # Return the output registers.
@@ -690,11 +699,11 @@ class LinearDepthGreaterThan(Bloq):
         if not self.signed:
             a_sign = bb.allocate(n=1)
             a_split = bb.split(a)
-            a = bb.join(np.concatenate([[a_sign], a_split]))
+            a = bb.join(np.concatenate([[a_sign], a_split]), dtype=QUInt(self.bitsize + 1))
 
             b_sign = bb.allocate(n=1)
             b_split = bb.split(b)
-            b = bb.join(np.concatenate([[b_sign], b_split]))
+            b = bb.join(np.concatenate([[b_sign], b_split]), dtype=QUInt(self.bitsize + 1))
 
         # Create variable true_bitsize to account for sign bit in bloq construction.
         true_bitsize = self.bitsize if self.signed else (self.bitsize + 1)
@@ -764,19 +773,19 @@ class LinearDepthGreaterThan(Bloq):
         for i in range(true_bitsize):
             b_split[i] = bb.add(XGate(), q=b_split[i])
 
-        a = bb.join(a_split)
-        b = bb.join(b_split)
+        a = bb.join(a_split, dtype=QUInt(true_bitsize))
+        b = bb.join(b_split, dtype=QUInt(true_bitsize))
 
         # If the input registers were unsigned we free the ancilla sign bits.
         if not self.signed:
             a_split = bb.split(a)
             a_sign = a_split[0]
-            a = bb.join(a_split[1:])
+            a = bb.join(a_split[1:], dtype=QUInt(self.bitsize))
             bb.free(a_sign)
 
             b_split = bb.split(b)
             b_sign = b_split[0]
-            b = bb.join(b_split[1:])
+            b = bb.join(b_split[1:], dtype=QUInt(self.bitsize))
             bb.free(b_sign)
 
         # Return the output registers.
@@ -814,6 +823,9 @@ class GreaterThanConstant(Bloq):
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
     def _t_complexity_(self) -> TComplexity:
+        # TODO Determine precise clifford count and/or ignore.
+        # See: https://github.com/quantumlib/Qualtran/issues/219
+        # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
     def short_name(self) -> str:
@@ -824,13 +836,14 @@ class GreaterThanConstant(Bloq):
             return TextBox("In(x)")
         elif soq.reg.name == 'target':
             return TextBox(f"⨁(x > {self.val})")
+        raise ValueError(f'Unknown register symbol {soq.reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        t_complexity = self.t_complexity()
-        return {(TGate(), t_complexity.t)}
+        tc = t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
+        return {(TGate(), tc.t)}
 
 
 @bloq_example
@@ -876,6 +889,7 @@ class EqualsAConstant(Bloq):
             return TextBox("In(x)")
         elif soq.reg.name == 'target':
             return TextBox(f"⨁(x = {self.val})")
+        raise ValueError(f'Unknown register symbol {soq.reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # See: https://github.com/quantumlib/Qualtran/issues/219

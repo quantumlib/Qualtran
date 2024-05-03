@@ -73,12 +73,14 @@ import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
+import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -475,6 +477,18 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
         ],
         directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
+    ),
+    NotebookSpecV2(
+        title='Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.qsp.generalized_qsp,
+        bloq_specs=[qualtran.bloqs.qsp.generalized_qsp._Generalized_QSP_DOC],
+    ),
+    NotebookSpecV2(
+        title='Hamiltonian Simulation by Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp,
+        bloq_specs=[
+            qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp._Hamiltonian_Simulation_by_GQSP_DOC
+        ],
     ),
 ]
 

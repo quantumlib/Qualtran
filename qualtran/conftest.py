@@ -75,7 +75,7 @@ def assert_equivalent_bloq_example_counts_for_pytest(bloq_ex: BloqExample):
         raise bce from bce
 
 
-def assert_bloq_example_serialize_for_pytest(bloq_ex: BloqExample):
+def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
     if bloq_ex.name in [
         'prep_sparse',
         'thc_prep',
@@ -88,20 +88,34 @@ def assert_bloq_example_serialize_for_pytest(bloq_ex: BloqExample):
         'select_pauli_lcu',
         'walk_op',
         'trott_unitary',
+        'hubbard_time_evolution_by_gqsp',
+        'symbolic_hamsim_by_gqsp',
+        'gqsp_1d_ising',
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
     try:
-        qlt_testing.assert_bloq_example_serialize(bloq_ex)
+        qlt_testing.assert_bloq_example_serializes(bloq_ex)
     except qlt_testing.BloqCheckException as bce:
         raise bce from bce
+
+
+def assert_bloq_example_qtyping_for_pytest(bloq_ex: BloqExample):
+    try:
+        qlt_testing.assert_bloq_example_qtyping(bloq_ex)
+    except qlt_testing.BloqCheckException as bce:
+        if bce.check_result is qlt_testing.BloqCheckResult.NA:
+            pytest.skip(bce.msg)
+        if bce.check_result is qlt_testing.BloqCheckResult.UNVERIFIED:
+            pytest.skip(bce.msg)
 
 
 _TESTFUNCS = [
     ('make', assert_bloq_example_make_for_pytest),
     ('decompose', assert_bloq_example_decompose_for_pytest),
     ('counts', assert_equivalent_bloq_example_counts_for_pytest),
-    ('serialization', assert_bloq_example_serialize_for_pytest),
+    ('serialize', assert_bloq_example_serializes_for_pytest),
+    ('qtyping', assert_bloq_example_qtyping_for_pytest),
 ]
 
 

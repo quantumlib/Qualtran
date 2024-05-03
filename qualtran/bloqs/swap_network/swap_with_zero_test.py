@@ -32,12 +32,6 @@ from qualtran.testing import assert_valid_bloq_decomposition
 random.seed(12345)
 
 
-def _make_SwapWithZero():
-    from qualtran.bloqs.swap_network import SwapWithZero
-
-    return SwapWithZero(selection_bitsize=3, target_bitsize=64, n_target_registers=5)
-
-
 def test_swap_with_zero_decomp():
     swz = SwapWithZero(selection_bitsize=3, target_bitsize=64, n_target_registers=5)
     assert_valid_bloq_decomposition(swz)
@@ -112,7 +106,7 @@ def test_swap_with_zero_classically():
     swz = SwapWithZero(selection_bitsize=2, target_bitsize=8, n_target_registers=4)
 
     for sel in range(2**2):
-        sel, out_data = swz.call_classically(selection=sel, targets=data)
+        sel, out_data = swz.call_classically(selection=sel, targets=data)  # type: ignore[assignment]
         print(sel, out_data)
 
 

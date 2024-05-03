@@ -30,13 +30,17 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -61,10 +65,10 @@ class MultiTargetCNOT(GateWithRegisters):
         self,
         *,
         context: cirq.DecompositionContext,
-        control: NDArray[cirq.Qid],
-        targets: NDArray[cirq.Qid],
+        control: NDArray[cirq.Qid],  # type: ignore[type-var]
+        targets: NDArray[cirq.Qid],  # type: ignore[type-var]
     ):
-        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:
+        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:  # type: ignore[type-var]
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)
 
@@ -143,7 +147,7 @@ class MultiControlPauli(GateWithRegisters):
             and_op = MultiAnd(self.cvs).on_registers(
                 ctrl=controls, junk=and_ancilla[:, np.newaxis], target=and_target
             )
-            and_op_inv = and_op**-1
+            and_op_inv = and_op**-1  # type: ignore[operator]
         yield and_op
         yield self.target_gate.on(*target).controlled_by(*and_target)
         yield and_op_inv
@@ -160,11 +164,11 @@ class MultiControlPauli(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        controls, target = vals.get('controls', np.array([])), vals.get('target')
+        controls, target = vals.get('controls', np.array([])), vals.get('target', 0)
         if self.target_gate not in (cirq.X, XGate()):
             raise NotImplementedError(f"{self} is not classically simulatable.")
 
-        if (self.cvs == controls).all():
+        if np.all(self.cvs == controls):
             target = (target + 1) % 2
 
         return {'controls': controls, 'target': target}
@@ -174,7 +178,7 @@ class MultiControlPauli(GateWithRegisters):
 
         n = len(self.cvs)
         if n >= 2:
-            and_gate = And(*self.cvs) if n == 2 else MultiAnd(self.cvs)
+            and_gate = And(self.cvs[0], self.cvs[1]) if n == 2 else MultiAnd(self.cvs)
             return {
                 (and_gate, 1),
                 (and_gate.adjoint(), 1),
@@ -249,13 +253,13 @@ class MultiControlX(Bloq):
     def on_classical_vals(
         self, ctrls: 'ClassicalValT', x: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        if (self.cvs == ctrls).all():
+        if np.all(self.cvs == ctrls):
             x = (x + 1) % 2
 
         return {'ctrls': ctrls, 'x': x}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrls: SoquetT, x: SoquetT
+        self, bb: 'BloqBuilder', ctrls: NDArray[Soquet], x: SoquetT  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         # n = number of controls in the bloq.
         n = len(self.cvs)

@@ -15,7 +15,7 @@
 """Quantum read-only memory."""
 
 from functools import cached_property
-from typing import Callable, Dict, Sequence, Set, Tuple
+from typing import Callable, Dict, Iterable, Sequence, Set, Tuple
 
 import attrs
 import cirq
@@ -30,6 +30,11 @@ from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT
 from qualtran.simulation.classical_sim import ClassicalValT
+
+
+def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
+    """Needed so mypy can correctly infer types."""
+    return tuple(x)
 
 
 @cirq.value_equality()
@@ -65,7 +70,7 @@ class QROM(UnaryIterationGate):
             Babbush et. al. (2020). Figure 3.
     """
 
-    data: Sequence[NDArray] = attrs.field(converter=tuple)
+    data: Sequence[NDArray] = attrs.field(converter=_to_tuple)
     selection_bitsizes: Tuple[int, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
@@ -221,6 +226,7 @@ class QROM(UnaryIterationGate):
             return TextBox(f'data_{subscript}')
         elif name == 'control':
             return Circle()
+        raise ValueError(f'Unrecognized register name {name}')
 
     def __pow__(self, power: int):
         if power in [1, -1]:

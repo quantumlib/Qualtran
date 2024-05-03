@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Set, Tuple
 
 import attrs
 import networkx as nx
@@ -25,7 +25,12 @@ import qualtran.testing as qlt_testing
 from qualtran import Bloq, BloqBuilder, Signature, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
-from qualtran.resource_counting import BloqCountT, get_bloq_call_graph, SympySymbolAllocator
+from qualtran.resource_counting import (
+    BloqCountT,
+    get_bloq_call_graph,
+    get_bloq_callee_counts,
+    SympySymbolAllocator,
+)
 
 
 @frozen
@@ -88,6 +93,23 @@ def test_bloq_counts_method():
     assert str(expr) == '3*log(100)'
 
 
+def test_get_bloq_callee_counts():
+    bloq = BigBloq(100)
+    callee_counts = get_bloq_callee_counts(bloq)
+    assert callee_counts == [(SubBloq(unrelated_param=0.5), sympy.log(100))]
+
+    bloq = DecompBloq(10)
+    callee_counts = get_bloq_callee_counts(bloq)
+    assert len(callee_counts) == 10 + 2  # 2 for split/join
+
+    bloq = SubBloq(unrelated_param=0.5)
+    callee_counts = get_bloq_callee_counts(bloq)
+    assert callee_counts == [(TGate(), 3)]
+
+    callee_counts = get_bloq_callee_counts(TGate())
+    assert callee_counts == []
+
+
 def test_bloq_counts_decomp():
     graph, sigma = get_bloq_call_graph(DecompBloq(10))
     assert len(sigma) == 3  # includes split and join
@@ -107,13 +129,18 @@ def test_bloq_counts_decomp():
 
 @pytest.mark.notebook
 def test_notebook():
-    qlt_testing.execute_notebook('bloq_counts')
+    qlt_testing.execute_notebook('call_graph')
+
+
+def _to_tuple(x: Iterable[BloqCountT]) -> Sequence[BloqCountT]:
+    """mypy compatible converter for OnlyCallGraphBloqShim.callees."""
+    return tuple(x)
 
 
 @frozen
 class OnlyCallGraphBloqShim(Bloq):
     name: str
-    callees: Sequence[BloqCountT] = field(converter=tuple, factory=tuple)
+    callees: Sequence[BloqCountT] = field(converter=_to_tuple, factory=tuple)
 
     @property
     def signature(self) -> 'Signature':

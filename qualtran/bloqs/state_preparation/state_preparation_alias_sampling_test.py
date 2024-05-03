@@ -29,7 +29,7 @@ def test_state_prep_alias_sampling_autotest(bloq_autotester):
     bloq_autotester(_state_prep_alias)
 
 
-def assert_state_preparation_valid_for_coefficient(lcu_coefficients: float, epsilon: float):
+def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray, epsilon: float):
     gate = StatePreparationAliasSampling.from_lcu_probs(
         lcu_probabilities=lcu_coefficients.tolist(), probability_epsilon=epsilon
     )
@@ -47,6 +47,7 @@ def assert_state_preparation_valid_for_coefficient(lcu_coefficients: float, epsi
     # State vector is of the form |l>|temp_{l}>. We trace out the |temp_{l}> part to
     # get the coefficients corresponding to |l>.
     L, logL = len(lcu_coefficients), len(g.quregs['selection'])
+    qlambda = sum(abs(lcu_coefficients))
     state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
     num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
     prepared_state = state_vector.sum(axis=1)
@@ -55,9 +56,16 @@ def assert_state_preparation_valid_for_coefficient(lcu_coefficients: float, epsi
     prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
     # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
     # same as `lcu_coefficients` upto `epsilon`.
-    np.testing.assert_allclose(lcu_coefficients, abs(prepared_state) ** 2, atol=epsilon)
+    np.testing.assert_allclose(lcu_coefficients / qlambda, abs(prepared_state) ** 2, atol=epsilon)
 
 
+def test_state_preparation_via_coherent_alias_sampling_quick():
+    num_sites, epsilon = 2, 1e-2
+    lcu_coefficients = get_1d_ising_lcu_coeffs(num_sites)
+    assert_state_preparation_valid_for_coefficient(lcu_coefficients, epsilon)
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize("num_sites, epsilon", [[2, 3e-3], [3, 3.0e-3], [4, 5.0e-3], [7, 8.0e-3]])
 def test_state_preparation_via_coherent_alias_sampling(num_sites, epsilon):
     lcu_coefficients = get_1d_ising_lcu_coeffs(num_sites)

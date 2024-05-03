@@ -17,8 +17,9 @@ from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Signature, Soquet, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
@@ -66,8 +67,8 @@ class Toffoli(Bloq):
         tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
+        incoming: Dict[str, NDArray['Soquet']],  # type: ignore[type-var]
+        outgoing: Dict[str, NDArray['Soquet']],  # type: ignore[type-var]
     ):
         import quimb.tensor as qtn
 
@@ -105,8 +106,8 @@ class Toffoli(Bloq):
         return {'ctrl': ctrl, 'target': target}
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (trg,) = target

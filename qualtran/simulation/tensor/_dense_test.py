@@ -50,12 +50,16 @@ class TensorAdderTester(Bloq):
     ):
         assert sorted(incoming.keys()) == ['qubits', 'x']
         in_qubits = incoming['qubits']
+        assert isinstance(in_qubits, np.ndarray)
         assert in_qubits.shape == (2,)
+        assert isinstance(incoming['x'], Soquet)
         assert incoming['x'].reg.bitsize == 2
 
         assert sorted(outgoing.keys()) == ['qubits', 'y']
         out_qubits = outgoing['qubits']
+        assert isinstance(out_qubits, np.ndarray)
         assert out_qubits.shape == (2,)
+        assert isinstance(outgoing['y'], Soquet)
         assert outgoing['y'].reg.bitsize == 1
 
         data = np.zeros((2**2, 2, 2, 2, 2, 2))
@@ -158,7 +162,7 @@ def test_bloq_with_non_trivial_inds():
     assert_valid_bloq_decomposition(bloq)
     cirq_qubits = cirq.LineQubit.range(2)
     cirq_quregs = {'q0': [cirq_qubits[0]], 'q1': [cirq_qubits[1]]}
-    cirq_circuit, _ = bloq.decompose_bloq().to_cirq_circuit(**cirq_quregs)
+    cirq_circuit, _ = bloq.decompose_bloq().to_cirq_circuit(**cirq_quregs, qubit_manager=None)
     cirq_unitary = cirq_circuit.unitary(qubit_order=cirq_qubits)
     np.testing.assert_allclose(cirq_unitary, bloq.decompose_bloq().tensor_contract())
     np.testing.assert_allclose(cirq_unitary, bloq.tensor_contract())

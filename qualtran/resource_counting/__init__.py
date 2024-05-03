@@ -17,11 +17,13 @@
 isort:skip_file
 """
 
-from .bloq_counts import (
+from ._generalization import GeneralizerT
+
+from ._call_graph import (
     BloqCountT,
-    GeneralizerT,
     big_O,
     SympySymbolAllocator,
+    get_bloq_callee_counts,
     get_bloq_call_graph,
     print_counts_graph,
     build_cbloq_call_graph,

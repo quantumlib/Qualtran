@@ -13,20 +13,22 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Union
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, SoquetT
+from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, Soquet
 
 
 @frozen
@@ -61,10 +63,6 @@ class CtrlScaleModAdd(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         k = ssa.new_symbol('k')
         return {(CtrlModAddK(k=k, bitsize=self.bitsize, mod=self.mod), self.bitsize)}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        ((bloq, n),) = self.bloq_counts().items()
-        return n * bloq.t_complexity()
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -115,10 +113,6 @@ class CtrlModAddK(Bloq):
         k = ssa.new_symbol('k')
         return {(CtrlAddK(k=k, bitsize=self.bitsize), 5)}
 
-    def _t_complexity_(self) -> 'TComplexity':
-        ((bloq, n),) = self.bloq_counts().items()
-        return n * bloq.t_complexity()
-
     def short_name(self) -> str:
         return f'x += {self.k} % {self.mod}'
 
@@ -148,9 +142,6 @@ class CtrlAddK(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 2 * self.bitsize)}
-
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=2 * self.bitsize)
 
 
 @frozen
@@ -197,9 +188,7 @@ class MontgomeryModAdd(Bloq):
 
         return {'x': x, 'y': y}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
 
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
@@ -210,8 +199,12 @@ class MontgomeryModAdd(Bloq):
         # constant subtraction circuit.
         x_split = bb.split(x)
         y_split = bb.split(y)
-        x = bb.join(np.concatenate([[junk_bit], x_split]))
-        y = bb.join(np.concatenate([[sign], y_split]))
+        x = bb.join(
+            np.concatenate([[junk_bit], x_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+        )
+        y = bb.join(
+            np.concatenate([[sign], y_split]), dtype=QMontgomeryUInt(bitsize=self.bitsize + 1)
+        )
 
         # Perform in-place addition on quantum register y.
         x, y = bb.add(Add(QMontgomeryUInt(bitsize=self.bitsize + 1)), a=x, b=y)
@@ -219,7 +212,7 @@ class MontgomeryModAdd(Bloq):
         # Temporary solution to equalize the bitlength of the x and y registers for Add().
         x_split = bb.split(x)
         junk_bit = x_split[0]
-        x = bb.join(x_split[1:])
+        x = bb.join(x_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         # Add constant -p to the y register.
         y = bb.add(
@@ -230,7 +223,7 @@ class MontgomeryModAdd(Bloq):
         # negative.
         y_split = bb.split(y)
         sign = y_split[0]
-        y = bb.join(y_split[1:])
+        y = bb.join(y_split[1:], dtype=QMontgomeryUInt(bitsize=self.bitsize))
 
         sign_split = bb.split(sign)
         sign_split, y = bb.add(
@@ -248,8 +241,8 @@ class MontgomeryModAdd(Bloq):
         sign = bb.add(XGate(), q=sign)
 
         # Free the ancilla qubits.
-        junk_bit = bb.free(junk_bit)
-        sign = bb.free(sign)
+        bb.free(junk_bit)
+        bb.free(sign)
 
         # Return the output registers.
         return {'x': x, 'y': y}

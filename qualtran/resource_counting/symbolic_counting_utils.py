@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Union
+from typing import Sized, Union
 
 import numpy as np
 import sympy
+from attrs import field, frozen, validators
 from cirq._doc import document
 
 SymbolicFloat = Union[float, sympy.Expr]
@@ -23,9 +24,49 @@ document(SymbolicFloat, """A floating point value or a sympy expression.""")
 SymbolicInt = Union[int, sympy.Expr]
 document(SymbolicFloat, """A floating point value or a sympy expression.""")
 
+SymbolicComplex = Union[complex, sympy.Expr]
+document(SymbolicComplex, """A complex value or a sympy expression.""")
+
+
+@frozen
+class Shaped:
+    """Symbolic value for an object that has a shape.
+
+    A Shaped object can be used as a symbolic replacement for any object that has an attribute `shape`,
+    for example numpy NDArrays.
+    Each dimension can be either an positive integer value or a sympy expression.
+
+    This is useful to do symbolic analysis of Bloqs whose call graph only depends on the shape of the input,
+    but not on the actual values.
+    For example, T-cost of the `QROM` Bloq depends only on the iteration length (shape) and not on actual data values.
+    """
+
+    shape: tuple[SymbolicInt, ...] = field(validator=validators.instance_of(tuple))
+
+    def is_symbolic(self):
+        return True
+
 
 def is_symbolic(*args) -> bool:
-    return any(isinstance(x, sympy.Basic) for x in args)
+    """Returns whether the inputs contain any symbolic object.
+
+    Returns:
+        True if any argument is either a sympy object,
+        or implements the `is_symbolic` method which returns True.
+    """
+
+    if len(args) != 1:
+        return any(is_symbolic(arg) for arg in args)
+
+    (arg,) = args
+    if isinstance(arg, sympy.Basic):
+        return True
+
+    checker = getattr(arg, 'is_symbolic', None)
+    if checker is not None:
+        return checker()
+
+    return False
 
 
 def pi(*args) -> SymbolicFloat:
@@ -68,7 +109,24 @@ def smax(*args):
     return max(*args)
 
 
+def smin(*args):
+    if is_symbolic(*args):
+        return sympy.Min(*args)
+    return min(*args)
+
+
 def acos(x: SymbolicFloat) -> SymbolicFloat:
     if not isinstance(x, sympy.Basic):
         return np.arccos(x)
     return sympy.acos(x)
+
+
+def sconj(x: SymbolicComplex) -> SymbolicComplex:
+    """Compute the complex conjugate."""
+    return sympy.conjugate(x) if is_symbolic(x) else np.conjugate(x)
+
+
+def slen(x: Union[Sized, Shaped]) -> SymbolicInt:
+    if isinstance(x, Shaped):
+        return x.shape[0]
+    return len(x)

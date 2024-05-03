@@ -145,6 +145,7 @@ def test_programmable_rotation_gate_array(angles, kappa, constructor):
             qid_shape=(2,) * len(ancilla_indices),
             dtype=np.complex128,
         ).state_vector()
+        assert expected_ancilla_state_vector is not None
         cirq.testing.assert_allclose_up_to_global_phase(
             ancilla_state_vector, expected_ancilla_state_vector, atol=1e-8
         )

@@ -16,7 +16,7 @@
 import abc
 import itertools
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
 import cirq
 import numpy as np
@@ -28,10 +28,14 @@ from qualtran import (
     Bloq,
     BloqBuilder,
     CompositeBloq,
+    Controlled,
+    CtrlSpec,
     DecomposeNotImplementedError,
     DecomposeTypeError,
     GateWithRegisters,
+    QAny,
     QBit,
+    QDType,
     Register,
     Side,
     Signature,
@@ -52,8 +56,13 @@ from qualtran.simulation.tensor._tensor_data_manipulation import (
 if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
 
-CirqQuregT = NDArray[cirq.Qid]
-CirqQuregInT = Union[NDArray[cirq.Qid], Sequence[cirq.Qid]]
+
+# numpy subtypes must be np.generic
+# However, this denotes a numpy array of type cirq.Qid
+_QidType = TypeVar('_QidType', bound=np.generic)
+
+CirqQuregT = NDArray[_QidType]
+CirqQuregInT = Union[NDArray[_QidType], Sequence[cirq.Qid]]
 
 
 def _get_cirq_quregs(signature: Signature, qm: InteropQubitManager):
@@ -82,7 +91,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         )
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: CirqQuregT
     ) -> cirq.OP_TREE:
         op = (
             self.cirq_gate.on_registers(**quregs)
@@ -128,7 +137,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         return cirq.unitary(self.cirq_gate, default=None)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        return cirq.circuit_diagram_info(self.cirq_gate)
+        return cirq.circuit_diagram_info(self.cirq_gate, default=None)
 
     def __str__(self):
         return str(self.cirq_gate)
@@ -153,8 +162,20 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
         return self.gate
 
 
+def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
+
+    from qualtran.drawing import Circle, directional_text_box, ModPlus
+
+    if symbol == "@":
+        return Circle(filled=True)
+    if symbol == "@(0)":
+        return Circle(filled=False)
+    if symbol == "X":
+        return ModPlus()
+    return directional_text_box(symbol, side=side)
+
+
 def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet') -> 'WireSymbol':
-    from qualtran.drawing import directional_text_box
 
     wire_symbols = cirq.circuit_diagram_info(gate).wire_symbols
     begin = 0
@@ -178,7 +199,7 @@ def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet')
                 # bitsize = 1 and shape is non trivial, index into the array of wireshapes.
                 symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
         begin = finish
-    return directional_text_box(text=symbol, side=soq.reg.side)
+    return _cirq_wire_symbol_to_qualtran_wire_symbol(symbol, soq.reg.side)
 
 
 def _add_my_tensors_from_gate(
@@ -210,7 +231,7 @@ def _add_my_tensors_from_gate(
     tn.add(qtn.Tensor(data=unitary, inds=outgoing_list + incoming_list, tags=[short_name, tag]))
 
 
-@frozen
+@frozen(eq=False)
 class _QReg:
     """Used as a container for qubits that form a `Register` of a given bitsize.
 
@@ -221,16 +242,36 @@ class _QReg:
     qubits: Tuple[cirq.Qid, ...] = field(
         converter=lambda v: (v,) if isinstance(v, cirq.Qid) else tuple(v)
     )
+    dtype: QDType
+
+    # Overwrite hash / equality to ensure single-qubit registers map to each other correctly.
+    # E.g., when updating qreg_to_qvars we may have output qregs with dtype =
+    # QBit, but the input registers (which are used to track the qubits) may
+    # have QUInt(1) or similar, leading to the mappings not updating correctly.
+    # Single qubit QFxp cases are handled separately in _ensure_in_reg_exists
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, _QReg):
+            return False
+
+        return other.qubits == self.qubits
+
+    def __hash__(self):
+        return hash(self.qubits)
 
 
 def _ensure_in_reg_exists(
     bb: BloqBuilder, in_reg: _QReg, qreg_to_qvar: Dict[_QReg, Soquet]
 ) -> None:
     """Takes care of qubit allocations, split and joins to ensure `qreg_to_qvar[in_reg]` exists."""
+    from qualtran.bloqs.util_bloqs import Cast
+
     all_mapped_qubits = {q for qreg in qreg_to_qvar for q in qreg.qubits}
     qubits_to_allocate: List[cirq.Qid] = [q for q in in_reg.qubits if q not in all_mapped_qubits]
     if qubits_to_allocate:
-        qreg_to_qvar[_QReg(qubits_to_allocate)] = bb.allocate(len(qubits_to_allocate))
+        n_alloc = len(qubits_to_allocate)
+        qreg_to_qvar[
+            _QReg(qubits_to_allocate, dtype=QBit() if n_alloc == 1 else QAny(n_alloc))
+        ] = bb.allocate(n_alloc)
 
     if in_reg in qreg_to_qvar:
         # This is the easy case when no split / joins are needed.
@@ -242,7 +283,9 @@ def _ensure_in_reg_exists(
     new_qreg_to_qvar: Dict[_QReg, Soquet] = {}
     for qreg, soq in qreg_to_qvar.items():
         if len(qreg.qubits) > 1 and any(q in qreg.qubits for q in in_reg_qubits):
-            new_qreg_to_qvar |= {_QReg(q): s for q, s in zip(qreg.qubits, bb.split(soq=soq))}
+            new_qreg_to_qvar |= {
+                _QReg(q, QBit()): s for q, s in zip(qreg.qubits, bb.split(soq=soq))
+            }
         else:
             new_qreg_to_qvar[qreg] = soq
     qreg_to_qvar.clear()
@@ -252,17 +295,36 @@ def _ensure_in_reg_exists(
     for qreg, soq in new_qreg_to_qvar.items():
         if len(in_reg_qubits) > 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
             assert len(qreg.qubits) == 1, "Individual qubits should have been split by now."
-            soqs_to_join[qreg.qubits[0]] = soq
+            # Cast single bit registers to QBit to preserve signature of later join.
+            if not isinstance(qreg.dtype, QBit):
+                soqs_to_join[qreg.qubits[0]] = bb.add(Cast(qreg.dtype, QBit()), reg=soq)
+            else:
+                soqs_to_join[qreg.qubits[0]] = soq
+        elif len(in_reg_qubits) == 1 and qreg.qubits and qreg.qubits[0] in in_reg_qubits:
+            # Cast single QBit registers to the appropriate single-bit register dtype.
+            err_msg = (
+                "Found non-QBit type register which shouldn't happen: "
+                f"{soq.reg.name} {soq.reg.dtype}"
+            )
+            assert isinstance(soq.reg.dtype, QBit), err_msg
+            if not isinstance(in_reg.dtype, QBit):
+                qreg_to_qvar[in_reg] = bb.add(Cast(QBit(), in_reg.dtype), reg=soq)
+            else:
+                qreg_to_qvar[qreg] = soq
         else:
             qreg_to_qvar[qreg] = soq
     if soqs_to_join:
-        qreg_to_qvar[in_reg] = bb.join(np.array([soqs_to_join[q] for q in in_reg.qubits]))
+        # A split is not necessarily matched with a join of the same size so we
+        # need to strip the data type of the parent split before assigning the correct bitsize.
+        qreg_to_qvar[in_reg] = bb.join(
+            np.array([soqs_to_join[q] for q in in_reg.qubits]), dtype=in_reg.dtype
+        )
 
 
 def _gather_input_soqs(
-    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]
-) -> Dict[str, NDArray[Soquet]]:
-    qvars_in: Dict[str, NDArray[Soquet]] = {}
+    bb: BloqBuilder, op_quregs: Dict[str, NDArray[_QReg]], qreg_to_qvar: Dict[_QReg, Soquet]  # type: ignore[type-var]
+) -> Dict[str, NDArray[Soquet]]:  # type: ignore[type-var]
+    qvars_in: Dict[str, NDArray[Soquet]] = {}  # type: ignore[type-var]
     for reg_name, quregs in op_quregs.items():
         flat_soqs: List[Soquet] = []
         for qureg in quregs.flatten():
@@ -307,6 +369,11 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
     if isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
         # Inverse of a cirq gate, delegate to Adjoint
         return Adjoint(_cirq_gate_to_bloq(gate._original))
+
+    if isinstance(gate, cirq.ControlledGate):
+        return Controlled(
+            _cirq_gate_to_bloq(gate.sub_gate), CtrlSpec.from_cirq_cv(gate.control_values)
+        )
 
     # Check specific basic gates instances.
     CIRQ_GATE_TO_BLOQ_MAP = {
@@ -409,8 +476,14 @@ def cirq_optree_to_cbloq(
     elif in_quregs is None or out_quregs is None:
         raise ValueError("`signature` requires specifying both `in_quregs` and `out_quregs`.")
 
-    in_quregs = {k: np.apply_along_axis(_QReg, -1, v) for k, v in in_quregs.items()}
-    out_quregs = {k: np.apply_along_axis(_QReg, -1, v) for k, v in out_quregs.items()}
+    in_quregs: Dict[str, NDArray] = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
+        for k, v in in_quregs.items()
+    }
+    out_quregs: Dict[str, NDArray] = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_right(k).dtype))  # type: ignore[arg-type]
+        for k, v in out_quregs.items()
+    }
 
     bb, initial_soqs = BloqBuilder.from_signature(signature, add_registers_allowed=False)
 
@@ -436,11 +509,13 @@ def cirq_optree_to_cbloq(
             bb.add(bloq)
             continue
 
+        reg_dtypes = [r.dtype for r in bloq.signature]
         # 3.1 Find input / output registers.
         all_op_quregs: Dict[str, NDArray[_QReg]] = {
-            k: np.apply_along_axis(_QReg, -1, v)
-            for k, v in split_qubits(bloq.signature, op.qubits).items()
+            k: np.apply_along_axis(_QReg, -1, *(v, reg_dtypes[i]))  # type: ignore[arg-type]
+            for i, (k, v) in enumerate(split_qubits(bloq.signature, op.qubits).items())
         }
+
         in_op_quregs: Dict[str, NDArray[_QReg]] = {
             reg.name: all_op_quregs[reg.name] for reg in bloq.signature.lefts()
         }

@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import qualtran.testing as qlt_testing
-from qualtran import BloqBuilder
+from qualtran import Bloq, BloqBuilder
 from qualtran.bloqs.basic_gates import (
     IntEffect,
     IntState,
@@ -112,7 +112,7 @@ def test_zero_effect_manual():
         bloq.call_classically(q=1)
 
     with pytest.raises(ValueError, match=r'Bad QBit\(\) value \[0\, 0\, 0\]'):
-        bloq.call_classically(q=[0, 0, 0])
+        bloq.call_classically(q=[0, 0, 0])  # type: ignore[arg-type]
 
 
 def test_one_effect_manual():
@@ -136,8 +136,8 @@ def test_zero_state_effect(bit):
     bb = BloqBuilder()
 
     if bit:
-        state = OneState()
-        eff = OneEffect()
+        state: Bloq = OneState()
+        eff: Bloq = OneEffect()
     else:
         state = ZeroState()
         eff = ZeroEffect()

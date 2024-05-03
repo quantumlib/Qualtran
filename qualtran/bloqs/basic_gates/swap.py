@@ -42,6 +42,7 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 from .t_gate import TGate
 
 if TYPE_CHECKING:
+    from qualtran import CompositeBloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -74,8 +75,8 @@ class TwoBitSwap(Bloq):
         return Signature.build(x=1, y=1)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         (x,) = x
         (y,) = y
         return cirq.SWAP.on(x, y), {'x': [x], 'y': [y]}
@@ -100,6 +101,9 @@ class TwoBitSwap(Bloq):
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': y, 'y': x}
+
+    def adjoint(self) -> 'Bloq':
+        return self
 
 
 @frozen
@@ -129,9 +133,9 @@ class TwoBitCSwap(Bloq):
         self,
         *,
         context: cirq.DecompositionContext,
-        ctrl: NDArray[cirq.Qid],
-        x: NDArray[cirq.Qid],
-        y: NDArray[cirq.Qid],
+        ctrl: NDArray[cirq.Qid],  # type: ignore[type-var]
+        x: NDArray[cirq.Qid],  # type: ignore[type-var]
+        y: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         (ctrl,) = ctrl
         (x,) = x
