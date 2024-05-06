@@ -179,7 +179,6 @@ class MontgomeryModAdd(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-
         y += x
         y -= self.p
 
@@ -189,7 +188,6 @@ class MontgomeryModAdd(Bloq):
         return {'x': x, 'y': y}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
-
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)

@@ -677,7 +677,6 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
-
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
