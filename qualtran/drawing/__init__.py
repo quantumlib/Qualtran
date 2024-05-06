@@ -46,4 +46,11 @@ from .bloq_counts_graph import (
     format_counts_graph_markdown,
 )
 
-from ._show_funcs import show_bloq, show_bloqs, show_call_graph, show_counts_sigma, show_flame_graph
+from ._show_funcs import (
+    show_bloq,
+    show_bloqs,
+    show_call_graph,
+    show_counts_sigma,
+    show_flame_graph,
+    show_bloq_via_qpic,
+)

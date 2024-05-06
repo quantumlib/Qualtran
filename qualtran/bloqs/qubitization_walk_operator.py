@@ -23,7 +23,6 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Sig
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     ignore_cliffords,
@@ -56,8 +55,6 @@ class QubitizationWalkOperator(GateWithRegisters):
             $PREPARE|00...00> = \sum_{l=0}^{L - 1}\sqrt{\frac{w_{l}}{\lambda}} |l> = |\ell>$
         control_val: If 0/1, a controlled version of the walk operator is constructed. Defaults to
             None, in which case the resulting walk operator is not controlled.
-        power: Constructs $W^{power}$ by repeatedly decomposing into `power` copies of $W$.
-            Defaults to 1.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
@@ -68,7 +65,6 @@ class QubitizationWalkOperator(GateWithRegisters):
     select: SelectOracle
     prepare: PrepareOracle
     control_val: Optional[int] = None
-    power: int = 1
 
     def __attrs_post_init__(self):
         assert self.select.control_registers == self.reflect.control_registers
@@ -106,18 +102,14 @@ class QubitizationWalkOperator(GateWithRegisters):
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> cirq.OP_TREE:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
-        select_op = self.select.on_registers(**select_reg)
+        yield self.select.on_registers(**select_reg)
 
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
-        reflect_op = self.reflect.on_registers(**reflect_reg)
-        for _ in range(self.power):
-            yield select_op
-            yield reflect_op
+        yield self.reflect.on_registers(**reflect_reg)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['W'] * (total_bits(self.signature) - total_bits(self.control_registers))
-        wire_symbols[-1] = f'W^{self.power}' if self.power != 1 else 'W'
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def controlled(
@@ -144,17 +136,6 @@ class QubitizationWalkOperator(GateWithRegisters):
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
-
-    def with_power(self, new_power: int) -> 'QubitizationWalkOperator':
-        return attrs.evolve(self, power=new_power)
-
-    def __pow__(self, power: int):
-        return self.with_power(self.power * power)
-
-    def _t_complexity_(self):
-        if self.power > 1:
-            return self.power * t_complexity(self.with_power(1))
-        return NotImplemented
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
