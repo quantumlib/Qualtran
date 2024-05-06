@@ -34,7 +34,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran._infra.composite_bloq import _binst_to_cxns, _reg_to_soq
+from qualtran._infra.composite_bloq import _binst_to_cxns
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
     merge_qubits,
@@ -302,18 +302,12 @@ def _wire_symbol_to_cirq_diagram_info(
 ) -> cirq.CircuitDiagramInfo:
     wire_symbols = []
     for reg in bloq.signature:
-        # Note: all of our soqs lack a `binst`. The `bloq.wire_symbol` methods
-        # should never use the binst field, but this isn't really enforced anywhere.
-        # https://github.com/quantumlib/Qualtran/issues/608
-        soqs = _reg_to_soq(LeftDangle, reg)
-        if isinstance(soqs, Soquet):
-            assert soqs.idx == ()
-            soqs = np.array([soqs] * reg.bitsize)
+        if reg.shape:
+            for idx in range(reg.bitsize):
+                for ri in reg.all_idxs():
+                    wire_symbols.append(bloq.wire_symbol(reg, ri))
         else:
-            soqs = np.broadcast_to(soqs, (reg.bitsize,) + reg.shape)
-
-        for soq in soqs.reshape(-1):
-            wire_symbols.append(bloq.wire_symbol(soq))
+            wire_symbols.extend([bloq.wire_symbol(reg)] * reg.bitsize)
 
     def _qualtran_wire_symbols_to_cirq_text(ws: WireSymbol) -> str:
         if isinstance(ws, Circle):

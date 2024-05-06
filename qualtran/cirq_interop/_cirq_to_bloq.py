@@ -166,7 +166,6 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
 
 
 def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
-
     from qualtran.drawing import Circle, directional_text_box, ModPlus
 
     if symbol == "@":
@@ -178,15 +177,19 @@ def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireS
     return directional_text_box(symbol, side=side)
 
 
-def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet') -> 'WireSymbol':
-
+def _wire_symbol_from_gate(
+    gate: cirq.Gate, signature: Signature, wire_reg: Register, idx: Tuple[int, ...] = tuple()
+) -> 'WireSymbol':
     wire_symbols = cirq.circuit_diagram_info(gate).wire_symbols
     begin = 0
-    symbol: str = soq.pretty()
+    if len(idx) > 0:
+        symbol = f'{wire_reg.name}[{", ".join(str(i) for i in idx)}]'
+    else:
+        symbol = wire_reg.name
     for reg in signature:
         reg_size = int(np.prod(reg.shape))
         finish = begin + reg.bitsize * int(np.prod(reg.shape))
-        if reg == soq.reg:
+        if reg == wire_reg:
             if reg_size == 1:
                 # either shape = () or shape = (1,), wire_symbols is a list of
                 # size reg.bitsize, we only want one label for the register.
@@ -195,14 +198,12 @@ def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet')
                 # If the bitsize > 1 AND the shape of the register is non
                 # trivial then we only want to index into the shape, (not shape
                 # * bitsize)
-                symbol = np.array(wire_symbols[begin : begin + reg_size]).reshape(reg.shape)[
-                    soq.idx
-                ]
+                symbol = np.array(wire_symbols[begin : begin + reg_size]).reshape(reg.shape)[idx]
             else:
                 # bitsize = 1 and shape is non trivial, index into the array of wireshapes.
-                symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
+                symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[idx]
         begin = finish
-    return _cirq_wire_symbol_to_qualtran_wire_symbol(symbol, soq.reg.side)
+    return _cirq_wire_symbol_to_qualtran_wire_symbol(symbol, wire_reg.side)
 
 
 def _add_my_tensors_from_gate(

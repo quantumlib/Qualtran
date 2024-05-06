@@ -14,13 +14,12 @@
 
 """Classes to apply single qubit bloq to multiple qubits."""
 from functools import cached_property
-from typing import Dict, Set
+from typing import Dict, Set, Tuple
 
 import attrs
 import sympy
 
 from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, SoquetT
-from qualtran._infra.quantum_graph import Soquet
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -55,7 +54,7 @@ class OnEach(Bloq):
     def short_name(self) -> str:
         return rf'{self.gate.short_name()}⨂{self.n}'
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         return TextBox(self.gate.short_name())
 
     def build_composite_bloq(self, bb: BloqBuilder, *, q: Soquet) -> Dict[str, SoquetT]:
