@@ -262,7 +262,7 @@ class XGate(Bloq):
         q = cirq_quregs.pop('q')
 
         (q,) = q
-        return cirq.X(q), {'q': [q]}
+        return cirq.X(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self):
         return TComplexity(clifford=1)

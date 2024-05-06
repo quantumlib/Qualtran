@@ -137,7 +137,7 @@ class ApproximateQFT(GateWithRegisters):
                 yield cirq.SWAP(q[i], q[-i - 1])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        phase_dict: Dict[AddIntoPhaseGrad, int] = defaultdict(int)
+        phase_dict: Dict[AddIntoPhaseGrad, SymbolicInt] = defaultdict(int)
         if is_symbolic(self.bitsize, self.phase_bitsize):
             phase_dict[
                 AddIntoPhaseGrad(

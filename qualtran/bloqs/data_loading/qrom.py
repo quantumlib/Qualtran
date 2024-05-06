@@ -195,8 +195,8 @@ class QROM(UnaryIterationGate):
             selections = {'selection': idx}
         else:
             # Multidimensional
-            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))
-            selections = {f'selection{i}': idx[i] for i in range(n_dim)}
+            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))  # type: ignore[assignment]
+            selections = {f'selection{i}': idx[i] for i in range(n_dim)}  # type: ignore[index]
 
         # Retrieve the data; bitwise add them in to the input target values
         targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}

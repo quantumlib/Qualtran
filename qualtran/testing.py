@@ -237,6 +237,8 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
     # note this will only work if shape = ().
     # See: https://github.com/quantumlib/Qualtran/issues/608
     for i, r in enumerate(regs):
+        # note this will only work if shape = ().
+        # See: https://github.com/quantumlib/Qualtran/issues/608
         ws.append(bloq.wire_symbol(r, (i,)).text)
 
     assert ws == expected_ws
@@ -641,6 +643,7 @@ def assert_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, 
         )
     except Exception as e:
         raise BloqCheckException.unverified('Strict type checking failed.\n' + str(e)) from e
+    return BloqCheckResult.PASS, ''
 
 
 def check_bloq_example_qtyping(bloq_ex: BloqExample) -> Tuple[BloqCheckResult, str]:

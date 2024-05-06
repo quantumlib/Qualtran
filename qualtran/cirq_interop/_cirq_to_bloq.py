@@ -15,6 +15,7 @@
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 import abc
 import itertools
+import numbers
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
@@ -136,7 +137,9 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     def _unitary_(self):
         return cirq.unitary(self.cirq_gate, default=None)
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(
+        self, args: cirq.CircuitDiagramInfoArgs
+    ) -> Optional[cirq.CircuitDiagramInfo]:
         return cirq.circuit_diagram_info(self.cirq_gate, default=None)
 
     def __str__(self):
@@ -413,6 +416,8 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         )
 
     if isinstance(gate, cirq.GlobalPhaseGate):
+        if isinstance(gate.coefficient, numbers.Complex):
+            return GlobalPhase(coefficient=complex(gate.coefficient))
         return GlobalPhase(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.

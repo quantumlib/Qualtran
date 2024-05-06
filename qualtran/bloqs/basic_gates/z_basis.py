@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, cast, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -34,6 +34,7 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -261,7 +262,7 @@ class ZGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.Z(q), {'q': [q]}
+        return cirq.Z(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
@@ -287,7 +288,7 @@ class _IntVector(Bloq):
     """
 
     val: int = attrs.field()
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
     state: bool
 
     @val.validator
@@ -321,7 +322,7 @@ class _IntVector(Bloq):
 
     @staticmethod
     def _build_composite_effect(
-        bb: 'BloqBuilder', val: 'SoquetT', bits: NDArray[np.uint8]
+        bb: 'BloqBuilder', val: 'Soquet', bits: NDArray[np.uint8]
     ) -> Dict[str, 'SoquetT']:
         xs = bb.split(val)
         effects = [ZeroEffect(), OneEffect()]
@@ -330,13 +331,14 @@ class _IntVector(Bloq):
         return {}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
         if self.state:
             assert not val
             return self._build_composite_state(bb, bits)
         else:
-            val = val['val']
-            return self._build_composite_effect(bb, val, bits)
+            return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
 
     def add_my_tensors(
         self,
@@ -346,6 +348,8 @@ class _IntVector(Bloq):
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         data = np.zeros(2**self.bitsize).reshape((2,) * self.bitsize)
         bitstring = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
         data[tuple(bitstring)] = 1
@@ -397,7 +401,7 @@ class IntState(_IntVector):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    def __init__(self, val: int, bitsize: int):
+    def __init__(self, val: int, bitsize: Union[int, sympy.Expr]):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
 

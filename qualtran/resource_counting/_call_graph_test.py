@@ -22,7 +22,7 @@ import sympy
 from attrs import field, frozen
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
 from qualtran.resource_counting import (
@@ -31,6 +31,7 @@ from qualtran.resource_counting import (
     get_bloq_callee_counts,
     SympySymbolAllocator,
 )
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 @frozen
@@ -53,7 +54,7 @@ class DecompBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> Dict[str, 'SoquetT']:
         qs = bb.split(x)
         for i in range(self.bitsize):
             qs[i] = bb.add(SubBloq(unrelated_param=i / 12), q=qs[i])
@@ -73,7 +74,7 @@ class SubBloq(Bloq):
         return {(TGate(), 3)}
 
 
-def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, int]]:
+def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, SymbolicInt]]:
     ss = SympySymbolAllocator()
     n_c = ss.new_symbol('n_c')
 

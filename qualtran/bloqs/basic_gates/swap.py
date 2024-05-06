@@ -80,7 +80,7 @@ class TwoBitSwap(Bloq):
     ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         (x,) = x
         (y,) = y
-        return cirq.SWAP.on(x, y), {'x': [x], 'y': [y]}
+        return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
@@ -277,7 +277,7 @@ class CSwap(GateWithRegisters):
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'Soquet', y: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError("`bitsize` must be a concrete value.")

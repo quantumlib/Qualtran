@@ -97,7 +97,7 @@ class Toffoli(Bloq):
         )
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', target: 'ClassicalValT'
+        self, ctrl: NDArray[np.integer], target: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         assert target in [0, 1]
         if ctrl[0] == 1 and ctrl[1] == 1:

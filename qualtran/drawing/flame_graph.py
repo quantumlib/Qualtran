@@ -161,8 +161,7 @@ def get_flame_graph_data(
     if file_path:
         with open(file_path, 'w') as f:
             f.write('\n'.join(data))
-    else:
-        return data
+    return data
 
 
 def get_flame_graph_svg_data(
@@ -190,5 +189,4 @@ def get_flame_graph_svg_data(
     if file_path:
         with open(file_path, 'w') as f:
             f.write(svg_data)
-    else:
-        return svg_data
+    return svg_data
