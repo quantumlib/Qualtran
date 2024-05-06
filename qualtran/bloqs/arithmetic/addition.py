@@ -612,3 +612,141 @@ def _add_k_large() -> AddConstantMod:
 _ADD_K_DOC = BloqDocSpec(
     bloq_cls=AddConstantMod, examples=[_add_k_symb, _add_k_small, _add_k_large]
 )
+
+@frozen
+class Subtract(Bloq):
+    r"""An n-bit subtraction gate.
+
+    Implements $U|a\rangle|b\rangle \rightarrow |a\rangle|a-b\rangle$ using $4n - 4 T$ gates.
+
+    Args:
+        a_dtype: Quantum datatype used to represent the integer a.
+        b_dtype: Quantum datatype used to represent the integer b. Must be large
+            enough to hold the result in the output register of a + b, or else it simply
+            drops the most significant bits. If not specified, b_dtype is set to a_dtype.
+
+    Registers:
+        a: A a_dtype.bitsize-sized input register (register a above).
+        b: A b_dtype.bitsize-sized input/output register (register b above).
+
+    References:
+        [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
+    """
+
+    a_dtype: QInt = field()
+    b_dtype: QInt = field()
+
+    @b_dtype.default
+    def b_dtype_default(self):
+        return self.a_dtype
+
+    @a_dtype.validator
+    def _a_dtype_validate(self, field, val):
+        if not isinstance(val, QInt):
+            raise ValueError("Only QInt type is supported.")
+        if isinstance(val.num_qubits, sympy.Expr):
+            return
+        if val.bitsize > self.b_dtype.bitsize:
+            raise ValueError("a_dtype bitsize must be less than or equal to b_dtype bitsize")
+
+    @b_dtype.validator
+    def _b_dtype_validate(self, field, val):
+        if not isinstance(val, QInt):
+            raise ValueError("Only QInt type is supported.")
+
+    @property
+    def dtype(self):
+        return self.b_dtype
+
+    @property
+    def signature(self):
+        return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        import quimb.tensor as qtn
+
+        if isinstance(self.a_dtype, QInt) or isinstance(self.b_dtype, QInt):
+            raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
+        N_a = 2**self.a_dtype.bitsize
+        N_b = 2**self.b_dtype.bitsize
+        inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
+        unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
+        # TODO: Add a value-to-index method on dtype to make this easier.
+        for a, b in itertools.product(range(N_a), range(N_b)):
+            unitary[a, b, a, int(math.fmod(a - b, N_b))] = 1
+
+        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
+    ) -> Dict[str, 'ClassicalValT']:
+        unsigned = isinstance(self.a_dtype, (QUInt, QMontgomeryUInt))
+        b_bitsize = self.b_dtype.bitsize
+        N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
+        return {'a': a, 'b': int(math.fmod(a - b, N))}
+
+    def short_name(self) -> str:
+        return "a+b"
+
+    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
+        wire_symbols += ["In(y)/Out(x-y)"] * int(self.b_dtype.bitsize)
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box
+
+        if soq.reg.name == 'a':
+            return directional_text_box('a', side=soq.reg.side)
+        elif soq.reg.name == 'b':
+            return directional_text_box('a-b', side=soq.reg.side)
+        else:
+            raise ValueError()
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        return {(XGate(), self.b_dtype.bitsize), (SimpleAddConstant(self.b_dtype.bitsize, k=1), 1), (Add(self.a_dtype, self.b_dtype), 1)}
+    
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', a: Soquet, b: Soquet
+    ) -> Dict[str, 'SoquetT']:
+        b = np.array([bb.add(XGate(), q=q) for q in bb.split(b)])  # 1s complement of b.
+        b = bb.add(SimpleAddConstant(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype))  # 2s complement of b.
+        a, b = bb.add(Add(self.a_dtype, self.b_dtype), a=a, b=b)  # a - b
+        return {'a': a, 'b': b}
+
+
+@bloq_example
+def _sub_symb() -> Subtract:
+    n = sympy.Symbol('n')
+    sub_symb = Subtract(QInt(bitsize=n))
+    return sub_symb
+
+
+@bloq_example
+def _sub_small() -> Subtract:
+    sub_small = Subtract(QInt(bitsize=4))
+    return sub_small
+
+
+@bloq_example
+def _sub_large() -> Subtract:
+    sub_large = Subtract(QInt(bitsize=64))
+    return sub_large
+
+
+@bloq_example
+def _sub_diff_size_regs() -> Subtract:
+    sub_diff_size_regs = Subtract(QInt(bitsize=4), QInt(bitsize=16))
+    return sub_diff_size_regs
+
+
+_SUB_DOC = BloqDocSpec(
+    bloq_cls=Subtract, examples=[_sub_symb, _sub_small, _sub_large, _sub_diff_size_regs]
+)

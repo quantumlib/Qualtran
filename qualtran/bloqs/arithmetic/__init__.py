@@ -17,6 +17,7 @@ from qualtran.bloqs.arithmetic.addition import (
     AddConstantMod,
     OutOfPlaceAdder,
     SimpleAddConstant,
+    Subtract,
 )
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,

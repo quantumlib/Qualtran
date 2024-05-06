@@ -26,6 +26,7 @@ from qualtran.bloqs.arithmetic.addition import (
     AddConstantMod,
     OutOfPlaceAdder,
     SimpleAddConstant,
+    Subtract,
 )
 from qualtran.bloqs.arithmetic.comparison_test import identity_map
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
@@ -381,6 +382,13 @@ def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result)
     assert bloq_classical[-1] == result
 
 
+def test_subtract():
+    gate = Subtract(QInt(3), QInt(5))
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    # qlt_testing.assert_valid_bloq_decomposition(gate**-1)
+
 @pytest.mark.notebook
 def test_notebook():
     qlt_testing.execute_notebook('addition')
+
+
