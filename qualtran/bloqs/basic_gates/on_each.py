@@ -19,7 +19,7 @@ from typing import Dict, Set, Tuple
 import attrs
 import sympy
 
-from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, QAny, Register, Signature, Soquet, SoquetT
 from qualtran.drawing import WireSymbol
 from qualtran.drawing.musical_score import TextBox
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

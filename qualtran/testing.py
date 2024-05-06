@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import cast, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import sympy
 
@@ -34,7 +34,6 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
-from qualtran.drawing.musical_score import TextBox
 from qualtran.resource_counting import GeneralizerT
 
 

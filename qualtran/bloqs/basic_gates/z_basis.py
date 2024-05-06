@@ -34,6 +34,7 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
