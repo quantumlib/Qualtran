@@ -20,9 +20,10 @@ import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signature, Soquet, SoquetT
-from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran._infra.gate_with_registers import GateWithRegisters, get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.for_testing import TestCastToFrom, TestMultiRegister
+from qualtran.bloqs.for_testing import TestAtom, TestCastToFrom, TestMultiRegister
+from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.util_bloqs import Allocate, Cast, Free, Join, Partition, Power, Split
 from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
@@ -235,6 +236,55 @@ def test_power():
     assert bloq_raised_to_power.signature == bloq.signature
     cbloq = bloq_raised_to_power.decompose_bloq()
     assert [binst.bloq for binst, _, _ in cbloq.iter_bloqnections()] == [bloq] * 10
+
+
+def test_power_of_power():
+    bloq = TestAtom()
+    assert Power(bloq, 6) == Power(bloq, 2) ** 3
+
+    gate = TestGWRAtom()
+    assert gate**-3 == gate.adjoint() ** 3
+    assert gate**6 == (gate**2) ** 3
+    assert gate**6 == (gate**-2) ** -3
+
+
+def test_power_circuit_diagram():
+    def to_cirq_circuit(bloq: GateWithRegisters) -> cirq.Circuit:
+        op = bloq.on(*cirq.LineQubit.range(bloq.num_qubits()))
+        return cirq.Circuit(op)
+
+    power_atom = Power(TestGWRAtom(), 4)
+
+    cirq.testing.assert_has_diagram(to_cirq_circuit(power_atom), '0: ───TestGWRAtom^4───')
+
+    power_multi_reg = Power(TestMultiRegister(), 4)
+    cirq.testing.assert_has_diagram(
+        to_cirq_circuit(power_multi_reg),
+        '''
+0: ────Power^4───
+       │
+1: ────yy^4──────
+       │
+2: ────yy^4──────
+       │
+3: ────yy^4──────
+       │
+4: ────yy^4──────
+       │
+5: ────yy^4──────
+       │
+6: ────yy^4──────
+       │
+7: ────yy^4──────
+       │
+8: ────yy^4──────
+       │
+9: ────zz^4──────
+       │
+10: ───zz^4──────
+       │
+11: ───zz^4──────''',
+    )
 
 
 @pytest.mark.notebook

@@ -39,5 +39,5 @@ def test_test_gwr_atom():
     assert ta.short_name() == 'GWRAtom'
     with pytest.raises(DecomposeTypeError):
         ta.decompose_bloq()
-    assert ta.adjoint() == ta
+    assert ta.adjoint() == TestGWRAtom(is_adjoint=True)
     np.testing.assert_allclose(cirq.unitary(ta), np.eye(2))
