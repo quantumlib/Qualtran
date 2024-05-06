@@ -72,6 +72,7 @@ import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
+import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
@@ -338,6 +339,21 @@ ARITHMETIC = [
         module=qualtran.bloqs.factoring.mod_mul,
         bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
+    ),
+    NotebookSpecV2(
+        title='Elliptic Curve Cryptography',
+        module=qualtran.bloqs.factoring.ecc,
+        bloq_specs=[
+            qualtran.bloqs.factoring.ecc._find_ecc_private_key._ECC_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc._ec_phase_estimate_r._EC_PE_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc._ec_add_r._ECC_ADD_R_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc._ec_add_r.EC_WINDOW_ADD_BLOQ_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Elliptic Curve Addition',
+        module=qualtran.bloqs.factoring.ecc._ec_add,
+        bloq_specs=[qualtran.bloqs.factoring.ecc._ec_add._EC_ADD_DOC],
     ),
 ]
 
