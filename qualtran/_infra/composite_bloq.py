@@ -1013,7 +1013,6 @@ class BloqBuilder:
                 in_soqs[k] = np.asarray(v)
 
         # Initial mapping of LeftDangle according to user-provided in_soqs.
-        # TODO: add checking if this can be a sequence
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
             (_reg_to_soq(LeftDangle, reg), cast(SoquetT, in_soqs[reg.name]))
             for reg in cbloq.signature.lefts()

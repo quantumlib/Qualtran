@@ -76,6 +76,8 @@ class SU2RotationGate(GateWithRegisters):
             raise ValueError(f'Symbolic phi not allowed: {self.phi}')
         if isinstance(self.theta, sympy.Expr):
             raise ValueError(f'Symbolic theta not allowed: {self.theta}')
+        if isinstance(self.global_shift, sympy.Expr):
+            raise ValueError(f'Symbolic global_shift not allowed: {self.global_shift}')
         return np.exp(1j * self.global_shift) * np.array(
             [
                 [
