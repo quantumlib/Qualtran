@@ -13,9 +13,8 @@
 #  limitations under the License.
 """SELECT for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Collection, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
-import cirq
 import numpy as np
 from attrs import evolve, frozen
 
