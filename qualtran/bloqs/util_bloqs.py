@@ -37,10 +37,11 @@ from qualtran import (
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import directional_text_box, WireSymbol
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicInt
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
 if TYPE_CHECKING:
+    import cirq
     from numpy.typing import NDArray
 
     from qualtran import AddControlledT, CtrlSpec
@@ -496,7 +497,10 @@ class Power(GateWithRegisters):
     def __attrs_post_init__(self):
         if any(reg.side != Side.THRU for reg in self.bloq.signature):
             raise ValueError('Bloq to repeat must have only THRU registers')
-        if self.power < 1:
+
+        if not is_symbolic(self.power) and (
+            not isinstance(self.power, (int, np.integer)) or self.power < 1
+        ):
             raise ValueError(f'{self.power=} must be a positive integer.')
 
     def adjoint(self) -> 'Bloq':
@@ -513,3 +517,21 @@ class Power(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(self.bloq, self.power)}
+
+    def __pow__(self, power) -> 'Power':
+        bloq = self.bloq.adjoint() if power < 0 else self.bloq
+        return Power(bloq, self.power * abs(power))
+
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
+        info = cirq.circuit_diagram_info(self.bloq, args, default=None)
+
+        if info is None:
+            info = super()._circuit_diagram_info_(args)
+
+        wire_symbols = [f'{symbol}^{self.power}' for symbol in info.wire_symbols]
+
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
