@@ -21,7 +21,7 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
 from functools import cached_property
-from typing import List, Tuple
+from typing import Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -43,6 +43,9 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+
+if TYPE_CHECKING:
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 @cirq.value_equality()
@@ -96,10 +99,11 @@ class StatePreparationAliasSampling(PrepareOracle):
     alt: NDArray[np.int_]
     keep: NDArray[np.int_]
     mu: int
+    sum_of_lcu_coeffs: float
 
     @classmethod
     def from_lcu_probs(
-        cls, lcu_probabilities: List[float], *, probability_epsilon: float = 1.0e-5
+        cls, lcu_probabilities: Sequence[float], *, probability_epsilon: float = 1.0e-5
     ) -> 'StatePreparationAliasSampling':
         """Factory to construct the state preparation gate for a given set of LCU coefficients.
 
@@ -119,7 +123,12 @@ class StatePreparationAliasSampling(PrepareOracle):
             alt=np.array(alt),
             keep=np.array(keep),
             mu=mu,
+            sum_of_lcu_coeffs=sum(lcu_probabilities),
         )
+
+    @cached_property
+    def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
+        return self.sum_of_lcu_coeffs
 
     @cached_property
     def sigma_mu_bitsize(self) -> int:
@@ -162,7 +171,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> cirq.OP_TREE:
-        N = self.selection_registers[0].dtype.iteration_length
+        N = self.selection_registers[0].dtype.iteration_length_or_zero()
         yield PrepareUniformSuperposition(N).on(*quregs['selection'])
         if self.mu == 0:
             return
@@ -181,7 +190,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
 def _state_prep_alias() -> StatePreparationAliasSampling:
-    coeffs = np.array([1.0, 1, 3, 2])
+    coeffs = [1.0, 1, 3, 2]
     mu = 3
     state_prep_alias = StatePreparationAliasSampling.from_lcu_probs(
         coeffs, probability_epsilon=2**-mu / len(coeffs)

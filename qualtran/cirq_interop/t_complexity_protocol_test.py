@@ -15,6 +15,7 @@ from typing import Set, TYPE_CHECKING
 
 import cirq
 import pytest
+from attrs import frozen
 
 from qualtran import Bloq, GateWithRegisters, Signature
 from qualtran._infra.gate_with_registers import get_named_qubits
@@ -36,6 +37,7 @@ class DoesNotSupportTComplexity:
     ...
 
 
+@frozen
 class SupportsTComplexityGateWithRegisters(GateWithRegisters):
     @property
     def signature(self) -> Signature:
@@ -64,6 +66,7 @@ class DoesNotSupportTComplexityBloq(Bloq):
         return Signature.build(q=1)
 
 
+@frozen
 class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
     @property
     def signature(self) -> 'Signature':
@@ -75,6 +78,8 @@ class SupportsTComplexityBloqViaBuildCallGraph(Bloq):
 
 def test_t_complexity_for_bloq_via_build_call_graph():
     bloq = SupportsTComplexityBloqViaBuildCallGraph()
+    _, sigma = bloq.call_graph(max_depth=1)
+    assert sigma != {}
     assert t_complexity(bloq) == TComplexity(t=5, clifford=10)
 
 
@@ -95,7 +100,7 @@ def test_t_complexity():
     assert t_complexity(SupportTComplexityGate().on(cirq.q('t'))) == TComplexity(t=1)
 
     g = GateHelper(SupportsTComplexityGateWithRegisters())
-    assert g.gate._decompose_with_context_(g.operation.qubits) is NotImplemented
+    assert g.gate._decompose_with_context_(g.operation.qubits) is NotImplemented  # type: ignore[attr-defined]
     assert t_complexity(g.gate) == TComplexity(t=1, clifford=2)
     assert t_complexity(g.operation) == TComplexity(t=1, clifford=2)
 
@@ -229,11 +234,12 @@ def test_cache_clear():
     # Using a global cache will result in a failure of this test since `cirq.X` has
     # `T-complexity(clifford=1)` but we explicitly return `TComplexity()` for IsCachable
     # operation; for which the hash would be equivalent to the hash of its subgate i.e. `cirq.X`.
-    t_complexity.cache_clear()
+    # TODO: t_complexity protocol will be refactored (#735)
+    t_complexity.cache_clear()  # type: ignore[attr-defined]
     op = Cachable2()
     assert t_complexity([op, op]) == TComplexity()
     assert op.num_calls == 1
-    t_complexity.cache_clear()
+    t_complexity.cache_clear()  # type: ignore[attr-defined]
 
 
 @pytest.mark.notebook

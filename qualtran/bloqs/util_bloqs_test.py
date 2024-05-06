@@ -124,6 +124,7 @@ def test_partition_as_cirq_op():
     bloq = TestPartition(test_bloq=CNOT())
     quregs = get_named_qubits(bloq.signature.lefts())
     op, quregs = bloq.as_cirq_op(cirq.ops.SimpleQubitManager(), **quregs)
+    assert op is not None
     unitary = cirq.unitary(cirq.Circuit(op))
     assert np.allclose(unitary, bloq_to_dense(CNOT()))
 
@@ -179,6 +180,7 @@ def test_classical_sim():
 def test_classical_sim_dtypes():
     s = Split(QAny(8))
     (xx,) = s.call_classically(reg=255)
+    assert isinstance(xx, np.ndarray)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     # TODO: Re-enable when Split/Join have real data types
@@ -188,10 +190,12 @@ def test_classical_sim_dtypes():
 
     # with numpy types
     (xx,) = s.call_classically(reg=np.uint8(255))
+    assert isinstance(xx, np.ndarray)
     assert xx.tolist() == [1, 1, 1, 1, 1, 1, 1, 1]
 
     # Warning: numpy will wrap too-large values
     (xx,) = s.call_classically(reg=np.uint8(256))
+    assert isinstance(xx, np.ndarray)
     assert xx.tolist() == [0, 0, 0, 0, 0, 0, 0, 0]
 
     # TODO: Re-enable when Split/Join have real data types

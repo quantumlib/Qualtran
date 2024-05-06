@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 import math
-from typing import Callable, Iterable, Iterator, Optional, Tuple
+from typing import Callable, cast, Iterable, Iterator, Optional, Tuple
 
 from attrs import frozen
 
@@ -183,13 +183,13 @@ def get_ccz2t_costs(
         data_block: data block configuration. Used to evaluate data error and footprint.
     """
     distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
-    n_generation_cycles = factory.n_cycles(n_magic=n_magic)
+    n_generation_cycles = factory.n_cycles(n_magic=n_magic, phys_err=phys_err)
     n_consumption_cycles = (
         n_magic.n_t / 4 + n_magic.n_ccz
     ) * data_block.n_cycles_to_consume_a_magic_state()
     n_cycles = max(n_generation_cycles, n_consumption_cycles)
     data_error = data_block.data_error(
-        n_algo_qubits=n_algo_qubits, n_cycles=n_cycles, phys_err=phys_err
+        n_algo_qubits=n_algo_qubits, n_cycles=int(n_cycles), phys_err=phys_err
     )
     failure_prob = distillation_error + data_error
     footprint = factory.footprint() + data_block.footprint(n_algo_qubits=n_algo_qubits)
@@ -240,7 +240,7 @@ def get_ccz2t_costs_from_error_budget(
         factory = CCZ2TFactory()
 
     distillation_error = factory.distillation_error(n_magic=n_magic, phys_err=phys_err)
-    n_cycles = factory.n_cycles(n_magic=n_magic)
+    n_cycles = factory.n_cycles(n_magic=n_magic, phys_err=phys_err)
 
     if data_block is None:
         # Use "left over" budget for data qubits.
@@ -287,7 +287,7 @@ def iter_ccz2t_factories(
         factory = CCZ2TFactory
     elif n_factories > 1:
 
-        def factory(distillation_l1_d, distillation_l2_d):
+        def factory(distillation_l1_d, distillation_l2_d):  # type: ignore[misc]
             base_factory = CCZ2TFactory(
                 distillation_l1_d=l1_distance, distillation_l2_d=l2_distance
             )
@@ -340,7 +340,7 @@ def get_ccz2t_costs_from_grid_search(
         version of the spreadsheet from https://arxiv.org/abs/1812.01238
     """
     best_cost: Optional[PhysicalCost] = None
-    best_params: Optional[Tuple[CCZ2TFactory, SimpleDataBlock]] = None
+    best_params: Optional[Tuple[MagicStateFactory, SimpleDataBlock]] = None
     for factory in factory_iter:
         for data_block in data_block_iter:
             cost = get_ccz2t_costs(
@@ -356,7 +356,10 @@ def get_ccz2t_costs_from_grid_search(
                 continue
             if best_cost is None or cost_function(cost) < cost_function(best_cost):
                 best_cost = cost
-                best_params = (factory, data_block)
+                best_params = (factory, cast(SimpleDataBlock, data_block))
+
+    if best_params is None or best_cost is None:
+        raise ValueError("No valid factories found!")
 
     best_factory, best_data_block = best_params
     return best_cost, best_factory, best_data_block

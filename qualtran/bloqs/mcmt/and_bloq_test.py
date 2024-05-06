@@ -129,6 +129,7 @@ def test_multi_truth_table():
             ctrl_qs = [bb.add(state[c]) for c in ctrl_string]
 
             ctrl_qs, junk, res = bb.add_from(MultiAnd(cvs), ctrl=ctrl_qs)
+            assert isinstance(ctrl_qs, np.ndarray)
 
             for c, q in zip(ctrl_string, ctrl_qs):
                 bb.add(eff[c], q=q)

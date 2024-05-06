@@ -47,6 +47,7 @@ def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray,
     # State vector is of the form |l>|temp_{l}>. We trace out the |temp_{l}> part to
     # get the coefficients corresponding to |l>.
     L, logL = len(lcu_coefficients), len(g.quregs['selection'])
+    qlambda = sum(abs(lcu_coefficients))
     state_vector = state_vector.reshape(2**logL, len(state_vector) // 2**logL)
     num_non_zero = (abs(state_vector) > 1e-6).sum(axis=1)
     prepared_state = state_vector.sum(axis=1)
@@ -55,7 +56,7 @@ def assert_state_preparation_valid_for_coefficient(lcu_coefficients: np.ndarray,
     prepared_state = prepared_state[:L] / np.sqrt(num_non_zero[:L])
     # Assert that the absolute square of prepared state (probabilities instead of amplitudes) is
     # same as `lcu_coefficients` upto `epsilon`.
-    np.testing.assert_allclose(lcu_coefficients, abs(prepared_state) ** 2, atol=epsilon)
+    np.testing.assert_allclose(lcu_coefficients / qlambda, abs(prepared_state) ** 2, atol=epsilon)
 
 
 def test_state_preparation_via_coherent_alias_sampling_quick():

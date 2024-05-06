@@ -17,6 +17,7 @@ from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -28,6 +29,7 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import Toffoli
@@ -131,7 +133,7 @@ class MultiplexedCSwap3D(Bloq):
     @staticmethod
     def _reshape_reg(
         bb: BloqBuilder, in_reg: SoquetT, out_shape: Tuple[int, ...], bitsize: int
-    ) -> SoquetT:
+    ) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Reshape registers allocated as a big register.
 
         Example:
@@ -162,6 +164,7 @@ class MultiplexedCSwap3D(Bloq):
             return TextBox('×(x)')
         elif soq.reg.name == 'junk':
             return TextBox('×(y)')
+        raise ValueError(f'Unknown name: {soq.reg.name}')
 
     def short_name(self) -> str:
         return 'MultiSwap'
@@ -279,9 +282,9 @@ class PrepareFirstQuantization(PrepareOracle):
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
-        nu_x: SoquetT,
-        nu_y: SoquetT,
-        nu_z: SoquetT,
+        nu_x: Soquet,
+        nu_y: Soquet,
+        nu_z: Soquet,
         m: SoquetT,
         succ_nu: SoquetT,
         l: SoquetT,
@@ -445,9 +448,9 @@ class SelectFirstQuantization(SelectOracle):
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
-        nu_x: SoquetT,
-        nu_y: SoquetT,
-        nu_z: SoquetT,
+        nu_x: Soquet,
+        nu_y: Soquet,
+        nu_z: Soquet,
         m: SoquetT,
         l: SoquetT,
         sys: SoquetT,
@@ -490,8 +493,10 @@ class SelectFirstQuantization(SelectOracle):
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
-        _ = [bb.free(pi) for pi in p]
-        _ = [bb.free(qi) for qi in q]
+        for pi in p:
+            bb.free(pi)
+        for qi in q:
+            bb.free(qi)
         bb.free(rl)
         return {
             'tuv': tuv,

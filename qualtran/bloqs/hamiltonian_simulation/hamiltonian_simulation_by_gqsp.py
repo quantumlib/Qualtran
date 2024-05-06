@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Dict, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -88,17 +88,25 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
     Args:
         walk_operator: qubitization walk operator of $H$ constructed from SELECT and PREPARE oracles.
         t: time to simulate the Hamiltonian, i.e. $e^{-iHt}$
-        alpha: the $1$-norm of the coefficients of the unitaries comprising the Hamiltonian $H$.
         precision: the precision $\epsilon$ to approximate $e^{it\cos\theta}$ to a polynomial.
     """
 
     walk_operator: QubitizationWalkOperator
     t: SymbolicFloat = field(kw_only=True)
-    alpha: SymbolicFloat = field(kw_only=True)
     precision: SymbolicFloat = field(kw_only=True)
+
+    def __attrs_post_init__(self):
+        if self.walk_operator.sum_of_lcu_coefficients is None:
+            raise ValueError(
+                f"Missing attribute `sum_of_ham_coeffs` for {self.walk_operator}, cannot implement Hamiltonian Simulation"
+            )
 
     def is_symbolic(self):
         return is_symbolic(self.t, self.alpha, self.precision)
+
+    @property
+    def alpha(self):
+        return self.walk_operator.sum_of_lcu_coefficients
 
     @cached_property
     def degree(self) -> SymbolicInt:
@@ -111,9 +119,10 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
         if self.is_symbolic():
             return Shaped((2 * self.degree + 1,))
 
-        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=self.degree)
+        poly = approx_exp_cos_by_jacobi_anger(-self.t * self.alpha, degree=cast(int, self.degree))
+
         # TODO(#860) current scaling method does not compute true maximum, so we scale down a bit more by (1 - 2\eps)
-        poly = scale_down_to_qsp_polynomial(poly) * (1 - 2 * self.precision)
+        poly = scale_down_to_qsp_polynomial(list(poly)) * (1 - 2 * self.precision)
         return poly
 
     @cached_property
@@ -168,7 +177,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
                 bb.free(soq)
             else:
                 for soq_element in soq:
-                    bb.free(soq)
+                    bb.free(cast(Soquet, soq))
 
         return soqs
 
@@ -178,9 +187,7 @@ def _hubbard_time_evolution_by_gqsp() -> HamiltonianSimulationByGQSP:
     from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
 
     walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(
-        walk_op, t=5, alpha=1, precision=1e-7
-    )
+    hubbard_time_evolution_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=5, precision=1e-7)
     return hubbard_time_evolution_by_gqsp
 
 
@@ -191,10 +198,9 @@ def _symbolic_hamsim_by_gqsp() -> HamiltonianSimulationByGQSP:
     from qualtran.bloqs.hubbard_model import get_walk_operator_for_hubbard_model
 
     walk_op = get_walk_operator_for_hubbard_model(2, 2, 1, 1)
-    t, alpha, inv_eps = sympy.symbols("t alpha N")
-    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(
-        walk_op, t=t, alpha=alpha, precision=1 / inv_eps
-    )
+
+    t, inv_eps = sympy.symbols("t N")
+    symbolic_hamsim_by_gqsp = HamiltonianSimulationByGQSP(walk_op, t=t, precision=1 / inv_eps)
     return symbolic_hamsim_by_gqsp
 
 

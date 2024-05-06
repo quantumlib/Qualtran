@@ -108,7 +108,8 @@ def test_apply_gate_to_lth_qubit_make_on():
     )
     op = gate.on_registers(**get_named_qubits(gate.signature))
     op2 = ApplyGateToLthQubit.make_on(
-        nth_gate=lambda n: cirq.Z if n & 1 else cirq.I, **get_named_qubits(gate.signature)
+        nth_gate=lambda n: cirq.Z if n & 1 else cirq.I,
+        **get_named_qubits(gate.signature),  # type: ignore[arg-type]
     )
     # Note: ApplyGateToLthQubit doesn't support value equality.
     assert op.qubits == op2.qubits
