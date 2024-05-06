@@ -434,6 +434,8 @@ class Controlled(GateWithRegisters):
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
+            print(self.subbloq)
+            print(type(self.subbloq))
             return self.subbloq.wire_symbol(reg, idx)
 
         # Otherwise, it's part of the control register.
