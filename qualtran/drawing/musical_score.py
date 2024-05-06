@@ -480,7 +480,7 @@ def _soq_to_symb(soq: Soquet) -> WireSymbol:
         return Text(soq.pretty() + f'/{soq.reg.dtype}', fontsize=8)
 
     # Otherwise, use `Bloq.wire_symbol`.
-    return soq.binst.bloq.wire_symbol(soq)
+    return soq.binst.bloq.wire_symbol(soq.reg, soq.idx)
 
 
 @mutable

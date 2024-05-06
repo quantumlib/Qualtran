@@ -113,14 +113,14 @@ class Toffoli(Bloq):
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Circle, ModPlus
 
-        if soq.reg.name == 'ctrl':
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return ModPlus()
-        raise ValueError(f'Bad wire symbol soquet: {soq}')
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
 
 @bloq_example

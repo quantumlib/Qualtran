@@ -34,7 +34,6 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
@@ -380,10 +379,10 @@ class _IntVector(Bloq):
         s = self.short_name()
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
-        return directional_text_box(text=f'{self.val}', side=soq.reg.side)
+        return directional_text_box(text=f'{self.val}', side=reg.side)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)

@@ -150,13 +150,13 @@ class Add(Bloq):
         wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
-        if soq.reg.name == 'a':
-            return directional_text_box('a', side=soq.reg.side)
-        elif soq.reg.name == 'b':
-            return directional_text_box('a+b', side=soq.reg.side)
+        if reg.name == 'a':
+            return directional_text_box('a', side=reg.side)
+        elif reg.name == 'b':
+            return directional_text_box('a+b', side=reg.side)
         else:
             raise ValueError()
 

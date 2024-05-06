@@ -30,7 +30,6 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -268,7 +267,7 @@ class XGate(Bloq):
     def _t_complexity_(self):
         return TComplexity(clifford=1)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import ModPlus
 
         return ModPlus()

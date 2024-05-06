@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Iterator, List, Sequence, Set, TYPE_CHECKING, Union
+from typing import Dict, Iterable, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -599,14 +599,14 @@ class GreaterThan(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'a':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg.name == 'a':
             return TextBox("In(a)")
-        if soq.reg.name == 'b':
+        if reg.name == 'b':
             return TextBox("In(b)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox("⨁(a > b)")
-        raise ValueError(f'Unknown register name {soq.reg.name}')
+        raise ValueError(f'Unknown register name {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -677,7 +677,6 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
-
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
@@ -831,12 +830,12 @@ class GreaterThanConstant(Bloq):
     def short_name(self) -> str:
         return f"x > {self.val}"
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg.name == 'x':
             return TextBox("In(x)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox(f"⨁(x > {self.val})")
-        raise ValueError(f'Unknown register symbol {soq.reg.name}')
+        raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -884,12 +883,12 @@ class EqualsAConstant(Bloq):
     def short_name(self) -> str:
         return f"x == {self.val}"
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg.name == 'x':
             return TextBox("In(x)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox(f"⨁(x = {self.val})")
-        raise ValueError(f'Unknown register symbol {soq.reg.name}')
+        raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # See: https://github.com/quantumlib/Qualtran/issues/219

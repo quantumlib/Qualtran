@@ -29,6 +29,7 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     GateWithRegisters,
+    Register,
     Signature,
     Soquet,
     SoquetT,
@@ -185,8 +186,8 @@ class TwoBitCSwap(Bloq):
     def short_name(self) -> str:
         return 'swap'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg.name == 'ctrl':
             return Circle(filled=True)
         else:
             return TextBox('×')
@@ -235,12 +236,12 @@ class Swap(Bloq):
     def short_name(self) -> str:
         return 'swap'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg.name == 'x':
             return TextBox('×(x)')
-        elif soq.reg.name == 'y':
+        elif reg.name == 'y':
             return TextBox('×(y)')
-        raise ValueError(f"Bad register name {soq.reg.name}")
+        raise ValueError(f"Bad register name {reg.name}")
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -318,10 +319,10 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'x':
             return TextBox('×(x)')
-        elif soq.reg.name == 'y':
+        elif reg.name == 'y':
             return TextBox('×(y)')
         else:
             return Circle(filled=True)
