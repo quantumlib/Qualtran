@@ -613,6 +613,7 @@ _ADD_K_DOC = BloqDocSpec(
     bloq_cls=AddConstantMod, examples=[_add_k_symb, _add_k_small, _add_k_large]
 )
 
+
 @frozen
 class Subtract(Bloq):
     r"""An n-bit subtraction gate.
@@ -711,13 +712,17 @@ class Subtract(Bloq):
             raise ValueError()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        return {(XGate(), self.b_dtype.bitsize), (SimpleAddConstant(self.b_dtype.bitsize, k=1), 1), (Add(self.a_dtype, self.b_dtype), 1)}
-    
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: Soquet, b: Soquet
-    ) -> Dict[str, 'SoquetT']:
+        return {
+            (XGate(), self.b_dtype.bitsize),
+            (SimpleAddConstant(self.b_dtype.bitsize, k=1), 1),
+            (Add(self.a_dtype, self.b_dtype), 1),
+        }
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
         b = np.array([bb.add(XGate(), q=q) for q in bb.split(b)])  # 1s complement of b.
-        b = bb.add(SimpleAddConstant(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype))  # 2s complement of b.
+        b = bb.add(
+            SimpleAddConstant(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
+        )  # 2s complement of b.
         a, b = bb.add(Add(self.a_dtype, self.b_dtype), a=a, b=b)  # a - b
         return {'a': a, 'b': b}
 
