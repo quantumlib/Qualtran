@@ -24,6 +24,9 @@ document(SymbolicFloat, """A floating point value or a sympy expression.""")
 SymbolicInt = Union[int, sympy.Expr]
 document(SymbolicFloat, """A floating point value or a sympy expression.""")
 
+SymbolicComplex = Union[complex, sympy.Expr]
+document(SymbolicComplex, """A complex value or a sympy expression.""")
+
 
 @frozen
 class Shaped:
@@ -116,6 +119,11 @@ def acos(x: SymbolicFloat) -> SymbolicFloat:
     if not isinstance(x, sympy.Basic):
         return np.arccos(x)
     return sympy.acos(x)
+
+
+def sconj(x: SymbolicComplex) -> SymbolicComplex:
+    """Compute the complex conjugate."""
+    return sympy.conjugate(x) if is_symbolic(x) else np.conjugate(x)
 
 
 def slen(x: Union[Sized, Shaped]) -> SymbolicInt:

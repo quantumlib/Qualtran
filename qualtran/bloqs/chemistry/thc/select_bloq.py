@@ -1,4 +1,5 @@
 #  Copyright 2023 Google LLC
+
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
+import cirq
 import numpy as np
 from attrs import evolve, frozen
 

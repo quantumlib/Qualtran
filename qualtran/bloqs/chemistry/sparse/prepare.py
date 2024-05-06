@@ -29,6 +29,7 @@ from qualtran import (
     QAny,
     QBit,
     Register,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
@@ -43,6 +44,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 
 if TYPE_CHECKING:
+    from qualtran import Bloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
@@ -102,12 +104,12 @@ def get_sparse_inputs_from_integrals(
         _add(q, q, q, p)
     for p in range(num_spat):
         _add(p, p, p, p)
-    eris_eight = np.array(eris_eight)
+    eris_eight_np = np.array(eris_eight)
     pqrs_indx_np = np.array(pqrs_indx)
-    keep_indx = np.where(np.abs(eris_eight) > drop_element_thresh)
-    eris_eight = eris_eight[keep_indx]
+    keep_indx = np.where(np.abs(eris_eight_np) > drop_element_thresh)
+    eris_eight_np = eris_eight_np[keep_indx]
     pqrs_indx_np = pqrs_indx_np[keep_indx[0]]
-    return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight))
+    return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight_np))
 
 
 @frozen
@@ -319,8 +321,8 @@ class PrepareSparse(PrepareOracle):
         swap_rs: 'SoquetT',
         swap_pqrs: 'SoquetT',
         flag_1b: 'SoquetT',
-        alt_pqrs: 'SoquetT',
-        theta: 'SoquetT',
+        alt_pqrs: NDArray[Soquet],  # type: ignore[type-var]
+        theta: NDArray[Soquet],  # type: ignore[type-var]
         keep: 'SoquetT',
         less_than: 'SoquetT',
         alt_flag_1b: 'SoquetT',
