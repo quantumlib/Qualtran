@@ -234,6 +234,8 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
     """
     ws = []
     regs = bloq.signature
+    # note this will only work if shape = ().
+    # See: https://github.com/quantumlib/Qualtran/issues/608
     for i, r in enumerate(regs):
         ws.append(bloq.wire_symbol(r, (i,)).text)
 
