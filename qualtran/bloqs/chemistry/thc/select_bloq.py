@@ -25,6 +25,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    CtrlSpec,
     QAny,
     QBit,
     Register,
@@ -312,34 +313,12 @@ class SelectTHC(SelectOracle):
 
         return out_soqs
 
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'SelectTHC':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return SelectTHC(
-                num_mu=self.num_mu,
-                num_spin_orb=self.num_spin_orb,
-                num_bits_theta=self.num_bits_theta,
-                keep_bitsize=self.keep_bitsize,
-                control_val=control_values[0],
-            )
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
+
+        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
 
 @bloq_example
