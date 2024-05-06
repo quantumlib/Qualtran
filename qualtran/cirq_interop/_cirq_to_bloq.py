@@ -162,8 +162,20 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
         return self.gate
 
 
+def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
+
+    from qualtran.drawing import Circle, directional_text_box, ModPlus
+
+    if symbol == "@":
+        return Circle(filled=True)
+    if symbol == "@(0)":
+        return Circle(filled=False)
+    if symbol == "X":
+        return ModPlus()
+    return directional_text_box(symbol, side=side)
+
+
 def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet') -> 'WireSymbol':
-    from qualtran.drawing import directional_text_box
 
     wire_symbols = cirq.circuit_diagram_info(gate).wire_symbols
     begin = 0
@@ -187,7 +199,7 @@ def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet')
                 # bitsize = 1 and shape is non trivial, index into the array of wireshapes.
                 symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
         begin = finish
-    return directional_text_box(text=symbol, side=soq.reg.side)
+    return _cirq_wire_symbol_to_qualtran_wire_symbol(symbol, soq.reg.side)
 
 
 def _add_my_tensors_from_gate(
