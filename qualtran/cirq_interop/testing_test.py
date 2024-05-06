@@ -47,7 +47,7 @@ def test_gate_helper():
     expected_quregs = {
         'ctrl': np.array([[cirq.q(f'ctrl[{i}]')] for i in range(4)]),
         'junk': np.array([[cirq.q(f'junk[{i}]')] for i in range(2)]),
-        'target': [cirq.NamedQubit('target')],
+        'target': np.array([cirq.NamedQubit('target')]),
     }
     for key in expected_quregs:
         assert np.array_equal(g.quregs[key], expected_quregs[key])

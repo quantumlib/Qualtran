@@ -24,7 +24,7 @@ import numpy as np
 import sympy
 
 from qualtran import Bloq
-from qualtran.resource_counting.bloq_counts import _compute_sigma
+from qualtran.resource_counting._call_graph import _compute_sigma
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 

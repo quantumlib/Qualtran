@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 
     from qualtran import Bloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 def _unary_iteration_segtree(
@@ -274,7 +275,7 @@ def _unary_iteration_callgraph_segtree(
     r_range: int,
     break_early: Callable[[int, int], bool],
     bloq_counts: Dict['Bloq', Union[int, 'sympy.Expr']],
-) -> Sequence[int]:
+) -> List[int]:
     """Iterative segment tree used to construct call graph for Unary iteration.
 
     See https://codeforces.com/blog/entry/18051 for an explanation of how iterative
@@ -477,7 +478,9 @@ class UnaryIterationGate(GateWithRegisters):
         """
         raise NotImplementedError("Selection register must not be empty.")
 
-    def _break_early(self, selection_index_prefix: Tuple[int, ...], l: int, r: int) -> bool:
+    def _break_early(
+        self, selection_index_prefix: Tuple[int, ...], l: 'SymbolicInt', r: 'SymbolicInt'
+    ) -> bool:
         """Derived classes should override this method to specify an early termination condition.
 
         For each internal node of the unary iteration segment tree, `break_early(l, r)` is called
@@ -507,7 +510,7 @@ class UnaryIterationGate(GateWithRegisters):
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         if total_bits(self.selection_registers) == 0 or self._break_early(
-            (), 0, self.selection_registers[0].dtype.iteration_length
+            (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()
         ):
             return self.decompose_zero_selection(context=context, **quregs)
 
@@ -554,7 +557,7 @@ class UnaryIterationGate(GateWithRegisters):
             selection_index_prefix = tuple(selection_reg_name_to_val.values())
             ith_for_loop = unary_iteration(
                 l_iter=0,
-                r_iter=self.selection_registers[nested_depth].dtype.iteration_length,
+                r_iter=int(self.selection_registers[nested_depth].dtype.iteration_length_or_zero()),
                 flanking_ops=ops,
                 controls=controls,
                 selection=[*quregs[self.selection_registers[nested_depth].name]],
@@ -590,7 +593,7 @@ class UnaryIterationGate(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         if total_bits(self.selection_registers) == 0 or self._break_early(
-            (), 0, self.selection_registers[0].dtype.iteration_length
+            (), 0, self.selection_registers[0].dtype.iteration_length_or_zero()
         ):
             return self.decompose_bloq().build_call_graph(ssa)
         num_loops = len(self.selection_registers)
@@ -607,7 +610,7 @@ class UnaryIterationGate(GateWithRegisters):
             selection_index_prefix = tuple(selection_reg_name_to_val.values())
             ith_for_loop = _unary_iteration_callgraph(
                 l_iter=0,
-                r_iter=self.selection_registers[nested_depth].dtype.iteration_length,
+                r_iter=int(self.selection_registers[nested_depth].dtype.iteration_length_or_zero()),
                 selection_bitsize=self.selection_registers[nested_depth].bitsize,
                 control_bitsize=num_controls,
                 break_early=lambda l, r: self._break_early(selection_index_prefix, l, r),

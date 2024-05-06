@@ -171,7 +171,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> cirq.OP_TREE:
-        N = self.selection_registers[0].dtype.iteration_length
+        N = self.selection_registers[0].dtype.iteration_length_or_zero()
         yield PrepareUniformSuperposition(N).on(*quregs['selection'])
         if self.mu == 0:
             return
@@ -190,7 +190,7 @@ class StatePreparationAliasSampling(PrepareOracle):
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
 def _state_prep_alias() -> StatePreparationAliasSampling:
-    coeffs = np.array([1.0, 1, 3, 2])
+    coeffs = [1.0, 1, 3, 2]
     mu = 3
     state_prep_alias = StatePreparationAliasSampling.from_lcu_probs(
         coeffs, probability_epsilon=2**-mu / len(coeffs)

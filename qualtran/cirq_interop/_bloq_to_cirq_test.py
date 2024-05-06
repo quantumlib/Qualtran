@@ -176,7 +176,7 @@ def test_construct_op_from_gate_raises():
     and_gate = And()
     qm = cirq.ops.SimpleQubitManager()
     q = [*cirq.LineQubit.range(2)]
-    in_quregs = {}
+    in_quregs: dict[str, np.ndarray] = {}
     with pytest.raises(ValueError, match='Compatible reg.*must exist'):
         _ = and_gate.as_cirq_op(qm, **in_quregs)
 

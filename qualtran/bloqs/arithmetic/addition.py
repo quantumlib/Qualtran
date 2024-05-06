@@ -14,7 +14,7 @@
 import itertools
 import math
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -253,7 +253,7 @@ _ADD_DOC = BloqDocSpec(
 
 
 @frozen
-class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
+class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""An n-bit addition gate.
 
     Implements $U|a\rangle|b\rangle 0\rangle \rightarrow |a\rangle|b\rangle|a+b\rangle$
@@ -310,11 +310,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
         a, b, c = quregs['a'][::-1], quregs['b'][::-1], quregs['c'][::-1]
-        optree = [
+        optree: List[List[cirq.Operation]] = [
             [
-                [cirq.CX(a[i], b[i]), cirq.CX(a[i], c[i])],
+                cirq.CX(a[i], b[i]),
+                cirq.CX(a[i], c[i]),
                 And().on(b[i], c[i], c[i + 1]),
-                [cirq.CX(a[i], b[i]), cirq.CX(a[i], c[i + 1]), cirq.CX(b[i], c[i])],
+                cirq.CX(a[i], b[i]),
+                cirq.CX(a[i], c[i + 1]),
+                cirq.CX(b[i], c[i]),
             ]
             for i in range(self.bitsize)
         ]
@@ -418,13 +421,13 @@ class SimpleAddConstant(Bloq):
         else:
             return {'x': x + self.k}
 
-        if (self.cvs == ctrls).all():
+        if np.all(self.cvs == ctrls):
             x = x + self.k
 
         return {'ctrls': ctrls, 'x': x}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, **regs: SoquetT
+        self, bb: 'BloqBuilder', x: Soquet, **regs: SoquetT
     ) -> Dict[str, 'SoquetT']:
         # Assign registers to variables and allocate ancilla bits for classical integer k.
         if len(self.cvs) > 0:
@@ -444,7 +447,7 @@ class SimpleAddConstant(Bloq):
         # controlled.
         for i in range(self.bitsize):
             if binary_rep[i] == 1:
-                if len(self.cvs) > 0:
+                if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
                         MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
                     )
@@ -453,6 +456,10 @@ class SimpleAddConstant(Bloq):
 
         # Rejoin the qubits representing k for in-place addition.
         k = bb.join(k_split, dtype=x.reg.dtype)
+        if not isinstance(x.reg.dtype, (QInt, QUInt, QMontgomeryUInt)):
+            raise ValueError(
+                "Only QInt, QUInt and QMontgomerUInt types are supported for composite addition."
+            )
         k, x = bb.add(Add(x.reg.dtype, x.reg.dtype), a=k, b=x)
 
         # Resplit the k qubits in order to undo the original bit flips to go from the binary
@@ -460,7 +467,7 @@ class SimpleAddConstant(Bloq):
         k_split = bb.split(k)
         for i in range(self.bitsize):
             if binary_rep[i] == 1:
-                if len(self.cvs) > 0:
+                if len(self.cvs) > 0 and ctrls is not None:
                     ctrls, k_split[i] = bb.add(
                         MultiControlX(cvs=self.cvs), ctrls=ctrls, x=k_split[i]
                     )
@@ -472,7 +479,7 @@ class SimpleAddConstant(Bloq):
         bb.free(k)
 
         # Return the output registers.
-        if len(self.cvs) > 0:
+        if len(self.cvs) > 0 and ctrls is not None:
             return {'ctrls': ctrls, 'x': x}
         else:
             return {'x': x}
@@ -499,7 +506,7 @@ _SIMPLE_ADD_K_DOC = BloqDocSpec(
 
 
 @frozen(auto_attribs=True)
-class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):
+class AddConstantMod(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U(add, M)|x> = |(x + add) % M> if x < M else |x>.
 
     Applies modular addition to input register `|x>` given parameters `mod` and `add_val` s.t.
