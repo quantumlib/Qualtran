@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Set, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Iterator, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -133,7 +133,7 @@ class MultiControlPauli(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('controls', np.array([])), quregs['target']
         if len(self.cvs) < 2:
             controls = controls.flatten()

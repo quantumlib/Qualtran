@@ -90,7 +90,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
         The decomposition proceeds from the most significant qubit -bit 0- to the least significant
@@ -358,7 +358,7 @@ _SQ_CMP_DOC = BloqDocSpec(bloq_cls=SingleQubitCompare, examples=[_sq_cmp])
 
 def _equality_with_zero(
     context: cirq.DecompositionContext, qubits: Sequence[cirq.Qid], z: cirq.Qid
-) -> cirq.OP_TREE:
+) -> Iterator[cirq.OP_TREE]:
     """Helper decomposition used in `LessThanEqual`"""
     if len(qubits) == 1:
         (q,) = qubits
@@ -451,7 +451,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
     def _decompose_via_tree(
         self, context: cirq.DecompositionContext, X: Sequence[cirq.Qid], Y: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if len(X) == 1:
             return
         if len(X) == 2:
