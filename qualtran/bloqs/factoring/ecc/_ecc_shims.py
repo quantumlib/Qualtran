@@ -13,10 +13,11 @@
 #  limitations under the License.
 
 from functools import cached_property
+from typing import Tuple
 
 from attrs import frozen
 
-from qualtran import Bloq, DecomposeTypeError, QBit, Register, Side, Signature, Soquet
+from qualtran import Bloq, CompositeBloq, DecomposeTypeError, QBit, Register, Side, Signature
 from qualtran.drawing import RarrowTextBox, WireSymbol
 
 
@@ -31,9 +32,10 @@ class MeasureQFT(Bloq):
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError('MeasureQFT is a placeholder, atomic bloq.')
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'x':
             return RarrowTextBox('MeasQFT')
+        raise ValueError(f'Unrecognized register name {reg.name}')
 
     def __str__(self):
         return 'MeasureQFT'
