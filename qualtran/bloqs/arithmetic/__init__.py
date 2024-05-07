@@ -39,3 +39,5 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SumOfSquares,
 )
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
+
+from ._shims import AddK, CHalf, Lt, MultiCToffoli, Negate, Sub
