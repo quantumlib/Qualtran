@@ -66,7 +66,6 @@ def test_ec_point_addition():
         (5, 8),
     ]
 
-    print()
     for k in range(1, 25):
         res: ECPoint = g * k
         ref_x, ref_y = ref_multiples[k]
