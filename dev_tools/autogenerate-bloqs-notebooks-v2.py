@@ -347,7 +347,7 @@ ARITHMETIC = [
             qualtran.bloqs.factoring.ecc._find_ecc_private_key._ECC_BLOQ_DOC,
             qualtran.bloqs.factoring.ecc._ec_phase_estimate_r._EC_PE_BLOQ_DOC,
             qualtran.bloqs.factoring.ecc._ec_add_r._ECC_ADD_R_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc._ec_add_r.EC_WINDOW_ADD_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc._ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
     NotebookSpecV2(

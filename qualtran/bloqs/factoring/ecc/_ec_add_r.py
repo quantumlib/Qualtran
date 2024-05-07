@@ -163,4 +163,4 @@ def _ec_window_add() -> ECWindowAddR:
     return ec_window_add
 
 
-EC_WINDOW_ADD_BLOQ_DOC = BloqDocSpec(bloq_cls=ECWindowAddR, examples=[_ec_window_add])
+_EC_WINDOW_ADD_BLOQ_DOC = BloqDocSpec(bloq_cls=ECWindowAddR, examples=[_ec_window_add])
