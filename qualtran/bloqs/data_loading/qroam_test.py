@@ -13,19 +13,12 @@
 #  limitations under the License.
 
 import numpy as np
+import pytest
+from openfermion.resource_estimates.utils import QI, QR
 
-from qualtran._infra.gate_with_registers import split_qubits, total_bits
-from qualtran.bloqs.basic_gates import CNOT, TGate
+from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.data_loading.qroam import _qroam_small, QROAM
-from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity
-from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim, GateHelper
-from qualtran.resource_counting.generalizers import cirq_to_bloqs
-from qualtran.testing import (
-    assert_valid_bloq_decomposition,
-    assert_wire_symbols_match_expected,
-    execute_notebook,
-)
+from qualtran.testing import assert_wire_symbols_match_expected
 
 
 def test_qroam_small(bloq_autotester):
@@ -63,3 +56,17 @@ def test_qroam_wire_symbols():
     data_sets = [rs.randint(0, 2**3, size=n) for _ in range(3)]
     qroam = QROAM.build(*data_sets, target_bitsizes=(3, 3, 3), block_size=2)
     assert_wire_symbols_match_expected(qroam, ['In', 'data_a', 'data_b', 'data_c'])
+
+
+@pytest.mark.parametrize("n", range(40, 200, 20))
+def test_t_complexity(n):
+    rs = np.random.RandomState()
+    data_sets = [rs.randint(0, 2**6, size=n) for _ in range(3)]
+    qroam = QROAM.build(*data_sets)
+    _, sigma = qroam.call_graph()
+    toff_count = sigma.get(TGate()) // 4
+    assert toff_count == QR(n, sum(qroam.target_bitsizes))[1]
+    qroam = QROAM.build(*data_sets).adjoint()
+    _, sigma = qroam.call_graph()
+    toff_count = sigma.get(TGate()) // 4
+    assert toff_count == QI(n)[1]

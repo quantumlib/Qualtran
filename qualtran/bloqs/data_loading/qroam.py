@@ -63,7 +63,7 @@ def find_optimal_log_block_size(
         k = 0.5 * np.log2(iteration_length)
 
         def value(kk: List[int]):
-            return iteration_length / np.power(2, kk) + target_bitsize
+            return iteration_length / np.power(2, kk) + np.power(2, kk)
 
     else:
         k = 0.5 * np.log2(iteration_length / target_bitsize)
@@ -75,7 +75,7 @@ def find_optimal_log_block_size(
         return 1, np.ceil(value(2))
     k_int = [np.floor(k), np.ceil(k)]  # restrict optimal k to integers
     k_opt = int(k_int[np.argmin(value(k_int))])  # obtain optimal k
-    val_opt = int(np.ceil(value(2**k_opt)))
+    val_opt = int(np.ceil(value(k_opt)))
     return k_opt, val_opt
 
 
@@ -90,7 +90,7 @@ class QROAM(Bloq):
             dimensional.
         target_bitsizes: Sequence of integers describing the size of target register for each
             data sequence to load.
-        block_size(B): Load batches of `B` data elements in each iteration of traditional QROM
+        block_size: Load batches of `B` data elements in each iteration of traditional QROM
             (N/B iterations required). Complexity of QROAM scales as
             `O(B * b + N / B)`, where `B` is the block_size. Defaults to optimal value of
             `\sim sqrt(N / b)`.
@@ -117,7 +117,6 @@ class QROAM(Bloq):
     is_adjoint: bool = False
 
     def __attrs_post_init__(self):
-        print(self)
         assert self.block_size != 1, "Use QROM for block_size == 1"
         assert len(set(len(d) for d in self.data)) == 1
         assert len(self.target_bitsizes) == len(self.data)
@@ -131,13 +130,17 @@ class QROAM(Bloq):
         target_bitsizes: Optional[int] = None,
         block_size: Optional[int] = None,
     ) -> 'QROAM':
-        """Factory method to build a QROAM block from numpy arrays of input data.
+        r"""Factory method to build a QROAM block from numpy arrays of input data.
 
         Args:
             data: Sequence of integers to load in the target register. If more than one sequence
                 is provided, each sequence must be of the same length.
             target_bitsizes: Sequence of integers describing the size of target register for each
                 data sequence to load. Defaults to `max(data[i]).bit_length()` for each i.
+            block_size: Load batches of `B` data elements in each iteration of traditional QROM
+                (N/B iterations required). Complexity of QROAM scales as
+                `O(B * b + N / B)`, where `B` is the block_size. Defaults to optimal value of
+                `\sim sqrt(N / b)`.
         """
         _data = [np.array(d, dtype=int) for d in data]
         if target_bitsizes is None:
@@ -158,9 +161,9 @@ class QROAM(Bloq):
         return selections | targets
 
     def adjoint(self) -> 'Bloq':
-        k_opt, _ = find_optimal_log_block_size(
+        k_opt = find_optimal_log_block_size(
             len(self.data[0]), sum(self.target_bitsizes), adjoint=not self.is_adjoint
-        )
+        )[0]
         return attrs.evolve(self, is_adjoint=not self.is_adjoint, block_size=2**k_opt)
 
     def pretty_name(self) -> str:
