@@ -19,6 +19,7 @@ import qualtran.testing as qlt_testing
 from qualtran import QUInt
 from qualtran.bloqs.arithmetic.controlled_addition import ControlledAdd
 from qualtran.cirq_interop.bit_tools import iter_bits
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.resource_counting.generalizers import ignore_split_join
 
@@ -31,7 +32,7 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 @pytest.mark.parametrize('control', [0, 1])
 def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, control):
     num_anc = num_bits_b - 1
-    gate = ControlledAdd(QUInt(num_bits_a), QUInt(num_bits_b), controlled=controlled_on)
+    gate = ControlledAdd(QUInt(num_bits_a), QUInt(num_bits_b), cv=controlled_on)
     qubits = cirq.LineQubit.range(num_bits_a + num_bits_b + 1)
     op = gate.on_registers(ctrl=qubits[0], a=qubits[1 : num_bits_a + 1], b=qubits[num_bits_a + 1 :])
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -65,7 +66,10 @@ def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, contro
 
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_counts_controlled(n: int):
-    add = ControlledAdd(QUInt(n), controlled=1)
+    add = ControlledAdd(QUInt(n), cv=1)
+    t_count = 8 * (n - 1) + 4
+
     qlt_testing.assert_valid_bloq_decomposition(add)
     assert add.t_complexity() == add.decompose_bloq().t_complexity()
     assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
+    assert add.t_complexity().t == t_count

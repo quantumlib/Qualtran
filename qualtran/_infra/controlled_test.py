@@ -107,11 +107,11 @@ def test_ctrl_bloq_as_cirq_op():
 
     # Simple ctrl spec
     _test_cirq_equivalence(subbloq, cirq.X)
-    _test_cirq_equivalence(subbloq.controlled(), cirq.X.controlled())
+    _test_cirq_equivalence(subbloq.controlled(), cirq.X.cv())
 
     # Different ways of specifying qubit registers get "expanded" into a flat list of qubits when
     # converting to Cirq.
-    cirq_gate = cirq.X.controlled(control_values=[0, 1, 0, 1])
+    cirq_gate = cirq.X.cv(control_values=[0, 1, 0, 1])
     _test_cirq_equivalence(subbloq.controlled(CtrlSpec(qdtypes=QUInt(4), cvs=0b0101)), cirq_gate)
 
     _test_cirq_equivalence(subbloq.controlled(CtrlSpec(cvs=[0, 1, 0, 1])), cirq_gate)

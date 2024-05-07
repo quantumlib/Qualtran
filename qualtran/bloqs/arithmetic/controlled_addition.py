@@ -46,7 +46,7 @@ class ControlledAdd(Bloq):
         b_dtype: Quantum datatype used to represent the integer b. Must be large
             enough to hold the result in the output register of a + b, or else it simply
             drops the most significant bits. If not specified, b_dtype is set to a_dtype.
-        controlled: When controlled=0, this bloq is active when the ctrl register is 0. When
+        cv: When controlled=0, this bloq is active when the ctrl register is 0. When
             controlled=1, this bloq is active when the ctrl register is 1.
 
     Registers:
@@ -60,7 +60,7 @@ class ControlledAdd(Bloq):
 
     a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
     b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
-    controlled: int = field(default=1)
+    cv: int = field(default=1)
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -80,7 +80,7 @@ class ControlledAdd(Bloq):
         if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
             raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
 
-    @controlled.validator
+    @cv.validator
     def _controlled_validate(self, field, val):
         if val not in (0, 1):
             raise ValueError("controlled must be either 0 or 1")
@@ -115,7 +115,7 @@ class ControlledAdd(Bloq):
         )
         unitary = np.zeros((2, N_a, N_b, 2, N_a, N_b), dtype=np.complex128)
         for c, a, b in itertools.product(range(2), range(N_a), range(N_b)):
-            if c == self.controlled:
+            if c == self.cv:
                 unitary[c, a, b, c, a, int(math.fmod(a + b, N_b))] = 1
             else:
                 unitary[c, a, b, c, a, b] = 1
@@ -131,7 +131,7 @@ class ControlledAdd(Bloq):
         b_bitsize = self.b_dtype.bitsize
         N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
         ctrl = kwargs['ctrl']
-        if ctrl != self.controlled:
+        if ctrl != self.cv:
             return {'ctrl': ctrl, 'a': a, 'b': b}
         else:
             return {'ctrl': ctrl, 'a': a, 'b': int(math.fmod(a + b, N))}
@@ -140,10 +140,7 @@ class ControlledAdd(Bloq):
         return "a+b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        if self.controlled is not None:
-            wire_symbols = ["In(ctrl)"]
-        else:
-            wire_symbols = []
+        wire_symbols = ["In(ctrl)"]
         wire_symbols += ["In(x)"] * self.a_dtype.bitsize
         wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
@@ -203,7 +200,7 @@ class ControlledAdd(Bloq):
         output_bits = quregs['b'][::-1]
         ancillas = context.qubit_manager.qalloc(self.b_dtype.bitsize - 1)[::-1]
         control = quregs['ctrl'][0]
-        if self.controlled == 0:
+        if self.cv == 0:
             yield cirq.X(control)
         # Start off the addition by anding into the ancilla
         yield And().on(input_bits[0], output_bits[0], ancillas[0])
@@ -219,7 +216,7 @@ class ControlledAdd(Bloq):
         )
         yield And().adjoint().on(input_bits[0], output_bits[0], ancillas[0])
         yield MultiControlPauli((1, 1), cirq.X).on(control, input_bits[0], output_bits[0])
-        if self.controlled == 0:
+        if self.cv == 0:
             yield cirq.X(control)
         context.qubit_manager.qfree(ancillas)
 
