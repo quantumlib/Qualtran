@@ -94,6 +94,8 @@ class _ModInvInner(Bloq):
         return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # This listing is based off of Haner 2023, fig 15. The order of operations
+        # matches the order in the figure
         listing = [
             (MultiCToffoli(self.n + 1), 1),
             (CNOT(), 1),
@@ -110,6 +112,8 @@ class _ModInvInner(Bloq):
             (CSwap(self.n), 2),
             (CNOT(), 1),
         ]
+        # Since the listing is time-ordered and the call graph protocol expects
+        # unique bloq keys, we group counts by bloqs.
         summer = defaultdict(lambda: 0)
         for bloq, n in listing:
             summer[bloq] += n
