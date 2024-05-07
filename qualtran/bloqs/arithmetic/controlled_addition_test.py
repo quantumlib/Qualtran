@@ -19,7 +19,6 @@ import qualtran.testing as qlt_testing
 from qualtran import QUInt
 from qualtran.bloqs.arithmetic.controlled_addition import ControlledAdd
 from qualtran.cirq_interop.bit_tools import iter_bits
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import assert_circuit_inp_out_cirqsim
 from qualtran.resource_counting.generalizers import ignore_split_join
 
