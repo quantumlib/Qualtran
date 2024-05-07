@@ -408,7 +408,7 @@ class AddK(Bloq):
     """
 
     bitsize: int
-    k: int
+    k: 'SymbolicInt'
     cvs: Tuple[int, ...] = field(converter=_cvs_converter, default=())
     signed: bool = False
 

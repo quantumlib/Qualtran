@@ -35,4 +35,4 @@ from qualtran.bloqs.arithmetic.multiplication import (
 )
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
 
-from ._shims import AddK, CHalf, Lt, MultiCToffoli, Negate, Sub
+from ._shims import CHalf, Lt, MultiCToffoli, Negate, Sub

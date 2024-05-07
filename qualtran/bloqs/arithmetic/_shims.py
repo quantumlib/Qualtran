@@ -40,15 +40,6 @@ class MultiCToffoli(Bloq):
         return {(Toffoli(), self.n - 2)}
 
 
-@frozen
-class AddK(Bloq):
-    n: int
-    k: int
-
-    @cached_property
-    def signature(self) -> 'Signature':
-        return Signature([Register('x', QUInt(self.n))])
-
 
 @frozen
 class Sub(Bloq):

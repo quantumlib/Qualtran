@@ -215,7 +215,7 @@ class ModAddK(GateWithRegisters):
         return {'x': out}
 
     def __pow__(self, power: int) -> 'AddK':
-        return AddK(self.bitsize, self.mod, k=self.add_val * power, cvs=self.cvs)
+        return ModAddK(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(Add(QUInt(self.bitsize), QUInt(self.bitsize)), 5)}

@@ -77,7 +77,7 @@ class ECAdd(Bloq):
         # litinksi
         return {
             (MultiCToffoli(n=self.n), 18),
-            (ModAdd(n=self.n, mod=self.mod), 3),
+            (ModAdd(bitsize=self.n, mod=self.mod), 3),
             (CModAdd(n=self.n, mod=self.mod), 2),
             (ModSub(n=self.n, mod=self.mod), 2),
             (CModSub(n=self.n, mod=self.mod), 4),
