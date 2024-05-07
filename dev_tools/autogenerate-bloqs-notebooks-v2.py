@@ -344,16 +344,16 @@ ARITHMETIC = [
         title='Elliptic Curve Cryptography',
         module=qualtran.bloqs.factoring.ecc,
         bloq_specs=[
-            qualtran.bloqs.factoring.ecc._find_ecc_private_key._ECC_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc._ec_phase_estimate_r._EC_PE_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc._ec_add_r._ECC_ADD_R_BLOQ_DOC,
-            qualtran.bloqs.factoring.ecc._ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
         ],
     ),
     NotebookSpecV2(
         title='Elliptic Curve Addition',
-        module=qualtran.bloqs.factoring.ecc._ec_add,
-        bloq_specs=[qualtran.bloqs.factoring.ecc._ec_add._EC_ADD_DOC],
+        module=qualtran.bloqs.factoring.ecc.ec_add,
+        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
     ),
 ]
 

@@ -23,8 +23,8 @@ from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.util_bloqs import Free
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
-from ._ec_phase_estimate_r import ECPhaseEstimateR
-from ._ec_point import ECPoint
+from .ec_phase_estimate_r import ECPhaseEstimateR
+from .ec_point import ECPoint
 
 
 @frozen

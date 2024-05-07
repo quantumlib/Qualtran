@@ -62,7 +62,7 @@ Bloqs Library
     factoring/mod_exp.ipynb
     factoring/mod_mul.ipynb
     factoring/ecc/ecc.ipynb
-    factoring/ecc/_ec_add.ipynb
+    factoring/ecc/ec_add.ipynb
 
 .. toctree::
     :maxdepth: 2

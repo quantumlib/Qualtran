@@ -12,16 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.ecc._ec_add_r import _ec_add_r, _ec_add_r_small, _ec_window_add
+from qualtran.bloqs.factoring.ecc.ec_phase_estimate_r import _ec_pe, _ec_pe_small
 
 
-def test_ec_add_r(bloq_autotester):
-    bloq_autotester(_ec_add_r)
+def test_ec_pe(bloq_autotester):
+    bloq_autotester(_ec_pe)
 
 
-def test_ec_add_r_small(bloq_autotester):
-    bloq_autotester(_ec_add_r_small)
-
-
-def test_ec_window_add(bloq_autotester):
-    bloq_autotester(_ec_window_add)
+def test_ec_pe_small(bloq_autotester):
+    bloq_autotester(_ec_pe_small)

@@ -12,12 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.factoring.ecc._ec_phase_estimate_r import _ec_pe, _ec_pe_small
+import qualtran.testing as qlt_testing
+from qualtran.bloqs.factoring.ecc.find_ecc_private_key import _ecc
 
 
-def test_ec_pe(bloq_autotester):
-    bloq_autotester(_ec_pe)
+def test_ecc(bloq_autotester):
+    bloq_autotester(_ecc)
 
 
-def test_ec_pe_small(bloq_autotester):
-    bloq_autotester(_ec_pe_small)
+def test_notebook():
+    qlt_testing.execute_notebook('ecc')

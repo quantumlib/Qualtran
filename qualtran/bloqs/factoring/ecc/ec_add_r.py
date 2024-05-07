@@ -22,7 +22,7 @@ from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QUInt, Register, Sig
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
 
-from ._ec_point import ECPoint
+from .ec_point import ECPoint
 
 
 @frozen

@@ -12,13 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import qualtran.testing as qlt_testing
-from qualtran.bloqs.factoring.ecc._ec_add import _ec_add
+from qualtran.bloqs.factoring.ecc.ec_add_r import _ec_add_r, _ec_add_r_small, _ec_window_add
 
 
-def test_ec_add(bloq_autotester):
-    bloq_autotester(_ec_add)
+def test_ec_add_r(bloq_autotester):
+    bloq_autotester(_ec_add_r)
 
 
-def test_notebook():
-    qlt_testing.execute_notebook('_ec_add')
+def test_ec_add_r_small(bloq_autotester):
+    bloq_autotester(_ec_add_r_small)
+
+
+def test_ec_window_add(bloq_autotester):
+    bloq_autotester(_ec_window_add)
