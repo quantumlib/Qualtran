@@ -382,15 +382,6 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         already accepts a `CtrlSpec` and simply returns it OR a Cirq-style API which accepts
         parameters expected by `cirq.Gate.controlled()` and converts them to a `CtrlSpec` object.
 
-        Users implementing custom `GateWithRegisters.controlled()` overrides can use this helper
-        to generate a CtrlSpec from the cirq-style API and thus easily support both Cirq & Bloq
-        APIs. For example
-
-        >>> class CustomGWR(GateWithRegisters):
-        >>>     def controlled(self, *args, **kwargs) -> 'Bloq':
-        >>>         ctrl_spec = self._get_ctrl_spec(*args, **kwargs)
-        >>>         # Use ctrl_spec to construct a controlled version of `self`.
-
         Args:
             num_controls: Cirq style API to specify control specification -
                 Total number of control qubits.
