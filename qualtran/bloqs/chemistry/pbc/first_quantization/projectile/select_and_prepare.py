@@ -137,18 +137,18 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
             ]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'sel':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'sel':
             return TextBox('In')
-        elif soq.reg.name == 'targets':
+        elif reg.name == 'targets':
             return TextBox('×(x)')
-        elif soq.reg.name == 'junk':
+        elif reg.name == 'junk':
             return TextBox('×(y)')
-        elif soq.reg.name == 'ctrl':
-            (c_idx,) = soq.idx
+        elif reg.name == 'ctrl':
+            (c_idx,) = idx
             filled = bool(self.cvs[c_idx])
             return Circle(filled)
-        raise ValueError(f'Unknown name: {soq.reg.name}')
+        raise ValueError(f'Unknown name: {reg.name}')
 
     def build_composite_bloq(
         self, bb: BloqBuilder, ctrl: SoquetT, sel: SoquetT, targets: SoquetT, junk: SoquetT

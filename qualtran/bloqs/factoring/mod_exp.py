@@ -29,6 +29,7 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import IntState
@@ -97,7 +98,7 @@ class ModExp(Bloq):
         """Helper method to return a `CtrlModMul` with attributes forwarded."""
         return CtrlModMul(k=k, bitsize=self.x_bitsize, mod=self.mod)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', exponent: 'Soquet') -> Dict[str, 'SoquetT']:
         if isinstance(self.exp_bitsize, sympy.Expr):
             raise DecomposeTypeError("`exp_bitsize` must be a concrete value.")
         x = bb.add(IntState(val=1, bitsize=self.x_bitsize))

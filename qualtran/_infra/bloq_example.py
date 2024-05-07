@@ -90,8 +90,11 @@ def bloq_example(
 
 
 def bloq_example(
-    _func: Optional[Callable[[], _BloqType]] = None, *, generalizer: _GeneralizerType = lambda x: x
-) -> BloqExample[_BloqType]:
+    _func: Optional[Callable[[], _BloqType]] = None,
+    *,
+    generalizer: _GeneralizerType = lambda x: x,
+    **kwargs: Any,
+) -> Union[Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]], BloqExample[_BloqType]]:
     """Decorator to turn a function into a `BloqExample`.
 
     This will set `name` to the name of the function and `bloq_cls` according to the return-type

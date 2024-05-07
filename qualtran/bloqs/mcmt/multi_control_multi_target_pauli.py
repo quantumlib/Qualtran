@@ -39,7 +39,8 @@ from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
@@ -55,7 +56,7 @@ class MultiTargetCNOT(GateWithRegisters):
         Appendix B.1.
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> Signature:
@@ -80,6 +81,8 @@ class MultiTargetCNOT(GateWithRegisters):
             yield cirq.Moment(cnots_for_depth_i(i, targets))
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self.bitsize)
 
 

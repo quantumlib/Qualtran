@@ -64,8 +64,8 @@ class Reflection(Bloq):
             [Register(f'reg{i}', QAny(bitsize=b)) for i, b in enumerate(self.bitsizes)]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        idx = int(soq.pretty()[3:])
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        idx = int(reg.name[3:])
         filled = bool(self.cvs[idx])
         return Circle(filled)
 
