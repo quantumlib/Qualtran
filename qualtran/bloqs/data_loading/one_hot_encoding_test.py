@@ -37,7 +37,7 @@ class OneHotEncodingTest(GateWithRegisters):
     ) -> cirq.OP_TREE:
         a = quregs['a']
         b = quregs['b']
-        binary_repr = list(iter_bits(self.integer, self.size))[::-1]
+        binary_repr = list(iter_bits(self.integer, self.size))
         for i in range(self.size):
             if binary_repr[i] == 1:
                 yield cirq.X(a[i])
@@ -46,12 +46,13 @@ class OneHotEncodingTest(GateWithRegisters):
 
 @pytest.mark.parametrize('integer', list(range(8)))
 def test_one_hot_encoding(integer):
-    gate = OneHotEncodingTest(integer, 3)
-    qubits = cirq.LineQubit.range(3 + 2**3)
-    op = gate.on_registers(a=qubits[:3], b=qubits[3:])
+    bitsize = 3
+    gate = OneHotEncodingTest(integer, bitsize)
+    qubits = cirq.LineQubit.range(bitsize + 2**bitsize)
+    op = gate.on_registers(a=qubits[:bitsize], b=qubits[bitsize:])
     circuit0 = cirq.Circuit(op)
-    initial_state = [0] * (3 + 2**3)
-    final_state = [0] * (3 + 2**3)
-    final_state[:3] = list(iter_bits(integer, 3))[::-1]
-    final_state[3 + integer] = 1
+    initial_state = [0] * (bitsize + 2**bitsize)
+    final_state = [0] * (bitsize + 2**bitsize)
+    final_state[:bitsize] = list(iter_bits(integer, bitsize))
+    final_state[bitsize + integer] = 1
     assert_circuit_inp_out_cirqsim(circuit0, qubits, initial_state, final_state)

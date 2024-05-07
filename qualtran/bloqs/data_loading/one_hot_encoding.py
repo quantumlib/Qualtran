@@ -45,7 +45,7 @@ class OneHotEncoding(GateWithRegisters):
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
-        a = quregs['a']
+        a = quregs['a'][::-1]
         b = quregs['b']
 
         yield cirq.X(b[0])
