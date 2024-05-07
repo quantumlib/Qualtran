@@ -61,7 +61,7 @@ def test_swap_two_bits_to_cirq():
     circuit, out_quregs = (
         SwapTwoBitsTest()
         .as_composite_bloq()
-        .to_cirq_circuit(
+        .to_cirq_circuit_and_quregs(
             x=[cirq.NamedQubit('q1')],
             y=[cirq.NamedQubit('q2')],
             qubit_manager=cirq.ops.SimpleQubitManager(),
@@ -124,7 +124,7 @@ def test_swap():
     swap_circuit, _ = (
         SwapTest(n=5)
         .as_composite_bloq()
-        .to_cirq_circuit(
+        .to_cirq_circuit_and_quregs(
             x=cirq.LineQubit.range(5),
             y=cirq.LineQubit.range(100, 105),
             qubit_manager=cirq.ops.SimpleQubitManager(),
@@ -151,7 +151,7 @@ def test_multi_and_allocates():
     multi_and = MultiAnd(cvs=(1, 1, 1, 1))
     cirq_quregs = get_named_qubits(multi_and.signature.lefts())
     assert sorted(cirq_quregs.keys()) == ['ctrl']
-    multi_and_circuit, out_quregs = multi_and.decompose_bloq().to_cirq_circuit(
+    multi_and_circuit, out_quregs = multi_and.decompose_bloq().to_cirq_circuit_and_quregs(
         **cirq_quregs, qubit_manager=cirq.ops.SimpleQubitManager()
     )
     assert sorted(out_quregs.keys()) == ['ctrl', 'junk', 'target']
@@ -195,7 +195,7 @@ def test_bloq_as_cirq_gate_left_register():
     q = bb.add(XGate(), q=q)
     bb.free(q)
     cbloq = bb.finalize()
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit, _ = cbloq.to_cirq_circuit_and_quregs()
     cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
 
 
@@ -234,7 +234,7 @@ x1: ──────────x──────────1───*=3�
     cbloq = mod_exp.decompose_bloq()
     # When converting a composite Bloq to a Cirq circuit, we only need to specify the input
     # registers.
-    decomposed_circuit, out_regs = cbloq.to_cirq_circuit(exponent=quregs['exponent'])
+    decomposed_circuit, out_regs = cbloq.to_cirq_circuit_and_quregs(exponent=quregs['exponent'])
     # Whereas when directly applying a cirq gate on qubits to get an operations, we need to
     # specify both input and output registers.
     circuit = cirq.Circuit(gate.on_registers(**out_regs), decomposed_circuit)

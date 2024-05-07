@@ -25,7 +25,7 @@ def test_to_cirq():
     q = bb.add(OneState())
     q = bb.add(Hadamard(), q=q)
     cbloq = bb.finalize(q=q)
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit, _ = cbloq.to_cirq_circuit_and_quregs()
     cirq.testing.assert_has_diagram(circuit, "_c(0): ───X───H───")
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)
