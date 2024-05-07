@@ -40,7 +40,6 @@ class MultiCToffoli(Bloq):
         return {(Toffoli(), self.n - 2)}
 
 
-
 @frozen
 class Sub(Bloq):
     n: int
