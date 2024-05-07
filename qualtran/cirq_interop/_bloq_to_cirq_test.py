@@ -24,6 +24,7 @@ from qualtran.bloqs.basic_gates import Toffoli, XGate
 from qualtran.bloqs.factoring import ModExp
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
+from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
 
 if TYPE_CHECKING:
@@ -212,6 +213,7 @@ def test_bloq_as_cirq_gate_for_mod_exp():
     # newly allocated RIGHT registers in the decomposition to the one's specified by the user
     # when constructing the original operation (in this case, register `x`).
     circuit = cirq.Circuit(op, cirq.decompose_once(op))
+    assert t_complexity(circuit) == 2 * mod_exp.t_complexity()
     cirq.testing.assert_has_diagram(
         circuit,
         '''
@@ -236,6 +238,7 @@ x1: ──────────x──────────1───*=3�
     # Whereas when directly applying a cirq gate on qubits to get an operations, we need to
     # specify both input and output registers.
     circuit = cirq.Circuit(gate.on_registers(**out_regs), decomposed_circuit)
+    assert t_complexity(circuit) == 2 * mod_exp.t_complexity()
     # Notice the newly allocated qubits _C(0) and _C(1) for output register x.
     cirq.testing.assert_has_diagram(
         circuit,
