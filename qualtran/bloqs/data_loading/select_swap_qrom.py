@@ -19,7 +19,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
@@ -242,8 +242,8 @@ class SelectSwapQROM(GateWithRegisters):
             wire_symbols += [f"QROAM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        name = soq.reg.name
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        name = reg.name
         if name == 'selection':
             return TextBox('In')
         elif 'target' in name:

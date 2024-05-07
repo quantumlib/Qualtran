@@ -24,7 +24,8 @@ from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 @attrs.frozen
@@ -150,7 +151,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         )
 
     @cached_property
-    def b_grad(self) -> int:
+    def b_grad(self) -> 'SymbolicInt':
         return self.phase_oracle.b_grad
 
     @cached_property
