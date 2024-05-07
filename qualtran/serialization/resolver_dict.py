@@ -65,6 +65,7 @@ import qualtran.bloqs.chemistry.trotter.hubbard.hopping
 import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
+import qualtran.bloqs.data_loading.qroam
 import qualtran.bloqs.data_loading.qrom
 import qualtran.bloqs.data_loading.select_swap_qrom
 import qualtran.bloqs.factoring.mod_add
@@ -244,6 +245,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTile": qualtran.bloqs.chemistry.trotter.hubbard.hopping.HoppingTile,
     "qualtran.bloqs.chemistry.trotter.trotterized_unitary": qualtran.bloqs.chemistry.trotter.trotterized_unitary,
     "qualtran.bloqs.data_loading.qrom.QROM": qualtran.bloqs.data_loading.qrom.QROM,
+    "qualtran.bloqs.data_loading.qroam.QROAM": qualtran.bloqs.data_loading.qroam.QROAM,
     "qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM": qualtran.bloqs.data_loading.select_swap_qrom.SelectSwapQROM,
     "qualtran.bloqs.factoring.mod_add.CtrlAddK": qualtran.bloqs.factoring.mod_add.CtrlAddK,
     "qualtran.bloqs.factoring.mod_add.CtrlModAddK": qualtran.bloqs.factoring.mod_add.CtrlModAddK,
