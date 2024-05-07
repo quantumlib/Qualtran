@@ -41,7 +41,7 @@ class OneHotEncodingTest(GateWithRegisters):
         for i in range(self.size):
             if binary_repr[i] == 1:
                 yield cirq.X(a[i])
-        yield OneHotEncoding(binary_reg_size=self.size).on_registers(a=a, b=b)
+        yield OneHotEncoding(binary_bitsize=self.size).on_registers(a=a, b=b)
 
 
 @pytest.mark.parametrize('integer', list(range(8)))

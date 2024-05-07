@@ -31,15 +31,15 @@ class OneHotEncoding(GateWithRegisters):
 
     References:
         [Windowed quantum arithmetic](https://arxiv.org/pdf/1905.07682.pdf)
-        Figure 4]
+        Figure 4
     """
 
-    binary_reg_size: int = field()
+    binary_bitsize: int
 
     @property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(
-            a=QUInt(self.binary_reg_size), b=QAny(2**self.binary_reg_size)
+            a=QUInt(self.binary_bitsize), b=QAny(2 ** self.binary_bitsize)
         )
 
     def decompose_from_registers(
