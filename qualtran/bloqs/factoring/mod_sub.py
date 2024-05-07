@@ -13,15 +13,19 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 from attrs import frozen
 
-from qualtran import Bloq, QMontgomeryUInt, Register, Signature, SoquetT
+from qualtran import Bloq, QMontgomeryUInt, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.factoring.mod_add import MontgomeryModAdd
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -62,15 +66,13 @@ class MontgomeryModSub(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': (y - x) % self.p}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
-    ) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
 
         # Bit flip all qubits in register x.
         x_split = bb.split(x)
         for i in range(self.bitsize):
             x_split[i] = bb.add(XGate(), q=x_split[i])
-        x = bb.join(x_split)
+        x = bb.join(x_split, dtype=QMontgomeryUInt(self.bitsize))
 
         # Add constant p+1 to the x register.
         x = bb.add(SimpleAddConstant(bitsize=self.bitsize, k=self.p + 1, signed=False, cvs=()), x=x)
@@ -88,7 +90,7 @@ class MontgomeryModSub(Bloq):
         x_split = bb.split(x)
         for i in range(self.bitsize):
             x_split[i] = bb.add(XGate(), q=x_split[i])
-        x = bb.join(x_split)
+        x = bb.join(x_split, dtype=QMontgomeryUInt(self.bitsize))
 
         # Return the output registers.
         return {'x': x, 'y': y}
@@ -126,7 +128,7 @@ class MontgomeryModNeg(Bloq):
     def on_classical_vals(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         return {'x': (-1 * x) % self.p}
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: SoquetT) -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
 
         # Initialize an ancilla qubit to |1>.
         ctrl = bb.allocate(n=1)
@@ -134,9 +136,7 @@ class MontgomeryModNeg(Bloq):
 
         # Perform a multi-controlled bitflip on the ancilla bit if the state of x is the bitstring
         # representing 0.
-        cvs = ()
-        for i in range(self.bitsize):
-            cvs = cvs + (0,)
+        cvs = tuple([0] * self.bitsize)
         x_split = bb.split(x)
         x_split, ctrl = bb.add(MultiControlX(cvs=cvs), ctrls=x_split, x=ctrl)
         x = bb.join(x_split)

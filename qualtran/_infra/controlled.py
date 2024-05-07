@@ -34,6 +34,7 @@ from numpy.typing import NDArray
 
 from .bloq import Bloq
 from .data_types import QBit, QDType
+from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
@@ -45,8 +46,15 @@ if TYPE_CHECKING:
 
 
 def _cvs_convert(
-    cvs: Union[int, Sequence[int], Sequence[Sequence[int]]]
-) -> Tuple[NDArray[int], ...]:
+    cvs: Union[
+        int,
+        np.integer,
+        NDArray[np.integer],
+        Sequence[Union[int, np.integer]],
+        Sequence[Sequence[Union[int, np.integer]]],
+        Sequence[NDArray[np.integer]],
+    ]
+) -> Tuple[NDArray[np.integer], ...]:
     if isinstance(cvs, (int, np.integer)):
         return (np.array(cvs),)
     if isinstance(cvs, np.ndarray):
@@ -102,7 +110,7 @@ class CtrlSpec:
     qdtypes: Tuple[QDType, ...] = attrs.field(
         default=QBit(), converter=lambda qt: (qt,) if isinstance(qt, QDType) else tuple(qt)
     )
-    cvs: Tuple[NDArray[int], ...] = attrs.field(default=1, converter=_cvs_convert)
+    cvs: Tuple[NDArray[np.integer], ...] = attrs.field(default=1, converter=_cvs_convert)
 
     def __attrs_post_init__(self):
         assert len(self.qdtypes) == len(self.cvs)
@@ -158,15 +166,15 @@ class CtrlSpec:
                 return False
         return True
 
-    def wire_symbol(self, i: int, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, i: int, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         # Return a circle for bits; a box otherwise.
         from qualtran.drawing import Circle, TextBox
 
-        if soq.reg.bitsize == 1:
-            cv = self.cvs[i][soq.idx]
+        if reg.bitsize == 1:
+            cv = self.cvs[i][idx]
             return Circle(filled=(cv == 1))
 
-        cv = self.cvs[i][soq.idx]
+        cv = self.cvs[i][idx]
         return TextBox(f'{cv}')
 
     @cached_property
@@ -227,7 +235,7 @@ class CtrlSpec:
         for qdtype, shape in zip(qdtypes, shapes):
             full_shape = shape + (qdtype.num_qubits,)
             curr_cvs_bits = np.array(cv[idx : idx + int(np.prod(full_shape))]).reshape(full_shape)
-            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)
+            curr_cvs = np.apply_along_axis(qdtype.from_bits, -1, curr_cvs_bits)  # type: ignore[arg-type]
             bloq_cvs.append(curr_cvs)
         return CtrlSpec(tuple(qdtypes), tuple(bloq_cvs))
 
@@ -266,7 +274,7 @@ def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
         i = 1
     else:
         i = 0
-    names = []
+    names: List[str] = []
     while len(names) < n:
         while True:
             i += 1
@@ -278,7 +286,7 @@ def _get_nice_ctrl_reg_names(reg_names: List[str], n: int) -> Tuple[str, ...]:
 
 
 @attrs.frozen
-class Controlled(Bloq):
+class Controlled(GateWithRegisters):
     """A controlled version of `subbloq`.
 
     This meta-bloq is part of the 'controlled' protocol. As a default fallback,
@@ -350,13 +358,15 @@ class Controlled(Bloq):
             cbloq = self.subbloq.decompose_bloq()
 
         bb, initial_soqs = BloqBuilder.from_signature(self.signature)
-        ctrl_soqs = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
+        ctrl_soqs: List['SoquetT'] = [initial_soqs[creg_name] for creg_name in self.ctrl_reg_names]
 
         soq_map: List[Tuple[SoquetT, SoquetT]] = []
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
             in_soqs = bb.map_soqs(in_soqs, soq_map)
             new_bloq, adder = binst.bloq.get_ctrl_system(self.ctrl_spec)
-            ctrl_soqs, new_out_soqs = adder(bb, ctrl_soqs=ctrl_soqs, in_soqs=in_soqs)
+            adder_output = adder(bb, ctrl_soqs=ctrl_soqs, in_soqs=in_soqs)
+            ctrl_soqs = list(adder_output[0])
+            new_out_soqs = adder_output[1]
             soq_map.extend(zip(old_out_soqs, new_out_soqs))
 
         fsoqs = bb.map_soqs(cbloq.final_soqs(), soq_map)
@@ -410,14 +420,32 @@ class Controlled(Bloq):
         # Add the data to the tensor network.
         tn.add(qtn.Tensor(data=data, inds=out_ind + in_ind, tags=[self.short_name(), tag]))
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name not in self.ctrl_reg_names:
+    def _unitary_(self):
+        if isinstance(self.subbloq, GateWithRegisters):
+            # subbloq is a cirq gate, use the cirq-style API to derive a unitary.
+            return cirq.unitary(
+                cirq.ControlledGate(self.subbloq, control_values=self.ctrl_spec.to_cirq_cv())
+            )
+        if all(reg.side == Side.THRU for reg in self.subbloq.signature):
+            # subbloq has only THRU registers, so the tensor contraction corresponds
+            # to a unitary matrix.
+            return self.tensor_contract()
+        # Unable to determine the unitary effect.
+        return NotImplemented
+
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name not in self.ctrl_reg_names:
             # Delegate to subbloq
-            return self.subbloq.wire_symbol(soq)
+            print(self.subbloq)
+            print(type(self.subbloq))
+            return self.subbloq.wire_symbol(reg, idx)
 
         # Otherwise, it's part of the control register.
-        i = self.ctrl_reg_names.index(soq.reg.name)
-        return self.ctrl_spec.wire_symbol(i, soq)
+        i = self.ctrl_reg_names.index(reg.name)
+        return self.ctrl_spec.wire_symbol(i, reg, idx)
+
+    def adjoint(self) -> 'Bloq':
+        return self.subbloq.adjoint().controlled(self.ctrl_spec)
 
     def pretty_name(self) -> str:
         return f'C[{self.subbloq.pretty_name()}]'
@@ -434,7 +462,23 @@ class Controlled(Bloq):
         ctrl_regs = {reg_name: cirq_quregs.pop(reg_name) for reg_name in self.ctrl_reg_names}
         ctrl_qubits = [q for reg in ctrl_regs.values() for q in reg.reshape(-1)]
         sub_op, cirq_quregs = self.subbloq.as_cirq_op(qubit_manager, **cirq_quregs)
+        assert sub_op is not None
         return (
             sub_op.controlled_by(*ctrl_qubits, control_values=self.ctrl_spec.to_cirq_cv()),
             cirq_quregs | ctrl_regs,
         )
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
+
+        if isinstance(self.subbloq, cirq.Gate):
+            sub_info = cirq.circuit_diagram_info(self.subbloq, args, None)
+            if sub_info is not None:
+                cv_info = cirq.circuit_diagram_info(self.ctrl_spec.to_cirq_cv())
+
+                return cirq.CircuitDiagramInfo(
+                    wire_symbols=(*cv_info.wire_symbols, *sub_info.wire_symbols),
+                    exponent=sub_info.exponent,
+                )
+
+        return _wire_symbol_to_cirq_diagram_info(self, args)

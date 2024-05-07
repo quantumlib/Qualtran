@@ -23,18 +23,19 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Sig
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
-from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     ignore_cliffords,
     ignore_split_join,
 )
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
 class QubitizationWalkOperator(GateWithRegisters):
     r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
+    For a Hamiltonian $H = \sum_l w_l H_l$ (s.t. $w_l > 0$ and $H_l$ are unitaries),
     Constructs a Szegedy quantum walk operator $W = R_{L} . SELECT$, which is a product of
     two reflections $R_{L} = (2|L><L| - I)$ and $SELECT=\sum_{l}|l><l|H_{l}$.
 
@@ -42,7 +43,8 @@ class QubitizationWalkOperator(GateWithRegisters):
     vector spaces. For an arbitrary eigenstate $|k>$ of $H$ with eigenvalue $E_k$, $|\ell>|k>$ and
     an orthogonal state $\phi_{k}$ span the irreducible two-dimensional space that $|\ell>|k>$ is
     in under the action of $W$. In this space, $W$ implements a Pauli-Y rotation by an angle of
-    $-2arccos(E_{k} / \lambda)$ s.t. $W = e^{i arccos(E_k / \lambda) Y}$.
+    $-2arccos(E_{k} / \lambda)$ s.t. $W = e^{i arccos(E_k / \lambda) Y}$,
+    where $\lambda = \sum_l w_l$.
 
     Thus, the walk operator $W$ encodes the spectrum of $H$ as a function of eigenphases of $W$
     s.t. $spectrum(H) = \lambda cos(arg(spectrum(W)))$ where $arg(e^{i\phi}) = \phi$.
@@ -53,8 +55,6 @@ class QubitizationWalkOperator(GateWithRegisters):
             $PREPARE|00...00> = \sum_{l=0}^{L - 1}\sqrt{\frac{w_{l}}{\lambda}} |l> = |\ell>$
         control_val: If 0/1, a controlled version of the walk operator is constructed. Defaults to
             None, in which case the resulting walk operator is not controlled.
-        power: Constructs $W^{power}$ by repeatedly decomposing into `power` copies of $W$.
-            Defaults to 1.
 
     References:
         [Encoding Electronic Spectra in Quantum Circuits with Linear T Complexity]
@@ -65,7 +65,6 @@ class QubitizationWalkOperator(GateWithRegisters):
     select: SelectOracle
     prepare: PrepareOracle
     control_val: Optional[int] = None
-    power: int = 1
 
     def __attrs_post_init__(self):
         assert self.select.control_registers == self.reflect.control_registers
@@ -92,24 +91,25 @@ class QubitizationWalkOperator(GateWithRegisters):
     def reflect(self) -> ReflectionUsingPrepare:
         return ReflectionUsingPrepare(self.prepare, control_val=self.control_val, global_phase=-1)
 
+    @cached_property
+    def sum_of_lcu_coefficients(self) -> Optional[SymbolicFloat]:
+        r"""value of $\lambda$, i.e. sum of absolute values of coefficients $w_l$."""
+        return self.prepare.l1_norm_of_coeffs
+
     def decompose_from_registers(
         self,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> cirq.OP_TREE:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
-        select_op = self.select.on_registers(**select_reg)
+        yield self.select.on_registers(**select_reg)
 
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
-        reflect_op = self.reflect.on_registers(**reflect_reg)
-        for _ in range(self.power):
-            yield select_op
-            yield reflect_op
+        yield self.reflect.on_registers(**reflect_reg)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['W'] * (total_bits(self.signature) - total_bits(self.control_registers))
-        wire_symbols[-1] = f'W^{self.power}' if self.power != 1 else 'W'
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def controlled(
@@ -132,25 +132,10 @@ class QubitizationWalkOperator(GateWithRegisters):
         ):
             c_select = self.select.controlled(control_values=control_values)
             assert isinstance(c_select, SelectOracle)
-            return QubitizationWalkOperator(
-                c_select, self.prepare, control_val=control_values[0], power=self.power
-            )
+            return attrs.evolve(self, select=c_select, control_val=control_values[0])
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
-
-    def with_power(self, new_power: int) -> 'QubitizationWalkOperator':
-        return QubitizationWalkOperator(
-            self.select, self.prepare, control_val=self.control_val, power=new_power
-        )
-
-    def __pow__(self, power: int):
-        return self.with_power(self.power * power)
-
-    def _t_complexity_(self):
-        if self.power > 1:
-            return self.power * t_complexity(self.with_power(1))
-        return NotImplemented
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

@@ -53,7 +53,7 @@ def custom_qroam_repr(self) -> str:
 
 
 # TODO: better way of customizing label
-SelectSwapQROM.__repr__ = custom_qroam_repr
+SelectSwapQROM.__repr__ = custom_qroam_repr  # type: ignore[assignment]
 
 
 def custom_qrom_repr(self) -> str:
@@ -62,7 +62,8 @@ def custom_qrom_repr(self) -> str:
     return f"QROM(selection_bitsizes={selection_repr}, target_bitsizes={target_repr})"
 
 
-QROM.__repr__ = custom_qrom_repr
+# TODO: better way of customizing label
+QROM.__repr__ = custom_qrom_repr  # type: ignore[assignment]
 
 
 def custom_generalizations(bloq: Bloq) -> Optional[Bloq]:

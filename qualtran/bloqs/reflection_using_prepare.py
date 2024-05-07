@@ -96,7 +96,8 @@ class ReflectionUsingPrepare(GateWithRegisters):
         # 0. Allocate new ancillas, if needed.
         phase_target = qm.qalloc(1)[0] if self.control_val is None else quregs.pop('control')[0]
         state_prep_ancilla = {
-            reg.name: qm.qalloc(reg.total_bits()) for reg in self.prepare_gate.junk_registers
+            reg.name: np.array(qm.qalloc(reg.total_bits())).reshape(reg.shape + (reg.bitsize,))
+            for reg in self.prepare_gate.junk_registers
         }
         state_prep_selection_regs = quregs
         prepare_op = self.prepare_gate.on_registers(
@@ -122,7 +123,7 @@ class ReflectionUsingPrepare(GateWithRegisters):
         yield prepare_op
 
         # 4. Deallocate ancilla.
-        qm.qfree([q for anc in state_prep_ancilla.values() for q in anc])
+        qm.qfree([q for anc in state_prep_ancilla.values() for q in anc.flatten()])
         if self.control_val is None:
             qm.qfree([phase_target])
 

@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Set, Tuple
 
 import attrs
 import networkx as nx
@@ -22,10 +22,16 @@ import sympy
 from attrs import field, frozen
 
 import qualtran.testing as qlt_testing
-from qualtran import Bloq, BloqBuilder, Signature, SoquetT
+from qualtran import Bloq, BloqBuilder, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford, Join, Split
-from qualtran.resource_counting import BloqCountT, get_bloq_call_graph, SympySymbolAllocator
+from qualtran.resource_counting import (
+    BloqCountT,
+    get_bloq_call_graph,
+    get_bloq_callee_counts,
+    SympySymbolAllocator,
+)
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 @frozen
@@ -48,7 +54,7 @@ class DecompBloq(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(x=self.bitsize)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'SoquetT') -> Dict[str, 'SoquetT']:
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: 'Soquet') -> Dict[str, 'SoquetT']:
         qs = bb.split(x)
         for i in range(self.bitsize):
             qs[i] = bb.add(SubBloq(unrelated_param=i / 12), q=qs[i])
@@ -68,7 +74,7 @@ class SubBloq(Bloq):
         return {(TGate(), 3)}
 
 
-def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, int]]:
+def get_big_bloq_counts_graph_1(bloq: Bloq) -> Tuple[nx.DiGraph, Dict[Bloq, SymbolicInt]]:
     ss = SympySymbolAllocator()
     n_c = ss.new_symbol('n_c')
 
@@ -86,6 +92,23 @@ def test_bloq_counts_method():
     assert len(sigma) == 1
     expr = sigma[TGate()]
     assert str(expr) == '3*log(100)'
+
+
+def test_get_bloq_callee_counts():
+    bloq = BigBloq(100)
+    callee_counts = get_bloq_callee_counts(bloq)
+    assert callee_counts == [(SubBloq(unrelated_param=0.5), sympy.log(100))]
+
+    bloq = DecompBloq(10)
+    callee_counts = get_bloq_callee_counts(bloq)
+    assert len(callee_counts) == 10 + 2  # 2 for split/join
+
+    bloq = SubBloq(unrelated_param=0.5)
+    callee_counts = get_bloq_callee_counts(bloq)
+    assert callee_counts == [(TGate(), 3)]
+
+    callee_counts = get_bloq_callee_counts(TGate())
+    assert callee_counts == []
 
 
 def test_bloq_counts_decomp():
@@ -107,13 +130,18 @@ def test_bloq_counts_decomp():
 
 @pytest.mark.notebook
 def test_notebook():
-    qlt_testing.execute_notebook('bloq_counts')
+    qlt_testing.execute_notebook('call_graph')
+
+
+def _to_tuple(x: Iterable[BloqCountT]) -> Sequence[BloqCountT]:
+    """mypy compatible converter for OnlyCallGraphBloqShim.callees."""
+    return tuple(x)
 
 
 @frozen
 class OnlyCallGraphBloqShim(Bloq):
     name: str
-    callees: Sequence[BloqCountT] = field(converter=tuple, factory=tuple)
+    callees: Sequence[BloqCountT] = field(converter=_to_tuple, factory=tuple)
 
     @property
     def signature(self) -> 'Signature':

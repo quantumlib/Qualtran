@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import List, Optional, Sequence, Tuple
+from typing import Iterator, List, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
@@ -178,7 +178,7 @@ class SelectSwapQROM(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.Operation]:
         # Divide each data sequence and corresponding target registers into
         # `self.num_blocks` batches of size `self.block_size`.
         selection, targets = quregs.pop('selection'), quregs
@@ -199,7 +199,6 @@ class SelectSwapQROM(GateWithRegisters):
         # Construct QROM, SwapWithZero and CX operations using the batched data and qubits.
         k = (self.block_size - 1).bit_length()
         q, r = selection[: self.selection_q], selection[self.selection_q :]
-        qrom_op, swap_with_zero_op = [], []
         qrom_gate = QROM(
             qrom_data,
             selection_bitsizes=(self.selection_q,),
@@ -219,14 +218,20 @@ class SelectSwapQROM(GateWithRegisters):
         clean_targets = merge_qubits(self.target_registers, **targets)
         cnot_op = cirq.Moment(cirq.CNOT(s, t) for s, t in zip(ordered_target_qubits, clean_targets))
         # Yield the operations in correct order.
-        yield qrom_op
-        yield swap_with_zero_op
-        yield cnot_op
-        yield cirq.inverse(swap_with_zero_op)
-        yield cirq.inverse(qrom_op)
-        yield swap_with_zero_op
-        yield cnot_op
-        yield cirq.inverse(swap_with_zero_op)
+        if self.block_size > 1:
+            yield qrom_op
+            yield swap_with_zero_op
+            yield from cnot_op
+            yield cirq.inverse(swap_with_zero_op)
+            yield cirq.inverse(qrom_op)
+            yield swap_with_zero_op
+            yield from cnot_op
+            yield cirq.inverse(swap_with_zero_op)
+        else:
+            yield qrom_op
+            yield from cnot_op
+            yield cirq.inverse(qrom_op)
+            yield from cnot_op
 
         context.qubit_manager.qfree(ordered_target_qubits)
 
@@ -237,8 +242,8 @@ class SelectSwapQROM(GateWithRegisters):
             wire_symbols += [f"QROAM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        name = soq.reg.name
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        name = reg.name
         if name == 'selection':
             return TextBox('In')
         elif 'target' in name:
@@ -248,6 +253,7 @@ class SelectSwapQROM(GateWithRegisters):
             return TextBox(f'data_{subscript}')
         elif name == 'control':
             return Circle()
+        raise ValueError(f'Unknown register name {name}')
 
     def short_name(self) -> str:
         return 'QROAM'

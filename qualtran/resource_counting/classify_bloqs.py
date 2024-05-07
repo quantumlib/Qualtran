@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import collections.abc as abc
 from collections import defaultdict
-from typing import Dict, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import cast, Dict, List, Optional, Sequence, TYPE_CHECKING, Union
 
 import sympy
 
-from qualtran import Bloq
+from qualtran import Adjoint, Bloq
 from qualtran.resource_counting.generalizers import (
     ignore_alloc_free,
     ignore_cliffords,
@@ -47,7 +48,7 @@ def _get_basic_bloq_classification() -> Dict[str, str]:
     return bloq_classifier
 
 
-def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[str]]) -> str:
+def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, str]) -> str:
     """Classify a bloq given a bloq_classification.
 
     Args:
@@ -58,7 +59,7 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[str]]) -> str
         classification: The matching key in bloq_classification. Returns other if not classified.
     """
     if 'adjoint' in bloq.__module__:
-        mod_name = bloq.subbloq.__module__
+        mod_name = cast(Adjoint, bloq).subbloq.__module__
     else:
         mod_name = bloq.__module__
     for k, v in bloq_classification.items():
@@ -69,7 +70,7 @@ def classify_bloq(bloq: Bloq, bloq_classification: Dict[str, Tuple[str]]) -> str
 
 def classify_t_count_by_bloq_type(
     bloq: Bloq,
-    bloq_classification: Optional[Dict[str, Tuple[Bloq]]] = None,
+    bloq_classification: Optional[Dict[str, str]] = None,
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
 ) -> Dict[str, Union[int, sympy.Expr]]:
     """Classify (bin) the T count of a bloq's call graph by type of operation.
@@ -88,14 +89,18 @@ def classify_t_count_by_bloq_type(
     if bloq_classification is None:
         bloq_classification = _get_basic_bloq_classification()
     keeper = lambda bloq: classify_bloq(bloq, bloq_classification) != 'other'
-    basic_generalizer = [ignore_split_join, ignore_alloc_free, ignore_cliffords]
+    basic_generalizer: List['GeneralizerT'] = [
+        ignore_split_join,
+        ignore_alloc_free,
+        ignore_cliffords,
+    ]
     if generalizer is not None:
-        if isinstance(generalizer, (list, tuple)):
-            basic_generalizer = basic_generalizer + list(generalizer)
+        if isinstance(generalizer, abc.Sequence):
+            basic_generalizer.extend(generalizer)
         else:
             basic_generalizer.append(generalizer)
     _, sigma = bloq.call_graph(generalizer=basic_generalizer, keep=keeper)
-    classified_bloqs = defaultdict(int)
+    classified_bloqs: Dict[str, Union[int, sympy.Expr]] = defaultdict(int)
     for k, v in sigma.items():
         classification = classify_bloq(k, bloq_classification)
         classified_bloqs[classification] += v * t_counts_from_sigma(k.call_graph()[1])

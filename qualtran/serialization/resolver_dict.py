@@ -75,9 +75,9 @@ import qualtran.bloqs.for_testing.atom
 import qualtran.bloqs.for_testing.casting
 import qualtran.bloqs.for_testing.interior_alloc
 import qualtran.bloqs.for_testing.many_registers
+import qualtran.bloqs.for_testing.matrix_gate
 import qualtran.bloqs.for_testing.with_call_graph
 import qualtran.bloqs.for_testing.with_decomposition
-import qualtran.bloqs.generalized_qsp
 import qualtran.bloqs.hubbard_model
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.mcmt.multi_control_multi_target_pauli
@@ -95,6 +95,7 @@ import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.qft_phase_gradient
 import qualtran.bloqs.qft.qft_text_book
 import qualtran.bloqs.qft.two_bit_ffft
+import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
 import qualtran.bloqs.reflection_using_prepare
@@ -254,6 +255,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg": qualtran.bloqs.factoring.mod_sub.MontgomeryModNeg,
     "qualtran.bloqs.factoring.mod_sub.MontgomeryModSub": qualtran.bloqs.factoring.mod_sub.MontgomeryModSub,
     "qualtran.bloqs.for_testing.atom.TestAtom": qualtran.bloqs.for_testing.atom.TestAtom,
+    "qualtran.bloqs.for_testing.atom.TestGWRAtom": qualtran.bloqs.for_testing.atom.TestGWRAtom,
     "qualtran.bloqs.for_testing.atom.TestTwoBitOp": qualtran.bloqs.for_testing.atom.TestTwoBitOp,
     "qualtran.bloqs.for_testing.casting.TestCastToFrom": qualtran.bloqs.for_testing.casting.TestCastToFrom,
     "qualtran.bloqs.for_testing.interior_alloc.InteriorAlloc": qualtran.bloqs.for_testing.interior_alloc.InteriorAlloc,
@@ -261,12 +263,11 @@ RESOLVER_DICT = {
     "qualtran.bloqs.for_testing.many_registers.TestMultiRegister": qualtran.bloqs.for_testing.many_registers.TestMultiRegister,
     "qualtran.bloqs.for_testing.many_registers.TestMultiTypedRegister": qualtran.bloqs.for_testing.many_registers.TestMultiTypedRegister,
     "qualtran.bloqs.for_testing.many_registers.TestQFxp": qualtran.bloqs.for_testing.many_registers.TestQFxp,
+    "qualtran.bloqs.for_testing.matrix_gate.MatrixGate": qualtran.bloqs.for_testing.matrix_gate.MatrixGate,
     "qualtran.bloqs.for_testing.with_call_graph.TestBloqWithCallGraph": qualtran.bloqs.for_testing.with_call_graph.TestBloqWithCallGraph,
     "qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestIndependentParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo": qualtran.bloqs.for_testing.with_decomposition.TestParallelCombo,
     "qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo": qualtran.bloqs.for_testing.with_decomposition.TestSerialCombo,
-    "qualtran.bloqs.generalized_qsp.GeneralizedQSP": qualtran.bloqs.generalized_qsp.GeneralizedQSP,
-    "qualtran.bloqs.generalized_qsp.SU2RotationGate": qualtran.bloqs.generalized_qsp.SU2RotationGate,
     "qualtran.bloqs.hubbard_model.PrepareHubbard": qualtran.bloqs.hubbard_model.PrepareHubbard,
     "qualtran.bloqs.hubbard_model.SelectHubbard": qualtran.bloqs.hubbard_model.SelectHubbard,
     "qualtran.bloqs.mcmt.and_bloq.And": qualtran.bloqs.mcmt.and_bloq.And,
@@ -289,6 +290,7 @@ RESOLVER_DICT = {
     "qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient": qualtran.bloqs.qft.qft_phase_gradient.QFTPhaseGradient,
     "qualtran.bloqs.qft.qft_text_book.QFTTextBook": qualtran.bloqs.qft.qft_text_book.QFTTextBook,
     "qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT": qualtran.bloqs.qft.two_bit_ffft.TwoBitFFFT,
+    "qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP": qualtran.bloqs.qsp.generalized_qsp.GeneralizedQSP,
     "qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator": qualtran.bloqs.qubitization_walk_operator.QubitizationWalkOperator,
     "qualtran.bloqs.reflection.Reflection": qualtran.bloqs.reflection.Reflection,
     "qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare": qualtran.bloqs.reflection_using_prepare.ReflectionUsingPrepare,

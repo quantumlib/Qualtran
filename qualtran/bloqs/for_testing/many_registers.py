@@ -17,8 +17,21 @@ from typing import Dict
 
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
-from qualtran import Bloq, BoundedQUInt, QAny, QBit, QFxp, QUInt, Register, Signature
+from qualtran import (
+    Bloq,
+    BloqBuilder,
+    BoundedQUInt,
+    QAny,
+    QBit,
+    QFxp,
+    QUInt,
+    Register,
+    Signature,
+    Soquet,
+    SoquetT,
+)
 
 from .atom import TestAtom, TestTwoBitOp
 
@@ -40,12 +53,12 @@ class TestMultiRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: 'SoquetT', zz: 'SoquetT'
-    ) -> Dict[str, 'Soquet']:
+        self, bb: 'BloqBuilder', xx: 'SoquetT', yy: NDArray['Soquet'], zz: Soquet  # type: ignore[type-var]
+    ) -> Dict[str, 'SoquetT']:
         xx = bb.add(TestAtom(), q=xx)
         for i in range(2):
             for j in range(2):
-                a, b = bb.split(yy[i, j])
+                a, b = bb.split(yy[i, j])  # type: ignore[index]
                 a, b = bb.add(TestTwoBitOp(), ctrl=a, target=b)
                 yy[i, j] = bb.join(np.array([a, b]))
         a, b, c = bb.split(zz)
@@ -60,7 +73,7 @@ class TestMultiRegister(Bloq):
 class TestBoundedQUInt(Bloq):
     @cached_property
     def signature(self) -> Signature:
-        return Signature([Register('xx', BoundedQUInt(4, 3)), Register('yy', QUInt(8, 6, True))])
+        return Signature([Register('xx', BoundedQUInt(4, 3)), Register('yy', QFxp(8, 6, True))])
 
 
 @frozen
@@ -92,11 +105,11 @@ class TestMultiTypedRegister(Bloq):
         )
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: 'SoquetT', b: 'SoquetT', c: 'SoquetT', d: 'SoquetT'
+        self, bb: 'BloqBuilder', a: 'SoquetT', b: 'SoquetT', c: 'SoquetT', d: 'Soquet'
     ) -> Dict[str, 'Soquet']:
         a, b = bb.add(TestBoundedQUInt(), xx=a, yy=d)
         b, c = bb.add(TestQFxp(), xx=b, yy=c)
-        return {'a': a, 'b': bb, 'c': c, 'd': d}
+        return {'a': a, 'b': b, 'c': c, 'd': d}
 
     def short_name(self) -> str:
         return 'abcd[T]'

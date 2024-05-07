@@ -56,7 +56,7 @@ References:
 
 import abc
 from functools import cached_property
-from typing import Dict, Sequence, Set, TYPE_CHECKING, Union
+from typing import cast, Dict, Sequence, Set, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -71,6 +71,7 @@ from qualtran import (
     QFxp,
     Register,
     Signature,
+    Soquet,
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
@@ -84,6 +85,8 @@ from qualtran.resource_counting.symbolic_counting_utils import (
 
 if TYPE_CHECKING:
     from qualtran import SoquetT
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
@@ -125,6 +128,7 @@ class QvrZPow(QvrInterface):
             floating point number.
         eps: Precision for synthesizing the phases.
     """
+
     cost_reg: Register
     gamma: Union[float, sympy.Expr] = 1.0
     eps: Union[float, sympy.Expr] = 1e-9
@@ -154,7 +158,9 @@ class QvrZPow(QvrInterface):
         return ()
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
-        out = soqs[self.cost_reg.name]
+        if isinstance(self.cost_dtype.bitsize, sympy.Expr):
+            raise ValueError(f'Unsupported symbolic {self.cost_dtype.bitsize} bitsize')
+        out = cast(Soquet, soqs[self.cost_reg.name])
         out = bb.split(out)
         eps = self.eps / len(out)
         if self.cost_dtype.signed:
@@ -165,7 +171,7 @@ class QvrZPow(QvrInterface):
                 ZPowGate(exponent=(2**power_of_two) * self.gamma * 2, eps=self.eps / len(out)),
                 q=out[-(i + 1)],
             )
-        return {self.cost_reg.name: bb.join(out)}
+        return {self.cost_reg.name: bb.join(out, self.cost_reg.dtype)}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         zpow = ZPowGate(exponent=self.gamma, eps=self.eps / self.cost_dtype.bitsize)
@@ -216,6 +222,7 @@ def find_optimal_phase_grad_size(gamma_fxp: Fxp, cost_dtype: QFxp, eps: float) -
             high = mid - 1
         else:
             low = mid + 1
+    assert ans is not None, "Could not find optimal phase!"
     assert is_good_phase_grad_size(ans)
     return ans
 
@@ -369,12 +376,12 @@ class QvrPhaseGradient(QvrInterface):
         return dtype
 
     @cached_property
-    def b_phase(self) -> int:
+    def b_phase(self) -> 'SymbolicInt':
         pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
         return ceil(log2(pi * 2 / self.eps))
 
     @cached_property
-    def b_grad_via_formula(self) -> int:
+    def b_grad_via_formula(self) -> 'SymbolicInt':
         # Using Equation A7 from https://arxiv.org/abs/2007.07391
         pi = sympy.pi if isinstance(self.eps, sympy.Expr) else np.pi
         return ceil(log2(self.num_additions * 2 * pi / self.eps))
@@ -388,7 +395,7 @@ class QvrPhaseGradient(QvrInterface):
         return find_optimal_phase_grad_size(self.gamma_fxp, self.cost_dtype, self.eps / (2 * np.pi))
 
     @cached_property
-    def b_grad(self) -> int:
+    def b_grad(self) -> 'SymbolicInt':
         if (
             is_symbolic(self.eps, self.gamma, self.cost_dtype.bitsize)
             or self.cost_dtype.bitsize >= 54
@@ -432,7 +439,7 @@ class QvrPhaseGradient(QvrInterface):
         # The reference assumes that cost register always stores a fraction between [0, 1). We
         # do not have this assumption and therefore, we also need to add self.cost_dtype.num_int
         # to the gamma bitsize.
-        n_int = smax(0, bit_length(abs(self.gamma)))
+        n_int = smax(0, bit_length(sympy.Abs(self.gamma)))
         n_frac = self.cost_dtype.num_int + self.b_phase
         return QFxp(bitsize=n_int + n_frac, num_frac=n_frac, signed=False)
 

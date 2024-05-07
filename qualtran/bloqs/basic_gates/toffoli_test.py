@@ -56,7 +56,8 @@ def test_classical_sim():
     tof = Toffoli()
 
     for c0, c1 in itertools.product([0, 1], repeat=2):
-        ctrl, target = tof.call_classically(ctrl=[c0, c1], target=0)
+        ctrl, target = tof.call_classically(ctrl=np.asarray([c0, c1]), target=0)
+        assert isinstance(ctrl, np.ndarray)
         assert ctrl.tolist() == [c0, c1]
         if c0 == 1 and c1 == 1:
             assert target == 1

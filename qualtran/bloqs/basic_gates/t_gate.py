@@ -19,8 +19,7 @@ import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Signature, Soquet, SoquetT
-from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -75,9 +74,6 @@ class TGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
-    def _t_complexity_(self) -> 'TComplexity':
-        return TComplexity(t=1)
-
     def add_my_tensors(
         self,
         tn: 'qtn.TensorNetwork',
@@ -99,8 +95,8 @@ class TGate(Bloq):
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (q,) = q
@@ -115,7 +111,7 @@ class TGate(Bloq):
         maybe_dag = 'is_adjoint=True' if self.is_adjoint else ''
         return f'TGate({maybe_dag})'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox(self.pretty_name())
 
 

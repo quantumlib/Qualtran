@@ -72,13 +72,16 @@ import qualtran.bloqs.chemistry.trotter.hubbard.interaction
 import qualtran.bloqs.chemistry.trotter.ising.unitaries
 import qualtran.bloqs.chemistry.trotter.trotterized_unitary
 import qualtran.bloqs.data_loading.qrom
+import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
+import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
 import qualtran.bloqs.qft.approximate_qft
 import qualtran.bloqs.qft.two_bit_ffft
+import qualtran.bloqs.qsp.generalized_qsp
 import qualtran.bloqs.qubitization_walk_operator
 import qualtran.bloqs.reflection
 import qualtran.bloqs.rotations.phasing_via_cost_function
@@ -115,11 +118,6 @@ BASIC_GATES: List[NotebookSpecV2] = [
         title='CNOT',
         module=qualtran.bloqs.basic_gates.cnot,
         bloq_specs=[qualtran.bloqs.basic_gates.cnot._CNOT_DOC],
-    ),
-    NotebookSpecV2(
-        title='SU2 Rotation',
-        module=qualtran.bloqs.basic_gates.su2_rotation,
-        bloq_specs=[qualtran.bloqs.basic_gates.su2_rotation._SU2_ROTATION_GATE_DOC],
     ),
     NotebookSpecV2(
         title='S Gate',
@@ -342,6 +340,21 @@ ARITHMETIC = [
         bloq_specs=[qualtran.bloqs.factoring.mod_mul._MODMUL_DOC],
         directory=f'{SOURCE_DIR}/bloqs/factoring',
     ),
+    NotebookSpecV2(
+        title='Elliptic Curve Cryptography',
+        module=qualtran.bloqs.factoring.ecc,
+        bloq_specs=[
+            qualtran.bloqs.factoring.ecc.find_ecc_private_key._ECC_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_phase_estimate_r._EC_PE_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_add_r._ECC_ADD_R_BLOQ_DOC,
+            qualtran.bloqs.factoring.ecc.ec_add_r._EC_WINDOW_ADD_BLOQ_DOC,
+        ],
+    ),
+    NotebookSpecV2(
+        title='Elliptic Curve Addition',
+        module=qualtran.bloqs.factoring.ecc.ec_add,
+        bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
+    ),
 ]
 
 
@@ -357,6 +370,11 @@ ROT_QFT_PE = [
             qualtran.bloqs.basic_gates.rotation._Y_POW_DOC,
             qualtran.bloqs.basic_gates.rotation._Z_POW_DOC,
         ],
+    ),
+    NotebookSpecV2(
+        title='SU2 Rotation',
+        module=qualtran.bloqs.basic_gates.su2_rotation,
+        bloq_specs=[qualtran.bloqs.basic_gates.su2_rotation._SU2_ROTATION_GATE_DOC],
     ),
     NotebookSpecV2(
         title='Quantum Variable Rotation',
@@ -475,6 +493,18 @@ OTHER: List[NotebookSpecV2] = [
             qualtran.bloqs.state_preparation.state_preparation_via_rotation._STATE_PREP_VIA_ROTATIONS_DOC
         ],
         directory=f'{SOURCE_DIR}/bloqs/state_preparation/',
+    ),
+    NotebookSpecV2(
+        title='Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.qsp.generalized_qsp,
+        bloq_specs=[qualtran.bloqs.qsp.generalized_qsp._Generalized_QSP_DOC],
+    ),
+    NotebookSpecV2(
+        title='Hamiltonian Simulation by Generalized Quantum Signal Processing',
+        module=qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp,
+        bloq_specs=[
+            qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp._Hamiltonian_Simulation_by_GQSP_DOC
+        ],
     ),
 ]
 

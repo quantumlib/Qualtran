@@ -11,32 +11,40 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 import attrs
 import cirq
 import numpy as np
 import pytest
 
+import qualtran.testing as qlt_testing
 from qualtran import GateWithRegisters, Signature
 from qualtran.bloqs.rotations.hamming_weight_phasing import (
     HammingWeightPhasing,
     HammingWeightPhasingViaPhaseGradient,
 )
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
-from qualtran.cirq_interop.testing import (
-    assert_decompose_is_consistent_with_t_complexity,
-    GateHelper,
+from qualtran.cirq_interop.testing import GateHelper
+from qualtran.resource_counting.generalizers import (
+    cirq_to_bloqs,
+    generalize_rotation_angle,
+    ignore_split_join,
 )
-from qualtran.testing import assert_valid_bloq_decomposition
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+
+if TYPE_CHECKING:
+    from qualtran import BloqBuilder, SoquetT
 
 
 @pytest.mark.parametrize('n', [2, 3, 4, 5, 6, 7, 8])
 @pytest.mark.parametrize('theta', [1 / 10, 1 / 5, 1 / 7, np.pi / 2])
 def test_hamming_weight_phasing(n: int, theta: float):
     gate = HammingWeightPhasing(n, theta)
-    assert_valid_bloq_decomposition(gate)
-    assert_decompose_is_consistent_with_t_complexity(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_equivalent_bloq_counts(
+        gate, [ignore_split_join, cirq_to_bloqs, generalize_rotation_angle]
+    )
 
     assert gate.t_complexity().rotations == n.bit_length()
     assert gate.t_complexity().t == 4 * (n - n.bit_count())
@@ -56,8 +64,8 @@ def test_hamming_weight_phasing(n: int, theta: float):
 @pytest.mark.parametrize('n', [10, 32, 64, 100, 1024])
 def test_hamming_weight_phasing_large(n: int):
     gate = HammingWeightPhasing(n, 1 / 10)
-    assert_valid_bloq_decomposition(gate)
-    assert_decompose_is_consistent_with_t_complexity(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_equivalent_bloq_counts(gate, [ignore_split_join, generalize_rotation_angle])
 
     assert gate.t_complexity().rotations == n.bit_length()
     assert gate.t_complexity().t == 4 * (n - n.bit_count())
@@ -74,7 +82,7 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         return Signature.build(x=self.bitsize)
 
     @property
-    def b_grad(self) -> int:
+    def b_grad(self) -> SymbolicInt:
         return HammingWeightPhasingViaPhaseGradient(self.bitsize, self.exponent, self.eps).b_grad
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:
@@ -96,7 +104,7 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
 )
 def test_hamming_weight_phasing_via_phase_gradient(n: int, theta: float, eps: float):
     gate = TestHammingWeightPhasingViaPhaseGradient(n, theta, eps)
-    assert_valid_bloq_decomposition(gate)
+    qlt_testing.assert_valid_bloq_decomposition(gate)
 
     gh = GateHelper(gate)
     sim = cirq.Simulator(dtype=np.complex128)

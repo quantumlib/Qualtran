@@ -30,9 +30,11 @@ from qualtran import (
     Register,
     Side,
     Signature,
+    Soquet,
+    SoquetT,
 )
 from qualtran._infra.gate_with_registers import get_named_qubits
-from qualtran.bloqs.basic_gates import CNOT, OneState
+from qualtran.bloqs.basic_gates import CNOT, GlobalPhase, OneState
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.util_bloqs import Allocate, Free, Join, Split
 from qualtran.cirq_interop import cirq_optree_to_cbloq, CirqGateAsBloq, CirqQuregT
@@ -47,6 +49,8 @@ class TestCNOT(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
         ctrl, target = soqs['control'], soqs['target']
+        assert isinstance(ctrl, Soquet)
+        assert isinstance(target, Soquet)
         ctrl, target = bb.add(CirqGateAsBloq(cirq.CNOT), q=[ctrl, target])
         return {'control': ctrl, 'target': target}
 
@@ -103,7 +107,7 @@ def test_bloq_decompose():
     assert tb.pretty_name() == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
-    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs)
+    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs, qubit_manager=None)
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == TComplexity(clifford=1)
 
@@ -133,7 +137,7 @@ def test_cbloq_to_cirq_circuit():
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
     # CirqGate has registers of bitsize=1 and shape=(n,); hence the list transpose below.
     circuit2, _ = cbloq.to_cirq_circuit(
-        **{'qubits': [[q] for q in qubits]}, qubit_manager=cirq.ops.SimpleQubitManager()
+        qubits=np.asarray([[q] for q in qubits]), qubit_manager=cirq.ops.SimpleQubitManager()
     )
 
     assert circuit == circuit2
@@ -224,3 +228,7 @@ def test_cirq_gate_as_bloq_decompose_raises():
     bloq = CirqGateAsBloq(cirq.X)
     with pytest.raises(DecomposeNotImplementedError, match="does not declare a decomposition"):
         _ = bloq.decompose_bloq()
+
+
+def test_cirq_gate_as_bloq_diagram_info():
+    assert cirq.circuit_diagram_info(GlobalPhase(1j)) is None

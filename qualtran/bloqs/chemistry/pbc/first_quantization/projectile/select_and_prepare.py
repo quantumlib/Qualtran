@@ -13,10 +13,11 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
-from attrs import field, frozen
+from attrs import evolve, field, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -27,7 +28,6 @@ from qualtran import (
     QAny,
     QBit,
     Register,
-    Side,
     Signature,
     Soquet,
     SoquetT,
@@ -62,7 +62,13 @@ class PrepareTUVSuperpositions(Bloq):
     r"""Prepare the superposition over registers selecting between T U and V.
 
     Args:
-        adjoint: whether to dagger the bloq or not.
+        num_bits_t: The number of bits of precision for the state preparation
+            over the register selecting between the different components of the
+            Hamiltonian.
+        eta: The number of electrons.
+        lambda_zeta: sum of nuclear charges.
+        num_bits_rot_aa: The number of bits of precision for the rotation for
+            amplitude amplification.
 
     Registers:
         tuv: Register to prepare to select between T or UV.
@@ -80,7 +86,7 @@ class PrepareTUVSuperpositions(Bloq):
     eta: int
     lambda_zeta: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -89,19 +95,20 @@ class PrepareTUVSuperpositions(Bloq):
                 Register('tuv', QBit()),
                 Register('tepm', QAny(bitsize=2)),
                 Register('uv', QAny(bitsize=2)),
-                Register(
-                    'flags', QBit(), shape=(4,), side=Side.LEFT if self.adjoint else Side.RIGHT
-                ),
+                Register('flags', QBit(), shape=(4,)),
             ]
         )
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def short_name(self) -> str:
         return 'PREP TUV'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
+        if self.is_adjoint:
             # inverting inequality tests at zero Toffoli.
-            return {}
+            return set()
         else:
             return {(Toffoli(), 6 * self.num_bits_t + 2)}
 
@@ -130,17 +137,18 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
             ]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'sel':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'sel':
             return TextBox('In')
-        elif soq.reg.name == 'targets':
+        elif reg.name == 'targets':
             return TextBox('×(x)')
-        elif soq.reg.name == 'junk':
+        elif reg.name == 'junk':
             return TextBox('×(y)')
-        elif soq.reg.name == 'ctrl':
-            (c_idx,) = soq.idx
+        elif reg.name == 'ctrl':
+            (c_idx,) = idx
             filled = bool(self.cvs[c_idx])
             return Circle(filled)
+        raise ValueError(f'Unknown name: {reg.name}')
 
     def build_composite_bloq(
         self, bb: BloqBuilder, ctrl: SoquetT, sel: SoquetT, targets: SoquetT, junk: SoquetT
@@ -194,7 +202,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
+        is_adjoint: Whether to dagger the bloq or not.
 
     Registers:
         tuv: Register for preparing superposition for selecting between kinetic
@@ -232,7 +240,6 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @property
     def selection_registers(self) -> Tuple[Register, ...]:
@@ -266,11 +273,10 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
 
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
-        left_right = Side.LEFT if self.adjoint else Side.RIGHT
         return (
             Register("succ_nu", QBit()),
             Register("plus_t", QBit()),
-            Register('flags', QBit(), shape=(4,), side=left_right),
+            Register('flags', QBit(), shape=(4,)),
         )
 
     def short_name(self) -> str:
@@ -290,37 +296,26 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
-        nu_x: SoquetT,
-        nu_y: SoquetT,
-        nu_z: SoquetT,
+        nu_x: Soquet,
+        nu_y: Soquet,
+        nu_z: Soquet,
         m: SoquetT,
         succ_nu: SoquetT,
         l: SoquetT,
-        flags: Optional[SoquetT] = None,
+        flags: SoquetT,
     ) -> Dict[str, 'SoquetT']:
         prep_tuv = PrepareTUVSuperpositions(
-            self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa, adjoint=self.adjoint
+            self.num_bits_t, self.eta, self.lambda_zeta, self.num_bits_rot_aa
         )
-        if self.adjoint:
-            tuv, tepm, uv = bb.add(prep_tuv, tuv=tuv, tepm=tepm, uv=uv, flags=flags)
-        else:
-            tuv, tepm, uv, flags = bb.add(prep_tuv, tuv=tuv, tepm=tepm, uv=uv)
+        tuv, tepm, uv, flags = bb.add(prep_tuv, tuv=tuv, tepm=tepm, uv=uv, flags=flags)
         i, j = bb.add(
-            UniformSuperpostionIJFirstQuantization(
-                self.eta, self.num_bits_rot_aa, adjoint=self.adjoint
-            ),
-            i=i,
-            j=j,
+            UniformSuperpostionIJFirstQuantization(self.eta, self.num_bits_rot_aa), i=i, j=j
         )
         # |+>
         # plus_t = bb.add(Hadamard(), q=plus_t)
         w, w_mean, r, s = bb.add(
             PrepareTFirstQuantizationWithProj(
-                self.num_bits_p,
-                self.num_bits_n,
-                self.eta,
-                self.num_bits_rot_aa,
-                adjoint=self.adjoint,
+                self.num_bits_p, self.num_bits_n, self.eta, self.num_bits_rot_aa
             ),
             w=w,
             w_mean=w_mean,
@@ -336,7 +331,6 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
                 self.m_param,
                 self.lambda_zeta,
                 self.num_bits_nuc_pos,
-                adjoint=self.adjoint,
             ),
             mu=mu,
             nu=[nu_x, nu_y, nu_z],
@@ -362,9 +356,8 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             'm': m,
             'l': l,
             'succ_nu': succ_nu,
+            'flags': flags,
         }
-        if not self.adjoint:
-            out_flags['flags'] = flags
         return out_flags
 
 
@@ -384,7 +377,6 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             Hamiltonian.
         num_bits_rot_aa: The number of bits of precision for the rotation for
             amplitude amplification.
-        adjoint: Whether to dagger the bloq or not.
 
     Registers:
         ham_ctrl: Control bits flagging which component of the Hamiltonian to apply.
@@ -422,7 +414,6 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     num_bits_nuc_pos: int = 16
     num_bits_t: int = 16
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
 
     @cached_property
     def control_registers(self) -> Tuple[Register, ...]:
@@ -473,7 +464,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
     def build_composite_bloq(
         self,
         bb: BloqBuilder,
-        ham_ctrl: SoquetT,
+        ham_ctrl: NDArray[Soquet],  # type: ignore[type-var]
         i_ne_j: SoquetT,
         plus_t: SoquetT,
         i: SoquetT,
@@ -483,13 +474,13 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         r: SoquetT,
         s: SoquetT,
         mu: SoquetT,
-        nu_x: SoquetT,
-        nu_y: SoquetT,
-        nu_z: SoquetT,
+        nu_x: Soquet,
+        nu_y: Soquet,
+        nu_z: Soquet,
         m: SoquetT,
         l: SoquetT,
         sys: SoquetT,
-        proj: SoquetT,
+        proj: NDArray[Soquet],  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         # ancilla for swaps from electronic and projectile system registers.
         # we assume these are left in a clean state after SELECT operations
@@ -554,8 +545,10 @@ class SelectFirstQuantizationWithProj(SelectOracle):
         j, sys, q = bb.add(
             MultiplexedCSwap3D(self.num_bits_p, self.eta), sel=j, targets=sys, junk=q
         )
-        _ = [bb.free(pi) for pi in p]
-        _ = [bb.free(qi) for qi in q]
+        for pi in p:
+            bb.free(pi)
+        for qi in q:
+            bb.free(qi)
         ham_ctrl[:] = flag_t, flag_t_mean, flag_uv, flag_proj
         bb.free(rl)
         return {

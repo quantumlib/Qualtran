@@ -61,12 +61,15 @@ Bloqs Library
     arithmetic/conversions.ipynb
     factoring/mod_exp.ipynb
     factoring/mod_mul.ipynb
+    factoring/ecc/ecc.ipynb
+    factoring/ecc/ec_add.ipynb
 
 .. toctree::
     :maxdepth: 2
     :caption: Rotations:
 
     basic_gates/rotation.ipynb
+    basic_gates/su2_rotation.ipynb
     rotations/quantum_variable_rotation.ipynb
     rotations/phasing_via_cost_function.ipynb
     qft/two_bit_ffft.ipynb
@@ -88,3 +91,5 @@ Bloqs Library
     multiplexers/select_pauli_lcu.ipynb
     state_preparation/state_preparation_alias_sampling.ipynb
     state_preparation/state_preparation_via_rotation.ipynb
+    qsp/generalized_qsp.ipynb
+    hamiltonian_simulation/hamiltonian_simulation_by_gqsp.ipynb

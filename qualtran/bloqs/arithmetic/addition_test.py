@@ -29,6 +29,7 @@ from qualtran.bloqs.arithmetic.addition import (
 )
 from qualtran.bloqs.arithmetic.comparison_test import identity_map
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
+from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import (
     assert_circuit_inp_out_cirqsim,
     assert_decompose_is_consistent_with_t_complexity,
@@ -44,7 +45,7 @@ from qualtran.simulation.classical_sim import (
 @pytest.mark.parametrize('a,b,num_bits', itertools.product(range(4), range(4), range(3, 5)))
 def test_add_decomposition(a: int, b: int, num_bits: int):
     num_anc = num_bits - 1
-    gate = Add(dtype=QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     op = gate.on_registers(a=qubits[:num_bits], b=qubits[num_bits:])
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
@@ -67,10 +68,39 @@ def test_add_decomposition(a: int, b: int, num_bits: int):
     assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
 
 
+@pytest.mark.parametrize('a', [1, 2])
+@pytest.mark.parametrize('b', [1, 2, 3])
+@pytest.mark.parametrize('num_bits_a', [2, 3])
+@pytest.mark.parametrize('num_bits_b', [4, 5])
+def test_add_diff_size_registers(a, b, num_bits_a, num_bits_b):
+    num_anc = num_bits_b - 1
+    gate = Add(QUInt(num_bits_a), QUInt(num_bits_b))
+    qubits = cirq.LineQubit.range(num_bits_a + num_bits_b)
+    op = gate.on_registers(a=qubits[:num_bits_a], b=qubits[num_bits_a:])
+    greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+    context = cirq.DecompositionContext(greedy_mm)
+    circuit = cirq.Circuit(cirq.decompose_once(op, context=context))
+    circuit0 = cirq.Circuit(op)
+    ancillas = sorted(circuit.all_qubits())[-num_anc:]
+    initial_state = [0] * (num_bits_a + num_bits_b + num_anc)
+    initial_state[:num_bits_a] = list(iter_bits(a, num_bits_a))
+    initial_state[num_bits_a : num_bits_a + num_bits_b] = list(iter_bits(b, num_bits_b))
+    final_state = [0] * (num_bits_a + num_bits_b + num_anc)
+    final_state[:num_bits_a] = list(iter_bits(a, num_bits_a))
+    final_state[num_bits_a : num_bits_a + num_bits_b] = list(iter_bits(a + b, num_bits_b))
+    assert_circuit_inp_out_cirqsim(circuit, qubits + ancillas, initial_state, final_state)
+    assert_circuit_inp_out_cirqsim(
+        circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
+    )
+    # Test diagrams
+    expected_wire_symbols = ("In(x)",) * num_bits_a + ("In(y)/Out(x+y)",) * num_bits_b
+    assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
+
+
 def test_add_truncated():
     num_bits = 3
     num_anc = num_bits - 1
-    gate = Add(dtype=QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     circuit = cirq.Circuit(cirq.decompose_once(gate.on(*qubits)))
     ancillas = sorted(circuit.all_qubits() - frozenset(qubits))
@@ -85,7 +115,7 @@ def test_add_truncated():
     # increasing number of bits yields correct value
     num_bits = 4
     num_anc = num_bits - 1
-    gate = Add(dtype=QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     context = cirq.DecompositionContext(greedy_mm)
@@ -100,7 +130,7 @@ def test_add_truncated():
 
     num_bits = 3
     num_anc = num_bits - 1
-    gate = Add(dtype=QUInt(num_bits))
+    gate = Add(QUInt(num_bits))
     qubits = cirq.LineQubit.range(2 * num_bits)
     greedy_mm = cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
     context = cirq.DecompositionContext(greedy_mm)
@@ -134,12 +164,20 @@ def test_subtract(a, b, num_bits):
     assert_circuit_inp_out_cirqsim(circuit, all_qubits, initial_state, final_state)
 
 
+def add_reference_t_complexity(b: Add):
+    n = b.dtype.bitsize
+    num_clifford = (n - 2) * 19 + 16
+    num_toffoli = n - 1
+    return TComplexity(t=4 * num_toffoli, clifford=num_clifford)
+
+
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_counts(n: int):
     add = Add(QUInt(n))
     qlt_testing.assert_valid_bloq_decomposition(add)
     assert add.t_complexity() == add.decompose_bloq().t_complexity()
-    assert add.bloq_counts() == add.decompose_bloq().bloq_counts(generalizer=ignore_split_join)
+    assert add.t_complexity() == add_reference_t_complexity(add)
+    qlt_testing.assert_equivalent_bloq_counts(add, ignore_split_join)
 
 
 @pytest.mark.parametrize('a,b', itertools.product(range(2**3), repeat=2))
@@ -193,7 +231,7 @@ a  b  |  a  b
     )
 
 
-def test_add():
+def test_add_in_cbloq():
     bb = BloqBuilder()
     bitsize = 4
     q0 = bb.add_register('a', bitsize)
@@ -234,7 +272,8 @@ def test_add_mod_n(bitsize, mod, add_val, cvs):
     op = gate.on_registers(**get_named_qubits(gate.signature))
     circuit = cirq.Circuit(op)
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
-    circuit += op**-1
+    # Missing cirq stubs
+    circuit += op**-1  # type: ignore[operator]
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(gate.num_qubits()), circuit)
 
 
@@ -249,6 +288,17 @@ def test_add_mod_n_protocols():
     assert hash(add_one) != hash(add_two)
     assert add_two.cvs == (1, 0)
     assert cirq.circuit_diagram_info(add_two).wire_symbols == ('@', '@(0)') + ('Add_2_Mod_5',) * 3
+
+
+def add_constant_mod_n_ref_t_complexity_(b: AddConstantMod) -> TComplexity:
+    # Rough cost as given in https://arxiv.org/abs/1905.09749
+    return 5 * Add(QUInt(b.bitsize)).t_complexity()
+
+
+@pytest.mark.parametrize('bitsize', [3, 9])
+def test_add_mod_n_gate_counts(bitsize):
+    bloq = AddConstantMod(bitsize, mod=8, add_val=2, cvs=[0, 1])
+    assert bloq.t_complexity() == add_constant_mod_n_ref_t_complexity_(bloq)
 
 
 def test_out_of_place_adder():

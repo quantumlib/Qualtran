@@ -34,13 +34,16 @@ from .data_types import (
 def test_qint():
     qint_8 = QInt(8)
     assert qint_8.num_qubits == 8
+    assert str(qint_8) == 'QInt(8)'
     n = sympy.symbols('x')
     qint_8 = QInt(n)
     assert qint_8.num_qubits == n
+    assert str(qint_8) == 'QInt(x)'
 
 
 def test_qint_ones():
     qint_8 = QIntOnesComp(8)
+    assert str(qint_8) == 'QIntOnesComp(8)'
     assert qint_8.num_qubits == 8
     with pytest.raises(ValueError, match="num_qubits must be > 1."):
         QIntOnesComp(1)
@@ -51,6 +54,8 @@ def test_qint_ones():
 
 def test_quint():
     qint_8 = QUInt(8)
+    assert str(qint_8) == 'QUInt(8)'
+
     assert qint_8.num_qubits == 8
     # works
     QUInt(1)
@@ -61,6 +66,8 @@ def test_quint():
 
 def test_bounded_quint():
     qint_3 = BoundedQUInt(2, 3)
+    assert str(qint_3) == 'BoundedQUInt(2, 3)'
+
     assert qint_3.bitsize == 2
     assert qint_3.iteration_length == 3
     with pytest.raises(ValueError, match="BoundedQUInt iteration length.*"):
@@ -74,10 +81,12 @@ def test_bounded_quint():
 
 def test_qfxp():
     qfp_16 = QFxp(16, 15)
+    assert str(qfp_16) == 'QFxp(16, 15)'
     assert qfp_16.num_qubits == 16
     assert qfp_16.num_int == 1
     assert qfp_16.fxp_dtype_str == 'fxp-u16/15'
     qfp_16 = QFxp(16, 15, signed=True)
+    assert str(qfp_16) == 'QFxp(16, 15, True)'
     assert qfp_16.num_qubits == 16
     assert qfp_16.num_int == 0
     assert qfp_16.fxp_dtype_str == 'fxp-s16/15'
@@ -100,6 +109,7 @@ def test_qfxp():
 
 def test_qmontgomeryuint():
     qmontgomeryuint_8 = QMontgomeryUInt(8)
+    assert str(qmontgomeryuint_8) == 'QMontgomeryUInt(8)'
     assert qmontgomeryuint_8.num_qubits == 8
     # works
     QMontgomeryUInt(1)
@@ -125,7 +135,7 @@ def test_validation_errs():
         QBit().assert_valid_classical_val(-1)
 
     with pytest.raises(ValueError):
-        QBit().assert_valid_classical_val('|0>')
+        QBit().assert_valid_classical_val('|0>')  # type: ignore[arg-type]
 
     with pytest.raises(ValueError):
         QUInt(3).assert_valid_classical_val(8)
@@ -201,6 +211,7 @@ def test_type_errors_matrix(qdtype_a, qdtype_b):
 
 
 def test_single_qubit_consistency():
+    assert str(QBit()) == 'QBit()'
     assert check_dtypes_consistent(QBit(), QBit())
     assert check_dtypes_consistent(QBit(), QInt(1))
     assert check_dtypes_consistent(QInt(1), QBit())

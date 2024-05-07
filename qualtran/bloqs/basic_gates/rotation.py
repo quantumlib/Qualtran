@@ -11,19 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 from functools import cached_property
-from typing import Protocol
+from typing import Protocol, runtime_checkable, Union
 
+import attrs
 import cirq
 import numpy as np
+import sympy
 from attrs import frozen
 
 from qualtran import bloq_example, BloqDocSpec, CompositeBloq, DecomposeTypeError
 from qualtran.cirq_interop import CirqGateAsBloqBase
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
+@runtime_checkable
 class _HasEps(Protocol):
     """Protocol for typing `RotationBloq` base class mixin that has accuracy specified as eps."""
 
@@ -72,7 +75,7 @@ class ZPowGate(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    exponent: float = 1.0
+    exponent: SymbolicFloat = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
 
@@ -86,6 +89,9 @@ class ZPowGate(CirqGateAsBloqBase):
     def __pow__(self, power):
         g = self.cirq_gate**power
         return ZPowGate(g.exponent, g.global_shift, self.eps)
+
+    def adjoint(self) -> 'ZPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
 
 
 @bloq_example
@@ -118,6 +124,9 @@ class CZPowGate(CirqGateAsBloqBase):
     def __pow__(self, power):
         g = self.cirq_gate**power
         return CZPowGate(g.exponent, g.global_shift, self.eps)
+
+    def adjoint(self) -> 'CZPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
 
 
 @frozen
@@ -161,7 +170,7 @@ class XPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
-    exponent: float = 1.0
+    exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
 
@@ -171,6 +180,9 @@ class XPowGate(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.XPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def adjoint(self) -> 'XPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
 
 
 @bloq_example
@@ -223,7 +235,7 @@ class YPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
-    exponent: float = 1.0
+    exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
 
@@ -233,6 +245,9 @@ class YPowGate(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.YPowGate(exponent=self.exponent, global_shift=self.global_shift)
+
+    def adjoint(self) -> 'YPowGate':
+        return attrs.evolve(self, exponent=-self.exponent)
 
 
 @bloq_example
@@ -263,8 +278,8 @@ class Rz(CirqGateAsBloqBase):
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
 
-    angle: float
-    eps: float = 1e-11
+    angle: Union[sympy.Expr, float]
+    eps: Union[sympy.Expr, float] = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")
@@ -273,10 +288,13 @@ class Rz(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rz(self.angle)
 
+    def adjoint(self) -> 'Rz':
+        return attrs.evolve(self, angle=-self.angle)
+
 
 @frozen
 class Rx(CirqGateAsBloqBase):
-    angle: float
+    angle: Union[sympy.Expr, float]
     eps: float = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
@@ -286,10 +304,13 @@ class Rx(CirqGateAsBloqBase):
     def cirq_gate(self) -> cirq.Gate:
         return cirq.rx(self.angle)
 
+    def adjoint(self) -> 'Rx':
+        return attrs.evolve(self, angle=-self.angle)
+
 
 @frozen
 class Ry(CirqGateAsBloqBase):
-    angle: float
+    angle: Union[sympy.Expr, float]
     eps: float = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
@@ -298,6 +319,9 @@ class Ry(CirqGateAsBloqBase):
     @cached_property
     def cirq_gate(self) -> cirq.Gate:
         return cirq.ry(self.angle)
+
+    def adjoint(self) -> 'Ry':
+        return attrs.evolve(self, angle=-self.angle)
 
 
 @bloq_example

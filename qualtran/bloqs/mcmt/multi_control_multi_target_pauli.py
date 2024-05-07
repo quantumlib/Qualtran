@@ -30,13 +30,18 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
-from qualtran.bloqs.mcmt.and_bloq import MultiAnd
+from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
+    import quimb.tensor as qtn
+
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+    from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
@@ -51,7 +56,7 @@ class MultiTargetCNOT(GateWithRegisters):
         Appendix B.1.
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> Signature:
@@ -61,10 +66,10 @@ class MultiTargetCNOT(GateWithRegisters):
         self,
         *,
         context: cirq.DecompositionContext,
-        control: NDArray[cirq.Qid],
-        targets: NDArray[cirq.Qid],
+        control: NDArray[cirq.Qid],  # type: ignore[type-var]
+        targets: NDArray[cirq.Qid],  # type: ignore[type-var]
     ):
-        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:
+        def cnots_for_depth_i(i: int, q: NDArray[cirq.Qid]) -> cirq.OP_TREE:  # type: ignore[type-var]
             for c, t in zip(q[: 2**i], q[2**i : min(len(q), 2 ** (i + 1))]):
                 yield cirq.CNOT(c, t)
 
@@ -76,6 +81,8 @@ class MultiTargetCNOT(GateWithRegisters):
             yield cirq.Moment(cnots_for_depth_i(i, targets))
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         return cirq.CircuitDiagramInfo(wire_symbols=["@"] + ["X"] * self.bitsize)
 
 
@@ -101,10 +108,15 @@ _C_MULTI_NOT_DOC = BloqDocSpec(
 
 @frozen
 class MultiControlPauli(GateWithRegisters):
-    """Implements multi-control, single-target C^{n}P gate.
+    r"""Implements multi-control, single-target C^{n}P gate.
 
     Implements $C^{n}P = (1 - |1^{n}><1^{n}|) I + |1^{n}><1^{n}| P^{n}$ using $n-1$
-    clean ancillas using a multi-controlled `AND` gate.
+    clean ancillas using a multi-controlled `AND` gate. Uses the Toffoli ladder
+    construction described in "n−2 Ancilla Bits" section of Ref[1] but uses an
+    $\text{AND} / \text{AND}^\dagger$ ladder instead for computing / uncomputing
+    using clean ancillas instead of the Toffoli ladder. The measurement based
+    uncomputation of $\text{AND}$ does not consume any magic states and thus has
+    better constant factors.
 
     References:
         [Constructing Large Controlled Nots](https://algassert.com/circuits/2015/06/05/Constructing-Large-Controlled-Nots.html)
@@ -123,7 +135,7 @@ class MultiControlPauli(GateWithRegisters):
         self, *, context: cirq.DecompositionContext, **quregs: NDArray['cirq.Qid']
     ) -> cirq.OP_TREE:
         controls, target = quregs.get('controls', np.array([])), quregs['target']
-        if len(self.cvs) <= 2:
+        if len(self.cvs) < 2:
             controls = controls.flatten()
             yield [cirq.X(q) for cv, q in zip(self.cvs, controls) if cv == 0]
             yield self.target_gate.on(*target).controlled_by(*controls)
@@ -131,12 +143,17 @@ class MultiControlPauli(GateWithRegisters):
             return
         qm = context.qubit_manager
         and_ancilla, and_target = np.array(qm.qalloc(len(self.cvs) - 2)), qm.qalloc(1)
-        and_op = MultiAnd(self.cvs).on_registers(
-            ctrl=controls, junk=and_ancilla[:, np.newaxis], target=and_target
-        )
+        if len(self.cvs) == 2:
+            and_op = And(*self.cvs).on(*controls.flatten(), *and_target)
+            and_op_inv = And(*self.cvs).adjoint()(*controls.flatten(), *and_target)
+        else:
+            and_op = MultiAnd(self.cvs).on_registers(
+                ctrl=controls, junk=and_ancilla[:, np.newaxis], target=and_target
+            )
+            and_op_inv = and_op**-1  # type: ignore[operator]
         yield and_op
         yield self.target_gate.on(*target).controlled_by(*and_target)
-        yield and_op**-1
+        yield and_op_inv
         qm.qfree([*and_ancilla, *and_target])
 
     def short_name(self) -> str:
@@ -150,11 +167,11 @@ class MultiControlPauli(GateWithRegisters):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
-        controls, target = vals.get('controls', np.array([])), vals.get('target')
+        controls, target = vals.get('controls', np.array([])), vals.get('target', 0)
         if self.target_gate not in (cirq.X, XGate()):
             raise NotImplementedError(f"{self} is not classically simulatable.")
 
-        if (self.cvs == controls).all():
+        if np.all(self.cvs == controls):
             target = (target + 1) % 2
 
         return {'controls': controls, 'target': target}
@@ -163,10 +180,11 @@ class MultiControlPauli(GateWithRegisters):
         from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
 
         n = len(self.cvs)
-        if n > 2:
+        if n >= 2:
+            and_gate = And(self.cvs[0], self.cvs[1]) if n == 2 else MultiAnd(self.cvs)
             return {
-                (MultiAnd(self.cvs), 1),
-                (MultiAnd(self.cvs).adjoint(), 1),
+                (and_gate, 1),
+                (and_gate.adjoint(), 1),
                 (_cirq_gate_to_bloq(self.target_gate.controlled(1)), 1),
             }
         n_pre_post_x = 2 * (len(self.cvs) - sum(self.cvs))
@@ -238,13 +256,13 @@ class MultiControlX(Bloq):
     def on_classical_vals(
         self, ctrls: 'ClassicalValT', x: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        if (self.cvs == ctrls).all():
+        if np.all(self.cvs == ctrls):
             x = (x + 1) % 2
 
         return {'ctrls': ctrls, 'x': x}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrls: SoquetT, x: SoquetT
+        self, bb: 'BloqBuilder', ctrls: NDArray[Soquet], x: SoquetT  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         # n = number of controls in the bloq.
         n = len(self.cvs)

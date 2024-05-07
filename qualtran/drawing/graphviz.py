@@ -26,6 +26,7 @@ from qualtran import (
     Connection,
     DanglingT,
     LeftDangle,
+    QBit,
     QDType,
     Register,
     RightDangle,
@@ -207,11 +208,11 @@ class GraphDrawer:
 
         if rowspan != 1:
             assert rowspan > 1
-            rowspan = f'rowspan="{rowspan}"'
+            rowspan_html = f'rowspan="{rowspan}"'
         else:
-            rowspan = ''
+            rowspan_html = ''
 
-        return f'<TD {rowspan} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
+        return f'<TD {rowspan_html} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
 
     def _get_register_tr(
         self,
@@ -405,8 +406,7 @@ class PrettyGraphDrawer(GraphDrawer):
 class TypedGraphDrawer(PrettyGraphDrawer):
     @staticmethod
     def _fmt_dtype(dtype: QDType):
-        label = f'{dtype.__class__.__name__}({dtype.num_qubits})'
-        return label
+        return str(dtype)
 
     def cxn_label(self, cxn: Connection) -> str:
         """Overridable method to return labels for connections."""
@@ -414,6 +414,8 @@ class TypedGraphDrawer(PrettyGraphDrawer):
         l, r = cxn.left.reg.dtype, cxn.right.reg.dtype
         if l == r:
             return self._fmt_dtype(l)
+        elif l.num_qubits == 1:
+            return self._fmt_dtype(l if isinstance(l, QBit) else r)
         else:
             return f'{self._fmt_dtype(l)}-{self._fmt_dtype(r)}'
 
