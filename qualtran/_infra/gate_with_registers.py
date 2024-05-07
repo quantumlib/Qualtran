@@ -557,7 +557,7 @@ class SpecializedSingleQubitControlledGate(GateWithRegisters):
     Example usage:
 
         @attrs.frozen
-        class MyGate(SpecializedSingleQubitControlledMixin, GateWithRegisters):
+        class MyGate(SpecializedSingleQubitControlledGate, GateWithRegisters):
             control_val: Optional[int] = None
 
             @property
