@@ -603,6 +603,4 @@ class SpecializedSingleQubitControlledGate(GateWithRegisters):
 
             return cbloq, adder
 
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with {ctrl_spec=}.'
-        )
+        return super().get_ctrl_system(ctrl_spec)
