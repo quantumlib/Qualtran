@@ -22,7 +22,7 @@ import cirq
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Soquet
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
@@ -195,8 +195,8 @@ class QROM(UnaryIterationGate):
             selections = {'selection': idx}
         else:
             # Multidimensional
-            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))
-            selections = {f'selection{i}': idx[i] for i in range(n_dim)}
+            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))  # type: ignore[assignment]
+            selections = {f'selection{i}': idx[i] for i in range(n_dim)}  # type: ignore[index]
 
         # Retrieve the data; bitwise add them in to the input target values
         targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}
@@ -210,8 +210,8 @@ class QROM(UnaryIterationGate):
             wire_symbols += [f"QROM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        name = soq.reg.name
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        name = reg.name
         if name == 'selection':
             return TextBox('In')
         elif 'selection' in name:

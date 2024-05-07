@@ -14,6 +14,7 @@
 
 """Functionality for the `Bloq.call_graph()` protocol."""
 
+import collections.abc as abc
 from collections import defaultdict
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
@@ -77,16 +78,18 @@ def _generalize_callees(
     """
     callee_counts: List[BloqCountT] = []
     for callee, n in raw_callee_counts:
-        callee = generalizer(callee)
-        if callee is None:
+        generalized_callee = generalizer(callee)
+        if generalized_callee is None:
             # Signifies that this callee should be ignored.
             continue
-        callee_counts.append((callee, n))
+        callee_counts.append((generalized_callee, n))
     return callee_counts
 
 
 def get_bloq_callee_counts(
-    bloq: 'Bloq', generalizer: 'GeneralizerT' = None, ssa: SympySymbolAllocator = None
+    bloq: 'Bloq',
+    generalizer: Optional['GeneralizerT'] = None,
+    ssa: Optional[SympySymbolAllocator] = None,
 ) -> List[BloqCountT]:
     """Get the direct callees of a bloq and the number of times they are called.
 
@@ -228,7 +231,7 @@ def get_bloq_call_graph(
         keep = lambda b: False
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, (list, tuple)):
+    if isinstance(generalizer, abc.Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     g = nx.DiGraph()

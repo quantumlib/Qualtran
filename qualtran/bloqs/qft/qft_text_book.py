@@ -48,7 +48,7 @@ class QFTTextBook(GateWithRegisters):
     ) -> cirq.OP_TREE:
         yield cirq.H(q[0])
         for i in range(1, len(q)):
-            yield PhaseGradientUnitary(i, exponent=0.5, controlled=True).on_registers(
+            yield PhaseGradientUnitary(i, exponent=0.5, is_controlled=True).on_registers(
                 ctrl=q[i], phase_grad=q[:i][::-1]
             )
             yield cirq.H(q[i])

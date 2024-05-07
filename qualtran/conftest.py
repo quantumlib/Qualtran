@@ -94,6 +94,17 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
 
+    if bloq_ex.name in [
+        'ecc',
+        'ec_pe',
+        'ec_pe_small',
+        'ec_add_r',
+        'ec_add_r_small',
+        'ec_window_add',
+        'ec_add',
+    ]:
+        pytest.xfail("Skipping serialization test for bloqs that use ECPoint.")
+
     try:
         qlt_testing.assert_bloq_example_serializes(bloq_ex)
     except qlt_testing.BloqCheckException as bce:

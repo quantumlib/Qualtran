@@ -123,7 +123,7 @@ def acos(x: SymbolicFloat) -> SymbolicFloat:
 
 def sconj(x: SymbolicComplex) -> SymbolicComplex:
     """Compute the complex conjugate."""
-    return sympy.conjugate(x) if is_symbolic(x) else np.conjugate(x)
+    return sympy.conjugate(x) if isinstance(x, sympy.Expr) else np.conjugate(x)
 
 
 def slen(x: Union[Sized, Shaped]) -> SymbolicInt:

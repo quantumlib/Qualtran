@@ -157,14 +157,14 @@ class MultiplexedCSwap3D(Bloq):
         )
         return merged_qubits.reshape(out_shape)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'sel':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'sel':
             return TextBox('In')
-        elif soq.reg.name == 'targets':
+        elif reg.name == 'targets':
             return TextBox('×(x)')
-        elif soq.reg.name == 'junk':
+        elif reg.name == 'junk':
             return TextBox('×(y)')
-        raise ValueError(f'Unknown name: {soq.reg.name}')
+        raise ValueError(f'Unknown name: {reg.name}')
 
     def short_name(self) -> str:
         return 'MultiSwap'
