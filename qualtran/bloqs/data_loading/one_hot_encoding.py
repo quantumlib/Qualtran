@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import itertools
+import math
+from typing import Any, Dict
+
 import attrs
 import cirq
-from attr import field
 from numpy._typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Signature
@@ -39,7 +42,7 @@ class OneHotEncoding(GateWithRegisters):
     @property
     def signature(self) -> 'Signature':
         return Signature.build_from_dtypes(
-            a=QUInt(self.binary_bitsize), b=QAny(2 ** self.binary_bitsize)
+            a=QUInt(self.binary_bitsize), b=QAny(2**self.binary_bitsize)
         )
 
     def decompose_from_registers(
