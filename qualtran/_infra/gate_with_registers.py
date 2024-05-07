@@ -357,7 +357,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def __pow__(self, power: int) -> 'Bloq':
+    def __pow__(self, power: int) -> 'GateWithRegisters':
         bloq = self if power > 0 else self.adjoint()
         if abs(power) == 1:
             return bloq

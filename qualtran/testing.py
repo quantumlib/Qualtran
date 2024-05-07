@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import cast, Dict, List, Optional, Sequence, Tuple, Union
 
 import sympy
 
@@ -34,6 +34,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
+from qualtran.drawing import TextBox
 from qualtran.resource_counting import GeneralizerT
 
 
@@ -239,7 +240,7 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
     for i, r in enumerate(regs):
         # note this will only work if shape = ().
         # See: https://github.com/quantumlib/Qualtran/issues/608
-        ws.append(bloq.wire_symbol(r, (i,)).text)
+        ws.append(cast(TextBox, bloq.wire_symbol(r, (i,))).text)
 
     assert ws == expected_ws
 
