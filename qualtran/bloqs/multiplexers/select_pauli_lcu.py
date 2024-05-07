@@ -15,7 +15,7 @@
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
 from functools import cached_property
-from typing import Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
+from typing import Iterable, Optional, Sequence, Tuple
 
 import attrs
 import cirq
@@ -23,6 +23,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.resource_counting.generalizers import (
@@ -31,9 +32,6 @@ from qualtran.resource_counting.generalizers import (
     ignore_split_join,
 )
 
-if TYPE_CHECKING:
-    from qualtran import AddControlledT, Bloq, BloqBuilder, CtrlSpec, SoquetT
-
 
 def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliString]:
     """mypy-compatible attrs converter for SelectPauliLCU.select_unitaries"""
@@ -41,7 +39,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SelectOracle, UnaryIterationGate):
+class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIterationGate):
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$
@@ -119,13 +117,6 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
         """
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
-
-        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

@@ -21,7 +21,11 @@ import pytest
 from attrs import frozen
 
 from qualtran import BoundedQUInt, QAny, QBit, Register
-from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran._infra.gate_with_registers import (
+    get_named_qubits,
+    SpecializedSingleQubitControlledGate,
+    total_bits,
+)
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
@@ -51,7 +55,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
 
 @frozen
-class BernoulliEncoder(SelectOracle):
+class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
@@ -85,13 +89,6 @@ class BernoulliEncoder(SelectOracle):
                 )  # pragma: no cover
             if y1:
                 yield cirq.X(tq).controlled_by(*q, control_values=[1] * self.selection_bitsize)
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
-
-        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
     @cached_property
     def mu(self) -> float:

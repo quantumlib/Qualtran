@@ -21,13 +21,17 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import merge_qubits, total_bits
+from qualtran._infra.gate_with_registers import (
+    merge_qubits,
+    SpecializedSingleQubitControlledGate,
+    total_bits,
+)
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(GateWithRegisters):
+class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate, GateWithRegisters):
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s><s|)$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$
@@ -122,10 +126,3 @@ class ReflectionUsingPrepare(GateWithRegisters):
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['R_L'] * total_bits(self.selection_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
-
-        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)

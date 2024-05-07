@@ -13,23 +13,14 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Optional, Tuple
 
 import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import (
-    AddControlledT,
-    Bloq,
-    BloqBuilder,
-    CtrlSpec,
-    GateWithRegisters,
-    Register,
-    Signature,
-    SoquetT,
-)
-from qualtran._infra.gate_with_registers import total_bits
+from qualtran import CtrlSpec, GateWithRegisters, Register, Signature
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
@@ -72,7 +63,7 @@ class CodeForRandomVariable:
 
 
 @attrs.frozen
-class MeanEstimationOperator(GateWithRegisters):
+class MeanEstimationOperator(SpecializedSingleQubitControlledGate, GateWithRegisters):
     r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544.
 
     The MeanEstimationOperator (aka KO Operator) expects `CodeForRandomVariable` to specify the
@@ -91,12 +82,14 @@ class MeanEstimationOperator(GateWithRegisters):
     """
 
     code: CodeForRandomVariable
-    cv: Optional[int] = None
+    control_val: Optional[int] = None
     arctan_bitsize: int = 32
 
     @cached_property
     def reflect(self) -> ReflectionUsingPrepare:
-        return ReflectionUsingPrepare(self.code.synthesizer, global_phase=-1, control_val=self.cv)
+        return ReflectionUsingPrepare(
+            self.code.synthesizer, global_phase=-1, control_val=self.control_val
+        )
 
     @cached_property
     def select(self) -> ComplexPhaseOracle:
@@ -125,36 +118,15 @@ class MeanEstimationOperator(GateWithRegisters):
         yield self.select.on_registers(**select_reg)
         yield self.reflect.on_registers(**reflect_reg)
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
-
-        if self.cv is None and ctrl_spec.shapes in [((),), ((1,),)]:
-            c_encoder = self.code.encoder.controlled(ctrl_spec)
-            assert isinstance(c_encoder, SelectOracle)
-            c_code = attrs.evolve(self.code, encoder=c_encoder)
-            cbloq = attrs.evolve(self, code=c_code, cv=(int(ctrl_spec.cvs[0].item())))
-            (ctrl_reg,) = cbloq.control_registers
-
-            def adder(
-                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
-                soqs = bb.add_d(cbloq, **soqs)
-                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
-                return ctrl_soqs, soqs.values()
-
-            return cbloq, adder
-
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with {ctrl_spec=}.'
-        )
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'MeanEstimationOperator':
+        c_encoder = self.code.encoder.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        assert isinstance(c_encoder, SelectOracle)
+        c_code = attrs.evolve(self.code, encoder=c_encoder)
+        return attrs.evolve(self, code=c_code, control_val=control_val)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = []
-        if self.cv is not None:
-            wire_symbols.append("@" if self.cv == 1 else "(0)")
+        if self.control_val is not None:
+            wire_symbols.append("@" if self.control_val == 1 else "(0)")
         wire_symbols += ['U_ko'] * (total_bits(self.signature) - total_bits(self.control_registers))
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

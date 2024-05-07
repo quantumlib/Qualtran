@@ -20,6 +20,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
@@ -81,7 +82,7 @@ class TestPrepareOracle(PrepareOracle):
 
 
 @frozen
-class TestPauliSelectOracle(SelectOracle):
+class TestPauliSelectOracle(SpecializedSingleQubitControlledGate, SelectOracle):
     r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
 
     Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
@@ -145,13 +146,6 @@ class TestPauliSelectOracle(SelectOracle):
             if self.control_val is not None:
                 op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
             yield op
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
-
-        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
 
 def random_qubitization_walk_operator(

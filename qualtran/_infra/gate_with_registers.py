@@ -39,7 +39,7 @@ from qualtran._infra.registers import Register, Side
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import CtrlSpec, SoquetT
+    from qualtran import AddControlledT, BloqBuilder, CtrlSpec, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
 
@@ -547,49 +547,62 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
 
-def get_ctrl_system_for_single_qubit_controlled(
-    bloq: GateWithRegisters, ctrl_spec: Optional['CtrlSpec'] = None
-) -> Tuple['Bloq', 'AddControlledT']:
-    """Wrapper to correctly wire a custom implementation of a single-qubit controlled version of a gate.
+class SpecializedSingleQubitControlledGate(GateWithRegisters):
+    """Add a specialized single-qubit controlled version of a Bloq.
 
-    For any gate that supports a single-qubit controlled version
-    with an API that has `control_val` and `control_registers`.
-    Add the `get_ctrl_system` implementation as shown below:
+    `control_val` is an optional single-bit control. When `control_val` is provided,
+     the `control_registers` property should return a single named qubit register,
+     and otherwise return an empty tuple.
 
-    .. code:: python
+    Example usage:
 
-        class MyGate(GateWithRegisters):
-            control_val: Optional[int]
+        @attrs.frozen
+        class MyGate(SpecializedSingleQubitControlledMixin, GateWithRegisters):
+            control_val: Optional[int] = None
 
             @property
             def control_registers() -> Tuple[Register, ...]:
-                ...
-
-            def get_ctrl_system(
-                self, ctrl_spec: Optional['CtrlSpec'] = None
-            ) -> Tuple['Bloq', 'AddControlledT']:
-                from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
-
-                return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
+                return () if self.control_val is None else (Register('control', QBit()),)
     """
-    if ctrl_spec is None:
-        ctrl_spec = CtrlSpec()
 
-    assert hasattr(bloq, 'control_val')
-    assert hasattr(bloq, 'control_registers')
+    control_val: Optional[int]
 
-    if bloq.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
-        cbloq = attrs.evolve(bloq, control_val=int(ctrl_spec.cvs[0].item()))
-        (ctrl_reg,) = cbloq.control_registers
+    @property
+    @abc.abstractmethod
+    def control_registers(self) -> Tuple[Register, ...]:
+        ...
 
-        def adder(
-            bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-        ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-            soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
-            soqs = bb.add_d(cbloq, **soqs)
-            ctrl_soqs = [soqs.pop(ctrl_reg.name)]
-            return ctrl_soqs, soqs.values()
+    def get_single_qubit_controlled_bloq(
+        self, control_val: int
+    ) -> 'SpecializedSingleQubitControlledGate':
+        """Override this to provide a custom controlled bloq"""
+        return attrs.evolve(self, control_val=control_val)
 
-        return cbloq, adder
+    def get_ctrl_system(
+        self, ctrl_spec: Optional['CtrlSpec'] = None
+    ) -> Tuple['Bloq', 'AddControlledT']:
+        if ctrl_spec is None:
+            ctrl_spec = CtrlSpec()
 
-    raise NotImplementedError(f'Cannot create a controlled version of {bloq} with {ctrl_spec=}.')
+        if self.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
+            control_val = int(ctrl_spec.cvs[0].item())
+            cbloq = self.get_single_qubit_controlled_bloq(control_val)
+
+            if not hasattr(cbloq, 'control_registers'):
+                raise TypeError("{cbloq} should have attribute `control_registers`")
+
+            (ctrl_reg,) = cbloq.control_registers
+
+            def adder(
+                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
+            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
+                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
+                soqs = bb.add_d(cbloq, **soqs)
+                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
+                return ctrl_soqs, soqs.values()
+
+            return cbloq, adder
+
+        raise NotImplementedError(
+            f'Cannot create a controlled version of {self} with {ctrl_spec=}.'
+        )

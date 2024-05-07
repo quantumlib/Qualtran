@@ -55,7 +55,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import total_bits
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.arithmetic import AddConstantMod
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
@@ -72,7 +72,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen
-class SelectHubbard(SelectOracle):
+class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
     In contrast to the arbitrary chemistry Hamiltonian, we:
@@ -218,13 +218,6 @@ class SelectHubbard(SelectOracle):
         ).on_registers(
             q_x=q_x, q_y=q_y, control=[*V, *control], target=target_qubits_for_apply_to_lth_gate
         )
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
-
-        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         info = super(SelectHubbard, self)._circuit_diagram_info_(args)

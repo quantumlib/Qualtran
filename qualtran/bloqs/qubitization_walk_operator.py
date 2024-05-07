@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Optional, Tuple
 
 import attrs
 import cirq
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, CtrlSpec, GateWithRegisters, Register, Signature
-from qualtran._infra.gate_with_registers import total_bits
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.resource_counting.generalizers import (
@@ -32,7 +32,7 @@ from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
-class QubitizationWalkOperator(GateWithRegisters):
+class QubitizationWalkOperator(SpecializedSingleQubitControlledGate, GateWithRegisters):
     r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
     For a Hamiltonian $H = \sum_l w_l H_l$ (s.t. $w_l > 0$ and $H_l$ are unitaries),
@@ -107,31 +107,11 @@ class QubitizationWalkOperator(GateWithRegisters):
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
         yield self.reflect.on_registers(**reflect_reg)
 
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        if ctrl_spec is None:
-            ctrl_spec = CtrlSpec()
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'QubitizationWalkOperator':
+        assert self.control_val is None
 
-        if self.control_val is None and ctrl_spec.shapes in [((),), ((1,),)]:
-            c_select = self.select.controlled(ctrl_spec)
-            assert isinstance(c_select, SelectOracle)
-            cbloq = attrs.evolve(self, select=c_select, control_val=(int(ctrl_spec.cvs[0].item())))
-            (ctrl_reg,) = cbloq.control_registers
-
-            def adder(
-                bb: 'BloqBuilder', ctrl_soqs: Sequence['SoquetT'], in_soqs: dict[str, 'SoquetT']
-            ) -> tuple[Iterable['SoquetT'], Iterable['SoquetT']]:
-                soqs = {ctrl_reg.name: ctrl_soqs[0]} | in_soqs
-                soqs = bb.add_d(cbloq, **soqs)
-                ctrl_soqs = [soqs.pop(ctrl_reg.name)]
-                return ctrl_soqs, soqs.values()
-
-            return cbloq, adder
-
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with {ctrl_spec=}.'
-        )
+        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        return attrs.evolve(self, select=c_select, control_val=control_val)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
