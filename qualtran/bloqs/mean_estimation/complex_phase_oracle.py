@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple
+from typing import Iterator, Tuple
 
 import attrs
 import cirq
@@ -56,7 +56,7 @@ class ComplexPhaseOracle(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         qm = context.qubit_manager
         target_reg = {
             reg.name: qm.qalloc(reg.total_bits()) for reg in self.encoder.target_registers

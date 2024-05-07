@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import Iterator, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -44,7 +44,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         theta = np.arccos(np.sqrt(1 - self.p))
         yield cirq.ry(2 * theta).on(q[0])
         yield [cirq.CNOT(q[0], q[i]) for i in range(1, len(q))]
@@ -74,7 +74,7 @@ class BernoulliEncoder(SelectOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         y0_bin = bit_tools.iter_bits(self.y[0], self.target_bitsize)
         y1_bin = bit_tools.iter_bits(self.y[1], self.target_bitsize)
 
@@ -188,7 +188,7 @@ class GroverSynthesizer(PrepareOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, *, context, selection: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         yield cirq.H.on_each(*selection)
 
     def __pow__(self, power):
@@ -219,7 +219,7 @@ class GroverEncoder(SelectOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, *, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         selection_cv = [
             *bit_tools.iter_bits(self.marked_item, total_bits(self.selection_registers))
         ]

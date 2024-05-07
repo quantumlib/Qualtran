@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Iterator
+
 import attrs
 import cirq
 import numpy as np
 import pytest
 from fxpmath import Fxp
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
@@ -51,7 +53,7 @@ class TestQvrPhaseGradient(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         x = quregs[self.cost_reg.name]
         phase_grad = context.qubit_manager.qalloc(int(self.qvr.b_grad))
         yield cirq.H.on_each(*phase_grad)
