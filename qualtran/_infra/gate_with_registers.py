@@ -33,7 +33,6 @@ from numpy.typing import NDArray
 
 from qualtran._infra.bloq import Bloq, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import CompositeBloq
-from qualtran._infra.quantum_graph import Soquet
 from qualtran._infra.registers import Register, Side
 
 if TYPE_CHECKING:
@@ -309,10 +308,10 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         )
         return self.on_registers(**all_quregs), out_quregs
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.cirq_interop._cirq_to_bloq import _wire_symbol_from_gate
 
-        return _wire_symbol_from_gate(self, self.signature, soq)
+        return _wire_symbol_from_gate(self, self.signature, reg, idx)
 
     # Part-2: Cirq-FT style interface can be used to implemented algorithms by Bloq authors.
 
@@ -452,7 +451,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
 
     # pylint: disable=signature-differs
     @overload
-    def controlled(self, ctrl_spec: Optional['CtrlSpec'] = None) -> 'GateWithRegisters':
+    def controlled(self, *, ctrl_spec: Optional['CtrlSpec'] = None) -> 'GateWithRegisters':
         """Bloq-style API to construct a controlled Bloq. See `Bloq.controlled()`."""
 
     def controlled(

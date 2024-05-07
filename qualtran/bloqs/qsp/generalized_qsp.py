@@ -38,7 +38,10 @@ if TYPE_CHECKING:
 
 
 def qsp_complementary_polynomial(
-    P: Sequence[complex], *, verify: bool = False, verify_precision: float = 1e-7
+    P: Union[NDArray[np.number], Sequence[complex]],
+    *,
+    verify: bool = False,
+    verify_precision: float = 1e-7,
 ) -> Sequence[complex]:
     r"""Computes the Q polynomial given P
 
@@ -150,8 +153,8 @@ def qsp_complementary_polynomial(
 
 
 def qsp_phase_factors(
-    P: Sequence[complex], Q: Sequence[complex]
-) -> Tuple[Sequence[float], Sequence[float], float]:
+    P: Union[NDArray[np.number], Sequence[complex]], Q: Union[NDArray[np.number], Sequence[complex]]
+) -> Tuple[NDArray[np.floating], NDArray[np.floating], int]:
     """Computes the QSP signal rotations for a given pair of polynomials.
 
     The QSP transformation is described in Theorem 3, and the algorithm for computing
@@ -202,7 +205,9 @@ def qsp_phase_factors(
     return theta, phi, lambd
 
 
-def _polynomial_max_abs_value_on_unit_circle(P: Sequence[complex], *, n_points=2**17):
+def _polynomial_max_abs_value_on_unit_circle(
+    P: Union[NDArray[np.number], Sequence[complex], Shaped], *, n_points=2**17
+):
     r"""Find the maximum absolute value of $P$ on $N$ uniform points on the complex unit circle.
 
     For a polynomial $P$, this function computes
@@ -244,13 +249,15 @@ def scale_down_to_qsp_polynomial(
         n_points: number of points to sample on the unit circle to evaluate the polynomial
     """
     P = np.asarray(P)
-    max_value = _polynomial_max_abs_value_on_unit_circle(P, n_points=n_points)
+    max_value = _polynomial_max_abs_value_on_unit_circle(list(P), n_points=n_points)
     if max_value > 1:
         P = P / max_value
     return P
 
 
-def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
+def assert_is_qsp_polynomial(
+    P: Union[NDArray[np.number], Sequence[complex], Shaped], *, n_points: int = 2**17
+):
     r"""Check if the given polynomial is a valid QSP polynomial.
 
     $P$ is a QSP polynomial if $|P(e^{i\theta})| \le 1$ for every $\theta \in [0, 2\pi]$.
@@ -261,7 +268,7 @@ def assert_is_qsp_polynomial(P: Sequence[complex], *, n_points: int = 2**17):
     ), f"Not a QSP polynomial! maximum absolute value {max_value} is greater than 1."
 
 
-def _to_tuple(x: Iterable[complex]) -> Union[Tuple[complex, ...], Shaped]:
+def _to_tuple(x: Union[Iterable[complex], Shaped]) -> Union[Tuple[complex, ...], Shaped]:
     """mypy-compatible attrs converter for GeneralizedQSP.P and Q"""
     if isinstance(x, Shaped):
         return x
@@ -351,7 +358,7 @@ class GeneralizedQSP(GateWithRegisters):
         verify: bool = False,
         verify_precision=1e-7,
     ) -> 'GeneralizedQSP':
-        if is_symbolic(P):
+        if isinstance(P, Shaped) or is_symbolic(P):
             return GeneralizedQSP(U, P, P, negative_power=negative_power)
 
         if verify:
@@ -360,15 +367,17 @@ class GeneralizedQSP(GateWithRegisters):
         return GeneralizedQSP(U, P, Q, negative_power=negative_power)
 
     @cached_property
-    def _qsp_phases(self) -> Tuple[Sequence[float], Sequence[float], float]:
+    def _qsp_phases(self) -> Tuple[NDArray[np.floating], NDArray[np.floating], int]:
+        if isinstance(self.P, Shaped) or isinstance(self.Q, Shaped):
+            raise ValueError('Phases not allowed for shaped P and Q')
         return qsp_phase_factors(self.P, self.Q)
 
     @cached_property
-    def _theta(self) -> Sequence[float]:
+    def _theta(self) -> NDArray[np.floating]:
         return self._qsp_phases[0]
 
     @cached_property
-    def _phi(self) -> Sequence[float]:
+    def _phi(self) -> NDArray[np.floating]:
         return self._qsp_phases[1]
 
     @cached_property
@@ -390,6 +399,8 @@ class GeneralizedQSP(GateWithRegisters):
         (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power
+        if not isinstance(num_inverse_applications, int):
+            raise ValueError(f'Symbolic negative power {self.negative_power} not allowed')
 
         yield self.signal_rotations[0].on(signal_qubit)
         for signal_rotation in self.signal_rotations[1:]:
@@ -409,7 +420,7 @@ class GeneralizedQSP(GateWithRegisters):
         return is_symbolic(self.P, self.Q, self.negative_power)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.is_symbolic():
+        if isinstance(self.P, Shaped) or self.is_symbolic():
             degree = slen(self.P) - 1
 
             return {
@@ -421,14 +432,14 @@ class GeneralizedQSP(GateWithRegisters):
 
         degree = len(self.P) - 1
 
-        counts = set(Counter(self.signal_rotations).items())
+        counts: Set['BloqCountT'] = set(Counter(self.signal_rotations).items())
 
         if degree > self.negative_power:
             counts.add((self.U.controlled(control_values=[0]), degree - self.negative_power))
         elif self.negative_power > degree:
             counts.add((self.U.adjoint(), self.negative_power - degree))
 
-        if self.negative_power > 0:
+        if isinstance(self.negative_power, int) and self.negative_power > 0:
             counts.add((self.U.adjoint().controlled(), min(degree, self.negative_power)))
 
         return counts
