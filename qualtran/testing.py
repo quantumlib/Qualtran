@@ -238,7 +238,6 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, 
         expected_ws: A list of the expected wire symbols or their associated text.
     """
     expected_idx = 0
-    ws = []
     for reg in bloq.signature:
         if reg.shape:
             indices = np.ndindex(reg.shape)

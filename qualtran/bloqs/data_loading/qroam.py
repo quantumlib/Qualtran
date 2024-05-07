@@ -103,6 +103,10 @@ class QROAM(Bloq):
 
     Raises:
         ValueError: If all target data sequences to load do not have the same length.
+
+    References:
+        [Qubitization of Arbitrary Basis Quantum Chemistry Leveraging Sparsity and Low Rank Factorization](https://quantum-journal.org/papers/q-2019-12-02-208).
+        Last paragraph of page 8 / top of page 9 and appendices A - C.
     """
 
     data: Sequence[NDArray] = attrs.field(converter=_to_tuple)
@@ -113,7 +117,8 @@ class QROAM(Bloq):
     is_adjoint: bool = False
 
     def __attrs_post_init__(self):
-        assert self.block_size == 1, "Use QROM for block_size == 1"
+        print(self)
+        assert self.block_size != 1, "Use QROM for block_size == 1"
         assert len(set(len(d) for d in self.data)) == 1
         assert len(self.target_bitsizes) == len(self.data)
         assert all(t >= int(max(d)).bit_length() for t, d in zip(self.target_bitsizes, self.data))
@@ -204,7 +209,7 @@ class QROAM(Bloq):
 
 @bloq_example
 def _qroam_small() -> QROAM:
-    data = np.arange(5)
+    data = np.arange(10)
     qrom_small = QROAM.build(data)
     return qrom_small
 
