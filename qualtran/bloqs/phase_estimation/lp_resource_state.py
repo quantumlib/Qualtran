@@ -14,7 +14,7 @@
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -69,7 +69,7 @@ class LPRSInterimPrep(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         q, anc = quregs['m'].tolist()[::-1], quregs['anc']
@@ -129,7 +129,7 @@ class LPResourceState(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Use the _LPResourceStateHelper and do a single round of amplitude amplification."""
         q = quregs['m'].flatten().tolist()
         anc, flag = context.qubit_manager.qalloc(2)

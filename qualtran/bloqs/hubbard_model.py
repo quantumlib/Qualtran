@@ -47,7 +47,7 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
 from functools import cached_property
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Iterator, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -157,7 +157,7 @@ class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         p_x, p_y, q_x, q_y = quregs['p_x'], quregs['p_y'], quregs['q_x'], quregs['q_y']
         U, V, alpha, beta = quregs['U'], quregs['V'], quregs['alpha'], quregs['beta']
         control, target = quregs.get('control', ()), quregs['target']
@@ -302,7 +302,7 @@ class PrepareHubbard(PrepareOracle):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         p_x, p_y, q_x, q_y = quregs['p_x'], quregs['p_y'], quregs['q_x'], quregs['q_y']
         U, V, alpha, beta = quregs['U'], quregs['V'], quregs['alpha'], quregs['beta']
         temp = quregs['temp']

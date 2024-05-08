@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Iterator, Optional, Tuple
 
 import attrs
 import cirq
@@ -86,7 +86,7 @@ class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate, GateWithRegis
         self,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         qm = context.qubit_manager
         # 0. Allocate new ancillas, if needed.
         phase_target = qm.qalloc(1)[0] if self.control_val is None else quregs.pop('control')[0]

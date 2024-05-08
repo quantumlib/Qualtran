@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Sequence, Tuple, Union
+from typing import Iterator, Sequence, Tuple, Union
 
 import attrs
 import cirq
@@ -98,7 +98,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         quregs['accumulator'] = np.array(context.qubit_manager.qalloc(1))
         control = quregs[self.control_regs[0].name] if total_bits(self.control_registers) else []
         yield cirq.X(*quregs['accumulator']).controlled_by(*control)
@@ -120,7 +120,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         target: Sequence[cirq.Qid],
         accumulator: Sequence[cirq.Qid],
         **selection_indices: int,
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if any(
             isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
             for reg in self.selection_regs

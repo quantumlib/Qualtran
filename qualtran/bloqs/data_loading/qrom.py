@@ -15,7 +15,7 @@
 """Quantum read-only memory."""
 
 from functools import cached_property
-from typing import Callable, Dict, Iterable, Sequence, Set, Tuple
+from typing import Callable, Dict, Iterable, Iterator, Sequence, Set, Tuple
 
 import attrs
 import cirq
@@ -132,7 +132,7 @@ class QROM(UnaryIterationGate):
         selection_idx: Tuple[int, ...],
         gate: Callable[[cirq.Qid], cirq.Operation],
         **target_regs: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         for i, d in enumerate(self.data):
             target = target_regs.get(f'target{i}_', ())
             for q, bit in zip(target, f'{int(d[selection_idx]):0{len(target)}b}'):
@@ -141,7 +141,7 @@ class QROM(UnaryIterationGate):
 
     def decompose_zero_selection(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls = merge_qubits(self.control_registers, **quregs)
         target_regs = {reg.name: quregs[reg.name] for reg in self.target_registers}
         zero_indx = (0,) * len(self.data[0].shape)
@@ -175,7 +175,7 @@ class QROM(UnaryIterationGate):
 
     def nth_operation(
         self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         target_regs = {reg.name: kwargs[reg.name] for reg in self.target_registers}
         yield self._load_nth_data(selection_idx, lambda q: CNOT().on(control, q), **target_regs)

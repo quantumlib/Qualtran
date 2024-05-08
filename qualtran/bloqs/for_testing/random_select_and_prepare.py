@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Iterator, Optional, Tuple
 
 import cirq
 import numpy as np
@@ -139,7 +139,7 @@ class TestPauliSelectOracle(SpecializedSingleQubitControlledGate, SelectOracle):
         selection: NDArray[cirq.Qid],  # type: ignore[type-var]
         target: NDArray[cirq.Qid],  # type: ignore[type-var]
         **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         for cv, U in enumerate(self.select_unitaries):
             bits = tuple(map(int, bin(cv)[2:].zfill(self.select_bitsize)))[::-1]
             op = U.on(*target).controlled_by(*selection, control_values=bits)

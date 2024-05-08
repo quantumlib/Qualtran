@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Iterable, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -395,7 +395,7 @@ class GeneralizedQSP(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
-    ) -> 'cirq.OP_TREE':
+    ) -> Iterator['cirq.OP_TREE']:
         (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power

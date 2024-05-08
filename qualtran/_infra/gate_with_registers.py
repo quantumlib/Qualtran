@@ -15,6 +15,7 @@
 import abc
 from typing import (
     Any,
+    cast,
     Collection,
     Dict,
     Iterable,
@@ -358,8 +359,8 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def __pow__(self, power: int) -> 'Bloq':
-        bloq = self if power > 0 else self.adjoint()
+    def __pow__(self, power: int) -> 'GateWithRegisters':
+        bloq = self if power > 0 else cast(GateWithRegisters, self.adjoint())
         if abs(power) == 1:
             return bloq
         if all(reg.side == Side.THRU for reg in self.signature):

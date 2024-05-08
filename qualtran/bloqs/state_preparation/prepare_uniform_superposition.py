@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple, Union
+from typing import Iterator, Tuple, Union
 
 import attrs
 import cirq
@@ -72,7 +72,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('ctrl', ()), quregs['target']
         # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         n, k = self.n, 0

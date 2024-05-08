@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Iterator, Optional, Tuple
 
 import attrs
 import cirq
@@ -100,7 +100,7 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate, GateWithReg
         self,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
         yield self.select.on_registers(**select_reg)
 

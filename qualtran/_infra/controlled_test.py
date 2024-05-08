@@ -415,7 +415,7 @@ ctrl: ───@────────
 q: ──────X^0.25───''',
     )
 
-    ctrl_0_gate = XPowGate(0.25).controlled(CtrlSpec(cvs=0))
+    ctrl_0_gate = XPowGate(0.25).controlled(ctrl_spec=CtrlSpec(cvs=0))
     cirq.testing.assert_has_diagram(
         cirq.Circuit(ctrl_0_gate.on_registers(**get_named_qubits(ctrl_0_gate.signature))),
         '''
@@ -424,7 +424,7 @@ ctrl: ───(0)──────
 q: ──────X^0.25───''',
     )
 
-    multi_ctrl_gate = XPowGate(0.25).controlled(CtrlSpec(cvs=[0, 1]))
+    multi_ctrl_gate = XPowGate(0.25).controlled(ctrl_spec=CtrlSpec(cvs=[0, 1]))
     cirq.testing.assert_has_diagram(
         cirq.Circuit(multi_ctrl_gate.on_registers(**get_named_qubits(multi_ctrl_gate.signature))),
         '''
@@ -435,7 +435,7 @@ ctrl[1]: ───@────────
 q: ─────────X^0.25───''',
     )
 
-    ctrl_bloq = Swap(2).controlled(CtrlSpec(cvs=[0, 1]))
+    ctrl_bloq = Swap(2).controlled(ctrl_spec=CtrlSpec(cvs=[0, 1]))
     cirq.testing.assert_has_diagram(
         cirq.Circuit(ctrl_bloq.on_registers(**get_named_qubits(ctrl_bloq.signature))),
         '''
