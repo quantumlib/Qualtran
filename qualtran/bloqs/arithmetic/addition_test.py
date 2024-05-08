@@ -272,7 +272,8 @@ def test_add_mod_n(bitsize, mod, add_val, cvs):
     op = gate.on_registers(**get_named_qubits(gate.signature))
     circuit = cirq.Circuit(op)
     cirq.testing.assert_equivalent_computational_basis_map(basis_map, circuit)
-    circuit += op**-1
+    # Missing cirq stubs
+    circuit += op**-1  # type: ignore[operator]
     cirq.testing.assert_equivalent_computational_basis_map(identity_map(gate.num_qubits()), circuit)
 
 

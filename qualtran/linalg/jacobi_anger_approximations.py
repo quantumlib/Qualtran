@@ -18,6 +18,7 @@ import scipy
 import sympy
 from numpy.typing import NDArray
 
+from qualtran.resource_counting import big_O
 from qualtran.resource_counting.symbolic_counting_utils import (
     is_symbolic,
     SymbolicFloat,
@@ -40,7 +41,7 @@ def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicFl
 
     If any parameter is symbolic, this returns an asymptotic result given by
     $$
-        d = \mathcal{O}(t + \frac{\log\epsilon}{\log\log\epsilon})
+        d = \mathcal{O}(t + \frac{\log(1/\epsilon)}{\log\log(1/\epsilon)})
     $$
 
     Args:
@@ -51,10 +52,10 @@ def degree_jacobi_anger_approximation(t: SymbolicFloat, *, precision: SymbolicFl
         Truncation degree $d$ as defined above.
     """
     if is_symbolic(t, precision):
-        return sympy.O(t + sympy.log(precision) / sympy.log(sympy.log(precision)))
+        return big_O(t + sympy.log(1 / precision) / sympy.log(sympy.log(1 / precision)))
 
     def term_too_small(n: int) -> bool:
-        return np.isclose(scipy.special.jv(n, t), 0, atol=precision)
+        return bool(np.isclose(scipy.special.jv(n, t), 0, atol=float(precision)))
 
     d = 1
     while not term_too_small(d):

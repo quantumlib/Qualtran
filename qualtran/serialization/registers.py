@@ -46,7 +46,7 @@ def register_from_proto(register: registers_pb2.Register) -> Register:
     )
 
 
-def _side_to_proto(side: Side) -> registers_pb2.Register.Side:
+def _side_to_proto(side: Side) -> registers_pb2.Register.Side.ValueType:
     if side == Side.LEFT:
         return registers_pb2.Register.Side.LEFT
     if side == Side.RIGHT:
@@ -56,11 +56,11 @@ def _side_to_proto(side: Side) -> registers_pb2.Register.Side:
     return registers_pb2.Register.Side.UNKNOWN
 
 
-def _side_from_proto(side: registers_pb2.Register.Side) -> Side:
+def _side_from_proto(side: registers_pb2.Register.Side.ValueType) -> Side:
     if side == registers_pb2.Register.Side.LEFT:
         return Side.LEFT
     if side == registers_pb2.Register.Side.RIGHT:
         return Side.RIGHT
     if side == registers_pb2.Register.Side.THRU:
         return Side.THRU
-    return Side.UNKNOWN
+    raise ValueError(f'Unknown Side type {side}')

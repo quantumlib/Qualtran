@@ -27,6 +27,7 @@ from qualtran.cirq_interop.jupyter_tools import (
 
 
 def test_svg_circuit():
+
     g = cq_testing.GateHelper(MultiAnd(cvs=(1, 1, 1)))
     svg = svg_circuit(g.circuit, g.r)
     svg_str = svg.data
@@ -57,7 +58,7 @@ def test_display_gate_and_compilation(monkeypatch):
 
 
 def test_circuit_with_costs():
-    g = cq_testing.GateHelper(MultiAnd(cvs=(1, 1, 1)))
+    g = cq_testing.GateHelper(MultiAnd(cvs=(1, 1, 1)))  # type: ignore[arg-type]
     circuit = circuit_with_costs(g.circuit)
     expected_circuit = cirq.Circuit(g.operation.with_tags('t:8,r:0'))
     cirq.testing.assert_same_circuits(circuit, expected_circuit)

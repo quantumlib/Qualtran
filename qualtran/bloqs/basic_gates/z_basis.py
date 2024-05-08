@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, cast, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
@@ -112,8 +112,8 @@ class _ZVector(Bloq):
         return {}
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'
-    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', **cirq_quregs: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         if not self.state:
             raise ValueError(f"There is no Cirq equivalent for {self}")
 
@@ -262,7 +262,7 @@ class ZGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.Z(q), {'q': [q]}
+        return cirq.Z(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
@@ -287,8 +287,8 @@ class _IntVector(Bloq):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    val: int = attrs.field()
-    bitsize: int
+    val: Union[int, sympy.Expr] = attrs.field()
+    bitsize: Union[int, sympy.Expr]
     state: bool
 
     @val.validator
@@ -322,7 +322,7 @@ class _IntVector(Bloq):
 
     @staticmethod
     def _build_composite_effect(
-        bb: 'BloqBuilder', val: 'SoquetT', bits: NDArray[np.uint8]
+        bb: 'BloqBuilder', val: 'Soquet', bits: NDArray[np.uint8]
     ) -> Dict[str, 'SoquetT']:
         xs = bb.split(val)
         effects = [ZeroEffect(), OneEffect()]
@@ -331,13 +331,14 @@ class _IntVector(Bloq):
         return {}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **val: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         bits = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
         if self.state:
             assert not val
             return self._build_composite_state(bb, bits)
         else:
-            val = val['val']
-            return self._build_composite_effect(bb, val, bits)
+            return self._build_composite_effect(bb, cast(Soquet, val['val']), bits)
 
     def add_my_tensors(
         self,
@@ -347,6 +348,8 @@ class _IntVector(Bloq):
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         data = np.zeros(2**self.bitsize).reshape((2,) * self.bitsize)
         bitstring = ints_to_bits(np.array([self.val]), w=self.bitsize)[0]
         data[tuple(bitstring)] = 1
@@ -359,7 +362,7 @@ class _IntVector(Bloq):
 
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, int]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
         if self.state:
             assert val is None
             return {'val': self.val}
@@ -380,10 +383,10 @@ class _IntVector(Bloq):
         s = self.short_name()
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
-        return directional_text_box(text=f'{self.val}', side=soq.reg.side)
+        return directional_text_box(text=f'{self.val}', side=reg.side)
 
 
 @frozen(init=False, field_transformer=_hide_base_fields)
@@ -398,7 +401,7 @@ class IntState(_IntVector):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    def __init__(self, val: int, bitsize: int):
+    def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
 

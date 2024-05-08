@@ -14,6 +14,7 @@
 
 """Functionality for the `Bloq.call_graph()` protocol."""
 
+import collections.abc as abc
 from collections import defaultdict
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
@@ -23,7 +24,7 @@ import sympy
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
-GeneralizerT = Callable[[Bloq], Optional[Bloq]]
+from ._generalization import _make_composite_generalizer, GeneralizerT
 
 
 def big_O(expr) -> sympy.Order:
@@ -77,12 +78,46 @@ def _generalize_callees(
     """
     callee_counts: List[BloqCountT] = []
     for callee, n in raw_callee_counts:
-        callee = generalizer(callee)
-        if callee is None:
+        generalized_callee = generalizer(callee)
+        if generalized_callee is None:
             # Signifies that this callee should be ignored.
             continue
-        callee_counts.append((callee, n))
+        callee_counts.append((generalized_callee, n))
     return callee_counts
+
+
+def get_bloq_callee_counts(
+    bloq: 'Bloq',
+    generalizer: Optional['GeneralizerT'] = None,
+    ssa: Optional[SympySymbolAllocator] = None,
+) -> List[BloqCountT]:
+    """Get the direct callees of a bloq and the number of times they are called.
+
+    This calls `bloq.build_call_graph()` with the correct configuration options.
+
+    Args:
+        bloq: The bloq.
+        generalizer: If provided, run this function on each callee to consolidate attributes
+            that do not affect resource estimates. If the callable
+            returns `None`, the bloq is omitted from the counts graph. If a sequence of
+            generalizers is provided, each generalizer will be run in order.
+        ssa: A sympy symbol allocator that can be provided if one already exists in your
+            computation.
+
+    Returns:
+        A list of (bloq, n) bloq counts.
+    """
+    if generalizer is None:
+        generalizer = lambda b: b
+    if isinstance(generalizer, (list, tuple)):
+        generalizer = _make_composite_generalizer(*generalizer)
+    if ssa is None:
+        ssa = SympySymbolAllocator()
+
+    try:
+        return _generalize_callees(bloq.build_call_graph(ssa), generalizer)
+    except (DecomposeNotImplementedError, DecomposeTypeError):
+        return []
 
 
 def _build_call_graph(
@@ -103,8 +138,7 @@ def _build_call_graph(
         # We already visited this node.
         return
 
-    # Make sure this node is present in the graph. You could annotate
-    # additional node properties here, too.
+    # Make sure this node is present in the graph.
     g.add_node(bloq)
 
     # Base case 1: This node is requested by the user to be a leaf node via the `keep` parameter.
@@ -116,12 +150,7 @@ def _build_call_graph(
         return
 
     # Prep for recursion: get the callees and modify them according to `generalizer`.
-    try:
-        callee_counts = _generalize_callees(bloq.build_call_graph(ssa), generalizer)
-    except (DecomposeNotImplementedError, DecomposeTypeError):
-        # Base case 3: Decomposition (or `bloq_counts`) is not implemented. This is left as a
-        #              leaf node.
-        return
+    callee_counts = get_bloq_callee_counts(bloq, generalizer)
 
     # Base case 3: Empty list of callees
     if not callee_counts:
@@ -165,19 +194,6 @@ def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, symp
     return dict(bloq_sigmas[root_bloq])
 
 
-def _make_composite_generalizer(*funcs: GeneralizerT) -> GeneralizerT:
-    """Return a generalizer that calls each `*funcs` generalizers in order."""
-
-    def _composite_generalize(b: Bloq) -> Optional[Bloq]:
-        for func in funcs:
-            b = func(b)
-            if b is None:
-                return
-        return b
-
-    return _composite_generalize
-
-
 def get_bloq_call_graph(
     bloq: Bloq,
     generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
@@ -215,7 +231,7 @@ def get_bloq_call_graph(
         keep = lambda b: False
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, (list, tuple)):
+    if isinstance(generalizer, abc.Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     g = nx.DiGraph()

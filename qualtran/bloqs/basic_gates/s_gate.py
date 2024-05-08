@@ -19,7 +19,7 @@ import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Signature, Soquet, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox, WireSymbol
 
@@ -75,8 +75,8 @@ class SGate(Bloq):
         )
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type:ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type:ignore[type-var]
         import cirq
 
         (q,) = q
@@ -86,7 +86,7 @@ class SGate(Bloq):
         maybe_dag = '†' if self.is_adjoint else ''
         return f'S{maybe_dag}'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox(self.pretty_name())
 
     def adjoint(self) -> 'Bloq':

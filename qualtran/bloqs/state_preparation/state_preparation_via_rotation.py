@@ -73,11 +73,11 @@ References:
 
 """
 
-from typing import Dict, List, Tuple
+from typing import cast, Dict, Iterable, List, Sequence, Tuple
 
 import attrs
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -86,12 +86,18 @@ from qualtran import (
     BloqDocSpec,
     GateWithRegisters,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import XGate
 from qualtran.bloqs.basic_gates.rotation import Rx
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+
+
+def _to_tuple(x: Iterable[complex]) -> Sequence[complex]:
+    """mypy compatible converter for StatePreparationViaRotations.state_coefficients"""
+    return tuple(x)
 
 
 @attrs.frozen
@@ -119,7 +125,7 @@ class StatePreparationViaRotations(GateWithRegisters):
     """
 
     phase_bitsize: int
-    state_coefficients: Tuple[complex, ...] = attrs.field(converter=tuple)
+    state_coefficients: Tuple[complex, ...] = attrs.field(converter=_to_tuple)
     control_bitsize: int = 0
     uncompute: bool = False
 
@@ -151,7 +157,9 @@ class StatePreparationViaRotations(GateWithRegisters):
         * target_state: register where the state is written
         * phase_gradient: phase gradient state (will be left unaffected)
         """
-        rotation_tree = RotationTree(self.state_coefficients, self.phase_bitsize, self.uncompute)
+        rotation_tree = RotationTree(
+            np.asarray(self.state_coefficients), self.phase_bitsize, self.uncompute
+        )
         ampl_rv, phase_rv = rotation_tree.get_rom_vals()
         if self.uncompute:
             soqs = self._prepare_phases(phase_rv, bb, **soqs)
@@ -169,7 +177,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         * target_state: register where the state is written
         * phase_gradient: phase gradient state (will be left unaffected)
         """
-        state_qubits = bb.split(soqs.pop("target_state"))
+        state_qubits = bb.split(cast(Soquet, soqs.pop("target_state")))
         for i in range(self.state_bitsize):
             # for the normal gate loop from qubit 0 to state_bitsizes-1, if it is the adjoint
             # then the process is run backwards with the opposite turn angles
@@ -186,19 +194,21 @@ class StatePreparationViaRotations(GateWithRegisters):
                 soqs["selection"] = bb.join(state_qubits[:qi])
             if self.control_bitsize > 1:
                 soqs["control"] = bb.join(
-                    np.array([*bb.split(soqs.pop("prepare_control")), state_qubits[qi]])
+                    np.array(
+                        [*bb.split(cast(Soquet, soqs.pop("prepare_control"))), state_qubits[qi]]
+                    )
                 )
             elif self.control_bitsize == 1:
                 soqs["control"] = bb.join(np.array([soqs.pop("prepare_control"), state_qubits[qi]]))
             else:
                 soqs["control"] = state_qubits[qi]
             soqs = bb.add_d(ctrl_rot_q, **soqs)
-            separated = bb.split(soqs.pop("control"))
+            separated = bb.split(cast(Soquet, soqs.pop("control")))
             if self.control_bitsize != 0:
                 soqs["prepare_control"] = bb.join(separated[:-1])
             state_qubits[qi] = separated[-1]
             if qi:
-                state_qubits[:qi] = bb.split(soqs.pop("selection"))
+                state_qubits[:qi] = bb.split(cast(Soquet, soqs.pop("selection")))
             state_qubits[qi] = bb.add(Rx(angle=-np.pi / 2), q=state_qubits[qi])
 
         soqs["target_state"] = bb.join(state_qubits)
@@ -231,7 +241,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         rot_ancilla = bb.add(XGate(), q=rot_ancilla)
         if self.control_bitsize > 1:
             soqs["control"] = bb.join(
-                np.array([*bb.split(soqs.pop("prepare_control")), rot_ancilla])
+                np.array([*bb.split(cast(Soquet, soqs.pop("prepare_control"))), rot_ancilla])
             )
         elif self.control_bitsize == 1:
             soqs["control"] = bb.join(np.array([soqs.pop("prepare_control"), rot_ancilla]))
@@ -244,7 +254,7 @@ class StatePreparationViaRotations(GateWithRegisters):
         soqs["selection"] = soqs.pop("target_state")
         soqs = bb.add_d(ctrl_rot, **soqs)
         soqs["target_state"] = soqs.pop("selection")
-        separated = bb.split(soqs.pop("control"))
+        separated = bb.split(cast(Soquet, soqs.pop("control")))
         if self.control_bitsize != 0:
             soqs["prepare_control"] = bb.join(separated[:-1])
         separated[-1] = bb.add(XGate(), q=separated[-1])
@@ -340,7 +350,7 @@ class PRGAViaPhaseGradient(Bloq):
         # (line 1 of eq (8) in [1])
         soqs = bb.add_d(qrom, **soqs)
         soqs["phase_gradient"] = phase_grad
-        bb.free(soqs.pop("target0_"))
+        bb.free(cast(Soquet, soqs.pop("target0_")))
         return soqs
 
 
@@ -356,7 +366,7 @@ class RotationTree:
             Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    def __init__(self, state: ArrayLike, phase_bitsize: int, uncompute: bool = False):
+    def __init__(self, state: NDArray, phase_bitsize: int, uncompute: bool = False):
         self.state_bitsize = (len(state) - 1).bit_length()
         self._calc_amplitude_angles_and_rv(state, phase_bitsize, uncompute)
         self._calc_phase_rom_values(state, phase_bitsize, uncompute)
@@ -365,7 +375,7 @@ class RotationTree:
         return self.amplitude_rom_values, self.phase_rom_values
 
     def _calc_amplitude_angles_and_rv(
-        self, state: ArrayLike, phase_bitsize: int, uncompute: bool
+        self, state: NDArray, phase_bitsize: int, uncompute: bool
     ) -> None:
         r"""Gives a list of the ROM values to be loaded for preparing the amplitudes of a state.
 
@@ -389,7 +399,7 @@ class RotationTree:
                 rom_vals_this_layer.append(rom_val)
             self.amplitude_rom_values.append(rom_vals_this_layer)
 
-    def _calc_phase_rom_values(self, state: ArrayLike, phase_bitsize: int, uncompute: bool) -> None:
+    def _calc_phase_rom_values(self, state: NDArray, phase_bitsize: int, uncompute: bool) -> None:
         """Computes the rom value to be loaded to get the phase for each coefficient of the state.
 
         As we are using the equivalent to controlled Z to do the rotations instead of Rz, there

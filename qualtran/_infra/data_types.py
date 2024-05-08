@@ -50,7 +50,7 @@ respectively.
 
 import abc
 from enum import Enum
-from typing import Any, Iterable, List, Sequence, Union
+from typing import Any, cast, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
@@ -88,6 +88,13 @@ class QDType(metaclass=abc.ABCMeta):
             val: A classical value that should be in the domain of this QDType.
             debug_str: Optional debugging information to use in exception messages.
         """
+
+    def iteration_length_or_zero(self) -> Union[int, sympy.Expr]:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return getattr(self, 'iteration_length', 0)
 
     def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
         """Raises an exception if `val_array` is not a valid array of classical values
@@ -133,7 +140,9 @@ class QBit(QDType):
         assert len(bits) == 1
         return bits[0]
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if not np.all((val_array == 0) | (val_array == 1)):
             raise ValueError(f"Bad {self} value array in {debug_str}")
 
@@ -192,7 +201,7 @@ class QInt(QDType):
     def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
-        mask = (1 << self.bitsize) - 1
+        mask = (1 << cast(int, self.bitsize)) - 1
         return QUInt(self.bitsize).to_bits(int(x) & mask)
 
     def from_bits(self, bits: Sequence[int]) -> int:
@@ -209,11 +218,16 @@ class QInt(QDType):
         if val >= 2 ** (self.bitsize - 1):
             raise ValueError(f"Too-large classical {self}: {val} encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < -(2 ** (self.bitsize - 1))):
             raise ValueError(f"Too-small classical {self}s encountered in {debug_str}")
         if np.any(val_array >= 2 ** (self.bitsize - 1)):
             raise ValueError(f"Too-large classical {self}s encountered in {debug_str}")
+
+    def __str__(self):
+        return f'QInt({self.bitsize})'
 
 
 @attrs.frozen
@@ -298,11 +312,16 @@ class QUInt(QDType):
         if val >= 2**self.bitsize:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+    def __str__(self):
+        return f'QUInt({self.bitsize})'
 
 
 @attrs.frozen
@@ -372,7 +391,9 @@ class BoundedQUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(0, self.iteration_length)
+        if isinstance(self.iteration_length, int):
+            return range(0, self.iteration_length)
+        raise ValueError(f'Classical Domain not defined for expression: {self.iteration_length}')
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -391,7 +412,9 @@ class BoundedQUInt(QDType):
         """Combine individual bits to form x"""
         return QUInt(self.bitsize).from_bits(bits)
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= self.iteration_length):
@@ -499,7 +522,7 @@ class QMontgomeryUInt(QDType):
     fast modular multiplication.
 
     In order to convert an unsigned integer from a finite field x % p into Montgomery form you
-    first must choose a value r > p where gcd(r, p) = 1. Typically this value is a power of 2.
+    first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
 
     Conversion to Montgomery form:
         [x] = (x * r) % p
@@ -539,7 +562,9 @@ class QMontgomeryUInt(QDType):
         if val >= 2**self.bitsize:
             raise ValueError(f"Too-large classical value encountered in {debug_str}")
 
-    def assert_valid_classical_val_array(self, val_array: NDArray[int], debug_str: str = 'val'):
+    def assert_valid_classical_val_array(
+        self, val_array: NDArray[np.integer], debug_str: str = 'val'
+    ):
         if np.any(val_array < 0):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
@@ -563,7 +588,7 @@ class QDTypeCheckingSeverity(Enum):
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
-def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
+def _check_uint_fxp_consistent(a: Union[QUInt, BoundedQUInt, QMontgomeryUInt], b: QFxp) -> bool:
     """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False

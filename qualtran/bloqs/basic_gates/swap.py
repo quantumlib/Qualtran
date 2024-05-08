@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -29,6 +29,7 @@ from qualtran import (
     BloqDocSpec,
     DecomposeTypeError,
     GateWithRegisters,
+    Register,
     Signature,
     Soquet,
     SoquetT,
@@ -42,6 +43,7 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 from .t_gate import TGate
 
 if TYPE_CHECKING:
+    from qualtran import CompositeBloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -74,11 +76,11 @@ class TwoBitSwap(Bloq):
         return Signature.build(x=1, y=1)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', x: 'CirqQuregT', y: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         (x,) = x
         (y,) = y
-        return cirq.SWAP.on(x, y), {'x': [x], 'y': [y]}
+        return cirq.SWAP.on(x, y), {'x': np.asarray([x]), 'y': np.asarray([y])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)
@@ -100,6 +102,9 @@ class TwoBitSwap(Bloq):
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': y, 'y': x}
+
+    def adjoint(self) -> 'Bloq':
+        return self
 
 
 @frozen
@@ -129,10 +134,10 @@ class TwoBitCSwap(Bloq):
         self,
         *,
         context: cirq.DecompositionContext,
-        ctrl: NDArray[cirq.Qid],
-        x: NDArray[cirq.Qid],
-        y: NDArray[cirq.Qid],
-    ) -> cirq.OP_TREE:
+        ctrl: NDArray[cirq.Qid],  # type: ignore[type-var]
+        x: NDArray[cirq.Qid],  # type: ignore[type-var]
+        y: NDArray[cirq.Qid],  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         (ctrl,) = ctrl
         (x,) = x
         (y,) = y
@@ -181,8 +186,8 @@ class TwoBitCSwap(Bloq):
     def short_name(self) -> str:
         return 'swap'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg.name == 'ctrl':
             return Circle(filled=True)
         else:
             return TextBox('×')
@@ -231,12 +236,12 @@ class Swap(Bloq):
     def short_name(self) -> str:
         return 'swap'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg.name == 'x':
             return TextBox('×(x)')
-        elif soq.reg.name == 'y':
+        elif reg.name == 'y':
             return TextBox('×(y)')
-        raise ValueError(f"Bad register name {soq.reg.name}")
+        raise ValueError(f"Bad register name {reg.name}")
 
     def adjoint(self) -> 'Bloq':
         return self
@@ -272,7 +277,7 @@ class CSwap(GateWithRegisters):
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'SoquetT', y: 'SoquetT'
+        self, bb: 'BloqBuilder', ctrl: 'SoquetT', x: 'Soquet', y: 'Soquet'
     ) -> Dict[str, 'SoquetT']:
         if isinstance(self.bitsize, sympy.Expr):
             raise DecomposeTypeError("`bitsize` must be a concrete value.")
@@ -314,10 +319,10 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'x':
             return TextBox('×(x)')
-        elif soq.reg.name == 'y':
+        elif reg.name == 'y':
             return TextBox('×(y)')
         else:
             return Circle(filled=True)

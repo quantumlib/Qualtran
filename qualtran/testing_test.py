@@ -142,8 +142,8 @@ def test_assert_soquets_used_exactly_once():
 
 def test_check_bloq_example_make():
     @bloq_example
-    def _my_cnot() -> CNOT:
-        return 'CNOT 0 1'
+    def _my_cnot() -> Bloq:
+        return 'CNOT 0 1'  # type: ignore[return-value]
 
     res, msg = check_bloq_example_make(_my_cnot)
     assert res is BloqCheckResult.FAIL, msg

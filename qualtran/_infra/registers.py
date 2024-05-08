@@ -16,10 +16,11 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple
+from typing import Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
 import numpy as np
+import sympy
 from attrs import field, frozen
 
 from .data_types import QAny, QBit, QDType
@@ -128,7 +129,7 @@ class Signature:
         self._rights = _dedupe((reg.name, reg) for reg in self._registers if reg.side & Side.RIGHT)
 
     @classmethod
-    def build(cls, **registers: int) -> 'Signature':
+    def build(cls, **registers: Union[int, sympy.Expr]) -> 'Signature':
         """Construct a Signature comprised of simple thru registers given the register bitsizes.
 
         Args:

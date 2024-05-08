@@ -15,7 +15,7 @@ r"""Bloqs for preparation of the U and V parts of the first quantized chemistry 
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
-from attrs import frozen
+from attrs import evolve, frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Side, Signature, SoquetT
 from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
@@ -50,7 +50,6 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
         page 21, Eq 77.
     """
     num_bits_p: int
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -90,7 +89,7 @@ class PrepareNuSuperPositionState(Bloq):
         page 21, Eq 78.
     """
     num_bits_p: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -100,6 +99,9 @@ class PrepareNuSuperPositionState(Bloq):
                 Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
             ]
         )
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def short_name(self) -> str:
         return r'PREP $2^{-\mu}|\mu\rangle|\nu\rangle$'
@@ -125,24 +127,29 @@ class FlagZeroAsFailure(Bloq):
         page 21, Eq 80.
     """
     num_bits_p: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [
                 Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
-                Register("flag_minus_zero", QBit(), side=Side.RIGHT),
+                Register(
+                    "flag_minus_zero", QBit(), side=Side.RIGHT if not self.is_adjoint else Side.LEFT
+                ),
             ]
         )
 
     def short_name(self) -> str:
         return r'$\nu\ne -0$'
 
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
+        if self.is_adjoint:
             # This can be inverted with cliffords.
-            return {}
+            return set()
         else:
             # Controlled Toffoli each having n_p + 1 controls and 2 Toffolis to
             # check the result of the Toffolis.
@@ -165,7 +172,7 @@ class TestNuLessThanMu(Bloq):
         page 21, Eq 80.
     """
     num_bits_p: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -173,15 +180,20 @@ class TestNuLessThanMu(Bloq):
             [
                 Register("mu", QAny(self.num_bits_p)),
                 Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
-                Register("flag_nu_lt_mu", QBit(), side=Side.RIGHT),
+                Register(
+                    "flag_nu_lt_mu", QBit(), side=Side.RIGHT if not self.is_adjoint else Side.LEFT
+                ),
             ]
         )
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     def short_name(self) -> str:
         return r'$\nu < 2^{\mu-2}$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
+        if self.is_adjoint:
             # This can be inverted with cliffords.
             return {(Toffoli(), 0)}
         else:
@@ -204,13 +216,15 @@ class TestNuInequality(Bloq):
     Args:
         num_bits_p: The number of bits to represent each dimension of the momentum register.
         num_bits_m: The number of bits for $\mathcal{M}$. Eq 86.
-        adjoint: Whether to dagger the bloq or not.
+        is_adjoint: Whether to dagger the bloq or not.
 
     Registers:
         mu: the one-hot unary superposition register.
         nu: the momentum transfer register.
         m: the ancilla register in unfiform superposition.
         flag_mu_prep: A flag checking the success of the $mu$ state prep.
+
+
         flag_minus_zero: A flag from checking for negative zero.
         flag_ineq: A flag from checking $\nu \lt 2^{\mu -2}$.
         succ: a flag bit for failure of the state preparation.
@@ -221,7 +235,7 @@ class TestNuInequality(Bloq):
     """
     num_bits_p: int
     num_bits_m: int
-    adjoint: bool = False
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -230,9 +244,15 @@ class TestNuInequality(Bloq):
                 Register("mu", QAny(self.num_bits_p)),
                 Register("nu", QAny(self.num_bits_p + 1), shape=(3,)),
                 Register("m", QAny(self.num_bits_m)),
-                Register("flag_minus_zero", QBit(), side=Side.LEFT),
-                Register("flag_mu_prep", QBit(), side=Side.LEFT),
-                Register("flag_ineq", QBit(), side=Side.LEFT),
+                Register(
+                    "flag_minus_zero", QBit(), side=Side.LEFT if not self.is_adjoint else Side.RIGHT
+                ),
+                Register(
+                    "flag_mu_prep", QBit(), side=Side.LEFT if not self.is_adjoint else Side.RIGHT
+                ),
+                Register(
+                    "flag_ineq", QBit(), side=Side.LEFT if not self.is_adjoint else Side.RIGHT
+                ),
                 Register("succ", QBit()),
             ]
         )
@@ -240,14 +260,18 @@ class TestNuInequality(Bloq):
     def short_name(self) -> str:
         return r'$(2^{\mu-2})^2\mathcal{M} > m \nu^2 $'
 
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
+
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        if self.adjoint:
+        if self.is_adjoint:
             return {(Toffoli(), 0)}
         else:
             # 1. Compute $\nu_x^2 + \nu_y^2 + \nu_z^2$
             cost_1 = (SumOfSquares(self.num_bits_p, k=3), 1)
             # 2. Compute $m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
             cost_2 = (Product(2 * self.num_bits_p + 2, self.num_bits_m), 1)
+
             # 3. Inequality test
             cost_3 = (GreaterThan(self.num_bits_m, 2 * self.num_bits_p + 2), 1)
             # 4. 3 Toffoli for overall success
@@ -302,7 +326,6 @@ class PrepareNuState(Bloq):
     """
     num_bits_p: int
     m_param: int
-    adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -322,20 +345,15 @@ class PrepareNuState(Bloq):
     def build_composite_bloq(
         self, bb: BloqBuilder, mu: SoquetT, nu: SoquetT, m: SoquetT, flag_nu: SoquetT
     ) -> Dict[str, 'SoquetT']:
-        mu, flag_mu = bb.add(
-            PrepareMuUnaryEncodedOneHot(self.num_bits_p, adjoint=self.adjoint), mu=mu
-        )
-        mu, nu = bb.add(
-            PrepareNuSuperPositionState(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
-        )
-        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint), nu=nu)
-        mu, nu, flag_nu_lt_mu = bb.add(
-            TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint), mu=mu, nu=nu
-        )
+        mu, flag_mu = bb.add(PrepareMuUnaryEncodedOneHot(self.num_bits_p), mu=mu)
+        mu, nu = bb.add(PrepareNuSuperPositionState(self.num_bits_p), mu=mu, nu=nu)
+        nu, flag_zero = bb.add(FlagZeroAsFailure(self.num_bits_p), nu=nu)
+        mu, nu, flag_nu_lt_mu = bb.add(TestNuLessThanMu(self.num_bits_p), mu=mu, nu=nu)
         n_m = (self.m_param - 1).bit_length()
         m = bb.add(PrepareUniformSuperposition(self.m_param), target=m)
+
         mu, nu, m, flag_nu = bb.add(
-            TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint),
+            TestNuInequality(self.num_bits_p, n_m),
             mu=mu,
             nu=nu,
             m=m,
@@ -353,10 +371,10 @@ class PrepareNuState(Bloq):
         # 2. Prepare mu-nu superposition (Eq 78)
         cost_2 = (PrepareNuSuperPositionState(self.num_bits_p), 1)
         # 3. Remove minus zero
-        cost_3 = (FlagZeroAsFailure(self.num_bits_p, adjoint=self.adjoint), 1)
+        cost_3 = (FlagZeroAsFailure(self.num_bits_p), 1)
         # 4. Test $\nu < 2^{\mu-2}$
-        cost_4 = (TestNuLessThanMu(self.num_bits_p, adjoint=self.adjoint), 1)
+        cost_4 = (TestNuLessThanMu(self.num_bits_p), 1)
         # 5. Prepare superposition over $m$ which is a power of two so only clifford.
         # 6. Test that $(2^{\mu-2})^2\mathcal{M} > m (\nu_x^2 + \nu_y^2 + \nu_z^2)$
-        cost_6 = (TestNuInequality(self.num_bits_p, n_m, adjoint=self.adjoint), 1)
+        cost_6 = (TestNuInequality(self.num_bits_p, n_m), 1)
         return {cost_1, cost_2, cost_3, cost_4, cost_6}

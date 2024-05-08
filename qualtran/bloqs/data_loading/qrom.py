@@ -15,14 +15,14 @@
 """Quantum read-only memory."""
 
 from functools import cached_property
-from typing import Callable, Dict, Sequence, Set, Tuple
+from typing import Callable, Dict, Iterable, Iterator, Sequence, Set, Tuple
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register, Soquet
+from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, Register
 from qualtran._infra.gate_with_registers import merge_qubits, total_bits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
@@ -30,6 +30,11 @@ from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT
 from qualtran.simulation.classical_sim import ClassicalValT
+
+
+def _to_tuple(x: Iterable[NDArray]) -> Sequence[NDArray]:
+    """Needed so mypy can correctly infer types."""
+    return tuple(x)
 
 
 @cirq.value_equality()
@@ -65,7 +70,7 @@ class QROM(UnaryIterationGate):
             Babbush et. al. (2020). Figure 3.
     """
 
-    data: Sequence[NDArray] = attrs.field(converter=tuple)
+    data: Sequence[NDArray] = attrs.field(converter=_to_tuple)
     selection_bitsizes: Tuple[int, ...] = attrs.field(
         converter=lambda x: tuple(x.tolist() if isinstance(x, np.ndarray) else x)
     )
@@ -127,7 +132,7 @@ class QROM(UnaryIterationGate):
         selection_idx: Tuple[int, ...],
         gate: Callable[[cirq.Qid], cirq.Operation],
         **target_regs: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         for i, d in enumerate(self.data):
             target = target_regs.get(f'target{i}_', ())
             for q, bit in zip(target, f'{int(d[selection_idx]):0{len(target)}b}'):
@@ -136,7 +141,7 @@ class QROM(UnaryIterationGate):
 
     def decompose_zero_selection(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls = merge_qubits(self.control_registers, **quregs)
         target_regs = {reg.name: quregs[reg.name] for reg in self.target_registers}
         zero_indx = (0,) * len(self.data[0].shape)
@@ -170,7 +175,7 @@ class QROM(UnaryIterationGate):
 
     def nth_operation(
         self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
         target_regs = {reg.name: kwargs[reg.name] for reg in self.target_registers}
         yield self._load_nth_data(selection_idx, lambda q: CNOT().on(control, q), **target_regs)
@@ -190,8 +195,8 @@ class QROM(UnaryIterationGate):
             selections = {'selection': idx}
         else:
             # Multidimensional
-            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))
-            selections = {f'selection{i}': idx[i] for i in range(n_dim)}
+            idx = tuple(vals[f'selection{i}'] for i in range(n_dim))  # type: ignore[assignment]
+            selections = {f'selection{i}': idx[i] for i in range(n_dim)}  # type: ignore[index]
 
         # Retrieve the data; bitwise add them in to the input target values
         targets = {f'target{d_i}_': d[idx] for d_i, d in enumerate(self.data)}
@@ -205,8 +210,8 @@ class QROM(UnaryIterationGate):
             wire_symbols += [f"QROM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        name = soq.reg.name
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        name = reg.name
         if name == 'selection':
             return TextBox('In')
         elif 'selection' in name:
@@ -221,6 +226,7 @@ class QROM(UnaryIterationGate):
             return TextBox(f'data_{subscript}')
         elif name == 'control':
             return Circle()
+        raise ValueError(f'Unrecognized register name {name}')
 
     def __pow__(self, power: int):
         if power in [1, -1]:

@@ -29,8 +29,8 @@ from qualtran import (
     CompositeBloq,
     CtrlSpec,
     DecomposeTypeError,
+    Register,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -123,20 +123,20 @@ class CNOT(Bloq):
         return super().get_ctrl_system(ctrl_spec=ctrl_spec)
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', ctrl: 'CirqQuregT', target: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (ctrl,) = ctrl
         (target,) = target
         return cirq.CNOT(ctrl, target), {'ctrl': np.array([ctrl]), 'target': np.array([target])}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return ModPlus()
-        raise ValueError(f'Bad wire symbol soquet: {soq}')
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

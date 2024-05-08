@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Iterator, Set, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -66,8 +66,8 @@ class CSwapApprox(GateWithRegisters):
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         ctrl, target_x, target_y = quregs['ctrl'], quregs['x'], quregs['y']
 
         def g(q: cirq.Qid, adjoint=False) -> cirq.ops.op_tree.OpTree:

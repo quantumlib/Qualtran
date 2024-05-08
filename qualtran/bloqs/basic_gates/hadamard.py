@@ -24,8 +24,8 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     DecomposeTypeError,
+    Register,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -82,8 +82,8 @@ class Hadamard(Bloq):
         )
 
     def as_cirq_op(
-        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         import cirq
 
         (q,) = q
@@ -95,7 +95,7 @@ class Hadamard(Bloq):
     def short_name(self) -> 'str':
         return 'H'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox('H')
 
 

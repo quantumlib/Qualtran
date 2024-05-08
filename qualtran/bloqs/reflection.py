@@ -14,7 +14,7 @@
 r"""Bloq to reflect about zero."""
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -30,6 +30,11 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
+def _to_tuple(x: Iterable[int]) -> Sequence[int]:
+    """mypy compatible attrs converter for Reflection.cvs and bitsizes"""
+    return tuple(x)
+
+
 @attrs.frozen
 class Reflection(Bloq):
     r"""Perform a reflection about zero: $2|0\rangle\langle 0| - 1$
@@ -41,8 +46,8 @@ class Reflection(Bloq):
         bitsizes: The bitsizes of each of the registers to reflect about.
         cvs: The control values for each register.
     """
-    bitsizes: Tuple[int, ...] = attrs.field(converter=tuple)
-    cvs: Tuple[int] = attrs.field(converter=tuple)
+    bitsizes: Tuple[int, ...] = attrs.field(converter=_to_tuple)
+    cvs: Tuple[int, ...] = attrs.field(converter=_to_tuple)
 
     def __attrs_post_init__(self):
         if len(self.bitsizes) != len(self.cvs):
@@ -59,9 +64,9 @@ class Reflection(Bloq):
             [Register(f'reg{i}', QAny(bitsize=b)) for i, b in enumerate(self.bitsizes)]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        idx = int(soq.pretty()[3:])
-        filled = bool(self.cvs[idx])
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        cvs_idx = int(reg.name[3:])
+        filled = bool(self.cvs[cvs_idx])
         return Circle(filled)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs) -> Dict[str, 'Soquet']:

@@ -12,10 +12,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import numpy as np
+import pytest
 import sympy
 from sympy.codegen.cfunctions import log2 as sympy_log2
 
-from qualtran.resource_counting.symbolic_counting_utils import bit_length, ceil, log2, smax, smin
+from qualtran.resource_counting.symbolic_counting_utils import (
+    bit_length,
+    ceil,
+    is_symbolic,
+    log2,
+    Shaped,
+    slen,
+    smax,
+    smin,
+)
 
 
 def test_log2():
@@ -48,3 +58,13 @@ def test_bit_length():
         assert x.bit_length() == bit_length(x)
         assert x.bit_length() == bit_length(x + 0.5)
         assert x.bit_length() == bit_length(x + 0.0001)
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [(4,), (1, 2), (1, 2, 3), (sympy.Symbol('n'),), (sympy.Symbol('n'), sympy.Symbol('m'), 100)],
+)
+def test_shaped(shape: tuple[int, ...]):
+    shaped = Shaped(shape=shape)
+    assert is_symbolic(shaped)
+    assert slen(shaped) == shape[0]

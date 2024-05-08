@@ -34,7 +34,7 @@ from qualtran import (
     Signature,
     Soquet,
 )
-from qualtran._infra.composite_bloq import _binst_to_cxns, _reg_to_soq
+from qualtran._infra.composite_bloq import _binst_to_cxns
 from qualtran._infra.gate_with_registers import (
     _get_all_and_output_quregs_from_input,
     merge_qubits,
@@ -99,8 +99,8 @@ class BloqAsCirqGate(cirq.Gate):
 
     @classmethod
     def bloq_on(
-        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager
-    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:
+        cls, bloq: Bloq, cirq_quregs: Dict[str, 'CirqQuregT'], qubit_manager: cirq.QubitManager  # type: ignore[type-var]
+    ) -> Tuple['cirq.Operation', Dict[str, 'CirqQuregT']]:  # type: ignore[type-var]
         """Shim `bloq` into a cirq gate and call it on `cirq_quregs`.
 
         This is used as a default implementation for `Bloq.as_cirq_op` if a native
@@ -157,7 +157,7 @@ class BloqAsCirqGate(cirq.Gate):
         return NotImplemented
 
     def on_registers(
-        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]
+        self, **qubit_regs: Union[cirq.Qid, Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
     ) -> cirq.Operation:
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
@@ -212,7 +212,7 @@ def _bloq_to_cirq_op(
     succ_cxns: Iterable[Connection],
     qvar_to_qreg: Dict[Soquet, _QReg],
     qubit_manager: cirq.QubitManager,
-) -> cirq.Operation:
+) -> Optional[cirq.Operation]:
     _track_soq_name_changes(pred_cxns, qvar_to_qreg)
     in_quregs: Dict[str, CirqQuregT] = {
         reg.name: np.empty((*reg.shape, reg.bitsize), dtype=object)
@@ -257,12 +257,12 @@ def _cbloq_to_cirq_circuit(
         circuit: The cirq.FrozenCircuit version of this composite bloq.
         cirq_quregs: The output mapping from right register names to Cirq qubit arrays.
     """
-    cirq_quregs = {
-        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))
+    cirq_quregs: Dict[str, 'CirqQuregInT'] = {
+        k: np.apply_along_axis(_QReg, -1, *(v, signature.get_left(k).dtype))  # type: ignore[arg-type]
         for k, v in cirq_quregs.items()
     }
     qvar_to_qreg: Dict[Soquet, _QReg] = {
-        Soquet(LeftDangle, idx=idx, reg=reg): cirq_quregs[reg.name][idx]
+        Soquet(LeftDangle, idx=idx, reg=reg): np.asarray(cirq_quregs[reg.name])[idx]
         for reg in signature.lefts()
         for idx in reg.all_idxs()
     }
@@ -302,18 +302,12 @@ def _wire_symbol_to_cirq_diagram_info(
 ) -> cirq.CircuitDiagramInfo:
     wire_symbols = []
     for reg in bloq.signature:
-        # Note: all of our soqs lack a `binst`. The `bloq.wire_symbol` methods
-        # should never use the binst field, but this isn't really enforced anywhere.
-        # https://github.com/quantumlib/Qualtran/issues/608
-        soqs = _reg_to_soq(None, reg)
-        if isinstance(soqs, Soquet):
-            assert soqs.idx == ()
-            soqs = np.array([soqs] * reg.bitsize)
+        if reg.shape:
+            for idx in range(reg.bitsize):
+                for ri in reg.all_idxs():
+                    wire_symbols.append(bloq.wire_symbol(reg, ri))
         else:
-            soqs = np.broadcast_to(soqs, (reg.bitsize,) + reg.shape)
-
-        for soq in soqs.reshape(-1):
-            wire_symbols.append(bloq.wire_symbol(soq))
+            wire_symbols.extend([bloq.wire_symbol(reg)] * reg.bitsize)
 
     def _qualtran_wire_symbols_to_cirq_text(ws: WireSymbol) -> str:
         if isinstance(ws, Circle):
@@ -327,5 +321,5 @@ def _wire_symbol_to_cirq_diagram_info(
             return 'X'
         raise NotImplementedError(f"Unknown cirq version of {ws}")
 
-    wire_symbols = [_qualtran_wire_symbols_to_cirq_text(ws) for ws in wire_symbols]
-    return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+    text_symbols = [_qualtran_wire_symbols_to_cirq_text(ws) for ws in wire_symbols]
+    return cirq.CircuitDiagramInfo(wire_symbols=text_symbols)

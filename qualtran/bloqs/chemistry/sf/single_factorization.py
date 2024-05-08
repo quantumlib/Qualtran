@@ -26,7 +26,8 @@ from functools import cached_property
 from typing import Dict, Iterable, Set, TYPE_CHECKING
 
 import numpy as np
-from attrs import frozen
+from attrs import evolve, frozen
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -37,6 +38,7 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran._infra.data_types import BoundedQUInt
@@ -69,7 +71,7 @@ class SingleFactorizationOneBody(Bloq):
             sampling. Called $\aleph$ in the reference.
         num_bits_rot_aa: Number of bits of precision for rotations for amplitude
             amplification in uniform state preparation. Called $b_r$ in the reference.
-        adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
+        is_adjoint: Whether this bloq is daggered or not. This affects the QROM cost.
         kp1: QROAM blocking factor for data prepared over l (auxiliary) index.
             Defaults to 1 (i.e. QROM).
         kp1: QROAM blocking factor for data prepared over pq indicies. Defaults to 1 (i.e.) QROM.
@@ -96,7 +98,7 @@ class SingleFactorizationOneBody(Bloq):
     num_spin_orb: int
     num_bits_state_prep: int
     num_bits_rot_aa: int = 8
-    adjoint: bool = False
+    is_adjoint: bool = False
     kp1: int = 1
     kp2: int = 1
     kp1_inv: int = 1
@@ -109,6 +111,9 @@ class SingleFactorizationOneBody(Bloq):
             Register("l_ne_zero", QBit()),
             Register('succ_pq', QBit()),
         )
+
+    def adjoint(self) -> 'Bloq':
+        return evolve(self, is_adjoint=not self.is_adjoint)
 
     @property
     def selection_registers(self) -> Iterable[Register]:
@@ -326,10 +331,10 @@ class SingleFactorizationBlockEncoding(Bloq):
         self,
         bb: 'BloqBuilder',
         *,
-        ctrl: SoquetT,
+        ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
-        pq: SoquetT,
-        rot_aa: SoquetT,
+        pq: NDArray[Soquet],  # type: ignore[type-var]
+        rot_aa: NDArray[Soquet],  # type: ignore[type-var]
         swap_pq: SoquetT,
         spin: SoquetT,
         sys: SoquetT,
@@ -425,7 +430,7 @@ def _sf_one_body() -> SingleFactorizationOneBody:
         num_spin_orb=num_spin_orb,
         num_bits_state_prep=num_bits_state_prep,
         num_bits_rot_aa=num_bits_rot_aa,
-        adjoint=False,
+        is_adjoint=False,
     )
     return sf_one_body
 
