@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -137,7 +137,7 @@ class TwoBitCSwap(Bloq):
         ctrl: NDArray[cirq.Qid],  # type: ignore[type-var]
         x: NDArray[cirq.Qid],  # type: ignore[type-var]
         y: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         (ctrl,) = ctrl
         (x,) = x
         (y,) = y

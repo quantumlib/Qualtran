@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Iterator, Optional, Tuple
 
 import attrs
 import cirq
@@ -49,7 +49,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         yield PrepareUniformSuperposition(self.n, self.cvs).on_registers(target=quregs['selection'])
 
 

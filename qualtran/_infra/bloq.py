@@ -27,9 +27,11 @@ if TYPE_CHECKING:
 
     from qualtran import (
         AddControlledT,
+        Adjoint,
         BloqBuilder,
         CompositeBloq,
         CtrlSpec,
+        GateWithRegisters,
         Register,
         Signature,
         Soquet,

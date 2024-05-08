@@ -21,7 +21,7 @@ largest absolute error that one can tolerate in the prepared amplitudes.
 """
 
 from functools import cached_property
-from typing import Sequence, Tuple, TYPE_CHECKING
+from typing import Iterator, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -170,7 +170,7 @@ class StatePreparationAliasSampling(PrepareOracle):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         N = self.selection_registers[0].dtype.iteration_length_or_zero()
         yield PrepareUniformSuperposition(N).on(*quregs['selection'])
         if self.mu == 0:
