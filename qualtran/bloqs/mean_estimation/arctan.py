@@ -25,7 +25,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 
 @attrs.frozen
-class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # ignore: type[misc]
+class ArcTan(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Applies U|x>|0>|0000...0> = |x>|sign>|abs(-2 arctan(x) / pi)>.
 
     Args:

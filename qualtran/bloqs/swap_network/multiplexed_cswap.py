@@ -75,7 +75,9 @@ class MultiplexedCSwap(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        target_shape = tuple(sreg.dtype.iteration_length for sreg in self.selection_registers)
+        target_shape = tuple(
+            sreg.dtype.iteration_length_or_zero() for sreg in self.selection_registers
+        )
         return tuple(
             [
                 Register('targets', QAny(bitsize=self.target_bitsize), shape=target_shape),
@@ -100,7 +102,7 @@ class MultiplexedCSwap(UnaryIterationGate):
         target_regs = kwargs['targets']
         output_reg = kwargs['output']
         return CSwap(self.target_bitsize).make_on(
-            ctrl=control, x=target_regs[selection_idx], y=output_reg
+            ctrl=[control], x=target_regs[selection_idx], y=output_reg
         )
 
 

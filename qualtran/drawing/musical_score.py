@@ -21,7 +21,7 @@ represents a qubit or register of qubits.
 import abc
 import heapq
 import json
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import attrs
 import networkx as nx
@@ -120,7 +120,9 @@ class LineManager:
                 kept.append((ys, until))
         self._reserved = kept
 
-    def maybe_reserve(self, binst: BloqInstance, reg: Register, idx: Tuple[int, ...]):
+    def maybe_reserve(
+        self, binst: Union[DanglingT, BloqInstance], reg: Register, idx: Tuple[int, ...]
+    ):
         """Override this method to provide custom control over line allocation.
 
         After a new y position is allocated and after a y position is freed, this method
@@ -136,7 +138,7 @@ class LineManager:
 
     def new(
         self, binst: BloqInstance, reg: Register, seq_x: int, topo_gen: int
-    ) -> Union[RegPosition, NDArray[RegPosition]]:
+    ) -> Union[RegPosition, NDArray[RegPosition]]:  # type: ignore[type-var]
         """Allocate a position or positions for `reg`.
 
         `binst` and `reg` can optionally modify the allocation strategy.
@@ -164,7 +166,10 @@ class LineManager:
         self.hlines.add(attrs.evolve(partial_h_line, seq_x_end=seq_x_end))
 
     def free(
-        self, binst: BloqInstance, reg: Register, arr: Union[RegPosition, NDArray[RegPosition]]
+        self,
+        binst: Union[DanglingT, BloqInstance],
+        reg: Register,
+        arr: Union[RegPosition, NDArray[RegPosition]],
     ):
         """De-allocate a position or positions for `reg`.
 
@@ -178,16 +183,17 @@ class LineManager:
             self.finish_hline(qline.y, seq_x_end=qline.seq_x)
             self.maybe_reserve(binst, reg, idx=tuple())
             return
-
+        assert isinstance(arr, np.ndarray)
         for idx in reg.all_idxs():
             qline = arr[idx]
+            assert isinstance(qline, RegPosition)
             heapq.heappush(self.available, qline.y)
             self.finish_hline(qline.y, seq_x_end=qline.seq_x)
             self.maybe_reserve(binst, reg, idx)
 
 
 def _get_in_vals(
-    binst: BloqInstance, reg: Register, soq_assign: Dict[Soquet, RegPosition]
+    binst: Union[DanglingT, BloqInstance], reg: Register, soq_assign: Dict[Soquet, RegPosition]
 ) -> Union[RegPosition, NDArray[RegPosition]]:
     """Pluck out the correct values from `soq_assign` for `reg` on `binst`."""
     if not reg.shape:
@@ -203,7 +209,7 @@ def _get_in_vals(
 
 def _update_assign_from_vals(
     regs: Iterable[Register],
-    binst: BloqInstance,
+    binst: Union[DanglingT, BloqInstance],
     vals: Dict[str, RegPosition],
     soq_assign: Dict[Soquet, RegPosition],
     seq_x: int,
@@ -217,9 +223,11 @@ def _update_assign_from_vals(
     """
     for reg in regs:
         try:
-            arr = vals[reg.name]
+            arr: Union[RegPosition, NDArray[RegPosition]] = vals[reg.name]
         except KeyError:
-            arr = manager.new(binst=binst, reg=reg, seq_x=seq_x, topo_gen=topo_gen)
+            arr = manager.new(
+                binst=cast(BloqInstance, binst), reg=reg, seq_x=seq_x, topo_gen=topo_gen
+            )
 
         if reg.shape:
             arr = np.asarray(arr)
@@ -234,6 +242,7 @@ def _update_assign_from_vals(
                 soq_assign[soq] = attrs.evolve(arr[idx], seq_x=seq_x, topo_gen=topo_gen)
         else:
             soq = Soquet(binst, reg)
+            assert isinstance(arr, RegPosition)
             soq_assign[soq] = attrs.evolve(arr, seq_x=seq_x, topo_gen=topo_gen)
 
 
@@ -289,7 +298,7 @@ def _binst_assign_line(
 
 
 def _cbloq_musical_score(
-    signature: Signature, binst_graph: nx.DiGraph, manager: LineManager = None
+    signature: Signature, binst_graph: nx.DiGraph, manager: Optional[LineManager] = None
 ) -> Tuple[Dict[str, RegPosition], Dict[Soquet, RegPosition], LineManager]:
     """Assign musical score positions through a composite bloq's contents.
 
@@ -480,7 +489,7 @@ def _soq_to_symb(soq: Soquet) -> WireSymbol:
         return Text(soq.pretty() + f'/{soq.reg.dtype}', fontsize=8)
 
     # Otherwise, use `Bloq.wire_symbol`.
-    return soq.binst.bloq.wire_symbol(soq)
+    return soq.binst.bloq.wire_symbol(soq.reg, soq.idx)
 
 
 @mutable
@@ -623,6 +632,7 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
                 binst_x = rpos.seq_x
 
         if not isinstance(binst, DanglingT):
+            assert binst_x is not None
             msd.vlines.append(
                 VLine(
                     x=binst_x,

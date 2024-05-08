@@ -19,7 +19,7 @@ import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Signature, Soquet, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.drawing import TextBox, WireSymbol
 
 if TYPE_CHECKING:
@@ -111,7 +111,7 @@ class TGate(Bloq):
         maybe_dag = 'is_adjoint=True' if self.is_adjoint else ''
         return f'TGate({maybe_dag})'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox(self.pretty_name())
 
 
