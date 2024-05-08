@@ -79,4 +79,7 @@ during state preparation. The cost of initial state preparation is typically
 ignored.
 """
 
-from .select_and_prepare import PrepareFirstQuantization, SelectFirstQuantization
+from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
+    PrepareFirstQuantization,
+    SelectFirstQuantization,
+)

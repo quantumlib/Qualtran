@@ -17,8 +17,8 @@
 isort:skip_file
 """
 
-from .graphviz import GraphDrawer, PrettyGraphDrawer
-from .musical_score import (
+from qualtran.drawing.graphviz import GraphDrawer, PrettyGraphDrawer
+from qualtran.drawing.musical_score import (
     RegPosition,
     HLine,
     VLine,
@@ -37,16 +37,16 @@ from .musical_score import (
     dump_musical_score,
 )
 
-from .classical_sim_graph import ClassicalSimGraphDrawer
+from qualtran.drawing.classical_sim_graph import ClassicalSimGraphDrawer
 
-from .bloq_counts_graph import (
+from qualtran.drawing.bloq_counts_graph import (
     GraphvizCounts,
     GraphvizCallGraph,
     format_counts_sigma,
     format_counts_graph_markdown,
 )
 
-from ._show_funcs import (
+from qualtran.drawing._show_funcs import (
     show_bloq,
     show_bloqs,
     show_call_graph,

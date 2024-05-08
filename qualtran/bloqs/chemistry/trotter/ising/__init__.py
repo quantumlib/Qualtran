@@ -21,4 +21,4 @@ $$
 where $J$ and $\Gamma$ are coupling parameters.
 """
 
-from .unitaries import IsingXUnitary, IsingZZUnitary
+from qualtran.bloqs.chemistry.trotter.ising.unitaries import IsingXUnitary, IsingZZUnitary

@@ -23,7 +23,7 @@ import numpy as np
 import sympy
 from attrs import field, frozen
 
-from .data_types import QAny, QBit, QDType
+from qualtran._infra.data_types import QAny, QBit, QDType
 
 
 class Side(enum.Flag):

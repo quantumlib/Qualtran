@@ -16,9 +16,8 @@ from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Type, T
 
 from attrs import field, frozen
 
+from qualtran._infra.bloq import Bloq
 from qualtran.resource_counting import GeneralizerT
-
-from .bloq import Bloq
 
 _BloqType = TypeVar('_BloqType', bound=Bloq)
 _GeneralizerType = Union[GeneralizerT, Sequence[GeneralizerT]]

@@ -34,13 +34,12 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
+from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
-
-from .t_gate import TGate
 
 if TYPE_CHECKING:
     from qualtran import CompositeBloq

@@ -21,16 +21,24 @@ gates `TGate` and `Toffoli` which are commonly counted to estimate algorithm res
 requirements.
 """
 
-from .cnot import CNOT
-from .global_phase import GlobalPhase
-from .hadamard import Hadamard
-from .on_each import OnEach
-from .rotation import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
-from .s_gate import SGate
-from .su2_rotation import SU2RotationGate
-from .swap import CSwap, Swap, TwoBitCSwap, TwoBitSwap
-from .t_gate import TGate
-from .toffoli import Toffoli
-from .x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate
-from .y_gate import YGate
-from .z_basis import IntEffect, IntState, OneEffect, OneState, ZeroEffect, ZeroState, ZGate
+from qualtran.bloqs.basic_gates.cnot import CNOT
+from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+from qualtran.bloqs.basic_gates.hadamard import Hadamard
+from qualtran.bloqs.basic_gates.on_each import OnEach
+from qualtran.bloqs.basic_gates.rotation import CZPowGate, Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+from qualtran.bloqs.basic_gates.s_gate import SGate
+from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+from qualtran.bloqs.basic_gates.swap import CSwap, Swap, TwoBitCSwap, TwoBitSwap
+from qualtran.bloqs.basic_gates.t_gate import TGate
+from qualtran.bloqs.basic_gates.toffoli import Toffoli
+from qualtran.bloqs.basic_gates.x_basis import MinusEffect, MinusState, PlusEffect, PlusState, XGate
+from qualtran.bloqs.basic_gates.y_gate import YGate
+from qualtran.bloqs.basic_gates.z_basis import (
+    IntEffect,
+    IntState,
+    OneEffect,
+    OneState,
+    ZeroEffect,
+    ZeroState,
+    ZGate,
+)

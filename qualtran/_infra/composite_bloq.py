@@ -40,10 +40,17 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
-from .bloq import Bloq, DecomposeTypeError
-from .data_types import check_dtypes_consistent, QAny, QBit, QDType
-from .quantum_graph import BloqInstance, Connection, DanglingT, LeftDangle, RightDangle, Soquet
-from .registers import Register, Side, Signature
+from qualtran._infra.bloq import Bloq, DecomposeTypeError
+from qualtran._infra.data_types import check_dtypes_consistent, QAny, QBit, QDType
+from qualtran._infra.quantum_graph import (
+    BloqInstance,
+    Connection,
+    DanglingT,
+    LeftDangle,
+    RightDangle,
+    Soquet,
+)
+from qualtran._infra.registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     import cirq

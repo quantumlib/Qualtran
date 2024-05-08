@@ -19,10 +19,16 @@ import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from .composite_bloq import _binst_to_cxns, _cxn_to_soq_dict, _map_soqs, _reg_to_soq, BloqBuilder
-from .gate_with_registers import GateWithRegisters
-from .quantum_graph import LeftDangle, RightDangle
-from .registers import Signature
+from qualtran._infra.composite_bloq import (
+    _binst_to_cxns,
+    _cxn_to_soq_dict,
+    _map_soqs,
+    _reg_to_soq,
+    BloqBuilder,
+)
+from qualtran._infra.gate_with_registers import GateWithRegisters
+from qualtran._infra.quantum_graph import LeftDangle, RightDangle
+from qualtran._infra.registers import Signature
 
 if TYPE_CHECKING:
     from qualtran import Bloq, CompositeBloq, Register, Signature, Soquet, SoquetT

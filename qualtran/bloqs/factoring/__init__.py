@@ -12,6 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from .mod_add import CtrlAddK, CtrlModAddK, CtrlScaleModAdd
-from .mod_exp import ModExp
-from .mod_mul import CtrlModMul
+from qualtran.bloqs.factoring.mod_add import CtrlAddK, CtrlModAddK, CtrlScaleModAdd
+from qualtran.bloqs.factoring.mod_exp import ModExp
+from qualtran.bloqs.factoring.mod_mul import CtrlModMul

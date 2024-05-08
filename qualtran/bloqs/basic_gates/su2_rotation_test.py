@@ -26,10 +26,14 @@ from qualtran.bloqs.basic_gates import (
     ZGate,
     ZPowGate,
 )
+from qualtran.bloqs.basic_gates.su2_rotation import (
+    _hadamard,
+    _su2_rotation_gate,
+    _t_gate,
+    SU2RotationGate,
+)
 from qualtran.cirq_interop import BloqAsCirqGate
 from qualtran.cirq_interop.testing import assert_decompose_is_consistent_with_t_complexity
-
-from .su2_rotation import _hadamard, _su2_rotation_gate, _t_gate, SU2RotationGate
 
 
 def test_decompose_SU2_to_single_qubit_pauli_gates():

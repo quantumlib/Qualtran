@@ -56,5 +56,5 @@ appropriately weighting these non-zero terms and then using $|+\rangle$ states
 to perform control swaps between the $pqrs$ registers.
 """
 
-from .prepare import PrepareSparse
-from .select_bloq import SelectSparse
+from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
+from qualtran.bloqs.chemistry.sparse.select_bloq import SelectSparse

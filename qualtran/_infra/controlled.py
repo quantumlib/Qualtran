@@ -32,10 +32,10 @@ import numpy as np
 import quimb.tensor as qtn
 from numpy.typing import NDArray
 
-from .bloq import Bloq
-from .data_types import QBit, QDType
-from .gate_with_registers import GateWithRegisters
-from .registers import Register, Side, Signature
+from qualtran._infra.bloq import Bloq
+from qualtran._infra.data_types import QBit, QDType
+from qualtran._infra.gate_with_registers import GateWithRegisters
+from qualtran._infra.registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT

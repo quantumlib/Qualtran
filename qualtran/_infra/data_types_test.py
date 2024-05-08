@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import sympy
 
-from .data_types import (
+from qualtran._infra.data_types import (
     BoundedQUInt,
     check_dtypes_consistent,
     QAny,

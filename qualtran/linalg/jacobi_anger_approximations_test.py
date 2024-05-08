@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-from .jacobi_anger_approximations import (
+from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     approx_exp_sin_by_jacobi_anger,
     degree_jacobi_anger_approximation,

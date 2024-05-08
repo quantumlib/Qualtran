@@ -13,10 +13,13 @@
 #  limitations under the License.
 
 
-from ._dense import bloq_to_dense, get_right_and_left_inds
-from ._flattening import bloq_has_custom_tensors, flatten_for_tensor_contraction
-from ._quimb import cbloq_as_contracted_tensor, cbloq_to_quimb
-from ._tensor_data_manipulation import (
+from qualtran.simulation.tensor._dense import bloq_to_dense, get_right_and_left_inds
+from qualtran.simulation.tensor._flattening import (
+    bloq_has_custom_tensors,
+    flatten_for_tensor_contraction,
+)
+from qualtran.simulation.tensor._quimb import cbloq_as_contracted_tensor, cbloq_to_quimb
+from qualtran.simulation.tensor._tensor_data_manipulation import (
     active_space_for_ctrl_spec,
     eye_tensor_for_signature,
     tensor_data_from_unitary_and_signature,

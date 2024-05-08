@@ -18,8 +18,7 @@ from numpy.typing import NDArray
 
 from qualtran import Bloq, Signature, Soquet
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
-
-from ._quimb import cbloq_to_quimb
+from qualtran.simulation.tensor._quimb import cbloq_to_quimb
 
 
 def get_right_and_left_inds(signature: Signature) -> List[List[Soquet]]:

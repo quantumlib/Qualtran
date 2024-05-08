@@ -32,8 +32,7 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-
-from .atom import TestAtom, TestTwoBitOp
+from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 
 
 @frozen

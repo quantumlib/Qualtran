@@ -70,4 +70,7 @@ including this quantum projectile.  Again, state preparation costs are currently
 ignored as this is logarithmic in the size of the basis set.
 """
 
-from .select_and_prepare import PrepareFirstQuantizationWithProj, SelectFirstQuantizationWithProj
+from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
+    PrepareFirstQuantizationWithProj,
+    SelectFirstQuantizationWithProj,
+)

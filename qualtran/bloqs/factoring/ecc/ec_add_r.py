@@ -19,10 +19,9 @@ import sympy
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QUInt, Register, Signature, Soquet
+from qualtran.bloqs.factoring.ecc.ec_point import ECPoint
 from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
-
-from .ec_point import ECPoint
 
 
 @frozen

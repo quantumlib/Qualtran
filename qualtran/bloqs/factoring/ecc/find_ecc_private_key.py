@@ -20,11 +20,10 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QUInt, Signature, SoquetT
 from qualtran.bloqs.basic_gates import IntState
+from qualtran.bloqs.factoring.ecc.ec_phase_estimate_r import ECPhaseEstimateR
+from qualtran.bloqs.factoring.ecc.ec_point import ECPoint
 from qualtran.bloqs.util_bloqs import Free
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-
-from .ec_phase_estimate_r import ECPhaseEstimateR
-from .ec_point import ECPoint
 
 
 @frozen

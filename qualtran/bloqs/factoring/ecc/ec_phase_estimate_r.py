@@ -31,11 +31,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import PlusState
+from qualtran.bloqs.factoring.ecc._ecc_shims import MeasureQFT
+from qualtran.bloqs.factoring.ecc.ec_add_r import ECAddR
+from qualtran.bloqs.factoring.ecc.ec_point import ECPoint
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-
-from ._ecc_shims import MeasureQFT
-from .ec_add_r import ECAddR
-from .ec_point import ECPoint
 
 
 @frozen
