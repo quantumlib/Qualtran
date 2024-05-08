@@ -20,7 +20,7 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, Register, Signature
+from qualtran import QBit, Register, Signature
 from qualtran._infra.gate_with_registers import (
     merge_qubits,
     SpecializedSingleQubitControlledGate,
@@ -31,7 +31,7 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate, GateWithRegisters):  # type: ignore[misc]
+class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s><s|)$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$

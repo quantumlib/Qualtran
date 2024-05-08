@@ -19,7 +19,7 @@ import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import CtrlSpec, GateWithRegisters, Register, Signature
+from qualtran import CtrlSpec, Register, Signature
 from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.mean_estimation.complex_phase_oracle import ComplexPhaseOracle
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
@@ -63,7 +63,7 @@ class CodeForRandomVariable:
 
 
 @attrs.frozen
-class MeanEstimationOperator(SpecializedSingleQubitControlledGate, GateWithRegisters):  # type: ignore[misc]
+class MeanEstimationOperator(SpecializedSingleQubitControlledGate):
     r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544.
 
     The MeanEstimationOperator (aka KO Operator) expects `CodeForRandomVariable` to specify the
