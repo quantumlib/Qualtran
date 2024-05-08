@@ -382,9 +382,29 @@ def test_classical_simple_add_constant_signed(bitsize, k, x, cvs, ctrls, result)
     assert bloq_classical[-1] == result
 
 
-def test_subtract_bloq():
+@pytest.mark.slow
+def test_subtract_bloq_decomposition():
     gate = Subtract(QInt(3), QInt(5))
     qlt_testing.assert_valid_bloq_decomposition(gate)
+
+    want = np.zeros((256, 256))
+    for a_b in range(256):
+        a, b = a_b >> 5, a_b & 31
+        c = (a - b) % 32
+        want[(a << 5) | c][a_b] = 1
+    got = gate.tensor_contract()
+    np.testing.assert_equal(got, want)
+
+
+def test_subtract_bloq_validation():
+    assert Subtract(QUInt(3)) == Subtract(QUInt(3), QUInt(3))
+    with pytest.raises(ValueError, match='bitsize must be less'):
+        _ = Subtract(QInt(5), QInt(3))
+    assert Subtract(QUInt(3)).dtype == QUInt(3)
+
+
+def test_subtract_bloq_consitant_counts():
+    qlt_testing.assert_equivalent_bloq_counts(Subtract(QInt(3), QInt(4)))
 
 
 @pytest.mark.notebook

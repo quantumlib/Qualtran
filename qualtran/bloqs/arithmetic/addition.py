@@ -39,10 +39,10 @@ from qualtran import (
     SoquetT,
 )
 from qualtran._infra.data_types import QMontgomeryUInt
+from qualtran.bloqs import util_bloqs
 from qualtran.bloqs.basic_gates import CNOT, XGate
 from qualtran.bloqs.mcmt.and_bloq import And
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
-from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -332,7 +332,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {
             (And(uncompute=self.is_adjoint), self.bitsize),
-            (ArbitraryClifford(n=2), 5 * self.bitsize),
+            (util_bloqs.ArbitraryClifford(n=2), 5 * self.bitsize),
         }
 
     def __pow__(self, power: int):
@@ -634,8 +634,8 @@ class Subtract(Bloq):
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    a_dtype: QInt = field()
-    b_dtype: QInt = field()
+    a_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
+    b_dtype: Union[QInt, QUInt, QMontgomeryUInt] = field()
 
     @b_dtype.default
     def b_dtype_default(self):
@@ -643,8 +643,8 @@ class Subtract(Bloq):
 
     @a_dtype.validator
     def _a_dtype_validate(self, field, val):
-        if not isinstance(val, QInt):
-            raise ValueError("Only QInt type is supported.")
+        if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
+            raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
         if isinstance(val.num_qubits, sympy.Expr):
             return
         if val.bitsize > self.b_dtype.bitsize:
@@ -652,38 +652,21 @@ class Subtract(Bloq):
 
     @b_dtype.validator
     def _b_dtype_validate(self, field, val):
-        if not isinstance(val, QInt):
-            raise ValueError("Only QInt type is supported.")
+        if not isinstance(val, (QInt, QUInt, QMontgomeryUInt)):
+            raise ValueError("Only QInt, QUInt and QMontgomerUInt types are supported.")
 
     @property
     def dtype(self):
-        return self.b_dtype
+        if self.a_dtype != self.b_dtype:
+            raise ValueError(
+                "Add.dtype is only supported when both operands have the same dtype: "
+                f"{self.a_dtype=}, {self.b_dtype=}"
+            )
+        return self.a_dtype
 
     @property
     def signature(self):
         return Signature([Register("a", self.a_dtype), Register("b", self.b_dtype)])
-
-    def add_my_tensors(
-        self,
-        tn: 'qtn.TensorNetwork',
-        tag: Any,
-        *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
-    ):
-        import quimb.tensor as qtn
-
-        if isinstance(self.a_dtype, QInt) or isinstance(self.b_dtype, QInt):
-            raise TypeError("Tensor contraction for addition is only supported for unsigned ints.")
-        N_a = 2**self.a_dtype.bitsize
-        N_b = 2**self.b_dtype.bitsize
-        inds = (incoming['a'], incoming['b'], outgoing['a'], outgoing['b'])
-        unitary = np.zeros((N_a, N_b, N_a, N_b), dtype=np.complex128)
-        # TODO: Add a value-to-index method on dtype to make this easier.
-        for a, b in itertools.product(range(N_a), range(N_b)):
-            unitary[a, b, a, int(math.fmod(a - b, N_b))] = 1
-
-        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
@@ -694,7 +677,7 @@ class Subtract(Bloq):
         return {'a': a, 'b': int(math.fmod(a - b, N))}
 
     def short_name(self) -> str:
-        return "a+b"
+        return "a-b"
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
@@ -712,10 +695,18 @@ class Subtract(Bloq):
             raise ValueError()
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        a_dtype = (
+            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
+        )
+        b_dtype = (
+            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
+        )
         return {
             (XGate(), self.b_dtype.bitsize),
             (SimpleAddConstant(self.b_dtype.bitsize, k=1), 1),
-            (Add(self.a_dtype, self.b_dtype), 1),
+            (Add(a_dtype, b_dtype), 1),
+            (util_bloqs.Split(self.b_dtype), 1),
+            (util_bloqs.Join(self.b_dtype), 1),
         }
 
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
@@ -723,7 +714,15 @@ class Subtract(Bloq):
         b = bb.add(
             SimpleAddConstant(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
         )  # 2s complement of b.
-        a, b = bb.add(Add(self.a_dtype, self.b_dtype), a=a, b=b)  # a - b
+
+        a_dtype = (
+            self.a_dtype if not isinstance(self.a_dtype, QInt) else QUInt(self.a_dtype.bitsize)
+        )
+        b_dtype = (
+            self.b_dtype if not isinstance(self.b_dtype, QInt) else QUInt(self.b_dtype.bitsize)
+        )
+
+        a, b = bb.add(Add(a_dtype, b_dtype), a=a, b=b)  # a - b
         return {'a': a, 'b': b}
 
 
