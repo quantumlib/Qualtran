@@ -226,6 +226,9 @@ class QInt(QDType):
         if np.any(val_array >= 2 ** (self.bitsize - 1)):
             raise ValueError(f"Too-large classical {self}s encountered in {debug_str}")
 
+    def __str__(self):
+        return f'QInt({self.bitsize})'
+
 
 @attrs.frozen
 class QIntOnesComp(QDType):
@@ -316,6 +319,9 @@ class QUInt(QDType):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+    def __str__(self):
+        return f'QUInt({self.bitsize})'
 
 
 @attrs.frozen
@@ -516,7 +522,7 @@ class QMontgomeryUInt(QDType):
     fast modular multiplication.
 
     In order to convert an unsigned integer from a finite field x % p into Montgomery form you
-    first must choose a value r > p where gcd(r, p) = 1. Typically this value is a power of 2.
+    first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
 
     Conversion to Montgomery form:
         [x] = (x * r) % p

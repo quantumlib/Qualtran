@@ -15,7 +15,7 @@
 """Classes for drawing bloq counts graphs with Graphviz."""
 import abc
 import html
-from typing import Any, Dict, Iterable, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
 import attrs
 import IPython.display
@@ -185,7 +185,7 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
             in each node. The keys and values must support `str()`.
     """
 
-    def __init__(self, g: nx.DiGraph, bloq_data: Dict['Bloq', Dict[Any, Any]] = None):
+    def __init__(self, g: nx.DiGraph, bloq_data: Optional[Dict['Bloq', Dict[Any, Any]]] = None):
         super().__init__(g)
 
         if bloq_data is None:
@@ -214,12 +214,15 @@ class GraphvizCallGraph(_CallGraphDrawerBase):
 
 def _format_bloq_expr_markdown(bloq: Bloq, expr: Union[int, sympy.Expr]) -> str:
     """Return "`bloq`: expr" as markdown."""
-    try:
-        expr = expr._repr_latex_()
-    except AttributeError:
-        expr = f'{expr}'
+    if isinstance(expr, int):
+        expr_str = str(expr)
+    else:
+        try:
+            expr_str = expr._repr_latex_()
+        except AttributeError:
+            expr_str = f'{expr}'
 
-    return f'`{bloq}`: {expr}'
+    return f'`{bloq}`: {expr_str}'
 
 
 def format_counts_graph_markdown(graph: nx.DiGraph) -> str:

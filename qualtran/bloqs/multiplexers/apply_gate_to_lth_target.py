@@ -19,6 +19,7 @@ from typing import Callable, Sequence, Tuple
 import attrs
 import cirq
 import numpy as np
+import sympy
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
@@ -78,16 +79,26 @@ class ApplyGateToLthQubit(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
+        if any(
+            isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
+            for reg in self.selection_registers
+        ):
+            raise ValueError(f'Symbolic iteration size not allowed for {self.selection_registers}')
         total_iteration_size = np.prod(
-            tuple(reg.dtype.iteration_length_or_zero() for reg in self.selection_registers)
+            tuple(int(reg.dtype.iteration_length_or_zero()) for reg in self.selection_registers)
         )
         return (Register('target', QAny(int(total_iteration_size))),)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if any(
+            isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
+            for reg in self.selection_registers
+        ):
+            raise ValueError(f'Symbolic iteration size not allowed for {self.selection_registers}')
         wire_symbols = ["@"] * total_bits(self.control_registers)
         wire_symbols += ["In"] * total_bits(self.selection_registers)
         for it in itertools.product(
-            *[range(reg.dtype.iteration_length_or_zero()) for reg in self.selection_regs]
+            *[range(int(reg.dtype.iteration_length_or_zero())) for reg in self.selection_regs]
         ):
             wire_symbols += [str(self.nth_gate(*it))]
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
@@ -99,7 +110,14 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         target: Sequence[cirq.Qid],
         **selection_indices: int,
     ) -> cirq.OP_TREE:
-        selection_shape = tuple(reg.dtype.iteration_length_or_zero() for reg in self.selection_regs)
+        if any(
+            isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
+            for reg in self.selection_registers
+        ):
+            raise ValueError(f'Symbolic iteration size not allowed for {self.selection_registers}')
+        selection_shape = tuple(
+            int(reg.dtype.iteration_length_or_zero()) for reg in self.selection_regs
+        )
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = int(np.ravel_multi_index(selection_idx, selection_shape))
         return self.nth_gate(*selection_idx).on(target[target_idx]).controlled_by(control)
