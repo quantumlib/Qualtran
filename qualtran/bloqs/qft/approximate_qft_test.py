@@ -111,7 +111,9 @@ def test_approximate_qft_t_complexity(n: int, with_reverse: bool):
         t_complexity = 0
         for i in range(1, n):
             t_complexity += (
-                AddIntoPhaseGrad(min(i, b - 1), min(i, b - 1) + 1, controlled=True).t_complexity().t
+                AddIntoPhaseGrad(min(i, b - 1), min(i, b - 1) + 1, controlled_by=True)
+                .t_complexity()
+                .t
             )
         return t_complexity
 

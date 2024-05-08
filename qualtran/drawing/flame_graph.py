@@ -24,7 +24,7 @@ import numpy as np
 import sympy
 
 from qualtran import Bloq
-from qualtran.resource_counting.bloq_counts import _compute_sigma
+from qualtran.resource_counting._call_graph import _compute_sigma
 from qualtran.resource_counting.t_counts_from_sigma import t_counts_from_sigma
 
 
@@ -161,8 +161,7 @@ def get_flame_graph_data(
     if file_path:
         with open(file_path, 'w') as f:
             f.write('\n'.join(data))
-    else:
-        return data
+    return data
 
 
 def get_flame_graph_svg_data(
@@ -190,5 +189,4 @@ def get_flame_graph_svg_data(
     if file_path:
         with open(file_path, 'w') as f:
             f.write(svg_data)
-    else:
-        return svg_data
+    return svg_data

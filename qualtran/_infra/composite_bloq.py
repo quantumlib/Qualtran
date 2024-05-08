@@ -16,24 +16,28 @@
 from functools import cached_property
 from typing import (
     Callable,
+    cast,
     Dict,
     FrozenSet,
     Hashable,
     Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
     overload,
     Sequence,
     Set,
     Tuple,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 
 import attrs
 import networkx as nx
 import numpy as np
+import sympy
 from numpy.typing import NDArray
 
 from .bloq import Bloq, DecomposeTypeError
@@ -44,22 +48,34 @@ from .registers import Register, Side, Signature
 if TYPE_CHECKING:
     import cirq
 
-    from qualtran.cirq_interop import CirqQuregInT, CirqQuregT
+    from qualtran.cirq_interop._cirq_to_bloq import CirqQuregInT, CirqQuregT
     from qualtran.cirq_interop.t_complexity_protocol import TComplexity
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
 
+# NDArrays must be bound to np.generic
+_SoquetType = TypeVar('_SoquetType', bound=np.generic)
 
-SoquetT = Union[Soquet, NDArray[Soquet]]
+SoquetT = Union[Soquet, NDArray[_SoquetType]]
 """A `Soquet` or array of soquets."""
 
-SoquetInT = Union[Soquet, NDArray[Soquet], Sequence[Soquet]]
+SoquetInT = Union[Soquet, NDArray[_SoquetType], Sequence[Soquet]]
 """A soquet or array-like of soquets.
 
 This type alias is used for input argument to parts of the library that are more
 permissive about the types they accept. Under-the-hood, such functions will
 canonicalize and return `SoquetT`.
 """
+
+
+def _to_tuple(x: Iterable[Connection]) -> Sequence[Connection]:
+    """mypy-compatible attrs converter for CompositeBloq.connections"""
+    return tuple(x)
+
+
+def _to_set(x: Iterable[BloqInstance]) -> FrozenSet[BloqInstance]:
+    """mypy-compatible attrs converter for CompositeBloq.bloq_instances"""
+    return frozenset(x)
 
 
 @attrs.frozen
@@ -83,9 +99,9 @@ class CompositeBloq(Bloq):
             should correspond to the dangling `Soquets` in the `cxns`.
     """
 
-    connections: Tuple[Connection, ...] = attrs.field(converter=tuple)
+    connections: Tuple[Connection, ...] = attrs.field(converter=_to_tuple)
     signature: Signature
-    bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=frozenset)
+    bloq_instances: FrozenSet[BloqInstance] = attrs.field(converter=_to_set)
 
     @bloq_instances.default
     def _default_bloq_instances(self):
@@ -162,7 +178,9 @@ class CompositeBloq(Bloq):
 
         return cirq_optree_to_cbloq(circuit)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(
+        self, **vals: Union[sympy.Symbol, 'ClassicalValT']
+    ) -> Dict[str, 'ClassicalValT']:
         """Support classical data by recursing into the composite bloq."""
         from qualtran.simulation.classical_sim import call_cbloq_classically
 
@@ -434,7 +452,7 @@ def _create_binst_graph(
 
 
 def _binst_to_cxns(
-    binst: BloqInstance, binst_graph: nx.DiGraph
+    binst: Union[BloqInstance, DanglingT], binst_graph: nx.DiGraph
 ) -> Tuple[List[Connection], List[Connection]]:
     """Helper method to extract all predecessor and successor Connections for a binst."""
     pred_cxns: List[Connection] = []
@@ -481,7 +499,7 @@ def _cxn_to_soq_dict(
         assign = get_assign(cxn)
 
         if me.reg.shape:
-            soqdict[me.reg.name][me.idx] = assign
+            soqdict[me.reg.name][me.idx] = assign  # type: ignore[index]
         else:
             soqdict[me.reg.name] = assign
 
@@ -585,14 +603,14 @@ def _reg_to_soq(
     # Annoyingly, this must be a special case.
     # Otherwise, x[i] = thing will nest *array* objects because our ndarray's type is
     # 'object'. This wouldn't happen--for example--with an integer array.
-    soqs = Soquet(binst, reg)
-    available.add(soqs)
-    return soqs
+    soq = Soquet(binst, reg)
+    available.add(soq)
+    return soq
 
 
 def _process_soquets(
     registers: Iterable[Register],
-    in_soqs: Dict[str, SoquetT],
+    in_soqs: Mapping[str, SoquetInT],
     debug_str: str,
     func: Callable[[Soquet, Register, Tuple[int, ...]], None],
 ) -> None:
@@ -617,7 +635,7 @@ def _process_soquets(
             the incoming, indexed soquet as well as the register and (left-)index it
             has been mapped to.
     """
-
+    unchecked_names: Set[str] = set(in_soqs.keys())
     for reg in registers:
         try:
             # if we want fancy indexing (which we do), we need numpy
@@ -626,7 +644,7 @@ def _process_soquets(
         except KeyError:
             raise BloqError(f"{debug_str} requires a Soquet named `{reg.name}`.") from None
 
-        del in_soqs[reg.name]  # so we can check for surplus arguments.
+        unchecked_names.remove(reg.name)  # so we can check for surplus arguments.
 
         for li in reg.all_idxs():
             idxed_soq = in_soq[li]
@@ -639,9 +657,8 @@ def _process_soquets(
                 raise BloqError(
                     f"{debug_str} register dtypes are not consistent {extra_str}."
                 ) from None
-
-    if in_soqs:
-        raise BloqError(f"{debug_str} does not accept Soquets: {in_soqs.keys()}.") from None
+    if unchecked_names:
+        raise BloqError(f"{debug_str} does not accept Soquets: {unchecked_names}.") from None
 
 
 def _map_soqs(
@@ -818,7 +835,9 @@ class BloqBuilder:
         initial_soqs: Dict[str, SoquetT] = {}
         for reg in signature:
             if reg.side & Side.LEFT:
-                initial_soqs[reg.name] = bb.add_register_from_dtype(reg)
+                register = bb.add_register_from_dtype(reg)
+                assert register is not None
+                initial_soqs[reg.name] = register
             else:
                 bb.add_register_from_dtype(reg)
 
@@ -853,7 +872,11 @@ class BloqBuilder:
         return i
 
     def _add_cxn(
-        self, binst: BloqInstance, idxed_soq: Soquet, reg: Register, idx: Tuple[int, ...]
+        self,
+        binst: Union[BloqInstance, DanglingT],
+        idxed_soq: Soquet,
+        reg: Register,
+        idx: Tuple[int, ...],
     ) -> None:
         """Helper function to be used as the base for the `func` argument of `_process_soquets`.
 
@@ -946,7 +969,7 @@ class BloqBuilder:
         return outs
 
     def _add_binst(
-        self, binst: BloqInstance, in_soqs: Dict[str, SoquetInT]
+        self, binst: BloqInstance, in_soqs: Mapping[str, SoquetInT]
     ) -> Iterator[Tuple[str, SoquetT]]:
         """Add a bloq instance.
 
@@ -991,7 +1014,8 @@ class BloqBuilder:
 
         # Initial mapping of LeftDangle according to user-provided in_soqs.
         soq_map: List[Tuple[SoquetT, SoquetT]] = [
-            (_reg_to_soq(LeftDangle, reg), in_soqs[reg.name]) for reg in cbloq.signature.lefts()
+            (_reg_to_soq(LeftDangle, reg), cast(SoquetT, in_soqs[reg.name]))
+            for reg in cbloq.signature.lefts()
         ]
 
         for binst, in_soqs, old_out_soqs in cbloq.iter_bloqsoqs():
@@ -1066,7 +1090,7 @@ class BloqBuilder:
             connections=self._cxns, signature=signature, bloq_instances=self._binsts
         )
 
-    def allocate(self, n: int = 1, dtype: Optional[QDType] = None) -> Soquet:
+    def allocate(self, n: Union[int, sympy.Expr] = 1, dtype: Optional[QDType] = None) -> Soquet:
         from qualtran.bloqs.util_bloqs import Allocate
 
         if dtype is not None:
@@ -1081,7 +1105,7 @@ class BloqBuilder:
 
         self.add(Free(dtype=soq.reg.dtype), reg=soq)
 
-    def split(self, soq: Soquet) -> NDArray[Soquet]:
+    def split(self, soq: Soquet) -> NDArray[Soquet]:  # type: ignore[type-var]
         """Add a Split bloq to split up a register."""
         from qualtran.bloqs.util_bloqs import Split
 
@@ -1090,7 +1114,7 @@ class BloqBuilder:
 
         return self.add(Split(dtype=soq.reg.dtype), reg=soq)
 
-    def join(self, soqs: NDArray[Soquet], dtype: Optional[QDType] = None) -> Soquet:
+    def join(self, soqs: NDArray[Soquet], dtype: Optional[QDType] = None) -> Soquet:  # type: ignore[type-var]
         from qualtran.bloqs.util_bloqs import Join
 
         try:

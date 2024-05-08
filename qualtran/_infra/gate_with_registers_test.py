@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Iterator, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -46,7 +46,7 @@ class _TestGate(GateWithRegisters):
         regs = Signature([r1, r2, r3])
         return regs
 
-    def decompose_from_registers(self, *, context, **quregs) -> cirq.OP_TREE:
+    def decompose_from_registers(self, *, context, **quregs) -> Iterator[cirq.OP_TREE]:
         yield cirq.H.on_each(quregs['r1'])
         yield cirq.X.on_each(quregs['r2'])
         yield cirq.X.on_each(quregs['r3'])
@@ -57,7 +57,9 @@ def test_gate_with_registers():
     assert tg._num_qubits_() == 8
     qubits = cirq.LineQubit.range(8)
     circ = cirq.Circuit(tg._decompose_(qubits))
-    assert circ.operation_at(cirq.LineQubit(3), 0).gate == cirq.H
+    op = circ.operation_at(cirq.LineQubit(3), 0)
+    assert op is not None
+    assert op.gate == cirq.H
 
     op1 = tg.on_registers(r1=qubits[:5], r2=qubits[6:], r3=qubits[5])
     op2 = tg.on(*qubits[:5], *qubits[6:], qubits[5])
@@ -77,19 +79,18 @@ def test_gate_with_registers():
     assert (
         tg.controlled(num_controls=1, control_values=[0])
         == tg.controlled(control_values=[0], control_qid_shape=(2,))
-        == tg.controlled(CtrlSpec(cvs=0))
         == tg.controlled(ctrl_spec=CtrlSpec(cvs=0))
     )
 
     # Test GWR.controlled() raises with incorrect invocation.
     with pytest.raises(ValueError):
-        tg.controlled(control_values=[0], ctrl_spec=CtrlSpec())
+        tg.controlled(control_values=[0], ctrl_spec=CtrlSpec())  # type: ignore[call-overload]
 
     with pytest.raises(ValueError):
-        tg.controlled(CtrlSpec(), control_values=[0])
+        tg.controlled(CtrlSpec(), control_values=[0])  # type: ignore[call-overload]
 
     with pytest.raises(ValueError):
-        tg.controlled(CtrlSpec(), ctrl_spec=CtrlSpec())
+        tg.controlled(CtrlSpec(), ctrl_spec=CtrlSpec())  # type: ignore[call-overload]
 
     # Test GWR**pow
     assert tg**-1 == tg.adjoint()

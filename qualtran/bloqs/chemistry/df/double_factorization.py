@@ -46,6 +46,7 @@ from qualtran import (
     QBit,
     Register,
     Signature,
+    Soquet,
     SoquetT,
 )
 from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
@@ -156,9 +157,9 @@ class DoubleFactorizationOneBody(Bloq):
     def build_composite_bloq(
         self,
         bb: 'BloqBuilder',
-        succ_l: SoquetT,
+        succ_l: Soquet,
         l_ne_zero: SoquetT,
-        succ_p: SoquetT,
+        succ_p: Soquet,
         p: SoquetT,
         rot_aa: SoquetT,
         spin: SoquetT,
@@ -166,7 +167,7 @@ class DoubleFactorizationOneBody(Bloq):
         offset: SoquetT,
         rot: SoquetT,
         rotations: SoquetT,
-        sys: SoquetT,
+        sys: NDArray[Soquet],  # type: ignore[type-var]
     ) -> Dict[str, 'SoquetT']:
         # 1st half
         in_prep = InnerPrepareDoubleFactorization(
@@ -374,7 +375,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
     def build_composite_bloq(
         self,
         bb: 'BloqBuilder',
-        ctrl: SoquetT,
+        ctrl: NDArray[Soquet],  # type: ignore[type-var]
         l: SoquetT,
         p: SoquetT,
         spin: SoquetT,
@@ -459,7 +460,7 @@ class DoubleFactorizationBlockEncoding(Bloq):
             num_bits_rot_aa=self.num_bits_rot_aa_outer,
         ).adjoint()
         l, succ_l = bb.add(outer_prep, l=l, succ_l=succ_l)
-        ctrl = succ_l, l_ne_zero, theta, succ_p
+        ctrl = np.asarray([succ_l, l_ne_zero, theta, succ_p])
         return {
             'ctrl': ctrl,
             'l': l,

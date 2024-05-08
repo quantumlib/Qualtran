@@ -19,6 +19,8 @@ import numpy as np
 from qualtran import BloqBuilder
 from qualtran.bloqs.basic_gates import TGate, Toffoli, ZeroState
 from qualtran.bloqs.basic_gates.toffoli import _toffoli
+from qualtran.drawing.musical_score import Circle, ModPlus
+from qualtran.testing import assert_wire_symbols_match_expected
 
 
 def test_toffoli(bloq_autotester):
@@ -50,13 +52,17 @@ _c(1): ───@───@───
           │   │
 _c(2): ───X───X───""",
     )
+    assert_wire_symbols_match_expected(
+        Toffoli(), [Circle(filled=True), Circle(filled=True), ModPlus()]
+    )
 
 
 def test_classical_sim():
     tof = Toffoli()
 
     for c0, c1 in itertools.product([0, 1], repeat=2):
-        ctrl, target = tof.call_classically(ctrl=[c0, c1], target=0)
+        ctrl, target = tof.call_classically(ctrl=np.asarray([c0, c1]), target=0)
+        assert isinstance(ctrl, np.ndarray)
         assert ctrl.tolist() == [c0, c1]
         if c0 == 1 and c1 == 1:
             assert target == 1

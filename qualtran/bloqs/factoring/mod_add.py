@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, SoquetT
+from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
@@ -77,14 +77,14 @@ class CtrlScaleModAdd(Bloq):
     def short_name(self) -> str:
         return f'y += x*{self.k} % {self.mod}'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'ctrl':
             return Circle()
-        if soq.reg.name == 'x':
+        if reg.name == 'x':
             return TextBox('x')
-        if soq.reg.name == 'y':
+        if reg.name == 'y':
             return TextBox(f'y += x*{self.k}')
-        raise ValueError(f"Unknown soquet {soq}")
+        raise ValueError(f"Unknown register name {reg.name}")
 
 
 @frozen
@@ -179,7 +179,6 @@ class MontgomeryModAdd(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-
         y += x
         y -= self.p
 
@@ -188,10 +187,7 @@ class MontgomeryModAdd(Bloq):
 
         return {'x': x, 'y': y}
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', x: SoquetT, y: SoquetT
-    ) -> Dict[str, 'SoquetT']:
-
+    def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -243,8 +239,8 @@ class MontgomeryModAdd(Bloq):
         sign = bb.add(XGate(), q=sign)
 
         # Free the ancilla qubits.
-        junk_bit = bb.free(junk_bit)
-        sign = bb.free(sign)
+        bb.free(junk_bit)
+        bb.free(sign)
 
         # Return the output registers.
         return {'x': x, 'y': y}

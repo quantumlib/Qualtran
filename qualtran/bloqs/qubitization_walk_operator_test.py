@@ -51,15 +51,16 @@ def get_walk_operator_for_1d_ising_model(num_sites: int, eps: float) -> Qubitiza
 def test_qubitization_walk_operator(num_sites: int, eps: float):
     ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
     ham_coeff = [abs(ps.coefficient.real) for ps in ham]
-    qubitization_lambda = np.sum(ham_coeff)
 
     walk = walk_operator_for_pauli_hamiltonian(ham, eps)
     assert_valid_bloq_decomposition(walk)
 
+    qubitization_lambda = walk.sum_of_lcu_coefficients
+
     g, qubit_order, walk_circuit = construct_gate_helper_and_qubit_order(walk)
 
     L_state = np.zeros(2 ** len(g.quregs['selection']))
-    L_state[: len(ham_coeff)] = np.sqrt(ham_coeff / qubitization_lambda)
+    L_state[: len(ham_coeff)] = np.sqrt(np.array(ham_coeff) / qubitization_lambda)
 
     assert len(walk_circuit.all_qubits()) < 23
 
@@ -111,9 +112,16 @@ target2: ──────SelectPauliLCU─────────
 target3: ──────SelectPauliLCU─────────
 ''',
     )
+
     # 2. Diagram for $W^{2} = SELECT.R_{L}.SELCT.R_{L}$
-    walk_squared_op = walk.with_power(2).on_registers(**g.quregs)
-    circuit = cirq.Circuit(cirq.decompose_once(walk_squared_op))
+    def decompose_twice(op):
+        ops = []
+        for sub_op in cirq.decompose_once(op):
+            ops += cirq.decompose_once(sub_op)
+        return ops
+
+    walk_squared_op = (walk**2).on_registers(**g.quregs)
+    circuit = cirq.Circuit(decompose_twice(walk_squared_op))
     cirq.testing.assert_has_diagram(
         circuit,
         '''

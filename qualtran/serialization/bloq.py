@@ -14,7 +14,7 @@
 
 import dataclasses
 import inspect
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import attrs
 import cirq
@@ -63,13 +63,16 @@ def arg_to_proto(*, name: str, val: Any) -> bloq_pb2.BloqArg:
     if isinstance(val, tuple) and all(isinstance(x, Register) for x in val):
         return bloq_pb2.BloqArg(name=name, registers=registers.registers_to_proto(val))
     if isinstance(val, cirq.Gate):
-        return bloq_pb2.BloqArg(name=name, cirq_json_gzip=cirq.to_json_gzip(val))
+        gzipped = cirq.to_json_gzip(val)
+        if gzipped is None:
+            raise ValueError(f"Cannot gzip {val}")
+        return bloq_pb2.BloqArg(name=name, cirq_json_gzip=gzipped)
     if isinstance(val, QDType):
         return bloq_pb2.BloqArg(name=name, qdata_type=data_types.data_type_to_proto(val))
     if isinstance(val, CtrlSpec):
         return bloq_pb2.BloqArg(name=name, ctrl_spec=ctrl_spec.ctrl_spec_to_proto(val))
     if isinstance(val, (np.ndarray, tuple, list)):
-        return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(val))
+        return bloq_pb2.BloqArg(name=name, ndarray=args.ndarray_to_proto(np.asarray(val)))
     if np.iscomplexobj(val):
         return bloq_pb2.BloqArg(name=name, complex_val=args.complex_to_proto(val))
     raise ValueError(f"Cannot serialize {val} of unknown type {type(val)}")
@@ -139,7 +142,7 @@ class _BloqLibDeserializer:
 
     def _construct_bloq(self, name: str, **kwargs):
         """Construct a Bloq using serialized name and BloqArgs."""
-        return resolver_dict.RESOLVER_DICT[name](**kwargs)
+        return resolver_dict.RESOLVER_DICT[name](**kwargs)  # type: ignore[operator]
 
     def _connection_from_proto(self, cxn: bloq_pb2.Connection) -> Connection:
         return Connection(
@@ -147,7 +150,7 @@ class _BloqLibDeserializer:
         )
 
     def _soquet_from_proto(self, soq: bloq_pb2.Soquet) -> Soquet:
-        binst = (
+        binst: Union[BloqInstance, DanglingT] = (
             self.dangling_to_singleton[soq.dangling_t]
             if soq.HasField('dangling_t')
             else BloqInstance(
@@ -221,12 +224,12 @@ def _iter_fields(bloq: Bloq):
     serialization / deserialization.
     """
 
-    if dataclasses.is_dataclass(type(bloq)):
+    if dataclasses.is_dataclass(bloq):
         for field in dataclasses.fields(bloq):
             if field.name in inspect.signature(type(bloq).__init__).parameters:
                 yield field
     elif attrs.has(type(bloq)):
-        for field in attrs.fields(type(bloq)):
+        for field in attrs.fields(type(bloq)):  # type: ignore[arg-type]
             if field.name in inspect.signature(type(bloq).__init__).parameters:
                 yield field
 

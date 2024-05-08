@@ -15,7 +15,6 @@
 from functools import cached_property
 from typing import Dict, List, Set, Tuple, TYPE_CHECKING
 
-import attrs
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
@@ -26,7 +25,7 @@ from .quantum_graph import LeftDangle, RightDangle
 from .registers import Signature
 
 if TYPE_CHECKING:
-    from qualtran import Bloq, CompositeBloq, Signature, Soquet, SoquetT
+    from qualtran import Bloq, CompositeBloq, Register, Signature, Soquet, SoquetT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
@@ -144,7 +143,7 @@ class Adjoint(GateWithRegisters):
         return self.subbloq.decompose_bloq().adjoint()
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         if isinstance(self.subbloq, GateWithRegisters):
             return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
@@ -183,11 +182,11 @@ class Adjoint(GateWithRegisters):
         """Delegate to subbloq's `__str__` method."""
         return f'Adjoint(subbloq={str(self.subbloq)})'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
         # if the provided soquet is facing the correct direction.
-        return self.subbloq.wire_symbol(attrs.evolve(soq, reg=soq.reg.adjoint())).adjoint()
+        return self.subbloq.wire_symbol(reg=reg.adjoint(), idx=idx).adjoint()
 
     def _t_complexity_(self):
         """The cirq-style `_t_complexity_` delegates to the subbloq's method with a special shim.
@@ -200,7 +199,7 @@ class Adjoint(GateWithRegisters):
             return NotImplemented
 
         try:
-            return self.subbloq._t_complexity_(adjoint=True)
+            return self.subbloq._t_complexity_(adjoint=True)  # type: ignore[call-arg]
         except TypeError as e:
             if 'adjoint' in str(e):
                 return self.subbloq._t_complexity_()

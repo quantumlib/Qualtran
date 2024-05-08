@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import Iterator, Optional, Sequence, Tuple
 
 import attrs
 import cirq
@@ -21,14 +21,14 @@ from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
-from qualtran.bloqs.for_testing.random_gate import RandomGate
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 
 
 @frozen
-class RandomPrepareOracle(PrepareOracle):
-    r"""Gate that prepares a randomly chosen state with real amplitudes.
+class TestPrepareOracle(PrepareOracle):
+    r"""Gate that prepares a fixed state with real amplitudes using a MatrixGate.
 
     It is an $n$-qubit unitary $U$ such that
 
@@ -39,13 +39,13 @@ class RandomPrepareOracle(PrepareOracle):
     where $\alpha_x \ge 0$ such that $\sum_x \alpha_x = 1$.
 
     Args:
-        U: A `RandomGate` whose matrix is the unitary of the oracle.
+        U: A `MatrixGate` whose matrix is the unitary of the oracle.
 
     Registers:
         selection: $n$-qubit register
     """
 
-    U: RandomGate
+    U: MatrixGate
 
     def __attrs_post_init__(self):
         # check that first column is all reals
@@ -56,25 +56,25 @@ class RandomPrepareOracle(PrepareOracle):
     def selection_registers(self) -> tuple[Register, ...]:
         return (Register('selection', BoundedQUInt(bitsize=self.U.bitsize)),)
 
+    @property
+    def l1_norm_of_coeffs(self) -> float:
+        return 1.0
+
     @classmethod
-    def create(cls, bitsize: int, *, random_state: np.random.RandomState):
-        matrix = RandomGate.create(bitsize, random_state=random_state).matrix
+    def random(cls, bitsize: int, *, random_state: np.random.RandomState):
+        """Generate a random unitary s.t. the first column has all real amplitudes"""
+        matrix = MatrixGate.random(bitsize, random_state=random_state).matrix
         matrix = np.array(matrix)
 
         # make the first column (weights \sqrt{alpha_i}) all reals
         column = matrix[:, 0]
         matrix = matrix * (column.conj() / np.abs(column))[:, None]
 
-        return cls(RandomGate(bitsize, matrix))
+        return cls(MatrixGate(bitsize, matrix))
 
     def build_composite_bloq(self, bb: BloqBuilder, selection: SoquetT) -> dict[str, SoquetT]:
         selection = bb.add(self.U, q=selection)
         return {'selection': selection}
-
-    def __pow__(self, power):
-        if power == -1:
-            return self.U.adjoint()
-        return NotImplemented
 
     @cached_property
     def alphas(self):
@@ -82,7 +82,7 @@ class RandomPrepareOracle(PrepareOracle):
 
 
 @frozen
-class PauliSelectOracle(SelectOracle):
+class TestPauliSelectOracle(SelectOracle):
     r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
 
     Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
@@ -113,7 +113,7 @@ class PauliSelectOracle(SelectOracle):
     @classmethod
     def random(
         cls, select_bitsize: int, target_bitsize: int, *, random_state: np.random.RandomState
-    ) -> 'PauliSelectOracle':
+    ) -> 'TestPauliSelectOracle':
         dps = tuple(
             cirq.DensePauliString(random_state.randint(0, 4, size=target_bitsize))
             for _ in range(2**select_bitsize)
@@ -163,10 +163,10 @@ class PauliSelectOracle(SelectOracle):
         self,
         *,
         context: cirq.DecompositionContext,
-        selection: NDArray[cirq.Qid],
-        target: NDArray[cirq.Qid],
-        **quregs: NDArray[cirq.Qid],
-    ) -> cirq.OP_TREE:
+        selection: NDArray[cirq.Qid],  # type: ignore[type-var]
+        target: NDArray[cirq.Qid],  # type: ignore[type-var]
+        **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         if self.control_val is not None:
             selection = np.concatenate([selection, quregs['control']])
 
@@ -197,8 +197,8 @@ def random_qubitization_walk_operator(
     Returns:
         WalkOperator for $H$, and the Hamiltonian $H$.
     """
-    prepare = RandomPrepareOracle.create(select_bitsize, random_state=random_state)
-    select = PauliSelectOracle.random(select_bitsize, target_bitsize, random_state=random_state)
+    prepare = TestPrepareOracle.random(select_bitsize, random_state=random_state)
+    select = TestPauliSelectOracle.random(select_bitsize, target_bitsize, random_state=random_state)
 
     np.testing.assert_allclose(np.linalg.norm(prepare.alphas, 1), 1)
 

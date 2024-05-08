@@ -27,9 +27,12 @@ if TYPE_CHECKING:
 
     from qualtran import (
         AddControlledT,
+        Adjoint,
         BloqBuilder,
         CompositeBloq,
         CtrlSpec,
+        GateWithRegisters,
+        Register,
         Signature,
         Soquet,
         SoquetT,
@@ -179,7 +182,9 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return Adjoint(self)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(
+        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
@@ -212,7 +217,9 @@ class Bloq(metaclass=abc.ABCMeta):
         except NotImplementedError as e:
             raise NotImplementedError(f"{self} does not support classical simulation: {e}") from e
 
-    def call_classically(self, **vals: 'ClassicalValT') -> Tuple['ClassicalValT', ...]:
+    def call_classically(
+        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Tuple['ClassicalValT', ...]:
         """Call this bloq on classical data.
 
         Bloq users can call this function to apply bloqs to classical data. If you're
@@ -297,7 +304,7 @@ class Bloq(metaclass=abc.ABCMeta):
     def call_graph(
         self,
         generalizer: Optional[Union['GeneralizerT', Sequence['GeneralizerT']]] = None,
-        keep: Callable[['Bloq'], bool] = None,
+        keep: Optional[Callable[['Bloq'], bool]] = None,
         max_depth: Optional[int] = None,
     ) -> Tuple['nx.DiGraph', Dict['Bloq', Union[int, 'sympy.Expr']]]:
         """Get the bloq call graph and call totals.
@@ -322,7 +329,7 @@ class Bloq(metaclass=abc.ABCMeta):
                 according to `keep` and `max_depth` (if provided) or if a bloq cannot be
                 decomposed.
         """
-        from qualtran.resource_counting.bloq_counts import get_bloq_call_graph
+        from qualtran.resource_counting import get_bloq_call_graph
 
         return get_bloq_call_graph(self, generalizer=generalizer, keep=keep, max_depth=max_depth)
 
@@ -501,7 +508,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         """On a musical score visualization, use this `WireSymbol` to represent `soq`.
 
         By default, we use a "directional text box", which is a text box that is either
@@ -514,4 +521,10 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from qualtran.drawing import directional_text_box
 
-        return directional_text_box(text=soq.pretty(), side=soq.reg.side)
+        label = reg.name
+        if len(idx) > 0:
+            pretty_str = f'{label}[{", ".join(str(i) for i in idx)}]'
+        else:
+            pretty_str = label
+
+        return directional_text_box(text=pretty_str, side=reg.side)

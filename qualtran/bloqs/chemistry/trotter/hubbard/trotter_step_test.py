@@ -23,7 +23,7 @@ from qualtran.resource_counting.generalizers import PHI
 
 def catch_rotations(bloq) -> Bloq:
     if isinstance(bloq, Rz):
-        if abs(bloq.angle) < 1e-12:
+        if isinstance(bloq.angle, float) and abs(bloq.angle) < 1e-12:
             return ArbitraryClifford(1)
         else:
             return Rz(angle=PHI)

@@ -135,7 +135,7 @@ def test_validation_errs():
         QBit().assert_valid_classical_val(-1)
 
     with pytest.raises(ValueError):
-        QBit().assert_valid_classical_val('|0>')
+        QBit().assert_valid_classical_val('|0>')  # type: ignore[arg-type]
 
     with pytest.raises(ValueError):
         QUInt(3).assert_valid_classical_val(8)

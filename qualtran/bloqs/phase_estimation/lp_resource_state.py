@@ -14,18 +14,28 @@
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from functools import cached_property
-from typing import Set, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
 import numpy as np
+import sympy
 from numpy._typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QUInt, Register, Side, Signature
+from qualtran import (
+    Bloq,
+    bloq_example,
+    BloqDocSpec,
+    GateWithRegisters,
+    QUInt,
+    Register,
+    Side,
+    Signature,
+)
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi
+from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -47,7 +57,7 @@ class LPRSInterimPrep(GateWithRegisters):
     Amplitude Amplification to boost the amplitude of desired resource state to 1.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
     eps: float = 1e-11
 
     @cached_property
@@ -59,7 +69,9 @@ class LPRSInterimPrep(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         q, anc = quregs['m'].tolist()[::-1], quregs['anc']
         yield [OnEach(self.bitsize, Hadamard()).on(*q), Hadamard().on(*anc)]
         for i in range(self.bitsize):
@@ -70,11 +82,16 @@ class LPRSInterimPrep(GateWithRegisters):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         rz_angle = -2 * pi(self.bitsize) / (2**self.bitsize + 1)
-        ret = {(Rz(angle=rz_angle), 1), (Hadamard(), 2 + self.bitsize)}
+        ret: Set[Tuple[Bloq, SymbolicInt]] = {
+            (Rz(angle=rz_angle), 1),
+            (Hadamard(), 2 + self.bitsize),
+        }
         if is_symbolic(self.bitsize):
             ret |= {(Rz(angle=rz_angle).controlled(), self.bitsize)}
         else:
-            ret |= {(Rz(angle=rz_angle * (2**i)).controlled(), 1) for i in range(self.bitsize)}
+            ret |= {
+                (Rz(angle=rz_angle * (2**i)).controlled(), 1) for i in range(int(self.bitsize))
+            }
         return ret
 
     def _t_complexity_(self) -> 'TComplexity':
@@ -104,7 +121,7 @@ class LPResourceState(GateWithRegisters):
         Complexity](https://arxiv.org/abs/1805.03662) Section II-B
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -112,7 +129,7 @@ class LPResourceState(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Use the _LPResourceStateHelper and do a single round of amplitude amplification."""
         q = quregs['m'].flatten().tolist()
         anc, flag = context.qubit_manager.qalloc(2)

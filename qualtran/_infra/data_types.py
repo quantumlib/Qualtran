@@ -89,6 +89,13 @@ class QDType(metaclass=abc.ABCMeta):
             debug_str: Optional debugging information to use in exception messages.
         """
 
+    def iteration_length_or_zero(self) -> Union[int, sympy.Expr]:
+        """Safe version of iteration length.
+
+        Returns the iteration_length if the type has it or else zero.
+        """
+        return getattr(self, 'iteration_length', 0)
+
     def assert_valid_classical_val_array(self, val_array: NDArray[Any], debug_str: str = 'val'):
         """Raises an exception if `val_array` is not a valid array of classical values
         for this type.
@@ -219,6 +226,9 @@ class QInt(QDType):
         if np.any(val_array >= 2 ** (self.bitsize - 1)):
             raise ValueError(f"Too-large classical {self}s encountered in {debug_str}")
 
+    def __str__(self):
+        return f'QInt({self.bitsize})'
+
 
 @attrs.frozen
 class QIntOnesComp(QDType):
@@ -310,6 +320,9 @@ class QUInt(QDType):
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
 
+    def __str__(self):
+        return f'QUInt({self.bitsize})'
+
 
 @attrs.frozen
 class BoundedQUInt(QDType):
@@ -378,7 +391,9 @@ class BoundedQUInt(QDType):
         return self.bitsize
 
     def get_classical_domain(self) -> Iterable[Any]:
-        return range(0, self.iteration_length)
+        if isinstance(self.iteration_length, int):
+            return range(0, self.iteration_length)
+        raise ValueError(f'Classical Domain not defined for expression: {self.iteration_length}')
 
     def assert_valid_classical_val(self, val: int, debug_str: str = 'val'):
         if not isinstance(val, (int, np.integer)):
@@ -507,7 +522,7 @@ class QMontgomeryUInt(QDType):
     fast modular multiplication.
 
     In order to convert an unsigned integer from a finite field x % p into Montgomery form you
-    first must choose a value r > p where gcd(r, p) = 1. Typically this value is a power of 2.
+    first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
 
     Conversion to Montgomery form:
         [x] = (x * r) % p
@@ -573,7 +588,7 @@ class QDTypeCheckingSeverity(Enum):
     """Strictly enforce type checking between registers. Only single bit conversions are allowed."""
 
 
-def _check_uint_fxp_consistent(a: QUInt, b: QFxp) -> bool:
+def _check_uint_fxp_consistent(a: Union[QUInt, BoundedQUInt, QMontgomeryUInt], b: QFxp) -> bool:
     """A uint / qfxp is consistent with a whole or totally fractional unsigned QFxp."""
     if b.signed:
         return False

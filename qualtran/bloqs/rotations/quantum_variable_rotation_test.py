@@ -11,12 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Iterator
+
 import attrs
 import cirq
 import numpy as np
 import pytest
 from fxpmath import Fxp
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
@@ -50,14 +52,14 @@ class TestQvrPhaseGradient(GateWithRegisters):
         return QvrPhaseGradient(self.cost_reg, self.gamma, self.eps)
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    ) -> Iterator[cirq.OP_TREE]:
         x = quregs[self.cost_reg.name]
-        phase_grad = context.qubit_manager.qalloc(self.qvr.b_grad)
+        phase_grad = context.qubit_manager.qalloc(int(self.qvr.b_grad))
         yield cirq.H.on_each(*phase_grad)
-        yield PhaseGradientUnitary(self.qvr.b_grad, -1).on(*phase_grad)
+        yield PhaseGradientUnitary(int(self.qvr.b_grad), -1).on(*phase_grad)
         yield self.qvr.on_registers(x=x, phase_grad=phase_grad)
-        yield PhaseGradientUnitary(self.qvr.b_grad, +1).on(*phase_grad)
+        yield PhaseGradientUnitary(int(self.qvr.b_grad), +1).on(*phase_grad)
         yield cirq.H.on_each(*phase_grad)
 
 

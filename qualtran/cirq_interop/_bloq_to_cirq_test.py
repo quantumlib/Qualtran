@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -26,6 +26,9 @@ from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate, CirqQuregT
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity
 from qualtran.testing import execute_notebook
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen
@@ -173,7 +176,7 @@ def test_construct_op_from_gate_raises():
     and_gate = And()
     qm = cirq.ops.SimpleQubitManager()
     q = [*cirq.LineQubit.range(2)]
-    in_quregs = {}
+    in_quregs: dict[str, np.ndarray] = {}
     with pytest.raises(ValueError, match='Compatible reg.*must exist'):
         _ = and_gate.as_cirq_op(qm, **in_quregs)
 

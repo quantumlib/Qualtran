@@ -19,7 +19,12 @@ import cirq
 
 from qualtran import Bloq, Controlled
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2, SymbolicFloat
+from qualtran.resource_counting.symbolic_counting_utils import (
+    ceil,
+    log2,
+    SymbolicFloat,
+    SymbolicInt,
+)
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 _ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)
@@ -37,7 +42,7 @@ class TComplexity:
     def rotation_cost(eps: SymbolicFloat) -> SymbolicFloat:
         return ceil(1.149 * log2(1.0 / eps) + 9.2)
 
-    def t_incl_rotations(self, eps: float = 1e-11) -> int:
+    def t_incl_rotations(self, eps: float = 1e-11) -> SymbolicInt:
         """Return the total number of T gates after compiling rotations"""
 
         # TODO Determine precise clifford count and/or ignore.
@@ -45,7 +50,7 @@ class TComplexity:
         # a bound of 3 log(1/eps).
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
-        return self.t + self.rotation_cost(eps) * self.rotations
+        return ceil(self.t + self.rotation_cost(eps) * self.rotations)
 
     def __add__(self, other: 'TComplexity') -> 'TComplexity':
         return TComplexity(
@@ -150,16 +155,16 @@ def _from_iterable(it: Any) -> Optional[TComplexity]:
 
 def _from_bloq_build_call_graph(stc: Any) -> Optional[TComplexity]:
     # Uses the depth 1 call graph of Bloq `stc` to recursively compute the complexity.
+    from qualtran.resource_counting import get_bloq_callee_counts
     from qualtran.resource_counting.generalizers import cirq_to_bloqs
 
     if not isinstance(stc, Bloq):
         return None
-    _, sigma = stc.call_graph(max_depth=1, generalizer=cirq_to_bloqs)
-    if sigma == {stc: 1}:
-        # No decomposition found.
+    callee_counts = get_bloq_callee_counts(bloq=stc, generalizer=cirq_to_bloqs)
+    if len(callee_counts) == 0:
         return None
     ret = TComplexity()
-    for bloq, n in sigma.items():
+    for bloq, n in callee_counts:
         r = t_complexity(bloq)
         if r is None:
             return None

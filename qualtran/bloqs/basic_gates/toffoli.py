@@ -17,8 +17,9 @@ from typing import Any, Dict, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import frozen
+from numpy.typing import NDArray
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Signature, Soquet, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting import SympySymbolAllocator
@@ -66,8 +67,8 @@ class Toffoli(Bloq):
         tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
-        incoming: Dict[str, 'SoquetT'],
-        outgoing: Dict[str, 'SoquetT'],
+        incoming: Dict[str, NDArray['Soquet']],  # type: ignore[type-var]
+        outgoing: Dict[str, NDArray['Soquet']],  # type: ignore[type-var]
     ):
         import quimb.tensor as qtn
 
@@ -96,7 +97,7 @@ class Toffoli(Bloq):
         )
 
     def on_classical_vals(
-        self, ctrl: 'ClassicalValT', target: 'ClassicalValT'
+        self, ctrl: NDArray[np.integer], target: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
         assert target in [0, 1]
         if ctrl[0] == 1 and ctrl[1] == 1:
@@ -112,14 +113,14 @@ class Toffoli(Bloq):
         (trg,) = target
         return cirq.CCNOT(*ctrl[:, 0], trg), {'ctrl': ctrl, 'target': target}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.drawing import Circle, ModPlus
 
-        if soq.reg.name == 'ctrl':
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return ModPlus()
-        raise ValueError(f'Bad wire symbol soquet: {soq}')
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
 
 @bloq_example

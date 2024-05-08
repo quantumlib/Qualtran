@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Iterator, List, Sequence, Set, TYPE_CHECKING, Union
+from typing import Dict, Iterable, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -47,11 +47,12 @@ from qualtran.drawing.musical_score import TextBox
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @frozen
-class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
+class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U_a|x>|z> = |x> |z ^ (x < a)>"""
 
     bitsize: int
@@ -89,7 +90,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
         The decomposition proceeds from the most significant qubit -bit 0- to the least significant
@@ -216,12 +217,14 @@ class BiQubitsMixer(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         x, y, ancilla = quregs['x'], quregs['y'], quregs['ancilla']
         x_msb, x_lsb = x
         y_msb, y_lsb = y
 
-        def _cswap(control: cirq.Qid, a: cirq.Qid, b: cirq.Qid, aux: cirq.Qid) -> cirq.OP_TREE:
+        def _cswap(
+            control: cirq.Qid, a: cirq.Qid, b: cirq.Qid, aux: cirq.Qid
+        ) -> Iterator[cirq.Operation]:
             """A CSWAP with 4T complexity and whose adjoint has 0T complexity.
 
                 A controlled SWAP that swaps `a` and `b` based on `control`.
@@ -233,7 +236,7 @@ class BiQubitsMixer(GateWithRegisters):
             yield cirq.CNOT(aux, a)
             yield cirq.CNOT(a, b)
 
-        def _decomposition():
+        def _decomposition() -> Iterator[cirq.Operation]:
             # computes the difference of x - y where
             #   x = 2*x_msb + x_lsb
             #   y = 2*y_msb + y_lsb
@@ -253,10 +256,10 @@ class BiQubitsMixer(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'BiQubitsMixer':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> cirq.Gate:
+    def __pow__(self, power: int) -> 'BiQubitsMixer':
         if power == 1:
             return self
         if power == -1:
@@ -307,7 +310,7 @@ class SingleQubitCompare(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         a = quregs['a']
         b = quregs['b']
         less_than = quregs['less_than']
@@ -326,10 +329,10 @@ class SingleQubitCompare(GateWithRegisters):
         else:
             yield from _decomposition()
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'SingleQubitCompare':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
-    def __pow__(self, power: int) -> cirq.Gate:
+    def __pow__(self, power: int) -> Union['SingleQubitCompare', cirq.Gate]:
         if not isinstance(power, int):
             raise ValueError('SingleQubitCompare is only defined for integer powers.')
         if power % 2 == 0:
@@ -355,7 +358,7 @@ _SQ_CMP_DOC = BloqDocSpec(bloq_cls=SingleQubitCompare, examples=[_sq_cmp])
 
 def _equality_with_zero(
     context: cirq.DecompositionContext, qubits: Sequence[cirq.Qid], z: cirq.Qid
-) -> cirq.OP_TREE:
+) -> Iterator[cirq.OP_TREE]:
     """Helper decomposition used in `LessThanEqual`"""
     if len(qubits) == 1:
         (q,) = qubits
@@ -370,7 +373,7 @@ def _equality_with_zero(
 
 
 @frozen
-class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
+class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     """Applies U|x>|y>|z> = |x>|y> |z ^ (x <= y)>
 
     Decomposes the gate in a T-complexity optimal way.
@@ -402,8 +405,8 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
     """
 
-    x_bitsize: int
-    y_bitsize: int
+    x_bitsize: 'SymbolicInt'
+    y_bitsize: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -412,6 +415,10 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if isinstance(self.x_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic x bitsize {self.x_bitsize} not allowed')
+        if isinstance(self.y_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic y bitsize {self.y_bitsize} not allowed')
         return [2] * self.x_bitsize, [2] * self.y_bitsize, [2]
 
     def with_registers(self, *new_registers) -> "LessThanEqual":
@@ -428,6 +435,10 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
         return {'x': x, 'y': y, 'target': target ^ (x <= y)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        if isinstance(self.x_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic x bitsize {self.x_bitsize} not allowed')
+        if isinstance(self.y_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic y bitsize {self.y_bitsize} not allowed')
         wire_symbols = ["In(x)"] * self.x_bitsize
         wire_symbols += ["In(y)"] * self.y_bitsize
         wire_symbols += ['⨁(x <= y)']
@@ -440,7 +451,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
 
     def _decompose_via_tree(
         self, context: cirq.DecompositionContext, X: Sequence[cirq.Qid], Y: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if len(X) == 1:
             return
         if len(X) == 2:
@@ -456,8 +467,8 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
-        lhs, rhs, (target,) = quregs['x'], quregs['y'], quregs['target']
+    ) -> Iterator[cirq.OP_TREE]:
+        lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
 
         n = min(len(lhs), len(rhs))
 
@@ -579,8 +590,8 @@ class GreaterThan(Bloq):
         target: A single bit output register to store the result of A > B.
     """
 
-    a_bitsize: int
-    b_bitsize: int
+    a_bitsize: 'SymbolicInt'
+    b_bitsize: 'SymbolicInt'
 
     @property
     def signature(self):
@@ -597,13 +608,14 @@ class GreaterThan(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'a':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg.name == 'a':
             return TextBox("In(a)")
-        if soq.reg.name == 'b':
+        if reg.name == 'b':
             return TextBox("In(b)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox("⨁(a > b)")
+        raise ValueError(f'Unknown register name {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -672,15 +684,14 @@ class LinearDepthGreaterThan(Bloq):
         return {'a': a, 'b': b, 'target': target}
 
     def build_composite_bloq(
-        self, bb: 'BloqBuilder', a: SoquetT, b: SoquetT, target: SoquetT
+        self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
-
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
             # We use a specially controlled Toffolli gate to implement GreaterThan.
             # If a is 1 and b is 0 then a > b and we can flip the target bit.
-            ctrls = [a, b]
+            ctrls = np.asarray([a, b])
             ctrls, target = bb.add(MultiControlX(cvs=(1, 0)), ctrls=ctrls, x=target)
             a, b = ctrls
             # Return the output registers.
@@ -688,7 +699,7 @@ class LinearDepthGreaterThan(Bloq):
 
         # Allocate lists to store ancillas generated by the logical-and and control pairs input
         # into logical-ands.
-        ancillas = []
+        ancillas: List[SoquetT] = []
         and_ctrls = []
 
         # If the input registers are unsigned we need to append a sign bit to them in order to use
@@ -828,11 +839,12 @@ class GreaterThanConstant(Bloq):
     def short_name(self) -> str:
         return f"x > {self.val}"
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg.name == 'x':
             return TextBox("In(x)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox(f"⨁(x > {self.val})")
+        raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -880,11 +892,12 @@ class EqualsAConstant(Bloq):
     def short_name(self) -> str:
         return f"x == {self.val}"
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg.name == 'x':
             return TextBox("In(x)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox(f"⨁(x = {self.val})")
+        raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # See: https://github.com/quantumlib/Qualtran/issues/219

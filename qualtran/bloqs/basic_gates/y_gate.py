@@ -41,6 +41,9 @@ class YGate(Bloq):
     def signature(self) -> 'Signature':
         return Signature.build(q=1)
 
+    def adjoint(self) -> 'Bloq':
+        return self
+
     def add_my_tensors(
         self,
         tn: qtn.TensorNetwork,
@@ -61,7 +64,7 @@ class YGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.Y(q), {'q': [q]}
+        return cirq.Y(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

@@ -39,6 +39,7 @@ from qualtran.bloqs.basic_gates import (
     OneState,
     Swap,
     XGate,
+    XPowGate,
     YGate,
     ZeroState,
     ZGate,
@@ -57,7 +58,7 @@ def test_ctrl_spec():
     cspec1 = CtrlSpec()
     assert cspec1 == CtrlSpec(QBit(), cvs=1)
 
-    cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
+    cspec2 = CtrlSpec(cvs=np.ones(27, dtype=np.intc).reshape((3, 3, 3)))
     assert cspec2.shapes == ((3, 3, 3),)
     assert cspec2 != cspec1
 
@@ -99,7 +100,7 @@ def test_ctrl_bloq_as_cirq_op():
 
     def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
         left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(**left_quregs)
+        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit(None, **left_quregs)
         circuit2 = cirq.Circuit(
             gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
         )
@@ -123,7 +124,7 @@ def test_ctrl_bloq_as_cirq_op():
     bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
     quregs = get_named_qubits(bloq.signature)
     ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
-    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(**quregs)
+    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit(None, **quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
     )
@@ -138,15 +139,15 @@ def test_ctrl_spec_activation_1():
 
 
 def test_ctrl_spec_activation_2():
-    cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
-    arr = np.ones(27).reshape((3, 3, 3))
+    cspec2 = CtrlSpec(cvs=np.ones((3, 3, 3), dtype=np.intc))
+    arr = np.ones((3, 3, 3), dtype=np.intc)
     assert cspec2.is_active(arr)
     arr[1, 1, 1] = 0
     assert not cspec2.is_active(arr)
     with pytest.raises(ValueError):
         cspec2.is_active(0)
     with pytest.raises(ValueError):
-        cspec2.is_active(np.ones(27))
+        cspec2.is_active(np.ones(27, dtype=np.intc))
 
 
 def test_ctrl_spec_activation_3():
@@ -271,14 +272,14 @@ def test_classical_sim_simple():
 
 
 def test_classical_sim_array():
-    ctrl_spec = CtrlSpec(cvs=np.zeros(9).reshape((3, 3)))
+    ctrl_spec = CtrlSpec(cvs=np.zeros((3, 3), dtype=np.intc))
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
-    ones = np.ones(9).reshape((3, 3))
+    ones = np.ones((3, 3), dtype=np.intc)
     ctrl, q = bloq.call_classically(ctrl=ones, q=0)
     np.testing.assert_array_equal(ctrl, ones)
     assert q == 0
 
-    zeros = np.zeros(9).reshape((3, 3))
+    zeros = np.zeros((3, 3), dtype=np.intc)
     ctrl, q = bloq.call_classically(ctrl=zeros, q=0)
     np.testing.assert_array_equal(ctrl, zeros)
     assert q == 1
@@ -298,11 +299,11 @@ def test_classical_sim_int_arr():
     ctrl_spec = CtrlSpec(QInt(64), cvs=[1234, 234234])
     bloq = Controlled(XGate(), ctrl_spec=ctrl_spec)
 
-    vals = bloq.call_classically(ctrl=[1234, 234234], q=0)
+    vals = bloq.call_classically(ctrl=np.asarray([1234, 234234]), q=0)
     np.testing.assert_array_equal(vals[0], (1234, 234234))
     assert vals[1] == 1
 
-    vals = bloq.call_classically(ctrl=[123, 234234], q=0)
+    vals = bloq.call_classically(ctrl=np.asarray([123, 234234]), q=0)
     np.testing.assert_array_equal(vals[0], (123, 234234))
     assert vals[1] == 0
 
@@ -377,7 +378,7 @@ class TestCtrlStatePrepAnd(Bloq):
         and_ctrl = [bb.add(one_or_zero[cv]) for cv in self.and_ctrl]
 
         ctrl_soqs = bb.add_d(cbloq, **ctrl_soqs, ctrl=and_ctrl)
-        out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])
+        out_soqs = np.asarray([*ctrl_soqs.pop('ctrl'), ctrl_soqs.pop('target')])  # type: ignore[misc]
 
         for reg, cvs in zip(cbloq.ctrl_regs, self.ctrl_spec.cvs):
             for idx in reg.all_idxs():
@@ -402,3 +403,51 @@ def test_controlled_tensor_for_and_bloq(ctrl_spec: CtrlSpec):
     _verify_ctrl_tensor_for_and(ctrl_spec, (1, 0))
     _verify_ctrl_tensor_for_and(ctrl_spec, (0, 1))
     _verify_ctrl_tensor_for_and(ctrl_spec, (0, 0))
+
+
+def test_controlled_diagrams():
+    ctrl_gate = XPowGate(0.25).controlled()
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(ctrl_gate.on_registers(**get_named_qubits(ctrl_gate.signature))),
+        '''
+ctrl: ───@────────
+         │
+q: ──────X^0.25───''',
+    )
+
+    ctrl_0_gate = XPowGate(0.25).controlled(ctrl_spec=CtrlSpec(cvs=0))
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(ctrl_0_gate.on_registers(**get_named_qubits(ctrl_0_gate.signature))),
+        '''
+ctrl: ───(0)──────
+         │
+q: ──────X^0.25───''',
+    )
+
+    multi_ctrl_gate = XPowGate(0.25).controlled(ctrl_spec=CtrlSpec(cvs=[0, 1]))
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(multi_ctrl_gate.on_registers(**get_named_qubits(multi_ctrl_gate.signature))),
+        '''
+ctrl[0]: ───(0)──────
+            │
+ctrl[1]: ───@────────
+            │
+q: ─────────X^0.25───''',
+    )
+
+    ctrl_bloq = Swap(2).controlled(ctrl_spec=CtrlSpec(cvs=[0, 1]))
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(ctrl_bloq.on_registers(**get_named_qubits(ctrl_bloq.signature))),
+        '''
+ctrl[0]: ───(0)────
+            │
+ctrl[1]: ───@──────
+            │
+x0: ────────×(x)───
+            │
+x1: ────────×(x)───
+            │
+y0: ────────×(y)───
+            │
+y1: ────────×(y)───''',
+    )

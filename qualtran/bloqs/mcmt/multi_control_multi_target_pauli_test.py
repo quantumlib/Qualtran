@@ -28,13 +28,14 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import (
 def test_multi_target_cnot(num_targets):
     qubits = cirq.LineQubit.range(num_targets + 1)
     naive_circuit = cirq.Circuit(cirq.CNOT(qubits[0], q) for q in qubits[1:])
-    op = MultiTargetCNOT(num_targets).on(*qubits)
+    bloq = MultiTargetCNOT(num_targets)
+    op = bloq.on(*qubits)
     cirq.testing.assert_circuits_with_terminal_measurements_are_equivalent(
         cirq.Circuit(op), naive_circuit, atol=1e-6
     )
     optimal_circuit = cirq.Circuit(cirq.decompose_once(op))
     assert len(optimal_circuit) == 2 * np.ceil(np.log2(num_targets)) + 1
-    qlt_testing.assert_valid_bloq_decomposition(op.gate)
+    qlt_testing.assert_valid_bloq_decomposition(bloq)
 
 
 @pytest.mark.parametrize("num_controls", [0, 1, 2, *range(7, 17)])

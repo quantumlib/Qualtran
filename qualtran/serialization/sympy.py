@@ -89,7 +89,7 @@ def _get_sympy_const_from_enum(enum: int) -> Any:
         sympy_pb2.ConstSymbol.Pi: sympy.pi,
         sympy_pb2.ConstSymbol.E: sympy.E,
         sympy_pb2.ConstSymbol.EulerGamma: sympy.EulerGamma,
-        sympy_pb2.ConstSymbol.Infinity: sympy.core.numbers.Infinity(),
+        sympy_pb2.ConstSymbol.Infinity: sympy.oo,
         sympy_pb2.ConstSymbol.ImaginaryUnit: sympy.core.numbers.ImaginaryUnit(),
     }
     return enum_to_sympy[enum]
@@ -107,7 +107,7 @@ def _get_const_symbolic_operand(expr: sympy.Expr) -> sympy_pb2.Parameter:
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.E)
     if expr == sympy.EulerGamma:
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.EulerGamma)
-    if isinstance(expr, sympy.core.numbers.Infinity):
+    if isinstance(expr, sympy.core.numbers.Infinity) or expr == sympy.oo:
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.Infinity)
     if isinstance(expr, sympy.core.numbers.ImaginaryUnit):
         return sympy_pb2.Parameter(const_symbol=sympy_pb2.ConstSymbol.ImaginaryUnit)
@@ -141,8 +141,6 @@ def _get_sympy_operand(expr: Union[sympy.Basic, int, float]) -> sympy_pb2.Parame
             denominator = _get_sympy_operand(expr.denominator)
             fraction = sympy_pb2.Rational(numerator=numerator, denominator=denominator)
             return sympy_pb2.Parameter(const_rat=fraction)
-        else:
-            raise NotImplementedError(f"Sympy expression {str(expr)} cannot be serialized.")
     if type(expr) is int:
         return sympy_pb2.Parameter(const_int=expr)
     if type(expr) is float:

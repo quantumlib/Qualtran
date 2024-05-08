@@ -208,11 +208,11 @@ class GraphDrawer:
 
         if rowspan != 1:
             assert rowspan > 1
-            rowspan = f'rowspan="{rowspan}"'
+            rowspan_html = f'rowspan="{rowspan}"'
         else:
-            rowspan = ''
+            rowspan_html = ''
 
-        return f'<TD {rowspan} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
+        return f'<TD {rowspan_html} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
 
     def _get_register_tr(
         self,

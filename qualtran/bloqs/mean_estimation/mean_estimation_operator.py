@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Collection, Optional, Sequence, Tuple, Union
+from typing import Collection, Iterator, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
@@ -85,7 +85,6 @@ class MeanEstimationOperator(GateWithRegisters):
     cv: Tuple[int, ...] = attrs.field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
     )
-    power: int = 1
     arctan_bitsize: int = 32
 
     @cv.validator
@@ -121,20 +120,15 @@ class MeanEstimationOperator(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
-        select_op = self.select.on_registers(**select_reg)
-        reflect_op = self.reflect.on_registers(**reflect_reg)
-        for _ in range(self.power):
-            yield select_op
-            yield reflect_op
+        yield self.select.on_registers(**select_reg)
+        yield self.reflect.on_registers(**reflect_reg)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
-        wire_symbols = [] if self.cv == () else [["@(0)", "@"][self.cv[0]]]
+        wire_symbols = [] if self.cv == () else [["(0)", "@"][self.cv[0]]]
         wire_symbols += ['U_ko'] * (total_bits(self.signature) - total_bits(self.control_registers))
-        if self.power != 1:
-            wire_symbols[-1] = f'U_ko^{self.power}'
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def controlled(
@@ -160,17 +154,8 @@ class MeanEstimationOperator(GateWithRegisters):
             return MeanEstimationOperator(
                 CodeForRandomVariable(encoder=c_select, synthesizer=self.code.synthesizer),
                 cv=self.cv + (control_values[0],),
-                power=self.power,
                 arctan_bitsize=self.arctan_bitsize,
             )
         raise NotImplementedError(
             f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
-
-    def with_power(self, new_power: int) -> 'MeanEstimationOperator':
-        return MeanEstimationOperator(
-            self.code, cv=self.cv, power=new_power, arctan_bitsize=self.arctan_bitsize
-        )
-
-    def __pow__(self, power: int):
-        return self.with_power(self.power * power)

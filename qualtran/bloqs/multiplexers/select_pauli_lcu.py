@@ -15,7 +15,7 @@
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
 from functools import cached_property
-from typing import Collection, Optional, Sequence, Tuple, Union
+from typing import Collection, Iterable, Iterator, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
@@ -30,6 +30,11 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+
+
+def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliString]:
+    """mypy-compatible attrs converter for SelectPauliLCU.select_unitaries"""
+    return tuple(x)
 
 
 @attrs.frozen
@@ -55,7 +60,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
     """
     selection_bitsize: int
     target_bitsize: int
-    select_unitaries: Tuple[cirq.DensePauliString, ...] = attrs.field(converter=tuple)
+    select_unitaries: Tuple[cirq.DensePauliString, ...] = attrs.field(converter=_to_tuple)
     control_val: Optional[int] = None
 
     def __attrs_post_init__(self):
@@ -86,7 +91,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
 
     def decompose_from_registers(
         self, context, **quregs: NDArray[cirq.Qid]  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])
         yield super(SelectPauliLCU, self).decompose_from_registers(context=context, **quregs)

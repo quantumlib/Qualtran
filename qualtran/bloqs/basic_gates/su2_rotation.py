@@ -12,14 +12,14 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox
@@ -70,6 +70,14 @@ class SU2RotationGate(GateWithRegisters):
 
     @cached_property
     def rotation_matrix(self) -> NDArray[np.complex_]:
+        if isinstance(self.lambd, sympy.Expr):
+            raise ValueError(f'Symbolic lambda not allowed: {self.lambd}')
+        if isinstance(self.phi, sympy.Expr):
+            raise ValueError(f'Symbolic phi not allowed: {self.phi}')
+        if isinstance(self.theta, sympy.Expr):
+            raise ValueError(f'Symbolic theta not allowed: {self.theta}')
+        if isinstance(self.global_shift, sympy.Expr):
+            raise ValueError(f'Symbolic global_shift not allowed: {self.global_shift}')
         return np.exp(1j * self.global_shift) * np.array(
             [
                 [
@@ -117,13 +125,13 @@ class SU2RotationGate(GateWithRegisters):
         )
 
     def _unitary_(self):
-        if self._is_parameterized_():
+        if self.is_symbolic():
             return None
         return self.rotation_matrix
 
     def build_composite_bloq(self, bb: 'BloqBuilder', q: 'SoquetT') -> Dict[str, 'SoquetT']:
-        pi = sympy.pi if self._is_parameterized_() else np.pi
-        exp = sympy.exp if self._is_parameterized_() else np.exp
+        pi = sympy.pi if self.is_symbolic() else np.pi
+        exp = sympy.exp if self.is_symbolic() else np.exp
 
         bb.add(GlobalPhase(coefficient=-exp(1j * self.global_shift), eps=self.eps / 4))
         q = bb.add(ZPowGate(exponent=1 - self.lambd / pi, global_shift=-1, eps=self.eps / 4), q=q)
@@ -131,10 +139,19 @@ class SU2RotationGate(GateWithRegisters):
         q = bb.add(ZPowGate(exponent=-self.phi / pi, global_shift=-1, eps=self.eps / 4), q=q)
         return {'q': q}
 
+    def adjoint(self) -> 'SU2RotationGate':
+        return SU2RotationGate(
+            theta=self.theta,
+            phi=-self.lambd,
+            lambd=-self.phi,
+            global_shift=-self.global_shift,
+            eps=self.eps,
+        )
+
     def pretty_name(self) -> str:
         return 'SU_2'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox(
             f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
         )
@@ -142,7 +159,7 @@ class SU2RotationGate(GateWithRegisters):
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=3)
 
-    def _is_parameterized_(self) -> bool:
+    def is_symbolic(self) -> bool:
         return is_symbolic(self.theta, self.phi, self.lambd, self.global_shift)
 
     @classmethod
