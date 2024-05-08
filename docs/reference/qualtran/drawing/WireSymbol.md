@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L346-L362">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L355-L371">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -37,7 +37,7 @@ A symbol is a particular visual representation of a bloq's register.
 
 <h3 id="draw"><code>draw</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L353-L355">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L362-L364">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>@abc.abstractmethod</code>
@@ -51,7 +51,7 @@ Draw this symbol using matplotlib.
 
 <h3 id="adjoint"><code>adjoint</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L357-L359">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L366-L368">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>adjoint() -> 'WireSymbol'
@@ -62,7 +62,7 @@ Return a symbol that is the adjoint of this.
 
 <h3 id="json_dict"><code>json_dict</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L361-L362">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L370-L371">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>json_dict() -> Dict[str, Any]

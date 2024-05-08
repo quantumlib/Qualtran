@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L223-L265">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L233-L275">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -46,7 +46,7 @@ A ones' complement representation is assumed for negative integers.
 
 <h3 id="to_bits"><code>to_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L244-L247">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L254-L257">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_bits(
@@ -59,7 +59,7 @@ Yields individual bits corresponding to binary representation of x
 
 <h3 id="from_bits"><code>from_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L249-L252">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L259-L262">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>from_bits(
@@ -72,7 +72,7 @@ Combine individual bits to form x
 
 <h3 id="get_classical_domain"><code>get_classical_domain</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L254-L256">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L264-L266">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_classical_domain() -> Iterable[int]
@@ -83,7 +83,7 @@ Yields all possible classical (computational basis state) values representable b
 
 <h3 id="assert_valid_classical_val"><code>assert_valid_classical_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L258-L265">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L268-L275">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val(

@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L51-L90">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L51-L91">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -92,7 +92,7 @@ The number of physical qubits used by the data block.
 
 <h3 id="data_error"><code>data_error</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L82-L87">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L82-L88">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>data_error(
@@ -105,7 +105,7 @@ The error associated with storing data on `n_algo_qubits` for `n_cycles`.
 
 <h3 id="n_cycles_to_consume_a_magic_state"><code>n_cycles_to_consume_a_magic_state</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L89-L90">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/data_block.py#L90-L91">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>n_cycles_to_consume_a_magic_state() -> int

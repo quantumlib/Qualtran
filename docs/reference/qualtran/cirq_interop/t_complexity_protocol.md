@@ -19,3 +19,5 @@
 
 [`SymbolicFloat`](../../qualtran/cirq_interop/t_complexity_protocol/SymbolicFloat.md)
 
+[`SymbolicInt`](../../qualtran/cirq_interop/t_complexity_protocol/SymbolicInt.md)
+

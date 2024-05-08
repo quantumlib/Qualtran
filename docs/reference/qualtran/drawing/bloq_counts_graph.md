@@ -7,7 +7,9 @@ Classes for drawing bloq counts graphs with Graphviz.
 
 ## Classes
 
-[`class GraphvizCounts`](../../qualtran/drawing/GraphvizCounts.md): This class turns a bloqs count graph into Graphviz objects and drawings.
+[`class GraphvizCounts`](../../qualtran/drawing/GraphvizCounts.md): Draw a bloq call graphs using Graphviz.
+
+[`class GraphvizCallGraph`](../../qualtran/drawing/GraphvizCallGraph.md): Draw a bloq call graph using Graphviz with additional data.
 
 ## Functions
 

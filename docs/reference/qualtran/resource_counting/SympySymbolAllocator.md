@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/bloq_counts.py#L36-L52">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_call_graph.py#L37-L53">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -14,14 +14,6 @@
 
 
 A class that allocates unique sympy symbols for integrating out bloq attributes.
-
-<section class="expandable">
-  <h4 class="showalways">View aliases</h4>
-  <p>
-<b>Main aliases</b>
-<p>`qualtran.resource_counting.bloq_counts.SympySymbolAllocator`</p>
-</p>
-</section>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.resource_counting.SympySymbolAllocator()
@@ -40,7 +32,7 @@ by this class. We refer to this process as "generalizing".
 
 <h3 id="new_symbol"><code>new_symbol</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/bloq_counts.py#L48-L52">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_call_graph.py#L49-L53">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>new_symbol(

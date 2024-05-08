@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/flame_graph.py#L168-L194">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/flame_graph.py#L167-L192">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>

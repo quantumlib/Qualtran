@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L87-L109">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L92-L117">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -17,10 +17,12 @@ Decorator to turn a function into a `BloqExample`.
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.bloq_example(
-    _func: Callable[[], <a href="../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>] = None,
+    _func: Optional[Callable[[], _BloqType]] = None,
     *,
-    generalizer: <a href="../qualtran/resource_counting/GeneralizerT.html"><code>qualtran.resource_counting.GeneralizerT</code></a> = (lambda x: x)
-)
+    generalizer: <a href="../qualtran/resource_counting/GeneralizerT.html"><code>qualtran.resource_counting.GeneralizerT</code></a> = (lambda x: x),
+    **kwargs
+) -> Union[Callable[[Callable[[], _BloqType]], BloqExample[_BloqType]],
+    BloqExample[_BloqType]]
 </code></pre>
 
 

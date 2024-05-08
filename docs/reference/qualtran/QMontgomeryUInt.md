@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L499-L556">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L514-L571">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -33,7 +33,7 @@ every QUInt can be treated as a QMontgomeryUInt. Montgomery form is used in orde
 fast modular multiplication.
 
 In order to convert an unsigned integer from a finite field x % p into Montgomery form you
-first must choose a value r > p where gcd(r, p) = 1. Typically this value is a power of 2.
+first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
 
 Conversion to Montgomery form:
     [x] = (x * r) % p
@@ -65,7 +65,7 @@ Pseudocode for REDC(u) can be found in the resource below.
 
 <h3 id="get_classical_domain"><code>get_classical_domain</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L533-L534">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L548-L549">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>get_classical_domain() -> Iterable[Any]
@@ -76,7 +76,7 @@ Yields all possible classical (computational basis state) values representable b
 
 <h3 id="to_bits"><code>to_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L536-L537">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L551-L552">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>to_bits(
@@ -89,7 +89,7 @@ Yields individual bits corresponding to binary representation of x
 
 <h3 id="from_bits"><code>from_bits</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L539-L540">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L554-L555">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>from_bits(
@@ -102,7 +102,7 @@ Combine individual bits to form x
 
 <h3 id="assert_valid_classical_val"><code>assert_valid_classical_val</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L542-L548">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L557-L563">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val(
@@ -126,7 +126,7 @@ Args
 
 <h3 id="assert_valid_classical_val_array"><code>assert_valid_classical_val_array</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L550-L556">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/data_types.py#L565-L571">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>assert_valid_classical_val_array(

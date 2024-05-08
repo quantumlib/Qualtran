@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L87-L186">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L87-L192">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -83,11 +83,11 @@ Go through our reservations and rescind them depending on the `until` predicate.
 
 <h3 id="maybe_reserve"><code>maybe_reserve</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L123-L135">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L123-L137">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>maybe_reserve(
-    binst: <a href="../../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>,
+    binst: Union[<a href="../../qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>, <a href="../../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>],
     reg: <a href="../../qualtran/Register.html"><code>qualtran.Register</code></a>,
     idx: Tuple[int, ...]
 )
@@ -107,7 +107,7 @@ and call the `until` predicate on `binst, reg`.
 
 <h3 id="new"><code>new</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L137-L158">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L139-L160">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>new(
@@ -125,7 +125,7 @@ Allocate a position or positions for `reg`.
 
 <h3 id="finish_hline"><code>finish_hline</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L160-L164">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L162-L166">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>finish_hline(
@@ -138,11 +138,11 @@ Update `self.hlines` once we know where an HLine ends.
 
 <h3 id="free"><code>free</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L166-L186">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/musical_score.py#L168-L192">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>free(
-    binst: <a href="../../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>,
+    binst: Union[<a href="../../qualtran/DanglingT.html"><code>qualtran.DanglingT</code></a>, <a href="../../qualtran/BloqInstance.html"><code>qualtran.BloqInstance</code></a>],
     reg: <a href="../../qualtran/Register.html"><code>qualtran.Register</code></a>,
     arr: Union[RegPosition, NDArray[RegPosition]]
 )

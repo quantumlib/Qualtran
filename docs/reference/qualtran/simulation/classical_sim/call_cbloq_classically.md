@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/simulation/classical_sim.py#L174-L215">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/simulation/classical_sim.py#L178-L221">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -18,7 +18,7 @@ Propagate `on_classical_vals` calls through a composite bloq's contents.
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.simulation.classical_sim.call_cbloq_classically(
     signature: <a href="../../../qualtran/Signature.html"><code>qualtran.Signature</code></a>,
-    vals: Dict[str, <a href="../../../qualtran/simulation/classical_sim/ClassicalValT.html"><code>qualtran.simulation.classical_sim.ClassicalValT</code></a>],
+    vals: Mapping[str, Union[sympy.Symbol, ClassicalValT]],
     binst_graph: nx.DiGraph
 ) -> Tuple[Dict[str, ClassicalValT], Dict[Soquet, ClassicalValT]]
 </code></pre>

@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/ccz2t_cost_model.py#L309-L362">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/surface_code/ccz2t_cost_model.py#L309-L365">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -34,7 +34,7 @@ Grid search over parameters to minimize space time volume.
     factory_iter: Iterable[<a href="../../qualtran/surface_code/MagicStateFactory.html"><code>qualtran.surface_code.MagicStateFactory</code></a>] = tuple(iter_ccz2t_factories()),
     data_block_iter: Iterable[<a href="../../qualtran/surface_code/data_block/DataBlock.html"><code>qualtran.surface_code.data_block.DataBlock</code></a>] = tuple(iter_simple_data_blocks()),
     cost_function: Callable[[<a href="../../qualtran/surface_code/PhysicalCost.html"><code>qualtran.surface_code.PhysicalCost</code></a>], float] = (lambda pc: pc.qubit_hours)
-) -> Tuple[<a href="../../qualtran/surface_code/PhysicalCost.html"><code>qualtran.surface_code.PhysicalCost</code></a>, <a href="../../qualtran/surface_code/CCZ2TFactory.html"><code>qualtran.surface_code.CCZ2TFactory</code></a>, <a href="../../qualtran/surface_code/SimpleDataBlock.html"><code>qualtran.surface_code.SimpleDataBlock</code></a>]
+) -> Tuple[<a href="../../qualtran/surface_code/PhysicalCost.html"><code>qualtran.surface_code.PhysicalCost</code></a>, <a href="../../qualtran/surface_code/MagicStateFactory.html"><code>qualtran.surface_code.MagicStateFactory</code></a>, <a href="../../qualtran/surface_code/SimpleDataBlock.html"><code>qualtran.surface_code.SimpleDataBlock</code></a>]
 </code></pre>
 
 

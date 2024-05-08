@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/_show_funcs.py#L34-L51">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/drawing/_show_funcs.py#L36-L56">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -32,9 +32,10 @@ Display a visual representation of the bloq in IPython.
 : The bloq to show
 
 `type`<a id="type"></a>
-: Either 'graph', 'dtype', or 'musical_score'. By default, display a directed acyclic
-  graph of the bloq connectivity. If dtype then the connections are
-  labelled with their dtypes rather than bitsizes. Otherwise, draw a
-  musical score diagram.
+: Either 'graph', 'dtype', 'musical_score' or 'latex'. By default, display
+  a directed acyclic graph of the bloq connectivity. If dtype then the
+  connections are labelled with their dtypes rather than bitsizes. If 'latex',
+  then latex diagrams are drawn using `qpic`, which should be installed already
+  and is invoked via a subprocess.run() call. Otherwise, draw a musical score diagram.
 
 

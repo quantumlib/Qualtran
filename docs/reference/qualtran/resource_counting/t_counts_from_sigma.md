@@ -11,5 +11,5 @@
 
 ## Type Aliases
 
-[`SymbolicInt`](../../qualtran/resource_counting/symbolic_counting_utils/SymbolicInt.md)
+[`SymbolicInt`](../../qualtran/cirq_interop/t_complexity_protocol/SymbolicInt.md)
 

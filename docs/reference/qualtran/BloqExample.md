@@ -4,7 +4,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L22-L56">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L27-L61">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -71,10 +71,10 @@ Consider using the decorator `@bloq_example` to construct a `BloqExample` from a
 
 <h3 id="make"><code>make</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L46-L48">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L51-L53">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>make() -> <a href="../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>
+<code>make() -> _BloqType
 </code></pre>
 
 Make the bloq.
@@ -82,10 +82,10 @@ Make the bloq.
 
 <h3 id="__call__"><code>__call__</code></h3>
 
-<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L50-L56">View source</a>
+<a target="_blank" class="external" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/_infra/bloq_example.py#L55-L61">View source</a>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>__call__() -> <a href="../qualtran/Bloq.html"><code>qualtran.Bloq</code></a>
+<code>__call__() -> _BloqType
 </code></pre>
 
 This class is callable: it will make the bloq.

@@ -52,10 +52,10 @@
    qualtran/testing/BloqCheckResult.md
    qualtran/testing/assert_bloq_example_decompose.md
    qualtran/testing/assert_bloq_example_make.md
-   qualtran/testing/assert_bloq_example_preserves_types.md
-   qualtran/testing/assert_bloq_example_serialize.md
+   qualtran/testing/assert_bloq_example_qtyping.md
+   qualtran/testing/assert_bloq_example_serializes.md
    qualtran/testing/assert_connections_compatible.md
-   qualtran/testing/assert_connections_preserve_types.md
+   qualtran/testing/assert_connections_consistent_qdtypes.md
    qualtran/testing/assert_equivalent_bloq_counts.md
    qualtran/testing/assert_equivalent_bloq_example_counts.md
    qualtran/testing/assert_registers_match_dangling.md
@@ -67,8 +67,8 @@
    qualtran/testing/assert_wire_symbols_match_expected.md
    qualtran/testing/check_bloq_example_decompose.md
    qualtran/testing/check_bloq_example_make.md
-   qualtran/testing/check_bloq_example_serialize.md
-   qualtran/testing/check_connections_preserve_preserves_types.md
+   qualtran/testing/check_bloq_example_qtyping.md
+   qualtran/testing/check_bloq_example_serializes.md
    qualtran/testing/check_equivalent_bloq_example_counts.md
    qualtran/testing/execute_notebook.md
 
@@ -79,6 +79,7 @@
    qualtran/drawing/Circle.md
    qualtran/drawing/ClassicalSimGraphDrawer.md
    qualtran/drawing/GraphDrawer.md
+   qualtran/drawing/GraphvizCallGraph.md
    qualtran/drawing/GraphvizCounts.md
    qualtran/drawing/HLine.md
    qualtran/drawing/LarrowTextBox.md
@@ -103,7 +104,9 @@
    qualtran/drawing/get_musical_score_data.md
    qualtran/drawing/graphviz.md
    qualtran/drawing/musical_score.md
+   qualtran/drawing/qpic_diagram.md
    qualtran/drawing/show_bloq.md
+   qualtran/drawing/show_bloq_via_qpic.md
    qualtran/drawing/show_bloqs.md
    qualtran/drawing/show_call_graph.md
    qualtran/drawing/show_counts_sigma.md
@@ -117,10 +120,10 @@
    qualtran/resource_counting/GeneralizerT.md
    qualtran/resource_counting/SympySymbolAllocator.md
    qualtran/resource_counting/big_O.md
-   qualtran/resource_counting/bloq_counts.md
    qualtran/resource_counting/build_cbloq_call_graph.md
    qualtran/resource_counting/generalizers.md
    qualtran/resource_counting/get_bloq_call_graph.md
+   qualtran/resource_counting/get_bloq_callee_counts.md
    qualtran/resource_counting/print_counts_graph.md
    qualtran/resource_counting/symbolic_counting_utils.md
    qualtran/resource_counting/t_counts_from_sigma.md
@@ -204,6 +207,16 @@
 
 .. toctree::
    :hidden:
+   :caption: qpic_diagram
+
+   qualtran/drawing/qpic_diagram/QpicCircuit.md
+   qualtran/drawing/qpic_diagram/QpicWireManager.md
+   qualtran/drawing/qpic_diagram/get_qpic_data.md
+   qualtran/drawing/qpic_diagram/qpic_diagram_for_bloq.md
+   qualtran/drawing/qpic_diagram/qpic_input_to_diagram.md
+
+.. toctree::
+   :hidden:
    :caption: generalizers
 
    qualtran/resource_counting/generalizers/cirq_to_bloqs.md
@@ -217,7 +230,8 @@
    :hidden:
    :caption: symbolic_counting_utils
 
-   qualtran/resource_counting/symbolic_counting_utils/SymbolicInt.md
+   qualtran/resource_counting/symbolic_counting_utils/Shaped.md
+   qualtran/resource_counting/symbolic_counting_utils/SymbolicComplex.md
    qualtran/resource_counting/symbolic_counting_utils/acos.md
    qualtran/resource_counting/symbolic_counting_utils/bit_length.md
    qualtran/resource_counting/symbolic_counting_utils/ceil.md
@@ -225,7 +239,10 @@
    qualtran/resource_counting/symbolic_counting_utils/is_symbolic.md
    qualtran/resource_counting/symbolic_counting_utils/log2.md
    qualtran/resource_counting/symbolic_counting_utils/pi.md
+   qualtran/resource_counting/symbolic_counting_utils/sconj.md
+   qualtran/resource_counting/symbolic_counting_utils/slen.md
    qualtran/resource_counting/symbolic_counting_utils/smax.md
+   qualtran/resource_counting/symbolic_counting_utils/smin.md
 
 .. toctree::
    :hidden:
@@ -239,6 +256,7 @@
 
    qualtran/cirq_interop/t_complexity_protocol/SupportsTComplexity.md
    qualtran/cirq_interop/t_complexity_protocol/SymbolicFloat.md
+   qualtran/cirq_interop/t_complexity_protocol/SymbolicInt.md
    qualtran/cirq_interop/t_complexity_protocol/TComplexity.md
    qualtran/cirq_interop/t_complexity_protocol/t_complexity.md
 

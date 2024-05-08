@@ -19,6 +19,8 @@ isort:skip_file
 
 [`musical_score`](../qualtran/drawing/musical_score.md): Tools for laying out composite bloq graphs onto a "musical score".
 
+[`qpic_diagram`](../qualtran/drawing/qpic_diagram.md): Classes for drawing latex diagrams for bloqs with QPIC - https://github.com/qpic/qpic.
+
 ## Classes
 
 [`class GraphDrawer`](../qualtran/drawing/GraphDrawer.md): A class to encapsulate methods for displaying a CompositeBloq as a graph using graphviz.
@@ -51,7 +53,9 @@ isort:skip_file
 
 [`class ClassicalSimGraphDrawer`](../qualtran/drawing/ClassicalSimGraphDrawer.md): A graph drawer that labels each edge with a classical value.
 
-[`class GraphvizCounts`](../qualtran/drawing/GraphvizCounts.md): This class turns a bloqs count graph into Graphviz objects and drawings.
+[`class GraphvizCounts`](../qualtran/drawing/GraphvizCounts.md): Draw a bloq call graphs using Graphviz.
+
+[`class GraphvizCallGraph`](../qualtran/drawing/GraphvizCallGraph.md): Draw a bloq call graph using Graphviz with additional data.
 
 ## Functions
 
@@ -68,6 +72,8 @@ isort:skip_file
 [`get_musical_score_data(...)`](../qualtran/drawing/get_musical_score_data.md): Get the musical score data for a (composite) bloq.
 
 [`show_bloq(...)`](../qualtran/drawing/show_bloq.md): Display a visual representation of the bloq in IPython.
+
+[`show_bloq_via_qpic(...)`](../qualtran/drawing/show_bloq_via_qpic.md): Display latex diagram for bloq by invoking `qpic`. Assumes qpic is already installed.
 
 [`show_bloqs(...)`](../qualtran/drawing/show_bloqs.md): Display multiple bloqs side-by-side in IPython.
 

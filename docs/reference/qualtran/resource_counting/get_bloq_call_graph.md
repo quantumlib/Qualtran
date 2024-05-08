@@ -3,7 +3,7 @@
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/bloq_counts.py#L181-L227">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/resource_counting/_call_graph.py#L197-L243">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -14,14 +14,6 @@
 
 Recursively build the bloq call graph and call totals.
 
-
-<section class="expandable">
-  <h4 class="showalways">View aliases</h4>
-  <p>
-<b>Main aliases</b>
-<p>`qualtran.resource_counting.bloq_counts.get_bloq_call_graph`</p>
-</p>
-</section>
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
 <code>qualtran.resource_counting.get_bloq_call_graph(

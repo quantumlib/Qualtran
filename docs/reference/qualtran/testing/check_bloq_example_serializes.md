@@ -1,9 +1,9 @@
-# check_bloq_example_serialize
+# check_bloq_example_serializes
 
 
 <table class="tfo-notebook-buttons tfo-api nocontent" align="left">
 <td>
-  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/testing.py#L547-L569">
+  <a target="_blank" href="https://github.com/quantumlib/Qualtran/blob/main/qualtran/testing.py#L588-L610">
     <img src="https://www.tensorflow.org/images/GitHub-Mark-32px.png" />
     View source on GitHub
   </a>
@@ -16,7 +16,7 @@ Check that the BloqExample has consistent serialization.
 
 
 <pre class="devsite-click-to-copy prettyprint lang-py tfo-signature-link">
-<code>qualtran.testing.check_bloq_example_serialize(
+<code>qualtran.testing.check_bloq_example_serializes(
     bloq_ex: <a href="../../qualtran/BloqExample.html"><code>qualtran.BloqExample</code></a>
 ) -> Tuple[<a href="../../qualtran/testing/BloqCheckResult.html"><code>qualtran.testing.BloqCheckResult</code></a>, str]
 </code></pre>
