@@ -68,6 +68,10 @@ def check_polynomial_pair_on_random_points_on_unit_circle(
 
     for _ in range(n_points):
         z = np.exp(random_state.random() * np.pi * 2j)
+        # DO NOT SUBMIT: Logs
+        a = 1-(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2)
+        print(a)
+
         np.testing.assert_allclose(np.abs(P(z)) ** 2 + np.abs(Q(z)) ** 2, 1, rtol=rtol)
 
 
