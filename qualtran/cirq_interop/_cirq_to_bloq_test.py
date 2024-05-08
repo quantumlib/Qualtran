@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, Tuple
+from typing import Dict, Iterator, Tuple
 
 import attr
 import cirq
@@ -211,7 +211,7 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
         def signature(self):
             return Signature([Register('junk', QAny(2), side=Side.LEFT)])
 
-        def decompose_from_registers(self, *, context, junk) -> cirq.OP_TREE:
+        def decompose_from_registers(self, *, context, junk) -> Iterator[cirq.OP_TREE]:
             yield cirq.CNOT(*junk)
             yield cirq.reset_each(*junk)
 

@@ -22,6 +22,7 @@ from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QUInt, Signat
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.util_bloqs import Free
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 from .ec_phase_estimate_r import ECPhaseEstimateR
 from .ec_point import ECPoint
@@ -80,13 +81,13 @@ class FindECCPrivateKey(Bloq):
         return Signature([])
 
     @property
-    def mod(self) -> int:
+    def mod(self) -> SymbolicInt:
         if self.base_point.mod != self.public_key.mod:
             raise ValueError("Inconsistent moduli in the two points.")
         return self.base_point.mod
 
     @property
-    def curve_a(self) -> int:
+    def curve_a(self) -> SymbolicInt:
         if self.base_point.curve_a != self.public_key.curve_a:
             raise ValueError("Inconsistent curve parameters in the two points.")
         return self.base_point.curve_a

@@ -24,7 +24,7 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, Optional, Sequence, Set, Tuple, Union
 
 import attrs
 import cirq
@@ -168,7 +168,7 @@ class And(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 
         * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
@@ -302,7 +302,7 @@ class MultiAnd(Bloq):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         control, ancilla, target = (
             quregs['ctrl'].flatten(),
             quregs.get('junk', np.array([])).flatten(),

@@ -18,6 +18,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
+import numpy as np
 import sympy
 
 from qualtran import (
@@ -34,6 +35,7 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _get_flat_dangling_soqs
 from qualtran._infra.data_types import check_dtypes_consistent, QDTypeCheckingSeverity
+from qualtran.drawing.musical_score import WireSymbol
 from qualtran.resource_counting import GeneralizerT
 
 
@@ -225,23 +227,35 @@ def assert_valid_bloq_decomposition(bloq: Optional[Bloq]) -> CompositeBloq:
     return cbloq
 
 
-def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[str]):
+def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, WireSymbol]]):
     """Assert a bloq's wire symbols match the expected ones.
+
+    For multi-dimensional registers (with a shape), this will iterate
+    through the register indices (see numpy.ndindices for iteration order).
 
     Args:
         bloq: the bloq whose wire symbols we want to check.
-        expected_ws: A list of the expected wire symbols.
+        expected_ws: A list of the expected wire symbols or their associated text.
     """
-    ws = []
-    regs = bloq.signature
-    # note this will only work if shape = ().
-    # See: https://github.com/quantumlib/Qualtran/issues/608
-    for i, r in enumerate(regs):
-        # note this will only work if shape = ().
-        # See: https://github.com/quantumlib/Qualtran/issues/608
-        ws.append(bloq.wire_symbol(r, (i,)).text)
-
-    assert ws == expected_ws
+    expected_idx = 0
+    for reg in bloq.signature:
+        if reg.shape:
+            indices = np.ndindex(reg.shape)
+        else:
+            indices = np.ndindex((1,))
+        for idx in indices:
+            wire_symbol = bloq.wire_symbol(reg, idx)
+            expected_symbol = expected_ws[expected_idx]
+            if isinstance(expected_symbol, str):
+                wire_text = getattr(wire_symbol, 'text', None)
+                assert (
+                    wire_text == expected_symbol
+                ), f'Wire symbol {wire_text} does not match expected {expected_symbol}'
+            else:
+                assert (
+                    wire_symbol == expected_symbol
+                ), f'Wire symbol {wire_symbol} does not match expected {expected_symbol}'
+            expected_idx += 1
 
 
 def execute_notebook(name: str):
