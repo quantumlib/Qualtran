@@ -14,7 +14,7 @@
 
 import itertools
 from functools import cached_property
-from typing import Callable, Sequence, Tuple
+from typing import Callable, Sequence, Set, Tuple
 
 import attrs
 import cirq
@@ -24,6 +24,8 @@ import sympy
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register, Signature
 from qualtran._infra.gate_with_registers import total_bits
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
+from qualtran.cirq_interop._cirq_to_bloq import _cirq_gate_to_bloq
+from qualtran.resource_counting import BloqCountT
 
 
 @attrs.frozen
@@ -121,6 +123,10 @@ class ApplyGateToLthQubit(UnaryIterationGate):
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = int(np.ravel_multi_index(selection_idx, selection_shape))
         return self.nth_gate(*selection_idx).on(target[target_idx]).controlled_by(control)
+
+    def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:
+        selection_idx = tuple(selection_regs_name_to_val[reg.name] for reg in self.selection_regs)
+        return {(_cirq_gate_to_bloq(self.nth_gate(*selection_idx)), 1)}
 
 
 @bloq_example
