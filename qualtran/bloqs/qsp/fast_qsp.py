@@ -47,14 +47,19 @@ class FastQSP:
 def fast_complementary_polynomial(poly, verify=True, granularity=8):
     DTYPE = np.complex128
     TOLERANCE = 1e-12
-    poly = poly.astype(DTYPE)
+    poly = np.array(poly, dtype=DTYPE)
     np.random.seed(42)
     q_initial = np.random.randn(poly.shape[0]*2)
     q_initial_normalized = q_initial / np.linalg.norm(q_initial)
 
     qsp = FastQSP(poly)
 
-    minimizer = minimize(qsp.loss_function,q_initial_normalized, method="L-BFGS-B", tol=TOLERANCE)
+    # minimizer = minimize(qsp.loss_function,q_initial_normalized, method="L-BFGS-B", tol=TOLERANCE, bounds=[(-1,1)],
+    #                      options={"maxcor":50, "eps":1e-15, "maxls":20})
+    minimizer = minimize(qsp.loss_function,q_initial_normalized,  tol=TOLERANCE, bounds=[(-1,1)],
+                         options={"maxcor":50, "eps":1e-15, "maxls":20})
+
+
 
     return qsp.array_to_complex(minimizer.x)
 
