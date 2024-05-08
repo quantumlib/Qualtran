@@ -54,11 +54,8 @@ def fast_complementary_polynomial(poly, verify=True, granularity=8):
 
     qsp = FastQSP(poly)
 
-    # minimizer = minimize(qsp.loss_function,q_initial_normalized, method="L-BFGS-B", tol=TOLERANCE, bounds=[(-1,1)],
-    #                      options={"maxcor":50, "eps":1e-15, "maxls":20})
-    minimizer = minimize(qsp.loss_function,q_initial_normalized,  tol=TOLERANCE, bounds=[(-1,1)],
+    minimizer = minimize(qsp.loss_function,q_initial_normalized, method="L-BFGS-B", tol=TOLERANCE, bounds=[(-1,1)],
                          options={"maxcor":50, "eps":1e-15, "maxls":20})
-
 
 
     return qsp.array_to_complex(minimizer.x)
