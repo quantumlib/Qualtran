@@ -24,7 +24,7 @@ from qualtran.drawing import Text
 
 def test_test_atom():
     ta = TestAtom()
-    assert cast(Text, ta.wire_symbol(reg=None)).text == 'Atom'
+    assert cast(Text, ta.wire_symbol(reg=None)).text == 'TestAtom'
     with pytest.raises(DecomposeTypeError):
         ta.decompose_bloq()
 
