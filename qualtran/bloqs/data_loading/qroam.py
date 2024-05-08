@@ -194,8 +194,8 @@ class QROAM(Bloq):
         )[1]
         return {(Toffoli(), cost)}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        name = soq.reg.name
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        name = reg.name
         if name == 'selection':
             return TextBox('In')
         elif 'target' in name:
