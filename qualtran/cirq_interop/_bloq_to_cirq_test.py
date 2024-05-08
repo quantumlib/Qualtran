@@ -58,21 +58,13 @@ class SwapTwoBitsTest(Bloq):
 
 
 def test_swap_two_bits_to_cirq():
-    circuit, out_quregs = (
-        SwapTwoBitsTest()
-        .as_composite_bloq()
-        .to_cirq_circuit_and_quregs(
-            x=[cirq.NamedQubit('q1')],
-            y=[cirq.NamedQubit('q2')],
-            qubit_manager=cirq.ops.SimpleQubitManager(),
-        )
-    )
+    circuit = SwapTwoBitsTest().as_composite_bloq().to_cirq_circuit()
     cirq.testing.assert_has_diagram(
         circuit,
         """\
-q1: ───×───
-       │
-q2: ───×───""",
+x: ───×───
+      │
+y: ───×───""",
     )
 
 
@@ -121,12 +113,11 @@ def test_bloq_as_cirq_gate_uses_tensor_data_for_unitary(n: int):
 
 
 def test_swap():
-    swap_circuit, _ = (
+    swap_circuit = (
         SwapTest(n=5)
         .as_composite_bloq()
-        .to_cirq_circuit_and_quregs(
-            x=cirq.LineQubit.range(5),
-            y=cirq.LineQubit.range(100, 105),
+        .to_cirq_circuit(
+            cirq_quregs={'x': cirq.LineQubit.range(5), 'y': cirq.LineQubit.range(100, 105)},
             qubit_manager=cirq.ops.SimpleQubitManager(),
         )
     )
@@ -195,7 +186,7 @@ def test_bloq_as_cirq_gate_left_register():
     q = bb.add(XGate(), q=q)
     bb.free(q)
     cbloq = bb.finalize()
-    circuit, _ = cbloq.to_cirq_circuit_and_quregs()
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, """_c(0): ───alloc───X───free───""")
 
 

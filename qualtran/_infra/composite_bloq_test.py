@@ -40,7 +40,6 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran._infra.data_types import BoundedQUInt, QAny, QBit, QFxp, QUInt
-from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp

@@ -100,9 +100,7 @@ def test_ctrl_bloq_as_cirq_op():
 
     def _test_cirq_equivalence(bloq: Bloq, gate: cirq.Gate):
         left_quregs = get_named_qubits(bloq.signature.lefts())
-        circuit1, right_quregs = bloq.as_composite_bloq().to_cirq_circuit_and_quregs(
-            None, **left_quregs
-        )
+        circuit1 = bloq.as_composite_bloq().to_cirq_circuit(cirq_quregs=left_quregs)
         circuit2 = cirq.Circuit(
             gate.on(*merge_qubits(bloq.signature, **get_named_qubits(bloq.signature)))
         )
@@ -126,7 +124,7 @@ def test_ctrl_bloq_as_cirq_op():
     bloq = Controlled(Swap(5), CtrlSpec(qdtypes=QUInt(4), cvs=0b0101))
     quregs = get_named_qubits(bloq.signature)
     ctrl, x, y = quregs['ctrl'], quregs['x'], quregs['y']
-    circuit1, _ = bloq.decompose_bloq().to_cirq_circuit_and_quregs(None, **quregs)
+    circuit1 = bloq.decompose_bloq().to_cirq_circuit(cirq_quregs=quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
     )

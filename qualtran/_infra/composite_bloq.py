@@ -172,7 +172,7 @@ class CompositeBloq(Bloq):
         self,
         *,
         qubit_manager: Optional['cirq.QubitManager'] = None,
-        cirq_quregs: Optional['CirqQuregInT'] = None,
+        cirq_quregs: Optional[Dict[str, 'CirqQuregInT']] = None,
     ) -> 'cirq.FrozenCircuit':
         """Convert this CompositeBloq to a `cirq.Circuit`.
 

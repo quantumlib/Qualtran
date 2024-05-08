@@ -131,8 +131,9 @@ def test_partition_as_cirq_op():
     assert np.allclose(unitary, bloq_to_dense(CNOT()))
 
     bloq = TestPartition(test_bloq=TestMultiRegister())
-    circuit, _ = bloq.decompose_bloq().to_cirq_circuit_and_quregs(
-        cirq.ops.SimpleQubitManager(), test_regs=cirq.NamedQubit.range(12, prefix='system')
+    circuit = bloq.decompose_bloq().to_cirq_circuit(
+        qubit_manager=cirq.ops.SimpleQubitManager(),
+        cirq_quregs={'test_regs': cirq.NamedQubit.range(12, prefix='system')},
     )
     assert (
         circuit.to_text_diagram(transpose=True)
