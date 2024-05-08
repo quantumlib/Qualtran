@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import sympy
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QUInt, Register, Signature
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
 
 from .ec_point import ECPoint
@@ -144,7 +144,11 @@ class ECWindowAddR(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'ECWindowAddR({self.n=})')
         if reg.name == 'ctrl':
             return Circle()
         if reg.name == 'x':

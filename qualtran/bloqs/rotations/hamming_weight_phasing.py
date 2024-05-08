@@ -80,7 +80,7 @@ class HammingWeightPhasing(GateWithRegisters):
         )
         return soqs
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'HWP_{self.bitsize}(Z^{self.exponent})'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -166,5 +166,5 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
         return {'x': x, 'phase_grad': phase_grad}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'HWPG_{self.bitsize}(Z^{self.exponent})'

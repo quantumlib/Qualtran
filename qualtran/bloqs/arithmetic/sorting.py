@@ -56,7 +56,7 @@ class Comparator(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "Cmprtr"
 
     def _t_complexity_(self):
@@ -104,7 +104,7 @@ class BitonicSort(Bloq):
     def signature(self):
         return Signature([Register("input", QAny(self.bitsize), shape=(self.k,))])
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "BSort"
 
     def _t_complexity_(self):

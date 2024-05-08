@@ -13,7 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
@@ -42,7 +53,7 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
-from qualtran.drawing.musical_score import TextBox
+from qualtran.drawing.musical_score import Text, TextBox
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
@@ -62,7 +73,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'x<{self.less_than_val}'
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
@@ -428,7 +439,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'x <= y'
 
     def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
@@ -599,16 +610,15 @@ class GreaterThan(Bloq):
             a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
         )
 
-    def short_name(self) -> str:
-        return "a>b"
-
     def _t_complexity_(self) -> 'TComplexity':
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text("a>b")
         if reg.name == 'a':
             return TextBox("In(a)")
         if reg.name == 'b':
@@ -799,7 +809,7 @@ class LinearDepthGreaterThan(Bloq):
         # Return the output registers.
         return {'a': a, 'b': b, 'target': target}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a > b"
 
 
@@ -836,10 +846,9 @@ class GreaterThanConstant(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
-    def short_name(self) -> str:
-        return f"x > {self.val}"
-
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text(f"x > {self.val}")
         if reg.name == 'x':
             return TextBox("In(x)")
         elif reg.name == 'target':
@@ -889,10 +898,9 @@ class EqualsAConstant(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
 
-    def short_name(self) -> str:
-        return f"x == {self.val}"
-
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text(f"x == {self.val}")
         if reg.name == 'x':
             return TextBox("In(x)")
         elif reg.name == 'target':

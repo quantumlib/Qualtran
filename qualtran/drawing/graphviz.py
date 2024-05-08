@@ -376,7 +376,8 @@ class PrettyGraphDrawer(GraphDrawer):
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
-        return f'<font point-size="10">{html.escape(binst.bloq.short_name())}</font>'
+        # This wire symbol should always be a text element
+        return f'<font point-size="10">{html.escape(binst.bloq.wire_symbol(reg=None).text)}</font>'  # type: ignore[attr-defined]
 
     def soq_label(self, soq: Soquet):
         from qualtran.bloqs.util_bloqs import Join, Split

@@ -36,7 +36,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import directional_text_box, WireSymbol
+from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicInt
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
 
@@ -111,7 +111,9 @@ class Split(Bloq):
 
         return self, add_controlled
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(self.pretty_name())
         if reg.shape:
             text = f'[{", ".join(str(i) for i in idx)}]'
             return directional_text_box(text, side=reg.side)
@@ -181,7 +183,9 @@ class Join(Bloq):
 
         return self, add_controlled
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
         if reg.shape:
             text = f'[{", ".join(str(i) for i in idx)}]'
             return directional_text_box(text, side=reg.side)
@@ -304,6 +308,8 @@ class Partition(Bloq):
             return self._classical_unpartition(**vals)
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
         if reg.shape:
             text = f'[{",".join(str(i) for i in idx)}]'
             return directional_text_box(text, side=reg.side)
@@ -346,6 +352,8 @@ class Allocate(Bloq):
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
         assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
 
@@ -392,6 +400,8 @@ class Free(Bloq):
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
         assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
 

@@ -156,7 +156,7 @@ class MultiControlPauli(GateWithRegisters):
         yield and_op_inv
         qm.qfree([*and_ancilla, *and_target])
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         n = len(self.cvs)
         ctrl = f'C^{n}' if n > 2 else ['', 'C', 'CC'][n]
         return f'{ctrl}{self.target_gate!s}'
@@ -208,7 +208,7 @@ class MultiControlPauli(GateWithRegisters):
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
     def _has_unitary_(self) -> bool:
@@ -359,5 +359,5 @@ class MultiControlX(Bloq):
         # Return the output registers.
         return {'ctrls': ctrls, 'x': x}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'C^{len(self.cvs)}-NOT'

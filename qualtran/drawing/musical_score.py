@@ -638,7 +638,7 @@ def get_musical_score_data(bloq: Bloq, manager: Optional[LineManager] = None) ->
                     x=binst_x,
                     top_y=binst_top_y,
                     bottom_y=binst_bot_y,
-                    label=binst.bloq.short_name(),
+                    label=binst.bloq.wire_symbol(reg=None),
                 )
             )
 

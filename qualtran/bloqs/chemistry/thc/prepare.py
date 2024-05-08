@@ -13,7 +13,7 @@
 #  limitations under the License.
 """PREPARE for the molecular tensor hypercontraction (THC) hamiltonian"""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import numpy as np
@@ -47,6 +47,7 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPau
 from qualtran.bloqs.reflection import Reflection
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.cirq_interop import CirqGateAsBloq
+from qualtran.drawing import Text
 from qualtran.linalg.lcu_util import preprocess_lcu_coefficients_for_reversible_sampling
 from qualtran.resource_counting.generalizers import ignore_cliffords, ignore_split_join
 
@@ -104,8 +105,13 @@ class UniformSuperpositionTHC(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'$\sum_{\mu < \nu} |\mu\nu\rangle$'
+
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('UniformSuperpositionTHC')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self,

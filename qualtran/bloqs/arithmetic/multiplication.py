@@ -50,7 +50,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     result_bitsize: int
     is_adjoint: bool = False
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "result -= a*b" if self.is_adjoint else "result += a*b"
 
     @property
@@ -106,7 +106,7 @@ class PlusEqualProduct(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -163,7 +163,7 @@ class Square(Bloq):
         a = vals["a"]
         return {'a': a, 'result': a**2}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a^2"
 
     def _t_complexity_(self):
@@ -250,7 +250,7 @@ class SumOfSquares(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "SOS"
 
     def _t_complexity_(self):
@@ -313,7 +313,7 @@ class Product(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a*b"
 
     def _t_complexity_(self):
@@ -378,7 +378,7 @@ class ScaleIntByReal(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "r*i"
 
     def _t_complexity_(self):
@@ -441,7 +441,7 @@ class MultiplyTwoReals(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a*b"
 
     def _t_complexity_(self):
@@ -505,7 +505,7 @@ class SquareRealNumber(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "a^2"
 
     def _t_complexity_(self):

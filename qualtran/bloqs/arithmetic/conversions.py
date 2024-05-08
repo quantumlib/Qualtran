@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -31,7 +31,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import WireSymbol
-from qualtran.drawing.musical_score import TextBox
+from qualtran.drawing.musical_score import Text, TextBox
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -76,9 +76,6 @@ class ToContiguousIndex(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
-        return r'$(\mu,\nu) \rightarrow s$'
-
     def on_classical_vals(
         self, mu: 'ClassicalValT', nu: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
@@ -88,7 +85,9 @@ class ToContiguousIndex(Bloq):
         num_toffoli = self.bitsize**2 + self.bitsize - 1
         return TComplexity(t=4 * num_toffoli)
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text(r'$(\mu,\nu) \rightarrow s$')
         if reg.name == 'mu':
             return TextBox(r'$\mu$')
         elif reg.name == 'nu':

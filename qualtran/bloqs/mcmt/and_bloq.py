@@ -50,7 +50,7 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
@@ -158,7 +158,9 @@ class And(GateWithRegisters):
             )
         )
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('And')
         if reg.name == 'target':
             return directional_text_box('∧', side=reg.side)
 
@@ -322,9 +324,10 @@ class MultiAnd(Bloq):
             t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
         )
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('And')
         if reg.name == 'ctrl':
-            print(idx)
             return Circle(filled=self.cvs[idx[0]] == 1)
         if reg.name == 'target':
             return directional_text_box('∧', side=reg.side)
@@ -334,7 +337,7 @@ class MultiAnd(Bloq):
             pretty_text = reg.name
         return directional_text_box(text=pretty_text, side=reg.side)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'And'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:

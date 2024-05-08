@@ -58,7 +58,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build(ctrl=len(self.cvs), target=(self.n - 1).bit_length())
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'$\sum_l |l\rangle$'
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
