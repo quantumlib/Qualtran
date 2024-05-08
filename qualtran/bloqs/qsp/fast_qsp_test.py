@@ -14,13 +14,16 @@
 
 import numpy as np
 import pytest
-from .generalized_qsp_test import random_qsp_polynomial, check_polynomial_pair_on_random_points_on_unit_circle
+
 from .fast_qsp import fast_complementary_polynomial
+from .generalized_qsp_test import (
+    check_polynomial_pair_on_random_points_on_unit_circle,
+    random_qsp_polynomial,
+)
 
 
 # @pytest.mark.parametrize("degree", [4, 5])
 @pytest.mark.parametrize("degree", [5])
-
 def test_complementary_polynomial_quick(degree: int):
     random_state = np.random.RandomState(42)
 
@@ -28,4 +31,3 @@ def test_complementary_polynomial_quick(degree: int):
         P = random_qsp_polynomial(degree, random_state=random_state)
         Q = fast_complementary_polynomial(P, verify=True)
         check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
-
