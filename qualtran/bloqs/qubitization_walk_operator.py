@@ -111,6 +111,10 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate, GateWithReg
         assert self.control_val is None
 
         c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        if not isinstance(c_select, SelectOracle):
+            raise TypeError(
+                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
+            )
         return attrs.evolve(self, select=c_select, control_val=control_val)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:

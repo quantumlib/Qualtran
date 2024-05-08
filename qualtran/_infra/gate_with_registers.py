@@ -568,7 +568,7 @@ class SpecializedSingleQubitControlledGate(GateWithRegisters):
         self, control_val: int
     ) -> 'SpecializedSingleQubitControlledGate':
         """Override this to provide a custom controlled bloq"""
-        return attrs.evolve(self, control_val=control_val)
+        return attrs.evolve(self, control_val=control_val)  # type: ignore[misc]
 
     def get_ctrl_system(
         self, ctrl_spec: Optional['CtrlSpec'] = None
