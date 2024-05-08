@@ -39,7 +39,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIterationGate):
+class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIterationGate):  # type: ignore[misc]
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$

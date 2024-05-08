@@ -31,7 +31,7 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate, GateWithRegisters):
+class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate, GateWithRegisters):  # type: ignore[misc]
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s><s|)$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$

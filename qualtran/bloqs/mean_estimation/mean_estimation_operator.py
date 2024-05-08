@@ -63,7 +63,7 @@ class CodeForRandomVariable:
 
 
 @attrs.frozen
-class MeanEstimationOperator(SpecializedSingleQubitControlledGate, GateWithRegisters):
+class MeanEstimationOperator(SpecializedSingleQubitControlledGate, GateWithRegisters):  # type: ignore[misc]
     r"""Mean estimation operator $U=REFL_{p} ROT_{y}$ as per Sec 3.1 of arxiv.org:2208.07544.
 
     The MeanEstimationOperator (aka KO Operator) expects `CodeForRandomVariable` to specify the

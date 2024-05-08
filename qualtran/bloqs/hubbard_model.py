@@ -72,7 +72,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen
-class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):
+class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
     In contrast to the arbitrary chemistry Hamiltonian, we:
