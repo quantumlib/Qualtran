@@ -16,7 +16,7 @@ import itertools
 import traceback
 from enum import Enum
 from pathlib import Path
-from typing import cast, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import sympy
@@ -238,12 +238,11 @@ def assert_wire_symbols_match_expected(bloq: Bloq, expected_ws: List[Union[str, 
         expected_ws: A list of the expected wire symbols or their associated text.
     """
     expected_idx = 0
-    ws = []
     for reg in bloq.signature:
         if reg.shape:
             indices = np.ndindex(reg.shape)
         else:
-            indices = [(0,)]
+            indices = np.ndindex((1,))
         for idx in indices:
             wire_symbol = bloq.wire_symbol(reg, idx)
             expected_symbol = expected_ws[expected_idx]
