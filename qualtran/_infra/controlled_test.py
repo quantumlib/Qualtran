@@ -39,6 +39,7 @@ from qualtran.bloqs.basic_gates import (
     OneState,
     Swap,
     XGate,
+    XPowGate,
     YGate,
     ZeroState,
     ZGate,
@@ -57,7 +58,7 @@ def test_ctrl_spec():
     cspec1 = CtrlSpec()
     assert cspec1 == CtrlSpec(QBit(), cvs=1)
 
-    cspec2 = CtrlSpec(cvs=np.ones(27).reshape((3, 3, 3)))
+    cspec2 = CtrlSpec(cvs=np.ones(27, dtype=np.intc).reshape((3, 3, 3)))
     assert cspec2.shapes == ((3, 3, 3),)
     assert cspec2 != cspec1
 
@@ -402,3 +403,51 @@ def test_controlled_tensor_for_and_bloq(ctrl_spec: CtrlSpec):
     _verify_ctrl_tensor_for_and(ctrl_spec, (1, 0))
     _verify_ctrl_tensor_for_and(ctrl_spec, (0, 1))
     _verify_ctrl_tensor_for_and(ctrl_spec, (0, 0))
+
+
+def test_controlled_diagrams():
+    ctrl_gate = XPowGate(0.25).controlled()
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(ctrl_gate.on_registers(**get_named_qubits(ctrl_gate.signature))),
+        '''
+ctrl: ───@────────
+         │
+q: ──────X^0.25───''',
+    )
+
+    ctrl_0_gate = XPowGate(0.25).controlled(CtrlSpec(cvs=0))
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(ctrl_0_gate.on_registers(**get_named_qubits(ctrl_0_gate.signature))),
+        '''
+ctrl: ───(0)──────
+         │
+q: ──────X^0.25───''',
+    )
+
+    multi_ctrl_gate = XPowGate(0.25).controlled(CtrlSpec(cvs=[0, 1]))
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(multi_ctrl_gate.on_registers(**get_named_qubits(multi_ctrl_gate.signature))),
+        '''
+ctrl[0]: ───(0)──────
+            │
+ctrl[1]: ───@────────
+            │
+q: ─────────X^0.25───''',
+    )
+
+    ctrl_bloq = Swap(2).controlled(CtrlSpec(cvs=[0, 1]))
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(ctrl_bloq.on_registers(**get_named_qubits(ctrl_bloq.signature))),
+        '''
+ctrl[0]: ───(0)────
+            │
+ctrl[1]: ───@──────
+            │
+x0: ────────×(x)───
+            │
+x1: ────────×(x)───
+            │
+y0: ────────×(y)───
+            │
+y1: ────────×(y)───''',
+    )

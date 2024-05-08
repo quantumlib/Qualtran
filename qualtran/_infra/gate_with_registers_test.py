@@ -79,7 +79,6 @@ def test_gate_with_registers():
     assert (
         tg.controlled(num_controls=1, control_values=[0])
         == tg.controlled(control_values=[0], control_qid_shape=(2,))
-        == tg.controlled(CtrlSpec(cvs=0))
         == tg.controlled(ctrl_spec=CtrlSpec(cvs=0))
     )
 

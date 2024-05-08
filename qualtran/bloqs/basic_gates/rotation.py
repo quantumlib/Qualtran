@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Protocol, Union
+from typing import Protocol, runtime_checkable, Union
 
 import attrs
 import cirq
@@ -26,6 +26,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
+@runtime_checkable
 class _HasEps(Protocol):
     """Protocol for typing `RotationBloq` base class mixin that has accuracy specified as eps."""
 
@@ -169,7 +170,7 @@ class XPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
-    exponent: float = 1.0
+    exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
 
@@ -234,7 +235,7 @@ class YPowGate(CirqGateAsBloqBase):
         [Optimal ancilla-free Clifford+T approximation
         of z-rotations](https://arxiv.org/pdf/1403.2975.pdf).
     """
-    exponent: float = 1.0
+    exponent: Union[sympy.Expr, float] = 1.0
     global_shift: float = 0.0
     eps: float = 1e-11
 
@@ -278,7 +279,7 @@ class Rz(CirqGateAsBloqBase):
     """
 
     angle: Union[sympy.Expr, float]
-    eps: float = 1e-11
+    eps: Union[sympy.Expr, float] = 1e-11
 
     def decompose_bloq(self) -> 'CompositeBloq':
         raise DecomposeTypeError(f"{self} is atomic")

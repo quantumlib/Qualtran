@@ -158,11 +158,11 @@ class And(GateWithRegisters):
             )
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'target':
-            return directional_text_box('∧', side=soq.reg.side)
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'target':
+            return directional_text_box('∧', side=reg.side)
 
-        (c_idx,) = soq.idx
+        (c_idx,) = idx
         filled = bool(self.cv1 if c_idx == 0 else self.cv2)
         return Circle(filled)
 
@@ -268,7 +268,9 @@ class MultiAnd(Bloq):
         )
 
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
+        accumulate_and = np.bitwise_and.accumulate(
+            np.equal(ctrl, np.asarray(self.cvs)).astype(np.uint8)
+        )
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 
@@ -320,12 +322,17 @@ class MultiAnd(Bloq):
             t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
-            return Circle(filled=self.cvs[soq.idx[0]] == 1)
-        if soq.reg.name == 'target':
-            return directional_text_box('∧', side=soq.reg.side)
-        return directional_text_box(text=soq.pretty(), side=soq.reg.side)
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'ctrl':
+            print(idx)
+            return Circle(filled=self.cvs[idx[0]] == 1)
+        if reg.name == 'target':
+            return directional_text_box('∧', side=reg.side)
+        if len(idx) > 0:
+            pretty_text = f'{reg.name}[{", ".join(str(i) for i in idx)}]'
+        else:
+            pretty_text = reg.name
+        return directional_text_box(text=pretty_text, side=reg.side)
 
     def short_name(self) -> str:
         return 'And'
