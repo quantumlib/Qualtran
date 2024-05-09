@@ -87,7 +87,7 @@ class ToContiguousIndex(Bloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
-            return Text(r'$(\mu,\nu) \rightarrow s$')
+            return Text('')
         if reg.name == 'mu':
             return TextBox(r'$\mu$')
         elif reg.name == 'nu':

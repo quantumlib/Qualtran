@@ -110,7 +110,7 @@ class UniformSuperpositionTHC(Bloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text('UniformSuperpositionTHC')
+            return Text('Σ |μν>')
         return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
