@@ -25,7 +25,9 @@ class QROMWithClassicalControls(QROM):
 
     def D_x(self, x):
         bitstring = []
-        for i in range(self.QROM_bloq.re)
+        x_start = 0
+        for i in range(len(self.QROM_bloq.target_bitsizes)):
+            bitstring.append(self.QROM_bloq.data[x[x_start:x_start + self.QROM_bloq.target_bitsizes[i]]])
 
     def nth_operation(
         self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
