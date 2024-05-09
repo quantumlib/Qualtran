@@ -409,7 +409,7 @@ class SimpleAddConstant(Bloq):
         [Improved quantum circuits for elliptic curve discrete logarithms](https://arxiv.org/abs/2001.09580) Fig 2a
     """
 
-    bitsize: int
+    bitsize: Union[int, sympy.Expr]
     k: int
     cvs: Tuple[int, ...] = field(
         converter=lambda v: (v,) if isinstance(v, int) else tuple(v), default=()
@@ -446,6 +446,10 @@ class SimpleAddConstant(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, **regs: SoquetT
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(
+                f'Symbolic bitsize {self.bitsize} not supported for SimpleAddConstant.build_composite_bloq'
+            )
         # Assign registers to variables and allocate ancilla bits for classical integer k.
         if len(self.cvs) > 0:
             ctrls = regs['ctrls']
