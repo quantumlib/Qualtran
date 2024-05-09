@@ -76,6 +76,8 @@ class ECAddR(Bloq):
         return {'ctrl': 1, 'x': result.x, 'y': result.y}
 
     def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
         if reg.name == 'ctrl':
             return Circle()
         if reg.name == 'x':
