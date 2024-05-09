@@ -134,12 +134,11 @@ def _get_cost_value(
         return static_cost
 
     # Strategy 3: Compute
-    # part a. set up caching of computed costs. Using the callable will use the cache if possible
-    #         and only recurse if the bloq has not been seen before. The result of a computation
-    #         will be cached.
+    # part a. set up caching of computed costs by currying the costs_cache.
     def _get_cost_val_internal(callee: 'Bloq'):
         return _get_cost_value(callee, cost_key, costs_cache=costs_cache, generalizer=generalizer)
 
+    # part b. call the compute method and cache the result.
     tstart = time.perf_counter()
     computed_cost = cost_key.compute(bloq, _get_cost_val_internal)
     tdur = time.perf_counter() - tstart
