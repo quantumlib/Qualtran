@@ -40,13 +40,13 @@ class OneHotEncoding(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature([
             Register('a', QUInt(self.binary_bitsize), side=Side.THRU),
-            Register('b', QAny(2**self.binary_bitsize), side=Side.RIGHT),
+            Register('b', QAny(2**self.binary_bitsize), side=Side.THRU),
         ])
 
     def on_classical_vals(
-        self, a: 'ClassicalValT',
+        self, a: 'ClassicalValT', b: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-        return {'a': a, 'b': 2**a}
+        return {'a': a, 'b': int(2**a)}
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
