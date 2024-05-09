@@ -233,8 +233,6 @@ def test_qubitization_walk_operator_consistent_protocols_and_controlled():
         gate.controlled(num_controls=1, control_values=(0,)),
         op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
-    with pytest.raises(NotImplementedError, match="Cannot create a controlled version"):
-        _ = gate.controlled(num_controls=2)
 
 
 @pytest.mark.notebook

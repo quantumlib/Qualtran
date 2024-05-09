@@ -40,7 +40,6 @@ from qualtran import (
 )
 from qualtran._infra.composite_bloq import _create_binst_graph, _get_dangling_soquets
 from qualtran._infra.data_types import BoundedQUInt, QAny, QBit, QFxp, QUInt
-from qualtran._infra.gate_with_registers import get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, IntEffect, ZeroEffect
 from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
 from qualtran.bloqs.for_testing.many_registers import TestMultiTypedRegister, TestQFxp
@@ -164,13 +163,25 @@ def test_map_soqs():
 
 def test_bb_composite_bloq():
     cbloq_auto = TestTwoCNOT().decompose_bloq()
-    circuit, _ = cbloq_auto.to_cirq_circuit(q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)])
+    circuit, _ = cbloq_auto.to_cirq_circuit_and_quregs(
+        q1=[cirq.LineQubit(1)], q2=[cirq.LineQubit(2)]
+    )
     cirq.testing.assert_has_diagram(
         circuit,
         desired="""\
 1: ───@───X───
       │   │
 2: ───X───@─── \
+    """,
+    )
+
+    circuit = cbloq_auto.to_cirq_circuit()
+    cirq.testing.assert_has_diagram(
+        circuit,
+        desired="""\
+q1: ───@───X───
+       │   │
+q2: ───X───@───
     """,
     )
 
@@ -344,7 +355,7 @@ def test_complicated_target_register():
     # note: this includes the two `Dangling` generations.
     assert len(list(nx.topological_generations(binst_graph))) == 2 * 3 + 2
 
-    circuit, _ = cbloq.to_cirq_circuit(None, **get_named_qubits(bloq.signature.lefts()))
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(
         circuit,
         """\
