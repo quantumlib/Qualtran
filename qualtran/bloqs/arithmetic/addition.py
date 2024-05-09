@@ -43,6 +43,7 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     CtrlSpec,
+    DecomposeTypeError,
     GateWithRegisters,
     QBit,
     QInt,
@@ -51,7 +52,7 @@ from qualtran import (
     Side,
     Signature,
     Soquet,
-    SoquetT, DecomposeTypeError,
+    SoquetT,
 )
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
