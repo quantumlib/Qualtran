@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import attrs
 import cirq
@@ -19,6 +19,7 @@ from numpy._typing import NDArray
 
 from qualtran import GateWithRegisters, QAny, QUInt, Signature, Register, Side
 from qualtran.bloqs.basic_gates import TwoBitCSwap
+from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
 
 @attrs.frozen
@@ -42,6 +43,19 @@ class OneHotEncoding(GateWithRegisters):
             Register('a', QUInt(self.binary_bitsize), side=Side.THRU),
             Register('b', QAny(2**self.binary_bitsize), side=Side.THRU),
         ])
+
+    def add_my_tensors(
+        self,
+        tn: 'qtn.TensorNetwork',
+        tag: Any,
+        *,
+        incoming: Dict[str, 'SoquetT'],
+        outgoing: Dict[str, 'SoquetT'],
+    ):
+        _add_my_tensors_from_gate(
+            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+        )
+
 
     def on_classical_vals(
         self, a: 'ClassicalValT', b: 'ClassicalValT'
