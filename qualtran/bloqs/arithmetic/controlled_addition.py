@@ -139,12 +139,6 @@ class ControlledAdd(Bloq):
     def short_name(self) -> str:
         return "a+b"
 
-    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["In(ctrl)"]
-        wire_symbols += ["In(x)"] * self.a_dtype.bitsize
-        wire_symbols += ["In(y)/Out(x+y)"] * self.b_dtype.bitsize
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
     def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
         from qualtran.drawing import directional_text_box
 
