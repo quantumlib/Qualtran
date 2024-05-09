@@ -24,6 +24,7 @@ from qualtran.resource_counting.symbolic_counting_utils import (
     Shaped,
     slen,
     smax,
+    smin,
 )
 
 
@@ -44,6 +45,12 @@ def test_smax():
     assert smax(1, 2) == 2
     assert smax(1.1, 2.2) == 2.2
     assert smax(1, sympy.Symbol('x')) == sympy.Max(1, sympy.Symbol('x'))
+
+
+def test_smin():
+    assert smin(1, 2) == 1
+    assert smin(1.1, 2.2) == 1.1
+    assert smin(1, sympy.Symbol('x')) == sympy.Min(1, sympy.Symbol('x'))
 
 
 def test_bit_length():

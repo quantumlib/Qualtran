@@ -287,7 +287,7 @@ class _IntVector(Bloq):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    val: int = attrs.field()
+    val: Union[int, sympy.Expr] = attrs.field()
     bitsize: Union[int, sympy.Expr]
     state: bool
 
@@ -362,7 +362,7 @@ class _IntVector(Bloq):
 
         tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
 
-    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, int]:
+    def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
         if self.state:
             assert val is None
             return {'val': self.val}
@@ -401,7 +401,7 @@ class IntState(_IntVector):
         val: The register of size `bitsize` which initializes the value `val`.
     """
 
-    def __init__(self, val: int, bitsize: Union[int, sympy.Expr]):
+    def __init__(self, val: Union[int, sympy.Expr], bitsize: Union[int, sympy.Expr]):
         self.__attrs_init__(val=val, bitsize=bitsize, state=True)
 
 

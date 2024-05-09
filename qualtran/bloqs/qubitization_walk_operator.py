@@ -13,14 +13,14 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Collection, Optional, Sequence, Tuple, Union
+from typing import Iterator, Optional, Tuple
 
 import attrs
 import cirq
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
-from qualtran._infra.gate_with_registers import total_bits
+from qualtran import bloq_example, BloqDocSpec, CtrlSpec, Register, Signature
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.resource_counting.generalizers import (
@@ -32,7 +32,7 @@ from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
 
 
 @attrs.frozen(cache_hash=True)
-class QubitizationWalkOperator(GateWithRegisters):
+class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
     r"""Constructs a Szegedy Quantum Walk operator using LCU oracles SELECT and PREPARE.
 
     For a Hamiltonian $H = \sum_l w_l H_l$ (s.t. $w_l > 0$ and $H_l$ are unitaries),
@@ -100,42 +100,27 @@ class QubitizationWalkOperator(GateWithRegisters):
         self,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
         yield self.select.on_registers(**select_reg)
 
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
         yield self.reflect.on_registers(**reflect_reg)
 
+    def get_single_qubit_controlled_bloq(self, control_val: int) -> 'QubitizationWalkOperator':
+        assert self.control_val is None
+
+        c_select = self.select.controlled(ctrl_spec=CtrlSpec(cvs=control_val))
+        if not isinstance(c_select, SelectOracle):
+            raise TypeError(
+                f"controlled version of {self.select} = {c_select} must also be a SelectOracle"
+            )
+        return attrs.evolve(self, select=c_select, control_val=control_val)
+
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['W'] * (total_bits(self.signature) - total_bits(self.control_registers))
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'QubitizationWalkOperator':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            c_select = self.select.controlled(control_values=control_values)
-            assert isinstance(c_select, SelectOracle)
-            return attrs.evolve(self, select=c_select, control_val=control_values[0])
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])

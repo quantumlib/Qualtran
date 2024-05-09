@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -72,7 +72,7 @@ class PhaseGradientUnitary(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         ctrl = quregs.get('ctrl', ())
         gate = CZPowGate if self.is_controlled else ZPowGate
         for i, q in enumerate(quregs['phase_grad']):
@@ -128,7 +128,7 @@ class PhaseGradientState(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
         # Assumes `phase_grad` is in big-endian representation.
@@ -409,7 +409,7 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type:
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.gamma, sympy.Expr):
             raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
         x, phase_grad = quregs['x'], quregs['phase_grad']
