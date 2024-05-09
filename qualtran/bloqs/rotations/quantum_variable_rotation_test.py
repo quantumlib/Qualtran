@@ -21,11 +21,13 @@ from fxpmath import Fxp
 from numpy.typing import NDArray
 
 from qualtran import GateWithRegisters, QFxp, Register, Signature
+from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import PhaseGradientUnitary
 from qualtran.bloqs.rotations.quantum_variable_rotation import (
     _qvr_phase_gradient,
     _qvr_zpow,
     QvrPhaseGradient,
+    QvrZPow,
 )
 
 
@@ -35,6 +37,34 @@ def test_qvr_zpow_auto(bloq_autotester):
 
 def test_qvr_phase_gradient_auto(bloq_autotester):
     bloq_autotester(_qvr_phase_gradient)
+
+
+@pytest.mark.parametrize('gamma', [1, 0.1, 0.01])
+def test_qvr_zpow_unitary(gamma: float):
+    # ZPow applies a phase e^{x pi gamma} to the |1> state
+    zpow = cirq.Z**gamma
+    # QVR applies e^{x pi 2 gamma} to the |x> state.
+    # When |x> is an integer, phase applied to |1> state is e^{1 pi 2 gamma}.
+    zpow_qvr = QvrZPow(Register('x', QFxp(1, 0, False)), gamma / 2)
+    np.testing.assert_allclose(cirq.unitary(zpow), cirq.unitary(zpow_qvr))
+    # When |x> is a Fxp number, phase applied to |.1> state is e^{(1/2) pi 2 gamma} = e^{pi gamma}
+    zpow_qvr = QvrZPow(Register('x', QFxp(1, 1, False)), gamma)
+    np.testing.assert_allclose(cirq.unitary(zpow), cirq.unitary(zpow_qvr))
+
+
+def test_qvr_zpow_unitary_approx_ignores_small_angle_rotations():
+    n, gamma = 12, 0.1
+    expected_unitary = np.diag([np.exp(1j * 2 * np.pi * gamma * x / 2**n) for x in range(2**n)])
+
+    for eps, nrot in zip([0.5, 1e-1, 1e-2, 1e-3, 1e-4], [1, 3, 6, 10, 12]):
+        zpow_qvr = QvrZPow(Register('x', QFxp(n, n, False)), gamma, eps=eps)
+        assert zpow_qvr.num_rotations == nrot
+        nrot_from_decompose = sum(
+            int(isinstance(binst.bloq, ZPowGate))
+            for binst in zpow_qvr.decompose_bloq().bloq_instances
+        )
+        assert nrot_from_decompose == nrot
+        np.testing.assert_allclose(cirq.unitary(zpow_qvr), expected_unitary, atol=eps)
 
 
 @attrs.frozen
@@ -70,18 +100,33 @@ def trace_distance(u, v):
     return np.sqrt(dist)
 
 
+def qvr_phase_gradient_unitary_test_helper(gamma: float, eps: float):
+    zpow = cirq.Z**gamma
+    # QVR applies e^{x pi 2 gamma} to the |x> state.
+    # When |x> is an integer, phase applied to |1> state is e^{1 pi 2 gamma}.
+    zpow_qvr = TestQvrPhaseGradient(Register('x', QFxp(1, 0, False)), gamma / 2, eps)
+    np.testing.assert_allclose(cirq.unitary(zpow), cirq.unitary(zpow_qvr), atol=eps)
+    assert trace_distance(cirq.unitary(zpow), cirq.unitary(zpow_qvr)) < eps
+    # When |x> is a Fxp number, phase applied to |.1> state is e^{(1/2) pi 2 gamma} = e^{pi gamma}
+    zpow_qvr = TestQvrPhaseGradient(Register('x', QFxp(1, 1, False)), gamma, eps)
+    np.testing.assert_allclose(cirq.unitary(zpow), cirq.unitary(zpow_qvr), atol=eps)
+    assert trace_distance(cirq.unitary(zpow), cirq.unitary(zpow_qvr)) < eps
+
+
 @pytest.mark.parametrize('gamma', [1 / 2, 1 / 4, 1 / 8, 1 / 16, 15 / 16])
 @pytest.mark.parametrize('eps', [1e-2, 1e-3, 1e-4, 1e-5])
-def test_qvr_phase_gradient_unitary(gamma: float, eps: float):
-    zpow = cirq.Z**gamma
-    zpow_qvr = TestQvrPhaseGradient(Register('x', QFxp(1, 1, signed=False)), gamma, eps)
-    assert trace_distance(cirq.unitary(zpow), cirq.unitary(zpow_qvr)) < eps
+def test_qvr_phase_gradient_unitary_for_exact_gamma(gamma: float, eps: float):
+    qvr_phase_gradient_unitary_test_helper(gamma, eps)
+
+
+def test_qvr_phase_gradient_unitary_for_inexact_gamma():
+    qvr_phase_gradient_unitary_test_helper(0.1, 1e-2)
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize('normalize', [True, False])
 def test_qvr_phase_gradient_cost_reg_greater_than_b_grad(normalize: bool):
-    n, gamma, eps = (13, (2**20 - 1) / 2**20, 1e-1)
+    n, gamma, eps = (9, (2**20 - 1) / 2**20, 1e-1)
     # Note that `gamma` is of the form `0.111111111` and thus has worst case complexity
     # in terms of adding errors
     assert Fxp(gamma, signed=False).bin() == '1' * 20
