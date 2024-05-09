@@ -512,7 +512,8 @@ class Bloq(metaclass=abc.ABCMeta):
         rectangular for thru-registers or facing to the left or right for non-thru-registers.
 
         If reg is specified as `None`, this should return a Text label for the title of
-        the gate.
+        the gate. If no title is needed (as the wire_symbols are self-explanatory),
+        this should return `Text('')`.
 
         Override this method to provide a more relevant `WireSymbol` for the provided soquet.
         This method can access bloq attributes. For example: you may want to draw either
