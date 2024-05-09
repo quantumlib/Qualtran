@@ -56,3 +56,10 @@ def test_one_hot_encoding(integer):
     final_state[:bitsize] = list(iter_bits(integer, bitsize))
     final_state[bitsize + integer] = 1
     assert_circuit_inp_out_cirqsim(circuit0, qubits, initial_state, final_state)
+
+@pytest.mark.parametrize('integer', list(range(8)))
+def test_one_hot_encoding_on_classical_vals(integer):
+    bitsize = 3
+    gate = OneHotEncodingTest(integer, bitsize)
+    b = gate.on_classical_vals(a=integer)
+    assert b == 2 ** integer

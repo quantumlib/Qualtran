@@ -11,11 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import List, Dict
+
 import attrs
 import cirq
 from numpy._typing import NDArray
 
-from qualtran import GateWithRegisters, QAny, QUInt, Signature
+from qualtran import GateWithRegisters, QAny, QUInt, Signature, Register, Side
 from qualtran.bloqs.basic_gates import TwoBitCSwap
 
 
@@ -36,9 +38,15 @@ class OneHotEncoding(GateWithRegisters):
 
     @property
     def signature(self) -> 'Signature':
-        return Signature.build_from_dtypes(
-            a=QUInt(self.binary_bitsize), b=QAny(2**self.binary_bitsize)
-        )
+        return Signature([
+            Register('a', QUInt(self.binary_bitsize), side=Side.THRU),
+            Register('b', QAny(2**self.binary_bitsize), side=Side.RIGHT),
+        ])
+
+    def on_classical_vals(
+        self, a: 'ClassicalValT',
+    ) -> Dict[str, 'ClassicalValT']:
+        return {'a': a, 'b': 2**a}
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
@@ -46,7 +54,9 @@ class OneHotEncoding(GateWithRegisters):
         a = quregs['a'][::-1]
         b = quregs['b']
 
-        yield cirq.X(b[0])
+        op_tree: List[cirq.Operation] = []
+        op_tree.append(cirq.X(b[0]))
         for i in range(len(a)):
             for j in range(2**i):
-                yield TwoBitCSwap().on_registers(ctrl=a[i], x=b[j], y=b[2**i + j])
+                op_tree.append(TwoBitCSwap().on_registers(ctrl=a[i], x=b[j], y=b[2**i + j]))
+        return op_tree
