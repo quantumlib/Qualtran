@@ -337,9 +337,6 @@ class MultiAnd(Bloq):
             pretty_text = reg.name
         return directional_text_box(text=pretty_text, side=reg.side)
 
-    def pretty_name(self) -> str:
-        return 'And'
-
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(And(), len(self.cvs) - 1)}
 
