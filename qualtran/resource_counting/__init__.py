@@ -17,9 +17,9 @@
 isort:skip_file
 """
 
-from qualtran.resource_counting._generalization import GeneralizerT
+from ._generalization import GeneralizerT
 
-from qualtran.resource_counting._call_graph import (
+from ._call_graph import (
     BloqCountT,
     big_O,
     SympySymbolAllocator,
@@ -29,4 +29,4 @@ from qualtran.resource_counting._call_graph import (
     build_cbloq_call_graph,
 )
 
-from qualtran.resource_counting import generalizers
+from . import generalizers

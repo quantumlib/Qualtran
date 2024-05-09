@@ -12,8 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.for_testing.atom import TestAtom, TestTwoBitOp
-from qualtran.bloqs.for_testing.casting import TestCastToFrom
-from qualtran.bloqs.for_testing.many_registers import TestMultiRegister
-from qualtran.bloqs.for_testing.with_call_graph import TestBloqWithCallGraph
-from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo, TestSerialCombo
+from .atom import TestAtom, TestTwoBitOp
+from .casting import TestCastToFrom
+from .many_registers import TestMultiRegister
+from .with_call_graph import TestBloqWithCallGraph
+from .with_decomposition import TestParallelCombo, TestSerialCombo

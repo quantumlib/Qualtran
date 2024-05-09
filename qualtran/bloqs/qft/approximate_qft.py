@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Iterator, Set, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -114,7 +114,7 @@ class ApproximateQFT(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if self.bitsize == 1:
             yield cirq.H(*quregs['q'])
             return

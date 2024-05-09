@@ -20,11 +20,11 @@ from typing import Dict, Optional, Sequence, TYPE_CHECKING, Union
 import IPython.display
 import ipywidgets
 
-from qualtran.drawing.bloq_counts_graph import format_counts_sigma, GraphvizCounts
-from qualtran.drawing.flame_graph import get_flame_graph_svg_data
-from qualtran.drawing.graphviz import PrettyGraphDrawer, TypedGraphDrawer
-from qualtran.drawing.musical_score import draw_musical_score, get_musical_score_data
-from qualtran.drawing.qpic_diagram import qpic_diagram_for_bloq
+from .bloq_counts_graph import format_counts_sigma, GraphvizCounts
+from .flame_graph import get_flame_graph_svg_data
+from .graphviz import PrettyGraphDrawer, TypedGraphDrawer
+from .musical_score import draw_musical_score, get_musical_score_data
+from .qpic_diagram import qpic_diagram_for_bloq
 
 if TYPE_CHECKING:
     import networkx as nx

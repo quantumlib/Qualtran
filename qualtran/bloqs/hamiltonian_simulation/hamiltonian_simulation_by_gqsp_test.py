@@ -20,11 +20,6 @@ from numpy.typing import NDArray
 
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.for_testing.random_select_and_prepare import random_qubitization_walk_operator
-from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
-    _hubbard_time_evolution_by_gqsp,
-    _symbolic_hamsim_by_gqsp,
-    HamiltonianSimulationByGQSP,
-)
 from qualtran.bloqs.qsp.generalized_qsp_test import (
     assert_matrices_almost_equal,
     check_polynomial_pair_on_random_points_on_unit_circle,
@@ -32,6 +27,12 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
 )
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.resource_counting.symbolic_counting_utils import Shaped
+
+from .hamiltonian_simulation_by_gqsp import (
+    _hubbard_time_evolution_by_gqsp,
+    _symbolic_hamsim_by_gqsp,
+    HamiltonianSimulationByGQSP,
+)
 
 
 def test_examples(bloq_autotester):

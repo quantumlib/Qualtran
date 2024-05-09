@@ -19,7 +19,8 @@ from typing import Dict, TYPE_CHECKING
 import pydot
 
 from qualtran import Bloq, Connection
-from qualtran.drawing.graphviz import PrettyGraphDrawer
+
+from .graphviz import PrettyGraphDrawer
 
 if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT

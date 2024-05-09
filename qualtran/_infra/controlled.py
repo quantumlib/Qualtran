@@ -32,10 +32,10 @@ import numpy as np
 import quimb.tensor as qtn
 from numpy.typing import NDArray
 
-from qualtran._infra.bloq import Bloq
-from qualtran._infra.data_types import QBit, QDType
-from qualtran._infra.gate_with_registers import GateWithRegisters
-from qualtran._infra.registers import Register, Side, Signature
+from .bloq import Bloq
+from .data_types import QBit, QDType
+from .gate_with_registers import GateWithRegisters
+from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT
@@ -445,7 +445,7 @@ class Controlled(GateWithRegisters):
         return self.ctrl_spec.wire_symbol(i, reg, idx)
 
     def adjoint(self) -> 'Bloq':
-        return self.subbloq.adjoint().controlled(self.ctrl_spec)
+        return self.subbloq.adjoint().controlled(ctrl_spec=self.ctrl_spec)
 
     def pretty_name(self) -> str:
         return f'C[{self.subbloq.pretty_name()}]'

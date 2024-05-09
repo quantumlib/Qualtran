@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sized, Union
+from typing import cast, Sized, Union
 
 import numpy as np
 import sympy
@@ -79,6 +79,10 @@ def log2(x: SymbolicFloat) -> SymbolicFloat:
     if not isinstance(x, sympy.Basic):
         return np.log2(x)
     return log2(x)
+
+
+def sabs(x: SymbolicFloat) -> SymbolicFloat:
+    return cast(SymbolicFloat, abs(x))
 
 
 def ceil(x: SymbolicFloat) -> SymbolicInt:

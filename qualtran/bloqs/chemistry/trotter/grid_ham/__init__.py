@@ -13,5 +13,5 @@
 #  limitations under the License.
 """Bloqs for Trotter simulation of the real space grid Hamiltonian."""
 
-from qualtran.bloqs.chemistry.trotter.grid_ham.kinetic import KineticEnergy
-from qualtran.bloqs.chemistry.trotter.grid_ham.potential import PairPotential, PotentialEnergy
+from .kinetic import KineticEnergy
+from .potential import PairPotential, PotentialEnergy

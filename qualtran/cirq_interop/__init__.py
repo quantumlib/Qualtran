@@ -17,7 +17,7 @@
 isort:skip_file
 """
 
-from qualtran.cirq_interop._cirq_to_bloq import (
+from ._cirq_to_bloq import (
     CirqQuregT,
     CirqGateAsBloq,
     CirqGateAsBloqBase,
@@ -25,4 +25,4 @@ from qualtran.cirq_interop._cirq_to_bloq import (
     decompose_from_cirq_style_method,
 )
 
-from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+from ._bloq_to_cirq import BloqAsCirqGate

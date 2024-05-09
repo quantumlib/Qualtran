@@ -33,8 +33,8 @@ Using Shor's algorithm for the discrete logarithm, we can find $k$ in polynomial
 with a quantum algorithm.
 """
 
-from qualtran.bloqs.factoring.ecc.ec_point import ECPoint
-from qualtran.bloqs.factoring.ecc.ec_add import ECAdd
-from qualtran.bloqs.factoring.ecc.ec_add_r import ECAddR, ECWindowAddR
-from qualtran.bloqs.factoring.ecc.ec_phase_estimate_r import ECPhaseEstimateR
-from qualtran.bloqs.factoring.ecc.find_ecc_private_key import FindECCPrivateKey
+from .ec_point import ECPoint
+from .ec_add import ECAdd
+from .ec_add_r import ECAddR, ECWindowAddR
+from .ec_phase_estimate_r import ECPhaseEstimateR
+from .find_ecc_private_key import FindECCPrivateKey

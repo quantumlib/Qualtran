@@ -24,7 +24,7 @@ import sympy
 from qualtran import Bloq, CompositeBloq, DecomposeNotImplementedError, DecomposeTypeError
 
 BloqCountT = Tuple[Bloq, Union[int, sympy.Expr]]
-from qualtran.resource_counting._generalization import _make_composite_generalizer, GeneralizerT
+from ._generalization import _make_composite_generalizer, GeneralizerT
 
 
 def big_O(expr) -> sympy.Order:

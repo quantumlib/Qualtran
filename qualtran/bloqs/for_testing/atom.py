@@ -158,7 +158,7 @@ class TestGWRAtom(GateWithRegisters):
     def _unitary_(self):
         return np.eye(2)
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'TestGWRAtom':
         return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def _t_complexity_(self) -> 'TComplexity':

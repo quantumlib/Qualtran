@@ -12,8 +12,4 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.chemistry.ising.hamiltonian import (
-    get_1d_ising_hamiltonian,
-    get_1d_ising_lcu_coeffs,
-    get_1d_ising_pauli_terms,
-)
+from .hamiltonian import get_1d_ising_hamiltonian, get_1d_ising_lcu_coeffs, get_1d_ising_pauli_terms

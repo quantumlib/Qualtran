@@ -12,7 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.arithmetic._shims import AddK, CHalf, Lt, MultiCToffoli, Negate, Sub
 from qualtran.bloqs.arithmetic.addition import (
     Add,
     AddConstantMod,
@@ -41,3 +40,5 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SumOfSquares,
 )
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
+
+from ._shims import AddK, CHalf, Lt, MultiCToffoli, Negate, Sub

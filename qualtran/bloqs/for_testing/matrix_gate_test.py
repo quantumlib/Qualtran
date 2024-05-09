@@ -15,7 +15,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+from .matrix_gate import MatrixGate
 
 
 @pytest.mark.parametrize("bitsize", [1, 2, 3])

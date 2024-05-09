@@ -15,7 +15,7 @@
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
 from functools import cached_property
-from typing import Collection, Iterable, Optional, Sequence, Tuple, Union
+from typing import Collection, Iterable, Iterator, Optional, Sequence, Tuple, Union
 
 import attrs
 import cirq
@@ -91,7 +91,7 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
 
     def decompose_from_registers(
         self, context, **quregs: NDArray[cirq.Qid]  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if self.control_val == 0:
             yield cirq.X(*quregs['control'])
         yield super(SelectPauliLCU, self).decompose_from_registers(context=context, **quregs)

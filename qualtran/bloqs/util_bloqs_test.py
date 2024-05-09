@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import subprocess
 from functools import cached_property
 from typing import Dict, Type, Union
 
@@ -290,3 +291,8 @@ def test_power_circuit_diagram():
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('util_bloqs')
+
+
+def test_no_circular_import():
+    # There was a circular import that would only be triggered by this import incantation
+    subprocess.check_call(['python', '-c', 'from qualtran.bloqs import util_bloqs'])

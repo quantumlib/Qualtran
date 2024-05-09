@@ -27,14 +27,14 @@ isort:skip_file
 
 # Internal imports: none
 # External imports: none
-from qualtran._infra.bloq import Bloq, DecomposeTypeError, DecomposeNotImplementedError
+from ._infra.bloq import Bloq, DecomposeTypeError, DecomposeNotImplementedError
 
 # External imports:
 #     networkx - create binst graph, topological sorting
 #     numpy - managing soquets in builder and map_soqs
 #     cirq_ft - tcomplexity is sum of children
 # Internal imports: bloq, registers, _infra
-from qualtran._infra.composite_bloq import (
+from ._infra.composite_bloq import (
     BloqError,
     CompositeBloq,
     BloqBuilder,
@@ -42,7 +42,7 @@ from qualtran._infra.composite_bloq import (
     SoquetT,
 )
 
-from qualtran._infra.data_types import (
+from ._infra.data_types import (
     QDType,
     QInt,
     QBit,
@@ -57,11 +57,11 @@ from qualtran._infra.data_types import (
 # Internal imports: none
 # External:
 #  - numpy: multiplying bitsizes, making cirq quregs
-from qualtran._infra.registers import Register, Signature, Side
+from ._infra.registers import Register, Signature, Side
 
 # Internal imports: none
 # External imports: none
-from qualtran._infra.quantum_graph import (
+from ._infra.quantum_graph import (
     BloqInstance,
     Connection,
     DanglingT,
@@ -70,12 +70,12 @@ from qualtran._infra.quantum_graph import (
     Soquet,
 )
 
-from qualtran._infra.gate_with_registers import GateWithRegisters
+from ._infra.gate_with_registers import GateWithRegisters
 
-from qualtran._infra.adjoint import Adjoint
+from ._infra.adjoint import Adjoint
 
-from qualtran._infra.controlled import Controlled, CtrlSpec, AddControlledT
+from ._infra.controlled import Controlled, CtrlSpec, AddControlledT
 
-from qualtran._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
+from ._infra.bloq_example import BloqExample, bloq_example, BloqDocSpec
 
 # --------------------------------------------------------------------------------------------------
