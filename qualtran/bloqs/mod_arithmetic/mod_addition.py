@@ -214,7 +214,7 @@ class ModAddK(GateWithRegisters):
         assert ctrl is None
         return {'x': out}
 
-    def __pow__(self, power: int) -> 'AddK':
+    def __pow__(self, power: int) -> 'ModAddK':
         return ModAddK(self.bitsize, self.mod, add_val=self.add_val * power, cvs=self.cvs)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:

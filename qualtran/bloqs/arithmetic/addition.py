@@ -51,7 +51,7 @@ from qualtran import (
     Side,
     Signature,
     Soquet,
-    SoquetT,
+    SoquetT, DecomposeTypeError,
 )
 from qualtran._infra.data_types import QMontgomeryUInt
 from qualtran.bloqs.basic_gates import CNOT, XGate
@@ -419,7 +419,7 @@ class AddK(Bloq):
         Haner et. al. 2020. Section 3: Components. "Integer addition" and Fig 2a.
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     k: 'SymbolicInt'
     cvs: Tuple[int, ...] = field(converter=_cvs_converter, default=())
     signed: bool = False
@@ -454,6 +454,9 @@ class AddK(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', x: Soquet, **regs: SoquetT
     ) -> Dict[str, 'SoquetT']:
+        if isinstance(self.k, sympy.Expr) or isinstance(self.bitsize, sympy.Expr):
+            raise DecomposeTypeError(f"Cannot decompose symbolic {self}.")
+
         # Assign registers to variables and allocate ancilla bits for classical integer k.
         if len(self.cvs) > 0:
             ctrls = regs['ctrls']
@@ -510,6 +513,7 @@ class AddK(Bloq):
             return {'x': x}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        loading_cost: Tuple[Bloq, SymbolicInt]
         if len(self.cvs) == 0:
             loading_cost = (XGate(), self.bitsize)  # upper bound; depends on the data.
         elif len(self.cvs) == 1:
