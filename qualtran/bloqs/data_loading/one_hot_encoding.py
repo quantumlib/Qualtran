@@ -21,8 +21,7 @@ from qualtran.bloqs.basic_gates import TwoBitCSwap
 
 @attrs.frozen
 class OneHotEncoding(GateWithRegisters):
-    """
-    One-hot encode a binary integer into a target register.
+    """One-hot encode a binary integer into a target register.
 
     Registers:
         a: an unsigned integer
