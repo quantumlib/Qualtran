@@ -15,7 +15,7 @@
 """Bloqs for applying SELECT unitary for LCU of Pauli Strings."""
 
 from functools import cached_property
-from typing import Collection, Iterable, Iterator, Optional, Sequence, Tuple, Union
+from typing import Iterable, Iterator, Optional, Sequence, Tuple
 
 import attrs
 import cirq
@@ -23,6 +23,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, BoundedQUInt, QAny, QBit, Register
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
 from qualtran.bloqs.select_and_prepare import SelectOracle
 from qualtran.resource_counting.generalizers import (
@@ -38,7 +39,7 @@ def _to_tuple(x: Iterable[cirq.DensePauliString]) -> Sequence[cirq.DensePauliStr
 
 
 @attrs.frozen
-class SelectPauliLCU(SelectOracle, UnaryIterationGate):
+class SelectPauliLCU(SpecializedSingleQubitControlledGate, SelectOracle, UnaryIterationGate):  # type: ignore[misc]
     r"""A SELECT bloq for selecting and applying operators from an array of `PauliString`s.
 
     $$
@@ -116,34 +117,6 @@ class SelectPauliLCU(SelectOracle, UnaryIterationGate):
         """
         ps = self.select_unitaries[selection].on(*target)
         return ps.with_coefficient(np.sign(complex(ps.coefficient).real)).controlled_by(control)
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'SelectPauliLCU':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return SelectPauliLCU(
-                self.selection_bitsize,
-                self.target_bitsize,
-                self.select_unitaries,
-                control_val=control_values[0],
-            )
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
