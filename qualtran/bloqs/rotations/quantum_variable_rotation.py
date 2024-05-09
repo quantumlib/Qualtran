@@ -81,6 +81,7 @@ from qualtran.resource_counting.symbolic_counting_utils import (
     is_symbolic,
     log2,
     pi,
+    sabs,
     smax,
     smin,
     SymbolicInt,
@@ -174,7 +175,7 @@ class QvrZPow(QvrInterface):
 
     @cached_property
     def num_frac_rotations(self) -> SymbolicInt:
-        ignoring_small_angle_rots = ceil(log2((pi(self.eps) * 2 * abs(self.gamma)) / self.eps))
+        ignoring_small_angle_rots = ceil(log2((pi(self.eps) * 2 * sabs(self.gamma)) / self.eps))
         return smin(self.cost_dtype.num_frac, ignoring_small_angle_rots)
 
     @cached_property
@@ -186,11 +187,16 @@ class QvrZPow(QvrInterface):
             raise ValueError(f'Unsupported symbolic {self.cost_dtype.bitsize} bitsize')
         out = cast(Soquet, soqs[self.cost_reg.name])
         out = bb.split(out)
-        eps = self.eps / self.num_rotations
+        num_rotations = (
+            self.num_rotations
+            if isinstance(self.num_rotations, int)
+            else self.cost_reg.total_bits()
+        )
+        eps = self.eps / num_rotations
         if self.cost_dtype.signed:
             out[0] = bb.add(ZPowGate(exponent=1, eps=eps), q=out[0])
         offset = 1 + self.cost_dtype.num_frac - self.num_frac_rotations
-        for i in range(self.num_rotations):
+        for i in range(num_rotations):
             power_of_two = i - self.num_frac_rotations
             exp = (2**power_of_two) * self.gamma * 2
             out[-(i + offset)] = bb.add(ZPowGate(exponent=exp, eps=eps), q=out[-(i + offset)])
