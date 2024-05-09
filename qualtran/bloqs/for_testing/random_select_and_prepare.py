@@ -12,15 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Iterator, Optional, Sequence, Tuple
+from typing import Iterator, Optional, Tuple
 
-import attrs
 import cirq
 import numpy as np
 from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import BloqBuilder, BoundedQUInt, QBit, Register, SoquetT
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
@@ -82,7 +82,7 @@ class TestPrepareOracle(PrepareOracle):
 
 
 @frozen
-class TestPauliSelectOracle(SelectOracle):
+class TestPauliSelectOracle(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""Paulis acting on $m$ qubits, controlled by an $n$-qubit register.
 
     Given $2^n$ multi-qubit-Paulis (acting on $m$ qubits) $U_j$,
@@ -132,33 +132,6 @@ class TestPauliSelectOracle(SelectOracle):
     def target_registers(self) -> Tuple[Register, ...]:
         return (Register('target', BoundedQUInt(bitsize=self.target_bitsize)),)
 
-    def adjoint(self):
-        return self
-
-    def __pow__(self, power):
-        if abs(power) == 1:
-            return self
-        return NotImplemented
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values=None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'cirq.Gate':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return attrs.evolve(self, control_val=control_values[0])
-        raise NotImplementedError()
-
     def decompose_from_registers(
         self,
         *,
@@ -167,14 +140,12 @@ class TestPauliSelectOracle(SelectOracle):
         target: NDArray[cirq.Qid],  # type: ignore[type-var]
         **quregs: NDArray[cirq.Qid],  # type: ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
-        if self.control_val is not None:
-            selection = np.concatenate([selection, quregs['control']])
-
         for cv, U in enumerate(self.select_unitaries):
             bits = tuple(map(int, bin(cv)[2:].zfill(self.select_bitsize)))[::-1]
+            op = U.on(*target).controlled_by(*selection, control_values=bits)
             if self.control_val is not None:
-                bits = (*bits, self.control_val)
-            yield U.on(*target).controlled_by(*selection, control_values=bits)
+                op = op.controlled_by(*quregs['control'], control_values=[self.control_val])
+            yield op
 
 
 def random_qubitization_walk_operator(

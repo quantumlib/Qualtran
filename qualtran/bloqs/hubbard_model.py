@@ -47,7 +47,7 @@ considered in both the PREPARE and SELECT operations corresponding to the terms 
 See the documentation for `PrepareHubbard` and `SelectHubbard` for details.
 """
 from functools import cached_property
-from typing import Collection, Iterator, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+from typing import Iterator, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -55,7 +55,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import BoundedQUInt, QAny, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import total_bits
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate, total_bits
 from qualtran.bloqs.arithmetic import AddConstantMod
 from qualtran.bloqs.basic_gates import CSwap
 from qualtran.bloqs.mcmt.and_bloq import MultiAnd
@@ -72,7 +72,7 @@ if TYPE_CHECKING:
 
 
 @attrs.frozen
-class SelectHubbard(SelectOracle):
+class SelectHubbard(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""The SELECT operation optimized for the 2D Hubbard model.
 
     In contrast to the arbitrary chemistry Hamiltonian, we:
@@ -217,29 +217,6 @@ class SelectHubbard(SelectOracle):
             control_regs=Register('control', QAny(1 + total_bits(self.control_registers))),
         ).on_registers(
             q_x=q_x, q_y=q_y, control=[*V, *control], target=target_qubits_for_apply_to_lth_gate
-        )
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'SelectHubbard':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return SelectHubbard(self.x_dim, self.y_dim, control_val=control_values[0])
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
         )
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
