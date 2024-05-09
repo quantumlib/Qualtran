@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -132,7 +132,7 @@ class QubitizationQPE(GateWithRegisters):
 
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         walk_regs = {reg.name: quregs[reg.name] for reg in self.walk.signature}
         reflect_regs = {reg.name: walk_regs[reg.name] for reg in self.walk.reflect.signature}
 

@@ -157,7 +157,9 @@ class StatePreparationViaRotations(GateWithRegisters):
         * target_state: register where the state is written
         * phase_gradient: phase gradient state (will be left unaffected)
         """
-        rotation_tree = RotationTree(self.state_coefficients, self.phase_bitsize, self.uncompute)
+        rotation_tree = RotationTree(
+            np.asarray(self.state_coefficients), self.phase_bitsize, self.uncompute
+        )
         ampl_rv, phase_rv = rotation_tree.get_rom_vals()
         if self.uncompute:
             soqs = self._prepare_phases(phase_rv, bb, **soqs)

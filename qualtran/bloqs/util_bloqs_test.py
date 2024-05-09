@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import subprocess
 from functools import cached_property
-from typing import Dict, Type
+from typing import Dict, Type, Union
 
 import cirq
 import numpy as np
@@ -32,7 +33,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 @pytest.mark.parametrize('n', [5, 123])
 @pytest.mark.parametrize('bloq_cls', [Split, Join])
-def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
+def test_register_sizes_add_up(bloq_cls: Union[Type[Split], Type[Join]], n):
     bloq = bloq_cls(QAny(n))
     for name, group_regs in bloq.signature.groups():
         if any(reg.side is Side.THRU for reg in group_regs):
@@ -97,7 +98,7 @@ class TestPartition(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', test_regs: 'SoquetT') -> Dict[str, 'Soquet']:
         bloq_regs = self.test_bloq.signature
-        partition = Partition(self.bitsize, bloq_regs)
+        partition = Partition(self.bitsize, bloq_regs)  # type: ignore[arg-type]
         out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
         test_regs = bb.add(
@@ -130,8 +131,9 @@ def test_partition_as_cirq_op():
     assert np.allclose(unitary, bloq_to_dense(CNOT()))
 
     bloq = TestPartition(test_bloq=TestMultiRegister())
-    circuit, _ = bloq.decompose_bloq().to_cirq_circuit(
-        cirq.ops.SimpleQubitManager(), test_regs=cirq.NamedQubit.range(12, prefix='system')
+    circuit = bloq.decompose_bloq().to_cirq_circuit(
+        qubit_manager=cirq.ops.SimpleQubitManager(),
+        cirq_quregs={'test_regs': cirq.NamedQubit.range(12, prefix='system')},
     )
     assert (
         circuit.to_text_diagram(transpose=True)
@@ -290,3 +292,8 @@ def test_power_circuit_diagram():
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('util_bloqs')
+
+
+def test_no_circular_import():
+    # There was a circular import that would only be triggered by this import incantation
+    subprocess.check_call(['python', '-c', 'from qualtran.bloqs import util_bloqs'])

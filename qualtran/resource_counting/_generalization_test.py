@@ -26,7 +26,7 @@ def test_make_composite_generalizer():
 
     def func2(b: Bloq) -> Optional[Bloq]:
         if isinstance(b, TestAtom):
-            return
+            return None
         return b
 
     b = TestAtom(tag='test')
