@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 import abc
+import collections
 import logging
 import time
 from collections import defaultdict
@@ -173,7 +174,7 @@ def get_cost_value(
         costs_cache = {}
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, (list, tuple)):
+    if isinstance(generalizer, collections.abc.Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     cost_val = _get_cost_value(bloq, cost_key, costs_cache=costs_cache, generalizer=generalizer)
@@ -210,7 +211,7 @@ def get_cost_cache(
         costs_cache = {}
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, (list, tuple)):
+    if isinstance(generalizer, collections.abc.Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     _get_cost_value(bloq, cost_key, costs_cache=costs_cache, generalizer=generalizer)
@@ -240,7 +241,7 @@ def query_costs(
         A dictionary of dictionaries forming a table of multiple costs for multiple bloqs.
         This is indexed by bloq, then cost key.
     """
-    costs = defaultdict(dict)
+    costs: Dict['Bloq', Dict[CostKey, CostValT]] = defaultdict(dict)
     for cost_key in cost_keys:
         cost_for_bloqs = get_cost_cache(bloq, cost_key, generalizer=generalizer)
         for bloq, val in cost_for_bloqs.items():

@@ -19,13 +19,18 @@ from qualtran import Bloq, Signature
 from qualtran.resource_counting import BloqCountT, CostKey, SympySymbolAllocator
 
 
+def _convert_callees(callees: Sequence[BloqCountT]) -> Tuple[BloqCountT, ...]:
+    # Convert to tuples in a type-checked way.
+    return tuple(callees)
+
+
 @frozen
 class CostingBloq(Bloq):
     """A bloq that lets you set the costs via attributes."""
 
     name: str
     num_qubits: int
-    callees: Sequence[BloqCountT] = field(converter=tuple, factory=tuple)
+    callees: Sequence[BloqCountT] = field(converter=_convert_callees, factory=tuple)
     static_costs: Sequence[Tuple[CostKey, Any]] = field(converter=tuple, factory=tuple)
 
     @property

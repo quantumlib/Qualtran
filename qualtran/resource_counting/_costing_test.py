@@ -43,7 +43,7 @@ class TestCostKey(CostKey[int]):
 
         return total
 
-    def zero(self) -> CostValT:
+    def zero(self) -> int:
         return 0
 
     def __hash__(self):

@@ -14,7 +14,7 @@
 
 """Functionality for the `Bloq.call_graph()` protocol."""
 
-import collections.abc as abc
+import collections.abc
 from collections import defaultdict
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
@@ -231,7 +231,7 @@ def get_bloq_call_graph(
         keep = lambda b: False
     if generalizer is None:
         generalizer = lambda b: b
-    if isinstance(generalizer, abc.Sequence):
+    if isinstance(generalizer, collections.abc.Sequence):
         generalizer = _make_composite_generalizer(*generalizer)
 
     g = nx.DiGraph()
