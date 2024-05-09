@@ -28,7 +28,7 @@ class OneHotEncoding(GateWithRegisters):
         b: the target to one-hot encode.
 
     References:
-        [Windowed quantum arithmetic](https://arxiv.org/pdf/1905.07682.pdf)
+        [Windowed quantum arithmetic](https://arxiv.org/abs/1905.07682)
         Figure 4
     """
 
