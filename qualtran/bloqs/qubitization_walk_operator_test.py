@@ -89,6 +89,22 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
         )
 
 
+def test_qubitization_walk_operator_adjoint():
+    num_sites, eps = 4, 2e-1
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
+    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    walk_inv_tensor = walk.adjoint().tensor_contract()
+    walk_adj_tensor = Adjoint(walk).tensor_contract()
+    np.testing.assert_allclose(walk_inv_tensor, walk_adj_tensor)
+
+
+def test_t_complexity_for_controlled_and_adjoint():
+    num_sites, eps = 4, 2e-1
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
+    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    assert walk.controlled().adjoint().t_complexity() == walk.adjoint().controlled().t_complexity()
+
+
 def test_qubitization_walk_operator_diagrams():
     num_sites, eps = 4, 1e-1
     walk = get_walk_operator_for_1d_ising_model(num_sites, eps)
