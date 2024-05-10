@@ -14,7 +14,7 @@
 """SELECT for the sparse chemistry Hamiltonian in second quantization."""
 
 from functools import cached_property
-from typing import Collection, Dict, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -29,6 +29,7 @@ from qualtran import (
     Register,
     SoquetT,
 )
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.basic_gates import SGate
 from qualtran.bloqs.multiplexers.selected_majorana_fermion import SelectedMajoranaFermion
 from qualtran.bloqs.select_and_prepare import SelectOracle
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class SelectSparse(SelectOracle):
+class SelectSparse(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""SELECT oracle for the sparse Hamiltonian.
 
     Implements the two applications of Fig. 13.
@@ -150,29 +151,6 @@ class SelectSparse(SelectOracle):
         if self.control_val is not None:
             out_soqs['control'] = soqs['control']
         return out_soqs
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'SelectSparse':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return SelectSparse(self.num_spin_orb, control_val=control_values[0])
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Pg 30, enumeration 1: 2 applications of SELECT in Fig. 13, one of
