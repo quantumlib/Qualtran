@@ -58,18 +58,32 @@ def test_decompose_bloq_counts():
     prep = _prep_sparse()
     cost_decomp = prep.decompose_bloq().call_graph()[1][TGate()]
     cost_call = prep.call_graph()[1][TGate()]
-    assert cost_decomp != cost_call
+    assert cost_decomp == cost_call
 
 
-@pytest.mark.parametrize('sparsity', [0.0, 1e-2])
-@pytest.mark.parametrize('nb', [4, 5, 6, 7])
-def test_get_sparse_inputs_from_integrals(nb, sparsity):
-    tpq = np.random.random((nb, nb))
+def build_random_test_integrals(nb: int):
+    """Build random one- and two-electron integrals of the correct symmetry.
+
+    Args:
+        nb: The number of spatial orbitals.
+
+    Returns:
+        tpq: The one-body matrix elements.
+        eris: Chemist ERIs (pq|rs).
+    """
+    tpq = np.random.normal(size=(nb, nb))
     tpq = 0.5 * (tpq + tpq.T)
     eris = np.random.normal(scale=4, size=(nb,) * 4)
     eris += np.transpose(eris, (0, 1, 3, 2))
     eris += np.transpose(eris, (1, 0, 2, 3))
     eris += np.transpose(eris, (2, 3, 0, 1))
+    return tpq, eris
+
+
+@pytest.mark.parametrize('sparsity', [0.0, 1e-2])
+@pytest.mark.parametrize('nb', [4, 5, 6, 7])
+def test_get_sparse_inputs_from_integrals(nb, sparsity):
+    tpq, eris = build_random_test_integrals(nb)
     pqrs_indx, eris_eight = get_sparse_inputs_from_integrals(
         tpq, eris, drop_element_thresh=sparsity
     )
