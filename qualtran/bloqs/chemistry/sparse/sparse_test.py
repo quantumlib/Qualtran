@@ -78,7 +78,7 @@ def get_sel_swap_qrom_t_count(prep: PrepareSparse) -> int:
             break
     if qrom_bloq is None:
         return 0
-    return qrom_bloq.call_graph()[1].get(TGate(), 0)
+    return int(qrom_bloq.call_graph()[1].get(TGate(), 0))
 
 
 @pytest.mark.slow
