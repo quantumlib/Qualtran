@@ -65,6 +65,7 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
     select: SelectOracle
     prepare: PrepareOracle
     control_val: Optional[int] = None
+    uncompute: bool = False
 
     def __attrs_post_init__(self):
         assert self.select.control_registers == self.reflect.control_registers
@@ -102,10 +103,15 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
     ) -> Iterator[cirq.OP_TREE]:
         select_reg = {reg.name: quregs[reg.name] for reg in self.select.signature}
-        yield self.select.on_registers(**select_reg)
 
         reflect_reg = {reg.name: quregs[reg.name] for reg in self.reflect.signature}
-        yield self.reflect.on_registers(**reflect_reg)
+        if self.uncompute:
+            yield self.reflect.adjoint().on_registers(**reflect_reg)
+            yield self.select.adjoint().on_registers(**select_reg)
+
+        else:
+            yield self.select.on_registers(**select_reg)
+            yield self.reflect.on_registers(**reflect_reg)
 
     def get_single_qubit_controlled_bloq(self, control_val: int) -> 'QubitizationWalkOperator':
         assert self.control_val is None
@@ -121,6 +127,9 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['W'] * (total_bits(self.signature) - total_bits(self.control_registers))
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    def adjoint(self) -> 'QubitizationWalkOperator':
+        return attrs.evolve(self, uncompute=not self.uncompute)
 
 
 @bloq_example(generalizer=[cirq_to_bloqs, ignore_split_join, ignore_cliffords])
