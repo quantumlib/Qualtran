@@ -77,6 +77,7 @@ Bloqs Library
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     qubitization_walk_operator.ipynb
+    phase_estimation/qubitization_qpe.ipynb
 
 .. toctree::
     :maxdepth: 2
