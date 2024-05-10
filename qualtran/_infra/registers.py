@@ -16,7 +16,7 @@
 import enum
 import itertools
 from collections import defaultdict
-from typing import Dict, Iterable, Iterator, List, overload, Tuple, Union
+from typing import cast, Dict, Iterable, Iterator, List, overload, Tuple, Union
 
 import attrs
 import numpy as np
@@ -65,7 +65,7 @@ class Register:
 
     name: str
     dtype: QDType
-    shape: Tuple[SymbolicInt, ...] = field(
+    _shape: Tuple[SymbolicInt, ...] = field(
         default=tuple(), converter=lambda v: (v,) if isinstance(v, int) else tuple(v)
     )
     side: Side = Side.THRU
@@ -76,6 +76,16 @@ class Register:
 
     def is_symbolic(self) -> bool:
         return is_symbolic(self.dtype, *self.shape)
+
+    @property
+    def shape_symbolic(self) -> Tuple[SymbolicInt, ...]:
+        return self._shape
+
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        if is_symbolic(*self._shape):
+            raise ValueError(f"{self} is symbolic. Cannot get real-valued shape.")
+        return cast(Tuple[int, ...], self._shape)
 
     @property
     def bitsize(self) -> int:
