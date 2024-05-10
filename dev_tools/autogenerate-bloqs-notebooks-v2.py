@@ -62,6 +62,7 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
+import qualtran.bloqs.chemistry.quad_fermion.givens_bloq
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
 import qualtran.bloqs.chemistry.sparse.walk_operator
@@ -269,6 +270,14 @@ CHEMISTRY: List[NotebookSpecV2] = [
             qualtran.bloqs.chemistry.trotter.hubbard.interaction._INTERACTION_DOC,
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
+    ),
+    NotebookSpecV2(
+        title='Givens Rotations',
+        module=qualtran.bloqs.chemistry.quad_fermion.givens_bloq,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._REAL_GIVENS_DOC,
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._CPLX_GIVENS_DOC,
+        ],
     ),
 ]
 
