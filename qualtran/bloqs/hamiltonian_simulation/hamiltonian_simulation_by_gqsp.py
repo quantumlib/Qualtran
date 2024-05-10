@@ -177,7 +177,7 @@ class HamiltonianSimulationByGQSP(GateWithRegisters):
                 bb.free(soq)
             else:
                 for soq_element in soq:
-                    bb.free(cast(Soquet, soq))
+                    bb.free(cast(Soquet, soq_element))
 
         return soqs
 

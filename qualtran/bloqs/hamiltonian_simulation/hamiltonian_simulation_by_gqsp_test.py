@@ -95,3 +95,8 @@ def test_hamiltonian_simulation_by_gqsp(
             select_bitsize, target_bitsize, random_state=random_state
         )
         verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=t, precision=precision)
+
+
+def test_hamiltonian_simulation_by_gqsp_t_complexity():
+    hubbard_time_evolution_by_gqsp = _hubbard_time_evolution_by_gqsp.make()
+    _ = hubbard_time_evolution_by_gqsp.t_complexity()
