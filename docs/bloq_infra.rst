@@ -37,5 +37,6 @@ types (``Register``), and algorithms (``CompositeBloq``).
    _infra/gate_with_registers.ipynb
    drawing/graphviz.ipynb
    drawing/musical_score.ipynb
+   drawing/drawing_call_graph.ipynb
    simulation/xcheck_classical_quimb.ipynb
    Autodoc.ipynb
