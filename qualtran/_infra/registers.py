@@ -75,7 +75,7 @@ class Register:
             raise ValueError(f'dtype must be a QDType: found {type(self.dtype)}')
 
     def is_symbolic(self) -> bool:
-        return is_symbolic(self.dtype, *self.shape)
+        return is_symbolic(self.dtype, *self._shape)
 
     @property
     def shape_symbolic(self) -> Tuple[SymbolicInt, ...]:
