@@ -75,7 +75,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates.rotation import ZPowGate
 from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
-from qualtran.resource_counting.symbolic_counting_utils import (
+from qualtran.symbolics import (
     bit_length,
     ceil,
     is_symbolic,
@@ -90,7 +90,6 @@ from qualtran.resource_counting.symbolic_counting_utils import (
 if TYPE_CHECKING:
     from qualtran import SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 
 class QvrInterface(GateWithRegisters, metaclass=abc.ABCMeta):
