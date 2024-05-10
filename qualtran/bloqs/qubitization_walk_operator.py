@@ -128,7 +128,7 @@ class QubitizationWalkOperator(SpecializedSingleQubitControlledGate):
         wire_symbols += ['W'] * (total_bits(self.signature) - total_bits(self.control_registers))
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def adjoint(self) -> 'Bloq':
+    def adjoint(self) -> 'QubitizationWalkOperator':
         return attrs.evolve(self, uncompute=not self.uncompute)
 
 
