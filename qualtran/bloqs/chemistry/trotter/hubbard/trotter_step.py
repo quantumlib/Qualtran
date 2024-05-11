@@ -21,6 +21,8 @@ U \approx e^{i \frac{t}{2} H_I} e^{i \frac{t}{2} H_h^p} e^{i t H_h^g}
 $$
 
 """
+from typing import Sequence
+
 from qualtran.bloqs.chemistry.trotter.hubbard.hopping import HoppingTile, HoppingTileHWP
 from qualtran.bloqs.chemistry.trotter.hubbard.interaction import Interaction, InteractionHWP
 from qualtran.bloqs.chemistry.trotter.trotterized_unitary import TrotterizedUnitary
@@ -53,6 +55,8 @@ def build_plaq_unitary_second_order_suzuki(
     pink = HoppingTile(length=length, angle=0, eps=eps, pink=True, tau=hubb_t)
     gold = HoppingTile(length=length, angle=0, eps=eps, pink=False, tau=hubb_t)
     interaction = Interaction(length=length, angle=0, eps=eps, hubb_u=hubb_u)
+    indices: Sequence[int] = ()
+    coeffs: Sequence[float] = ()
     if strip_layer:
         # H_p H_g H_p H_I
         indices = (1, 2, 1, 0)
@@ -96,6 +100,8 @@ def build_plaq_hwp_unitary_second_order_suzuki(
     pink = HoppingTileHWP(length=length, angle=0, eps=eps, pink=True, tau=hubb_t)
     gold = HoppingTileHWP(length=length, angle=0, eps=eps, pink=False, tau=hubb_t)
     interaction = InteractionHWP(length=length, angle=0, eps=eps, hubb_u=hubb_u)
+    indices: Sequence[int] = ()
+    coeffs: Sequence[float] = ()
     if strip_layer:
         # H_p H_g H_p H_I
         indices = (1, 2, 1, 0)

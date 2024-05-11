@@ -34,7 +34,7 @@ def catch_rotations(bloq) -> Bloq:
     if isinstance(bloq, (Rz, ZPowGate)):
         if isinstance(bloq, ZPowGate):
             return Rz(angle=PHI)
-        elif abs(bloq.angle) < 1e-12:
+        elif abs(float(bloq.angle)) < 1e-12:
             return ArbitraryClifford(1)
         else:
             return Rz(angle=PHI)

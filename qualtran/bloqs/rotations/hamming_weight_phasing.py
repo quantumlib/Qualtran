@@ -13,9 +13,10 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
+import sympy
 
 from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
@@ -60,7 +61,7 @@ class HammingWeightPhasing(GateWithRegisters):
 
     bitsize: int
     exponent: float
-    eps: float = 1e-10
+    eps: Union[float, sympy.Expr] = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':
