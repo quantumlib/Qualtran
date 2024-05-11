@@ -25,13 +25,13 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
-    CtrlSpec,
     QAny,
     QBit,
     Register,
     Signature,
     SoquetT,
 )
+from qualtran._infra.gate_with_registers import SpecializedSingleQubitControlledGate
 from qualtran.bloqs.basic_gates import CSwap, Toffoli, XGate
 from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
 from qualtran.bloqs.select_and_prepare import SelectOracle
@@ -120,7 +120,7 @@ class THCRotations(Bloq):
 
 
 @frozen
-class SelectTHC(SelectOracle):
+class SelectTHC(SpecializedSingleQubitControlledGate, SelectOracle):
     r"""SELECT for THC Hamiltonian.
 
     Args:
@@ -314,13 +314,6 @@ class SelectTHC(SelectOracle):
             out_soqs['control'] = soqs['control']
 
         return out_soqs
-
-    def get_ctrl_system(
-        self, ctrl_spec: Optional['CtrlSpec'] = None
-    ) -> Tuple['Bloq', 'AddControlledT']:
-        from qualtran._infra.gate_with_registers import get_ctrl_system_for_single_qubit_controlled
-
-        return get_ctrl_system_for_single_qubit_controlled(self, ctrl_spec)
 
 
 @bloq_example
