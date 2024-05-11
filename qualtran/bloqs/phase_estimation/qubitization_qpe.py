@@ -200,8 +200,10 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     N = x_dim * y_dim * 2
     qlambda = 2 * N * t + (N * mu) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
-    return qubitization_qpe_hubbard_model
+    qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
+        walk, qpe_eps
+    )
+    return qubitization_qpe_hubbard_model_large
 
 
 @bloq_example
@@ -235,10 +237,6 @@ def _qubitization_qpe_chem_thc() -> QubitizationQPE:
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_chem_thc = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
     return qubitization_qpe_chem_thc
-    qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
-        walk, qpe_eps
-    )
-    return qubitization_qpe_hubbard_model_large
 
 
 @bloq_example
