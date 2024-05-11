@@ -53,3 +53,46 @@ def build_plaq_unitary_second_order_suzuki(
         (interaction, pink, gold), indices=indices, coeffs=coeffs, timestep=timestep
     )
     return unitary
+
+
+def build_plaq_hwp_unitary_second_order_suzuki(
+    length: int,
+    hubb_u: float,
+    timestep: float,
+    hubb_t: float = 1.0,
+    eps: float = 1e-9,
+    strip_layer: bool = False,
+) -> TrotterizedUnitary:
+    """Build second order Suzuki-Trotter unitary for the square lattice Hubbard model.
+
+    This variant uses Hamming weight phasing for the rotations.
+
+    Args:
+        length: box length
+        hubb_u: Hubbard u.
+        timestep: The time step for the unitary.
+        hubb_t: Hubbard t. Default = 1.
+        eps: The precision for single-qubit rotations.
+        strip_layer: Whether to strip one application of the interaction term
+            which is a common optimization if multiple trotter step are merged.
+
+    Returns:
+        unitary: The trotterized approximation to the unitary e^{-i t H}.
+    """
+    # Build the basic bloqs which make up the 2nd order PlAQ unitary.
+    # The pink and gold "tiles".
+    pink = HoppingTileHWP(length=length, angle=0, eps=eps, pink=True, tau=hubb_t)
+    gold = HoppingTileHWP(length=length, angle=0, eps=eps, pink=False, tau=hubb_t)
+    interaction = InteractionHWP(length=length, angle=0, eps=eps, hubb_u=hubb_u)
+    if strip_layer:
+        # H_p H_g H_p H_I
+        indices = (1, 2, 1, 0)
+        coeffs = (0.5, 1, 0.5, 1)
+    else:
+        # Trotter splitting parameters when H = H_I + H_h^p + H_h^g
+        indices = (0, 1, 2, 1, 0)
+        coeffs = (0.5, 0.5, 1.0, 0.5, 0.5)
+    unitary = TrotterizedUnitary(
+        (interaction, pink, gold), indices=indices, coeffs=coeffs, timestep=timestep
+    )
+    return unitary
