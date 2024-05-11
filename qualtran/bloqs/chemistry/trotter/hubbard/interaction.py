@@ -66,6 +66,7 @@ class Interaction(Bloq):
         # Page 13 paragraph 1.
         return {(Rz(angle=self.angle * self.hubb_u, eps=self.eps), self.length**2)}
 
+
 @frozen
 class InteractionHWP(Bloq):
     r"""Bloq implementing the hubbard U part of the hamiltonian using Hamming weight phasing.
@@ -124,6 +125,7 @@ _INTERACTION_DOC = BloqDocSpec(
     import_line='from qualtran.bloqs.chemistry.trotter.hubbard.interaction import Interaction',
     examples=(_interaction,),
 )
+
 
 @bloq_example
 def _interaction_hwp() -> InteractionHWP:
