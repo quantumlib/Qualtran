@@ -19,7 +19,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 from qualtran import GateWithRegisters, Register, Signature
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
+    from qualtran.symbolics import SymbolicFloat
 
 
 class SelectOracle(GateWithRegisters):

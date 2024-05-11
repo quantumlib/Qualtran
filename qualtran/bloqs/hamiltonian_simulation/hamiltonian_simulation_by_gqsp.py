@@ -25,12 +25,7 @@ from qualtran.linalg.jacobi_anger_approximations import (
     approx_exp_cos_by_jacobi_anger,
     degree_jacobi_anger_approximation,
 )
-from qualtran.resource_counting.symbolic_counting_utils import (
-    is_symbolic,
-    Shaped,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import is_symbolic, Shaped, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
