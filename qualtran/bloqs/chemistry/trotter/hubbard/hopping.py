@@ -21,6 +21,7 @@ from attrs import frozen
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT
+from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -134,6 +135,68 @@ class HoppingTile(Bloq):
         }
 
 
+@frozen
+class HoppingTileHWP(HoppingTile):
+    r"""Bloq implementing a "tile" of the one-body hopping unitary using Hamming weight phasing.
+
+    Implements the unitary
+    $$
+    e^{i H_h^{x}} = \prod_{k\sigma} e^{i t H_h^{x(k,\sigma)}}
+    $$
+    for a particular choise of of plaquette hamiltonian $H_h^x$, where $x$ = pink or gold.
+
+    Each plaquette Hamiltonian can be split into $L^2/4$ commuting terms. Each
+    term can be implemented using the 4-qubit HoppingPlaquette above. The
+    HoppingPlaquette bloq contains 2 arbitrary rotations which are flanked by Clifford operations.
+    All of the rotations within a HoppingTile have the same angle so we can use
+    HammingWeightPhaseing to reduce the number of T gates that need to be
+    synthesized. Accounting for spin there are then $2 \times 2 \times L^2/4$
+    arbitrary rotations in each Tile, but only  $L^2/2$ of them can be applied
+    at the same time due to the $e^{iXX} e^{iYY}$ circuit not permitting parallel $R_z$ gates.
+
+    Unlike in the HoppingTile implementation where we can neatly factor
+    everything into sub-bloqs, here we would need to apply any clifford and F
+    gates first in parallel then bulk apply the rotations in parallel using
+    HammingWeightPhasing and then apply another layer of clifford and F gates.
+
+    Args:
+        length: Lattice side length L.
+        angle: The prefactor scaling the Hopping hamiltonian in the unitary (`t` above).
+            This should contain any relevant prefactors including the time step
+            and any splitting coefficients.
+        tau: The Hopping hamiltonian parameter. Typically the hubbard model is
+            defined relative to $\tau$ so it's defaulted to 1.
+        eps: The precision of the single qubit rotations.
+        pink: The colour of the plaquette.
+
+    Registers:
+        system: The system register of size 2 `length`.
+
+    References:
+        [Early fault-tolerant simulations of the Hubbard model](
+            https://arxiv.org/abs/2012.09238) see Eq. 21 and App E.
+    """
+
+    def short_name(self) -> str:
+        l = 'p' if self.pink else 'g'
+        return f'H_h^{l}(HWP)'
+
+    def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
+        # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
+        # Each plaquette contributes 4 TwoBitFFFT gates and two arbitrary rotations.
+        # We use Hamming weight phasing to apply all 2 * L^2/4 (two for spin
+        # here) for both of these rotations.
+        return {
+            (TwoBitFFFT(0, 1, self.eps), 4 * self.length**2 // 2),
+            (
+                HammingWeightPhasing(
+                    2 * self.length**2 // 4, self.tau * self.angle, eps=self.eps
+                ),
+                2,
+            ),
+        }
+
+
 @bloq_example
 def _hopping_tile() -> HoppingTile:
     length = 8
@@ -161,4 +224,19 @@ _PLAQUETTE_DOC = BloqDocSpec(
     bloq_cls=HoppingPlaquette,
     import_line='from qualtran.bloqs.chemistry.trotter.hubbard.hopping import HoppingPlaquette',
     examples=(_plaquette,),
+)
+
+
+@bloq_example
+def _hopping_tile_hwp() -> HoppingTileHWP:
+    length = 8
+    angle = 0.15
+    hopping_tile_hwp = HoppingTileHWP(length, angle)
+    return hopping_tile_hwp
+
+
+_HOPPING_TILE_HWP_DOC = BloqDocSpec(
+    bloq_cls=HoppingTileHWP,
+    import_line='from qualtran.bloqs.chemistry.trotter.hubbard.hopping import HoppingTileHWP',
+    examples=(_hopping_tile_hwp,),
 )
