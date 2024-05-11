@@ -47,8 +47,8 @@ from qualtran.drawing.musical_score import TextBox
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen

@@ -31,7 +31,7 @@ from qualtran.bloqs.arithmetic import Add, AddK
 from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli, Negate, Sub
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.drawing import Circle, TextBox, WireSymbol
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
+from qualtran.symbolics import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator

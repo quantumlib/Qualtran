@@ -16,16 +16,7 @@ import pytest
 import sympy
 from sympy.codegen.cfunctions import log2 as sympy_log2
 
-from qualtran.resource_counting.symbolic_counting_utils import (
-    bit_length,
-    ceil,
-    is_symbolic,
-    log2,
-    Shaped,
-    slen,
-    smax,
-    smin,
-)
+from qualtran.symbolics import bit_length, ceil, is_symbolic, log2, Shaped, slen, smax, smin
 
 
 def test_log2():

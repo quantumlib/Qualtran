@@ -35,7 +35,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi, SymbolicInt
+from qualtran.symbolics import acos, is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -160,8 +160,6 @@ class LPResourceState(GateWithRegisters):
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.resource_counting.symbolic_counting_utils import acos
-
         flag_angle = acos(1 / (1 + 2**self.bitsize))
 
         return {
