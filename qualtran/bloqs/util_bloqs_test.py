@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import subprocess
 from functools import cached_property
-from typing import Dict, Type
+from typing import Dict, Type, Union
 
 import cirq
 import numpy as np
@@ -20,9 +21,10 @@ import pytest
 from attrs import frozen
 
 from qualtran import Bloq, BloqBuilder, QAny, QFxp, QInt, Register, Side, Signature, Soquet, SoquetT
-from qualtran._infra.gate_with_registers import get_named_qubits
+from qualtran._infra.gate_with_registers import GateWithRegisters, get_named_qubits
 from qualtran.bloqs.basic_gates import CNOT, XGate
-from qualtran.bloqs.for_testing import TestCastToFrom, TestMultiRegister
+from qualtran.bloqs.for_testing import TestAtom, TestCastToFrom, TestMultiRegister
+from qualtran.bloqs.for_testing.atom import TestGWRAtom
 from qualtran.bloqs.util_bloqs import Allocate, Cast, Free, Join, Partition, Power, Split
 from qualtran.simulation.classical_sim import call_cbloq_classically
 from qualtran.simulation.tensor import bloq_to_dense, cbloq_to_quimb
@@ -31,7 +33,7 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 @pytest.mark.parametrize('n', [5, 123])
 @pytest.mark.parametrize('bloq_cls', [Split, Join])
-def test_register_sizes_add_up(bloq_cls: Type[Bloq], n):
+def test_register_sizes_add_up(bloq_cls: Union[Type[Split], Type[Join]], n):
     bloq = bloq_cls(QAny(n))
     for name, group_regs in bloq.signature.groups():
         if any(reg.side is Side.THRU for reg in group_regs):
@@ -96,7 +98,7 @@ class TestPartition(Bloq):
 
     def build_composite_bloq(self, bb: 'BloqBuilder', test_regs: 'SoquetT') -> Dict[str, 'Soquet']:
         bloq_regs = self.test_bloq.signature
-        partition = Partition(self.bitsize, bloq_regs)
+        partition = Partition(self.bitsize, bloq_regs)  # type: ignore[arg-type]
         out_regs = bb.add(partition, x=test_regs)
         out_regs = bb.add(self.test_bloq, **{reg.name: sp for reg, sp in zip(bloq_regs, out_regs)})
         test_regs = bb.add(
@@ -129,8 +131,9 @@ def test_partition_as_cirq_op():
     assert np.allclose(unitary, bloq_to_dense(CNOT()))
 
     bloq = TestPartition(test_bloq=TestMultiRegister())
-    circuit, _ = bloq.decompose_bloq().to_cirq_circuit(
-        cirq.ops.SimpleQubitManager(), test_regs=cirq.NamedQubit.range(12, prefix='system')
+    circuit = bloq.decompose_bloq().to_cirq_circuit(
+        qubit_manager=cirq.ops.SimpleQubitManager(),
+        cirq_quregs={'test_regs': cirq.NamedQubit.range(12, prefix='system')},
     )
     assert (
         circuit.to_text_diagram(transpose=True)
@@ -237,6 +240,60 @@ def test_power():
     assert [binst.bloq for binst, _, _ in cbloq.iter_bloqnections()] == [bloq] * 10
 
 
+def test_power_of_power():
+    bloq = TestAtom()
+    assert Power(bloq, 6) == Power(bloq, 2) ** 3
+
+    gate = TestGWRAtom()
+    assert gate**-3 == gate.adjoint() ** 3
+    assert gate**6 == (gate**2) ** 3
+    assert gate**6 == (gate**-2) ** -3
+
+
+def test_power_circuit_diagram():
+    def to_cirq_circuit(bloq: GateWithRegisters) -> cirq.Circuit:
+        op = bloq.on(*cirq.LineQubit.range(bloq.num_qubits()))
+        return cirq.Circuit(op)
+
+    power_atom = Power(TestGWRAtom(), 4)
+
+    cirq.testing.assert_has_diagram(to_cirq_circuit(power_atom), '0: ───TestGWRAtom^4───')
+
+    power_multi_reg = Power(TestMultiRegister(), 4)
+    cirq.testing.assert_has_diagram(
+        to_cirq_circuit(power_multi_reg),
+        '''
+0: ────Power^4───
+       │
+1: ────yy^4──────
+       │
+2: ────yy^4──────
+       │
+3: ────yy^4──────
+       │
+4: ────yy^4──────
+       │
+5: ────yy^4──────
+       │
+6: ────yy^4──────
+       │
+7: ────yy^4──────
+       │
+8: ────yy^4──────
+       │
+9: ────zz^4──────
+       │
+10: ───zz^4──────
+       │
+11: ───zz^4──────''',
+    )
+
+
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('util_bloqs')
+
+
+def test_no_circular_import():
+    # There was a circular import that would only be triggered by this import incantation
+    subprocess.check_call(['python', '-c', 'from qualtran.bloqs import util_bloqs'])

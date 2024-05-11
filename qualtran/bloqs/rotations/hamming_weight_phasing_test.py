@@ -31,6 +31,7 @@ from qualtran.resource_counting.generalizers import (
     generalize_rotation_angle,
     ignore_split_join,
 )
+from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
@@ -81,7 +82,7 @@ class TestHammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         return Signature.build(x=self.bitsize)
 
     @property
-    def b_grad(self) -> int:
+    def b_grad(self) -> SymbolicInt:
         return HammingWeightPhasingViaPhaseGradient(self.bitsize, self.exponent, self.eps).b_grad
 
     def build_composite_bloq(self, bb: 'BloqBuilder', *, x: 'SoquetT') -> Dict[str, 'SoquetT']:

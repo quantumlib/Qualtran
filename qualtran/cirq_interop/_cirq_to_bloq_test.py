@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Dict, Tuple
+from typing import Dict, Iterator, Tuple
 
 import attr
 import cirq
@@ -107,7 +107,7 @@ def test_bloq_decompose():
     assert tb.pretty_name() == 'TestCNOT'
 
     cirq_quregs = get_named_qubits(tb.signature.lefts())
-    circuit, _ = tb.decompose_bloq().to_cirq_circuit(**cirq_quregs, qubit_manager=None)
+    circuit, _ = tb.decompose_bloq().to_cirq_circuit_and_quregs(**cirq_quregs, qubit_manager=None)
     assert circuit == cirq.Circuit(cirq.CNOT(*cirq_quregs['control'], *cirq_quregs['target']))
     assert tb.t_complexity() == TComplexity(clifford=1)
 
@@ -136,7 +136,7 @@ def test_cbloq_to_cirq_circuit():
     # Note: a 1d `shape` bloq register is actually two-dimensional in cirq-world
     # because of the implicit `bitsize` dimension (which must be explicit in cirq-world).
     # CirqGate has registers of bitsize=1 and shape=(n,); hence the list transpose below.
-    circuit2, _ = cbloq.to_cirq_circuit(
+    circuit2, _ = cbloq.to_cirq_circuit_and_quregs(
         qubits=np.asarray([[q] for q in qubits]), qubit_manager=cirq.ops.SimpleQubitManager()
     )
 
@@ -211,7 +211,7 @@ def test_cirq_gate_as_bloq_for_left_only_gates():
         def signature(self):
             return Signature([Register('junk', QAny(2), side=Side.LEFT)])
 
-        def decompose_from_registers(self, *, context, junk) -> cirq.OP_TREE:
+        def decompose_from_registers(self, *, context, junk) -> Iterator[cirq.OP_TREE]:
             yield cirq.CNOT(*junk)
             yield cirq.reset_each(*junk)
 

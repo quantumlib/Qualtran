@@ -24,6 +24,7 @@ from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization_walk_operator import (
     _thc_walk_op,
     _walk_op,
+    _walk_op_chem_sparse,
     QubitizationWalkOperator,
 )
 from qualtran.bloqs.reflection_using_prepare_test import construct_gate_helper_and_qubit_order
@@ -37,6 +38,10 @@ def test_qubitization_walk_operator_autotest(bloq_autotester):
 
 def test_qubitization_walk_operator_chem_thc_autotest(bloq_autotester):
     bloq_autotester(_thc_walk_op)
+
+
+def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
+    bloq_autotester(_walk_op_chem_sparse)
 
 
 def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
@@ -120,9 +125,16 @@ target2: ──────SelectPauliLCU─────────
 target3: ──────SelectPauliLCU─────────
 ''',
     )
+
     # 2. Diagram for $W^{2} = SELECT.R_{L}.SELCT.R_{L}$
-    walk_squared_op = walk.with_power(2).on_registers(**g.quregs)
-    circuit = cirq.Circuit(cirq.decompose_once(walk_squared_op))
+    def decompose_twice(op):
+        ops = []
+        for sub_op in cirq.decompose_once(op):
+            ops += cirq.decompose_once(sub_op)
+        return ops
+
+    walk_squared_op = (walk**2).on_registers(**g.quregs)
+    circuit = cirq.Circuit(decompose_twice(walk_squared_op))
     cirq.testing.assert_has_diagram(
         circuit,
         '''
@@ -234,8 +246,6 @@ def test_qubitization_walk_operator_consistent_protocols_and_controlled():
         gate.controlled(num_controls=1, control_values=(0,)),
         op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
-    with pytest.raises(NotImplementedError, match="Cannot create a controlled version"):
-        _ = gate.controlled(num_controls=2)
 
 
 @pytest.mark.notebook

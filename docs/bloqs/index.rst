@@ -61,6 +61,8 @@ Bloqs Library
     arithmetic/conversions.ipynb
     factoring/mod_exp.ipynb
     factoring/mod_mul.ipynb
+    factoring/ecc/ecc.ipynb
+    factoring/ecc/ec_add.ipynb
 
 .. toctree::
     :maxdepth: 2
@@ -75,6 +77,7 @@ Bloqs Library
     phase_estimation/lp_resource_state.ipynb
     phase_estimation/text_book_qpe.ipynb
     qubitization_walk_operator.ipynb
+    phase_estimation/qubitization_qpe.ipynb
 
 .. toctree::
     :maxdepth: 2

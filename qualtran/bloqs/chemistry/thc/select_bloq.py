@@ -222,7 +222,9 @@ class SelectTHC(SelectOracle):
         )
         # Controlled Z_0
         (succ,), sys_b = bb.add(
-            ApplyControlledZs(cvs=(1,), bitsize=self.num_spin_orb // 2), ctrls=(succ,), system=sys_b
+            ApplyControlledZs(cvs=(1,), bitsize=self.num_spin_orb // 2),
+            ctrls=np.asarray([succ]),
+            system=sys_b,
         )
         # Undo rotations
         nu_eq_mp1, data, mu, sys_a = bb.add(

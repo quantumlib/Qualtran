@@ -15,7 +15,7 @@
 """Convenience functions for showing rich displays in Jupyter notebook."""
 
 import os
-from typing import Dict, Sequence, TYPE_CHECKING, Union
+from typing import Dict, Optional, Sequence, TYPE_CHECKING, Union
 
 import IPython.display
 import ipywidgets
@@ -56,7 +56,7 @@ def show_bloq(bloq: 'Bloq', type: str = 'graph'):  # pylint: disable=redefined-b
         raise ValueError(f"Unknown `show_bloq` type: {type}.")
 
 
-def show_bloqs(bloqs: Sequence['Bloq'], labels: Sequence[str] = None):
+def show_bloqs(bloqs: Sequence['Bloq'], labels: Optional[Sequence[Optional[str]]] = None):
     """Display multiple bloqs side-by-side in IPython."""
     n = len(bloqs)
     if labels is not None:

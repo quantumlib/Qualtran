@@ -188,11 +188,11 @@ class ApplyControlledZs(Bloq):
             ]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'system':
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg.name == 'system':
             return TextBox('Z')
 
-        (c_idx,) = soq.idx
+        (c_idx,) = idx
         filled = bool(self.cvs[c_idx])
         return Circle(filled)
 

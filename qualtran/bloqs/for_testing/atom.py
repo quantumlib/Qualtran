@@ -15,6 +15,7 @@
 from functools import cached_property
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
+import attrs
 import numpy as np
 from attrs import frozen
 
@@ -127,6 +128,7 @@ class TestGWRAtom(GateWithRegisters):
     """
 
     tag: Optional[str] = None
+    is_adjoint: bool = False
 
     @cached_property
     def signature(self) -> Signature:
@@ -156,17 +158,16 @@ class TestGWRAtom(GateWithRegisters):
     def _unitary_(self):
         return np.eye(2)
 
-    def adjoint(self) -> 'Bloq':
-        return self
+    def adjoint(self) -> 'TestGWRAtom':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(100)
 
     def __repr__(self):
-        if self.tag:
-            return f'TestGWRAtom({self.tag!r})'
-        else:
-            return 'TestGWRAtom()'
+        tag = f'{self.tag!r}' if self.tag else ''
+        dagger = '†' if self.is_adjoint else ''
+        return f'TestGWRAtom({tag}){dagger}'
 
     def short_name(self) -> str:
         if self.tag:

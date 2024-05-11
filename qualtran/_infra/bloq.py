@@ -27,9 +27,12 @@ if TYPE_CHECKING:
 
     from qualtran import (
         AddControlledT,
+        Adjoint,
         BloqBuilder,
         CompositeBloq,
         CtrlSpec,
+        GateWithRegisters,
+        Register,
         Signature,
         Soquet,
         SoquetT,
@@ -179,7 +182,9 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return Adjoint(self)
 
-    def on_classical_vals(self, **vals: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(
+        self, **vals: Union['sympy.Symbol', 'ClassicalValT']
+    ) -> Dict[str, 'ClassicalValT']:
         """How this bloq operates on classical data.
 
         Override this method if your bloq represents classical, reversible logic. For example:
@@ -503,7 +508,7 @@ class Bloq(metaclass=abc.ABCMeta):
 
         return self.on(*merge_qubits(self.signature, **qubit_regs))
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         """On a musical score visualization, use this `WireSymbol` to represent `soq`.
 
         By default, we use a "directional text box", which is a text box that is either
@@ -516,4 +521,10 @@ class Bloq(metaclass=abc.ABCMeta):
         """
         from qualtran.drawing import directional_text_box
 
-        return directional_text_box(text=soq.pretty(), side=soq.reg.side)
+        label = reg.name
+        if len(idx) > 0:
+            pretty_str = f'{label}[{", ".join(str(i) for i in idx)}]'
+        else:
+            pretty_str = label
+
+        return directional_text_box(text=pretty_str, side=reg.side)

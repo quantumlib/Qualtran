@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import Iterator, Optional, Sequence, Tuple
 
 import cirq
 import numpy as np
@@ -21,7 +21,11 @@ import pytest
 from attrs import frozen
 
 from qualtran import BoundedQUInt, QAny, QBit, Register
-from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran._infra.gate_with_registers import (
+    get_named_qubits,
+    SpecializedSingleQubitControlledGate,
+    total_bits,
+)
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
@@ -44,14 +48,14 @@ class BernoulliSynthesizer(PrepareOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         theta = np.arccos(np.sqrt(1 - self.p))
         yield cirq.ry(2 * theta).on(q[0])
         yield [cirq.CNOT(q[0], q[i]) for i in range(1, len(q))]
 
 
 @frozen
-class BernoulliEncoder(SelectOracle):
+class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
@@ -74,7 +78,7 @@ class BernoulliEncoder(SelectOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, q: Sequence[cirq.Qid], t: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         y0_bin = bit_tools.iter_bits(self.y[0], self.target_bitsize)
         y1_bin = bit_tools.iter_bits(self.y[1], self.target_bitsize)
 
@@ -85,10 +89,6 @@ class BernoulliEncoder(SelectOracle):
                 )  # pragma: no cover
             if y1:
                 yield cirq.X(tq).controlled_by(*q, control_values=[1] * self.selection_bitsize)
-
-    def controlled(self, *args, **kwargs):
-        cv = kwargs['control_values'][0]
-        return BernoulliEncoder(self.p, self.y, self.selection_bitsize, self.target_bitsize, cv)
 
     @cached_property
     def mu(self) -> float:
@@ -188,7 +188,7 @@ class GroverSynthesizer(PrepareOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, *, context, selection: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         yield cirq.H.on_each(*selection)
 
     def __pow__(self, power):
@@ -219,7 +219,7 @@ class GroverEncoder(SelectOracle):
 
     def decompose_from_registers(  # type:ignore[override]
         self, context, *, selection: Sequence[cirq.Qid], target: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         selection_cv = [
             *bit_tools.iter_bits(self.marked_item, total_bits(self.selection_registers))
         ]
@@ -278,25 +278,20 @@ def test_mean_estimation_operator_consistent_protocols():
         mean_gate.controlled(num_controls=1, control_values=(0,)),
         op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
-    with pytest.raises(NotImplementedError, match="Cannot create a controlled version"):
-        _ = mean_gate.controlled(num_controls=2)
 
-    # Test with_power
-    assert mean_gate.with_power(5) ** 2 == MeanEstimationOperator(
-        code, arctan_bitsize=arctan_bitsize, power=10
-    )
     # Test diagrams
-    expected_symbols = ['U_ko'] * cirq.num_qubits(mean_gate)
-    assert cirq.circuit_diagram_info(mean_gate).wire_symbols == tuple(expected_symbols)
-    control_symbols = ['@']
+    n_qubits = cirq.num_qubits(mean_gate)
+
+    assert cirq.circuit_diagram_info(mean_gate).wire_symbols == tuple(['U_ko'] * n_qubits)
+
     assert cirq.circuit_diagram_info(mean_gate.controlled()).wire_symbols == tuple(
-        control_symbols + expected_symbols
+        ['@'] + ['U_ko'] * n_qubits
     )
-    control_symbols = ['@(0)']
+
     assert cirq.circuit_diagram_info(
         mean_gate.controlled(control_values=(0,))
-    ).wire_symbols == tuple(control_symbols + expected_symbols)
-    expected_symbols[-1] = 'U_ko^2'
+    ).wire_symbols == tuple(['(0)'] + ['U_ko'] * n_qubits)
+
     assert cirq.circuit_diagram_info(
-        mean_gate.with_power(2).controlled(control_values=(0,))
-    ).wire_symbols == tuple(control_symbols + expected_symbols)
+        (mean_gate**2).controlled(control_values=(0,))
+    ).wire_symbols == tuple(['(0)'] + ['U_ko^2'] * n_qubits)

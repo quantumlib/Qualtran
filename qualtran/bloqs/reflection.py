@@ -64,9 +64,9 @@ class Reflection(Bloq):
             [Register(f'reg{i}', QAny(bitsize=b)) for i, b in enumerate(self.bitsizes)]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        idx = int(soq.pretty()[3:])
-        filled = bool(self.cvs[idx])
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        cvs_idx = int(reg.name[3:])
+        filled = bool(self.cvs[cvs_idx])
         return Circle(filled)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs) -> Dict[str, 'Soquet']:

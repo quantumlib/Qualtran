@@ -21,6 +21,7 @@ from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.phase_estimation.qubitization_qpe import (
     _qubitization_qpe_chem_thc,
     _qubitization_qpe_hubbard_model_small,
+    _qubitization_qpe_sparse_chem,
     QubitizationQPE,
 )
 from qualtran.bloqs.phase_estimation.text_book_qpe_test import simulate_theta_estimate
@@ -35,6 +36,11 @@ def test_qubitization_qpe_bloq_autotester(bloq_autotester):
 @pytest.mark.slow
 def test_qubitization_qpe_chem_thc_bloq_autotester(bloq_autotester):
     bloq_autotester(_qubitization_qpe_chem_thc)
+
+
+@pytest.mark.slow
+def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
+    bloq_autotester(_qubitization_qpe_sparse_chem)
 
 
 @pytest.mark.parametrize('num_terms', [2, 3, 4])
