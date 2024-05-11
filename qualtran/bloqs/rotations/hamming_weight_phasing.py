@@ -26,7 +26,7 @@ from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+    from qualtran.symbolics import SymbolicInt
 
 
 @attrs.frozen

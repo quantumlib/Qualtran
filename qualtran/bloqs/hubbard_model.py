@@ -68,7 +68,7 @@ from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
+    from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen
