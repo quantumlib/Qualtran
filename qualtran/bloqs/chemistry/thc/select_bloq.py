@@ -120,7 +120,7 @@ class THCRotations(Bloq):
 
 
 @frozen
-class SelectTHC(SpecializedSingleQubitControlledGate, SelectOracle):
+class SelectTHC(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""SELECT for THC Hamiltonian.
 
     Args:
