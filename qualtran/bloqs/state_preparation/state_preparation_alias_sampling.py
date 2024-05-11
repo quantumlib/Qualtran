@@ -45,7 +45,7 @@ from qualtran.resource_counting.generalizers import (
 )
 
 if TYPE_CHECKING:
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
+    from qualtran.symbolics import SymbolicFloat
 
 
 @cirq.value_equality()

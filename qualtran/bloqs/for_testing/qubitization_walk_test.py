@@ -24,7 +24,7 @@ from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen

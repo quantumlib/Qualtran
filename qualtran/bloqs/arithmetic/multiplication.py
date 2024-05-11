@@ -31,7 +31,7 @@ from qualtran import (
 )
 from qualtran.bloqs.basic_gates import TGate, Toffoli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import smax
+from qualtran.symbolics import smax
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
