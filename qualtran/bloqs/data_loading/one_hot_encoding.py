@@ -28,6 +28,9 @@ from qualtran.simulation.classical_sim import ClassicalValT
 class OneHotEncoding(GateWithRegisters):
     """One-hot encode a binary integer into a target register.
 
+    Args:
+        binary_bitsize: The number of bits in the binary integer register. There will be 2^binary_bitsize bits in the one-hot-encoded register.
+
     Registers:
         a: an unsigned integer
         b: the target to one-hot encode.
