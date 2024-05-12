@@ -50,6 +50,8 @@ class OneHotEncodingTest(GateWithRegisters):
 
 @pytest.mark.parametrize('integer', list(range(8)))
 def test_one_hot_encoding(integer):
+    # Tests that the second register has a 1 in the 'integer' index and zeroes elsewhere.
+    # For example, if integer=4, then second register should a 1 in the 4th index and zeroes else.
     bitsize = 3
     gate = OneHotEncodingTest(integer, bitsize)
     qubits = cirq.LineQubit.range(bitsize + 2**bitsize)
