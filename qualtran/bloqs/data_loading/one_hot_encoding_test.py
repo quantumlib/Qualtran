@@ -35,7 +35,7 @@ class OneHotEncodingTest(GateWithRegisters):
         return Signature.build_from_dtypes(a=QUInt(self.size), b=QUInt(2**self.size))
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid] # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         a = quregs['a']
         b = quregs['b']
