@@ -66,7 +66,7 @@ class OneHotEncoding(GateWithRegisters):
         return {'a': a, 'b': int(2**a)}
 
     def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
+        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
     ) -> cirq.OP_TREE:
         a = quregs['a'][::-1]
         b = quregs['b']
