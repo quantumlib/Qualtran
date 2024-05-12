@@ -1,5 +1,6 @@
 import dataclasses
-from typing import List, Sequence
+import itertools
+from typing import List, Sequence, Tuple
 
 import attrs
 import cirq
@@ -17,14 +18,16 @@ from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt, is_s
 
 @dataclasses.dataclass(frozen=True)
 class QROMAdjCondition(Condition):
-    D_x: int
+    dx: int
+
+    
 
 
 @attrs.define
 class QROMWithClassicalControls(QROM):
     QROM_bloq: QROM = field(default=None)
 
-    def D_x(self, x):
+    def calc_dx(self, x):
         bitstring = []
         x_start = 0
         for i in range(len(self.QROM_bloq.target_bitsizes)):
@@ -37,7 +40,7 @@ class QROMWithClassicalControls(QROM):
     def nth_operation(
         self, context: cirq.DecompositionContext, control: cirq.Qid, **kwargs
     ) -> cirq.OP_TREE:
-        selection_idx = tuple(kwargs[reg.name] for reg in self.selection_registers)
+        selection_idx: int = kwargs[self.selection_registers[0].name]
         target_regs = {reg.name: kwargs[reg.name] for reg in self.target_registers}
         # yield self._load_nth_data(selection_idx, lambda q: CNOT().on(control, q), **target_regs)
         # for i, d in enumerate(self.data):
@@ -47,8 +50,11 @@ class QROMWithClassicalControls(QROM):
         #     if int(bit):
         #         yield gate(q)
         N = int(log2(len(target)))
+        selection_bits = iter_bits(selection_idx, self.selection_bitsizes[0])
         for i in range(len(target)):
-            x = iter_bits(selection_idx, self.selection_bitsizes[0])
+            target_bits = iter_bits(i, N)
+            dx = self.calc_dx(list(itertools.chain(selection_bits, target_bits)))
+
 
 @attrs.frozen
 class QROMAdj():
