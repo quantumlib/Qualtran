@@ -17,9 +17,11 @@ import attrs
 import cirq
 from numpy._typing import NDArray
 
-from qualtran import GateWithRegisters, QAny, QUInt, Signature, Register, Side
+from qualtran import GateWithRegisters, QAny, QUInt, Signature, Register, Side, SoquetT
 from qualtran.bloqs.basic_gates import TwoBitCSwap
 from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
+import quimb.tensor as qtn
+from qualtran.simulation.classical_sim import ClassicalValT
 
 
 @attrs.frozen
