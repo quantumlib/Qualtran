@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import List
+
 import attrs
 import cirq
 import pytest
@@ -38,10 +40,12 @@ class OneHotEncodingTest(GateWithRegisters):
         a = quregs['a']
         b = quregs['b']
         binary_repr = list(iter_bits(self.integer, self.size))
+        op_tree: List[cirq.Operation] = []
         for i in range(self.size):
             if binary_repr[i] == 1:
-                yield cirq.X(a[i])
-        yield OneHotEncoding(binary_bitsize=self.size).on_registers(a=a, b=b)
+                op_tree.append(cirq.X(a[i]))
+        op_tree.append(OneHotEncoding(binary_bitsize=self.size).on_registers(a=a, b=b))
+        return op_tree
 
 
 @pytest.mark.parametrize('integer', list(range(8)))
