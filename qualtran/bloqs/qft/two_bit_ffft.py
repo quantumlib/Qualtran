@@ -12,10 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, TYPE_CHECKING
 
 import numpy as np
-import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 
@@ -36,6 +35,7 @@ from qualtran.bloqs.basic_gates.rotation import Rz
 from qualtran.bloqs.basic_gates.s_gate import SGate
 from qualtran.bloqs.basic_gates.t_gate import TGate
 from qualtran.resource_counting import SympySymbolAllocator
+from qualtran.symbolics.types import SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -74,7 +74,7 @@ class TwoBitFFFT(Bloq):
 
     k: int
     n: int
-    eps: Union[float, sympy.Expr] = 1e-10
+    eps: SymbolicFloat = 1e-10
     is_adjoint: bool = False
 
     def __attrs_post_init__(self):
