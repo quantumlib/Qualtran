@@ -519,7 +519,7 @@ class VLine:
     x: int
     top_y: int
     bottom_y: int
-    label: str
+    label: Text
 
     def json_dict(self):
         return attrs.asdict(self)
@@ -683,7 +683,8 @@ def draw_musical_score(
 
     for vline in msd.vlines:
         ax.vlines(vline.x, -vline.top_y, -vline.bottom_y, color='k', zorder=-1)
-        Text(vline.label).draw(ax, vline.x, vline.bottom_y - 0.5)
+        if vline.label.text:
+            vline.label.draw(ax, vline.x, vline.bottom_y - 0.5)
 
     for soq in msd.soqs:
         symb = soq.symb
