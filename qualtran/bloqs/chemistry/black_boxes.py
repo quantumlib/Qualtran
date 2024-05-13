@@ -32,7 +32,39 @@ if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-def get_qroam_cost(
+def qroam_cost(x, data_size: int, bitsize: int, adjoint: bool = False):
+    # See appendix B of https://arxiv.org/pdf/1902.02134
+    if adjoint:
+        return data_size / x + x
+    else:
+        return data_size / x + bitsize * (x - 1)
+
+
+def qroam_cost_dirty(x, data_size: int, bitsize: int, adjoint: bool = False):
+    # See appendix A of https://arxiv.org/pdf/1902.02134
+    if adjoint:
+        return data_size / x + x
+    else:
+        return 2 * (data_size / x - 1) + 4 * bitsize * (x - 1)
+
+
+def get_optimal_log_block_size_clean_ancilla(
+    data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: Optional[int] = None
+) -> int:
+    if qroam_block_size is None:
+        if adjoint:
+            log_blk = 0.5 * np.log2(data_size)
+            qroam_block_size = 2**log_blk
+        else:
+            log_blk = 0.5 * np.log2(data_size / bitsize)
+            assert log_blk >= 0
+            qroam_block_size = 2**log_blk
+    k = np.log2(qroam_block_size)
+    k_int = np.array([np.floor(k), np.ceil(k)])
+    return int(k_int[np.argmin(qroam_cost(2**k_int, data_size, bitsize, adjoint))])
+
+
+def get_qroam_cost_clean_ancilla(
     data_size: int, bitsize: int, adjoint: bool = False, qroam_block_size: Optional[int] = None
 ) -> int:
     """This gives the optimal k and minimum cost for a QROM over L values of size M.
@@ -51,22 +83,8 @@ def get_qroam_cost(
     """
     if qroam_block_size == 1:
         return data_size - 1
-    if adjoint:
-        if qroam_block_size is None:
-            log_blk = 0.5 * np.log2(data_size)
-            qroam_block_size = 2**log_blk
-        value = lambda x: data_size / x + x
-    else:
-        if qroam_block_size is None:
-            log_blk = 0.5 * np.log2(data_size / bitsize)
-            assert log_blk >= 0
-            qroam_block_size = 2**log_blk
-        value = lambda x: data_size / x + bitsize * (x - 1)
-    k = np.log2(qroam_block_size)
-    k_int = np.array([np.floor(k), np.ceil(k)])
-    k_opt = k_int[np.argmin(value(2**k_int))]
-    val_opt = np.ceil(value(2**k_opt))
-    return int(val_opt)
+    k_opt = get_optimal_log_block_size_clean_ancilla(data_size, bitsize, adjoint, qroam_block_size)
+    return int(np.ceil(qroam_cost(2**k_opt, data_size, bitsize, adjoint)))
 
 
 @frozen
@@ -96,7 +114,7 @@ class QROAM(Bloq):
         return Signature.build(sel=(self.data_size - 1).bit_length(), trg=self.target_bitsize)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        cost = get_qroam_cost(
+        cost = get_qroam_cost_clean_ancilla(
             self.data_size,
             self.target_bitsize,
             adjoint=self.is_adjoint,

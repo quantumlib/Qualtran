@@ -40,8 +40,8 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen

@@ -33,8 +33,8 @@ if TYPE_CHECKING:
 
     from qualtran import Bloq, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 @attrs.frozen

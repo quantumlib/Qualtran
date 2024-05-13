@@ -64,6 +64,7 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
+import qualtran.bloqs.chemistry.sparse.walk_operator
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
@@ -426,6 +427,11 @@ ROT_QFT_PE = [
         title='Qubitization Walk Operator',
         module=qualtran.bloqs.qubitization_walk_operator,
         bloq_specs=[qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
+    ),
+    NotebookSpecV2(
+        title='Qubitization Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.qubitization_qpe,
+        bloq_specs=[qualtran.bloqs.phase_estimation.qubitization_qpe._QUBITIZATION_QPE_DOC],
     ),
 ]
 

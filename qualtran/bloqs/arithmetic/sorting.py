@@ -19,7 +19,7 @@ from attrs import frozen
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Side, Signature
 from qualtran.bloqs.arithmetic import GreaterThan
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 
 @frozen

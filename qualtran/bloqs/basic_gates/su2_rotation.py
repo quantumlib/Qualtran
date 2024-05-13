@@ -23,12 +23,12 @@ from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Sig
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import Text, TextBox
-from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, SymbolicFloat
+from qualtran.symbolics import is_symbolic, SymbolicFloat
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
 
-    from qualtran import BloqBuilder, Soquet, SoquetT
+    from qualtran import BloqBuilder, SoquetT
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import SympySymbolAllocator
 

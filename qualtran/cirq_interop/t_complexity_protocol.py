@@ -19,12 +19,7 @@ import cirq
 
 from qualtran import Bloq, Controlled
 from qualtran.cirq_interop.decompose_protocol import _decompose_once_considering_known_decomposition
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    log2,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, log2, SymbolicFloat, SymbolicInt
 
 _T_GATESET = cirq.Gateset(cirq.T, cirq.T**-1, unroll_circuit_op=False)
 _ROTS_GATESET = cirq.Gateset(cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate, cirq.CZPowGate)

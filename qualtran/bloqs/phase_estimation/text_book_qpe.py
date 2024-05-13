@@ -20,14 +20,7 @@ import cirq
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    is_symbolic,
-    log2,
-    pi,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
