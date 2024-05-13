@@ -13,21 +13,25 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Collection, Iterator, Optional, Sequence, Tuple, Union
+from typing import Iterator, Optional, Tuple
 
 import attrs
 import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import GateWithRegisters, QBit, Register, Signature
-from qualtran._infra.gate_with_registers import merge_qubits, total_bits
+from qualtran import QBit, Register, Signature
+from qualtran._infra.gate_with_registers import (
+    merge_qubits,
+    SpecializedSingleQubitControlledGate,
+    total_bits,
+)
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 
 
 @attrs.frozen(cache_hash=True)
-class ReflectionUsingPrepare(GateWithRegisters):
+class ReflectionUsingPrepare(SpecializedSingleQubitControlledGate):
     r"""Applies reflection around a state prepared by `prepare_gate`
 
     Applies $R_{s, g=1} = g (I - 2|s><s|)$ using $R_{s} = P(I - 2|0><0|)P^{\dagger}$
@@ -122,26 +126,3 @@ class ReflectionUsingPrepare(GateWithRegisters):
         wire_symbols = ['@' if self.control_val else '@(0)'] * total_bits(self.control_registers)
         wire_symbols += ['R_L'] * total_bits(self.selection_registers)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
-
-    def controlled(
-        self,
-        num_controls: Optional[int] = None,
-        control_values: Optional[
-            Union[cirq.ops.AbstractControlValues, Sequence[Union[int, Collection[int]]]]
-        ] = None,
-        control_qid_shape: Optional[Tuple[int, ...]] = None,
-    ) -> 'ReflectionUsingPrepare':
-        if num_controls is None:
-            num_controls = 1
-        if control_values is None:
-            control_values = [1] * num_controls
-        if (
-            isinstance(control_values, Sequence)
-            and isinstance(control_values[0], int)
-            and len(control_values) == 1
-            and self.control_val is None
-        ):
-            return ReflectionUsingPrepare(self.prepare_gate, control_val=control_values[0])
-        raise NotImplementedError(
-            f'Cannot create a controlled version of {self} with control_values={control_values}.'
-        )

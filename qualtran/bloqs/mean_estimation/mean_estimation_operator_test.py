@@ -21,7 +21,11 @@ import pytest
 from attrs import frozen
 
 from qualtran import BoundedQUInt, QAny, QBit, Register
-from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
+from qualtran._infra.gate_with_registers import (
+    get_named_qubits,
+    SpecializedSingleQubitControlledGate,
+    total_bits,
+)
 from qualtran.bloqs.mean_estimation.mean_estimation_operator import (
     CodeForRandomVariable,
     MeanEstimationOperator,
@@ -51,7 +55,7 @@ class BernoulliSynthesizer(PrepareOracle):
 
 
 @frozen
-class BernoulliEncoder(SelectOracle):
+class BernoulliEncoder(SpecializedSingleQubitControlledGate, SelectOracle):  # type: ignore[misc]
     r"""Encodes Bernoulli random variable y0/y1 as $Enc|ii..i>|0> = |ii..i>|y_{i}>$ where i=0/1."""
 
     p: float
@@ -85,10 +89,6 @@ class BernoulliEncoder(SelectOracle):
                 )  # pragma: no cover
             if y1:
                 yield cirq.X(tq).controlled_by(*q, control_values=[1] * self.selection_bitsize)
-
-    def controlled(self, *args, **kwargs):
-        cv = kwargs['control_values'][0]
-        return BernoulliEncoder(self.p, self.y, self.selection_bitsize, self.target_bitsize, cv)
 
     @cached_property
     def mu(self) -> float:
@@ -278,8 +278,6 @@ def test_mean_estimation_operator_consistent_protocols():
         mean_gate.controlled(num_controls=1, control_values=(0,)),
         op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
-    with pytest.raises(NotImplementedError, match="Cannot create a controlled version"):
-        _ = mean_gate.controlled(num_controls=2)
 
     # Test diagrams
     n_qubits = cirq.num_qubits(mean_gate)

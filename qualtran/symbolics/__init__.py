@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,13 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-import pytest
-from openfermion.resource_estimates.utils import QI, QR
-
-from qualtran.bloqs.chemistry.black_boxes import get_qroam_cost_clean_ancilla
 
 
-@pytest.mark.parametrize("data_size, bitsize", ((100, 10), (100, 3), (1_000, 13), (1_000_000, 20)))
-def test_qroam_factors(data_size, bitsize):
-    assert get_qroam_cost_clean_ancilla(data_size, bitsize) == QR(data_size, bitsize)[-1]
-    assert get_qroam_cost_clean_ancilla(data_size, bitsize, adjoint=True) == QI(data_size)[-1]
+from qualtran.symbolics.math_funcs import (
+    acos,
+    bit_length,
+    ceil,
+    floor,
+    log2,
+    pi,
+    sabs,
+    sconj,
+    slen,
+    smax,
+    smin,
+)
+from qualtran.symbolics.types import (
+    is_symbolic,
+    Shaped,
+    SymbolicComplex,
+    SymbolicFloat,
+    SymbolicInt,
+)
