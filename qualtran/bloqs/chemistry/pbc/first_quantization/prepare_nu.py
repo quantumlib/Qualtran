@@ -57,7 +57,7 @@ class PrepareMuUnaryEncodedOneHot(Bloq):
             [Register("mu", QAny(self.num_bits_p)), Register("flag", QBit(), side=Side.RIGHT)]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'PREP $\sqrt{2^\mu}|\mu\rangle$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -103,7 +103,7 @@ class PrepareNuSuperPositionState(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'PREP $2^{-\mu}|\mu\rangle|\nu\rangle$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -140,7 +140,7 @@ class FlagZeroAsFailure(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'$\nu\ne -0$'
 
     def adjoint(self) -> 'Bloq':
@@ -189,7 +189,7 @@ class TestNuLessThanMu(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'$\nu < 2^{\mu-2}$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -257,7 +257,7 @@ class TestNuInequality(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'$(2^{\mu-2})^2\mathcal{M} > m \nu^2 $'
 
     def adjoint(self) -> 'Bloq':
@@ -339,7 +339,7 @@ class PrepareNuState(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r"PREP $\frac{1}{\lVert \nu \rVert} |\nu\rangle $"
 
     def build_composite_bloq(
