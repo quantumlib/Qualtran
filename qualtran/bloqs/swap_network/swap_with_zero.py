@@ -33,7 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, prod, SymbolicInt
 
