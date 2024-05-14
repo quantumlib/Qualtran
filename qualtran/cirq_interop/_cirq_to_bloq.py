@@ -49,9 +49,6 @@ from qualtran._infra.gate_with_registers import (
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
-from qualtran.simulation.tensor._tensor_data_manipulation import (
-    tensor_data_from_unitary_and_signature,
-)
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -218,6 +215,10 @@ def _add_my_tensors_from_gate(
     outgoing: Dict[str, 'SoquetT'],
 ):
     import quimb.tensor as qtn
+
+    from qualtran.simulation.tensor._tensor_data_manipulation import (
+        tensor_data_from_unitary_and_signature,
+    )
 
     if not cirq.has_unitary(gate):
         raise NotImplementedError(
