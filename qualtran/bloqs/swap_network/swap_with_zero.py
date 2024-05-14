@@ -13,11 +13,11 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Set, Tuple, TYPE_CHECKING, Union
 
+import attrs
 import cirq
 import numpy as np
-from attrs import frozen
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -34,41 +34,57 @@ from qualtran import (
 )
 from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
 from qualtran.resource_counting.generalizers import ignore_split_join
+from qualtran.symbolics import is_symbolic, prod, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 
 
-@frozen
-class SwapWithZero(GateWithRegisters):
-    """Swaps |Psi_0> with |Psi_x> if selection register stores index `x`.
+def _to_tuple(x: Union[SymbolicInt, Iterable[SymbolicInt]]) -> Tuple[SymbolicInt, ...]:
+    if isinstance(x, np.ndarray):
+        return _to_tuple(x.tolist())
+    if isinstance(x, Iterable):
+        return tuple(x)
+    return (x,)
 
-    Implements the unitary U |x> |Psi_0> |Psi_1> ... |Psi_{n-1}> --> |x> |Psi_x> |Rest of Psi>.
-    Note that the state of `|Rest of Psi>` is allowed to be anything and should not be depended
-    upon.
+
+@attrs.frozen
+class SwapWithZero(GateWithRegisters):
+    r"""Swaps $|\Psi_0\rangle$ with $|\Psi_x\rangle$ if selection register stores index `x`.
+
+    Implements the unitary
+    $$
+    U |x\rangle |\Psi_0\rangle |\Psi_1\rangle \dots \Psi_{M-1}\rangle \rightarrow
+      |x\rangle |\Psi_x\rangle |\text{Rest of } \Psi\rangle$
+    $$
+    Note that the state of $|\text{Rest of } \Psi\rangle$ is allowed to be anything and
+    should not be depended upon.
+
+    Also supports the multidimensional version where $|x\rangle$ can be an n-dimensional index
+    of the form $|x_1\rangle|x_2\rangle \dots |x_n\rangle$
 
     References:
         [Trading T-gates for dirty qubits in state preparation and unitary synthesis](https://arxiv.org/abs/1812.00954).
         Low, Kliuchnikov, Schaeffer. 2018.
     """
 
-    selection_bitsize: int
-    target_bitsize: int
-    n_target_registers: int
+    selection_bitsizes: Tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
+    target_bitsize: SymbolicInt
+    n_target_registers: Tuple[SymbolicInt, ...] = attrs.field(converter=_to_tuple)
 
     def __attrs_post_init__(self):
-        assert self.n_target_registers <= 2**self.selection_bitsize
+        assert len(self.n_target_registers) == len(self.selection_bitsizes)
 
     @cached_property
     def selection_registers(self) -> Tuple[Register, ...]:
-        return (
-            Register(
-                'selection',
-                BoundedQUInt(
-                    bitsize=self.selection_bitsize, iteration_length=self.n_target_registers
-                ),
-            ),
-        )
+        types = [
+            BoundedQUInt(sb, l)
+            for sb, l in zip(self.selection_bitsizes, self.n_target_registers)
+            if is_symbolic(sb) or sb > 0
+        ]
+        if len(types) == 1:
+            return (Register('selection', types[0]),)
+        return tuple(Register(f'selection{i}_', qdtype) for i, qdtype in enumerate(types))
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
@@ -80,61 +96,94 @@ class SwapWithZero(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature([*self.selection_registers, *self.target_registers])
 
-    def build_composite_bloq(
-        self, bb: 'BloqBuilder', selection: Soquet, targets: NDArray[Soquet]  # type: ignore[type-var]
-    ) -> Dict[str, 'SoquetT']:
-        cswap_n = CSwapApprox(self.target_bitsize)
-        # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target
-        # register. If the selection register stores index `r`, we want to bring the value stored
-        # in leaf indexed `r` to the leaf indexed `0`. At each node of the binary tree, the left
-        # subtree contains node with current bit 0 and right subtree contains nodes with current
-        # bit 1. Thus, leaf indexed `0` is the leftmost node in the tree.
-        # Start iterating from the root of the tree. If the j'th bit is set in the selection
-        # register (i.e. the control would be activated); we know that the value we are searching
-        # for is in the right subtree. In order to (eventually) bring the desired value to node
-        # 0; we swap all values in the right subtree with all values in the left subtree. This
-        # takes (N / (2 ** (j + 1)) swaps at level `j`.
-        # Therefore, in total, we need $\sum_{j=0}^{logN-1} \frac{N}{2 ^ {j + 1}}$ controlled swaps.
-        selection_dtype = selection.reg.dtype
-        selection = bb.split(selection)
-        for j in range(self.selection_bitsize):
-            for i in range(0, self.n_target_registers - 2**j, 2 ** (j + 1)):
-                # The inner loop is executed at-most `N - 1` times, where `N:= len(target_regs)`.
-                sel_i = self.selection_bitsize - j - 1
-                selection[sel_i], targets[i], targets[i + 2**j] = bb.add(
-                    cswap_n, ctrl=selection[sel_i], x=targets[i], y=targets[i + 2**j]
-                )
+    @cached_property
+    def cswap_n(self) -> 'CSwapApprox':
+        return CSwapApprox(self.target_bitsize)
 
-        return {'selection': bb.join(selection, dtype=selection_dtype), 'targets': targets}
+    def build_via_tree(
+        self,
+        bb: 'BloqBuilder',
+        sel: Dict[str, SoquetT],
+        targets: NDArray['Soquet'],
+        idx: Tuple[int, ...],
+    ) -> None:
+        sel_idx = len(idx)
+        if sel_idx == len(self.selection_bitsizes):
+            return
+
+        for i in range(self.n_target_registers[sel_idx]):
+            # First make sure that value to be searched is present at the LEFT most position
+            # of the composite index by recursively swapping the subtrees attached on leaf nodes of
+            # the current segment tree.
+            self.build_via_tree(bb, sel, targets, idx + (i,))
+
+        sel_reg = self.selection_registers[sel_idx]  # type: ignore[type-var]
+        sel_soqs = bb.split(sel[sel_reg.name])
+        sel_bitsize = self.selection_registers[sel_idx].bitsize
+        for j in range(sel_bitsize):
+            # Imagine a complete binary tree of depth `logN` with `N` leaves, each denoting a target
+            # register. If the selection register stores index `r`, we want to bring the value stored
+            # in leaf indexed `r` to the leaf indexed `0`. At each node of the binary tree, the left
+            # subtree contains node with current bit 0 and right subtree contains nodes with current
+            # bit 1. Thus, leaf indexed `0` is the leftmost node in the tree.
+            # Start iterating from the root of the tree. If the j'th bit is set in the selection
+            # register (i.e. the control would be activated); we know that the value we are searching
+            # for is in the right subtree. In order to (eventually) bring the desired value to node
+            # 0; we swap all values in the right subtree with all values in the left subtree. This
+            # takes (N / (2 ** (j + 1)) swaps at level `j`.
+            # Therefore, in total, we need $\sum_{j=0}^{logN-1} \frac{N}{2 ^ {j + 1}}$ controlled swaps.
+            sel_i = sel_bitsize - j - 1
+            for i in range(0, self.n_target_registers[sel_idx] - 2**j, 2 ** (j + 1)):
+                zero_pad = (0,) * (len(self.n_target_registers) - len(idx) - 1)
+                left_idx = idx + (i,) + zero_pad
+                right_idx = idx + (i + 2**j,) + zero_pad
+                sel_soqs[sel_i], targets[left_idx], targets[right_idx] = bb.add(
+                    self.cswap_n, ctrl=sel_soqs[sel_i], x=targets[left_idx], y=targets[right_idx]
+                )
+        sel[sel_reg.name] = bb.join(sel_soqs, dtype=sel_reg.dtype)
+
+    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
+        targets = soqs.pop('targets')  # type: ignore[type-var]
+        self.build_via_tree(bb, soqs, targets, ())
+        return {**soqs, 'targets': targets}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_swaps = np.floor(
-            sum([self.n_target_registers / (2 ** (j + 1)) for j in range(self.selection_bitsize)])
-        )
-        return {(CSwapApprox(self.target_bitsize), int(num_swaps))}
+        num_swaps = prod(*[x for x in self.n_target_registers]) - 1
+        return {(CSwapApprox(self.target_bitsize), num_swaps)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@(r⇋0)"] * self.selection_bitsize
-        for i in range(self.n_target_registers):
-            wire_symbols += [f"swap_{i}"] * self.target_bitsize
+        wire_symbols = ["@(r⇋0)"] * sum(self.selection_bitsizes)
+        for idx in np.ndindex(self.n_target_registers):
+            symbol = "swap" + "".join(f"_{i}" for i in idx)
+            wire_symbols += [symbol] * self.target_bitsize
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+
+    # def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
 
 
 @bloq_example(generalizer=ignore_split_join)
 def _swz() -> SwapWithZero:
-    swz = SwapWithZero(selection_bitsize=8, target_bitsize=32, n_target_registers=4)
+    swz = SwapWithZero(selection_bitsizes=8, target_bitsize=32, n_target_registers=4)
     return swz
 
 
 @bloq_example(generalizer=ignore_split_join)
 def _swz_small() -> SwapWithZero:
     # A small version on four bits.
-    swz_small = SwapWithZero(selection_bitsize=3, target_bitsize=2, n_target_registers=2)
+    swz_small = SwapWithZero(selection_bitsizes=3, target_bitsize=2, n_target_registers=2)
     return swz_small
+
+
+@bloq_example(generalizer=ignore_split_join)
+def _swz_multi_dimensional() -> SwapWithZero:
+    swz_multi_dimensional = SwapWithZero(
+        selection_bitsizes=(2, 2), target_bitsize=2, n_target_registers=(3, 4)
+    )
+    return swz_multi_dimensional
 
 
 _SWZ_DOC = BloqDocSpec(
     bloq_cls=SwapWithZero,
     import_line='from qualtran.bloqs.swap_network import SwapWithZero',
-    examples=(_swz, _swz_small),
+    examples=(_swz, _swz_small, _swz_multi_dimensional),
 )
