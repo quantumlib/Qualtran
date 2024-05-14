@@ -30,6 +30,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -59,7 +60,7 @@ class CSwapApprox(GateWithRegisters):
         Low et. al. 2018. See Appendix B.2.c.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:

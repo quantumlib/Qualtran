@@ -102,7 +102,7 @@ targets[3][1]: ───swap_3───────────────×(y)
 
 
 def test_swap_with_zero_cirq_gate_diagram_multi_dim():
-    gate = SwapWithZero((2, 2), 2, (3, 4))
+    gate = SwapWithZero((2, 1), 2, (3, 2))
     gh = cq_testing.GateHelper(gate)
     cirq.testing.assert_has_diagram(
         cirq.Circuit(gh.operation, cirq.decompose_once(gh.operation)),

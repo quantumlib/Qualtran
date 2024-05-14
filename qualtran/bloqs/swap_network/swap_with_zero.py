@@ -33,6 +33,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
+from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 from qualtran.symbolics import is_symbolic, prod, SymbolicInt
 
@@ -103,15 +104,17 @@ class SwapWithZero(GateWithRegisters):
     def build_via_tree(
         self,
         bb: 'BloqBuilder',
-        sel: Dict[str, SoquetT],
-        targets: NDArray['Soquet'],
+        sel: Dict[str, 'Soquet'],
+        targets: NDArray['Soquet'],  # type: ignore[type-var]
         idx: Tuple[int, ...],
     ) -> None:
         sel_idx = len(idx)
         if sel_idx == len(self.selection_bitsizes):
             return
 
-        for i in range(self.n_target_registers[sel_idx]):
+        n_target_registers = self.n_target_registers[sel_idx]
+        assert isinstance(n_target_registers, int)
+        for i in range(n_target_registers):
             # First make sure that value to be searched is present at the LEFT most position
             # of the composite index by recursively swapping the subtrees attached on leaf nodes of
             # the current segment tree.
@@ -142,23 +145,29 @@ class SwapWithZero(GateWithRegisters):
                 )
         sel[sel_reg.name] = bb.join(sel_soqs, dtype=sel_reg.dtype)
 
-    def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: SoquetT) -> Dict[str, 'SoquetT']:
-        targets = soqs.pop('targets')  # type: ignore[type-var]
-        self.build_via_tree(bb, soqs, targets, ())
-        return {**soqs, 'targets': targets}
+    def build_composite_bloq(
+        self, bb: 'BloqBuilder', targets: NDArray['Soquet'], **sel: 'Soquet'  # type: ignore[type-var]
+    ) -> Dict[str, 'SoquetT']:
+        self.build_via_tree(bb, sel, targets, ())
+        return sel | {'targets': targets}
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_swaps = prod(*[x for x in self.n_target_registers]) - 1
         return {(CSwapApprox(self.target_bitsize), num_swaps)}
 
-    def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
-        wire_symbols = ["@(r⇋0)"] * sum(self.selection_bitsizes)
-        for idx in np.ndindex(self.n_target_registers):
-            symbol = "swap" + "".join(f"_{i}" for i in idx)
-            wire_symbols += [symbol] * self.target_bitsize
-        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
+    def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
+        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
 
-    # def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        return _wire_symbol_to_cirq_diagram_info(self, args)
+
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        name = reg.name
+        if 'selection' in name:
+            return TextBox('@(r⇋0)')
+        elif name == 'targets':
+            subscript = "".join(f"_{i}" for i in idx)
+            return TextBox(f'swap{subscript}')
+        raise ValueError(f'Unrecognized register name {name}')
 
 
 @bloq_example(generalizer=ignore_split_join)
