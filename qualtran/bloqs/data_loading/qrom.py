@@ -14,7 +14,18 @@
 
 """Quantum read-only memory."""
 from functools import cached_property
-from typing import Callable, Dict, Iterable, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
