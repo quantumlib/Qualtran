@@ -41,10 +41,10 @@ class HoppingPlaquette(Bloq):
     $$
         \sum_{i,j} [R_{\mathrm{plaq}}]_{i,j} a_{i\sigma}^\dagger a_{j\sigma}
     $$
-    where the non-zero sub-bloq of R_{\mathrm{plaq}} is
+    where the non-zero sub-bloq of $R_{\mathrm{plaq}}$ is
 
     $$
-        R_{\mathrm{plaq}} = 
+        R_{\mathrm{plaq}} =
         \begin{bmatrix}
             0 & 1 & 0 & 1 \\
             1 & 0 & 1 & 0 \\
@@ -55,7 +55,7 @@ class HoppingPlaquette(Bloq):
 
     Args:
         kappa: The scalar prefactor appearing in the definition of the unitary.
-            Usually a combination of the timestep and the hopping parameter $\tau$. 
+            Usually a combination of the timestep and the hopping parameter $\tau$.
         eps: The precision of the single qubit rotations.
 
     Registers:
@@ -78,7 +78,7 @@ class HoppingPlaquette(Bloq):
         # page 14, discussion after E13
         # There are 4 flanking f-gates and a e^{iXX}e^{iYY} rotation, which can
         # be rotated to single rotation + cliffords.
-        return {(TwoBitFFFT(0, 1), 4), (Rz(self.kappa, eps=self.eps), 2)}
+        return {(TwoBitFFFT(0, 1, eps=self.eps), 4), (Rz(self.kappa, eps=self.eps), 2)}
 
 
 @frozen
@@ -116,10 +116,10 @@ class HoppingTile(Bloq):
     pink: bool = True
 
     def __attrs_post_init__(self):
-        if self.length % 2 != 0:
+        if isinstance(self.length, int) and self.length % 2 != 0:
             raise ValueError('Only even length lattices are supported')
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         l = 'p' if self.pink else 'g'
         return f'H_h^{l}'
 
@@ -129,7 +129,9 @@ class HoppingTile(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Page 5, text after Eq. 22. There are L^2 / 4 plaquettes of a given colour and x2 for spin.
-        return {(HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps), self.length**2 // 2)}
+        return {
+            (HoppingPlaquette(kappa=self.tau * self.angle, eps=self.eps), self.length**2 // 2)
+        }
 
 
 @bloq_example

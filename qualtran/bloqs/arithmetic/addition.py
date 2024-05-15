@@ -14,7 +14,19 @@
 import itertools
 import math
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import cirq
 import numpy as np
@@ -53,6 +65,7 @@ if TYPE_CHECKING:
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -129,7 +142,7 @@ class Add(Bloq):
         for a, b in itertools.product(range(N_a), range(N_b)):
             unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
 
-        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.pretty_name(), tag]))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
@@ -142,21 +155,20 @@ class Add(Bloq):
         N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
-    def short_name(self) -> str:
-        return "a+b"
-
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
         wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box, Text
 
-        if soq.reg.name == 'a':
-            return directional_text_box('a', side=soq.reg.side)
-        elif soq.reg.name == 'b':
-            return directional_text_box('a+b', side=soq.reg.side)
+        if reg is None:
+            return Text("a+b")
+        if reg.name == 'a':
+            return directional_text_box('a', side=reg.side)
+        elif reg.name == 'b':
+            return directional_text_box('a+b', side=reg.side)
         else:
             raise ValueError()
 
@@ -196,7 +208,7 @@ class Add(Bloq):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
@@ -272,7 +284,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         [Halving the cost of quantum addition](https://arxiv.org/abs/1709.06648)
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     is_adjoint: bool = False
 
     @property
@@ -287,6 +299,8 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if not isinstance(self.bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         return [2] * self.bitsize, [2] * self.bitsize, [2] * (self.bitsize + 1)
 
     def apply(self, a: int, b: int, c: int) -> Tuple[int, int, int]:
@@ -303,12 +317,14 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "c = a + b"
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
     ) -> cirq.OP_TREE:
+        if not isinstance(self.bitsize, int):
+            raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         a, b, c = quregs['a'][::-1], quregs['b'][::-1], quregs['c'][::-1]
         optree: List[List[cirq.Operation]] = [
             [
@@ -484,7 +500,7 @@ class SimpleAddConstant(Bloq):
         else:
             return {'x': x}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'x += {self.k}'
 
 

@@ -87,12 +87,27 @@ def assert_bloq_example_serializes_for_pytest(bloq_ex: BloqExample):
         'lp_resource_state_symbolic',
         'select_pauli_lcu',
         'walk_op',
+        'thc_walk_op',  # thc_prep does not serialize
+        'qubitization_qpe_chem_thc',  # too slow
+        'walk_op_chem_sparse',
+        'qubitization_qpe_sparse_chem',  # too slow
         'trott_unitary',
         'hubbard_time_evolution_by_gqsp',
         'symbolic_hamsim_by_gqsp',
         'gqsp_1d_ising',
     ]:
         pytest.xfail("Skipping serialization test for bloq examples that cannot yet be serialized.")
+
+    if bloq_ex.name in [
+        'ecc',
+        'ec_pe',
+        'ec_pe_small',
+        'ec_add_r',
+        'ec_add_r_small',
+        'ec_window_add',
+        'ec_add',
+    ]:
+        pytest.xfail("Skipping serialization test for bloqs that use ECPoint.")
 
     try:
         qlt_testing.assert_bloq_example_serializes(bloq_ex)

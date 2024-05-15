@@ -13,7 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Iterator, List, Sequence, Set, TYPE_CHECKING, Union
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
@@ -42,12 +53,13 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
-from qualtran.drawing.musical_score import TextBox
+from qualtran.drawing.musical_score import Text, TextBox
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -61,8 +73,12 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def short_name(self) -> str:
-        return f'x<{self.less_than_val}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x<{self.less_than_val}')
+        return super().wire_symbol(reg, idx)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, self.less_than_val, [2]
@@ -89,7 +105,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
         The decomposition proceeds from the most significant qubit -bit 0- to the least significant
@@ -216,7 +232,7 @@ class BiQubitsMixer(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         x, y, ancilla = quregs['x'], quregs['y'], quregs['ancilla']
         x_msb, x_lsb = x
         y_msb, y_lsb = y
@@ -309,7 +325,7 @@ class SingleQubitCompare(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         a = quregs['a']
         b = quregs['b']
         less_than = quregs['less_than']
@@ -357,7 +373,7 @@ _SQ_CMP_DOC = BloqDocSpec(bloq_cls=SingleQubitCompare, examples=[_sq_cmp])
 
 def _equality_with_zero(
     context: cirq.DecompositionContext, qubits: Sequence[cirq.Qid], z: cirq.Qid
-) -> cirq.OP_TREE:
+) -> Iterator[cirq.OP_TREE]:
     """Helper decomposition used in `LessThanEqual`"""
     if len(qubits) == 1:
         (q,) = qubits
@@ -404,8 +420,8 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         https://static-content.springer.com/esm/art%3A10.1038%2Fs41534-018-0071-5/MediaObjects/41534_2018_71_MOESM1_ESM.pdf
     """
 
-    x_bitsize: int
-    y_bitsize: int
+    x_bitsize: 'SymbolicInt'
+    y_bitsize: 'SymbolicInt'
 
     @cached_property
     def signature(self) -> 'Signature':
@@ -414,6 +430,10 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         )
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
+        if isinstance(self.x_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic x bitsize {self.x_bitsize} not allowed')
+        if isinstance(self.y_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic y bitsize {self.y_bitsize} not allowed')
         return [2] * self.x_bitsize, [2] * self.y_bitsize, [2]
 
     def with_registers(self, *new_registers) -> "LessThanEqual":
@@ -423,13 +443,21 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
-    def short_name(self) -> str:
-        return 'x <= y'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('x <= y')
+        return super().wire_symbol(reg, idx)
 
     def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': y, 'target': target ^ (x <= y)}
 
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
+        if isinstance(self.x_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic x bitsize {self.x_bitsize} not allowed')
+        if isinstance(self.y_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic y bitsize {self.y_bitsize} not allowed')
         wire_symbols = ["In(x)"] * self.x_bitsize
         wire_symbols += ["In(y)"] * self.y_bitsize
         wire_symbols += ['⨁(x <= y)']
@@ -442,7 +470,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
     def _decompose_via_tree(
         self, context: cirq.DecompositionContext, X: Sequence[cirq.Qid], Y: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if len(X) == 1:
             return
         if len(X) == 2:
@@ -458,7 +486,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
 
         n = min(len(lhs), len(rhs))
@@ -581,8 +609,8 @@ class GreaterThan(Bloq):
         target: A single bit output register to store the result of A > B.
     """
 
-    a_bitsize: int
-    b_bitsize: int
+    a_bitsize: 'SymbolicInt'
+    b_bitsize: 'SymbolicInt'
 
     @property
     def signature(self):
@@ -590,23 +618,22 @@ class GreaterThan(Bloq):
             a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
         )
 
-    def short_name(self) -> str:
-        return "a>b"
-
     def _t_complexity_(self) -> 'TComplexity':
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'a':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text("a>b")
+        if reg.name == 'a':
             return TextBox("In(a)")
-        if soq.reg.name == 'b':
+        if reg.name == 'b':
             return TextBox("In(b)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox("⨁(a > b)")
-        raise ValueError(f'Unknown register name {soq.reg.name}')
+        raise ValueError(f'Unknown register name {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -677,7 +704,6 @@ class LinearDepthGreaterThan(Bloq):
     def build_composite_bloq(
         self, bb: 'BloqBuilder', a: Soquet, b: Soquet, target: SoquetT
     ) -> Dict[str, 'SoquetT']:
-
         # Base Case: Comparing two qubits.
         # Signed doesn't matter because we can't represent signed integers with 1 qubit.
         if self.bitsize == 1:
@@ -691,7 +717,7 @@ class LinearDepthGreaterThan(Bloq):
 
         # Allocate lists to store ancillas generated by the logical-and and control pairs input
         # into logical-ands.
-        ancillas = []
+        ancillas: List[SoquetT] = []
         and_ctrls = []
 
         # If the input registers are unsigned we need to append a sign bit to them in order to use
@@ -791,8 +817,12 @@ class LinearDepthGreaterThan(Bloq):
         # Return the output registers.
         return {'a': a, 'b': b, 'target': target}
 
-    def short_name(self) -> str:
-        return "a > b"
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('a > b')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -828,15 +858,14 @@ class GreaterThanConstant(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
-    def short_name(self) -> str:
-        return f"x > {self.val}"
-
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text(f"x > {self.val}")
+        if reg.name == 'x':
             return TextBox("In(x)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox(f"⨁(x > {self.val})")
-        raise ValueError(f'Unknown register symbol {soq.reg.name}')
+        raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # TODO Determine precise clifford count and/or ignore.
@@ -881,15 +910,14 @@ class EqualsAConstant(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
 
-    def short_name(self) -> str:
-        return f"x == {self.val}"
-
-    def wire_symbol(self, soq: Soquet) -> WireSymbol:
-        if soq.reg.name == 'x':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text(f"x == {self.val}")
+        if reg.name == 'x':
             return TextBox("In(x)")
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return TextBox(f"⨁(x = {self.val})")
-        raise ValueError(f'Unknown register symbol {soq.reg.name}')
+        raise ValueError(f'Unknown register symbol {reg.name}')
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # See: https://github.com/quantumlib/Qualtran/issues/219

@@ -52,11 +52,7 @@ class YGate(Bloq):
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
-        tn.add(
-            qtn.Tensor(
-                data=_PAULIY, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
-            )
-        )
+        tn.add(qtn.Tensor(data=_PAULIY, inds=(outgoing['q'], incoming['q']), tags=["Y", tag]))
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -64,7 +60,7 @@ class YGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.Y(q), {'q': [q]}
+        return cirq.Y(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

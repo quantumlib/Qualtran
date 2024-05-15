@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import cirq
@@ -32,10 +32,9 @@ if TYPE_CHECKING:
     import quimb.tensor as qtn
 
     from qualtran import Bloq, SoquetT
-    from qualtran.resource_counting import SympySymbolAllocator
-    from qualtran.resource_counting.bloq_counts import BloqCountT
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat, SymbolicInt
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 
 @attrs.frozen
@@ -58,7 +57,7 @@ class PhaseGradientUnitary(GateWithRegisters):
     The implementation simply decomposes into $n$ (controlled-) rotations, one on each qubit.
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     exponent: float = 1
     is_controlled: bool = False
     eps: float = 1e-10
@@ -73,13 +72,15 @@ class PhaseGradientUnitary(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         ctrl = quregs.get('ctrl', ())
         gate = CZPowGate if self.is_controlled else ZPowGate
         for i, q in enumerate(quregs['phase_grad']):
             yield gate(exponent=self.exponent / 2**i, eps=self.eps / self.bitsize).on(*ctrl, q)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
         wire_symbols = ['@'] * self.is_controlled + [
             f'Z^{self.exponent}/{2**(i+1)}' for i in range(self.bitsize)
         ]
@@ -115,7 +116,7 @@ class PhaseGradientState(GateWithRegisters):
         Appendix A: Addition for controlled rotations
     """
 
-    bitsize: int
+    bitsize: 'SymbolicInt'
     exponent: float = -1
     eps: float = 1e-10
 
@@ -127,7 +128,9 @@ class PhaseGradientState(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
+        if isinstance(self.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic Bitsize not supported {self.bitsize}')
         # Assumes `phase_grad` is in big-endian representation.
         phase_grad = quregs['phase_grad']
         yield OnEach(self.bitsize, Hadamard()).on_registers(q=phase_grad)
@@ -213,7 +216,7 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         x_fxp = _fxp(x / 2**x_width, x_width).like(_fxp(0, self.phase_bitsize)).astype(float)
         return int(x_fxp.astype(float) * 2**self.phase_bitsize)
 
-    def apply(self, *args) -> Union[int, Iterable[int]]:
+    def apply(self, *args) -> Tuple[Union[int, np.integer, NDArray[np.integer]], ...]:
         if self.controlled_by is not None:
             ctrl, x, phase_grad = args
             out = self.on_classical_vals(ctrl=ctrl, x=x, phase_grad=phase_grad)
@@ -276,11 +279,11 @@ class AddIntoPhaseGrad(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
 
-def _fxp(x: float, n: int) -> Fxp:
+def _fxp(x: float, n: 'SymbolicInt') -> Fxp:
     """When 0 <= x < 1, constructs an n-bit fixed point representation with nice properties.
 
     Specifically,
@@ -316,7 +319,7 @@ def _mul_via_repeated_add(x_fxp: Fxp, gamma_fxp: Fxp, out: int) -> Fxp:
 
 
 @attrs.frozen
-class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # ignore: type[misc]
+class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[misc]
     r"""Optimized quantum-quantum addition into a phase gradient register scaled by a constant $\gamma$.
 
     $$
@@ -363,6 +366,8 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # ignor
         return Signature.build_from_dtypes(x=self.x_dtype, phase_grad=self.phase_dtype)
 
     def registers(self):
+        if isinstance(self.phase_bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic phase bitsize {self.phase_bitsize} not allowed')
         return [2] * self.x_dtype.num_qubits, [2] * self.phase_bitsize
 
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
@@ -379,6 +384,10 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # ignor
     @cached_method
     def scaled_val(self, x: int) -> int:
         """Computes `x*self.gamma` using fixed point arithmetic."""
+        if isinstance(self.gamma, sympy.Expr):
+            raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
+        if isinstance(self.phase_dtype.bitsize, sympy.Expr):
+            raise ValueError(f'Symbolic phase bitsize {self.phase_dtype.bitsize} not allowed')
         sign = np.sign(self.gamma)
         # `x` is an integer because we currently represent each bitstring as an integer during simulations.
         # However, `x` should be interpreted as per the fixed point specification given in self.x_dtype.
@@ -400,7 +409,9 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # ignor
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
+        if isinstance(self.gamma, sympy.Expr):
+            raise ValueError(f'Symbolic gamma {self.gamma} not allowed')
         x, phase_grad = quregs['x'], quregs['phase_grad']
         sign = int(np.sign(self.gamma))
         for i, bit in enumerate(self.gamma_fxp.bin()):
@@ -423,7 +434,11 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # ignor
                     x_bitsize, self.phase_bitsize, right_shift=right_shift, sign=sign
                 ).on_registers(x=x_qubits[:x_bitsize], phase_grad=phase_grad)
 
-    def apply(self, x: int, phase_grad: int) -> Union[int, Iterable[int]]:
+    def apply(
+        self, x: int, phase_grad: int
+    ) -> Tuple[
+        Union[int, np.integer, NDArray[np.integer]], Union[int, np.integer, NDArray[np.integer]]
+    ]:
         out = self.on_classical_vals(x=x, phase_grad=phase_grad)
         return out['x'], out['phase_grad']
 
@@ -459,5 +474,5 @@ class AddScaledValIntoPhaseReg(GateWithRegisters, cirq.ArithmeticGate):  # ignor
         from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )

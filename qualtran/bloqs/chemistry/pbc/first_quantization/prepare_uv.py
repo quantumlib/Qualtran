@@ -81,7 +81,7 @@ class PrepareUVFirstQuantization(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'PREP $UV$'
 
     def build_composite_bloq(

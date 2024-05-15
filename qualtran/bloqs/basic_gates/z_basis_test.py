@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import cast
+
 import cirq
 import numpy as np
 import pytest
@@ -35,6 +37,7 @@ from qualtran.bloqs.basic_gates.z_basis import (
     _zero_state,
     _zgate,
 )
+from qualtran.drawing import Text
 
 
 def test_zero_state(bloq_autotester):
@@ -156,7 +159,7 @@ def test_zero_state_effect(bit):
 
 def test_int_state_manual():
     k = IntState(255, bitsize=8)
-    assert k.short_name() == '255'
+    assert cast(Text, k.wire_symbol(reg=None)).text == '|255>'
     assert k.pretty_name() == '|255>'
     (val,) = k.call_classically()
     assert val == 255
@@ -171,7 +174,7 @@ def test_int_state_manual():
 
 def test_int_effect_manual():
     k = IntEffect(255, bitsize=8)
-    assert k.short_name() == '255'
+    assert cast(Text, k.wire_symbol(reg=None)).text == '<255|'
     assert k.pretty_name() == '<255|'
     ret = k.call_classically(val=255)
     assert ret == ()
@@ -188,7 +191,7 @@ def test_to_cirq():
     q = bb.add(ZeroState())
     q = bb.add(ZGate(), q=q)
     cbloq = bb.finalize(q=q)
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, "_c(0): ───Z───")
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)
@@ -198,7 +201,7 @@ def test_to_cirq():
     q = bb.add(OneState())
     q = bb.add(ZGate(), q=q)
     cbloq = bb.finalize(q=q)
-    circuit, _ = cbloq.to_cirq_circuit()
+    circuit = cbloq.to_cirq_circuit()
     cirq.testing.assert_has_diagram(circuit, "_c(0): ───X───Z───")
     vec1 = cbloq.tensor_contract()
     vec2 = cirq.final_state_vector(circuit)

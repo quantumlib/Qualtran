@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian with a quantum projectile."""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import evolve, field, frozen
@@ -51,7 +51,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_and_prepare import (
 )
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -102,7 +102,7 @@ class PrepareTUVSuperpositions(Bloq):
     def adjoint(self) -> 'Bloq':
         return evolve(self, is_adjoint=not self.is_adjoint)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'PREP TUV'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -137,18 +137,20 @@ class ControlledMultiplexedCSwap3D(MultiplexedCSwap3D):
             ]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'sel':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(self.pretty_name())
+        if reg.name == 'sel':
             return TextBox('In')
-        elif soq.reg.name == 'targets':
+        elif reg.name == 'targets':
             return TextBox('×(x)')
-        elif soq.reg.name == 'junk':
+        elif reg.name == 'junk':
             return TextBox('×(y)')
-        elif soq.reg.name == 'ctrl':
-            (c_idx,) = soq.idx
+        elif reg.name == 'ctrl':
+            (c_idx,) = idx
             filled = bool(self.cvs[c_idx])
             return Circle(filled)
-        raise ValueError(f'Unknown name: {soq.reg.name}')
+        raise ValueError(f'Unknown name: {reg.name}')
 
     def build_composite_bloq(
         self, bb: BloqBuilder, ctrl: SoquetT, sel: SoquetT, targets: SoquetT, junk: SoquetT
@@ -279,7 +281,7 @@ class PrepareFirstQuantizationWithProj(PrepareOracle):
             Register('flags', QBit(), shape=(4,)),
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'PREP'
 
     def build_composite_bloq(
@@ -458,7 +460,7 @@ class SelectFirstQuantizationWithProj(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'SELECT'
 
     def build_composite_bloq(

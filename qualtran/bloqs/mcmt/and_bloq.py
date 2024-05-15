@@ -24,7 +24,7 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, Optional, Sequence, Set, Tuple, Union
 
 import attrs
 import cirq
@@ -50,7 +50,7 @@ from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import big_O, BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
@@ -158,17 +158,19 @@ class And(GateWithRegisters):
             )
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'target':
-            return directional_text_box('∧', side=soq.reg.side)
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('And')
+        if reg.name == 'target':
+            return directional_text_box('∧', side=reg.side)
 
-        (c_idx,) = soq.idx
+        (c_idx,) = idx
         filled = bool(self.cv1 if c_idx == 0 else self.cv2)
         return Circle(filled)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Decomposes a single `And` gate on 2 controls and 1 target in terms of Clifford+T gates.
 
         * And(cv).on(c1, c2, target) uses 4 T-gates and assumes target is in |0> state.
@@ -268,7 +270,9 @@ class MultiAnd(Bloq):
         )
 
     def on_classical_vals(self, ctrl: NDArray[np.uint8]) -> Dict[str, NDArray[np.uint8]]:
-        accumulate_and = np.bitwise_and.accumulate(np.equal(ctrl, self.cvs).astype(np.uint8))
+        accumulate_and = np.bitwise_and.accumulate(
+            np.equal(ctrl, np.asarray(self.cvs)).astype(np.uint8)
+        )
         junk, target = accumulate_and[1:-1], accumulate_and[-1]
         return {'ctrl': ctrl, 'junk': junk, 'target': target}
 
@@ -300,7 +304,7 @@ class MultiAnd(Bloq):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         control, ancilla, target = (
             quregs['ctrl'].flatten(),
             quregs.get('junk', np.array([])).flatten(),
@@ -320,15 +324,18 @@ class MultiAnd(Bloq):
             t=4 * num_single_and, clifford=9 * num_single_and + 2 * pre_post_cliffords
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
-            return Circle(filled=self.cvs[soq.idx[0]] == 1)
-        if soq.reg.name == 'target':
-            return directional_text_box('∧', side=soq.reg.side)
-        return directional_text_box(text=soq.pretty(), side=soq.reg.side)
-
-    def short_name(self) -> str:
-        return 'And'
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('And')
+        if reg.name == 'ctrl':
+            return Circle(filled=self.cvs[idx[0]] == 1)
+        if reg.name == 'target':
+            return directional_text_box('∧', side=reg.side)
+        if len(idx) > 0:
+            pretty_text = f'{reg.name}[{", ".join(str(i) for i in idx)}]'
+        else:
+            pretty_text = reg.name
+        return directional_text_box(text=pretty_text, side=reg.side)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(And(), len(self.cvs) - 1)}

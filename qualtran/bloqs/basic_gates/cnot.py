@@ -29,12 +29,12 @@ from qualtran import (
     CompositeBloq,
     CtrlSpec,
     DecomposeTypeError,
+    Register,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, ModPlus, WireSymbol
+from qualtran.drawing import Circle, ModPlus, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
@@ -131,12 +131,14 @@ class CNOT(Bloq):
         (target,) = target
         return cirq.CNOT(ctrl, target), {'ctrl': np.array([ctrl]), 'target': np.array([target])}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return ModPlus()
-        raise ValueError(f'Bad wire symbol soquet: {soq}')
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

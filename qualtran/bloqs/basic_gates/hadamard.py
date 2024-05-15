@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -24,8 +24,8 @@ from qualtran import (
     BloqDocSpec,
     CompositeBloq,
     DecomposeTypeError,
+    Register,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
@@ -75,11 +75,7 @@ class Hadamard(Bloq):
     ):
         import quimb.tensor as qtn
 
-        tn.add(
-            qtn.Tensor(
-                data=_HADAMARD, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
-            )
-        )
+        tn.add(qtn.Tensor(data=_HADAMARD, inds=(outgoing['q'], incoming['q']), tags=["H", tag]))
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'  # type: ignore[type-var]
@@ -92,10 +88,7 @@ class Hadamard(Bloq):
     def _t_complexity_(self):
         return TComplexity(clifford=1)
 
-    def short_name(self) -> 'str':
-        return 'H'
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox('H')
 
 

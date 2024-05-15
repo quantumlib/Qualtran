@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, Signature, Soquet, SoquetT
+from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.drawing import TextBox, WireSymbol
 
@@ -70,7 +70,7 @@ class SGate(Bloq):
         data = _SMATRIX.conj().T if self.is_adjoint else _SMATRIX
         tn.add(
             qtn.Tensor(
-                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
+                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
             )
         )
 
@@ -86,7 +86,7 @@ class SGate(Bloq):
         maybe_dag = '†' if self.is_adjoint else ''
         return f'S{maybe_dag}'
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox(self.pretty_name())
 
     def adjoint(self) -> 'Bloq':

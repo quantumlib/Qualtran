@@ -208,11 +208,11 @@ class GraphDrawer:
 
         if rowspan != 1:
             assert rowspan > 1
-            rowspan = f'rowspan="{rowspan}"'
+            rowspan_html = f'rowspan="{rowspan}"'
         else:
-            rowspan = ''
+            rowspan_html = ''
 
-        return f'<TD {rowspan} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
+        return f'<TD {rowspan_html} port="{self.ids[soq]}">{html.escape(self.soq_label(soq))}</TD>'
 
     def _get_register_tr(
         self,
@@ -376,7 +376,11 @@ class PrettyGraphDrawer(GraphDrawer):
 
         if isinstance(binst.bloq, (Split, Join)):
             return ''
-        return f'<font point-size="10">{html.escape(binst.bloq.short_name())}</font>'
+        # This wire symbol should always be a text element
+        wire_symbol_title = binst.bloq.wire_symbol(reg=None).text  # type: ignore[attr-defined]
+        if not wire_symbol_title:
+            return ''
+        return f'<font point-size="10">{html.escape(wire_symbol_title)}</font>'
 
     def soq_label(self, soq: Soquet):
         from qualtran.bloqs.util_bloqs import Join, Split

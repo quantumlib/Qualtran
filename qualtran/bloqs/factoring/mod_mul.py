@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Optional, Set, Union
+from typing import Dict, Optional, Set, Tuple, Union
 
 import attrs
 import numpy as np
@@ -34,7 +34,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
 from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
 from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
@@ -111,15 +111,14 @@ class CtrlModMul(Bloq):
         assert ctrl == 1, ctrl
         return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
 
-    def short_name(self) -> str:
-        return f'x *= {self.k} % {self.mod}'
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x *= {self.k} % {self.mod}')
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        if soq.reg.name == 'x':
-            return directional_text_box(f'*={self.k}', side=soq.reg.side)
-        raise ValueError(f"Unknown register name: {soq.reg.name}")
+        if reg.name == 'x':
+            return directional_text_box(f'*={self.k}', side=reg.side)
+        raise ValueError(f"Unknown register name: {reg.name}")
 
 
 @frozen
@@ -152,7 +151,6 @@ class MontgomeryModDbl(Bloq):
         return {'x': (2 * x) % self.p}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet) -> Dict[str, 'SoquetT']:
-
         # Allocate ancilla bits for sign and double.
         lower_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -204,8 +202,12 @@ class MontgomeryModDbl(Bloq):
         # Return the output registers.
         return {'x': x}
 
-    def short_name(self) -> str:
-        return f'x = 2 * x mod {self.p}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x = 2 * x mod {self.p}')
+        return super().wire_symbol(reg, idx)
 
 
 _K = sympy.Symbol('k_mul')

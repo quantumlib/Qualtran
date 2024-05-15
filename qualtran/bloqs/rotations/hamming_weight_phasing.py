@@ -24,7 +24,8 @@ from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
-    from qualtran.resource_counting.bloq_counts import BloqCountT, SympySymbolAllocator
+    from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
+    from qualtran.symbolics import SymbolicInt
 
 
 @attrs.frozen
@@ -79,7 +80,7 @@ class HammingWeightPhasing(GateWithRegisters):
         )
         return soqs
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'HWP_{self.bitsize}(Z^{self.exponent})'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -150,7 +151,7 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         )
 
     @cached_property
-    def b_grad(self) -> int:
+    def b_grad(self) -> 'SymbolicInt':
         return self.phase_oracle.b_grad
 
     @cached_property
@@ -165,5 +166,5 @@ class HammingWeightPhasingViaPhaseGradient(GateWithRegisters):
         x = bb.add(HammingWeightCompute(self.bitsize).adjoint(), x=x, junk=junk, out=out)
         return {'x': x, 'phase_grad': phase_grad}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'HWPG_{self.bitsize}(Z^{self.exponent})'

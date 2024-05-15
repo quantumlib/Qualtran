@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Optional, Tuple
+from typing import Iterator, Optional, Tuple
 
 import attrs
 import cirq
@@ -24,7 +24,7 @@ from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.bloqs.select_and_prepare import PrepareOracle
 from qualtran.bloqs.state_preparation import PrepareUniformSuperposition
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicFloat
+from qualtran.symbolics import SymbolicFloat
 
 
 @attrs.frozen
@@ -49,7 +49,7 @@ class PrepareUniformSuperpositionTest(PrepareOracle):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         yield PrepareUniformSuperposition(self.n, self.cvs).on_registers(target=quregs['selection'])
 
 

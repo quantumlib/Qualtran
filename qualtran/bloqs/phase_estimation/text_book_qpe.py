@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -20,14 +20,7 @@ import cirq
 from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    is_symbolic,
-    log2,
-    pi,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -221,7 +214,7 @@ class TextbookQPE(GateWithRegisters):
 
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         target_quregs = {reg.name: quregs[reg.name] for reg in self.target_registers}
         unitary_op = self.unitary.on_registers(**target_quregs)
 
