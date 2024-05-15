@@ -18,6 +18,7 @@ import pytest
 from openfermion.circuits.gates import Ryxxy
 from scipy.linalg import expm
 
+import qualtran.testing as qlt_testing
 from qualtran.bloqs.basic_gates import CNOT, Hadamard, SGate, Toffoli, XGate
 from qualtran.bloqs.chemistry.quad_fermion.givens_bloq import (
     ComplexGivensRotationByPhaseGradient,
@@ -98,3 +99,8 @@ def test_complex_givens_costs(x_bitsize: int):
     gate_counts = gate.bloq_counts()
     assert gate_counts[add_into_phasegrad_gate] == 1
     assert gate_counts[real_givens_gate] == 1
+
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook('givens_bloq')
