@@ -65,7 +65,7 @@ class KineticEnergy(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'U_T(dt)'
 
     def build_composite_bloq(self, bb: BloqBuilder, *, system: NDArray[Soquet]) -> Dict[str, SoquetT]:  # type: ignore[type-var]

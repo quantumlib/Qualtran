@@ -95,7 +95,7 @@ class MontgomeryModSub(Bloq):
         # Return the output registers.
         return {'x': x, 'y': y}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'y = y - x mod {self.p}'
 
 
@@ -170,5 +170,5 @@ class MontgomeryModNeg(Bloq):
         # Return the output registers.
         return {'x': x}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'x = -x mod {self.p}'
