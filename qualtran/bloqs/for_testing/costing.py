@@ -57,5 +57,5 @@ def make_example_costing_bloqs():
         'Func1', num_qubits=10, callees=[(TGate(), 10), (TGate().adjoint(), 10), (Hadamard(), 10)]
     )
     func2 = CostingBloq('Func2', num_qubits=3, callees=[(Toffoli(), 100)])
-    algo = CostingBloq('Algo', num_qubits=100, callees=[(func1, 1), (func2, 1)])
+    algo = CostingBloq('Algo', num_qubits=100, callees=[(func1, 2), (func2, 1)])
     return algo

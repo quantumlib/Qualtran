@@ -28,6 +28,8 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
 from qualtran.symbolics import Shaped
 
+from ...resource_counting import BloqCount, get_cost_value
+from ..basic_gates import TGate, TwoBitCSwap
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
     _symbolic_hamsim_by_gqsp,
@@ -99,4 +101,7 @@ def test_hamiltonian_simulation_by_gqsp(
 
 def test_hamiltonian_simulation_by_gqsp_t_complexity():
     hubbard_time_evolution_by_gqsp = _hubbard_time_evolution_by_gqsp.make()
-    _ = hubbard_time_evolution_by_gqsp.t_complexity()
+    t_comp = hubbard_time_evolution_by_gqsp.t_complexity()
+
+    counts = get_cost_value(hubbard_time_evolution_by_gqsp, BloqCount.for_gateset('t+tof+cswap'))
+    assert t_comp.t == counts[TwoBitCSwap()] * 7 + counts[TGate()]

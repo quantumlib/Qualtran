@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,11 +13,11 @@
 #  limitations under the License.
 import logging
 from collections import defaultdict
-from typing import Callable, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Dict, Sequence, Tuple, TYPE_CHECKING
 
 import attrs
 import networkx as nx
-from attrs import frozen
+from attrs import field, frozen
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
@@ -31,15 +31,40 @@ logger = logging.getLogger(__name__)
 BloqCountDict = Dict['Bloq', int]
 
 
+def _gateset_bloqs_to_tuple(bloqs: Sequence['Bloq']) -> Tuple['Bloq', ...]:
+    return tuple(bloqs)
+
+
 @frozen
 class BloqCount(CostKey[BloqCountDict]):
-    gateset_bloqs: Tuple['Bloq', ...]
+    """A cost which is the count of a specific set of bloqs forming a gateset.
+
+    Often, we wish to know the number of specific gates in our algorithm. This is a generic
+    CostKey that can count any gate (bloq) of interest.
+
+    The cost value type for this cost is a mapping from bloq to its count.
+
+    Args:
+        gateset_bloqs: A sequence of bloqs which we will count. Bloqs are counted according
+            to their equality operator.
+        gateset_name: A string name of the gateset. Used for display and debugging purposes.
+    """
+
+    gateset_bloqs: Sequence['Bloq'] = field(converter=_gateset_bloqs_to_tuple)
     gateset_name: str
 
     @classmethod
     def for_gateset(cls, gateset_name: str):
+        """Helper constructor to configure this cost for some common gatesets.
+
+        Args:
+            gateset_name: One of 't', 't+tof', 't+tof+cswap'. This will construct a
+                `BloqCount` cost with the indicated gates as the `gateset_bloqs`. In all
+                cases, both TGate and its adjoint are included.
+        """
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
 
+        bloqs: Tuple['Bloq', ...]
         if gateset_name == 't':
             bloqs = (TGate(), TGate(is_adjoint=True))
         elif gateset_name == 't+tof':
@@ -53,6 +78,12 @@ class BloqCount(CostKey[BloqCountDict]):
 
     @classmethod
     def for_call_graph_leaf_bloqs(cls, g: nx.DiGraph):
+        """Helper constructor to configure this cost for 'leaf' bloqs in a given call graph.
+
+        Args:
+            g: The call graph. Its leaves will be used for `gateset_bloqs`. This call graph
+                can be generated from `Bloq.call_graph()`
+        """
         leaf_bloqs = {node for node in g.nodes if not g.succ[node]}
         return cls(tuple(leaf_bloqs), gateset_name='leaf')
 
@@ -74,6 +105,7 @@ class BloqCount(CostKey[BloqCountDict]):
         return dict(totals)
 
     def zero(self) -> BloqCountDict:
+        # The additive identity of the bloq counts dictionary is an empty dictionary.
         return {}
 
     def __str__(self):
@@ -82,6 +114,12 @@ class BloqCount(CostKey[BloqCountDict]):
 
 @frozen(kw_only=True)
 class GateCounts:
+    """A data class of counts of the typical target gates in a compilation.
+
+    Specifically, this class holds counts for the number of `TGate` (and adjoint), `Toffoli`,
+    `TwoBitCSwap`, `And`, and clifford bloqs.
+    """
+
     t: int = 0
     toffoli: int = 0
     cswap: int = 0
@@ -126,34 +164,28 @@ class GateCounts:
             return ', '.join(strs)
         return '-'
 
-    @property
-    def total_n_magic(self):
-        """The total number of magic states.
+    def total_t_count(
+        self, ts_per_toffoli: int = 4, ts_per_cswap: int = 7, ts_per_and_bloq: int = 4
+    ) -> int:
+        """Get the total number of T Gates for the `GateCounts` object.
 
-        This can be used as a rough proxy for total cost. It is the sum of all the attributes
-        other than `clifford`.
+        This simply multiplies each gate type by its cost in terms of T gates, which is configurable
+        via the arguments to this method.
         """
-        return self.t + self.toffoli + self.cswap + self.and_bloq
-
-    @property
-    def total_n_magic(self):
-        """The total number of magic states.
-
-        This can be used as a rough proxy for total cost. It is the sum of all the attributes
-        other than `clifford`.
-        """
-        return self.t + self.toffoli + self.cswap + self.and_bloq
+        return (
+            self.t
+            + ts_per_toffoli * self.toffoli
+            + ts_per_cswap * self.cswap
+            + ts_per_and_bloq * self.and_bloq
+        )
 
 
 @frozen
 class QECGatesCost(CostKey[GateCounts]):
-    """Counts specifically for 'expensive' gates in a surface code error correction scheme."""
+    """Counts specifically for 'expensive' gates in a surface code error correction scheme.
 
-    ts_per_toffoli: Optional[int] = None
-    toffolis_per_and: Optional[int] = None
-    ts_per_and: Optional[int] = None
-    toffolis_per_cswap: Optional[int] = None
-    ts_per_cswap: Optional[int] = None
+    The cost value type for this CostKey is `GateCounts`.
+    """
 
     def compute(self, bloq: 'Bloq', get_callee_cost: Callable[['Bloq'], GateCounts]) -> GateCounts:
         from qualtran.bloqs.basic_gates import TGate, Toffoli, TwoBitCSwap
@@ -165,28 +197,15 @@ class QECGatesCost(CostKey[GateCounts]):
 
         # Toffolis
         if isinstance(bloq, Toffoli):
-            if self.ts_per_toffoli is not None:
-                return GateCounts(t=self.ts_per_toffoli)
-            else:
-                return GateCounts(toffoli=1)
+            return GateCounts(toffoli=1)
 
         # 'And' bloqs
         if isinstance(bloq, And) and not bloq.uncompute:
-            if self.toffolis_per_and is not None:
-                return GateCounts(toffoli=self.toffolis_per_and * self.ts_per_toffoli)
-            elif self.ts_per_and is not None:
-                return GateCounts(t=self.ts_per_and)
-            else:
-                return GateCounts(and_bloq=1)
+            return GateCounts(and_bloq=1)
 
         # CSwaps aka Fredkin
         if isinstance(bloq, TwoBitCSwap):
-            if self.toffolis_per_cswap is not None:
-                return GateCounts(toffoli=self.toffolis_per_cswap)
-            elif self.ts_per_cswap is not None:
-                return GateCounts(t=self.ts_per_cswap)
-            else:
-                return GateCounts(cswap=1)
+            return GateCounts(cswap=1)
 
         # Cliffords
         if bloq_is_clifford(bloq):
@@ -209,11 +228,4 @@ class QECGatesCost(CostKey[GateCounts]):
             raise TypeError(f"{self} values should be `GateCounts`, got {val}")
 
     def __str__(self):
-        gates = ['t']
-        if self.ts_per_toffoli is None:
-            gates.append('tof')
-        if self.toffolis_per_and is None and self.ts_per_and is None:
-            gates.append('and')
-        if self.toffolis_per_cswap is None and self.ts_per_cswap is None:
-            gates.append('cswap')
-        return ','.join(gates) + ' counts'
+        return 'gate counts'
