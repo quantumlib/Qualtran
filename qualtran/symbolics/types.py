@@ -17,7 +17,7 @@ import sympy
 from attrs import field, frozen, validators
 from cirq._doc import document
 
-SymbolicFloat = Union[int, sympy.Expr]
+SymbolicFloat = Union[float, sympy.Expr]
 document(SymbolicFloat, """A floating point value or a sympy expression.""")
 
 SymbolicInt = Union[int, sympy.Expr]
