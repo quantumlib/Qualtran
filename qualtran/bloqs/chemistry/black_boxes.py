@@ -26,7 +26,7 @@ from attrs import field, frozen
 from qualtran import Bloq, BloqBuilder, QAny, QBit, Register, Signature, Soquet, SoquetT
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -194,9 +194,6 @@ class ApplyControlledZs(Bloq):
     cvs: Tuple[int, ...] = field(converter=lambda v: (v,) if isinstance(v, int) else tuple(v))
     bitsize: int
 
-    def short_name(self) -> str:
-        return "C" * len(self.cvs) + "Z"
-
     @cached_property
     def signature(self) -> Signature:
         return Signature(
@@ -206,7 +203,9 @@ class ApplyControlledZs(Bloq):
             ]
         )
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("C" * len(self.cvs) + "Z")
         if reg.name == 'system':
             return TextBox('Z')
 

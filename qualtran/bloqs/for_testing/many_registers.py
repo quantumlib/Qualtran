@@ -65,7 +65,7 @@ class TestMultiRegister(Bloq):
         zz = bb.join(np.array([a, b, c]))
         return {'xx': xx, 'yy': yy, 'zz': zz}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'xyz'
 
 
@@ -111,5 +111,5 @@ class TestMultiTypedRegister(Bloq):
         b, c = bb.add(TestQFxp(), xx=b, yy=c)
         return {'a': a, 'b': b, 'c': c, 'd': d}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'abcd[T]'

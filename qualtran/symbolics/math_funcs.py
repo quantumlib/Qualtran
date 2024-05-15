@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import cast, Sized, Union
+from typing import cast, overload, Sized, Tuple, Union
 
 import numpy as np
 import sympy
@@ -75,6 +75,13 @@ def smin(*args):
     return min(*args)
 
 
+def prod(*args: SymbolicInt) -> SymbolicInt:
+    ret: SymbolicInt = 1
+    for arg in args:
+        ret = ret * arg
+    return ret
+
+
 def acos(x: SymbolicFloat) -> SymbolicFloat:
     if not isinstance(x, sympy.Basic):
         return np.arccos(x)
@@ -90,3 +97,17 @@ def slen(x: Union[Sized, Shaped]) -> SymbolicInt:
     if isinstance(x, Shaped):
         return x.shape[0]
     return len(x)
+
+
+@overload
+def shape(x: np.ndarray) -> Tuple[int, ...]:
+    ...
+
+
+@overload
+def shape(x: Shaped) -> Tuple[SymbolicInt, ...]:
+    ...
+
+
+def shape(x: Union[np.ndarray, Shaped]):
+    return x.shape
