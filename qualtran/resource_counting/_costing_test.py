@@ -21,7 +21,6 @@ from qualtran.bloqs.basic_gates import Hadamard, TGate
 from qualtran.bloqs.for_testing.costing import CostingBloq, make_example_costing_bloqs
 from qualtran.resource_counting import (
     CostKey,
-    CostValT,
     get_bloq_callee_counts,
     get_cost_cache,
     get_cost_value,
