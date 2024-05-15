@@ -14,7 +14,19 @@
 import itertools
 import math
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import cirq
 import numpy as np
@@ -52,8 +64,8 @@ if TYPE_CHECKING:
 
     from qualtran.drawing import WireSymbol
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -130,7 +142,7 @@ class Add(Bloq):
         for a, b in itertools.product(range(N_a), range(N_b)):
             unitary[a, b, a, int(math.fmod(a + b, N_b))] = 1
 
-        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=unitary, inds=inds, tags=[self.pretty_name(), tag]))
 
     def decompose_bloq(self) -> 'CompositeBloq':
         return decompose_from_cirq_style_method(self)
@@ -143,17 +155,16 @@ class Add(Bloq):
         N = 2**b_bitsize if unsigned else 2 ** (b_bitsize - 1)
         return {'a': a, 'b': int(math.fmod(a + b, N))}
 
-    def short_name(self) -> str:
-        return "a+b"
-
     def _circuit_diagram_info_(self, _) -> cirq.CircuitDiagramInfo:
         wire_symbols = ["In(x)"] * int(self.a_dtype.bitsize)
         wire_symbols += ["In(y)/Out(x+y)"] * int(self.b_dtype.bitsize)
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box, Text
 
+        if reg is None:
+            return Text("a+b")
         if reg.name == 'a':
             return directional_text_box('a', side=reg.side)
         elif reg.name == 'b':
@@ -197,7 +208,7 @@ class Add(Bloq):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
@@ -306,7 +317,7 @@ class OutOfPlaceAdder(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[m
     def with_registers(self, *new_registers: Union[int, Sequence[int]]):
         raise NotImplementedError("no need to implement with_registers.")
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "c = a + b"
 
     def decompose_from_registers(
@@ -489,7 +500,7 @@ class SimpleAddConstant(Bloq):
         else:
             return {'x': x}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return f'x += {self.k}'
 
 

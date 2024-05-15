@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import Counter
 from functools import cached_property
-from typing import Iterable, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Iterable, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from attrs import field, frozen
@@ -22,14 +22,7 @@ from numpy.typing import NDArray
 
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QBit, Register, Signature
 from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-from qualtran.resource_counting.symbolic_counting_utils import (
-    is_symbolic,
-    Shaped,
-    slen,
-    smax,
-    smin,
-    SymbolicInt,
-)
+from qualtran.symbolics import is_symbolic, Shaped, slen, smax, smin, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
@@ -395,7 +388,7 @@ class GeneralizedQSP(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: 'cirq.DecompositionContext', signal, **quregs: NDArray['cirq.Qid']  # type: ignore[type-var]
-    ) -> 'cirq.OP_TREE':
+    ) -> Iterator['cirq.OP_TREE']:
         (signal_qubit,) = signal
 
         num_inverse_applications = self.negative_power

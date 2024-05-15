@@ -13,7 +13,18 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterable, Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
@@ -42,13 +53,13 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop.bit_tools import iter_bits
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
 from qualtran.drawing import WireSymbol
-from qualtran.drawing.musical_score import TextBox
+from qualtran.drawing.musical_score import Text, TextBox
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
     from qualtran.simulation.classical_sim import ClassicalValT
+    from qualtran.symbolics import SymbolicInt
 
 
 @frozen
@@ -62,8 +73,12 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
     def signature(self) -> Signature:
         return Signature.build_from_dtypes(x=QUInt(self.bitsize), target=QBit())
 
-    def short_name(self) -> str:
-        return f'x<{self.less_than_val}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x<{self.less_than_val}')
+        return super().wire_symbol(reg, idx)
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, self.less_than_val, [2]
@@ -90,7 +105,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Decomposes the gate into 4N And and And† operations for a T complexity of 4N.
 
         The decomposition proceeds from the most significant qubit -bit 0- to the least significant
@@ -217,7 +232,7 @@ class BiQubitsMixer(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         x, y, ancilla = quregs['x'], quregs['y'], quregs['ancilla']
         x_msb, x_lsb = x
         y_msb, y_lsb = y
@@ -310,7 +325,7 @@ class SingleQubitCompare(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         a = quregs['a']
         b = quregs['b']
         less_than = quregs['less_than']
@@ -358,7 +373,7 @@ _SQ_CMP_DOC = BloqDocSpec(bloq_cls=SingleQubitCompare, examples=[_sq_cmp])
 
 def _equality_with_zero(
     context: cirq.DecompositionContext, qubits: Sequence[cirq.Qid], z: cirq.Qid
-) -> cirq.OP_TREE:
+) -> Iterator[cirq.OP_TREE]:
     """Helper decomposition used in `LessThanEqual`"""
     if len(qubits) == 1:
         (q,) = qubits
@@ -428,8 +443,12 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         x_val, y_val, target_val = register_vals
         return x_val, y_val, target_val ^ (x_val <= y_val)
 
-    def short_name(self) -> str:
-        return 'x <= y'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('x <= y')
+        return super().wire_symbol(reg, idx)
 
     def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': y, 'target': target ^ (x <= y)}
@@ -451,7 +470,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
     def _decompose_via_tree(
         self, context: cirq.DecompositionContext, X: Sequence[cirq.Qid], Y: Sequence[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if len(X) == 1:
             return
         if len(X) == 2:
@@ -467,7 +486,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         lhs, rhs, (target,) = list(quregs['x']), list(quregs['y']), quregs['target']
 
         n = min(len(lhs), len(rhs))
@@ -599,16 +618,15 @@ class GreaterThan(Bloq):
             a=QUInt(self.a_bitsize), b=QUInt(self.b_bitsize), target=QBit()
         )
 
-    def short_name(self) -> str:
-        return "a>b"
-
     def _t_complexity_(self) -> 'TComplexity':
         # TODO Determine precise clifford count and/or ignore.
         # See: https://github.com/quantumlib/Qualtran/issues/219
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanEqual(self.a_bitsize, self.b_bitsize))
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text("a>b")
         if reg.name == 'a':
             return TextBox("In(a)")
         if reg.name == 'b':
@@ -799,8 +817,12 @@ class LinearDepthGreaterThan(Bloq):
         # Return the output registers.
         return {'a': a, 'b': b, 'target': target}
 
-    def short_name(self) -> str:
-        return "a > b"
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('a > b')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -836,10 +858,9 @@ class GreaterThanConstant(Bloq):
         # See: https://github.com/quantumlib/Qualtran/issues/217
         return t_complexity(LessThanConstant(self.bitsize, less_than_val=self.val))
 
-    def short_name(self) -> str:
-        return f"x > {self.val}"
-
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text(f"x > {self.val}")
         if reg.name == 'x':
             return TextBox("In(x)")
         elif reg.name == 'target':
@@ -889,10 +910,9 @@ class EqualsAConstant(Bloq):
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(t=4 * (self.bitsize - 1))
 
-    def short_name(self) -> str:
-        return f"x == {self.val}"
-
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
+        if reg is None:
+            return Text(f"x == {self.val}")
         if reg.name == 'x':
             return TextBox("In(x)")
         elif reg.name == 'target':

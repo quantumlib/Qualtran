@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import subprocess
 from functools import cached_property
 from typing import Dict, Type, Union
 
@@ -130,8 +131,9 @@ def test_partition_as_cirq_op():
     assert np.allclose(unitary, bloq_to_dense(CNOT()))
 
     bloq = TestPartition(test_bloq=TestMultiRegister())
-    circuit, _ = bloq.decompose_bloq().to_cirq_circuit(
-        cirq.ops.SimpleQubitManager(), test_regs=cirq.NamedQubit.range(12, prefix='system')
+    circuit = bloq.decompose_bloq().to_cirq_circuit(
+        qubit_manager=cirq.ops.SimpleQubitManager(),
+        cirq_quregs={'test_regs': cirq.NamedQubit.range(12, prefix='system')},
     )
     assert (
         circuit.to_text_diagram(transpose=True)
@@ -290,3 +292,8 @@ def test_power_circuit_diagram():
 @pytest.mark.notebook
 def test_notebook():
     execute_notebook('util_bloqs')
+
+
+def test_no_circular_import():
+    # There was a circular import that would only be triggered by this import incantation
+    subprocess.check_call(['python', '-c', 'from qualtran.bloqs import util_bloqs'])

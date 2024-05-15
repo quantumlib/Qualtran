@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -37,7 +37,7 @@ from qualtran import (
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
 from qualtran.cirq_interop import CirqQuregT, decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 from .t_gate import TGate
@@ -68,9 +68,6 @@ class TwoBitSwap(Bloq):
         y: the second bit
     """
 
-    def short_name(self) -> str:
-        return 'swap'
-
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(x=1, y=1)
@@ -96,7 +93,7 @@ class TwoBitSwap(Bloq):
         matrix = _swap_matrix()
         out_inds = [outgoing['x'], outgoing['y']]
         in_inds = [incoming['x'], incoming['y']]
-        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=["swap", tag]))
 
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
@@ -137,7 +134,7 @@ class TwoBitCSwap(Bloq):
         ctrl: NDArray[cirq.Qid],  # type: ignore[type-var]
         x: NDArray[cirq.Qid],  # type: ignore[type-var]
         y: NDArray[cirq.Qid],  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         (ctrl,) = ctrl
         (x,) = x
         (y,) = y
@@ -163,7 +160,7 @@ class TwoBitCSwap(Bloq):
         matrix = _controlled_swap_matrix()
         out_inds = [outgoing['ctrl'], outgoing['x'], outgoing['y']]
         in_inds = [incoming['ctrl'], incoming['x'], incoming['y']]
-        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=matrix, inds=out_inds + in_inds, tags=["swap", tag]))
 
     def on_classical_vals(
         self, ctrl: 'ClassicalValT', x: 'ClassicalValT', y: 'ClassicalValT'
@@ -183,10 +180,9 @@ class TwoBitCSwap(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def short_name(self) -> str:
-        return 'swap'
-
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg is None:
+            return Text('swap')
         if reg.name == 'ctrl':
             return Circle(filled=True)
         else:
@@ -233,10 +229,9 @@ class Swap(Bloq):
     ) -> Dict[str, 'ClassicalValT']:
         return {'x': y, 'y': x}
 
-    def short_name(self) -> str:
-        return 'swap'
-
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
+        if reg is None:
+            return Text('swap')
         if reg.name == 'x':
             return TextBox('×(x)')
         elif reg.name == 'y':
@@ -302,9 +297,6 @@ class CSwap(GateWithRegisters):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def short_name(self) -> str:
-        return r'x↔y'
-
     @classmethod
     def make_on(
         cls, **quregs: Union[Sequence[cirq.Qid], NDArray[cirq.Qid]]  # type: ignore[type-var]
@@ -319,7 +311,9 @@ class CSwap(GateWithRegisters):
             )
         return cirq.CircuitDiagramInfo(("@",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize)
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(r'x↔y')
         if reg.name == 'x':
             return TextBox('×(x)')
         elif reg.name == 'y':

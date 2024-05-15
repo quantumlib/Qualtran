@@ -115,7 +115,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         _add_my_tensors_from_gate(
             self.cirq_gate,
             self.signature,
-            self.short_name(),
+            str(self.cirq_gate),
             tn=tn,
             tag=tag,
             incoming=incoming,

@@ -13,7 +13,7 @@
 #  limitations under the License.
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Iterator, Set, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -25,13 +25,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, QFxp, QUInt, Signature
 from qualtran.bloqs.basic_gates import Hadamard, TwoBitSwap
 from qualtran.bloqs.rotations import AddIntoPhaseGrad
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    is_symbolic,
-    log2,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, is_symbolic, log2, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -114,7 +108,7 @@ class ApproximateQFT(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if self.bitsize == 1:
             yield cirq.H(*quregs['q'])
             return

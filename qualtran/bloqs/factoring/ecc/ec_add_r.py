@@ -13,13 +13,13 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict
+from typing import Dict, Optional, Tuple, Union
 
 import sympy
 from attrs import frozen
 
-from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QUInt, Register, Signature, Soquet
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran import Bloq, bloq_example, BloqDocSpec, QBit, QUInt, Register, Signature
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.simulation.classical_sim import ClassicalValT
 
 from .ec_point import ECPoint
@@ -67,7 +67,7 @@ class ECAddR(Bloq):
             [Register('ctrl', QBit()), Register('x', QUInt(self.n)), Register('y', QUInt(self.n))]
         )
 
-    def on_classical_vals(self, ctrl, x, y) -> Dict[str, 'ClassicalValT']:
+    def on_classical_vals(self, ctrl, x, y) -> Dict[str, Union['ClassicalValT', sympy.Expr]]:
         if ctrl == 0:
             return {'ctrl': ctrl, 'x': x, 'y': y}
 
@@ -75,13 +75,16 @@ class ECAddR(Bloq):
         result: ECPoint = A + self.R
         return {'ctrl': 1, 'x': result.x, 'y': result.y}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
             return Circle()
-        if soq.reg.name == 'x':
+        if reg.name == 'x':
             return TextBox(f'$+{self.R.x}$')
-        if soq.reg.name == 'y':
+        if reg.name == 'y':
             return TextBox(f'$+{self.R.y}$')
+        raise ValueError(f'Unrecognized register name {reg.name}')
 
     def __str__(self):
         return 'ECAddR'
@@ -143,13 +146,18 @@ class ECWindowAddR(Bloq):
             ]
         )
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'ECWindowAddR({self.n=})')
+        if reg.name == 'ctrl':
             return Circle()
-        if soq.reg.name == 'x':
+        if reg.name == 'x':
             return TextBox(f'$+{self.R.x}$')
-        if soq.reg.name == 'y':
+        if reg.name == 'y':
             return TextBox(f'$+{self.R.y}$')
+        raise ValueError(f'Unrecognized register name {reg.name}')
 
     def __str__(self):
         return f'ECWindowAddR({self.n=})'

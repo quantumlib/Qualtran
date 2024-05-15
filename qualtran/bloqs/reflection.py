@@ -14,7 +14,7 @@
 r"""Bloq to reflect about zero."""
 
 from functools import cached_property
-from typing import Dict, Iterable, Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -23,7 +23,7 @@ import numpy as np
 from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QAny, Register, Signature, Soquet
 from qualtran.bloqs.basic_gates import Toffoli
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
-from qualtran.drawing import Circle, WireSymbol
+from qualtran.drawing import Circle, Text, WireSymbol
 from qualtran.resource_counting.generalizers import ignore_split_join
 
 if TYPE_CHECKING:
@@ -55,18 +55,17 @@ class Reflection(Bloq):
                 f"cvs must be same length as bitsizes: {len(self.cvs)} vs {len(self.bitsizes)}"
             )
 
-    def short_name(self) -> str:
-        return 'Refl'
-
     @cached_property
     def signature(self) -> Signature:
         return Signature(
             [Register(f'reg{i}', QAny(bitsize=b)) for i, b in enumerate(self.bitsizes)]
         )
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        idx = int(reg.name[3:])
-        filled = bool(self.cvs[idx])
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('Refl')
+        cvs_idx = int(reg.name[3:])
+        filled = bool(self.cvs[cvs_idx])
         return Circle(filled)
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **regs) -> Dict[str, 'Soquet']:

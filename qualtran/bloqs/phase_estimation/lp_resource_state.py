@@ -14,7 +14,7 @@
 
 """Resource states proposed by A. Luis and J. Peřina (1996) for optimal phase measurements"""
 from functools import cached_property
-from typing import Set, Tuple, TYPE_CHECKING
+from typing import Iterator, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
@@ -35,7 +35,7 @@ from qualtran import (
 from qualtran.bloqs.basic_gates import CZPowGate, GlobalPhase, Hadamard, OnEach, Ry, Rz, XGate
 from qualtran.bloqs.mcmt import MultiControlPauli
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.resource_counting.symbolic_counting_utils import is_symbolic, pi, SymbolicInt
+from qualtran.symbolics import acos, is_symbolic, pi, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -64,12 +64,12 @@ class LPRSInterimPrep(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build(m=self.bitsize, anc=1)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'LPRS'
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         q, anc = quregs['m'].tolist()[::-1], quregs['anc']
@@ -129,7 +129,7 @@ class LPResourceState(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         """Use the _LPResourceStateHelper and do a single round of amplitude amplification."""
         q = quregs['m'].flatten().tolist()
         anc, flag = context.qubit_manager.qalloc(2)
@@ -160,8 +160,6 @@ class LPResourceState(GateWithRegisters):
         context.qubit_manager.qfree([flag, anc])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        from qualtran.resource_counting.symbolic_counting_utils import acos
-
         flag_angle = acos(1 / (1 + 2**self.bitsize))
 
         return {
