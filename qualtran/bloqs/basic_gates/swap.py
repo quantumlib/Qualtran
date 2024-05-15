@@ -182,7 +182,7 @@ class TwoBitCSwap(Bloq):
 
     def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:
-            return Text('swap')
+            return Text('')
         if reg.name == 'ctrl':
             return Circle(filled=True)
         else:
@@ -231,7 +231,7 @@ class Swap(Bloq):
 
     def wire_symbol(self, reg: Optional['Register'], idx: Tuple[int, ...] = ()) -> 'WireSymbol':
         if reg is None:
-            return Text('swap')
+            return Text('')
         if reg.name == 'x':
             return TextBox('×(x)')
         elif reg.name == 'y':
@@ -313,7 +313,7 @@ class CSwap(GateWithRegisters):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text(r'x↔y')
+            return Text('')
         if reg.name == 'x':
             return TextBox('×(x)')
         elif reg.name == 'y':

@@ -153,7 +153,7 @@ class SU2RotationGate(GateWithRegisters):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
-            return Text("SU_2")
+            return Text("")
 
         return TextBox(
             f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
