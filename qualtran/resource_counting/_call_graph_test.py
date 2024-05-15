@@ -31,7 +31,7 @@ from qualtran.resource_counting import (
     get_bloq_callee_counts,
     SympySymbolAllocator,
 )
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 
 @frozen

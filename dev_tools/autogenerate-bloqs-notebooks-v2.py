@@ -62,8 +62,10 @@ import qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv
 import qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_t
 import qualtran.bloqs.chemistry.pbc.first_quantization.select_uv
+import qualtran.bloqs.chemistry.quad_fermion.givens_bloq
 import qualtran.bloqs.chemistry.sf.single_factorization
 import qualtran.bloqs.chemistry.sparse.prepare
+import qualtran.bloqs.chemistry.sparse.walk_operator
 import qualtran.bloqs.chemistry.thc.prepare
 import qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt
 import qualtran.bloqs.chemistry.trotter.grid_ham.qvr
@@ -269,6 +271,14 @@ CHEMISTRY: List[NotebookSpecV2] = [
         ],
         directory=f'{SOURCE_DIR}/bloqs/chemistry/trotter/hubbard',
     ),
+    NotebookSpecV2(
+        title='Givens Rotations',
+        module=qualtran.bloqs.chemistry.quad_fermion.givens_bloq,
+        bloq_specs=[
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._REAL_GIVENS_DOC,
+            qualtran.bloqs.chemistry.quad_fermion.givens_bloq._CPLX_GIVENS_DOC,
+        ],
+    ),
 ]
 
 # --------------------------------------------------------------------------
@@ -426,6 +436,11 @@ ROT_QFT_PE = [
         title='Qubitization Walk Operator',
         module=qualtran.bloqs.qubitization_walk_operator,
         bloq_specs=[qualtran.bloqs.qubitization_walk_operator._QUBITIZATION_WALK_DOC],
+    ),
+    NotebookSpecV2(
+        title='Qubitization Phase Estimation',
+        module=qualtran.bloqs.phase_estimation.qubitization_qpe,
+        bloq_specs=[qualtran.bloqs.phase_estimation.qubitization_qpe._QUBITIZATION_QPE_DOC],
     ),
 ]
 

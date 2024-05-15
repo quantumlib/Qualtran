@@ -21,7 +21,11 @@ from qualtran._infra.gate_with_registers import get_named_qubits, total_bits
 from qualtran.bloqs.chemistry.ising import get_1d_ising_hamiltonian
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlPauli
 from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
-from qualtran.bloqs.qubitization_walk_operator import _walk_op, QubitizationWalkOperator
+from qualtran.bloqs.qubitization_walk_operator import (
+    _walk_op,
+    _walk_op_chem_sparse,
+    QubitizationWalkOperator,
+)
 from qualtran.bloqs.reflection_using_prepare_test import construct_gate_helper_and_qubit_order
 from qualtran.bloqs.state_preparation import StatePreparationAliasSampling
 from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
@@ -29,6 +33,10 @@ from qualtran.testing import assert_valid_bloq_decomposition, execute_notebook
 
 def test_qubitization_walk_operator_autotest(bloq_autotester):
     bloq_autotester(_walk_op)
+
+
+def test_qubitization_walk_operator_chem_sparse_autotest(bloq_autotester):
+    bloq_autotester(_walk_op_chem_sparse)
 
 
 def walk_operator_for_pauli_hamiltonian(ham: cirq.PauliSum, eps: float) -> QubitizationWalkOperator:
@@ -87,6 +95,22 @@ def test_qubitization_walk_operator(num_sites: int, eps: float):
         cirq.testing.assert_allclose_up_to_global_phase(
             overlap, eig_val / qubitization_lambda, atol=1e-6
         )
+
+
+def test_qubitization_walk_operator_adjoint():
+    num_sites, eps = 4, 2e-1
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
+    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    walk_inv_tensor = walk.adjoint().tensor_contract()
+    walk_adj_tensor = Adjoint(walk).tensor_contract()
+    np.testing.assert_allclose(walk_inv_tensor, walk_adj_tensor)
+
+
+def test_t_complexity_for_controlled_and_adjoint():
+    num_sites, eps = 4, 2e-1
+    ham = get_1d_ising_hamiltonian(cirq.LineQubit.range(num_sites))
+    walk = walk_operator_for_pauli_hamiltonian(ham, eps)
+    assert walk.controlled().adjoint().t_complexity() == walk.adjoint().controlled().t_complexity()
 
 
 def test_qubitization_walk_operator_diagrams():
