@@ -1,4 +1,4 @@
-#  Copyright 2023 Google LLC
+#  Copyright 2024 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,23 +12,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""Counting resource usage (bloqs, qubits)
+from qualtran.bloqs.for_testing.costing import make_example_costing_bloqs
+from qualtran.resource_counting import format_call_graph_debug_text
 
-isort:skip_file
-"""
 
-from ._generalization import GeneralizerT
-
-from ._call_graph import (
-    BloqCountT,
-    big_O,
-    SympySymbolAllocator,
-    get_bloq_callee_counts,
-    get_bloq_call_graph,
-    build_cbloq_call_graph,
-    format_call_graph_debug_text,
-)
-
-from ._costing import GeneralizerT, get_cost_value, get_cost_cache, query_costs, CostKey, CostValT
-
-from . import generalizers
+def test_costing_bloqs():
+    algo = make_example_costing_bloqs()
+    g, _ = algo.call_graph()
+    assert (
+        format_call_graph_debug_text(g)
+        == """\
+Algo -- 1 -> Func1
+Algo -- 1 -> Func2
+Func1 -- 10 -> Hadamard()
+Func1 -- 10 -> TGate()
+Func1 -- 10 -> TGate(is_adjoint=True)
+Func2 -- 100 -> Toffoli()
+Toffoli() -- 4 -> TGate()"""
+    )

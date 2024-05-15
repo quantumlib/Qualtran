@@ -20,7 +20,7 @@ import attrs
 import cirq
 import numpy as np
 import sympy
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
