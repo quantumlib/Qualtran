@@ -310,8 +310,12 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
         )
         return self.on_registers(**all_quregs), out_quregs
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         from qualtran.cirq_interop._cirq_to_bloq import _wire_symbol_from_gate
+        from qualtran.drawing import Text
+
+        if reg is None:
+            return Text(self.pretty_name())
 
         return _wire_symbol_from_gate(self, self.signature, reg, idx)
 
@@ -515,13 +519,7 @@ class GateWithRegisters(Bloq, cirq.Gate, metaclass=abc.ABCMeta):
             from qualtran.cirq_interop._cirq_to_bloq import _add_my_tensors_from_gate
 
             _add_my_tensors_from_gate(
-                self,
-                self.signature,
-                self.short_name(),
-                tn,
-                tag,
-                incoming=incoming,
-                outgoing=outgoing,
+                self, self.signature, str(self), tn, tag, incoming=incoming, outgoing=outgoing
             )
         else:
             return super().add_my_tensors(tn, tag, incoming=incoming, outgoing=outgoing)

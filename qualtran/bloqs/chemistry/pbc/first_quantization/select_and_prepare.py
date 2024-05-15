@@ -13,7 +13,7 @@
 #  limitations under the License.
 r"""SELECT and PREPARE for the first quantized chemistry Hamiltonian."""
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 import numpy as np
 from attrs import frozen
@@ -39,7 +39,7 @@ from qualtran.bloqs.chemistry.pbc.first_quantization.select_t import SelectTFirs
 from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import SelectUVFirstQuantization
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.swap_network import MultiplexedCSwap
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     from qualtran import Soquet
@@ -71,7 +71,7 @@ class PrepareTUVSuperpositions(Bloq):
     def signature(self) -> Signature:
         return Signature.build(tuv=1, uv=1)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'PREP TUV'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
@@ -157,7 +157,9 @@ class MultiplexedCSwap3D(Bloq):
         )
         return merged_qubits.reshape(out_shape)
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(self.pretty_name())
         if reg.name == 'sel':
             return TextBox('In')
         elif reg.name == 'targets':
@@ -166,7 +168,7 @@ class MultiplexedCSwap3D(Bloq):
             return TextBox('×(y)')
         raise ValueError(f'Unknown name: {reg.name}')
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'MultiSwap'
 
     def build_composite_bloq(
@@ -267,7 +269,7 @@ class PrepareFirstQuantization(PrepareOracle):
     def junk_registers(self) -> Tuple[Register, ...]:
         return (Register("succ_nu", QBit()), Register("plus_t", QBit()))
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'PREP'
 
     def build_composite_bloq(
@@ -432,7 +434,7 @@ class SelectFirstQuantization(SelectOracle):
             [*self.control_registers, *self.selection_registers, *self.target_registers]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'SELECT'
 
     def build_composite_bloq(

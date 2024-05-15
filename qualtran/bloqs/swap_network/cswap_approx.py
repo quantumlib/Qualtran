@@ -93,7 +93,7 @@ class CSwapApprox(GateWithRegisters):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return '~swap'
 
     def _t_complexity_(self) -> TComplexity:

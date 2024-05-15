@@ -14,7 +14,18 @@
 
 """Quantum read-only memory."""
 from functools import cached_property
-from typing import Callable, Dict, Iterable, Iterator, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
@@ -27,7 +38,7 @@ from qualtran._infra.gate_with_registers import merge_qubits
 from qualtran.bloqs.basic_gates import CNOT
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 from qualtran.bloqs.multiplexers.unary_iteration_bloq import UnaryIterationGate
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT
 from qualtran.simulation.classical_sim import ClassicalValT
 from qualtran.symbolics import bit_length, is_symbolic, prod, shape, Shaped, SymbolicInt
@@ -321,7 +332,9 @@ class QROM(UnaryIterationGate):
 
         return _wire_symbol_to_cirq_diagram_info(self, args)
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('QROM')
         name = reg.name
         if name == 'selection':
             return TextBox('In')

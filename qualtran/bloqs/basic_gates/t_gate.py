@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import attrs
 import numpy as np
@@ -87,7 +87,7 @@ class TGate(Bloq):
         data = _TMATRIX.conj().T if self.is_adjoint else _TMATRIX
         tn.add(
             qtn.Tensor(
-                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
+                data=data, inds=(outgoing['q'], incoming['q']), tags=[self.pretty_name(), tag]
             )
         )
 
@@ -111,7 +111,7 @@ class TGate(Bloq):
         maybe_dag = 'is_adjoint=True' if self.is_adjoint else ''
         return f'TGate({maybe_dag})'
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         return TextBox(self.pretty_name())
 
 
