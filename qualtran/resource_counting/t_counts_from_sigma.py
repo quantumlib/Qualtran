@@ -17,7 +17,7 @@ from typing import Mapping, Optional, Tuple, Type, TYPE_CHECKING
 
 import cirq
 
-from qualtran.resource_counting.symbolic_counting_utils import ceil, SymbolicInt
+from qualtran.symbolics import ceil, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import Bloq

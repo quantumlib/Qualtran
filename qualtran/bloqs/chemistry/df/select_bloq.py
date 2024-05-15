@@ -56,7 +56,7 @@ class ProgRotGateArray(Bloq):
     num_eig: int
     num_bits_rot: int
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return "Rotations"
 
     @cached_property

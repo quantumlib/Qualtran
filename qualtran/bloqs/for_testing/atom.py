@@ -60,7 +60,7 @@ class TestAtom(Bloq):
             qtn.Tensor(
                 data=np.array([[0, 1], [1, 0]]),
                 inds=(outgoing['q'], incoming['q']),
-                tags=[self.short_name(), tag],
+                tags=[self.pretty_name(), tag],
             )
         )
 
@@ -73,11 +73,11 @@ class TestAtom(Bloq):
         else:
             return 'TestAtom()'
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         if self.tag:
             return self.tag
         else:
-            return 'Atom'
+            return 'TestAtom'
 
 
 @frozen
@@ -106,12 +106,12 @@ class TestTwoBitOp(Bloq):
             qtn.Tensor(
                 data=np.array([[_I, _NULL], [_NULL, _X]]),
                 inds=(outgoing['ctrl'], incoming['ctrl'], outgoing['target'], incoming['target']),
-                tags=[self.short_name(), tag],
+                tags=[self.pretty_name(), tag],
             )
         )
 
-    def short_name(self) -> str:
-        return 'op'
+    def pretty_name(self) -> str:
+        return 'TestTwoBitOp'
 
 
 @frozen(repr=False)
@@ -151,7 +151,7 @@ class TestGWRAtom(GateWithRegisters):
             qtn.Tensor(
                 data=self._unitary_(),
                 inds=(outgoing['q'], incoming['q']),
-                tags=[self.short_name(), tag],
+                tags=[self.pretty_name(), tag],
             )
         )
 
@@ -169,7 +169,7 @@ class TestGWRAtom(GateWithRegisters):
         dagger = '†' if self.is_adjoint else ''
         return f'TestGWRAtom({tag}){dagger}'
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         if self.tag:
             return self.tag
         else:

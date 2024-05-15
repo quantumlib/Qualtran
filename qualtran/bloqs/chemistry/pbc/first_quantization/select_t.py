@@ -57,7 +57,7 @@ class SelectTFirstQuantization(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return r'SEL $T$'
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:

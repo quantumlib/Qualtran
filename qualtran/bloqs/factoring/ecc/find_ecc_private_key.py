@@ -22,7 +22,7 @@ from qualtran import Bloq, bloq_example, BloqBuilder, BloqDocSpec, QUInt, Signat
 from qualtran.bloqs.basic_gates import IntState
 from qualtran.bloqs.util_bloqs import Free
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.symbolics import SymbolicInt
 
 from .ec_phase_estimate_r import ECPhaseEstimateR
 from .ec_point import ECPoint

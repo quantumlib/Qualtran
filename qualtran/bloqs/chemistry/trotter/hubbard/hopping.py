@@ -120,7 +120,7 @@ class HoppingTile(Bloq):
         if isinstance(self.length, int) and self.length % 2 != 0:
             raise ValueError('Only even length lattices are supported')
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         l = 'p' if self.pink else 'g'
         return f'H_h^{l}'
 

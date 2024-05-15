@@ -12,15 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from typing import cast
+
 import pytest
 
 from qualtran.bloqs.factoring.mod_add import CtrlModAddK, CtrlScaleModAdd, MontgomeryModAdd
+from qualtran.drawing import Text
 from qualtran.testing import assert_valid_bloq_decomposition
 
 
 def test_ctrl_scale_mod_add():
     bloq = CtrlScaleModAdd(k=123, mod=13 * 17, bitsize=8)
-    assert bloq.short_name() == 'y += x*123 % 221'
+    assert cast(Text, bloq.wire_symbol(reg=None)).text == 'y += x*123 % 221'
 
     counts = bloq.bloq_counts()
     ((bloq, n),) = counts.items()
@@ -29,7 +32,7 @@ def test_ctrl_scale_mod_add():
 
 def test_ctrl_mod_add_k():
     bloq = CtrlModAddK(k=123, mod=13 * 17, bitsize=8)
-    assert bloq.short_name() == 'x += 123 % 221'
+    assert cast(Text, bloq.wire_symbol(reg=None)).text == 'x += 123 % 221'
 
     counts = bloq.bloq_counts()
     ((bloq, n),) = counts.items()
