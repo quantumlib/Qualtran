@@ -644,7 +644,7 @@ class Subtract(Bloq):
     Args:
         a_dtype: Quantum datatype used to represent the integer a.
         b_dtype: Quantum datatype used to represent the integer b. Must be large
-            enough to hold the result in the output register of a + b, or else it simply
+            enough to hold the result in the output register of a - b, or else it simply
             drops the most significant bits. If not specified, b_dtype is set to a_dtype.
 
     Registers:
