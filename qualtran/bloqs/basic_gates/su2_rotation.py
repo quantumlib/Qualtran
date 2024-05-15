@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import sympy
@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.basic_gates import GlobalPhase, Ry, ZPowGate
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import TextBox
+from qualtran.drawing import Text, TextBox
 from qualtran.symbolics import is_symbolic, SymbolicFloat
 
 if TYPE_CHECKING:
@@ -120,7 +120,7 @@ class SU2RotationGate(GateWithRegisters):
             qtn.Tensor(
                 data=self.rotation_matrix,
                 inds=(outgoing['q'], incoming['q']),
-                tags=[self.short_name(), tag],
+                tags=[self.pretty_name(), tag],
             )
         )
 
@@ -151,7 +151,10 @@ class SU2RotationGate(GateWithRegisters):
     def pretty_name(self) -> str:
         return 'SU_2'
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text("SU_2")
+
         return TextBox(
             f"{self.pretty_name()}({self.theta}, {self.phi}, {self.lambd}, {self.global_shift})"
         )

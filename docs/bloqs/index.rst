@@ -49,6 +49,7 @@ Bloqs Library
     chemistry/trotter/trotterized_unitary.ipynb
     chemistry/trotter/ising/ising.ipynb
     chemistry/trotter/hubbard/hubbard.ipynb
+    chemistry/quad_fermion/givens_bloq.ipynb
 
 .. toctree::
     :maxdepth: 2

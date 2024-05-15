@@ -14,7 +14,7 @@
 """Bloqs for the Potential energy of a 3D grid based Hamiltonian."""
 
 from functools import cached_property
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 from attrs import field, frozen
@@ -41,6 +41,7 @@ from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
 from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import QuantumVariableRotation
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.util_bloqs import Cast
+from qualtran.drawing import Text, WireSymbol
 
 
 @frozen
@@ -85,8 +86,12 @@ class PairPotential(Bloq):
     def pretty_name(self) -> str:
         return "PairPotential"
 
-    def short_name(self) -> str:
-        return f'U_{self.label}(dt)_ij'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'U_{self.label}(dt)_ij')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(
         self, bb: BloqBuilder, *, system_i: SoquetT, system_j: SoquetT
@@ -220,8 +225,12 @@ class PotentialEnergy(Bloq):
     def pretty_name(self) -> str:
         return "PotentialEnergy"
 
-    def short_name(self) -> str:
-        return f'U_{self.label}(dt)'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'U_{self.label}(dt)')
+        return super().wire_symbol(reg, idx)
 
     def build_composite_bloq(self, bb: BloqBuilder, *, system: SoquetT) -> Dict[str, SoquetT]:
         if isinstance(system, Soquet):

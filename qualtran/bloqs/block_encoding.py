@@ -87,7 +87,7 @@ class BlackBoxSelect(Bloq):
     def system_bitsize(self):
         return sum(reg.total_bits() for reg in self.select.target_registers)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'SEL'
 
     @cached_property
@@ -178,7 +178,7 @@ class BlackBoxPrepare(Bloq):
         )
         return {'selection': selection, 'junk': junk}
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'Prep'
 
 
@@ -234,7 +234,7 @@ class BlackBoxBlockEncoding(Bloq):
             ]
         )
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'B[V]'
 
     def build_composite_bloq(
@@ -281,8 +281,8 @@ class ChebyshevPolynomial(Bloq):
         if self.order < 1:
             raise ValueError(f"order must be greater >= 1. Found {self.order}.")
 
-    def short_name(self) -> str:
-        return f"T_{self.order}[{self.block_encoding.short_name()}]"
+    def pretty_name(self) -> str:
+        return f"T_{self.order}[{self.block_encoding.pretty_name()}]"
 
     @cached_property
     def signature(self) -> Signature:

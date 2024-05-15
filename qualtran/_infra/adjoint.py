@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, List, Set, Tuple, TYPE_CHECKING
+from typing import cast, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -170,10 +170,6 @@ class Adjoint(GateWithRegisters):
         """The call graph takes the adjoint of each of the bloqs in `subbloq`'s call graph."""
         return {(bloq.adjoint(), n) for bloq, n in self.subbloq.build_call_graph(ssa=ssa)}
 
-    def short_name(self) -> str:
-        """The subbloq's short_name with a dagger."""
-        return self.subbloq.short_name() + '†'
-
     def pretty_name(self) -> str:
         """The subbloq's pretty_name with a dagger."""
         return self.subbloq.pretty_name() + '†'
@@ -182,10 +178,17 @@ class Adjoint(GateWithRegisters):
         """Delegate to subbloq's `__str__` method."""
         return f'Adjoint(subbloq={str(self.subbloq)})'
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
         # Note: since we pass are passed a soquet which has the 'new' side, we flip it before
         # delegating and then flip back. Subbloqs only have to answer this protocol
         # if the provided soquet is facing the correct direction.
+        from qualtran.drawing import Text
+
+        if reg is None:
+            return Text(cast(Text, self.subbloq.wire_symbol(reg=None)).text + '†')
+
         return self.subbloq.wire_symbol(reg=reg.adjoint(), idx=idx).adjoint()
 
     def _t_complexity_(self):

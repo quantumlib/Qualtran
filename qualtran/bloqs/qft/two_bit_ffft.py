@@ -85,7 +85,7 @@ class TwoBitFFFT(Bloq):
     def signature(self) -> Signature:
         return Signature([Register('x', QBit()), Register('y', QBit())])
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'F(k, n)'
 
     def add_my_tensors(
@@ -106,7 +106,7 @@ class TwoBitFFFT(Bloq):
             qtn.Tensor(
                 data=matrix.reshape((2,) * 4),
                 inds=out_inds + in_inds,
-                tags=[self.short_name(), tag],
+                tags=[self.pretty_name(), tag],
             )
         )
 

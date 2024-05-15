@@ -20,7 +20,7 @@ import attrs
 import cirq
 import numpy as np
 import sympy
-from numpy._typing import NDArray
+from numpy.typing import NDArray
 
 from qualtran import (
     Bloq,
@@ -64,7 +64,7 @@ class LPRSInterimPrep(GateWithRegisters):
     def signature(self) -> 'Signature':
         return Signature.build(m=self.bitsize, anc=1)
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return 'LPRS'
 
     def decompose_from_registers(

@@ -93,7 +93,9 @@ class _ZVector(Bloq):
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
-                data=_ONE if self.bit else _ZERO, inds=(side['q'],), tags=[self.short_name(), tag]
+                data=_ONE if self.bit else _ZERO,
+                inds=(side['q'],),
+                tags=['1' if self.bit else '0', tag],
             )
         )
 
@@ -128,11 +130,8 @@ class _ZVector(Bloq):
         return op, {'q': np.array([q])}
 
     def pretty_name(self) -> str:
-        s = self.short_name()
+        s = '1' if self.bit else '0'
         return f'|{s}>' if self.state else f'<{s}|'
-
-    def short_name(self) -> str:
-        return '1' if self.bit else '0'
 
 
 def _hide_base_fields(cls, fields):
@@ -236,9 +235,6 @@ class ZGate(Bloq):
     def adjoint(self) -> 'Bloq':
         return self
 
-    def short_name(self) -> 'str':
-        return 'Z'
-
     def decompose_bloq(self) -> CompositeBloq:
         raise DecomposeTypeError(f"{self} is atomic")
 
@@ -250,11 +246,7 @@ class ZGate(Bloq):
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
-        tn.add(
-            qtn.Tensor(
-                data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
-            )
-        )
+        tn.add(qtn.Tensor(data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=["Z", tag]))
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -360,7 +352,7 @@ class _IntVector(Bloq):
         else:
             inds = (incoming['val'],)
 
-        tn.add(qtn.Tensor(data=data, inds=inds, tags=[self.short_name(), tag]))
+        tn.add(qtn.Tensor(data=data, inds=inds, tags=[f'{self.val}', tag]))
 
     def on_classical_vals(self, *, val: Optional[int] = None) -> Dict[str, Union[int, sympy.Expr]]:
         if self.state:
@@ -376,15 +368,15 @@ class _IntVector(Bloq):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(ArbitraryClifford(self.bitsize), 1)}
 
-    def short_name(self) -> str:
-        return f'{self.val}'
-
     def pretty_name(self) -> str:
-        s = self.short_name()
+        s = f'{self.val}'
         return f'|{s}>' if self.state else f'<{s}|'
 
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        from qualtran.drawing import directional_text_box, Text
+
+        if reg is None:
+            return Text(self.pretty_name())
 
         return directional_text_box(text=f'{self.val}', side=reg.side)
 
