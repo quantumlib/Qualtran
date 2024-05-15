@@ -16,12 +16,12 @@ r"""Bloqs implementing unitary evolution under the interacting part of the Hubba
 from functools import cached_property
 from typing import Set, TYPE_CHECKING, Union
 
-import sympy
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -53,10 +53,10 @@ class Interaction(Bloq):
         Eq. 6 page 2 and page 13 paragraph 1.
     """
 
-    length: Union[int, sympy.Expr]
-    angle: Union[float, sympy.Expr]
-    hubb_u: Union[float, sympy.Expr]
-    eps: Union[float, sympy.Expr] = 1e-9
+    length: Union[SymbolicInt]
+    angle: Union[SymbolicFloat]
+    hubb_u: Union[SymbolicFloat]
+    eps: Union[SymbolicFloat] = 1e-9
 
     @cached_property
     def signature(self) -> Signature:
@@ -96,10 +96,10 @@ class InteractionHWP(Bloq):
             14 paragraph 3 right column. The apply 2 batches of $L^2/2$ rotations.
     """
 
-    length: Union[int, sympy.Expr]
-    angle: Union[float, sympy.Expr]
-    hubb_u: Union[float, sympy.Expr]
-    eps: Union[float, sympy.Expr] = 1e-9
+    length: Union[SymbolicInt]
+    angle: Union[SymbolicFloat]
+    hubb_u: Union[SymbolicFloat]
+    eps: Union[SymbolicFloat] = 1e-9
 
     @cached_property
     def signature(self) -> Signature:

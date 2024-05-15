@@ -16,17 +16,16 @@ from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING, Union
 
 import attrs
-import sympy
 
 from qualtran import GateWithRegisters, QFxp, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import HammingWeightCompute
 from qualtran.bloqs.basic_gates import ZPowGate
 from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder, SoquetT
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
-    from qualtran.symbolics import SymbolicInt
 
 
 @attrs.frozen
@@ -61,7 +60,7 @@ class HammingWeightPhasing(GateWithRegisters):
 
     bitsize: int
     exponent: float
-    eps: Union[float, sympy.Expr] = 1e-10
+    eps: Union[SymbolicFloat] = 1e-10
 
     @cached_property
     def signature(self) -> 'Signature':

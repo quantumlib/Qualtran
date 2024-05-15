@@ -12,10 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 from functools import cached_property
-from typing import Any, Dict, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Set, TYPE_CHECKING
 
 import numpy as np
-import sympy
 from attrs import frozen
 from numpy.typing import NDArray
 

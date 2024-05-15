@@ -15,13 +15,13 @@
 from functools import cached_property
 from typing import Set, TYPE_CHECKING, Union
 
-import sympy
 from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, QAny, QBit, Register, Signature
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.qft.two_bit_ffft import TwoBitFFFT
 from qualtran.bloqs.rotations.hamming_weight_phasing import HammingWeightPhasing
+from qualtran.symbolics import SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -67,8 +67,8 @@ class HoppingPlaquette(Bloq):
         page 13 Eq. E4 and E5 (Appendix E)
     """
 
-    kappa: Union[float, sympy.Expr]
-    eps: Union[float, sympy.Expr] = 1e-9
+    kappa: Union[SymbolicFloat]
+    eps: Union[SymbolicFloat] = 1e-9
 
     @cached_property
     def signature(self) -> Signature:
@@ -110,10 +110,10 @@ class HoppingTile(Bloq):
         see Eq. 21 and App E.
     """
 
-    length: Union[int, sympy.Expr]
-    angle: Union[float, sympy.Expr]
+    length: Union[SymbolicInt]
+    angle: Union[SymbolicFloat]
     tau: float = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    eps: Union[SymbolicFloat] = 1e-9
     pink: bool = True
 
     def __attrs_post_init__(self):
