@@ -130,6 +130,7 @@ class CSwapApprox(Bloq):
             return TextBox("×(x)")
         if reg.name == 'y':
             return TextBox("×(y)")
+        raise ValueError(f"Unknown register {reg}.")
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.bitsize
