@@ -21,7 +21,7 @@ from attrs import frozen
 
 from qualtran import Bloq, bloq_example, BloqDocSpec, Register, Signature, SoquetT
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import TextBox, WireSymbol
+from qualtran.drawing import Text, TextBox, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
@@ -87,6 +87,8 @@ class SGate(Bloq):
         return f'S{maybe_dag}'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
         return TextBox(self.pretty_name())
 
     def adjoint(self) -> 'Bloq':

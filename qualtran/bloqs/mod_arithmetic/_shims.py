@@ -76,7 +76,7 @@ class CModSub(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'ctrl':
             return Circle()
         elif reg.name == 'x':
@@ -140,7 +140,7 @@ class _ModInvInner(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
@@ -174,7 +174,7 @@ class ModInv(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
@@ -208,7 +208,7 @@ class ModMul(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name in ['x', 'y']:
             return TextBox(reg.name)
         elif reg.name == 'out':
@@ -232,7 +232,7 @@ class ModDbl(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
@@ -264,7 +264,7 @@ class ModNeg(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
@@ -290,7 +290,7 @@ class CModNeg(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(str(self))
+            return Text("")
         if reg.name == 'ctrl':
             return Circle()
         elif reg.name == 'x':
