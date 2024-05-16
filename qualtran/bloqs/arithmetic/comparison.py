@@ -81,7 +81,7 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         if reg.name == 'x':
             return TextBox("x")
         if reg.name == 'target':
-            return TextBox("z ^ (x < a)")
+            return TextBox("z^(x<a)")
         raise ValueError(f'Unknown register name {reg.name}')
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
@@ -457,7 +457,7 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         if reg.name == "y":
             return TextBox('y')
         if reg.name == "target":
-            return TextBox('z ^ (x <= y)')
+            return TextBox('z^(x<=y)')
         raise ValueError(f'Unknown register name {reg.name}')
 
     def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
@@ -837,7 +837,7 @@ class LinearDepthGreaterThan(Bloq):
         if reg.name == "b":
             return TextBox('b')
         if reg.name == "target":
-            return TextBox('t ⨁ (a > b)')
+            return TextBox('t⨁(a>b)')
         raise ValueError(f'Unknown register name {reg.name}')
 
 
