@@ -50,11 +50,12 @@ if TYPE_CHECKING:
     from qualtran.simulation.classical_sim import ClassicalValT
 
 
-class UtilBloq(Bloq, metaclass=abc.ABCMeta):
-    """Base class for util bloqs.
+class _BookkeepingBloq(Bloq, metaclass=abc.ABCMeta):
+    """Base class for utility bloqs used for bookkeeping.
 
-    1. Trivial controlled - pass through the control register.
-    2. Do not affect T complexity.
+    This bloq:
+    - has trivial controlled versions, which pass through the control register.
+    - does not affect T complexity.
     """
 
     def get_ctrl_system(
@@ -74,7 +75,7 @@ class UtilBloq(Bloq, metaclass=abc.ABCMeta):
 
 
 @frozen
-class Split(UtilBloq):
+class Split(_BookkeepingBloq):
     """Split a bitsize `n` register into a length-`n` array-register.
 
     Attributes:
@@ -133,7 +134,7 @@ class Split(UtilBloq):
 
 
 @frozen
-class Join(UtilBloq):
+class Join(_BookkeepingBloq):
     """Join a length-`n` array-register into one register of bitsize `n`.
 
     Attributes:
@@ -192,7 +193,7 @@ class Join(UtilBloq):
 
 
 @frozen
-class Partition(UtilBloq):
+class Partition(_BookkeepingBloq):
     """Partition a generic index into multiple registers.
 
     Args:
@@ -315,7 +316,7 @@ class Partition(UtilBloq):
 
 
 @frozen
-class Allocate(UtilBloq):
+class Allocate(_BookkeepingBloq):
     """Allocate an `n` bit register.
 
     Attributes:
@@ -356,7 +357,7 @@ class Allocate(UtilBloq):
 
 
 @frozen
-class Free(UtilBloq):
+class Free(_BookkeepingBloq):
     """Free (i.e. de-allocate) an `n` bit register.
 
     The tensor decomposition assumes the `n` bit register is uncomputed and is in the $|0^{n}>$
@@ -426,7 +427,7 @@ class ArbitraryClifford(Bloq):
 
 
 @frozen
-class Cast(UtilBloq):
+class Cast(_BookkeepingBloq):
     """Cast a register from one n-bit QDType to another QDType.
 
 
