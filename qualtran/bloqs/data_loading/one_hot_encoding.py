@@ -60,7 +60,7 @@ class OneHotEncoding(GateWithRegisters):
         outgoing: Dict[str, 'SoquetT'],
     ):
         _add_my_tensors_from_gate(
-            self, self.signature, self.short_name(), tn, tag, incoming=incoming, outgoing=outgoing
+            self, self.signature, self.pretty_name(), tn, tag, incoming=incoming, outgoing=outgoing
         )
 
     def on_classical_vals(
@@ -80,6 +80,3 @@ class OneHotEncoding(GateWithRegisters):
             for j in range(2**i):
                 op_tree.append(TwoBitCSwap().on_registers(ctrl=a[i], x=b[j], y=b[2**i + j]))
         return op_tree
-
-    def short_name(self) -> str:
-        return "one-hot-enc"
