@@ -139,7 +139,7 @@ class CompositeBloq(Bloq):
         import cirq
 
         circuit, out_quregs = self.to_cirq_circuit_and_quregs(
-            qubit_manager=qubit_manager, cirq_quregs=cirq_quregs
+            qubit_manager=qubit_manager, **cirq_quregs
         )
         return cirq.CircuitOperation(circuit), out_quregs
 

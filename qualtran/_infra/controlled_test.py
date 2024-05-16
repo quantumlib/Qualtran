@@ -22,6 +22,7 @@ import qualtran.testing as qlt_testing
 from qualtran import (
     Bloq,
     BloqBuilder,
+    CompositeBloq,
     Controlled,
     CtrlSpec,
     QBit,
@@ -127,6 +128,19 @@ def test_ctrl_bloq_as_cirq_op():
     circuit1 = bloq.decompose_bloq().to_cirq_circuit(cirq_quregs=quregs)
     circuit2 = cirq.Circuit(
         cirq.SWAP(x[i], y[i]).controlled_by(*ctrl, control_values=[0, 1, 0, 1]) for i in range(5)
+    )
+    cirq.testing.assert_same_circuits(circuit1, circuit2)
+
+    # controlled composite subbloqs
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    cbloq = CompositeBloq.from_cirq_circuit(circuit).controlled().as_composite_bloq()
+    quregs = get_named_qubits(cbloq.signature.lefts())
+
+    circuit1 = cbloq.to_cirq_circuit(qubit_manager=None, cirq_quregs=quregs)
+    ctrl = quregs['ctrl'][0]
+    q = quregs['qubits'][0][0]
+    circuit2 = cirq.Circuit(
+        cirq.CircuitOperation(cirq.Circuit(cirq.X(q)).freeze()).controlled_by(ctrl)
     )
     cirq.testing.assert_same_circuits(circuit1, circuit2)
 
