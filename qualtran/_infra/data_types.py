@@ -54,9 +54,10 @@ from typing import Any, cast, Iterable, List, Sequence, Union
 
 import attrs
 import numpy as np
-import sympy
 from fxpmath import Fxp
 from numpy.typing import NDArray
+
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 
 class QDType(metaclass=abc.ABCMeta):
@@ -89,7 +90,11 @@ class QDType(metaclass=abc.ABCMeta):
             debug_str: Optional debugging information to use in exception messages.
         """
 
-    def iteration_length_or_zero(self) -> Union[int, sympy.Expr]:
+    @abc.abstractmethod
+    def is_symbolic(self) -> bool:
+        """Returns True if this qdtype is parameterized with symbolic objects."""
+
+    def iteration_length_or_zero(self) -> SymbolicInt:
         """Safe version of iteration length.
 
         Returns the iteration_length if the type has it or else zero.
@@ -130,6 +135,9 @@ class QBit(QDType):
         if not (val == 0 or val == 1):
             raise ValueError(f"Bad {self} value {val} in {debug_str}")
 
+    def is_symbolic(self) -> bool:
+        return False
+
     def to_bits(self, x) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
         self.assert_valid_classical_val(x)
@@ -154,7 +162,7 @@ class QBit(QDType):
 class QAny(QDType):
     """Opaque bag-of-qbits type."""
 
-    bitsize: Union[int, sympy.Expr]
+    bitsize: SymbolicInt
 
     @property
     def num_qubits(self):
@@ -170,6 +178,9 @@ class QAny(QDType):
     def from_bits(self, bits: Sequence[int]) -> int:
         # TODO: Raise an error once usage of `QAny` is minimized across the library
         return QUInt(self.bitsize).from_bits(bits)
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize)
 
     def assert_valid_classical_val(self, val, debug_str: str = 'val'):
         pass
@@ -188,11 +199,14 @@ class QInt(QDType):
         bitsize: The number of qubits used to represent the integer.
     """
 
-    bitsize: Union[int, sympy.Expr]
+    bitsize: SymbolicInt
 
     @property
     def num_qubits(self):
         return self.bitsize
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize)
 
     def get_classical_domain(self) -> Iterable[int]:
         max_val = 1 << (self.bitsize - 1)
@@ -226,6 +240,9 @@ class QInt(QDType):
         if np.any(val_array >= 2 ** (self.bitsize - 1)):
             raise ValueError(f"Too-large classical {self}s encountered in {debug_str}")
 
+    def __str__(self):
+        return f'QInt({self.bitsize})'
+
 
 @attrs.frozen
 class QIntOnesComp(QDType):
@@ -237,7 +254,7 @@ class QIntOnesComp(QDType):
         bitsize: The number of qubits used to represent the integer.
     """
 
-    bitsize: Union[int, sympy.Expr]
+    bitsize: SymbolicInt
 
     def __attrs_post_init__(self):
         if isinstance(self.bitsize, int):
@@ -247,6 +264,9 @@ class QIntOnesComp(QDType):
     @property
     def num_qubits(self):
         return self.bitsize
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize)
 
     def to_bits(self, x: int) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
@@ -283,11 +303,14 @@ class QUInt(QDType):
         bitsize: The number of qubits used to represent the integer.
     """
 
-    bitsize: Union[int, sympy.Expr]
+    bitsize: SymbolicInt
 
     @property
     def num_qubits(self):
         return self.bitsize
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize)
 
     def get_classical_domain(self) -> Iterable[Any]:
         return range(2**self.bitsize)
@@ -316,6 +339,9 @@ class QUInt(QDType):
             raise ValueError(f"Negative classical values encountered in {debug_str}")
         if np.any(val_array >= 2**self.bitsize):
             raise ValueError(f"Too-large classical values encountered in {debug_str}")
+
+    def __str__(self):
+        return f'QUInt({self.bitsize})'
 
 
 @attrs.frozen
@@ -365,11 +391,11 @@ class BoundedQUInt(QDType):
         iteration_length: The length of the iteration range.
     """
 
-    bitsize: Union[int, sympy.Expr]
-    iteration_length: Union[int, sympy.Expr] = attrs.field()
+    bitsize: SymbolicInt
+    iteration_length: SymbolicInt = attrs.field()
 
     def __attrs_post_init__(self):
-        if isinstance(self.bitsize, int):
+        if not self.is_symbolic():
             if self.iteration_length > 2**self.bitsize:
                 raise ValueError(
                     "BoundedQUInt iteration length is too large for given bitsize. "
@@ -379,6 +405,9 @@ class BoundedQUInt(QDType):
     @iteration_length.default
     def _default_iteration_length(self):
         return 2**self.bitsize
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize, self.iteration_length)
 
     @property
     def num_qubits(self):
@@ -440,8 +469,8 @@ class QFxp(QDType):
             number of integer bits is reduced by 1.
     """
 
-    bitsize: Union[int, sympy.Expr]
-    num_frac: Union[int, sympy.Expr]
+    bitsize: SymbolicInt
+    num_frac: SymbolicInt
     signed: bool = False
 
     @property
@@ -449,7 +478,7 @@ class QFxp(QDType):
         return self.bitsize
 
     @property
-    def num_int(self) -> Union[int, sympy.Expr]:
+    def num_int(self) -> SymbolicInt:
         return self.bitsize - self.num_frac - int(self.signed)
 
     @property
@@ -459,6 +488,9 @@ class QFxp(QDType):
     @property
     def _fxp_dtype(self) -> Fxp:
         return Fxp(None, dtype=self.fxp_dtype_str)
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize, self.num_frac)
 
     def to_bits(self, x: Union[float, Fxp]) -> List[int]:
         """Yields individual bits corresponding to binary representation of x"""
@@ -516,7 +548,7 @@ class QMontgomeryUInt(QDType):
     fast modular multiplication.
 
     In order to convert an unsigned integer from a finite field x % p into Montgomery form you
-    first must choose a value r > p where gcd(r, p) = 1. Typically this value is a power of 2.
+    first must choose a value r > p where gcd(r, p) = 1. Typically, this value is a power of 2.
 
     Conversion to Montgomery form:
         [x] = (x * r) % p
@@ -533,11 +565,14 @@ class QMontgomeryUInt(QDType):
         [Montgomery modular multiplication](https://en.wikipedia.org/wiki/Montgomery_modular_multiplication)
     """
 
-    bitsize: Union[int, sympy.Expr]
+    bitsize: SymbolicInt
 
     @property
     def num_qubits(self):
         return self.bitsize
+
+    def is_symbolic(self) -> bool:
+        return is_symbolic(self.bitsize)
 
     def get_classical_domain(self) -> Iterable[Any]:
         return range(2**self.bitsize)

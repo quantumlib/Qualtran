@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Tuple, Union
+from typing import Iterator, Optional, Tuple, Union
 
 import attrs
 import cirq
@@ -21,9 +21,10 @@ import numpy as np
 import sympy
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Register, Signature
 from qualtran.bloqs.arithmetic import LessThanConstant
 from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
+from qualtran.drawing import Text, WireSymbol
 
 
 @attrs.frozen
@@ -58,8 +59,12 @@ class PrepareUniformSuperposition(GateWithRegisters):
     def signature(self) -> Signature:
         return Signature.build(ctrl=len(self.cvs), target=(self.n - 1).bit_length())
 
-    def short_name(self) -> str:
-        return r'$\sum_l |l\rangle$'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text('Σ |l>')
+        return super().wire_symbol(reg, idx)
 
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
         control_symbols = ["@" if cv else "@(0)" for cv in self.cvs]
@@ -72,7 +77,7 @@ class PrepareUniformSuperposition(GateWithRegisters):
         *,
         context: cirq.DecompositionContext,
         **quregs: NDArray[cirq.Qid],  # type:ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         controls, target = quregs.get('ctrl', ()), quregs['target']
         # Find K and L as per https://arxiv.org/abs/1805.03662 Fig 12.
         n, k = self.n, 0

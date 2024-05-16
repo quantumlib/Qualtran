@@ -17,6 +17,7 @@ from qualtran.bloqs.arithmetic.addition import (
     AddConstantMod,
     OutOfPlaceAdder,
     SimpleAddConstant,
+    Subtract,
 )
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
@@ -39,3 +40,5 @@ from qualtran.bloqs.arithmetic.multiplication import (
     SumOfSquares,
 )
 from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
+
+from ._shims import AddK, CHalf, Lt, MultiCToffoli, Negate, Sub

@@ -19,11 +19,11 @@ import cirq
 import numpy as np
 from numpy.typing import NDArray
 
-from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature, Soquet
+from qualtran import BoundedQUInt, GateWithRegisters, QAny, Register, Signature
 from qualtran._infra.gate_with_registers import merge_qubits, split_qubits, total_bits
 from qualtran.bloqs.data_loading.qrom import QROM
 from qualtran.bloqs.swap_network import SwapWithZero
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 
 
 def find_optimal_log_block_size(iteration_length: int, target_bitsize: int) -> int:
@@ -242,8 +242,10 @@ class SelectSwapQROM(GateWithRegisters):
             wire_symbols += [f"QROAM_{i}"] * target.total_bits()
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        name = soq.reg.name
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('QROAM')
+        name = reg.name
         if name == 'selection':
             return TextBox('In')
         elif 'target' in name:
@@ -254,9 +256,6 @@ class SelectSwapQROM(GateWithRegisters):
         elif name == 'control':
             return Circle()
         raise ValueError(f'Unknown register name {name}')
-
-    def short_name(self) -> str:
-        return 'QROAM'
 
     def _value_equality_values_(self):
         return self.block_size, self._target_bitsizes, self.data

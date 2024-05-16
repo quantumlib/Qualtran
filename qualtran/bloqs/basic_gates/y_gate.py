@@ -16,7 +16,6 @@ from functools import cached_property
 from typing import Any, Dict, Tuple, TYPE_CHECKING
 
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import Bloq, Signature, SoquetT
@@ -24,6 +23,7 @@ from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
 
@@ -46,17 +46,15 @@ class YGate(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
-        tn.add(
-            qtn.Tensor(
-                data=_PAULIY, inds=(outgoing['q'], incoming['q']), tags=[self.short_name(), tag]
-            )
-        )
+        import quimb.tensor as qtn
+
+        tn.add(qtn.Tensor(data=_PAULIY, inds=(outgoing['q'], incoming['q']), tags=["Y", tag]))
 
     def as_cirq_op(
         self, qubit_manager: 'cirq.QubitManager', q: 'CirqQuregT'
@@ -64,7 +62,7 @@ class YGate(Bloq):
         import cirq
 
         (q,) = q
-        return cirq.Y(q), {'q': [q]}
+        return cirq.Y(q), {'q': np.asarray([q])}
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

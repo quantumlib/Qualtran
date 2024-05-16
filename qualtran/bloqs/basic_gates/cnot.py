@@ -17,7 +17,6 @@ from functools import cached_property
 from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import (
@@ -29,19 +28,19 @@ from qualtran import (
     CompositeBloq,
     CtrlSpec,
     DecomposeTypeError,
+    Register,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import Circle, ModPlus, WireSymbol
+from qualtran.drawing import Circle, ModPlus, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
-
 
 COPY = [1, 0, 0, 0, 0, 0, 0, 1]
 COPY = np.array(COPY, dtype=np.complex128).reshape((2, 2, 2))
@@ -72,7 +71,7 @@ class CNOT(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
@@ -86,6 +85,8 @@ class CNOT(Bloq):
         References:
             [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
         """
+        import quimb.tensor as qtn
+
         internal = qtn.rand_uuid()
         tn.add(
             qtn.Tensor(
@@ -131,12 +132,14 @@ class CNOT(Bloq):
         (target,) = target
         return cirq.CNOT(ctrl, target), {'ctrl': np.array([ctrl]), 'target': np.array([target])}
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.name == 'ctrl':
             return Circle(filled=True)
-        elif soq.reg.name == 'target':
+        elif reg.name == 'target':
             return ModPlus()
-        raise ValueError(f'Bad wire symbol soquet: {soq}')
+        raise ValueError(f'Unknown wire symbol register name: {reg.name}')
 
     def _t_complexity_(self) -> 'TComplexity':
         return TComplexity(clifford=1)

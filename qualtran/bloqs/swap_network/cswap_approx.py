@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING
+from typing import Dict, Iterator, Set, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
@@ -30,6 +30,7 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
     ignore_split_join,
 )
+from qualtran.symbolics import SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -59,7 +60,7 @@ class CSwapApprox(GateWithRegisters):
         Low et. al. 2018. See Appendix B.2.c.
     """
 
-    bitsize: int
+    bitsize: SymbolicInt
 
     @cached_property
     def signature(self) -> Signature:
@@ -67,7 +68,7 @@ class CSwapApprox(GateWithRegisters):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         ctrl, target_x, target_y = quregs['ctrl'], quregs['x'], quregs['y']
 
         def g(q: cirq.Qid, adjoint=False) -> cirq.ops.op_tree.OpTree:
@@ -93,7 +94,7 @@ class CSwapApprox(GateWithRegisters):
             return {'ctrl': 1, 'x': y, 'y': x}
         raise ValueError("Bad control value for CSwap classical simulation.")
 
-    def short_name(self) -> str:
+    def pretty_name(self) -> str:
         return '~swap'
 
     def _t_complexity_(self) -> TComplexity:

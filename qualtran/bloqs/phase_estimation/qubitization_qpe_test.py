@@ -19,7 +19,9 @@ from qualtran.bloqs.basic_gates import Hadamard, OnEach
 from qualtran.bloqs.for_testing.qubitization_walk_test import get_uniform_pauli_qubitized_walk
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.phase_estimation.qubitization_qpe import (
+    _qubitization_qpe_chem_thc,
     _qubitization_qpe_hubbard_model_small,
+    _qubitization_qpe_sparse_chem,
     QubitizationQPE,
 )
 from qualtran.bloqs.phase_estimation.text_book_qpe_test import simulate_theta_estimate
@@ -29,6 +31,16 @@ from qualtran.cirq_interop.testing import GateHelper
 @pytest.mark.slow
 def test_qubitization_qpe_bloq_autotester(bloq_autotester):
     bloq_autotester(_qubitization_qpe_hubbard_model_small)
+
+
+@pytest.mark.slow
+def test_qubitization_qpe_chem_thc_bloq_autotester(bloq_autotester):
+    bloq_autotester(_qubitization_qpe_chem_thc)
+
+
+@pytest.mark.slow
+def test_qubitization_qpe_sparse_chem_bloq_autotester(bloq_autotester):
+    bloq_autotester(_qubitization_qpe_sparse_chem)
 
 
 @pytest.mark.parametrize('num_terms', [2, 3, 4])

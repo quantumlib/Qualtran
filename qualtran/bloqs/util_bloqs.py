@@ -19,7 +19,6 @@ from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHE
 
 import attrs
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
@@ -33,15 +32,16 @@ from qualtran import (
     Register,
     Side,
     Signature,
-    Soquet,
     SoquetT,
 )
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
-from qualtran.drawing import directional_text_box, WireSymbol
-from qualtran.resource_counting.symbolic_counting_utils import SymbolicInt
+from qualtran.drawing import directional_text_box, Text, WireSymbol
 from qualtran.simulation.classical_sim import bits_to_ints, ints_to_bits
+from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
+    import cirq
+    import quimb.tensor as qtn
     from numpy.typing import NDArray
 
     from qualtran import AddControlledT, CtrlSpec
@@ -83,12 +83,16 @@ class Split(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
+        if not isinstance(outgoing['reg'], np.ndarray):
+            raise ValueError('Outgoing register must be a numpy array')
         tn.add(
             qtn.Tensor(
                 data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
@@ -109,11 +113,13 @@ class Split(Bloq):
 
         return self, add_controlled
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.shape:
-            text = f'[{", ".join(str(i) for i in soq.idx)}]'
-            return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(self.pretty_name())
+        if reg.shape:
+            text = f'[{", ".join(str(i) for i in idx)}]'
+            return directional_text_box(text, side=reg.side)
+        return directional_text_box(' ', side=reg.side)
 
 
 @frozen
@@ -146,12 +152,16 @@ class Join(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
+        if not isinstance(incoming['reg'], np.ndarray):
+            raise ValueError('Incoming register must be a numpy array')
         tn.add(
             qtn.Tensor(
                 data=np.eye(2**self.dtype.num_qubits, 2**self.dtype.num_qubits).reshape(
@@ -162,7 +172,7 @@ class Join(Bloq):
             )
         )
 
-    def on_classical_vals(self, reg: 'NDArray[np.uint8]') -> Dict[str, int]:
+    def on_classical_vals(self, reg: 'NDArray[np.uint]') -> Dict[str, int]:
         return {'reg': bits_to_ints(reg)[0]}
 
     def get_ctrl_system(
@@ -177,11 +187,13 @@ class Join(Bloq):
 
         return self, add_controlled
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.shape:
-            text = f'[{", ".join(str(i) for i in soq.idx)}]'
-            return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.shape:
+            text = f'[{", ".join(str(i) for i in idx)}]'
+            return directional_text_box(text, side=reg.side)
+        return directional_text_box(' ', side=reg.side)
 
 
 @frozen
@@ -221,7 +233,7 @@ class Partition(Bloq):
             start = 0
             for reg in self.regs:
                 shape = reg.shape + (reg.bitsize,)
-                size = np.prod(shape)
+                size = int(np.prod(shape))
                 outregs[reg.name] = np.array(cirq_quregs['x'][start : start + size]).reshape(shape)
                 start += size
             return None, outregs
@@ -233,12 +245,14 @@ class Partition(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         unitary_shape = []
         soquets = []
         _incoming = incoming if self.partition else outgoing
@@ -246,10 +260,11 @@ class Partition(Bloq):
         for reg in self.regs:
             for i in range(int(np.prod(reg.shape))):
                 unitary_shape.append(2**reg.bitsize)
-                if isinstance(_outgoing[reg.name], np.ndarray):
-                    soquets.append(_outgoing[reg.name].ravel()[i])
+                outgoing_reg = _outgoing[reg.name]
+                if isinstance(outgoing_reg, np.ndarray):
+                    soquets.append(outgoing_reg.ravel()[i])
                 else:
-                    soquets.append(_outgoing[reg.name])
+                    soquets.append(outgoing_reg)
 
         tn.add(
             qtn.Tensor(
@@ -261,12 +276,12 @@ class Partition(Bloq):
             )
         )
 
-    def _classical_partition(self, x: int) -> Dict[str, 'ClassicalValT']:
+    def _classical_partition(self, x: 'ClassicalValT') -> Dict[str, 'ClassicalValT']:
         out_vals = {}
         xbits = ints_to_bits(x, self.n)[0]
         start = 0
         for reg in self.regs:
-            size = np.prod(reg.shape + (reg.bitsize,))
+            size = int(np.prod(reg.shape + (reg.bitsize,)))
             bits_reg = xbits[start : start + size]
             if reg.shape == ():
                 out_vals[reg.name] = bits_to_ints(bits_reg)[0]
@@ -284,10 +299,11 @@ class Partition(Bloq):
     def _classical_unpartition(self, **vals: 'ClassicalValT'):
         out_vals = []
         for reg in self.regs:
-            if isinstance(vals[reg.name], np.ndarray):
-                out_vals.append(ints_to_bits(vals[reg.name].ravel(), reg.bitsize).ravel())
+            reg_val = vals[reg.name]
+            if isinstance(reg_val, np.ndarray):
+                out_vals.append(ints_to_bits(reg_val.ravel(), reg.bitsize).ravel())
             else:
-                out_vals.append(ints_to_bits(vals[reg.name], reg.bitsize)[0])
+                out_vals.append(ints_to_bits(reg_val, reg.bitsize)[0])
         big_int = np.concatenate(out_vals)
         return {'x': bits_to_ints(big_int)[0]}
 
@@ -297,11 +313,13 @@ class Partition(Bloq):
         else:
             return self._classical_unpartition(**vals)
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.shape:
-            text = f'[{",".join(str(i) for i in soq.idx)}]'
-            return directional_text_box(text, side=soq.reg.side)
-        return directional_text_box(' ', side=soq.reg.side)
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        if reg.shape:
+            text = f'[{",".join(str(i) for i in idx)}]'
+            return directional_text_box(text, side=reg.side)
+        return directional_text_box(' ', side=reg.side)
 
 
 @frozen
@@ -335,12 +353,16 @@ class Allocate(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        assert soq.reg.name == 'reg'
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
 
 
@@ -381,12 +403,16 @@ class Free(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
 
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        assert soq.reg.name == 'reg'
+    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text('')
+        assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
 
 
@@ -452,12 +478,14 @@ class Cast(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         tn.add(
             qtn.Tensor(
                 data=np.eye(2**self.inp_dtype.num_qubits, 2**self.inp_dtype.num_qubits),
@@ -497,7 +525,10 @@ class Power(GateWithRegisters):
     def __attrs_post_init__(self):
         if any(reg.side != Side.THRU for reg in self.bloq.signature):
             raise ValueError('Bloq to repeat must have only THRU registers')
-        if self.power < 1:
+
+        if not is_symbolic(self.power) and (
+            not isinstance(self.power, (int, np.integer)) or self.power < 1
+        ):
             raise ValueError(f'{self.power=} must be a positive integer.')
 
     def adjoint(self) -> 'Bloq':
@@ -508,9 +539,29 @@ class Power(GateWithRegisters):
         return self.bloq.signature
 
     def build_composite_bloq(self, bb: 'BloqBuilder', **soqs: 'SoquetT') -> Dict[str, 'SoquetT']:
+        if not isinstance(self.power, int):
+            raise ValueError(f'Symbolic power {self.power} not supported')
         for _ in range(self.power):
             soqs = bb.add_d(self.bloq, **soqs)
         return soqs
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(self.bloq, self.power)}
+
+    def __pow__(self, power) -> 'Power':
+        bloq = self.bloq.adjoint() if power < 0 else self.bloq
+        return Power(bloq, self.power * abs(power))
+
+    def _circuit_diagram_info_(
+        self, args: 'cirq.CircuitDiagramInfoArgs'
+    ) -> 'cirq.CircuitDiagramInfo':
+        import cirq
+
+        info = cirq.circuit_diagram_info(self.bloq, args, default=None)
+
+        if info is None:
+            info = super()._circuit_diagram_info_(args)
+
+        wire_symbols = [f'{symbol}^{self.power}' for symbol in info.wire_symbols]
+
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)

@@ -13,11 +13,12 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Sequence, Tuple, Union
+from typing import Iterator, Sequence, Tuple, Union
 
 import attrs
 import cirq
 import numpy as np
+import sympy
 from numpy.typing import NDArray
 
 from qualtran import QAny, QBit, Register
@@ -80,9 +81,15 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
     @cached_property
     def target_registers(self) -> Tuple[Register, ...]:
-        total_iteration_size = np.prod(
-            tuple(reg.dtype.iteration_length for reg in self.selection_registers)
+        if any(
+            isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
+            for reg in self.selection_registers
+        ):
+            raise ValueError(f'Symbolic iteration size not allowed for {self.selection_registers}')
+        iteration_sizes = list(
+            int(reg.dtype.iteration_length_or_zero()) for reg in self.selection_registers
         )
+        total_iteration_size = np.prod(iteration_sizes)
         return (Register('target', QAny(int(total_iteration_size))),)
 
     @cached_property
@@ -91,7 +98,7 @@ class SelectedMajoranaFermion(UnaryIterationGate):
 
     def decompose_from_registers(
         self, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         quregs['accumulator'] = np.array(context.qubit_manager.qalloc(1))
         control = quregs[self.control_regs[0].name] if total_bits(self.control_registers) else []
         yield cirq.X(*quregs['accumulator']).controlled_by(*control)
@@ -113,8 +120,15 @@ class SelectedMajoranaFermion(UnaryIterationGate):
         target: Sequence[cirq.Qid],
         accumulator: Sequence[cirq.Qid],
         **selection_indices: int,
-    ) -> cirq.OP_TREE:
-        selection_shape = tuple(reg.dtype.iteration_length for reg in self.selection_regs)
+    ) -> Iterator[cirq.OP_TREE]:
+        if any(
+            isinstance(reg.dtype.iteration_length_or_zero(), sympy.Expr)
+            for reg in self.selection_regs
+        ):
+            raise ValueError(f'Symbolic iteration length not allowed for {self.selection_regs}')
+        selection_shape = tuple(
+            int(reg.dtype.iteration_length_or_zero()) for reg in self.selection_regs
+        )
         selection_idx = tuple(selection_indices[reg.name] for reg in self.selection_regs)
         target_idx = int(np.ravel_multi_index(selection_idx, selection_shape))
         yield cirq.CNOT(control, *accumulator)

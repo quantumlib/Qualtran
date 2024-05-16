@@ -15,12 +15,12 @@
 """Cirq gates/circuits to Qualtran Bloqs conversion."""
 import abc
 import itertools
+import numbers
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TYPE_CHECKING, TypeVar, Union
 
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 from attrs import field, frozen
 from numpy.typing import NDArray
 
@@ -49,11 +49,10 @@ from qualtran._infra.gate_with_registers import (
 )
 from qualtran.cirq_interop._interop_qubit_manager import InteropQubitManager
 from qualtran.cirq_interop.t_complexity_protocol import t_complexity, TComplexity
-from qualtran.simulation.tensor._tensor_data_manipulation import (
-    tensor_data_from_unitary_and_signature,
-)
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran.drawing import WireSymbol
 
 
@@ -105,7 +104,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
@@ -114,7 +113,7 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
         _add_my_tensors_from_gate(
             self.cirq_gate,
             self.signature,
-            self.short_name(),
+            str(self.cirq_gate),
             tn=tn,
             tag=tag,
             incoming=incoming,
@@ -136,7 +135,9 @@ class CirqGateAsBloqBase(GateWithRegisters, metaclass=abc.ABCMeta):
     def _unitary_(self):
         return cirq.unitary(self.cirq_gate, default=None)
 
-    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+    def _circuit_diagram_info_(
+        self, args: cirq.CircuitDiagramInfoArgs
+    ) -> Optional[cirq.CircuitDiagramInfo]:
         return cirq.circuit_diagram_info(self.cirq_gate, default=None)
 
     def __str__(self):
@@ -162,16 +163,31 @@ class CirqGateAsBloq(CirqGateAsBloqBase):
         return self.gate
 
 
-def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet') -> 'WireSymbol':
-    from qualtran.drawing import directional_text_box
+def _cirq_wire_symbol_to_qualtran_wire_symbol(symbol: str, side: Side) -> 'WireSymbol':
+    from qualtran.drawing import Circle, directional_text_box, ModPlus
 
+    if symbol == "@":
+        return Circle(filled=True)
+    if symbol == "@(0)":
+        return Circle(filled=False)
+    if symbol == "X":
+        return ModPlus()
+    return directional_text_box(symbol, side=side)
+
+
+def _wire_symbol_from_gate(
+    gate: cirq.Gate, signature: Signature, wire_reg: Register, idx: Tuple[int, ...] = tuple()
+) -> 'WireSymbol':
     wire_symbols = cirq.circuit_diagram_info(gate).wire_symbols
     begin = 0
-    symbol: str = soq.pretty()
+    if len(idx) > 0:
+        symbol = f'{wire_reg.name}[{", ".join(str(i) for i in idx)}]'
+    else:
+        symbol = wire_reg.name
     for reg in signature:
         reg_size = int(np.prod(reg.shape))
         finish = begin + reg.bitsize * int(np.prod(reg.shape))
-        if reg == soq.reg:
+        if reg == wire_reg:
             if reg_size == 1:
                 # either shape = () or shape = (1,), wire_symbols is a list of
                 # size reg.bitsize, we only want one label for the register.
@@ -180,26 +196,30 @@ def _wire_symbol_from_gate(gate: cirq.Gate, signature: Signature, soq: 'Soquet')
                 # If the bitsize > 1 AND the shape of the register is non
                 # trivial then we only want to index into the shape, (not shape
                 # * bitsize)
-                symbol = np.array(wire_symbols[begin : begin + reg_size]).reshape(reg.shape)[
-                    soq.idx
-                ]
+                symbol = np.array(wire_symbols[begin : begin + reg_size]).reshape(reg.shape)[idx]
             else:
                 # bitsize = 1 and shape is non trivial, index into the array of wireshapes.
-                symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[soq.idx]
+                symbol = np.array(wire_symbols[begin:finish]).reshape(reg.shape)[idx]
         begin = finish
-    return directional_text_box(text=symbol, side=soq.reg.side)
+    return _cirq_wire_symbol_to_qualtran_wire_symbol(symbol, wire_reg.side)
 
 
 def _add_my_tensors_from_gate(
     gate: cirq.Gate,
     signature: Signature,
     short_name: str,
-    tn: qtn.TensorNetwork,
+    tn: 'qtn.TensorNetwork',
     tag: Any,
     *,
     incoming: Dict[str, 'SoquetT'],
     outgoing: Dict[str, 'SoquetT'],
 ):
+    import quimb.tensor as qtn
+
+    from qualtran.simulation.tensor._tensor_data_manipulation import (
+        tensor_data_from_unitary_and_signature,
+    )
+
     if not cirq.has_unitary(gate):
         raise NotImplementedError(
             f"CirqGateAsBloq.add_my_tensors is currently supported only for unitary gates. "
@@ -400,6 +420,8 @@ def _cirq_gate_to_bloq(gate: cirq.Gate) -> Bloq:
         )
 
     if isinstance(gate, cirq.GlobalPhaseGate):
+        if isinstance(gate.coefficient, numbers.Complex):
+            return GlobalPhase(coefficient=complex(gate.coefficient))
         return GlobalPhase(coefficient=gate.coefficient)
 
     # No known basic gate, wrap the cirq gate in a CirqGateAsBloq wrapper.

@@ -26,7 +26,7 @@ from qualtran.bloqs.qsp.generalized_qsp_test import (
     verify_generalized_qsp,
 )
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.resource_counting.symbolic_counting_utils import Shaped
+from qualtran.symbolics import Shaped
 
 from .hamiltonian_simulation_by_gqsp import (
     _hubbard_time_evolution_by_gqsp,
@@ -95,3 +95,8 @@ def test_hamiltonian_simulation_by_gqsp(
             select_bitsize, target_bitsize, random_state=random_state
         )
         verify_hamiltonian_simulation_by_gqsp(W, H.matrix(), t=t, precision=precision)
+
+
+def test_hamiltonian_simulation_by_gqsp_t_complexity():
+    hubbard_time_evolution_by_gqsp = _hubbard_time_evolution_by_gqsp.make()
+    _ = hubbard_time_evolution_by_gqsp.t_complexity()

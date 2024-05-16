@@ -14,7 +14,7 @@
 
 import itertools
 from functools import cached_property
-from typing import List, Sequence, Set, Tuple, TYPE_CHECKING
+from typing import Iterator, List, Sequence, Set, Tuple, TYPE_CHECKING
 
 import cirq
 import pytest
@@ -125,7 +125,7 @@ class ApplyXToIJKthQubit(UnaryIterationGate):
         t1: Sequence[cirq.Qid],
         t2: Sequence[cirq.Qid],
         t3: Sequence[cirq.Qid],
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         yield [cirq.CNOT(control, t1[i]), cirq.CNOT(control, t2[j]), cirq.CNOT(control, t3[k])]
 
     def nth_operation_callgraph(self, **selection_regs_name_to_val) -> Set['BloqCountT']:

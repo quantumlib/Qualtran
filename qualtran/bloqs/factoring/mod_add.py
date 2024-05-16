@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 import sympy
@@ -23,7 +23,7 @@ from qualtran import Bloq, QBit, QMontgomeryUInt, QUInt, Register, Signature, So
 from qualtran.bloqs.arithmetic.addition import Add, SimpleAddConstant
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import TGate, XGate
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -74,17 +74,16 @@ class CtrlScaleModAdd(Bloq):
         y_out = (y + x * self.k) % self.mod
         return {'ctrl': ctrl, 'x': x, 'y': y_out}
 
-    def short_name(self) -> str:
-        return f'y += x*{self.k} % {self.mod}'
-
-    def wire_symbol(self, soq: 'Soquet') -> 'WireSymbol':
-        if soq.reg.name == 'ctrl':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'y += x*{self.k} % {self.mod}')
+        if reg.name == 'ctrl':
             return Circle()
-        if soq.reg.name == 'x':
+        if reg.name == 'x':
             return TextBox('x')
-        if soq.reg.name == 'y':
+        if reg.name == 'y':
             return TextBox(f'y += x*{self.k}')
-        raise ValueError(f"Unknown soquet {soq}")
+        raise ValueError(f"Unknown register name {reg.name}")
 
 
 @frozen
@@ -113,8 +112,12 @@ class CtrlModAddK(Bloq):
         k = ssa.new_symbol('k')
         return {(CtrlAddK(k=k, bitsize=self.bitsize), 5)}
 
-    def short_name(self) -> str:
-        return f'x += {self.k} % {self.mod}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x += {self.k} % {self.mod}')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -133,15 +136,19 @@ class CtrlAddK(Bloq):
     k: Union[int, sympy.Expr]
     bitsize: Union[int, sympy.Expr]
 
-    def short_name(self) -> str:
-        return f'x += {self.k}'
-
     @cached_property
     def signature(self) -> 'Signature':
         return Signature([Register('ctrl', QBit()), Register('x', QUInt(self.bitsize))])
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         return {(TGate(), 2 * self.bitsize)}
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x += {self.k}')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen
@@ -179,7 +186,6 @@ class MontgomeryModAdd(Bloq):
     def on_classical_vals(
         self, x: 'ClassicalValT', y: 'ClassicalValT'
     ) -> Dict[str, 'ClassicalValT']:
-
         y += x
         y -= self.p
 
@@ -189,7 +195,6 @@ class MontgomeryModAdd(Bloq):
         return {'x': x, 'y': y}
 
     def build_composite_bloq(self, bb: 'BloqBuilder', x: Soquet, y: Soquet) -> Dict[str, 'SoquetT']:
-
         # Allocate ancilla bits for use in addition.
         junk_bit = bb.allocate(n=1)
         sign = bb.allocate(n=1)
@@ -247,5 +252,9 @@ class MontgomeryModAdd(Bloq):
         # Return the output registers.
         return {'x': x, 'y': y}
 
-    def short_name(self) -> str:
-        return f'y = y + x mod {self.p}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'y = y + x mod {self.p}')
+        return super().wire_symbol(reg, idx)

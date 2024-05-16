@@ -22,11 +22,11 @@ GeneralizerT = Callable[['Bloq'], Optional['Bloq']]
 def _make_composite_generalizer(*funcs: 'GeneralizerT') -> 'GeneralizerT':
     """Return a generalizer that calls each `*funcs` generalizers in order."""
 
-    def _composite_generalize(b: 'Bloq') -> Optional['Bloq']:
+    def _composite_generalize(b: Optional['Bloq']) -> Optional['Bloq']:
         for func in funcs:
-            b = func(b)
             if b is None:
-                return
+                return None
+            b = func(b)
         return b
 
     return _composite_generalize

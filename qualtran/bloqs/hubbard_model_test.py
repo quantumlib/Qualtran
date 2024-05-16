@@ -63,8 +63,6 @@ def test_hubbard_model_consistent_protocols():
         select_gate.controlled(num_controls=1, control_values=(0,)),
         select_op.controlled_by(cirq.q("control"), control_values=(0,)).gate,
     )
-    with pytest.raises(NotImplementedError, match="Cannot create a controlled version"):
-        _ = select_gate.controlled(num_controls=2)
 
     # Test diagrams
     expected_symbols = ['U', 'V', 'p_x', 'p_y', 'alpha', 'q_x', 'q_y', 'beta']

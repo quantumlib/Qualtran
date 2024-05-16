@@ -37,7 +37,12 @@ class Interaction(Bloq):
     which can be implemented using equal angle single-qubit Z rotations.
 
     Args:
-        length: Lattice length L.
+        length: Lattice length $L$.
+        angle: The prefactor scaling the Hopping hamiltonian in the unitary (`t` above).
+            This should contain any relevant prefactors including the time step
+            and any splitting coefficients.
+        hubb_u: The hubbard $U$ parameter.
+        eps: The precision of the single qubit rotations.
 
     Registers:
         system: The system register of size 2 `length`.
@@ -49,6 +54,7 @@ class Interaction(Bloq):
 
     length: Union[int, sympy.Expr]
     angle: Union[float, sympy.Expr]
+    hubb_u: Union[float, sympy.Expr]
     eps: Union[float, sympy.Expr] = 1e-9
 
     @cached_property
@@ -57,14 +63,15 @@ class Interaction(Bloq):
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         # Page 13 paragraph 1.
-        return {(Rz(angle=self.angle, eps=self.eps), self.length**2)}
+        return {(Rz(angle=self.angle * self.hubb_u, eps=self.eps), self.length**2)}
 
 
 @bloq_example
 def _interaction() -> Interaction:
     length = 8
     angle = 0.5
-    interaction = Interaction(length, angle)
+    hubb_u = 4.0
+    interaction = Interaction(length, angle, hubb_u)
     return interaction
 
 

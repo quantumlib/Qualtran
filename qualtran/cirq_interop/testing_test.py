@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from typing import Iterator
+
 import cirq
 import numpy as np
 import pytest
@@ -71,7 +73,7 @@ class InconsistentDecompostion(cirq.Operation):
     def _t_complexity_(self) -> TComplexity:
         return TComplexity(rotations=1)
 
-    def _decompose_(self) -> cirq.OP_TREE:
+    def _decompose_(self) -> Iterator[cirq.OP_TREE]:
         yield cirq.X(self.qubits[0])
 
     @property
