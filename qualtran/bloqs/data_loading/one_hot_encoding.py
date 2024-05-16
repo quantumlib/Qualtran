@@ -80,3 +80,6 @@ class OneHotEncoding(GateWithRegisters):
             for j in range(2**i):
                 op_tree.append(TwoBitCSwap().on_registers(ctrl=a[i], x=b[j], y=b[2**i + j]))
         return op_tree
+
+    def short_name(self) -> str:
+        return "one-hot-enc"
