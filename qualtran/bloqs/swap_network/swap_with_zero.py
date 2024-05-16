@@ -16,16 +16,15 @@ from functools import cached_property
 from typing import Dict, Iterable, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
-import cirq
 import numpy as np
 from numpy.typing import NDArray
 
 from qualtran import (
+    Bloq,
     bloq_example,
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
-    GateWithRegisters,
     QAny,
     Register,
     Signature,
@@ -50,7 +49,7 @@ def _to_tuple(x: Union[SymbolicInt, Iterable[SymbolicInt]]) -> Tuple[SymbolicInt
 
 
 @attrs.frozen
-class SwapWithZero(GateWithRegisters):
+class SwapWithZero(Bloq):
     r"""Swaps $|\Psi_0\rangle$ with $|\Psi_x\rangle$ if selection register stores index `x`.
 
     Implements the unitary
@@ -154,11 +153,6 @@ class SwapWithZero(GateWithRegisters):
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         num_swaps = prod(*[x for x in self.n_target_registers]) - 1
         return {(CSwapApprox(self.target_bitsize), num_swaps)}
-
-    def _circuit_diagram_info_(self, args) -> cirq.CircuitDiagramInfo:
-        from qualtran.cirq_interop._bloq_to_cirq import _wire_symbol_to_cirq_diagram_info
-
-        return _wire_symbol_to_cirq_diagram_info(self, args)
 
     def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:
