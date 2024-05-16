@@ -29,7 +29,6 @@ from typing import (
 import attrs
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 from numpy.typing import NDArray
 
 from .bloq import Bloq
@@ -38,6 +37,8 @@ from .gate_with_registers import GateWithRegisters
 from .registers import Register, Side, Signature
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import BloqBuilder, CompositeBloq, Soquet, SoquetT
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -399,6 +400,8 @@ class Controlled(GateWithRegisters):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         from qualtran._infra.composite_bloq import _flatten_soquet_collection
         from qualtran.simulation.tensor._tensor_data_manipulation import (
             active_space_for_ctrl_spec,

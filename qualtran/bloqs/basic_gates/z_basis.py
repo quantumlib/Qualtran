@@ -17,7 +17,6 @@ from typing import Any, cast, Dict, Optional, Set, Tuple, TYPE_CHECKING, Union
 
 import attrs
 import numpy as np
-import quimb.tensor as qtn
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
@@ -43,6 +42,7 @@ from qualtran.simulation.classical_sim import ints_to_bits
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.drawing import WireSymbol
@@ -84,12 +84,14 @@ class _ZVector(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         side = outgoing if self.state else incoming
         tn.add(
             qtn.Tensor(
@@ -240,12 +242,14 @@ class ZGate(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         tn.add(qtn.Tensor(data=_PAULIZ, inds=(outgoing['q'], incoming['q']), tags=["Z", tag]))
 
     def as_cirq_op(
@@ -334,12 +338,14 @@ class _IntVector(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
         outgoing: Dict[str, SoquetT],
     ):
+        import quimb.tensor as qtn
+
         if isinstance(self.bitsize, sympy.Expr):
             raise ValueError(f'Symbolic bitsize {self.bitsize} not supported')
         data = np.zeros(2**self.bitsize).reshape((2,) * self.bitsize)
