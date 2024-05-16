@@ -17,7 +17,6 @@ from typing import Any, Dict, Iterator, Optional, Sequence, Set, Tuple, TYPE_CHE
 
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 import sympy
 from attrs import frozen
 from numpy.typing import NDArray
@@ -43,6 +42,8 @@ from qualtran.resource_counting.generalizers import ignore_split_join
 from .t_gate import TGate
 
 if TYPE_CHECKING:
+    import quimb.tensor as qtn
+
     from qualtran import CompositeBloq
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
     from qualtran.simulation.classical_sim import ClassicalValT
@@ -90,6 +91,8 @@ class TwoBitSwap(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         matrix = _swap_matrix()
         out_inds = [outgoing['x'], outgoing['y']]
         in_inds = [incoming['x'], incoming['y']]
@@ -157,6 +160,8 @@ class TwoBitCSwap(Bloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         matrix = _controlled_swap_matrix()
         out_inds = [outgoing['ctrl'], outgoing['x'], outgoing['y']]
         in_inds = [incoming['ctrl'], incoming['x'], incoming['y']]
