@@ -58,6 +58,7 @@ from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiControlX
 from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import directional_text_box, Text
 
 if TYPE_CHECKING:
     import quimb.tensor as qtn
@@ -161,10 +162,9 @@ class Add(Bloq):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols)
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
-        from qualtran.drawing import directional_text_box, Text
 
         if reg is None:
-            return Text("a+b")
+            return Text("")
         if reg.name == 'a':
             return directional_text_box('a', side=reg.side)
         elif reg.name == 'b':

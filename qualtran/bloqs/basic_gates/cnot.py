@@ -17,7 +17,6 @@ from functools import cached_property
 from typing import Any, Dict, Iterable, Optional, Sequence, Tuple, TYPE_CHECKING
 
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 
 from qualtran import (
@@ -38,10 +37,10 @@ from qualtran.drawing import Circle, ModPlus, Text, WireSymbol
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
 
     from qualtran.cirq_interop import CirqQuregT
     from qualtran.simulation.classical_sim import ClassicalValT
-
 
 COPY = [1, 0, 0, 0, 0, 0, 0, 1]
 COPY = np.array(COPY, dtype=np.complex128).reshape((2, 2, 2))
@@ -72,7 +71,7 @@ class CNOT(Bloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, SoquetT],
@@ -86,6 +85,8 @@ class CNOT(Bloq):
         References:
             [Lectures on Quantum Tensor Networks](https://arxiv.org/abs/1912.10049). Biamonte 2019.
         """
+        import quimb.tensor as qtn
+
         internal = qtn.rand_uuid()
         tn.add(
             qtn.Tensor(

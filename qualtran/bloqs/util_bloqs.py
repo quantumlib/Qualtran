@@ -19,7 +19,6 @@ from typing import Any, Dict, Iterable, Optional, Sequence, Set, Tuple, TYPE_CHE
 
 import attrs
 import numpy as np
-import quimb.tensor as qtn
 from attrs import frozen
 from sympy import Expr
 
@@ -42,6 +41,7 @@ from qualtran.symbolics import is_symbolic, SymbolicInt
 
 if TYPE_CHECKING:
     import cirq
+    import quimb.tensor as qtn
     from numpy.typing import NDArray
 
     from qualtran import AddControlledT, CtrlSpec
@@ -103,12 +103,14 @@ class Split(UtilBloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         if not isinstance(outgoing['reg'], np.ndarray):
             raise ValueError('Outgoing register must be a numpy array')
         tn.add(
@@ -157,12 +159,14 @@ class Join(UtilBloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         if not isinstance(incoming['reg'], np.ndarray):
             raise ValueError('Incoming register must be a numpy array')
         tn.add(
@@ -233,12 +237,14 @@ class Partition(UtilBloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         unitary_shape = []
         soquets = []
         _incoming = incoming if self.partition else outgoing
@@ -336,6 +342,8 @@ class Allocate(UtilBloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(outgoing['reg'],), tags=['Allocate', tag]))
@@ -381,6 +389,8 @@ class Free(UtilBloq):
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         data = np.zeros(1 << self.dtype.num_qubits)
         data[0] = 1
         tn.add(qtn.Tensor(data=data, inds=(incoming['reg'],), tags=['Free', tag]))
@@ -455,12 +465,14 @@ class Cast(UtilBloq):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, 'SoquetT'],
         outgoing: Dict[str, 'SoquetT'],
     ):
+        import quimb.tensor as qtn
+
         tn.add(
             qtn.Tensor(
                 data=np.eye(2**self.inp_dtype.num_qubits, 2**self.inp_dtype.num_qubits),

@@ -77,8 +77,12 @@ class LessThanConstant(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text(f'x<{self.less_than_val}')
-        return super().wire_symbol(reg, idx)
+            return Text("")
+        if reg.name == 'x':
+            return TextBox("x")
+        if reg.name == 'target':
+            return TextBox("z^(x<a)")
+        raise ValueError(f'Unknown register name {reg.name}')
 
     def registers(self) -> Sequence[Union[int, Sequence[int]]]:
         return [2] * self.bitsize, self.less_than_val, [2]
@@ -447,8 +451,14 @@ class LessThanEqual(GateWithRegisters, cirq.ArithmeticGate):  # type: ignore[mis
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text('x <= y')
-        return super().wire_symbol(reg, idx)
+            return Text('')
+        if reg.name == "x":
+            return TextBox('x')
+        if reg.name == "y":
+            return TextBox('y')
+        if reg.name == "target":
+            return TextBox('z^(x<=y)')
+        raise ValueError(f'Unknown register name {reg.name}')
 
     def on_classical_vals(self, *, x: int, y: int, target: int) -> Dict[str, 'ClassicalValT']:
         return {'x': x, 'y': y, 'target': target ^ (x <= y)}
@@ -821,8 +831,14 @@ class LinearDepthGreaterThan(Bloq):
         self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
     ) -> 'WireSymbol':
         if reg is None:
-            return Text('a > b')
-        return super().wire_symbol(reg, idx)
+            return Text('')
+        if reg.name == "a":
+            return TextBox('a')
+        if reg.name == "b":
+            return TextBox('b')
+        if reg.name == "target":
+            return TextBox('t⨁(a>b)')
+        raise ValueError(f'Unknown register name {reg.name}')
 
 
 @frozen
@@ -860,7 +876,7 @@ class GreaterThanConstant(Bloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
-            return Text(f"x > {self.val}")
+            return Text("")
         if reg.name == 'x':
             return TextBox("In(x)")
         elif reg.name == 'target':
@@ -912,7 +928,7 @@ class EqualsAConstant(Bloq):
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> WireSymbol:
         if reg is None:
-            return Text(f"x == {self.val}")
+            return Text("")
         if reg.name == 'x':
             return TextBox("In(x)")
         elif reg.name == 'target':
