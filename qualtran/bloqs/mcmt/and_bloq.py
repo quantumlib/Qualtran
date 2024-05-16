@@ -24,12 +24,22 @@ to the and of its control registers. `And` will output the result into a fresh r
 
 import itertools
 from functools import cached_property
-from typing import Any, Dict, Iterable, Iterator, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 import attrs
 import cirq
 import numpy as np
-import quimb.tensor as qtn
 import sympy
 from attrs import field, frozen
 from numpy.typing import NDArray
@@ -60,6 +70,9 @@ from qualtran.resource_counting.generalizers import (
     ignore_cliffords,
 )
 from qualtran.simulation.classical_sim import ClassicalValT
+
+if TYPE_CHECKING:
+    import quimb.tensor as qtn
 
 
 @frozen
@@ -124,12 +137,14 @@ class And(GateWithRegisters):
 
     def add_my_tensors(
         self,
-        tn: qtn.TensorNetwork,
+        tn: 'qtn.TensorNetwork',
         tag: Any,
         *,
         incoming: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
         outgoing: Dict[str, NDArray[Soquet]],  # type: ignore[type-var]
     ):
+        import quimb.tensor as qtn
+
         # Fill in our tensor using "and" logic.
         data = np.zeros((2, 2, 2, 2, 2), dtype=np.complex128)
         for c1, c2 in itertools.product((0, 1), repeat=2):
