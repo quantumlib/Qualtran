@@ -13,17 +13,19 @@
 #  limitations under the License.
 
 from functools import cached_property
-from typing import Dict, Iterator, Set, TYPE_CHECKING
+from typing import Dict, Iterator, Optional, Set, Tuple, TYPE_CHECKING
 
 import cirq
 from attrs import frozen
 from numpy.typing import NDArray
 
-from qualtran import bloq_example, BloqDocSpec, GateWithRegisters, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, CompositeBloq, Register, Signature
 from qualtran.bloqs.basic_gates import TGate
 from qualtran.bloqs.mcmt.multi_control_multi_target_pauli import MultiTargetCNOT
 from qualtran.bloqs.util_bloqs import ArbitraryClifford
+from qualtran.cirq_interop import decompose_from_cirq_style_method
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
+from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting.generalizers import (
     cirq_to_bloqs,
     generalize_rotation_angle,
@@ -38,7 +40,7 @@ if TYPE_CHECKING:
 
 
 @frozen
-class CSwapApprox(GateWithRegisters):
+class CSwapApprox(Bloq):
     r"""Approximately implements a multi-target controlled swap unitary using only $4n$ T-gates.
 
     Implements $\mathrm{CSWAP}_n = |0 \rangle\langle 0| I + |1 \rangle\langle 1| \mathrm{SWAP}_n$
@@ -65,6 +67,9 @@ class CSwapApprox(GateWithRegisters):
     @cached_property
     def signature(self) -> Signature:
         return Signature.build(ctrl=1, x=self.bitsize, y=self.bitsize)
+
+    def decompose_bloq(self) -> 'CompositeBloq':
+        return decompose_from_cirq_style_method(self)
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
@@ -113,6 +118,18 @@ class CSwapApprox(GateWithRegisters):
         return cirq.CircuitDiagramInfo(
             ("@(approx)",) + ("×(x)",) * self.bitsize + ("×(y)",) * self.bitsize
         )
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return TextBox("approx")
+        if reg.name == 'ctrl':
+            return Circle()
+        if reg.name == 'x':
+            return TextBox("×(x)")
+        if reg.name == 'y':
+            return TextBox("×(y)")
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.bitsize
