@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import pytest
+
 from qualtran import Bloq
 from qualtran.bloqs.basic_gates import Rz
 from qualtran.bloqs.basic_gates.t_gate import TGate
@@ -45,5 +46,5 @@ def test_second_order_suzuki_costs():
 
 
 @pytest.mark.notebook
-def test_notebook()
+def test_notebook():
     execute_notebook('qpe_cost_optimization.ipynb')
