@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from qualtran.bloqs.arithmetic.addition import Add, AddK, Subtract, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder, Subtract
 from qualtran.bloqs.arithmetic.comparison import (
     BiQubitsMixer,
     EqualsAConstant,

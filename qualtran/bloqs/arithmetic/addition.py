@@ -666,7 +666,7 @@ class Subtract(Bloq):
         )
         return {
             (XGate(), self.b_dtype.bitsize),
-            (SimpleAddConstant(self.b_dtype.bitsize, k=1), 1),
+            (AddK(self.b_dtype.bitsize, k=1), 1),
             (Add(a_dtype, b_dtype), 1),
             (util_bloqs.Split(self.b_dtype), 1),
             (util_bloqs.Join(self.b_dtype), 1),
@@ -675,7 +675,7 @@ class Subtract(Bloq):
     def build_composite_bloq(self, bb: 'BloqBuilder', a: Soquet, b: Soquet) -> Dict[str, 'SoquetT']:
         b = np.array([bb.add(XGate(), q=q) for q in bb.split(b)])  # 1s complement of b.
         b = bb.add(
-            SimpleAddConstant(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
+            AddK(self.b_dtype.bitsize, k=1), x=bb.join(b, self.b_dtype)
         )  # 2s complement of b.
 
         a_dtype = (

@@ -21,7 +21,7 @@ import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import BloqBuilder, CtrlSpec, QInt, QUInt
-from qualtran.bloqs.arithmetic.addition import Add, AddK, Subtract, OutOfPlaceAdder
+from qualtran.bloqs.arithmetic.addition import Add, AddK, OutOfPlaceAdder, Subtract
 from qualtran.cirq_interop.bit_tools import iter_bits, iter_bits_twos_complement
 from qualtran.cirq_interop.t_complexity_protocol import TComplexity
 from qualtran.cirq_interop.testing import (
