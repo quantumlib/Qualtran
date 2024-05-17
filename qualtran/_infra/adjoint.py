@@ -142,12 +142,15 @@ class Adjoint(GateWithRegisters):
         """The decomposition is the adjoint of `subbloq`'s decomposition."""
         return self.subbloq.decompose_bloq().adjoint()
 
-    def decompose_from_registers(
-        self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
-    ) -> cirq.OP_TREE:
-        if isinstance(self.subbloq, GateWithRegisters):
-            return cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
-        return super().decompose_from_registers(context=context, **quregs)
+    # def decompose_from_registers(
+    #     self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]  # type: ignore[type-var]
+    # ) -> cirq.OP_TREE:
+    #     if isinstance(self.subbloq, GateWithRegisters) or hasattr(
+    #         self.subbloq, 'decompose_from_registers'
+    #     ):
+    #         yield cirq.inverse(self.subbloq.decompose_from_registers(context=context, **quregs))
+    #     else:
+    #         yield super().decompose_from_registers(context=context, **quregs)
 
     def _circuit_diagram_info_(
         self, args: 'cirq.CircuitDiagramInfoArgs'

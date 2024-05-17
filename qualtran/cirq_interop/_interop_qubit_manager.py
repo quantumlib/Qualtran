@@ -28,10 +28,30 @@ class InteropQubitManager(cirq.QubitManager):
         self._managed_qubits: Set[cirq.Qid] = set()
 
     def qalloc(self, n: int, dim: int = 2) -> List['cirq.Qid']:
-        return self._qm.qalloc(n, dim)
+        ret = []
+        qubits_to_free = []
+        while len(ret) < n:
+            new_alloc = self._qm.qalloc(n - len(ret), dim)
+            for q in new_alloc:
+                if q in self._managed_qubits:
+                    qubits_to_free.append(q)
+                else:
+                    ret.append(q)
+        self._qm.qfree(qubits_to_free)
+        return ret
 
     def qborrow(self, n: int, dim: int = 2) -> List['cirq.Qid']:
-        return self._qm.qborrow(n, dim)
+        ret = []
+        qubits_to_free = []
+        while len(ret) < n:
+            new_alloc = self._qm.qborrow(n - len(ret), dim)
+            for q in new_alloc:
+                if q in self._managed_qubits:
+                    qubits_to_free.append(q)
+                else:
+                    ret.append(q)
+        self._qm.qfree(qubits_to_free)
+        return ret
 
     def manage_qubits(self, qubits: Iterable[cirq.Qid]):
         self._managed_qubits |= set(qubits)

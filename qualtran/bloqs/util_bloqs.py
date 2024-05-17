@@ -365,6 +365,15 @@ class Allocate(Bloq):
         assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
 
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        shape = (*self.signature[0].shape, self.signature[0].bitsize)
+        return (
+            None,
+            {'reg': np.array(qubit_manager.qalloc(self.signature.n_qubits())).reshape(shape)},
+        )
+
 
 @frozen
 class Free(Bloq):
@@ -414,6 +423,12 @@ class Free(Bloq):
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
+
+    def as_cirq_op(
+        self, qubit_manager: 'cirq.QubitManager', reg: 'CirqQuregT'
+    ) -> Tuple[Union['cirq.Operation', None], Dict[str, 'CirqQuregT']]:
+        qubit_manager.qfree(reg.flatten().tolist())
+        return (None, {})
 
 
 @frozen
