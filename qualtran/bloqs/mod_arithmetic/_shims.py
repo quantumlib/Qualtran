@@ -27,8 +27,8 @@ from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 from attrs import frozen
 
 from qualtran import Bloq, QBit, QUInt, Register, Signature
-from qualtran.bloqs.arithmetic import Add, AddK
-from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli, Negate, Sub
+from qualtran.bloqs.arithmetic import Add, AddK, Subtract
+from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli, Negate
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
 from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.symbolics import ceil, log2
@@ -121,7 +121,7 @@ class _ModInvInner(Bloq):
             (CNOT(), 2),
             (Lt(self.n), 1),
             (CSwap(self.n), 2),
-            (Sub(self.n), 1),
+            (Subtract(QUInt(self.n)), 1),
             (Add(QUInt(self.n)), 1),
             (CNOT(), 1),
             (ModDbl(self.n, self.mod), 1),
