@@ -66,6 +66,7 @@ from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
     PrepareUniformSuperposition,
 )
+from qualtran.symbolics.math_funcs import acos, ssqrt
 
 if TYPE_CHECKING:
     from qualtran.symbolics import SymbolicFloat
@@ -308,7 +309,7 @@ class PrepareHubbard(PrepareOracle):
         temp = quregs['temp']
 
         N = self.x_dim * self.y_dim * 2
-        yield cirq.Ry(rads=2 * np.arccos(np.sqrt(self.t * N / self.l1_norm_of_coeffs))).on(*V)
+        yield cirq.Ry(rads=2 * acos(ssqrt(self.t * N / self.l1_norm_of_coeffs))).on(*V)
         yield cirq.Ry(rads=2 * np.arccos(np.sqrt(1 / 5))).on(*U).controlled_by(*V)
         yield PrepareUniformSuperposition(self.x_dim).on_registers(controls=[], target=p_x)
         yield PrepareUniformSuperposition(self.y_dim).on_registers(controls=[], target=p_y)
