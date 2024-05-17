@@ -47,4 +47,4 @@ def test_second_order_suzuki_costs():
 
 @pytest.mark.notebook
 def test_notebook():
-    execute_notebook('qpe_cost_optimization.ipynb')
+    execute_notebook('qpe_cost_optimization')
