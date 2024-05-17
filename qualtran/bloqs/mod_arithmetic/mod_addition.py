@@ -35,7 +35,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import XGate
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
@@ -318,10 +318,11 @@ class CtrlScaleModAdd(Bloq):
         y_out = (y + x * self.k) % self.mod
         return {'ctrl': ctrl, 'x': x, 'y': y_out}
 
-    def short_name(self) -> str:
-        return f'y += x*{self.k} % {self.mod}'
-
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f"mod {self.mod}")
         if reg.name == 'ctrl':
             return Circle()
         if reg.name == 'x':
