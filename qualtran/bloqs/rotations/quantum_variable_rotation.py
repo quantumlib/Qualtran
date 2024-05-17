@@ -84,6 +84,7 @@ from qualtran.symbolics import (
     sabs,
     smax,
     smin,
+    SymbolicFloat,
     SymbolicInt,
 )
 
@@ -145,15 +146,12 @@ class QvrZPow(QvrInterface):
     """
 
     cost_reg: Register
-    gamma: Union[float, sympy.Expr] = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    gamma: Union[SymbolicFloat] = 1.0
+    eps: Union[SymbolicFloat] = 1e-9
 
     @classmethod
     def from_bitsize(
-        cls,
-        bitsize: int,
-        gamma: Union[float, sympy.Expr] = 1.0,
-        eps: Union[float, sympy.Expr] = 1e-9,
+        cls, bitsize: int, gamma: Union[SymbolicFloat] = 1.0, eps: Union[SymbolicFloat] = 1e-9
     ) -> 'QvrZPow':
         cost_reg = Register("x", QFxp(bitsize, bitsize, signed=False))
         return QvrZPow(cost_reg, gamma=gamma, eps=eps)
@@ -381,8 +379,8 @@ class QvrPhaseGradient(QvrInterface):
     """
 
     cost_reg: Register
-    gamma: Union[float, sympy.Expr] = 1.0
-    eps: Union[float, sympy.Expr] = 1e-9
+    gamma: Union[SymbolicFloat] = 1.0
+    eps: Union[SymbolicFloat] = 1e-9
 
     def __attrs_post_init__(self):
         dtype = self.cost_reg.dtype
@@ -391,10 +389,7 @@ class QvrPhaseGradient(QvrInterface):
 
     @classmethod
     def from_bitsize(
-        cls,
-        bitsize: int,
-        gamma: Union[float, sympy.Expr] = 1.0,
-        eps: Union[float, sympy.Expr] = 1e-9,
+        cls, bitsize: int, gamma: Union[SymbolicFloat] = 1.0, eps: Union[SymbolicFloat] = 1e-9
     ) -> 'QvrPhaseGradient':
         cost_reg = Register("x", QFxp(bitsize, bitsize, signed=False))
         return QvrPhaseGradient(cost_reg, gamma=gamma, eps=eps)
