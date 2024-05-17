@@ -35,7 +35,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 from qualtran.bloqs.basic_gates import XGate
-from qualtran.drawing import Circle, Text, TextBox, WireSymbol
+from qualtran.drawing import Circle, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
