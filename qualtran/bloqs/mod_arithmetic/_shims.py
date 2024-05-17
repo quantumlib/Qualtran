@@ -22,7 +22,7 @@ and moved to their final organizational location soon (written: 2024-05-06).
 
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Set, Tuple, TYPE_CHECKING
+from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
 from attrs import frozen
 
@@ -30,8 +30,8 @@ from qualtran import Bloq, QBit, QUInt, Register, Signature
 from qualtran.bloqs.arithmetic import Add, AddK
 from qualtran.bloqs.arithmetic._shims import CHalf, Lt, MultiCToffoli, Negate, Sub
 from qualtran.bloqs.basic_gates import CNOT, CSwap, Swap, Toffoli
-from qualtran.drawing import Circle, TextBox, WireSymbol
-from qualtran.resource_counting.symbolic_counting_utils import ceil, log2
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
+from qualtran.symbolics import ceil, log2
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -72,7 +72,11 @@ class CModSub(Bloq):
         # Roetteler
         return {(Toffoli(), ceil(16 * self.n * log2(self.n) - 23.8 * self.n))}
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
         if reg.name == 'ctrl':
             return Circle()
         elif reg.name == 'x':
@@ -132,7 +136,11 @@ class _ModInvInner(Bloq):
             summer[bloq] += n
         return set(summer.items())
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
@@ -162,7 +170,11 @@ class ModInv(Bloq):
             (Swap(self.n), 1),
         }
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
@@ -192,7 +204,11 @@ class ModMul(Bloq):
         # Roetteler montgomery
         return {(Toffoli(), ceil(16 * self.n**2 * log2(self.n) - 26.3 * self.n**2))}
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
         if reg.name in ['x', 'y']:
             return TextBox(reg.name)
         elif reg.name == 'out':
@@ -212,7 +228,11 @@ class ModDbl(Bloq):
     def signature(self) -> 'Signature':
         return Signature([Register('x', QUInt(self.n)), Register('out', QUInt(self.n))])
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
         if reg.name == 'x':
             return TextBox('x')
         elif reg.name == 'out':
@@ -240,7 +260,11 @@ class ModNeg(Bloq):
             (AddK(self.n, k=self.mod).controlled(), 1),
         }
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
         if reg.name == 'x':
             return TextBox('$-x$')
         raise ValueError(f'Unrecognized register name {reg.name}')
@@ -262,7 +286,11 @@ class CModNeg(Bloq):
         # Roetteler
         return {(Toffoli(), ceil(8 * self.n * log2(self.n) - 14.5 * self.n))}
 
-    def wire_symbol(self, reg: 'Register', idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text("")
         if reg.name == 'ctrl':
             return Circle()
         elif reg.name == 'x':

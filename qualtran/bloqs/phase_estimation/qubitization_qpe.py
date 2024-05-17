@@ -16,19 +16,13 @@ from typing import Iterator, Set, Tuple, TYPE_CHECKING
 
 import attrs
 import cirq
+import numpy as np
 
-from qualtran import Bloq, bloq_example, GateWithRegisters, QFxp, Register, Signature
+from qualtran import Bloq, bloq_example, BloqDocSpec, GateWithRegisters, QFxp, Register, Signature
 from qualtran.bloqs.phase_estimation.lp_resource_state import LPResourceState
 from qualtran.bloqs.qft.qft_text_book import QFTTextBook
 from qualtran.bloqs.qubitization_walk_operator import QubitizationWalkOperator
-from qualtran.resource_counting.symbolic_counting_utils import (
-    ceil,
-    is_symbolic,
-    log2,
-    pi,
-    SymbolicFloat,
-    SymbolicInt,
-)
+from qualtran.symbolics import ceil, is_symbolic, log2, pi, SymbolicFloat, SymbolicInt
 
 if TYPE_CHECKING:
     from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
@@ -178,8 +172,10 @@ def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
     N = x_dim * y_dim * 2
     qlambda = 2 * N * t + (N * mu) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
-    return qubitization_qpe_hubbard_model
+    qubitization_qpe_hubbard_model_small = QubitizationQPE.from_standard_deviation_eps(
+        walk, qpe_eps
+    )
+    return qubitization_qpe_hubbard_model_small
 
 
 @bloq_example
@@ -197,5 +193,72 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     N = x_dim * y_dim * 2
     qlambda = 2 * N * t + (N * mu) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
-    qubitization_qpe_hubbard_model = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
-    return qubitization_qpe_hubbard_model
+    qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
+        walk, qpe_eps
+    )
+    return qubitization_qpe_hubbard_model_large
+
+
+@bloq_example
+def _qubitization_qpe_chem_thc() -> QubitizationQPE:
+    from openfermion.resource_estimates.utils import QI
+
+    from qualtran.bloqs.chemistry.thc.walk_operator import get_walk_operator_for_thc_ham
+
+    # Li et al parameters from openfermion.resource_estimates.thc.compute_cost_thc_test
+    num_spinorb = 152
+    num_bits_state_prep = 10
+    num_bits_rot = 20
+    thc_dim = 450
+    num_spat = num_spinorb // 2
+    tpq = np.random.normal(size=(num_spat, num_spat))
+    tpq = 0.5 * (tpq + tpq) / 2
+    zeta = np.random.normal(size=(thc_dim, thc_dim))
+    zeta = 0.5 * (zeta + zeta) / 2
+    qroam_blocking_factor = np.power(2, QI(thc_dim + num_spat)[0])
+    walk = get_walk_operator_for_thc_ham(
+        tpq,
+        zeta,
+        num_bits_state_prep=num_bits_state_prep,
+        num_bits_theta=num_bits_rot,
+        kr1=qroam_blocking_factor,
+        kr2=qroam_blocking_factor,
+    )
+
+    algo_eps = 0.0016
+    qlambda = 1201.5
+    qpe_eps = algo_eps / (qlambda * np.sqrt(2))
+    qubitization_qpe_chem_thc = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    return qubitization_qpe_chem_thc
+
+
+@bloq_example
+def _qubitization_qpe_sparse_chem() -> QubitizationQPE:
+    import numpy as np
+
+    from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
+    from qualtran.bloqs.chemistry.sparse.walk_operator import get_walk_operator_for_sparse_chem_ham
+    from qualtran.bloqs.phase_estimation import QubitizationQPE
+
+    num_spatial = 6
+    tpq, eris = build_random_test_integrals(num_spatial // 2)
+    walk = get_walk_operator_for_sparse_chem_ham(
+        tpq, eris, num_bits_rot_aa=8, num_bits_state_prep=16
+    )
+
+    algo_eps = 0.0016
+    qlambda = np.sum(np.abs(tpq)) + 0.5 * np.sum(np.abs(eris))
+    qpe_eps = algo_eps / (qlambda * np.sqrt(2))
+    qubitization_qpe_sparse_chem = QubitizationQPE.from_standard_deviation_eps(walk, qpe_eps)
+    return qubitization_qpe_sparse_chem
+
+
+_QUBITIZATION_QPE_DOC = BloqDocSpec(
+    bloq_cls=QubitizationQPE,
+    import_line='from qualtran.bloqs.phase_estimation.qubitization_qpe import QubitizationQPE',
+    examples=(
+        _qubitization_qpe_hubbard_model_small,
+        _qubitization_qpe_sparse_chem,
+        _qubitization_qpe_chem_thc,
+    ),
+)

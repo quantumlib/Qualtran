@@ -34,13 +34,20 @@ from qualtran import (
 )
 from qualtran.bloqs.arithmetic.addition import Add, AddK
 from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
-from qualtran.bloqs.basic_gates import XGate
-from qualtran.drawing import Circle, TextBox, WireSymbol
+from qualtran.bloqs.basic_gates import TGate, XGate
+from qualtran.drawing import Circle, Text, TextBox, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.simulation.classical_sim import ClassicalValT
 
 if TYPE_CHECKING:
     from qualtran import BloqBuilder
+
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x += {self.k}')
+        return super().wire_symbol(reg, idx)
 
 
 @frozen

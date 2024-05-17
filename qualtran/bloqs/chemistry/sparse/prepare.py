@@ -17,8 +17,8 @@ import itertools
 from functools import cached_property
 from typing import Dict, Optional, Set, Tuple, TYPE_CHECKING
 
+import attrs
 import numpy as np
-from attrs import evolve, field, frozen
 from numpy.typing import NDArray
 
 from qualtran import (
@@ -26,6 +26,7 @@ from qualtran import (
     BloqBuilder,
     BloqDocSpec,
     BoundedQUInt,
+    CtrlSpec,
     QAny,
     QBit,
     Register,
@@ -33,7 +34,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.arithmetic.comparison import LessThanEqual
-from qualtran.bloqs.basic_gates import CSwap, Hadamard, Toffoli
+from qualtran.bloqs.basic_gates import CSwap, Hadamard
 from qualtran.bloqs.basic_gates.on_each import OnEach
 from qualtran.bloqs.basic_gates.z_basis import ZGate
 from qualtran.bloqs.data_loading.select_swap_qrom import find_optimal_log_block_size, SelectSwapQROM
@@ -112,7 +113,7 @@ def get_sparse_inputs_from_integrals(
     return np.concatenate((tpq_indx, pqrs_indx_np)), np.concatenate((tpq_sparse, eris_eight_np))
 
 
-@frozen
+@attrs.frozen
 class PrepareSparse(PrepareOracle):
     r"""Prepare oracle for the sparse chemistry Hamiltonian
 
@@ -163,16 +164,17 @@ class PrepareSparse(PrepareOracle):
         [Even More Efficient Quantum Computations of Chemistry Through Tensor
             hypercontraction](https://arxiv.org/abs/2011.03494) Eq. A11.
     """
+
     num_spin_orb: int
     num_non_zero: int
     num_bits_state_prep: int
-    alt_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
-    alt_theta: Tuple[int, ...] = field(repr=False)
-    alt_one_body: Tuple[int, ...] = field(repr=False)
-    ind_pqrs: Tuple[Tuple[int, ...], ...] = field(repr=False)
-    theta: Tuple[int, ...] = field(repr=False)
-    one_body: Tuple[int, ...] = field(repr=False)
-    keep: Tuple[int, ...] = field(repr=False)
+    alt_pqrs: Tuple[Tuple[int, ...], ...] = attrs.field(repr=False)
+    alt_theta: Tuple[int, ...] = attrs.field(repr=False)
+    alt_one_body: Tuple[int, ...] = attrs.field(repr=False)
+    ind_pqrs: Tuple[Tuple[int, ...], ...] = attrs.field(repr=False)
+    theta: Tuple[int, ...] = attrs.field(repr=False)
+    one_body: Tuple[int, ...] = attrs.field(repr=False)
+    keep: Tuple[int, ...] = attrs.field(repr=False)
     num_bits_rot_aa: int = 8
     is_adjoint: bool = False
     qroam_block_size: Optional[int] = None
@@ -226,9 +228,6 @@ class PrepareSparse(PrepareOracle):
             Register("flag_1b", BoundedQUInt(1)),
         )
 
-    def adjoint(self) -> 'Bloq':
-        return evolve(self, is_adjoint=not self.is_adjoint)
-
     @cached_property
     def junk_registers(self) -> Tuple[Register, ...]:
         return (
@@ -240,6 +239,9 @@ class PrepareSparse(PrepareOracle):
             Register("less_than", QBit()),
             Register("alt_flag_1b", QBit()),
         )
+
+    def adjoint(self) -> 'Bloq':
+        return attrs.evolve(self, is_adjoint=not self.is_adjoint)
 
     @classmethod
     def from_hamiltonian_coeffs(
@@ -281,7 +283,7 @@ class PrepareSparse(PrepareOracle):
             tpq_prime, eris, drop_element_thresh=drop_element_thresh
         )
         num_non_zero = len(integrals)
-        alt, keep, mu = preprocess_lcu_coefficients_for_reversible_sampling(
+        alt, keep, _ = preprocess_lcu_coefficients_for_reversible_sampling(
             np.abs(integrals), epsilon=2**-num_bits_state_prep / num_non_zero
         )
         theta = (1 - np.sign(integrals)) // 2
@@ -304,6 +306,34 @@ class PrepareSparse(PrepareOracle):
             num_bits_rot_aa=num_bits_rot_aa,
             qroam_block_size=qroam_block_size,
         )
+
+    def build_qrom_bloq(self) -> 'Bloq':
+        n_n = (self.num_spin_orb // 2 - 1).bit_length()
+        target_bitsizes = (
+            (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
+        )
+        if self.qroam_block_size is None:
+            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
+        else:
+            block_size = self.qroam_block_size
+        qrom = SelectSwapQROM(
+            self.ind_pqrs[0],
+            self.ind_pqrs[1],
+            self.ind_pqrs[2],
+            self.ind_pqrs[3],
+            self.theta,
+            self.one_body,
+            self.alt_pqrs[0],
+            self.alt_pqrs[1],
+            self.alt_pqrs[2],
+            self.alt_pqrs[3],
+            self.alt_theta,
+            self.alt_one_body,
+            self.keep,
+            target_bitsizes=target_bitsizes,
+            block_size=block_size,
+        )
+        return qrom
 
     def build_composite_bloq(
         self,
@@ -330,31 +360,7 @@ class PrepareSparse(PrepareOracle):
         # 1. Prepare \sum_d |d\rangle
         d = bb.add(PrepareUniformSuperposition(self.num_non_zero), target=d)
         # 2. QROM the ind_d alt_d values
-        n_n = (self.num_spin_orb // 2 - 1).bit_length()
-        target_bitsizes = (
-            (n_n,) * 4 + (1,) * 2 + (n_n,) * 4 + (1,) * 2 + (self.num_bits_state_prep,)
-        )
-        if self.qroam_block_size is None:
-            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
-        else:
-            block_size = self.qroam_block_size
-        qrom = SelectSwapQROM(
-            self.ind_pqrs[0],
-            self.ind_pqrs[1],
-            self.ind_pqrs[2],
-            self.ind_pqrs[3],
-            self.theta,
-            self.one_body,
-            self.alt_pqrs[0],
-            self.alt_pqrs[1],
-            self.alt_pqrs[2],
-            self.alt_pqrs[3],
-            self.alt_theta,
-            self.alt_one_body,
-            self.keep,
-            target_bitsizes=target_bitsizes,
-            block_size=block_size,
-        )
+        qrom = self.build_qrom_bloq()
         (
             d,
             p,
@@ -392,8 +398,8 @@ class PrepareSparse(PrepareOracle):
         sigma = bb.add(OnEach(self.num_bits_state_prep, Hadamard()), q=sigma)
         keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
         less_than, theta[1] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[1])
-        # TODO: This should be off control
-        less_than, theta[0] = bb.add(ZGate().controlled(), ctrl=less_than, q=theta[0])
+        ctrl_spec = CtrlSpec(QBit(), 0b0)
+        less_than, theta[0] = bb.add(ZGate().controlled(ctrl_spec), ctrl=less_than, q=theta[0])
         # swap the ind and alt_pqrs values
         # TODO: These swaps are inverted at zero Toffoli cost in the reference.
         # The method is to copy all values being swapped before they are swapped. Then
@@ -402,14 +408,13 @@ class PrepareSparse(PrepareOracle):
         # controlled-phase operations, where the control is the control qubit
         # for the controlled swaps, and the targets are the copies of the
         # registers.
+        n_n = (self.num_spin_orb // 2 - 1).bit_length()
         less_than, alt_pqrs[0], p = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[0], y=p)
         less_than, alt_pqrs[1], q = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[1], y=q)
         less_than, alt_pqrs[2], r = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[2], y=r)
         less_than, alt_pqrs[3], s = bb.add(CSwap(n_n), ctrl=less_than, x=alt_pqrs[3], y=s)
         # swap the 1b/2b alt values
-        # less_than, flag_1b, alt_flag_1b = bb.add(CSwap(1), ctrl=less_than, x=flag_1b, y=alt_flag_1b)
-        # invert the comparator
-        keep, sigma, less_than = bb.add(lte_bloq, x=keep, y=sigma, target=less_than)
+        less_than, flag_1b, alt_flag_1b = bb.add(CSwap(1), ctrl=less_than, x=flag_1b, y=alt_flag_1b)
         # prepare |+> states for symmetry swaps
         swap_pq = bb.add(Hadamard(), q=swap_pq)
         swap_rs = bb.add(Hadamard(), q=swap_rs)
@@ -441,48 +446,23 @@ class PrepareSparse(PrepareOracle):
         }
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
-        num_bits_spat = (self.num_spin_orb // 2 - 1).bit_length()
-        if self.qroam_block_size is None:
-            target_bitsizes = (
-                (num_bits_spat,) * 4
-                + (1,) * 2
-                + (num_bits_spat,) * 4
-                + (1,) * 2
-                + (self.num_bits_state_prep,)
-            )
-            block_size = 2 ** find_optimal_log_block_size(self.num_non_zero, sum(target_bitsizes))
-        else:
-            block_size = self.qroam_block_size
-        if self.is_adjoint:
-            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + block_size  # A15
-        else:
-            output_size = self.num_bits_state_prep + 8 * num_bits_spat + 4
-            num_toff_qrom = int(np.ceil(self.num_non_zero / block_size)) + output_size * (
-                block_size - 1
-            )  # A14
-        qrom_cost = (Toffoli(), num_toff_qrom)
-        if self.is_adjoint:
-            return {(PrepareUniformSuperposition(self.num_non_zero), 1), qrom_cost}
-        swap_cost_state_prep = (CSwap(num_bits_spat), 4 + 4)  # 2. pg 39
-        ineq_cost_state_prep = (Toffoli(), (self.num_bits_state_prep + 1))  # 2. pg 39
-
         return {
             (PrepareUniformSuperposition(self.num_non_zero), 1),
-            qrom_cost,
-            swap_cost_state_prep,
-            ineq_cost_state_prep,
+            (self.build_qrom_bloq(), 1),
+            (OnEach(self.num_bits_state_prep, Hadamard()), 1),
+            (Hadamard(), 3),
+            (CSwap(1), 1),
+            (CSwap((self.num_spin_orb // 2 - 1).bit_length()), 4 + 4),
+            (LessThanEqual(self.num_bits_state_prep, self.num_bits_state_prep), 1),
         }
 
 
 @bloq_example
 def _prep_sparse() -> PrepareSparse:
+    from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
+
     num_spin_orb = 4
-    tpq = np.random.random((num_spin_orb // 2, num_spin_orb // 2))
-    tpq = 0.5 * (tpq + tpq.T)
-    eris = np.random.random((num_spin_orb // 2,) * 4)
-    eris += np.transpose(eris, (0, 1, 3, 2))
-    eris += np.transpose(eris, (1, 0, 2, 3))
-    eris += np.transpose(eris, (2, 3, 0, 1))
+    tpq, eris = build_random_test_integrals(num_spin_orb // 2)
     prep_sparse = PrepareSparse.from_hamiltonian_coeffs(num_spin_orb, tpq, eris)
     return prep_sparse
 

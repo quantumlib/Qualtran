@@ -34,7 +34,7 @@ from qualtran import (
 from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
 from qualtran.bloqs.mod_arithmetic import CtrlScaleModAdd
-from qualtran.drawing import Circle, directional_text_box, WireSymbol
+from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
 from qualtran.simulation.classical_sim import ClassicalValT
@@ -111,10 +111,9 @@ class CtrlModMul(Bloq):
         assert ctrl == 1, ctrl
         return {'ctrl': ctrl, 'x': (x * self.k) % self.mod}
 
-    def short_name(self) -> str:
-        return f'x *= {self.k} % {self.mod}'
-
-    def wire_symbol(self, reg: Register, idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+    def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x *= {self.k} % {self.mod}')
         if reg.name == 'ctrl':
             return Circle(filled=True)
         if reg.name == 'x':
@@ -199,8 +198,12 @@ class MontgomeryModDbl(Bloq):
         # Return the output registers.
         return {'x': x}
 
-    def short_name(self) -> str:
-        return f'x = 2 * x mod {self.p}'
+    def wire_symbol(
+        self, reg: Optional['Register'], idx: Tuple[int, ...] = tuple()
+    ) -> 'WireSymbol':
+        if reg is None:
+            return Text(f'x = 2 * x mod {self.p}')
+        return super().wire_symbol(reg, idx)
 
 
 _K = sympy.Symbol('k_mul')
