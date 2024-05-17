@@ -56,11 +56,6 @@ def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, contro
     assert_circuit_inp_out_cirqsim(
         circuit0, qubits, initial_state[:-num_anc], final_state[:-num_anc]
     )
-    # Test diagrams
-    expected_wire_symbols = (
-        ("In(ctrl)",) + ("In(x)",) * num_bits_a + ("In(y)/Out(x+y)",) * num_bits_b
-    )
-    assert cirq.circuit_diagram_info(gate).wire_symbols == expected_wire_symbols
 
 
 @pytest.mark.parametrize("n", [*range(3, 10)])

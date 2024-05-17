@@ -13,7 +13,7 @@
 #  limitations under the License.
 import itertools
 import math
-from typing import Any, Dict, Set, TYPE_CHECKING, Union
+from typing import Any, Dict, Iterator, Set, TYPE_CHECKING, Union
 
 import cirq
 import numpy as np
@@ -188,7 +188,7 @@ class ControlledAdd(Bloq):
 
     def decompose_from_registers(
         self, *, context: cirq.DecompositionContext, **quregs: NDArray[cirq.Qid]
-    ) -> cirq.OP_TREE:
+    ) -> Iterator[cirq.OP_TREE]:
         # reverse the order of qubits for big endian-ness.
         input_bits = quregs['a'][::-1]
         output_bits = quregs['b'][::-1]
