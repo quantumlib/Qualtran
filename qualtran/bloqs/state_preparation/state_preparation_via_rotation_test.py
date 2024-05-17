@@ -251,10 +251,12 @@ def test_state_preparation_via_rotation_multi_qubit_ctrl(
     assert np.allclose(result, correct)
 
 
+@pytest.mark.notebook
 def test_notebook():
     execute_notebook("state_preparation_via_rotation")
 
 
+@pytest.mark.notebook
 def test_notebook_tutorial():
     execute_notebook("state_preparation_via_rotation_tutorial")
 

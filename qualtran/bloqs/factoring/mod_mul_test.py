@@ -21,8 +21,8 @@ import sympy
 
 import qualtran.testing as qlt_testing
 from qualtran import Bloq
-from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
 from qualtran.bloqs.factoring.mod_mul import _modmul, _modmul_symb, CtrlModMul, MontgomeryModDbl
+from qualtran.bloqs.mod_arithmetic import CtrlScaleModAdd
 from qualtran.bloqs.util_bloqs import Allocate, Free
 from qualtran.drawing import Text
 from qualtran.resource_counting import SympySymbolAllocator

@@ -78,6 +78,7 @@ import qualtran.bloqs.factoring.ecc
 import qualtran.bloqs.factoring.mod_exp
 import qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp
 import qualtran.bloqs.mcmt.and_bloq
+import qualtran.bloqs.mod_arithmetic.mod_addition
 import qualtran.bloqs.multiplexers.apply_gate_to_lth_target
 import qualtran.bloqs.multiplexers.select_pauli_lcu
 import qualtran.bloqs.phase_estimation.lp_resource_state
@@ -291,7 +292,6 @@ ARITHMETIC = [
         bloq_specs=[
             qualtran.bloqs.arithmetic.addition._ADD_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_OOP_DOC,
-            qualtran.bloqs.arithmetic.addition._SIMPLE_ADD_K_DOC,
             qualtran.bloqs.arithmetic.addition._ADD_K_DOC,
         ],
     ),
@@ -365,6 +365,17 @@ ARITHMETIC = [
         module=qualtran.bloqs.factoring.ecc.ec_add,
         bloq_specs=[qualtran.bloqs.factoring.ecc.ec_add._EC_ADD_DOC],
     ),
+]
+
+MOD_ARITHMETIC = [
+    NotebookSpecV2(
+        title='Modular Addition',
+        module=qualtran.bloqs.mod_arithmetic.mod_addition,
+        bloq_specs=[
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_DOC,
+            qualtran.bloqs.mod_arithmetic.mod_addition._MOD_ADD_K_DOC,
+        ],
+    )
 ]
 
 
@@ -544,6 +555,7 @@ NB_BY_SECTION = [
     ('Basic Gates', BASIC_GATES),
     ('Chemistry', CHEMISTRY),
     ('Arithmetic', ARITHMETIC),
+    ('Modular Arithmetic', MOD_ARITHMETIC),
     ('Rotations', ROT_QFT_PE),
     ('Other', OTHER),
 ]

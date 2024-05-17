@@ -31,9 +31,9 @@ from qualtran import (
     Soquet,
     SoquetT,
 )
-from qualtran.bloqs.arithmetic.addition import SimpleAddConstant
+from qualtran.bloqs.arithmetic.addition import AddK
 from qualtran.bloqs.basic_gates import CNOT, CSwap, XGate
-from qualtran.bloqs.factoring.mod_add import CtrlScaleModAdd
+from qualtran.bloqs.mod_arithmetic import CtrlScaleModAdd
 from qualtran.drawing import Circle, directional_text_box, Text, WireSymbol
 from qualtran.resource_counting import BloqCountT, SympySymbolAllocator
 from qualtran.resource_counting.generalizers import ignore_alloc_free, ignore_split_join
@@ -163,9 +163,7 @@ class MontgomeryModDbl(Bloq):
         )
 
         # Add constant -p to the x register.
-        x = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize + 2, k=-1 * self.p, signed=True, cvs=()), x=x
-        )
+        x = bb.add(AddK(bitsize=self.bitsize + 2, k=-1 * self.p, signed=True, cvs=()), x=x)
 
         # Split the three bit pieces again so that we can use the sign to control our constant
         # addition circuit.
@@ -176,9 +174,7 @@ class MontgomeryModDbl(Bloq):
         # Add constant p to the x register if the result of the last modular reduction is negative.
         sign_split = bb.split(sign)
         sign_split, x = bb.add(
-            SimpleAddConstant(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)),
-            ctrls=sign_split,
-            x=x,
+            AddK(bitsize=self.bitsize + 1, k=self.p, signed=True, cvs=(1,)), ctrls=sign_split, x=x
         )
         sign = bb.join(sign_split)
 
