@@ -66,7 +66,8 @@ def test_controlled_addition(a, b, num_bits_a, num_bits_b, controlled_on, contro
 @pytest.mark.parametrize("n", [*range(3, 10)])
 def test_addition_gate_counts_controlled(n: int):
     add = ControlledAdd(QUInt(n), cv=1)
-    t_count = 8 * (n - 1) + 4
+    num_and = 2 * n - 1
+    t_count = 4 * num_and
 
     qlt_testing.assert_valid_bloq_decomposition(add)
     assert add.t_complexity() == add.decompose_bloq().t_complexity()

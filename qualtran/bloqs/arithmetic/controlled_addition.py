@@ -216,9 +216,9 @@ class ControlledAdd(Bloq):
 
     def _t_complexity_(self):
         n = self.b_dtype.bitsize
-        num_toffoli = n - 1
+        num_and = 2 * n - 1
         num_clifford = 33 * (n - 2) + 43
-        return TComplexity(t=8 * num_toffoli + 4, clifford=num_clifford)
+        return TComplexity(t=4 * num_and, clifford=num_clifford)
 
     def build_call_graph(self, ssa: 'SympySymbolAllocator') -> Set['BloqCountT']:
         n = self.b_dtype.bitsize
