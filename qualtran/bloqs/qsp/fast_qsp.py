@@ -34,7 +34,7 @@ class FastQSP:
         if self.only_reals:
             self.conv_p_negative = self.conv_by_flip_conj(poly) * -1
         else:
-            poly = poly.astype("complex128")
+            poly = np.array(poly, dtype=np.complex128)
             self.conv_p_negative = self.complex_conv_by_flip_conj(poly.real, poly.imag) * -1
         self.conv_p_negative[poly.shape[0] - 1] = 1 - np.linalg.norm(poly) ** 2
 
