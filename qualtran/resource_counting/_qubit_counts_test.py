@@ -12,8 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import pytest
 import sympy
 
+import qualtran.testing as qlt_testing
 from qualtran import QAny
 from qualtran.bloqs.basic_gates import Swap, TwoBitSwap
 from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
@@ -71,3 +73,7 @@ def test_qubit_count_cost():
         Swap(10): 20,
         TwoBitSwap(): 2,
     }
+
+@pytest.mark.notebook
+def test_notebook():
+    qlt_testing.execute_notebook("qubit_counts")

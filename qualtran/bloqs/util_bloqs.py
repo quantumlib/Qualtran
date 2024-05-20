@@ -355,6 +355,9 @@ class Allocate(_BookkeepingBloq):
         assert reg.name == 'reg'
         return directional_text_box('alloc', Side.RIGHT)
 
+    def __str__(self):
+        return f'Allocate({self.dtype})'
+
 
 @frozen
 class Free(_BookkeepingBloq):
@@ -401,6 +404,9 @@ class Free(_BookkeepingBloq):
             return Text('')
         assert reg.name == 'reg'
         return directional_text_box('free', Side.LEFT)
+
+    def __str__(self):
+        return f'Free({self.dtype})'
 
 
 @frozen

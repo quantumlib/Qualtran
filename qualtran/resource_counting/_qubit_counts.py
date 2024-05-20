@@ -12,9 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import abc
 import logging
-from typing import Callable, Dict, Generic, Sequence, Set, Tuple, TYPE_CHECKING, Union
+from typing import Callable, Set, Union
 
 import networkx as nx
 import sympy
@@ -22,10 +21,10 @@ from attrs import frozen
 
 from qualtran import Bloq, Connection, DanglingT, DecomposeNotImplementedError, DecomposeTypeError
 from qualtran._infra.composite_bloq import _binst_to_cxns
+from qualtran.symbolics import smax
 
 from ._call_graph import get_bloq_callee_counts
 from ._costing import CostKey
-from .symbolic_counting_utils import smax
 
 logger = logging.getLogger(__name__)
 
