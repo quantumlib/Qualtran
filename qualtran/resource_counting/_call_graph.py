@@ -171,27 +171,14 @@ def _build_call_graph(
             g.add_edge(bloq, callee, n=n)
 
 
-def _compute_sigma(root_bloq: Bloq, g: nx.DiGraph) -> Dict[Bloq, Union[int, sympy.Expr]]:
-    """Iterate over nodes to sum up the counts of leaf bloqs."""
-    bloq_sigmas: Dict[Bloq, Dict[Bloq, Union[int, sympy.Expr]]] = defaultdict(
-        lambda: defaultdict(lambda: 0)
-    )
-    for bloq in reversed(list(nx.topological_sort(g))):
-        callees = list(g.successors(bloq))
-        sigma = bloq_sigmas[bloq]
-        if not callees:
-            # 1. `bloq` is a leaf node. Its count is one of itself.
-            sigma[bloq] = 1
-            continue
+def _compute_sigma(
+    root_bloq: Bloq, g: nx.DiGraph, generalizer: 'GeneralizerT'
+) -> Dict[Bloq, Union[int, sympy.Expr]]:
+    """Shim for compatibility with old 'sigma' that used the call graph to count leaf bloqs."""
+    from qualtran.resource_counting import BloqCount, get_cost_value
 
-        for callee in callees:
-            callee_sigma = bloq_sigmas[callee]
-            # 2. Otherwise, sigma of the caller is sum(n * sigma of callee) for all the callees.
-            n = g.edges[bloq, callee]['n']
-            for k in callee_sigma.keys():
-                sigma[k] += callee_sigma[k] * n
-
-    return dict(bloq_sigmas[root_bloq])
+    leaf_counts = BloqCount.for_call_graph_leaf_bloqs(g)
+    return get_cost_value(root_bloq, leaf_counts, generalizer=generalizer)
 
 
 def get_bloq_call_graph(
@@ -239,7 +226,7 @@ def get_bloq_call_graph(
     if bloq is None:
         raise ValueError("You can't generalize away the root bloq.")
     _build_call_graph(bloq, generalizer, ssa, keep, max_depth, g=g, depth=0)
-    sigma = _compute_sigma(bloq, g)
+    sigma = _compute_sigma(bloq, g, generalizer)
     return g, sigma
 
 

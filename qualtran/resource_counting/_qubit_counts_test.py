@@ -14,13 +14,18 @@
 
 import sympy
 
+from qualtran import QAny
+from qualtran.bloqs.basic_gates import Swap, TwoBitSwap
 from qualtran.bloqs.for_testing.interior_alloc import InteriorAlloc
 from qualtran.bloqs.for_testing.with_decomposition import (
     TestIndependentParallelCombo,
     TestSerialCombo,
 )
+from qualtran.bloqs.util_bloqs import Allocate, Free
 from qualtran.drawing import show_bloq
-from qualtran.resource_counting._qubit_counting import _cbloq_max_width
+from qualtran.resource_counting import get_cost_cache, QubitCount
+from qualtran.resource_counting._qubit_counts import _cbloq_max_width
+from qualtran.resource_counting.generalizers import ignore_split_join
 
 
 def test_max_width_interior_alloc_symb():
@@ -54,3 +59,15 @@ def test_max_width_simple():
     show_bloq(TestSerialCombo().decompose_bloq())
     max_width = _cbloq_max_width(TestSerialCombo().decompose_bloq()._binst_graph)
     assert max_width == 1
+
+
+def test_qubit_count_cost():
+    bloq = InteriorAlloc(n=10)
+    qubit_counts = get_cost_cache(bloq, QubitCount(), generalizer=ignore_split_join)
+    assert qubit_counts == {
+        InteriorAlloc(n=10): 30,
+        Allocate(QAny(10)): 10,
+        Free(QAny(10)): 10,
+        Swap(10): 20,
+        TwoBitSwap(): 2,
+    }

@@ -108,8 +108,8 @@ class TGate(Bloq):
         return f'T{maybe_dag}'
 
     def __str__(self):
-        maybe_dag = 'is_adjoint=True' if self.is_adjoint else ''
-        return f'TGate({maybe_dag})'
+        maybe_dag = '†' if self.is_adjoint else ''
+        return f'T{maybe_dag}'
 
     def wire_symbol(self, reg: Optional[Register], idx: Tuple[int, ...] = tuple()) -> 'WireSymbol':
         if reg is None:

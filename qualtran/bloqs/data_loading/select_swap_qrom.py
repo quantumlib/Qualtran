@@ -259,3 +259,6 @@ class SelectSwapQROM(GateWithRegisters):
 
     def _value_equality_values_(self):
         return self.block_size, self._target_bitsizes, self.data
+
+    def __str__(self):
+        return 'SelectSwapQROM'

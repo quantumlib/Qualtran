@@ -58,7 +58,7 @@ def _pretty_name(bloq: Bloq) -> str:
 
 @functools.lru_cache(maxsize=1024)
 def _t_counts_for_bloq(bloq: Bloq, graph: nx.DiGraph) -> Union[int, sympy.Expr]:
-    sigma = _compute_sigma(bloq, graph)
+    sigma = _compute_sigma(bloq, graph, generalizer=lambda b: b)
     return t_counts_from_sigma(sigma)
 
 

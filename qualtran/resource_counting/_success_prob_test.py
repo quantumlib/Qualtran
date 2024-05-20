@@ -11,28 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+from qualtran.bloqs.for_testing.costing import CostingBloq
+from qualtran.resource_counting import get_cost_cache, get_cost_value, SuccessProb
 
-"""Counting resource usage (bloqs, qubits)
 
-isort:skip_file
-"""
+def test_coin_flip():
+    flip = CostingBloq('CoinFlip', num_qubits=1, static_costs=[(SuccessProb(), 0.5)])
+    algo = CostingBloq('Algo', num_qubits=0, callees=[(flip, 4)])
 
-from ._generalization import GeneralizerT
+    p = get_cost_value(algo, SuccessProb())
+    assert p == 0.5**4
 
-from ._call_graph import (
-    BloqCountT,
-    big_O,
-    SympySymbolAllocator,
-    get_bloq_callee_counts,
-    get_bloq_call_graph,
-    build_cbloq_call_graph,
-    format_call_graph_debug_text,
-)
-
-from ._costing import GeneralizerT, get_cost_value, get_cost_cache, query_costs, CostKey, CostValT
-
-from ._bloq_counts import BloqCount, QECGatesCost
-from ._qubit_counts import QubitCount
-from ._success_prob import SuccessProb
-
-from . import generalizers
+    costs = get_cost_cache(algo, SuccessProb())
+    assert costs == {algo: p, flip: 0.5}
