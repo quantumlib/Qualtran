@@ -139,9 +139,6 @@ class GateCounts:
         )
 
     def __mul__(self, other):
-        if not isinstance(other, int):
-            raise TypeError(f"Can only multiply `GateCounts` objects by integers, not {self}")
-
         return GateCounts(
             t=other * self.t,
             toffoli=other * self.toffoli,
