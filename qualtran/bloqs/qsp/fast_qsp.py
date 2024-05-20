@@ -34,19 +34,9 @@ class FastQSP:
         if self.only_reals:
             self.conv_p_negative = self.conv_by_flip_conj(poly) * -1
         else:
+            poly = poly.astype("complex128")
             self.conv_p_negative = self.complex_conv_by_flip_conj(poly.real, poly.imag) * -1
         self.conv_p_negative[poly.shape[0] - 1] = 1 - np.linalg.norm(poly) ** 2
-
-    def normalize(
-        self, input_poly: Union[NDArray[np.number], Sequence[complex]], granularity: int = 8
-    ):
-
-        P = np.pad(input_poly, (0, 2**granularity - input_poly.shape[0]))
-        ft = np.fft.fft(P)
-
-        # Normalize P
-        P_norms = np.abs(ft)
-        return input_poly / np.max(P_norms)
 
     def loss_function(self, x):
 
