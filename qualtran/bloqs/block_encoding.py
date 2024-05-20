@@ -13,24 +13,27 @@
 #  limitations under the License.
 r"""High level bloqs for defining bloq encodings and operations on block encodings.
 
-Given an operator $V$ which can be expressed as a linear combination of unitaries
+A block encoding of the Hamiltonian $H$ obeys:
 
 $$
-    V = \sum_l^L w_l U_l,
+    H = (\langle G|_a\otimes I_s U |G\rangle_a \otimes I_s),
 $$
-where $w_l \ge 0$, $w_l \in \mathbb{R}$, and $U_l$ is a unitary, then the block
-encoding $\mathcal{B}\left[\frac{V}{\lambda}\right]$ satisifies
+
+where $a$ is an ancilla register and $s$ is the system register, $U$ is a unitary sometimes
+called a signal oracle and encodes $H$ in its top right corner, while
+$|G\rangle_a$ is called the signal state. Oftentimes $U$ is a SELECT oracle implementing
 $$
-    _a\langle 0| \mathcal{B}\left[\frac{V}{\lambda}\right] |0\rangle_a
-    |\psi\rangle_s = \frac{V}{\lambda}|\psi\rangle_s
+    U|G\rangle_a|\psi\rangle_s = |G\rangle_a H |\psi\rangle_s,
 $$
-where the subscripts $a$ and $s$ signify ancilla and system registers
-respectively, and $\lambda = \sum_l w_l$. The ancilla register is at least of size $\log L$. In our
-implementations we typically split the ancilla registers into selection registers (i.e.
-the $l$ registers above) and junk registers which are extra qubits needed by
-state preparation but not controlled upon during SELECT.
+and $|G\rangle = \mathrm{PREPARE}|0\rangle_a$, which for a LCU representation
+of $H$ would prepare a superposition over the Hamiltonian LCU coefficients.
+However, there are other cases where it is not convenient to factorize the
+block encoding so cleanly (single-factorizated and double factorizated)
+chemistry Hamiltonians, or more generally we may only have access to $U$.
+In that case $|G\rangle = |0\rangle_a$.
 """
 
+import abc
 from functools import cached_property
 from typing import Dict, Set, TYPE_CHECKING
 
@@ -48,6 +51,7 @@ from qualtran import (
     SoquetT,
 )
 from qualtran.bloqs.reflection import Reflection
+from qualtran.bloqs.reflection_using_prepare import ReflectionUsingPrepare
 from qualtran.bloqs.select_and_prepare import PrepareOracle, SelectOracle
 from qualtran.bloqs.util_bloqs import Partition
 
@@ -182,13 +186,46 @@ class BlackBoxPrepare(Bloq):
         return 'Prep'
 
 
+class BlockEncoding(Bloq):
+    r"""Abstract interface for an arbitrary block encoding.
+
+    Users must provide methods for defining the ancilla, junk, and system registers,
+    and a method for defining the signal state $|G\rangle$. See module level
+    docstrings for more discussion.
+
+    References:
+        [Hamiltonian Simulation by Qubitization](https://quantum-journal.org/papers/q-2019-07-12-163/)
+            Sec 2 and 3 for introduction and definition of terms.
+    """
+
+    @property
+    @abc.abstractmethod
+    def selection_bitsize(self) -> int:
+        """The selection bitsize for state preparation. These are the `a` registers above"""
+
+    @property
+    @abc.abstractmethod
+    def junk_bitsize(self) -> int:
+        """The junk bitsize (additional ancilla registers not reflected on)."""
+
+    @property
+    @abc.abstractmethod
+    def system_bitsize(self) -> int:
+        """The system bitsize for applying the controlled (signal) unitary to."""
+
+    @property
+    @abc.abstractmethod
+    def reflection_using_signal_state(self):
+        r"""Construct the reflection around the signal state $|G\rangle."""
+
+
 @attrs.frozen
-class BlackBoxBlockEncoding(Bloq):
-    r"""Black box implementation of a block encoding using SELECT and PREPARE.
+class LCUBlockEncoding(BlockEncoding):
+    r"""LCU based block encoding from using SELECT and PREPARE oracles.
 
     Builds the block encoding via
     $$
-        \mathcal{B}[V] = \mathrm{PREPARE}^\dagger \cdot \mathrm{SELECT} \cdot \mathrm{PREPARE},
+        \mathcal{B}[H] = \mathrm{PREPARE}^\dagger \cdot \mathrm{SELECT} \cdot \mathrm{PREPARE},
     $$
     where
     $$
@@ -199,18 +236,32 @@ class BlackBoxBlockEncoding(Bloq):
         \mathrm{SELECT} |l\rangle_a|\psi\rangle_s = |l\rangle_a U_l |\psi\rangle_s.
     $$
 
+    The ancilla register is at least of size $\log L$. In our implementations we
+    typically split the ancilla registers into selection registers (i.e.  the
+    $l$ registers above) and junk registers which are extra qubits needed by
+    state preparation but not controlled upon during SELECT.
+
     Args:
         select: The bloq implementing the `SelectOracle` interface.
-        prepare: The bloq implementing the `SelectOracle` interface.
+        prepare: The bloq implementing the `PrepareOracle` interface.
 
     Registers:
         selection: The combined selection register.
         junk: Additional junk registers not prepared upon.
         system: The combined system register.
+
+    References:
+        [Hamiltonian Simulation by Qubitization](https://quantum-journal.org/papers/q-2019-07-12-163/)
+            Sec 3.1, page 7 and 8 for high level overview and definitions. A
+            block encoding is called a standard form encoding there.
     """
 
-    select: BlackBoxSelect
-    prepare: BlackBoxPrepare
+    select: BlackBoxSelect = attrs.field(
+        converter=lambda x: BlackBoxSelect(x) if isinstance(x, SelectOracle) else x
+    )
+    prepare: BlackBoxPrepare = attrs.field(
+        converter=lambda x: BlackBoxPrepare(x) if isinstance(x, PrepareOracle) else x
+    )
 
     @cached_property
     def selection_bitsize(self):
@@ -235,7 +286,11 @@ class BlackBoxBlockEncoding(Bloq):
         )
 
     def pretty_name(self) -> str:
-        return 'B[V]'
+        return 'B[H]'
+
+    @cached_property
+    def reflection_using_signal_state(self):
+        return ReflectionUsingPrepare(self.prepare.prepare)
 
     def build_composite_bloq(
         self, bb: 'BloqBuilder', selection: 'SoquetT', junk: 'SoquetT', system: 'SoquetT'
@@ -270,11 +325,11 @@ class ChebyshevPolynomial(Bloq):
         order: order of Chebychev polynomial.
 
     References:
-        [Quantum computing enhanced computational catalysis](
-            https://arxiv.org/abs/2007.14460). Page 45; Theorem 1.
+        [Quantum computing enhanced computational catalysis](https://arxiv.org/abs/2007.14460).
+            Page 45; Theorem 1.
     """
 
-    block_encoding: BlackBoxBlockEncoding
+    block_encoding: BlockEncoding
     order: int
 
     def __attrs_post_init__(self):
@@ -336,33 +391,32 @@ def _black_box_select() -> BlackBoxSelect:
 
 
 @bloq_example
-def _black_box_block_bloq() -> BlackBoxBlockEncoding:
-    from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
+def _black_box_block_bloq() -> LCUBlockEncoding:
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     dim = 3
-    select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
-    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
-    black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4)
+    black_box_block_bloq = LCUBlockEncoding(select=select, prepare=prepare)
     return black_box_block_bloq
 
 
 _BLACK_BOX_BLOCK_BLOQ_DOC = BloqDocSpec(
-    bloq_cls=BlackBoxBlockEncoding,
-    import_line='from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding',
+    bloq_cls=LCUBlockEncoding,
     examples=(_black_box_block_bloq,),
+    import_line='from qualtran.bloqs.block_encoding import LCUBlockEncoding',
 )
 
 
 @bloq_example
 def _chebyshev_poly() -> ChebyshevPolynomial:
-    from qualtran.bloqs.block_encoding import BlackBoxBlockEncoding, BlackBoxPrepare, BlackBoxSelect
+    from qualtran.bloqs.block_encoding import LCUBlockEncoding
     from qualtran.bloqs.hubbard_model import PrepareHubbard, SelectHubbard
 
     dim = 3
-    select = BlackBoxSelect(SelectHubbard(x_dim=dim, y_dim=dim))
-    prepare = BlackBoxPrepare(PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4))
-    black_box_block_bloq = BlackBoxBlockEncoding(select=select, prepare=prepare)
+    select = SelectHubbard(x_dim=dim, y_dim=dim)
+    prepare = PrepareHubbard(x_dim=dim, y_dim=dim, t=1, mu=4)
+    black_box_block_bloq = LCUBlockEncoding(select=select, prepare=prepare)
     chebyshev_poly = ChebyshevPolynomial(black_box_block_bloq, order=3)
     return chebyshev_poly
 
