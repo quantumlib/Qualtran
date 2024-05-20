@@ -13,19 +13,73 @@
 #  limitations under the License.
 
 import numpy as np
+from .generalized_qsp_test import verify_generalized_qsp
+from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+
+
 import pytest
-from .generalized_qsp_test import random_qsp_polynomial, check_polynomial_pair_on_random_points_on_unit_circle
+
 from .fast_qsp import fast_complementary_polynomial
+from .generalized_qsp_test import (
+    check_polynomial_pair_on_random_points_on_unit_circle,
+    random_qsp_polynomial,
+)
 
 
-# @pytest.mark.parametrize("degree", [4, 5])
-@pytest.mark.parametrize("degree", [5])
-
+@pytest.mark.parametrize("degree", [4, 5])
 def test_complementary_polynomial_quick(degree: int):
     random_state = np.random.RandomState(42)
-
     for _ in range(2):
         P = random_qsp_polynomial(degree, random_state=random_state)
-        Q = fast_complementary_polynomial(P, verify=True)
-        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state)
+        Q = fast_complementary_polynomial(P)
+        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state, rtol=1e-5)
+
+@pytest.mark.parametrize("degree", [3, 4])
+def test_real_polynomial_has_real_complementary_polynomial_quick(degree: int):
+    random_state = np.random.RandomState(42)
+
+    for _ in range(10):
+        P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
+        Q = fast_complementary_polynomial(P, only_reals=True)
+        Q = np.around(Q, decimals=8)
+        assert np.isreal(Q).all()
+        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state, rtol=1e-4)
+
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("degree", [5, 10, 20, 30, 100])
+def test_complementary_polynomial(degree: int):
+    random_state = np.random.RandomState(42)
+
+    results = []
+    for _ in range(100):
+        P = random_qsp_polynomial(degree, random_state=random_state)
+        Q = fast_complementary_polynomial(P)
+        results.append(np.array(Q))
+        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state, rtol=1e-7)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("degree", [2, 3, 4, 5, 10])
+def test_generalized_real_qsp_with_symbolic_signal_matrix(degree: int):
+    random_state = np.random.RandomState(102)
+
+    for _ in range(10):
+        P = random_qsp_polynomial(degree, random_state=random_state)
+        U = MatrixGate.random(2, random_state=random_state)
+        Q = fast_complementary_polynomial(P)
+        verify_generalized_qsp(U, P, Q=Q)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("degree", [3, 4, 5, 10, 20, 30, 100])
+def test_real_polynomial_has_real_complementary_polynomial(degree: int):
+    random_state = np.random.RandomState(42)
+    for _ in range(10):
+        P = random_qsp_polynomial(degree, random_state=random_state, only_real_coeffs=True)
+        Q = fast_complementary_polynomial(P, only_reals=True)
+        Q = np.around(Q, decimals=8)
+        assert np.isreal(Q).all()
+        check_polynomial_pair_on_random_points_on_unit_circle(P, Q, random_state=random_state, rtol=2e-2)
 
