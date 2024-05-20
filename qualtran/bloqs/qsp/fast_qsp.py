@@ -27,14 +27,12 @@ class FastQSP:
     only_reals: If "true", then only real polynomial values will be returned.
     """
 
-    def __init__(
-        self, poly: Union[NDArray[np.number], Sequence[complex]], only_reals: bool = False
-    ):
+    def __init__(self, poly: NDArray[np.number], only_reals: bool = False):
         self.only_reals = only_reals
         if self.only_reals:
             self.conv_p_negative = self.conv_by_flip_conj(poly) * -1
         else:
-            poly = np.array(poly, dtype=np.complex128)
+            assert poly.dtype == np.complex128
             self.conv_p_negative = self.complex_conv_by_flip_conj(poly.real, poly.imag) * -1
         self.conv_p_negative[poly.shape[0] - 1] = 1 - np.linalg.norm(poly) ** 2
 
