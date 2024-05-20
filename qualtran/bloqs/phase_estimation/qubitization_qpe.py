@@ -165,12 +165,12 @@ def _qubitization_qpe_hubbard_model_small() -> QubitizationQPE:
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     x_dim, y_dim, t = 2, 2, 2
-    mu = 4 * t
-    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+    u = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, u)
 
     algo_eps = t / 100
     N = x_dim * y_dim * 2
-    qlambda = 2 * N * t + (N * mu) // 2
+    qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_hubbard_model_small = QubitizationQPE.from_standard_deviation_eps(
         walk, qpe_eps
@@ -186,12 +186,12 @@ def _qubitization_qpe_hubbard_model_large() -> QubitizationQPE:
     from qualtran.bloqs.phase_estimation import QubitizationQPE
 
     x_dim, y_dim, t = 20, 20, 20
-    mu = 4 * t
-    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, mu)
+    u = 4 * t
+    walk = get_walk_operator_for_hubbard_model(x_dim, y_dim, t, u)
 
     algo_eps = t / 100
     N = x_dim * y_dim * 2
-    qlambda = 2 * N * t + (N * mu) // 2
+    qlambda = 2 * N * t + (N * u) // 2
     qpe_eps = algo_eps / (qlambda * np.sqrt(2))
     qubitization_qpe_hubbard_model_large = QubitizationQPE.from_standard_deviation_eps(
         walk, qpe_eps

@@ -243,7 +243,7 @@ class PrepareHubbard(PrepareOracle):
         x_dim: the number of sites along the x axis.
         y_dim: the number of sites along the y axis.
         t: coefficient for hopping terms in the Hubbard model hamiltonian.
-        mu: coefficient for single body Z term and two-body ZZ terms in the Hubbard model
+        u: coefficient for single body Z term and two-body ZZ terms in the Hubbard model
             hamiltonian.
 
     Signature:
@@ -266,8 +266,8 @@ class PrepareHubbard(PrepareOracle):
 
     x_dim: int
     y_dim: int
-    t: int
-    mu: int
+    t: float
+    u: float
 
     def __attrs_post_init__(self):
         if self.x_dim != self.y_dim:
@@ -294,7 +294,7 @@ class PrepareHubbard(PrepareOracle):
     def l1_norm_of_coeffs(self) -> 'SymbolicFloat':
         # https://arxiv.org/abs/1805.03662v2 equation 60
         N = self.x_dim * self.y_dim * 2
-        qlambda = 2 * N * self.t + (N * self.mu) // 2
+        qlambda = 2 * N * self.t + (N * self.u) // 2
         return qlambda
 
     @cached_property
@@ -335,9 +335,9 @@ class PrepareHubbard(PrepareOracle):
 
 
 def get_walk_operator_for_hubbard_model(
-    x_dim: int, y_dim: int, t: int, mu: int
+    x_dim: int, y_dim: int, t: int, u: int
 ) -> 'QubitizationWalkOperator':
     select = SelectHubbard(x_dim, y_dim)
-    prepare = PrepareHubbard(x_dim, y_dim, t, mu)
+    prepare = PrepareHubbard(x_dim, y_dim, t, u)
 
     return QubitizationWalkOperator(select=select, prepare=prepare)
